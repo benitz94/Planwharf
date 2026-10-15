@@ -10,14 +10,6 @@ Planwharf can use [Matt Pocock's open-source skills](https://github.com/mattpoco
 
 [Quick start](docs/QUICKSTART.md) | [FAQ](docs/FAQ.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
 
-## Planwharf at a glance
-
-![Illustrated Planwharf workflow: project, AI roles, approval, execution and recovery](docs/demo-workflow.svg)
-
-**Choose a project → choose your AIs → approve the work → follow actual results → resume when needed.**
-
-New here? [See the 40-second real-demo storyboard](docs/DEMO.md) and the [FAQ](docs/FAQ.md). The graphic above illustrates the workflow; it is not an application screenshot.
-
 ## Why Planwharf?
 
 AI coding CLIs can implement tasks, but running several of them separately leaves you to track decisions, assignments, progress and interrupted work yourself. Planwharf adds a **persistent project notebook and a coordinated execution workflow** around the AI tools you already use.
