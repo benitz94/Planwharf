@@ -8,7 +8,19 @@ Planwharf is still under active development and is provided **as is**. Features 
 
 Planwharf can use [Matt Pocock's open-source skills](https://github.com/mattpocock/skills) to guide its coding agents. Thanks to Matt and the contributors; see [third-party acknowledgments and license notices](docs/THIRD-PARTY-NOTICES.md).
 
-[Quick start](docs/QUICKSTART.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
+[Quick start](docs/QUICKSTART.md) | [FAQ](docs/FAQ.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
+
+## Why Planwharf?
+
+AI coding CLIs can implement tasks, but running several of them separately leaves you to track decisions, assignments, progress and interrupted work yourself. Planwharf adds a **persistent project notebook and a coordinated execution workflow** around the AI tools you already use.
+
+- **Keep the project, not just the conversation:** goals, decisions, notes and revisions remain connected to project history.
+- **Coordinate supported AI connections:** approve a MegaTask, see its SubTasks, and control which exact provider/model can coordinate, implement or review.
+- **Know what actually happened:** inspect worker attempts, reported tests, changed files, blockers and execution evidence instead of assuming that a process exit means success.
+- **Resume deliberately:** Stop and Pause preserve partial work and checkpoints; Resume checks project state and avoids automatically repeating finished SubTasks.
+- **Work locally:** the notebook and backend run on your computer; AI provider connectivity and credentials remain subject to the chosen integration.
+
+Planwharf does not promise perfect model compatibility or complete worker sandboxing. Windows has the strongest end-to-end verification so far. For a concise introduction, see the [FAQ](docs/FAQ.md).
 
 ## Download the latest release
 
