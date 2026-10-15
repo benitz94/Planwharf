@@ -8,6 +8,12 @@ New to Planwharf? This page explains what it does, how AI coding orchestration w
 
 Planwharf is a local, project-first notebook and coordinator for AI coding workers. It keeps goals, decisions, plans, execution results, and checkpoints together so you can understand what has happened in a project and what needs to happen next. It is not just a chat interface.
 
+### Why is it called Planwharf?
+
+The name combines **plan** — a living project plan — and **wharf** — a dock where arrivals, departures, and work are coordinated. Planwharf evolved from an AI orchestrator into a home for the whole project: plans, approvals, coding agents, results, history, and checkpoints. Like a harbor, it is a place where work comes together and can set off again without losing its progress. The name describes that role rather than tying the product to any particular AI provider.
+
+**Planwharf — where projects dock, agents work, and progress stays anchored.**
+
 ### Why use Planwharf instead of running AI coding CLIs separately?
 
 You can run Codex, Grok, or other supported connections directly. Planwharf adds a shared project record around those tools: an approved assignment, bounded tasks, visible worker and model identities, recorded outcomes, and checkpoints for interrupted work. It helps you coordinate and review work without relying on a long chat transcript to reconstruct progress.
