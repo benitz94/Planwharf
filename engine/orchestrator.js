@@ -1931,10 +1931,10 @@ function createOrchestrator(options) {
     throw new Error('Unsupported Supervisor action.');
   }
 
-  function bindAccount(providerId, key) {
+  function bindAccount(providerId, key, { commit = true } = {}) {
     const previous = store.lastAccountKeys[providerId];
     const changed = previous !== undefined && previous !== key;
-    if (previous !== key) { store.lastAccountKeys[providerId] = key; persist(); }
+    if (commit && previous !== key) { store.lastAccountKeys[providerId] = key; persist(); }
     return changed;
   }
 

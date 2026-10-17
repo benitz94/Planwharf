@@ -82,6 +82,37 @@ test('account switching isolates roles, invalidates quota and stale access, and 
     await new Promise(resolve => server.close(resolve)); await start();
     state = await request('/api/orchestrator?readOnly=1'); assert.deepEqual(model(state).roles, business);
     assert.equal(model(state).available, false, 'A login change while the backend is stopped also invalidates old account access');
+    await new Promise(resolve => server.close(resolve)); await start();
+    state = await request('/api/orchestrator?readOnly=1');
+    assert.equal(model(state).available, false, 'Repeated restart during failed discovery cannot resurrect a historical catalog for the unchanged invalidated account');
+    assert.deepEqual(model(state).roles, business, 'Access invalidation never rewrites account-scoped role choices');
     assert.equal(aiCalls, 0);
+  } finally { if (server?.listening) await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('failed cache invalidation does not commit switched account identity and retries safely', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-account-durable-')), planFile = path.join(dir, 'notebook.json'), attemptsDir = path.join(dir, 'attempts');
+  fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
+  let account = { key: 'fixture-account-a', type: 'normal' }, catalogOk = true, server, origin;
+  async function start() {
+    server = createServer({ planFile, attemptsDir, skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+      models: [{ id: 'grok-fixture', provider: 'grok', cli: 'grok-fixture', enabled: true, available: true }], readAccount: () => account,
+      discoverModels: async () => catalogOk ? { ok: true, ids: ['grok-fixture'] } : { ok: false, reason: 'Synthetic outage' }, fetchPlans: null,
+      askModel: () => { throw Error('No inference authorized'); } });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); origin = 'http://127.0.0.1:' + server.address().port;
+  }
+  async function request(route, post = false) { const response = await fetch(origin + route, post ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' } : {}); return { status: response.status, body: await response.json() }; }
+  const cache = path.join(attemptsDir, 'provider-model-catalogs.json'), backup = cache + '.fixture-backup';
+  try {
+    await start(); assert.equal((await request('/api/orchestrator?readOnly=1')).status, 200); assert.equal((await request('/api/models/refresh', true)).status, 200);
+    fs.renameSync(cache, backup); fs.mkdirSync(cache); account = { key: 'fixture-account-b', type: 'business' }; catalogOk = false;
+    assert.equal((await request('/api/orchestrator?readOnly=1')).status, 500);
+    const stateFile = path.join(attemptsDir, 'orchestrator.json');
+    assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf8')).lastAccountKeys.grok, 'fixture-account-a', 'Durability failure cannot commit the new account binding');
+    fs.rmdirSync(cache); fs.renameSync(backup, cache);
+    const retried = await request('/api/orchestrator?readOnly=1'); assert.equal(retried.status, 200); assert.equal(retried.body.models.find(model => model.id === 'grok-fixture').available, false);
+    assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf8')).lastAccountKeys.grok, 'fixture-account-b');
+    await new Promise(resolve => server.close(resolve)); await start();
+    const restarted = await request('/api/orchestrator?readOnly=1'); assert.equal(restarted.status, 200); assert.equal(restarted.body.models.find(model => model.id === 'grok-fixture').available, false);
   } finally { if (server?.listening) await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
 });

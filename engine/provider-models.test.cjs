@@ -117,3 +117,59 @@ const { createProviderModels } = require('./provider-models.cjs');
   }
   console.log('OK: exact Grok model discovery, preserved access on failed checks and no invented provider/model substitutions.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+const test = require('node:test');
+function scopedCatalogFixture(t) {
+  const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-catalog-scope-')); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const provider = { id: 'scope-fixture', adapter: 'codex', account: { key: 'account-b-fixture' } };
+  const freshModels = () => [{ id: 'exact-fixture', providerId: provider.id, cli: 'gpt-fixture', available: false, enabled: true, roles: { worker: true, reviewer: false } }];
+  return { fs, path, dir, provider, freshModels, cacheFile: path.join(dir, 'catalog.json') };
+}
+test('account invalidation survives restart and cannot restore cached access until fresh discovery succeeds', async t => {
+  const f = scopedCatalogFixture(t), providers = [f.provider];
+  const seed = createProviderModels(f.freshModels(), { providers, cacheFile: f.cacheFile, discover: async () => ({ ok: true, ids: ['gpt-fixture'] }) }); await seed.refresh(true);
+  const models = f.freshModels(), active = createProviderModels(models, { providers, cacheFile: f.cacheFile, discover: async () => ({ ok: false, reason: 'Synthetic catalog outage' }) });
+  await active.invalidate(f.provider.id); await active.refresh(true);
+  assert.equal(models[0].available, false); assert.equal(active.snapshot().providers[0].preservingPreviousAvailability, false);
+  const restarted = f.freshModels(); let reply = { ok: false, reason: 'Still unavailable' };
+  const next = createProviderModels(restarted, { providers, cacheFile: f.cacheFile, discover: async () => reply }); await next.refresh(true);
+  assert.equal(restarted[0].available, false, 'A second restart cannot revive historical access for the invalidated login');
+  reply = { ok: true, ids: ['gpt-fixture'] }; await next.refresh(true); assert.equal(restarted[0].available, true); assert.equal(restarted[0].availabilityVerified, true);
+  assert.deepEqual(restarted[0].roles, { worker: true, reviewer: false });
+  const cached = f.freshModels(), offline = createProviderModels(cached, { providers, cacheFile: f.cacheFile, discover: async () => ({ ok: false, reason: 'Same-account temporary outage' }) }); await offline.refresh(true);
+  assert.equal(cached[0].available, true, 'Freshly reverified unchanged-account cache remains usable offline');
+  assert.doesNotMatch(f.fs.readFileSync(f.cacheFile, 'utf8'), /account-b-fixture/, 'Account scope is persisted only as a digest');
+});
+test('an old-account discovery cannot grant access after a switch and queued refresh checks the active account', async t => {
+  const f = scopedCatalogFixture(t); f.provider.account.key = 'account-a-fixture';
+  const models = f.freshModels(); let release, started; const entered = new Promise(resolve => { started = resolve; }); let calls = 0;
+  const discovery = createProviderModels(models, { providers: [f.provider], cacheFile: f.cacheFile, discover: async provider => {
+    calls++; if (calls === 1) { started(); return await new Promise(resolve => { release = resolve; }); }
+    assert.equal(provider.account.key, 'account-b-fixture'); return { ok: false, reason: 'Current account requires fresh authorization' };
+  } });
+  const pending = discovery.refresh(true); await entered;
+  f.provider.account.key = 'account-b-fixture'; await discovery.invalidate(f.provider.id);
+  const current = discovery.refresh(true, f.provider.id); release({ ok: true, ids: ['gpt-fixture', 'gpt-a-only'] }); await Promise.all([pending, current]);
+  assert.equal(calls, 2); assert.equal(models[0].available, false); assert.equal(models.some(model => model.cli === 'gpt-a-only'), false); assert.equal(discovery.snapshot().providers[0].status, 'unread');
+});
+test('same-account return and changed configuration reject old in-flight generation results', async t => {
+  const f = scopedCatalogFixture(t), models = f.freshModels(); let release, started; const entered = new Promise(resolve => { started = resolve; }); let calls = 0;
+  const discovery = createProviderModels(models, { providers: [f.provider], discover: async () => { calls++; if (calls === 1) { started(); return await new Promise(resolve => { release = resolve; }); } return { ok: false, reason: 'Fresh check failed' }; } });
+  const pending = discovery.refresh(true); await entered;
+  await discovery.invalidate(f.provider.id); // Identity can return to the same key while the old request is pending.
+  const fresh = discovery.refresh(true, f.provider.id); release({ ok: true, ids: ['gpt-fixture', 'gpt-stale'] }); await Promise.all([pending, fresh]);
+  assert.equal(models[0].available, false); assert.equal(models.some(model => model.cli === 'gpt-stale'), false); assert.equal(calls, 2);
+  f.provider.adapter = 'configured-cli'; discovery.snapshot(); assert.equal(models[0].available, false, 'Configuration changes invalidate access even before the next discovery');
+});
+test('failed durable invalidation rejects without allowing pending stale discovery to clear the block', async t => {
+  const f = scopedCatalogFixture(t), models = f.freshModels(); models[0].available = true;
+  // A directory at the exact cache-file path reliably rejects atomic replacement.
+  f.fs.mkdirSync(f.cacheFile); let release, started; const entered = new Promise(resolve => { started = resolve; });
+  const discovery = createProviderModels(models, { providers: [f.provider], cacheFile: f.cacheFile, discover: async () => { started(); return await new Promise(resolve => { release = resolve; }); } });
+  const pending = discovery.refresh(true); await entered;
+  await assert.rejects(discovery.invalidate(f.provider.id), /invalidation could not be persisted/);
+  assert.equal(models[0].available, false);
+  release({ ok: true, ids: ['gpt-fixture', 'gpt-stale'] }); await pending;
+  assert.equal(models[0].available, false); assert.equal(models.some(model => model.cli === 'gpt-stale'), false);
+});

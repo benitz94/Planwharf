@@ -48,15 +48,49 @@ function catalogEntries(result) {
     capabilities: Object.fromEntries(Object.entries(m.capabilities || {}).filter(([, value]) => typeof value === 'boolean')) }));
 }
 function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFile }) {
-  const states = new Map(), restored = new Set(); let inflight;
+  const states = new Map(), restored = new Set(), stateScopes = new Map(), generations = new Map(), observedScopes = new Map(), blockedScopes = new Set(); let inflight, saving = Promise.resolve();
   let cache = {};
   if (cacheFile) try {
     const saved = JSON.parse(require('node:fs').readFileSync(cacheFile, 'utf8'));
-    if (saved.schema === 1 && saved.catalogs && typeof saved.catalogs === 'object') cache = saved.catalogs;
+    if (saved.schema === 1 && saved.catalogs && typeof saved.catalogs === 'object') {
+      cache = saved.catalogs;
+      for (const key of saved.invalidatedScopes || []) if (typeof key === 'string' && /^[a-f0-9]{64}$/.test(key)) blockedScopes.add(key);
+    }
   } catch { /* A missing or unreadable cache cannot verify provider access. */ }
   function cacheKey(provider) {
     return require('node:crypto').createHash('sha256').update(JSON.stringify([provider.id, provider.adapter, provider.account?.key || null, require('./provider-catalog.cjs').providerConfiguration(provider)])).digest('hex');
   }
+  for (const provider of providers) observedScopes.set(provider.id, cacheKey(provider));
+  function block(provider) {
+    const key = cacheKey(provider); blockedScopes.add(key); observedScopes.set(provider.id, key);
+    generations.set(provider.id, (generations.get(provider.id) || 0) + 1);
+    restored.delete(key); states.delete(provider.id); stateScopes.delete(provider.id);
+    for (const model of models.filter(model => model.providerId === provider.id)) {
+      model.available = false; model.availabilityVerified = false;
+      model.unavailableReason = 'Provider account or configuration changed. Access requires fresh discovery for the current scope.';
+      model.availabilityWarning = model.unavailableReason;
+    }
+  }
+  function invalidate(providerId) {
+    for (const provider of providers.filter(provider => provider.id === providerId)) block(provider);
+    return saveCache(true);
+  }
+  function ensureScopes(providerId) {
+    let changed = false;
+    for (const provider of providers.filter(provider => !providerId || provider.id === providerId)) {
+      const key = cacheKey(provider);
+      if (observedScopes.get(provider.id) !== key) {
+        if (states.has(provider.id) || generations.has(provider.id)) { block(provider); changed = true; }
+        else observedScopes.set(provider.id, key); // First identity attachment is checked by the server's persisted account binding.
+      }
+      if (blockedScopes.has(key)) for (const model of models.filter(model => model.providerId === provider.id)) {
+        model.available = false; model.availabilityVerified = false;
+        model.unavailableReason = 'Access requires fresh discovery for the current provider account or configuration.';
+      }
+    }
+    if (changed) void saveCache();
+  }
+  const observeScope = providerId => ensureScopes(providerId);
   function applyCatalog(provider, entries, checkedAt, verified) {
     for (const model of models.filter(m => m.providerId === provider.id)) {
       model.available = entries.some(m => m.cli === model.cli);
@@ -69,35 +103,53 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
         workerEligible: entry.workerEligible ?? entry.capabilities?.canCode ?? true, capabilities: { ...entry.capabilities }, providerConfig: require('./provider-catalog.cjs').providerConfiguration(provider) });
     }
   }
-  async function saveCache() {
-    if (!cacheFile) return;
-    const fs = require('node:fs/promises');
-    try {
-      await fs.mkdir(require('node:path').dirname(cacheFile), { recursive: true });
-      await fs.writeFile(cacheFile + '.tmp', JSON.stringify({ schema: 1, catalogs: cache }), 'utf8');
-      await fs.rename(cacheFile + '.tmp', cacheFile);
-    } catch { /* Keep the current verified catalog if cache persistence fails. */ }
+  function saveCache(strict = false) {
+    if (!cacheFile) return Promise.resolve();
+    const pending = saving.then(async () => {
+      const fs = require('node:fs/promises');
+      const temporary = cacheFile + '.' + require('node:crypto').randomUUID() + '.tmp';
+      try {
+        await fs.mkdir(require('node:path').dirname(cacheFile), { recursive: true });
+        await fs.writeFile(temporary, JSON.stringify({ schema: 1, catalogs: cache, invalidatedScopes: [...blockedScopes] }), { encoding: 'utf8', flag: 'wx' });
+        await fs.rename(temporary, cacheFile);
+      } catch { if (strict) throw new Error('Provider access invalidation could not be persisted. Access remains blocked; retry before accepting the account change.'); }
+      finally { try { await fs.rm(temporary, { force: true }); } catch {} }
+    });
+    saving = pending.catch(() => {});
+    return pending;
   }
   async function refresh(force = false, providerId) {
-    if (inflight) return inflight;
+    ensureScopes();
+    if (inflight) return inflight.then(() => refresh(force, providerId));
     inflight = (async () => {
       for (const provider of providers.filter(p => (!providerId || p.id === providerId) && p.enabled !== false)) {
         const key = cacheKey(provider);
+        if (observedScopes.get(provider.id) !== key) { block(provider); await saveCache(); }
+        const generation = generations.get(provider.id) || 0;
+        if (blockedScopes.has(key)) {
+          for (const model of models.filter(model => model.providerId === provider.id)) { model.available = false; model.availabilityVerified = false; model.unavailableReason = 'Access requires fresh discovery for the current provider account or configuration.'; }
+        }
         if (!restored.has(key)) {
           restored.add(key);
           const saved = cache[key], entries = saved && catalogEntries({ models: saved.models });
-          if (entries && typeof saved.checkedAt === 'string') {
+          if (!blockedScopes.has(key) && entries && typeof saved.checkedAt === 'string') {
             applyCatalog(provider, entries, saved.checkedAt, false);
             states.set(provider.id, { providerId: provider.id, label: provider.label || provider.id, status: 'unread', checkedAt: saved.checkedAt, reason: 'Using the last verified catalog until startup discovery completes.', ids: entries.map(m => m.cli), preservingPreviousAvailability: true });
+            stateScopes.set(provider.id, key);
           }
         }
-        const previous = states.get(provider.id);
+        const previous = stateScopes.get(provider.id) === key ? states.get(provider.id) : null;
         if (!force && previous && now() - Date.parse(previous.checkedAt) < ttl) continue;
         let result;
         try {
           const adapter = require('./provider-adapters.cjs').adapterFor(provider);
           result = discover !== listGrok ? await discover(provider) : await adapter?.discover?.(provider);
         } catch { result = { ok: false, reason: 'Provider catalog could not be read; previous model configuration is preserved.' }; }
+        if (cacheKey(provider) !== key || (generations.get(provider.id) || 0) !== generation) {
+          // A completed old-account request is never evidence for the active login.
+          if (cacheKey(provider) !== observedScopes.get(provider.id)) { block(provider); await saveCache(); }
+          continue;
+        }
         result ||= { ok: false, reason: 'Model enumeration unavailable for this adapter.' };
         const entries = catalogEntries(result);
         if (result.ok && !entries) result = { ok: false, reason: 'Provider returned an invalid model catalog; previous availability is retained.' };
@@ -109,16 +161,19 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
           model.availabilityWarning = result.ok ? null : result.reason || 'Model catalog check failed; previous availability is retained.';
         }
         if (result.ok) {
+          blockedScopes.delete(key);
           cache[key] = { checkedAt, models: entries };
           await saveCache();
         }
-        states.set(provider.id, { providerId: provider.id, label: provider.label || provider.id, status: result.ok ? 'current' : 'unread', checkedAt, reason: result.ok ? null : result.reason, preservingPreviousAvailability: !result.ok, ids: result.ok ? entries.map(m => m.cli) : previous?.ids || [] });
+        if (cacheKey(provider) !== key || (generations.get(provider.id) || 0) !== generation) { ensureScopes(); continue; }
+        states.set(provider.id, { providerId: provider.id, label: provider.label || provider.id, status: result.ok ? 'current' : 'unread', checkedAt, reason: result.ok ? null : result.reason, preservingPreviousAvailability: !result.ok && !blockedScopes.has(key), ids: result.ok ? entries.map(m => m.cli) : previous?.ids || [] });
+        stateScopes.set(provider.id, key);
       }
       return snapshot();
     })().finally(() => { inflight = null; });
     return inflight;
   }
-  function snapshot() { const list = providers.map(p => states.get(p.id) || { providerId: p.id, label: p.label || p.id, status: p.enabled === false ? 'disabled' : 'unknown', checkedAt: null, ids: [] }); return { providers: list, checking: Boolean(inflight), status: list.every(s => ['current', 'disabled'].includes(s.status)) ? 'current' : 'unread' }; }
-  return { refresh, snapshot };
+  function snapshot() { ensureScopes(); const list = providers.map(p => states.get(p.id) || { providerId: p.id, label: p.label || p.id, status: p.enabled === false ? 'disabled' : 'unknown', checkedAt: null, ids: [] }); return { providers: list, checking: Boolean(inflight), status: list.every(s => ['current', 'disabled'].includes(s.status)) ? 'current' : 'unread' }; }
+  return { refresh, snapshot, invalidate, observeScope };
 }
 module.exports = { createProviderModels, listGrok };

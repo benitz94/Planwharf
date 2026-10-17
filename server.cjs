@@ -103,9 +103,12 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         account ||= require('./engine/provider-accounts.cjs').unknownAccount();
         const previous = accountStates.get(provider.id);
         provider.account = account;
-        accountStates.set(provider.id, account);
-        const changedOnDisk = orchestra.bindAccount(provider.id, account.key);
+        providerModels.observeScope(provider.id);
+        // Do not commit the new account identity before its stale access cache
+        // has been durably invalidated. Failed writes must be retried on restart.
+        const changedOnDisk = orchestra.bindAccount(provider.id, account.key, { commit: false });
         if (changedOnDisk || previous && previous.key !== account.key) {
+          await providerModels.invalidate(provider.id);
           for (const model of models.filter(model => model.providerId === provider.id)) {
             model.available = false;
             model.unavailableReason = 'CLI account changed. Access must be verified for the current login.';
@@ -113,6 +116,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           orchestra.invalidateAccountCache(provider.id);
           if (previous || !refreshModels) await providerModels.refresh(true, provider.id);
         }
+        orchestra.bindAccount(provider.id, account.key);
+        accountStates.set(provider.id, account);
       }
     })().finally(() => { accountSync = null; });
     return accountSync;
