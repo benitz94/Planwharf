@@ -20,6 +20,7 @@ validation/*.json
 validation/translate-current.cjs
 validation/restore-error-codes.cjs
 *.settings.json
+*.browser.json
 validation/repository-access.json
 validation/repository-lead-access.json
 validation/provider-check/

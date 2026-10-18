@@ -11,6 +11,7 @@ const { createSentinel } = require('./engine/sentinel.js');
 const { createOrchestrator, jobFingerprint } = require('./engine/orchestrator.js');
 const { createSkillsCache } = require('./engine/skills.js');
 const { createSkillCatalog } = require('./engine/skill-catalog.cjs');
+const { detectBrowsers, validateBrowser, readBrowserPreference } = require('./engine/browser-settings.cjs');
 const { createProviderModels } = require('./engine/provider-models.cjs');
 const { loadCatalog } = require('./engine/provider-catalog.cjs');
 const { adapterFor } = require('./engine/provider-adapters.cjs');
@@ -421,6 +422,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {});
   const staticFiles = { '/supervisor-ui.js': ['supervisor-ui.js', 'text/javascript'], '/supervisor.css': ['supervisor.css', 'text/css'], '/harbor-ui.js': ['harbor-ui.js', 'text/javascript'], '/harbor.css': ['harbor.css', 'text/css'], '/update-ui.js': ['update-ui.js', 'text/javascript'], '/layout-ui.js': ['layout-ui.js', 'text/javascript'], '/model-policy-ui.js': ['model-policy-ui.js', 'text/javascript'], '/notifications.js': ['notifications.js', 'text/javascript'], '/quota.js': ['quota.js', 'text/javascript'], '/home-ui.js': ['home-ui.js', 'text/javascript'], '/window-ui.js': ['window-ui.js', 'text/javascript'], '/': ['index.html', 'text/html'], '/index.html': ['index.html', 'text/html'], '/orchestrator.html': ['orchestrator.html', 'text/html'], '/orch.js': ['orch.js', 'text/javascript'], '/app.js': ['app.js', 'text/javascript'], '/plan.js': ['plan.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/models.js': ['models.js', 'text/javascript'], '/models.json': ['models.json', 'application/json'], '/engine/attempts.js': ['engine/attempts.js', 'text/javascript'], '/engine/sentinel.js': ['engine/sentinel.js', 'text/javascript'] };
   staticFiles['/project-skills-ui.js'] = ['project-skills-ui.js', 'text/javascript'];
+  staticFiles['/browser-settings-ui.js'] = ['browser-settings-ui.js', 'text/javascript'];
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => {
       response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -546,6 +548,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'POST' && pathname === '/api/planwharf/window') {
         const url = `http://127.0.0.1:${request.socket.localPort}/`;
         return json(200, { ok: true, url, opened: typeof openPlanWindow === 'function' ? Boolean(openPlanWindow(url)) : false });
+      }
+      if (request.method === 'GET' && pathname === '/api/settings/browser') return json(200, { selected: readBrowserPreference(planFile), browsers: detectBrowsers() });
+      if (request.method === 'POST' && pathname === '/api/settings/browser') {
+        const input = await body(request);
+        let selected;
+        try { selected = validateBrowser(input); } catch (error) { throw new RequestError(400, error.message); }
+        await enqueue(() => writePlan(`${planFile}.browser.json`, selected));
+        return json(200, { selected, browsers: detectBrowsers() });
       }
       if (request.method === 'GET' && pathname === '/api/settings') return json(200, await readSettings());
       if (request.method === 'POST' && pathname === '/api/settings') {

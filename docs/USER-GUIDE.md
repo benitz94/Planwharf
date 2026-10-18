@@ -12,7 +12,7 @@ A Planwharf project is a local notebook entry linked to a source folder and opti
 
 ## Installation, launch and windows
 
-Install Node.js and a Chromium browser. Planwharf has no npm dependencies. For a normal installation, open the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest), expand **Assets**, and download `Planwharf-vX.Y.Z.zip`. This is the packaged application release and the same ZIP is used on Windows, macOS and Linux. Extract the entire archive; do not run the launcher from inside the ZIP. The accompanying `planwharf-update.json.gz` file is update metadata, not the application package. GitHub's automatically generated **Source code (zip/tar.gz)** files are repository snapshots; cloning the repository remains an alternative for development.
+Install Node.js and a modern browser such as Firefox, Brave, Opera, Edge or Chrome. Planwharf has no npm dependencies. For a normal installation, open the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest), expand **Assets**, and download `Planwharf-vX.Y.Z.zip`. This is the packaged application release and the same ZIP is used on Windows, macOS and Linux. Extract the entire archive; do not run the launcher from inside the ZIP. The accompanying `planwharf-update.json.gz` file is update metadata, not the application package. GitHub's automatically generated **Source code (zip/tar.gz)** files are repository snapshots; cloning the repository remains an alternative for development.
 
 The executable is a launcher and needs the neighboring files. Windows is the verified desktop platform. Linux/macOS launcher paths exist, but their desktop behavior has not been verified by the Windows acceptance.
 
@@ -26,7 +26,7 @@ Closing the desktop window checkpoints work and shuts down the backend, just lik
 
 The theme button switches between light and dark appearance. Theme and other local view preferences are retained by the browser profile. Expandable technical panels keep detailed controls available while Home stays focused on project progress.
 
-For terminal use, `node planwharf.cjs projects` lists notebook projects and `node planwharf.cjs status` reads recorded status without dispatching work. `--plan`, `--attempts-dir` and `--port` choose the local notebook, evidence directory and port. `--no-window` starts the backend without opening a desktop window. The `ask` command sends a message to the running backend; ordinary questions and explicit execution commands follow the same chat/approval rules described below.
+For terminal use, `node planwharf.cjs projects` lists notebook projects and `node planwharf.cjs status` reads recorded status without dispatching work. `--plan`, `--attempts-dir` and `--port` choose the local notebook, evidence directory and port. `--browser` chooses a detected browser name, `default`, or an absolute executable path. `--no-window` starts the backend without opening a desktop window. The `ask` command sends a message to the running backend; ordinary questions and explicit execution commands follow the same chat/approval rules described below.
 
 ## Projects and folders
 
@@ -189,3 +189,7 @@ Export is for metadata review/backup. Automatic re-import/restore is not support
 Keep TLS verification enabled. Existing operator CA settings remain respected, and provider environment adjustments are scoped to child processes. See [project status](PROJECT-STATUS.md) for verified platforms/providers and limitations, and [provider adapters](PROVIDER-ADAPTERS.md) for the developer extension contract.
 
 See [third-party acknowledgments](THIRD-PARTY-NOTICES.md) for upstream credits and license notices.
+
+## Application settings and browser
+
+Use **Launch browser** in the header. Select a detected Firefox, Brave, Opera, Edge, Chrome or Chromium installation, the system default, or a custom executable and family. Save, then Quit and relaunch to apply. `--browser default` overrides an unavailable saved browser. **Quit application** remains in the header.

@@ -75,7 +75,7 @@ Use **Quit application** to checkpoint and shut down safely. After updating appl
 
 ## Requirements and launch
 
-Install Node.js and a Chromium browser such as Edge or Chrome. Planwharf has no npm dependencies. Install and authenticate the coding CLIs you want to use separately.
+Install Node.js and a modern browser such as Firefox, Brave, Opera, Edge or Chrome. Planwharf has no npm dependencies. Install and authenticate the coding CLIs you want to use separately.
 
 **CLI authentication and model access are required for AI work.** Complete sign-in or credential setup in each supported CLI before using it in Planwharf. Signing in to a provider's chat website or app does not authenticate its CLI. Your account must also include access to the requested model through that CLI: a plan that includes only chat access is insufficient. Listing or configuring a model in Planwharf does not grant access, credits or quota. Planwharf uses the CLI's existing authentication; it does not turn a chat subscription into CLI access.
 
@@ -115,7 +115,9 @@ No `npm install` step is required. The shell launcher forwards command-line opti
 
 On every OS, install and authenticate each coding CLI in the same user environment that starts Planwharf. On macOS/Linux, CLI discovery looks for `codex`, `grok` and `agy` on `PATH`; for a custom location, set `PLANWHARF_CODEX`, `PLANWHARF_GROK` or `PLANWHARF_ANTIGRAVITY` to the executable's absolute path before launch. Each CLI must support the requested model and Planwharf's execution options on that OS; model recognition alone does not establish OS compatibility.
 
-Planwharf attempts to open a Chromium application window and falls back to the default browser (`open` on macOS, `xdg-open` on Linux). If a browser cannot be launched, open the printed local address, normally `http://127.0.0.1:4173`, in a browser on the same computer. Opening `index.html` directly does not start file persistence. Keep the server process running while using the notebook; use **Quit application** or Ctrl+C to shut down safely.
+Use **Launch browser** in the header and choose automatic detection, the system default, Firefox, Brave, Opera, Edge, Chrome, Chromium, or a custom executable. Save, then **Quit application** and relaunch. The choice is stored next to the notebook in `<notebook>.browser.json`. Firefox uses a separate Firefox profile and a normal window; Chromium browsers use application mode. Automatic detection falls back to the system browser when no supported executable is found. macOS and Linux browser launch paths are implemented but have not been verified end to end.
+
+For a launch-time override, use `Planwharf.exe --browser firefox`, `node planwharf.cjs --browser default`, or `--browser "absolute executable path"`. `PLANWHARF_BROWSER` also overrides the saved choice. A saved browser that is no longer installed is reported explicitly; use `--browser default` to recover. Opening `index.html` directly does not start file persistence.
 
 `Planwharf.exe` is a launcher: keep it with the complete application folder, including `planwharf.cjs`, `engine`, and `fixtures`, and install Node.js on each computer. Startup diagnostics are saved per launch under `%LOCALAPPDATA%\Planwharf\logs`; an error dialog includes the log path. `PLANWHARF_LAUNCH_LOG_DIR` can select another log directory. Browser launch failures attempt to open the same notebook in the default browser.
 

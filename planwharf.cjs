@@ -10,6 +10,7 @@ const { createAppWindows } = require('./engine/app-windows.cjs');
 const { createServer, readPlan } = require('./server.cjs');
 const { createAttemptEngine } = require('./engine/attempts.js');
 const { spawnWorker, isProcessAlive, killWorker, askOrchestrator, abortAsk, abortSupervisor } = require('./engine/runner.cjs');
+const { readBrowserPreference, resolveBrowser, browserArguments } = require('./engine/browser-settings.cjs');
 
 const root = __dirname;
 const defaultPlan = path.join(root, 'plan.json');
@@ -35,6 +36,11 @@ function parseArgs(argv) {
       opts.command = 'ask';
       opts.question = args.slice(i + 1).join(' ').trim();
       break;
+    }
+    else if (token === '--browser') {
+      const value = args[++i];
+      if (!value || value.startsWith('--')) throw new Error('--browser needs a browser name or absolute executable path.');
+      opts.browser = value;
     }
     else if (token === '--no-window') opts.noWindow = true;
     else if (token === '--plan' || token === '--attempts-dir') {
@@ -127,7 +133,7 @@ function findBrowser() {
 function findEdge() { return findBrowser(); }
 
 function listen(opts) {
-  const windows = opts.windows || createAppWindows({ onWindowClosed: () => server.quitApp && server.quitApp(), open: (url, view) => openWindow(url, path.join(opts.attemptsDir, 'windows', view)) });
+  const windows = opts.windows || createAppWindows({ onWindowClosed: () => server.quitApp && server.quitApp(), open: (url, view) => openWindow(url, path.join(opts.attemptsDir, 'windows', view), { browser: launchBrowser(opts) }) });
   const server = createServer({ planFile: opts.planFile, attemptsDir: opts.attemptsDir, models: opts.models, fetchPlans: opts.fetchPlans, syncSkills: opts.syncSkills !== false, skillsEnabled: opts.skillsEnabled !== false, spawnWorker, isProcessAlive, killWorker, askModel: askOrchestrator, abortAsk, abortSupervisor,
     updateManager: opts.updateManager, restartAfterUpdate: opts.restartAfterUpdate, appWindows: windows, quitApp: () => server.quitApp && server.quitApp(),
     openWatchWindow: url => windows.openView('orchestrator', url), openPlanWindow: url => windows.openView('planwharf', url) });
@@ -167,6 +173,11 @@ function openDefaultBrowser(url) {
   child.unref();
   return child;
 }
+function launchBrowser(opts) {
+  const override = opts.browser || process.env.PLANWHARF_BROWSER || process.env.PLANWHARF_EDGE;
+  const preference = override ? (path.isAbsolute(override) ? { id: 'custom', path: override, family: /firefox/i.test(path.basename(override)) ? 'firefox' : 'chromium' } : { id: override }) : readBrowserPreference(opts.planFile);
+  return resolveBrowser(preference);
+}
 function openWindow(url, profileDir, { browser = findBrowser(), start = spawn, fallbackBrowser = openDefaultBrowser } = {}) {
   if (!browser) {
     return fallbackBrowser(url);
@@ -175,7 +186,8 @@ function openWindow(url, profileDir, { browser = findBrowser(), start = spawn, f
   const opts = { stdio: 'ignore' };
   if (process.platform === 'win32') opts.windowsHide = false;
   const testArgs = process.env.PLANWHARF_TEST_NO_SANDBOX === '1' ? ['--no-sandbox'] : [];
-  const child = start(browser, [...testArgs, '--no-first-run', '--no-default-browser-check', '--start-fullscreen', '--disable-background-mode', '--app=' + url, `--user-data-dir=${profileDir}`], opts);
+  const selected = typeof browser === 'string' ? { path: browser, family: /firefox/i.test(path.basename(browser)) ? 'firefox' : 'chromium' } : browser;
+  const child = start(selected.path, [...(selected.family === 'firefox' ? [] : testArgs), ...browserArguments(selected, url, profileDir)], opts);
   child.profileDir = profileDir;
   let fallback = false;
   const recover = reason => {
