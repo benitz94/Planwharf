@@ -141,3 +141,48 @@ body.ship-view #supervisor-notice { display: none; }
 .ship-notice.is-critical { border-left: 3px solid var(--amber); }
 #ship-notifications > p { font-size: .8rem; }
 @media (max-width: 600px) { #ship-view-controls { top: 8px; left: 8px; right: 8px; } #ship-notifications { bottom: 8px; right: 8px; } }
+
+@font-face {
+  font-family: 'Planwharf Vessel';
+  src: url('/assets/fonts/im-fell-english-sc.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+/* Painted layers share the same camera; only the vessel travels. */
+.harbor-background { --harbor-line: #87b1bd; }
+.harbor-background::after {
+  opacity: 1;
+  background: linear-gradient(180deg, #09142055, #0a182233 55%, #07152155);
+}
+.harbor-landscape { filter: brightness(.68) saturate(.65); }
+.harbor-route { transform: translate(1070px, 850px); }
+.harbor-background[data-underway="true"] .harbor-route { transform: translate(980px, 825px); }
+.harbor-background .harbor-pier,
+.harbor-background[data-underway="true"] .harbor-pier { transform: none; opacity: 1; transition: none; }
+.harbor-vessel { filter: brightness(.73) saturate(.65); }
+.harbor-vessel-pirate { display: none; }
+.harbor-background[data-flag="pirate"] .harbor-vessel-classic { display: none; }
+.harbor-background[data-flag="pirate"] .harbor-vessel-pirate { display: block; }
+.harbor-background[data-flag="pirate"] .harbor-landscape { filter: brightness(.58) saturate(.4); }
+.harbor-background[data-flag="tech"] .harbor-vessel { filter: brightness(.76) saturate(.55) hue-rotate(145deg); }
+.harbor-background[data-flag="tech"] .harbor-landscape { filter: brightness(.65) saturate(.65) hue-rotate(12deg); }
+.harbor-background[data-flag="exploration"] .harbor-landscape { filter: brightness(.8) saturate(.7) hue-rotate(-12deg); }
+.harbor-background[data-flag="exploration"] .harbor-vessel { filter: brightness(.87) saturate(.6); }
+.harbor-background[data-flag="merchant"] .harbor-vessel { filter: brightness(.82) saturate(.9) sepia(.15); }
+.harbor-background[data-flag="merchant"] .harbor-landscape { filter: brightness(.72) saturate(.8) sepia(.1); }
+.harbor-background[data-state="neutral"] .harbor-ship { opacity: .8; }
+.harbor-captain { overflow: hidden; clip-path: inset(0); filter: drop-shadow(0 2px 2px #0008); }
+.harbor-flag { transform: scale(.42); }
+.harbor-background[data-motion="full"] .harbor-flag { animation: harbor-pennant 5s ease-in-out infinite alternate; }
+@keyframes harbor-pennant { from { transform: scale(.42) skewY(-2deg); } to { transform: scale(.42) skewY(2deg); } }
+html[data-theme="light"] .harbor-background::after { background: #e8f1f57a; }
+html[data-theme="light"] .harbor-landscape { filter: brightness(1.05) saturate(.5); }
+.harbor-project-name {
+  font-family: 'Planwharf Vessel', Georgia, serif;
+  font-size: 18px; font-style: normal; font-weight: 400; letter-spacing: .08em;
+  fill: #d4c291; stroke: #211a13; stroke-width: 1px; paint-order: stroke fill;
+}
+body.ship-view .harbor-background::after { background: #07142022; }
+body.ship-view .harbor-landscape { filter: brightness(.9) saturate(.8); }
+body.ship-view .harbor-vessel { filter: brightness(.95) saturate(.8); }

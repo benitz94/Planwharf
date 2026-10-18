@@ -83,46 +83,20 @@
     return row.status === 'idle' ? 'idle' : 'neutral';
   }
   const scene = `<svg class="harbor-scene" viewBox="0 0 1600 1000" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><linearGradient id="harbor-sea" x2="0" y2="1"><stop stop-color="var(--harbor-sea-top)"/><stop offset="1" stop-color="var(--harbor-sea-bottom)"/></linearGradient>
-      <pattern id="harbor-sail-tech" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="28" height="28" fill="var(--harbor-cabin)"/><path d="M0 14h10v-8h8v16h10M14 0v28" stroke="var(--harbor-livery)" stroke-width="1.5" fill="none" opacity=".65"/></pattern>
-      <pattern id="harbor-sail-stars" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="50" height="50" fill="var(--harbor-cabin)"/><path d="m25 10 3 12 12 3-12 3-3 12-3-12-12-3 12-3Z" fill="var(--harbor-livery)" opacity=".55"/></pattern>
-      <pattern id="harbor-sail-trade" width="30" height="30" patternUnits="userSpaceOnUse"><rect width="30" height="30" fill="var(--harbor-cabin)"/><path d="M0 15h30" stroke="var(--harbor-livery)" stroke-width="9" opacity=".65"/></pattern>
-      <mask id="harbor-sail-wear" maskUnits="userSpaceOnUse" x="-250" y="-380" width="550" height="400"><rect x="-250" y="-380" width="550" height="400" fill="white"/><path d="m-50-125 9 15-6 15-12-13Zm75-105 10 12-5 14-11-15Zm95 135 9 18-14 8-5-13Z" fill="black"/></mask>
-    </defs>
-    <path fill="var(--harbor-sky)" d="M0 0h1600v1000H0Z"/>
-    <g class="harbor-detail" fill="none" stroke="var(--harbor-line)" opacity=".2"><path d="M0 650h1600M0 630h1600M0 610h1600M1050 600l20-35h60l15 35m340 0v-70h35v70"/><path d="M1050 580h120m300-30h100"/></g>
-    <path fill="url(#harbor-sea)" d="M0 650h1600v350H0Z"/>
-    <g class="harbor-water" fill="none" stroke="var(--harbor-line)" stroke-width="1.5" opacity=".25"><path d="M-100 690q100-9 200 0t200 0t200 0t200 0t200 0t200 0t200 0t300 0M-100 825q140-12 280 0t280 0t280 0t280 0t280 0t300 0M0 930q120-8 240 0t240 0t240 0t240 0t240 0t400 0"/></g>
-    <g class="harbor-pier"><path fill="var(--harbor-pier)" d="m1440 718 160-28v48l-160 28Z"/><path d="m1440 718 160-28" fill="none" stroke="var(--harbor-line)" stroke-width="3"/><path d="M1460 758v130m68-145v115m60-128v106" stroke="var(--harbor-pier)" stroke-width="17"/><path d="M1490 709v-81" stroke="var(--harbor-pier)" stroke-width="8"/><circle class="harbor-beacon" cx="1490" cy="625" r="7" fill="var(--harbor-line)"/><path class="harbor-atmosphere" d="m1490 625-330-80 20 90Z" fill="var(--harbor-line)" opacity=".07"/><path d="M1465 712v-9m75-5v-9" stroke="var(--harbor-line)" stroke-width="7"/></g>
-    <g class="harbor-route">
-      <g class="harbor-ship">
-        <ellipse cx="0" cy="62" rx="182" ry="12" fill="var(--harbor-shadow)" opacity=".45"/>
-        <g class="harbor-wake" fill="none" stroke="var(--harbor-line)" opacity=".4"><path d="M-165 44q-80 10-150 5m150 8q-90 13-180 11" stroke-width="3"/></g>
-        <g class="harbor-ropes" fill="none" stroke="var(--harbor-rope)" stroke-width="2"><path d="M130 4q35 25 50-7M70 8q50 45 120-6"/></g>
-        <!-- Three-masted sailing ship; the selected ensign also controls its livery and sails. -->
-        <path class="harbor-hull" d="M-225-3q180 26 443-7l-43 64q-163 30-350-5Z" fill="var(--harbor-livery)" stroke="var(--harbor-line)" stroke-width="3"/>
-        <path class="harbor-hull-trim" d="M-210 15q200 29 407-6M-185 40q170 20 360-1" fill="none" stroke="var(--harbor-ensign-ink)" stroke-width="3" opacity=".7"/>
-        <path d="M-185-4v-35h70v39M95-1v-33h69l11 31" fill="var(--harbor-livery)" stroke="var(--harbor-line)" stroke-width="2"/>
-        <path d="M180-15 285-58M-195-16l-70-30" stroke="var(--harbor-rope)" stroke-width="5"/>
-        <g class="harbor-rigging" fill="none" stroke="var(--harbor-rope)" stroke-width="1.4" opacity=".8"><path d="M-125-273-218-4M-125-273-38 6M-15-352-138 6M-15-352 127 2M117-255 15 4M117-255 218-10M-15-352 285-58M-15-352-265-46"/></g>
-        <g class="harbor-masts" stroke="var(--harbor-line)" stroke-width="5"><path d="M-125 4v-281M-15 8v-365M117 1v-262"/></g>
-        <g class="harbor-sails" fill="var(--harbor-cabin)" stroke="var(--harbor-line)" stroke-width="1.8">
-          <path class="harbor-sail" d="M-187-246h124q-15 47 7 81-63-13-138 0 25-45 7-81Z"/>
-          <path class="harbor-sail" d="M-201-152h153q-15 57 8 95-79-16-169 0 25-49 8-95Z"/>
-          <path class="harbor-sail" d="M-65-324H35q-11 40 9 66-56-11-117 0 22-37 8-66Z"/>
-          <path class="harbor-sail" d="M-86-247H57q-17 49 8 81-75-14-159 0 25-44 8-81Z"/>
-          <path class="harbor-sail" d="M-102-153H76q-17 57 9 94-94-16-196 0 28-49 9-94Z"/>
-          <path class="harbor-sail" d="M66-228h104q-12 43 7 72-52-12-119 0 20-37 8-72Z"/>
-          <path class="harbor-sail" d="M56-144h124q-12 49 9 81-64-13-141 0 20-43 8-81Z"/>
-          <path class="harbor-jib" d="m130-246 132 177-114 12Z"/>
-        </g>
-        <g class="harbor-yards" stroke="var(--harbor-rope)" stroke-width="3"><path d="M-193-246h136M-208-152h167M-71-324H41M-92-247H64M-109-153H84M60-228h116M49-144h138"/></g>
-        <g class="harbor-flag-mount" transform="translate(-15 -355)"><g class="harbor-flag" transform="translate(-68 0) scale(.7)"></g></g>
-        <g class="harbor-portholes" fill="var(--harbor-ensign-ink)" opacity=".8"><circle cx="-140" cy="26" r="5"/><circle cx="-98" cy="31" r="5"/><circle cx="-56" cy="33" r="5"/><circle cx="-14" cy="35" r="5"/><circle cx="28" cy="35" r="5"/><circle cx="70" cy="32" r="5"/><circle cx="112" cy="27" r="5"/></g>
-        <g class="harbor-anchor" stroke="var(--harbor-rope)" stroke-width="2" fill="none"><path d="M130 32v58m-12-10q12 22 24 0m-20-6h16"/></g>
-      </g>
-    </g>
-    <g class="harbor-detail harbor-atmosphere" fill="var(--harbor-line)" opacity=".12"><circle cx="1150" cy="230" r="2"/><circle cx="1380" cy="330" r="2"/><circle cx="1475" cy="185" r="1.5"/></g>
+    <g transform="translate(1600 0) scale(-1 1)"><image class="harbor-landscape harbor-pier" href="/assets/harbor/port-dusk.png" width="1600" height="1000" preserveAspectRatio="xMidYMid slice"/></g>
+    <g class="harbor-water" fill="none" stroke="var(--harbor-line)" opacity=".12"><path d="M0 900q160-9 320 0t320 0t320 0t320 0t320 0M0 965q180-8 360 0t360 0t360 0t360 0t360 0"/></g>
+    <g class="harbor-route"><g class="harbor-ship">
+      <ellipse cx="-25" cy="-12" rx="390" ry="14" fill="#07131e" opacity=".35"/>
+      <g class="harbor-wake" fill="none" stroke="var(--harbor-line)" stroke-width="3"><path d="M360-8q100 12 230 4m-220 8q130 12 260 3"/></g>
+      <image class="harbor-vessel harbor-vessel-classic" href="/assets/harbor/vessel.png" x="-520" y="-680" width="1000" height="666.667"/>
+      <image class="harbor-vessel harbor-vessel-pirate" href="/assets/harbor/vessel-pirate.png" x="-520" y="-680" width="1000" height="666.667"/>
+      <g class="harbor-flag-mount" transform="translate(57 -668)"><g class="harbor-flag" transform="scale(.42)"></g></g>
+      <svg class="harbor-captain" x="340" y="-300" width="88" height="88" viewBox="0 0 100 100" overflow="hidden"><defs><clipPath id="harbor-captain-crop"><rect width="100" height="100"/></clipPath></defs><image clip-path="url(#harbor-captain-crop)" href="/assets/harbor/captains-caribbean.png" width="500" height="200" preserveAspectRatio="none"/></svg>
+      <circle class="harbor-captain-anchor" cx="384" cy="-300" r="0"/>
+      <circle class="harbor-portholes harbor-beacon" cx="435" cy="-94" r="3" fill="var(--harbor-ensign-ink)"/>
+      <g class="harbor-vessel-title" style="display:none"><title></title><defs><path id="harbor-name-curve" d="M-162-65 C-118-61-61-60 32-60"/></defs><text class="harbor-project-name" text-anchor="middle"><textPath href="#harbor-name-curve" startOffset="50%"></textPath></text></g>
+    </g></g>
+    <g class="harbor-atmosphere"><path d="M0 995h1600" stroke="var(--harbor-line)" stroke-opacity=".1"/></g>
   </svg>`;
   class HarborUI {
     constructor() {

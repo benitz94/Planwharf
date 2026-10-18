@@ -138,7 +138,7 @@ async function launchBrowser() {
 }
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r)); await new Promise(r => proxy.listen(0, '127.0.0.1', r)); base = `http://127.0.0.1:${proxy.address().port}`;
-  for (const asset of ['/harbor-ui.js', '/harbor.css', '/supervisor-ui.js', '/supervisor.css']) assert.equal((await fetch(base + asset)).status, 200, asset + ' actually served');
+  for (const asset of ['/harbor-ui.js', '/harbor.css', '/supervisor-ui.js', '/supervisor.css', '/assets/harbor/port-dusk.png', '/assets/harbor/vessel.png', '/assets/harbor/vessel-pirate.png', '/assets/harbor/captains-caribbean.png']) assert.equal((await fetch(base + asset)).status, 200, asset + ' actually served');
   await launchBrowser();await viewport(1600,1000);
   await cdp('Page.navigate',{url:base});await until(()=>evaluate("document.getElementById('project-select')?.options.length===2 && document.querySelector('.harbor-flag svg')"),'app loads');
   if(process.env.PLANWHARF_SUPERVISOR_ACTIONS_ONLY==='1'){await supervisorActions();assert.equal(aiCalls,0);assert.deepEqual(errors,[]);assert.deepEqual(networkErrors,[]);observations.push({result:'PASS',scope:'Supervisor contextual actions'});console.log('PASS Supervisor contextual browser actions:',out);return;}
