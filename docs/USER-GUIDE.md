@@ -18,7 +18,7 @@ The executable is a launcher and needs the neighboring files. Windows is the ver
 
 On Windows, open `Planwharf.exe` or `planwharf.cmd`. From a terminal, use `node planwharf.cjs`. On macOS/Linux, use the same extracted release ZIP and run `sh ./planwharf.sh` or `node ./planwharf.cjs`. The local server binds to `127.0.0.1`, normally on port 4173, and the desktop launcher can select another port when necessary.
 
-Normal launch opens one window with **Show Orchestrator** / **Show Planwharf** to switch views. Both views share one backend, selected project and local UI state. Opening the same notebook again reuses its backend and focuses or reopens the application.
+Normal launch opens one window with **Overview** / **Workspace** / **Supervisor** navigation to switch views. Both views share one backend, selected project and local UI state. Opening the same notebook again reuses its backend and focuses or reopens the application.
 
 The desktop window starts in full-screen mode. Press **F11** to toggle full-screen mode. If desktop launch falls back to your default browser, that browser controls its window size.
 
@@ -192,4 +192,4 @@ See [third-party acknowledgments](THIRD-PARTY-NOTICES.md) for upstream credits a
 
 ## Application settings and browser
 
-Use **Launch browser** in the header. Select a detected Firefox, Brave, Opera, Edge, Chrome or Chromium installation, the system default, or a custom executable and family. Save, then Quit and relaunch to apply. `--browser default` overrides an unavailable saved browser. **Quit application** remains in the header.
+Open **Settings** from the project rail and use **Launch browser**. Select a detected Firefox, Brave, Opera, Edge, Chrome or Chromium installation, the system default, or a custom executable and family. Save, then Quit and relaunch to apply. `--browser default` overrides an unavailable saved browser. **Quit application** remains in the header.

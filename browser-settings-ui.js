@@ -4,6 +4,7 @@
   if (!toolbar) return;
   const open = document.createElement('button');
   open.type = 'button';
+  open.id = 'launch-browser-button';
   open.className = 'secondary compact';
   open.textContent = 'Launch browser';
   toolbar.insertBefore(open, toolbar.querySelector('#app-quit') || toolbar.firstChild);

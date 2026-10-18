@@ -43,9 +43,9 @@
       if (window.PlanwharfSelectWorkspacePanel) window.PlanwharfSelectWorkspacePanel('supervisor');
       else window.PlanwharfRequestedWorkspacePanel = 'supervisor';
     }
-    document.body.dataset.appView = activeView;
+    document.body.dataset.appView = supervisorRequested ? 'supervisor' : activeView;
     const intro = document.getElementById('project-lede');
-    if (intro) intro.textContent = activeView === 'supervisor' ? 'Execution oversight, alerts, and Reviewer advice.' : activeView === 'orchestrator' ? 'Orchestrator chat, workers, and provider usage.' : 'Goal, progress, current work, next action, and your notes.';
+    if (intro) intro.textContent = supervisorRequested ? 'Execution oversight, alerts, and Reviewer advice.' : activeView === 'orchestrator' ? 'Orchestrator chat, workers, and provider usage.' : 'Goal, progress, current work, next action, and your notes.';
     if (control) {
       control.textContent = nativeWindow ? (view === 'planwharf' ? 'Open Orchestrator' : 'Open Planwharf') : activeView === 'planwharf' ? 'Show Orchestrator' : 'Show Planwharf';
       control.setAttribute('aria-pressed', String(activeView === 'orchestrator'));
@@ -54,7 +54,7 @@
       history.replaceState(null, '', supervisorRequested ? '#supervisor' : activeView === 'orchestrator' ? '#orchestrator' : '#project');
       window.scrollTo(0, scrollPositions[activeView]);
     }
-    window.dispatchEvent(new CustomEvent('planwharf-view', { detail: activeView }));
+    window.dispatchEvent(new CustomEvent('planwharf-view', { detail: document.body.dataset.appView }));
   }
   window.PlanwharfShowView = showView;
   control?.addEventListener('click', async () => { if (nativeWindow) { try { await post(view === 'planwharf' ? '/api/orchestrator/window' : '/api/planwharf/window', {}); } catch (error) { document.getElementById('toast').textContent = error.message; } } else showView(activeView === 'planwharf' ? 'orchestrator' : 'planwharf'); });
@@ -65,7 +65,8 @@
   if (header && typeof ResizeObserver !== 'undefined') {
     const controls = document.querySelector('.runtime-controls');
     const observer = new ResizeObserver(() => {
-      document.documentElement.style.setProperty('--app-header-height', `${header.getBoundingClientRect().height + (controls?.getBoundingClientRect().height || 0)}px`);
+      const extra = controls && !controls.closest('dialog') ? (controls.getBoundingClientRect().height || 0) : 0;
+      document.documentElement.style.setProperty('--app-header-height', `${header.getBoundingClientRect().height + extra}px`);
     });
     observer.observe(header);
     if (controls) observer.observe(controls);
@@ -208,7 +209,7 @@
     try {
       const data = await post('/api/models/refresh', {});
       displayProviderStatus(data.providerModels);
-      window.dispatchEvent(new CustomEvent('planwharf-view', { detail: activeView }));
+      window.dispatchEvent(new CustomEvent('planwharf-view', { detail: document.body.dataset.appView }));
     } catch (error) { status.textContent = error.message; }
     finally { event.target.disabled = false; }
   });

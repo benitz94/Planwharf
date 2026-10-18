@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const key = 'planwharf_layout_v1';
-  const defaults = { railWidth: 260, chatRatio: 1 / 2.2 };
+  const defaults = { railWidth: 240, chatRatio: 0.6 };
   const settings = value => ({
     railWidth: Number.isFinite(value?.railWidth) ? Math.max(200, Math.min(480, value.railWidth)) : defaults.railWidth,
     chatRatio: Number.isFinite(value?.chatRatio) ? Math.max(0, Math.min(1, value.chatRatio)) : defaults.chatRatio
