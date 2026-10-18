@@ -362,6 +362,25 @@ function createExecutionBridge(options) {
     return clone({ megaTasks: megas, subTasks: data.subTasks.filter(sub => ids.has(sub.megaTaskId)), results: data.results.filter(result => ids.has(result.megaTaskId)),
       checkpoints: data.checkpoints.filter(cp => cp.projectId === projectId), timeline: data.timeline.filter(item => item.projectId === projectId) });
   }
+  function restore(projectId, incoming) {
+    const payload = incoming && typeof incoming === 'object' ? clone(incoming) : {};
+    for (const mega of Array.isArray(payload.megaTasks) ? payload.megaTasks : []) {
+      if (mega && mega.projectId === projectId && !data.megaTasks.some(item => item.id === mega.id)) data.megaTasks.push(mega);
+    }
+    const known = new Set(data.megaTasks.filter(mega => mega.projectId === projectId).map(mega => mega.id));
+    for (const sub of Array.isArray(payload.subTasks) ? payload.subTasks : []) if (sub && known.has(sub.megaTaskId) && !data.subTasks.some(item => item.id === sub.id)) data.subTasks.push(sub);
+    for (const result of Array.isArray(payload.results) ? payload.results : []) if (result && known.has(result.megaTaskId)) data.results.push(result);
+    for (const checkpoint of Array.isArray(payload.checkpoints) ? payload.checkpoints : []) if (checkpoint && checkpoint.projectId === projectId && !data.checkpoints.some(item => item.id === checkpoint.id)) data.checkpoints.push(checkpoint);
+    for (const eventItem of Array.isArray(payload.timeline) ? payload.timeline : []) if (eventItem && eventItem.projectId === projectId) data.timeline.push(eventItem);
+    const last = data.megaTasks.filter(mega => mega.projectId === projectId).at(-1);
+    if (last) {
+      const row = rowFor(projectId, last.id);
+      const checkpoint = data.checkpoints.find(item => item.id === last.currentCheckpointId) || data.checkpoints.filter(item => item.megaTaskId === last.id).at(-1);
+      if (checkpoint) row.checkpoint = checkpoint;
+      paint(last);
+    }
+    persist();
+  }
   function checkpointForUpdate(item, job, megaTaskId) {
     const mega = target(item.project.id, megaTaskId);
     if (mega.taskId !== job.id) throw new Error('Update checkpoint belongs to another task.');
@@ -370,6 +389,6 @@ function createExecutionBridge(options) {
     if (!mega.currentCheckpointId) checkpoint(item, job, mega, 'application update');
     paint(mega); persist(); return mega;
   }
-  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate };
+  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore };
 }
 module.exports = { createExecutionBridge, repoState };

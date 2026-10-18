@@ -2,7 +2,7 @@
 
 See also the [quick start](QUICKSTART.md) and [complete user guide](USER-GUIDE.md), including model role permissions.
 
-This guide describes the completed current product scope, including durable execution, checkpoint recovery, usage, project history and export. Start with the steps below; use the later sections when you need more detail.
+This guide describes the completed current product scope, including durable execution, checkpoint recovery, usage, project history, export and import. Start with the steps below; use the later sections when you need more detail.
 
 Planwharf is a local project notebook and coordinator for coding workers. You keep a goal and its decisions, clarify the work, review a proposed assignment, approve it, and follow the workers' results. The lead coordinates; workers implement jobs in the linked project folder.
 
@@ -27,7 +27,7 @@ For a small first goal, try: “Build a local HTML counter with increment and re
 | Orchestration | A lead, explicit provider/model IDs, and an assignment you review before execution. |
 | Durable execution | A MegaTask split into SubTasks, with dependencies, attempts, structured results, and timeline milestones. |
 | Monitoring | Recorded processes, readable activity, raw output, completion evidence, and provider quota readings when available. |
-| Recovery | Stop, pause after current tasks, saved checkpoints, and explicit Resume using existing files and completed work. |
+| Recovery | Stop, pause after current tasks, saved checkpoints, explicit Resume, and **Import project** to restore an export as a new notebook project. |
 | Repository inspection | Local folder checks and GitHub comparison using your existing GitHub CLI authentication. |
 | Research | A separately approved research assignment with a retained report and source protection for supported routes. |
 
@@ -68,7 +68,7 @@ Create a new project folder inside that notebook for your experiment. Keep tests
 
 ## Planning, approval, and chat
 
-**The plan** stores direction, current state, decisions, and open questions. Saving an edit appends a revision; previous revisions remain in history. **What changed** compares revisions. Personal notes can be added, pinned, and deleted independently of jobs. AI relevance is off by default; enable it only for notes you want included in the AI briefing. Home groups project milestones, shows what changed since your last visit and offers Export project for a readable JSON metadata backup. Export does not include source contents, raw logs or credentials, and automatic import is not supported.
+**The plan** stores direction, current state, decisions, and open questions. Saving an edit appends a revision; previous revisions remain in history. **What changed** compares revisions. Personal notes can be added, pinned, and deleted independently of jobs. AI relevance is off by default; enable it only for notes you want included in the AI briefing. Home groups project milestones, shows what changed since your last visit and offers Export project for a readable JSON metadata backup. Export does not include source contents, raw logs or credentials. **Import project** restores that file as a new project after you confirm the folder; see [Continue work](CONTINUE-WORK.md). The plan card **Import** still pastes a single revision.
 
 **Grill me** clarifies the idea; **Grill with the docs** also uses project documentation. In **For you**, answer questions and choose whether to keep them open, close them with a decision, or change direction. Saved answers are planning records. **Skip grill** is available when you are ready to proceed.
 

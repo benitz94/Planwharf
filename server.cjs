@@ -17,7 +17,7 @@ const { loadCatalog } = require('./engine/provider-catalog.cjs');
 const { adapterFor } = require('./engine/provider-adapters.cjs');
 const defaultCatalog = loadCatalog(require('./models.json'));
 const defaultModels = defaultCatalog.models;
-const { exportProject } = require('./engine/project-export.cjs');
+const { exportProject, importProject } = require('./engine/project-export.cjs');
 const { projectHome } = require('./engine/project-home.cjs');
 const { ensureDefaultNotebook } = require('./engine/notebook-file.cjs');
 
@@ -506,6 +506,25 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           providerPolicies: Object.fromEntries(snapshot.providers.map(provider => [provider.id, provider.policy])), modelPolicies: Object.fromEntries(snapshot.models.map(model => [model.id, model.policy])), modelRoles: Object.fromEntries(snapshot.models.map(model => [model.id, model.roles])), enabled: Object.fromEntries(snapshot.models.map(model => [model.id, model.enabled])), providerEnabled: Object.fromEntries(snapshot.providers.map(provider => [provider.id, provider.enabled])) });
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="planwharf-project.json"', 'Cache-Control': 'no-store' });
         response.end(JSON.stringify(bundle, null, 2) + '\n'); return;
+      }
+      if (request.method === 'POST' && pathname === '/api/project-import') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
+        const input = await body(request, 4 * 1024 * 1024, 'Export is too large.');
+        if (!input || typeof input.version !== 'string' || input.bundle === undefined || Object.keys(input).some(key => !['version', 'bundle', 'folder', 'github'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const pending = enqueue(async () => {
+          const current = await readPlan(planFile);
+          if (input.version !== version(current)) throw new RequestError(409, 'The plan has changed. Reload the page before saving.');
+          let imported;
+          try { imported = importProject(current, input.bundle, { folder: input.folder, github: input.github }); }
+          catch (error) { throw new RequestError(400, error.message); }
+          await assertFolder(imported.project.project.folder);
+          if (!Plan.validate(imported.notebook)) throw new RequestError(400, 'The updated notebook is invalid.');
+          await save(planFile, imported.notebook);
+          orchestra.restoreImported(imported.project.project.id, imported.execution);
+          return { plan: imported.notebook, version: version(imported.notebook), projectId: imported.project.project.id, continue: imported.continue };
+        });
+        queue = pending.catch(() => {});
+        return json(201, await pending);
       }
       if (request.method === 'POST' && ['/api/project-home', '/api/notes'].includes(pathname)) {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');

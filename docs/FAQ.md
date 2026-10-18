@@ -54,6 +54,10 @@ Creating a notebook project or discussing an idea does not start coding. For exe
 
 Yes. **Pause after current tasks** lets active tasks finish without starting new ones. **Stop** terminates active workers and saves a checkpoint while preserving partial work. **Resume** uses checkpoint and repository-state checks to continue unfinished tasks; it does not automatically replay completed SubTasks. See the [user guide](USER-GUIDE.md).
 
+### Can I import a project I exported on another PC?
+
+Yes. **Import project** restores a Planwharf export as a new notebook project. Confirm the folder on this PC; the export does not overwrite an existing project or start workers. Resume from Home when a checkpoint was restored. Source files and credentials are not inside the export. See [Continue work](CONTINUE-WORK.md).
+
 ### What happens if an AI worker fails?
 
 Planwharf retains execution evidence and reconciles process status rather than treating a successful process exit as proof of successful work. The run may need review, correction, and a fresh attempt. Examine results and changed files before accepting them.

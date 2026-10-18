@@ -17,7 +17,7 @@ Planwharf is a local project notebook and AI coding coordinator. Planwharf expla
 - Deterministic command/status paths, compact selected-project briefings and six bounded recent chat turns with full archived history.
 - Persistent metadata-only invocation ledger and operational AI usage view, including reliable provider-reported lead tokens when available.
 - Grouped timeline with technical evidence, deterministic changes since last visit and checkpoint previews.
-- Readable JSON export containing metadata and Markdown summary; optional local browser notifications.
+- Readable JSON export containing metadata and Markdown summary; **Import project** restores an export as a new notebook project and can resume from a checkpoint; optional local browser notifications.
 - Normal desktop launch opens one window with Planwharf and Orchestrator views sharing one backend. Desktop window close and application Quit both follow the checkpoint/shutdown policy.
 
 ## Verified environment
@@ -26,7 +26,7 @@ Windows, Node.js 22 and Edge are exercised by the regression and browser harness
 
 ## Known limitations
 
-- Export-only: there is no automatic import or portable restore. Preserve notebook plus attempts directory for full recovery. Export omits source and large raw logs.
+- Import restores notebook metadata, notes, tasks and checkpoints as a new project. It does not copy source files, credentials, raw logs or live workers. Relink the folder on this PC before Resume. Preserve the attempts directory when you need original attempt files. Export still omits source and large raw logs.
 - Local notifications depend on OS/browser support and permission, and require an open UI. Notification preference is local to a browser profile.
 - Quota and catalogs depend on provider interfaces. Unread values remain explicit. Antigravity uses configured exact models when non-inference enumeration is unavailable.
 - Antigravity retains its normal display names because no verified account metadata interface is available; automatic per-account role separation is unavailable there.

@@ -56,7 +56,7 @@ Quota always means **REMAINING**, shared by all models on that provider pool. Ze
 - **Stop** terminates current work and saves a checkpoint. Partial file changes remain available.
 - **Resume** continues remaining work from the chosen checkpoint. Review the checkpoint comparison and confirm detected changes when requested. Completed slices are retained.
 - Add personal notes on Home. **AI relevant: Yes** includes a note in AI briefings; the default is No. Notes never automatically become tasks.
-- **Export project** downloads readable JSON metadata, including a Markdown summary. Keep the original notebook and attempts directory for complete recovery; automatic import is not supported.
+- **Export project** downloads readable JSON metadata, including a Markdown summary. **Import project** restores that file as a new notebook project. Relink the folder on this PC, then Resume from Home. Keep the original notebook and attempts directory when you need raw attempt files. See [Continue work](CONTINUE-WORK.md).
 - Optional **Notifications: On** requests local browser permission. Notifications require an open UI and platform support.
 - **Quit application** checkpoints and shuts down properly. Closing the desktop window uses the same checkpoint and shutdown path.
 

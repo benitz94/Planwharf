@@ -10,7 +10,7 @@ Planwharf is still under active development and is provided **as is**. Features 
 
 Planwharf can use [Matt Pocock's open-source skills](https://github.com/mattpocock/skills) to guide its coding agents. Thanks to Matt and the contributors; see [third-party acknowledgments and license notices](docs/THIRD-PARTY-NOTICES.md).
 
-[Quick start](docs/QUICKSTART.md) | [FAQ](docs/FAQ.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
+[Quick start](docs/QUICKSTART.md) | [FAQ](docs/FAQ.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) | [Continue work](docs/CONTINUE-WORK.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
 
 ## Planwharf at a glance
 
@@ -67,7 +67,7 @@ Review and approve a MegaTask before workers execute its SubTasks. **Pause after
 
 Project history groups execution events into milestones. Expand technical evidence for individual starts, results, checkpoints and Git observations. **Since your last visit** uses saved project data and local Git inspection; opening Home never invokes an AI. Notes stay notes: choose **AI relevant: Yes** only for guidance you want included in the briefing.
 
-Use **Export project** on Home to download readable JSON containing project metadata, revisions, notes, tasks, results, checkpoints, history and a Markdown summary. Source contents, raw worker logs and provider credentials are excluded. Export is for review and metadata backup; automatic import/restore is not supported. Keep the original notebook and attempts directory for full recovery.
+Use **Export project** on Home to download readable JSON containing project metadata, revisions, notes, tasks, results, checkpoints, history and a Markdown summary. Source contents, raw worker logs and provider credentials are excluded. **Import project** in the projects rail restores that export as a new notebook project (never overwriting an existing one). Relink the folder on this PC, then **Resume** from Home when a checkpoint was restored. Keep the original notebook and attempts directory when you need raw attempt files. See [Continue work](docs/CONTINUE-WORK.md).
 
 Optional **Notifications: On** requests local browser permission for completion, failures and saved checkpoints. Support depends on the OS/browser; notifications require an open UI and are off by default. No external notification service is used.
 

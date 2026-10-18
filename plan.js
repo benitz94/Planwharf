@@ -237,6 +237,53 @@
     });
     return notebook;
   }
+  function restoreProject(data, source, place = {}, timestamp = new Date().toISOString()) {
+    if (!validate(data)) throw new Error('The saved notebook is invalid.');
+    if (!source || typeof source.name !== 'string' || !source.name.trim()) throw new Error('Export is missing a project name.');
+    const located = placeFrom({ folder: place.folder || '', github: place.github || '' });
+    const notebook = data.schema === 2 ? clone(data) : { schema: 2, projects: [clone(data)] };
+    const used = new Set(notebook.projects.map(item => item.project.id));
+    const id = projectIdFromName(source.name, used);
+    const revisions = Array.isArray(source.revisions) && source.revisions.length
+      ? source.revisions.map(revision => ({
+        id: revision.id,
+        mode: ['manual', 'grill', 'import'].includes(revision.mode) ? revision.mode : 'import',
+        title: typeof revision.title === 'string' ? revision.title : '',
+        createdAt: typeof revision.createdAt === 'string' && Number.isFinite(Date.parse(revision.createdAt)) ? revision.createdAt : timestamp,
+        direction: typeof revision.direction === 'string' ? revision.direction : '',
+        state: typeof revision.state === 'string' ? revision.state : '',
+        closed: Array.isArray(revision.closed) ? revision.closed.filter(item => typeof item === 'string') : [],
+        open: Array.isArray(revision.open) ? revision.open.filter(item => typeof item === 'string') : []
+      }))
+      : [{ id: 1, mode: 'import', title: 'Imported project', createdAt: timestamp, direction: source.name.trim(), state: '', closed: [], open: [] }];
+    const tasks = (Array.isArray(source.tasks) ? source.tasks : []).map(task => ({
+      id: task.id,
+      projectId: id,
+      revision_id: task.revision_id,
+      title: task.title,
+      detail: task.detail,
+      status: task.status === 'running' ? 'paused' : task.status,
+      ...(task.timing ? { timing: task.timing } : {}),
+      ...(task.deadlineAt ? { deadlineAt: task.deadlineAt } : {})
+    }));
+    const notes = (Array.isArray(source.notes) ? source.notes : []).filter(note => note && typeof note.id === 'string' && note.id && typeof note.text === 'string' && note.text.trim() && typeof note.createdAt === 'string').map(note => ({
+      id: note.id,
+      text: note.text,
+      createdAt: note.createdAt,
+      ...(note.pinned === true ? { pinned: true } : {}),
+      ...(note.aiRelevant === true ? { aiRelevant: true } : {})
+    }));
+    const item = { schema: 1, project: projectRecord(id, source.name.trim(), located), revisions, tasks };
+    if (notes.length) item.home = { notes };
+    if (!validateProject(item)) throw new Error('Import is not a valid Planwharf project.');
+    const previous = notebook.projects.map(entry => clone(entry));
+    notebook.projects.push(item);
+    if (!validate(notebook)) throw new Error('The updated notebook is invalid.');
+    previous.forEach((entry, index) => {
+      if (JSON.stringify(entry) !== JSON.stringify(notebook.projects[index])) throw new Error('The updated notebook is invalid.');
+    });
+    return notebook;
+  }
   function setPlace(data, input) {
     if (!validate(data)) throw new Error('The saved notebook is invalid.');
     if (!input || typeof input.id !== 'string' || !input.id.trim()) throw new Error('Project not found.');
@@ -312,5 +359,5 @@
     if (reopened.length) changes.push({ key: 'reopened', before: [], after: reopened });
     return changes;
   }
-  return { example, validate, validateProject, appendRevision, startGrill, startGrillDocs, grill, importRevision, createProject, removeProject, setPlace, createTask, removeTask, taskTiming, diff, isFolderPath, isGithubUrl, starterFrontier, docsFrontier, grillFrontier, isGenericFrontier, GENERIC_FRONTIER };
+  return { example, validate, validateProject, appendRevision, startGrill, startGrillDocs, grill, importRevision, createProject, restoreProject, removeProject, setPlace, createTask, removeTask, taskTiming, diff, isFolderPath, isGithubUrl, starterFrontier, docsFrontier, grillFrontier, isGenericFrontier, GENERIC_FRONTIER };
 });

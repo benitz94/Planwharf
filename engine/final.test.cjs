@@ -93,7 +93,7 @@ test('timeline groups technical evidence; checkpoint diff reports changes withou
 test('export selects one project metadata and excludes credential fields and raw logs', () => {
   const project = { project: { id: 'p', name: 'Safe' }, revisions: [{ id: 1, direction: 'goal' }], tasks: [], home: { notes: [{ text: 'note', aiRelevant: true }] } };
   const bundle = exportProject(project, { megaTasks: [{ id: 'm', projectId: 'p', status: 'COMPLETE', title: 'work', credentials: 'secret' }, { id: 'other', projectId: 'q' }], subTasks: [], results: [{ megaTaskId: 'm', summary: 'result', workerTail: 'raw', token: 'secret' }], checkpoints: [], timeline: [] });
-  assert.equal(bundle.execution.megaTasks.length, 1); assert.equal(bundle.schema, 1); assert.equal(bundle.restoreSupported, false);
+  assert.equal(bundle.execution.megaTasks.length, 1); assert.equal(bundle.schema, 1); assert.equal(bundle.restoreSupported, true);
   assert.ok(!JSON.stringify(bundle).includes('secret')); assert.ok(!JSON.stringify(bundle).includes('raw'));
 });
 test('separate windows open together, focus independently, and closing one preserves the other', async () => {

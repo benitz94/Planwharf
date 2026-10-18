@@ -312,7 +312,7 @@
     if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new CustomEvent('planwharf-project', { detail: projectId }));
     const projects = notebookProjects();
     $('project-select').innerHTML = projects.map(p => `<option value="${escape(p.project.id)}" ${p.project.id === projectId ? 'selected' : ''}>${escape(p.project.name)}</option>`).join('');
-    for (const id of ['project-select', 'new-task', 'import-revision', 'new-project']) $(id).disabled = false;
+    for (const id of ['project-select', 'new-task', 'import-revision', 'new-project', 'import-project']) $(id).disabled = false;
     $('remove-project').disabled = projects.length < 2;
     $('grill-open').disabled = false;
     if ($('grill-docs')) $('grill-docs').disabled = !project().project.folder;
@@ -1394,9 +1394,55 @@
     finally { saving = false; }
   }
 
-  for (const kind of ['grill', 'import', 'task', 'project', 'place', 'auto-start']) {
+  for (const kind of ['grill', 'import', 'task', 'project', 'place', 'auto-start', 'import-project']) {
     $(`${kind}-cancel`).addEventListener('click', () => $(`${kind}-dialog`).close());
   }
+  $('import-project').addEventListener('click', () => {
+    $('import-project-form').reset();
+    $('import-project-error').hidden = true;
+    $('import-project-dialog').showModal();
+  });
+  $('import-project-file').addEventListener('change', async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const bundle = JSON.parse(await file.text());
+      if (bundle?.project?.folder && !$('import-project-form').elements.folder.value) $('import-project-form').elements.folder.value = bundle.project.folder;
+      if (bundle?.project?.github && !$('import-project-form').elements.github.value) $('import-project-form').elements.github.value = bundle.project.github;
+    } catch { /* Invalid JSON is reported on submit. */ }
+  });
+  $('import-project-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!data || saving) return;
+    saving = true;
+    $('import-project-error').hidden = true;
+    try {
+      const file = $('import-project-file').files[0];
+      if (!file) throw new Error('Choose a Planwharf export file.');
+      const bundle = JSON.parse(await file.text());
+      const payload = { version, bundle };
+      const folder = $('import-project-form').elements.folder.value.trim();
+      const github = $('import-project-form').elements.github.value.trim();
+      if (folder) payload.folder = folder;
+      if (github) payload.github = github;
+      const saved = await request('/api/project-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      data = saved.plan;
+      version = saved.version;
+      projectId = saved.projectId;
+      initProjectReturnState(projectId);
+      selected = project().revisions.at(-1).id;
+      render();
+      await refreshOrchestra();
+      window.PlanwharfShowView?.('planwharf');
+      $('import-project-dialog').close();
+      $('toast').textContent = saved.continue?.action === 'resume' ? `${project().project.name} imported. Resume from checkpoint on Home.` : `${project().project.name} imported. Review the next action on Home.`;
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 6000);
+    } catch (error) {
+      $('import-project-error').textContent = translateError(error.message.startsWith('JSON') ? 'Import a Planwharf project export (schema 1).' : error.message);
+      $('import-project-error').hidden = false;
+    }
+    finally { saving = false; }
+  });
   $('new-project').addEventListener('click', async () => {
     $('project-form').elements.name.value = '';
     $('project-form').elements.direction.value = '';

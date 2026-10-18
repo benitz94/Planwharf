@@ -51,7 +51,7 @@ The Living Plan records the goal, current state, decisions and open questions. S
 
 Grill asks questions to clarify an idea. **Grill me** uses the goal; **Grill with the docs** can use linked project documentation. Save answers to update the plan. **Skip grill** bypasses clarification when appropriate. Turning Grill off does not bypass approval of new work.
 
-The technical notebook import/editor controls validate their own data before saving. They are distinct from project export: a project export bundle does not have an automatic import/restore workflow.
+**Import** on The plan pastes one revision object. **Import project** in the projects rail restores a `planwharf-project-export` file as a new project. Both validate before saving. See [Continue work](CONTINUE-WORK.md).
 
 ## Personal notes
 
@@ -170,7 +170,7 @@ Optional **Notifications: On** requests local browser permission for completion,
 
 **Export project** downloads schema 1 JSON containing project metadata, Living Plan revisions, notes, tasks, structured Results, Checkpoints, timeline and relevant operational settings, including allowed model roles. A readable Markdown summary is included. Source contents, provider authentication and giant raw logs are excluded.
 
-Export is for metadata review/backup. Automatic re-import/restore is not supported. For complete recovery, preserve the notebook, its settings file and its attempts directory; keep source backups separately. Do not copy provider authentication into project exports or public GitHub evidence.
+**Import project** restores that export as a new notebook project. Confirm the folder on this PC; the export path is not copied blindly. Running tasks become paused, workers are not launched, and Resume on Home continues from the restored checkpoint. Raw attempt files and source still come from your own backups. Do not copy provider authentication into project exports or public GitHub evidence. See [Continue work](CONTINUE-WORK.md).
 
 ## Troubleshooting and safe updates
 
