@@ -1,0 +1,18 @@
+{
+  "foreignGit": {
+    "status": "complete",
+    "workerReceipt": true,
+    "gitInspection": {
+      "exists": true,
+      "readable": true,
+      "writable": true,
+      "git": false
+    }
+  },
+  "supervisor": {
+    "active": 0,
+    "modelId": "",
+    "alertCount": 17
+  },
+  "allOwnedWorkersStopped": true
+}

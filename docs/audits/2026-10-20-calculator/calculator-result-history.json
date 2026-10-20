@@ -1,0 +1,99 @@
+{
+  "provenance": "Unmodified structured Results from actual Planwharf child-process executions; identity fields are audit-only.",
+  "results": [
+    {
+      "resultId": "R-attempt-1",
+      "attemptId": "attempt-1",
+      "subTaskId": "MT-bdeeb394-81e4-4659-b821-d2670c393497-ST-01",
+      "megaTaskId": "MT-bdeeb394-81e4-4659-b821-d2670c393497",
+      "status": "COMPLETE",
+      "summary": "SIMULATED calculator build with actual local tests.",
+      "filesChanged": [
+        "calculator.js",
+        "index.html",
+        "calculator.test.cjs",
+        "README.md",
+        "worker-tests.txt"
+      ],
+      "tests": [
+        {
+          "command": "node --test calculator.test.cjs",
+          "status": "PASSED",
+          "evidence": "Actual child-process calculator tests."
+        }
+      ],
+      "blockers": [],
+      "nextAction": "Review the actual files and evidence.",
+      "createdAt": "2026-10-20T10:13:39.156Z"
+    },
+    {
+      "resultId": "R-attempt-2",
+      "attemptId": "attempt-2",
+      "subTaskId": "MT-1f717cd1-9b4d-4fbf-952b-cfb18bcd02ba-ST-01",
+      "megaTaskId": "MT-1f717cd1-9b4d-4fbf-952b-cfb18bcd02ba",
+      "status": "FAILED",
+      "summary": "SIMULATED reviewer rejected actual failing calculator tests.",
+      "filesChanged": [
+        "review.json"
+      ],
+      "tests": [
+        {
+          "command": "node --test calculator.test.cjs",
+          "status": "FAILED",
+          "evidence": "Actual local test process; deterministic reviewer."
+        }
+      ],
+      "blockers": [
+        "SIMULATED reviewer rejected actual failing calculator tests."
+      ],
+      "nextAction": "Resolve the observed failure before accepting.",
+      "createdAt": "2026-10-20T10:13:50.206Z"
+    },
+    {
+      "resultId": "R-attempt-10",
+      "attemptId": "attempt-10",
+      "subTaskId": "MT-f2c8a867-d6f0-4bf5-a46d-6b4c2c5749aa-ST-01",
+      "megaTaskId": "MT-f2c8a867-d6f0-4bf5-a46d-6b4c2c5749aa",
+      "status": "COMPLETE",
+      "summary": "SIMULATED calculator correction with actual local tests.",
+      "filesChanged": [
+        "calculator.js",
+        "index.html",
+        "calculator.test.cjs",
+        "README.md",
+        "worker-tests.txt"
+      ],
+      "tests": [
+        {
+          "command": "node --test calculator.test.cjs",
+          "status": "PASSED",
+          "evidence": "Actual child-process calculator tests."
+        }
+      ],
+      "blockers": [],
+      "nextAction": "Review the actual files and evidence.",
+      "createdAt": "2026-10-20T10:14:50.108Z"
+    },
+    {
+      "resultId": "R-attempt-11",
+      "attemptId": "attempt-11",
+      "subTaskId": "MT-8132a914-14c7-4595-be98-b333a554708d-ST-01",
+      "megaTaskId": "MT-8132a914-14c7-4595-be98-b333a554708d",
+      "status": "COMPLETE",
+      "summary": "SIMULATED reviewer inspected actual files and calculator tests passed.",
+      "filesChanged": [
+        "review.json"
+      ],
+      "tests": [
+        {
+          "command": "node --test calculator.test.cjs",
+          "status": "PASSED",
+          "evidence": "Actual local test process; deterministic reviewer."
+        }
+      ],
+      "blockers": [],
+      "nextAction": "Review the actual files and evidence.",
+      "createdAt": "2026-10-20T10:14:50.926Z"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "browser": "155.0.8059.80",
+  "execution": "Actual production server HTTP state and real deterministic child processes; no mocked state events or HTTP snapshots.",
+  "checks": [
+    {
+      "name": "three actual backend projects are running",
+      "status": "PASS",
+      "evidence": [
+        {
+          "id": "audit-concurrent-1",
+          "status": "watching"
+        },
+        {
+          "id": "audit-concurrent-2",
+          "status": "watching"
+        },
+        {
+          "id": "audit-concurrent-3",
+          "status": "watching"
+        }
+      ]
+    },
+    {
+      "name": "audio disabled and silent on first load",
+      "status": "PASS"
+    },
+    {
+      "name": "actual selected project drives Ship running pose",
+      "status": "PASS",
+      "evidence": {
+        "effects": "true",
+        "flag": "pirate",
+        "motion": "full",
+        "suspended": "false",
+        "weatherMode": "adaptive",
+        "weather": "calm",
+        "project": "audit-concurrent-1",
+        "state": "running",
+        "underway": "true",
+        "switching": "false",
+        "arrived": "false",
+        "captainReaction": "none",
+        "helmDisplay": "block"
+      }
+    },
+    {
+      "name": "explicit enable does not autoplay; Play advances real media",
+      "status": "PASS",
+      "evidence": {
+        "track": "ocean-trance",
+        "time": 0.167665
+      }
+    },
+    {
+      "name": "rapid switching among three actual projects preserves one player",
+      "status": "PASS",
+      "evidence": {
+        "project": "audit-concurrent-1",
+        "track": "ocean-trance"
+      }
+    },
+    {
+      "name": "second tab cannot start simultaneous playback",
+      "status": "PASS",
+      "evidence": {
+        "scope": "same origin/browser context, Web Locks; no physical speaker measurement",
+        "states": [
+          {
+            "paused": false,
+            "time": 1.269473,
+            "notice": ""
+          },
+          {
+            "paused": true,
+            "time": 0,
+            "notice": "Soundtrack is playing in another tab or window. Pause it there, then press Play here."
+          }
+        ]
+      }
+    },
+    {
+      "name": "workspace navigation and Ship View retain actual playback",
+      "status": "PASS"
+    },
+    {
+      "name": "pause remains sticky; Stop resets playback",
+      "status": "PASS"
+    },
+    {
+      "name": "personal missing or corrupt media gives feedback",
+      "status": "PASS",
+      "evidence": {
+        "afterReloadNotice": ""
+      }
+    },
+    {
+      "name": "keyboard settings close and mobile reflow",
+      "status": "PASS",
+      "evidence": {
+        "overflow": 0
+      }
+    },
+    {
+      "name": "dialog accessible-name inspection",
+      "status": "FAIL",
+      "error": "[{\"id\":\"revision-dialog\",\"name\":\"\"},{\"id\":\"grill-dialog\",\"name\":\"\"},{\"id\":\"import-dialog\",\"name\":\"\"},{\"id\":\"task-dialog\",\"name\":\"\"},{\"id\":\"auto-start-dialog\",\"name\":\"\"},{\"id\":\"project-dialog\",\"name\":\"\"},{\"id\":\"place-dialog\",\"name\":\"\"},{\"id\":\"import-project-dialog\",\"name\":\"\"}]"
+    },
+    {
+      "name": "calculator graphical keyboard operations and errors",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "failedRequests": [
+    {
+      "url": "http://127.0.0.1:<PORT>/api/project-home",
+      "status": 500,
+      "body": "{\"error\":\"Failed to read or save file. No revision was added.\"}"
+    }
+  ],
+  "physicalAudio": "Not verified; actual media playback and same-origin ownership state observed."
+}

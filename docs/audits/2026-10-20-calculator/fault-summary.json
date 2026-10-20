@@ -1,0 +1,14 @@
+[
+  {
+    "scenario": "nonzero",
+    "status": "failed"
+  },
+  {
+    "scenario": "malformed",
+    "status": "failed"
+  },
+  {
+    "scenario": "vanish",
+    "status": "failed"
+  }
+]

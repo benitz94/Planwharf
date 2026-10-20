@@ -1,0 +1,436 @@
+[
+  {
+    "at": "2026-10-20T10:13:27.614Z",
+    "name": "simulated-natural-request",
+    "answer": "SIMULATED coordination: the calculator request requires an implementation step followed by review of its actual files and tests. No files have been built. Use Start and approve the proposed task."
+  },
+  {
+    "at": "2026-10-20T10:13:27.638Z",
+    "name": "after-natural-request",
+    "projects": [
+      {
+        "id": "audit-control",
+        "status": "idle",
+        "megaTaskId": null
+      },
+      {
+        "id": "planwharf-dummy-calculator",
+        "status": "idle",
+        "megaTaskId": null
+      }
+    ]
+  },
+  {
+    "at": "2026-10-20T10:13:39.233Z",
+    "name": "calculator-build",
+    "status": "complete",
+    "files": [
+      ".planwharf",
+      "calculator.js",
+      "calculator.test.cjs",
+      "fixture-receipts.jsonl",
+      "index.html",
+      "README.md",
+      "worker-tests.txt"
+    ]
+  },
+  {
+    "at": "2026-10-20T10:13:39.259Z",
+    "name": "skill-delivery",
+    "received": true,
+    "deliveries": [
+      {
+        "role": "orchestrator",
+        "submitted": true,
+        "loaded": "unverified",
+        "followed": "unverified"
+      },
+      {
+        "role": "worker",
+        "submitted": true,
+        "loaded": "unverified",
+        "followed": "unverified"
+      }
+    ]
+  },
+  {
+    "at": "2026-10-20T10:13:49.401Z",
+    "name": "deliberate-defect",
+    "description": "Replaced division-by-zero exception with a wrong zero result in the disposable generated calculator."
+  },
+  {
+    "at": "2026-10-20T10:13:50.275Z",
+    "name": "review",
+    "project": "planwharf-dummy-calculator",
+    "status": "failed",
+    "megaTaskId": "MT-1f717cd1-9b4d-4fbf-952b-cfb18bcd02ba"
+  },
+  {
+    "at": "2026-10-20T10:14:13.133Z",
+    "name": "nonzero",
+    "project": "audit-nonzero",
+    "status": "failed",
+    "megaTaskId": "MT-f1e8c6cb-5b50-40d9-b9b1-f6027a99b2c3"
+  },
+  {
+    "at": "2026-10-20T10:14:13.553Z",
+    "name": "malformed",
+    "project": "audit-malformed",
+    "status": "failed",
+    "megaTaskId": "MT-9faecf15-0b08-4ad6-b2a4-bb7d958a9307"
+  },
+  {
+    "at": "2026-10-20T10:14:13.932Z",
+    "name": "vanish",
+    "project": "audit-vanish",
+    "status": "failed",
+    "megaTaskId": "MT-3ffc3ff6-b471-4de0-9a36-1129beac6ade"
+  },
+  {
+    "at": "2026-10-20T10:14:14.710Z",
+    "name": "hang-stop",
+    "status": "checkpointed",
+    "ownedPids": [
+      43352
+    ],
+    "stillAlive": []
+  },
+  {
+    "at": "2026-10-20T10:14:22.793Z",
+    "name": "three-real-process-projects",
+    "projects": [
+      {
+        "id": "audit-concurrent-1",
+        "live": [
+          {
+            "pid": 57068,
+            "folder": "<AUDIT_ROOT>\\Audit-Concurrent-1"
+          }
+        ]
+      },
+      {
+        "id": "audit-concurrent-2",
+        "live": [
+          {
+            "pid": 43676,
+            "folder": "<AUDIT_ROOT>\\Audit-Concurrent-2"
+          }
+        ]
+      },
+      {
+        "id": "audit-concurrent-3",
+        "live": [
+          {
+            "pid": 20836,
+            "folder": "<AUDIT_ROOT>\\Audit-Concurrent-3"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "at": "2026-10-20T10:14:50.250Z",
+    "name": "correct",
+    "status": "complete"
+  },
+  {
+    "at": "2026-10-20T10:14:51.100Z",
+    "name": "review",
+    "project": "planwharf-dummy-calculator",
+    "status": "complete",
+    "megaTaskId": "MT-8132a914-14c7-4595-be98-b333a554708d"
+  },
+  {
+    "at": "2026-10-20T10:16:36.048Z",
+    "name": "checkpoint-before-restart",
+    "project": "audit-dependencies"
+  },
+  {
+    "at": "2026-10-20T10:17:13.112Z",
+    "name": "normal-app-quit",
+    "pid": 20464
+  },
+  {
+    "at": "2026-10-20T10:18:02.161Z",
+    "name": "resume-confirmation-required",
+    "reason": "Repository or Living Plan changed since the checkpoint. Review changes and explicitly confirm before continuing."
+  },
+  {
+    "at": "2026-10-20T10:18:02.790Z",
+    "name": "resume-response"
+  },
+  {
+    "at": "2026-10-20T10:18:03.891Z",
+    "name": "resume-after-restart",
+    "status": "complete",
+    "attempts": [
+      "attempt-12",
+      "attempt-13",
+      "attempt-14"
+    ],
+    "subTasks": [
+      {
+        "title": "First receipt",
+        "status": "COMPLETE",
+        "attempts": 1
+      },
+      {
+        "title": "Wait for checkpoint",
+        "status": "COMPLETE",
+        "attempts": 2
+      }
+    ]
+  },
+  {
+    "at": "2026-10-20T10:19:15.367Z",
+    "name": "export-import",
+    "original": "planwharf-dummy-calculator",
+    "copy": "planwharf-dummy-calculator-2",
+    "history": 4
+  },
+  {
+    "at": "2026-10-20T10:19:15.408Z",
+    "name": "explicit-relink",
+    "copy": "planwharf-dummy-calculator-2"
+  },
+  {
+    "at": "2026-10-20T10:19:25.896Z",
+    "name": "deadline-checkpoint",
+    "status": "checkpointed",
+    "pids": [
+      12784
+    ],
+    "stillAlive": []
+  },
+  {
+    "at": "2026-10-20T10:20:57.730Z",
+    "name": "moved-folder-recovery",
+    "status": "complete"
+  },
+  {
+    "at": "2026-10-20T10:22:14.882Z",
+    "name": "missing-executable-launch",
+    "httpStatus": 200,
+    "status": "failed",
+    "next": "Resume from checkpoint.",
+    "noReceipt": true
+  },
+  {
+    "at": "2026-10-20T10:22:15.746Z",
+    "name": "foreign-read",
+    "project": "audit-foreign-read",
+    "status": "complete",
+    "megaTaskId": "MT-1500ceb3-5e13-4f11-91aa-44428af9fecc"
+  },
+  {
+    "at": "2026-10-20T10:22:15.756Z",
+    "name": "configured-cli-foreign-read",
+    "observed": true,
+    "simulated": true
+  },
+  {
+    "at": "2026-10-20T10:22:15.906Z",
+    "name": "foreign-git-metadata",
+    "httpStatus": 201,
+    "status": "needs_approval",
+    "noReceipt": true
+  },
+  {
+    "at": "2026-10-20T10:22:15.987Z",
+    "name": "foreign-git-approval",
+    "status": 200
+  },
+  {
+    "at": "2026-10-20T10:22:16.026Z",
+    "name": "invalid-relink",
+    "error": "Folder not found."
+  },
+  {
+    "at": "2026-10-20T10:22:16.201Z",
+    "name": "Supervisor",
+    "modelId": "",
+    "projects": [
+      {
+        "id": "audit-control",
+        "status": "idle",
+        "active": 0,
+        "alerts": []
+      },
+      {
+        "id": "planwharf-dummy-calculator",
+        "status": "complete",
+        "active": 0,
+        "alerts": []
+      },
+      {
+        "id": "audit-nonzero",
+        "status": "failed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "07e3f9d7-c47a-4fe4-b983-9eb010922a1c",
+            "kind": "execution-blocked"
+          },
+          {
+            "id": "c140536b-0732-4778-bb70-1633d82100fb",
+            "kind": "result-R-attempt-3"
+          }
+        ]
+      },
+      {
+        "id": "audit-malformed",
+        "status": "failed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "7700bf5c-8170-43f6-b6ad-fc63b75402c3",
+            "kind": "execution-blocked"
+          },
+          {
+            "id": "281b3c6d-764b-4f43-a35e-75469a2d6d01",
+            "kind": "result-R-attempt-4"
+          }
+        ]
+      },
+      {
+        "id": "audit-vanish",
+        "status": "failed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "11af4144-9b03-4ca5-9ff7-4a4bf043e199",
+            "kind": "execution-blocked"
+          },
+          {
+            "id": "88b1f056-1979-45b0-9cae-010e88042a78",
+            "kind": "result-R-attempt-5"
+          }
+        ]
+      },
+      {
+        "id": "audit-hang",
+        "status": "checkpointed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "430afe11-b041-4635-857c-5ec5a501ec8f",
+            "kind": "result-R-attempt-6"
+          }
+        ]
+      },
+      {
+        "id": "audit-concurrent-1",
+        "status": "checkpointed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "b4265af8-9662-42d5-9f72-04cd9955a842",
+            "kind": "result-R-attempt-7"
+          }
+        ]
+      },
+      {
+        "id": "audit-concurrent-2",
+        "status": "checkpointed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "b88086a9-12c4-432e-80d6-549784b07335",
+            "kind": "result-R-attempt-8"
+          }
+        ]
+      },
+      {
+        "id": "audit-concurrent-3",
+        "status": "checkpointed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "feee8a8e-634e-416f-a71d-41c4d346c97a",
+            "kind": "result-R-attempt-9"
+          }
+        ]
+      },
+      {
+        "id": "audit-dependencies",
+        "status": "complete",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "9f82ecea-4ad3-478c-8d89-48125b2f2dba",
+            "kind": "result-R-attempt-13"
+          }
+        ]
+      },
+      {
+        "id": "planwharf-dummy-calculator-2",
+        "status": "complete",
+        "active": 0,
+        "alerts": []
+      },
+      {
+        "id": "audit-moved",
+        "status": "complete",
+        "active": 0,
+        "alerts": []
+      },
+      {
+        "id": "audit-deadline",
+        "status": "checkpointed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "ee12de1d-6ea1-4894-833b-01064087c3ca",
+            "kind": "result-R-attempt-15"
+          }
+        ]
+      },
+      {
+        "id": "audit-missing",
+        "status": "failed",
+        "active": 0,
+        "alerts": [
+          {
+            "id": "75199776-2eed-4f34-8292-84512e478665",
+            "kind": "execution-blocked"
+          },
+          {
+            "id": "98ae3490-b161-4c17-9a7d-011daf0e92be",
+            "kind": "result-R-attempt-17"
+          }
+        ]
+      },
+      {
+        "id": "audit-foreign-read",
+        "status": "complete",
+        "active": 0,
+        "alerts": []
+      },
+      {
+        "id": "audit-foreign-git",
+        "status": "watching",
+        "active": 1,
+        "alerts": []
+      }
+    ],
+    "stableAlertIds": true
+  },
+  {
+    "at": "2026-10-20T10:26:32.783Z",
+    "name": "automatic-mode-approval-gate",
+    "noExecutionBeforeApproval": true,
+    "status": "complete",
+    "restoredMode": "manual"
+  },
+  {
+    "at": "2026-10-20T10:26:33.059Z",
+    "name": "missing-selected-skill",
+    "status": "failed",
+    "next": "Resume from checkpoint."
+  },
+  {
+    "at": "2026-10-20T10:26:33.177Z",
+    "name": "grill-with-manual-skill-selection",
+    "answer": "Manually selected Skills are unavailable for this execution: project-local/9c36af3fa3d946e5/audit-scope. Inspect catalog eligibility and approve current content before retrying."
+  }
+]

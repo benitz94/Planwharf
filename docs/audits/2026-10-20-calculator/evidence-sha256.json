@@ -1,0 +1,110 @@
+[
+  {
+    "path": "02-project-created.png",
+    "sha256": "520f6a1d78ef2c28b06c687a9bb9c60170016861d7313e15a9dc1d4bdca02bd4"
+  },
+  {
+    "path": "03-send-covered-by-soundtrack.png",
+    "sha256": "51c8e3b0ee65df284cffe5838039f2f612f8897dc6a428b11b59ec0084eacdca"
+  },
+  {
+    "path": "browser-audit.json",
+    "sha256": "2d0cb0dd9cd383d25640189ecb0e1500cfccc48b5a551ce9b9a93cd6e9a04c4a"
+  },
+  {
+    "path": "calculator/calculator.js",
+    "sha256": "c806e17520afcf78c23ae0098f3bb96b6ce95a3799b29217814702049e857596"
+  },
+  {
+    "path": "calculator/calculator.test.cjs",
+    "sha256": "3f2eb69110e98c4dc4e68e70310c93b18b44e7463b6b3ac6c4728e7910b26b05"
+  },
+  {
+    "path": "calculator/index.html",
+    "sha256": "517f2f649897913d644b3bee30949e94cd6874b0bc79bbc72ba962f26bfd0780"
+  },
+  {
+    "path": "calculator/README.md",
+    "sha256": "8d6bc61ab6dbace32e37bfd3b1f3d8618e8b501b827ddf45f8cdc491a2150e6f"
+  },
+  {
+    "path": "calculator-actual-gui.png",
+    "sha256": "5355e2e101c99763c3461c06087ea0781fa8814e88d8f2863323d53abc654102"
+  },
+  {
+    "path": "calculator-result-history.json",
+    "sha256": "3e64982e30bd57c495b1f82500b439730be7677f71798baa81cf3d1c234f311a"
+  },
+  {
+    "path": "dialog-accessibility-tree.json",
+    "sha256": "ad579293aed5cd09b314e76052462e3b82cb2f42ba2baea278ec9f5553336d96"
+  },
+  {
+    "path": "environment-first-start.json",
+    "sha256": "9cd348bedb6d22bbf178836821d951edc0280f20a7e6edaec97546e156a6315b"
+  },
+  {
+    "path": "fault-summary.json",
+    "sha256": "a995856fa6a4c60b94d86d1838495612aee6000ba3cd9f85a9bc54add6805f71"
+  },
+  {
+    "path": "final-boundaries.json",
+    "sha256": "77573de526427127db9b86cebeab71222fb98e9444fa158ea8ad17cd2c82e1f1"
+  },
+  {
+    "path": "issues.md",
+    "sha256": "031c5a209a20eeffbb6dfedc50fcb08dda0a003b788746eca27a503b012419c0"
+  },
+  {
+    "path": "mobile-overview.png",
+    "sha256": "76bea2dff1a72353144b550621353543996e03510f5aed7261ccd9afd499efb1"
+  },
+  {
+    "path": "README.md",
+    "sha256": "4f51c8d5dd0b777c17295e51458dc2c6a553f8dc631908b3fc92656f049ac8ec"
+  },
+  {
+    "path": "real-provider-outcomes.json",
+    "sha256": "73f94ab20210621f04c2c96fd14e9c340c5ba2f0bd5b18e4688da285ab4f0533"
+  },
+  {
+    "path": "reproduce.md",
+    "sha256": "af600a51f0583123142dd3d15164a9426cec7429e8d2047e18f9aac487521f65"
+  },
+  {
+    "path": "ship-actual-checkpoint.png",
+    "sha256": "cbe47c164bd25e841b4094014d21a8ddb4cd2aefc4afcf4767032bfa0a4770a0"
+  },
+  {
+    "path": "ship-actual-completed.png",
+    "sha256": "49aa1f5c4b4e0087c7831cc965d54642e043511cd27af2f5ea4ed2afacada95e"
+  },
+  {
+    "path": "ship-actual-idle.png",
+    "sha256": "36a30ab447e3144baab93cd67d40eb6019ab2fbe5ec186239df0bd3ac76bff39"
+  },
+  {
+    "path": "ship-actual-running-calm.png",
+    "sha256": "f293d6a84ac181383b780531c01542b8a62bd77d639f802f83c593f9e4dc2642"
+  },
+  {
+    "path": "ship-actual-running-storm.png",
+    "sha256": "a360d761cca1fb6334ca25aae33dbeed6b371bdf068350a993a0a608eb468257"
+  },
+  {
+    "path": "ship-three-projects-running.png",
+    "sha256": "dfa7087915e5b68462f252554484fc70df25b9733f0b08210a78a6a75754bd27"
+  },
+  {
+    "path": "state-audit.json",
+    "sha256": "d393c93e0ea425bfaef8858c42844911f14c98925fafda5e089fcdbfe04a02e1"
+  },
+  {
+    "path": "verification.json",
+    "sha256": "e62bac1686ce16976c2c10ddd7e61045595e6acb9b6fd8af74a727cd25a89dd1"
+  },
+  {
+    "path": "workflow-events.json",
+    "sha256": "9b389d976ef310b2067671c49f844f4e09adc2810e9981df9a51f9fc9dd94e72"
+  }
+]

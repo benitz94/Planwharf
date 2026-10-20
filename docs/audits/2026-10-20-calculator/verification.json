@@ -1,0 +1,60 @@
+{
+  "baseline": "d6c49d0952ded776a45b444e81788ce0ae435fbe",
+  "productionCodeChanges": 0,
+  "realProvider": {
+    "calls": 2,
+    "successfulInference": 0,
+    "models": [
+      "gpt-6-luna",
+      "gpt-6.1-sol"
+    ],
+    "outcome": "Both unsupported by the tested ChatGPT CLI route."
+  },
+  "deterministicCalculator": {
+    "correctedTests": {
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    "injectedDefect": {
+      "tests": 12,
+      "passed": 11,
+      "failed": 1
+    },
+    "review": "Separate actual AUDIT child executed local tests; not independent AI review."
+  },
+  "independentBrowser": {
+    "checks": 12,
+    "passed": 11,
+    "failed": 1,
+    "http500": 1,
+    "jsErrors": 0
+  },
+  "actualStateBrowser": {
+    "checks": 8,
+    "passed": 8
+  },
+  "supplementalRegressions": {
+    "tests": 86,
+    "passed": 83,
+    "failed": 0,
+    "skipped": 3,
+    "skipReason": "Windows file symlinks unavailable"
+  },
+  "localEngineeringCI": {
+    "checks": 215,
+    "failed": 0
+  },
+  "cleanup": {
+    "ownedAuditWorkersLive": 0,
+    "normalQuit": true
+  },
+  "limitations": [
+    "No successful real AI Worker/Reviewer",
+    "No physical speaker listening",
+    "No natural autoplay denial qualification",
+    "Chrome only",
+    "Long-duration stall detection not exercised",
+    "Production defects reported, not repaired"
+  ]
+}

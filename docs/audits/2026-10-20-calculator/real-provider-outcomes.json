@@ -1,0 +1,22 @@
+{
+  "source": "Production Planwharf runner and actual installed CLI",
+  "cli": "codex-cli 0.144.3",
+  "loginStatus": "ChatGPT login reported; no account details retained",
+  "calls": [
+    {
+      "at": "2026-10-20T10:10:13.032Z",
+      "model": "gpt-6.1-sol",
+      "answer": "PROVIDER_USAGE_LIMIT: codex / gpt-6.1-sol. Check provider quota and your configured usage policy.\n\ncodex CLI failed (provider): {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.\"}}",
+      "diagnostic": "PROVIDER_USAGE_LIMIT",
+      "durationMs": 3248
+    },
+    {
+      "at": "2026-10-20T10:08:59.639Z",
+      "model": "gpt-6-luna",
+      "answer": "PROVIDER_USAGE_LIMIT: codex / gpt-6-luna. Check provider quota and your configured usage policy.\n\ncodex CLI failed (provider): {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6-luna' model is not supported when using Codex with a ChatGPT account.\"}}",
+      "diagnostic": "PROVIDER_USAGE_LIMIT",
+      "durationMs": 4279
+    }
+  ],
+  "noSuccessfulInference": true
+}

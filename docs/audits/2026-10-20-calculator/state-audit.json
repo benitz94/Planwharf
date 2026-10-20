@@ -1,0 +1,114 @@
+[
+  {
+    "name": "Actual idle",
+    "status": "PASS",
+    "evidence": {
+      "effects": "true",
+      "flag": "classic",
+      "motion": "full",
+      "suspended": "false",
+      "weatherMode": "adaptive",
+      "weather": "light",
+      "project": "audit-control",
+      "state": "idle",
+      "underway": "false",
+      "switching": "false",
+      "arrived": "false",
+      "captainReaction": "none"
+    }
+  },
+  {
+    "name": "Actual completed",
+    "status": "PASS",
+    "evidence": {
+      "effects": "true",
+      "flag": "classic",
+      "motion": "full",
+      "suspended": "false",
+      "weatherMode": "adaptive",
+      "weather": "calm",
+      "project": "planwharf-dummy-calculator",
+      "state": "completed",
+      "underway": "false",
+      "switching": "false",
+      "arrived": "true",
+      "captainReaction": "none"
+    }
+  },
+  {
+    "name": "Actual checkpoint",
+    "status": "PASS",
+    "evidence": {
+      "effects": "true",
+      "flag": "classic",
+      "motion": "full",
+      "suspended": "false",
+      "weatherMode": "adaptive",
+      "weather": "light",
+      "project": "audit-concurrent-1",
+      "state": "checkpoint",
+      "underway": "false",
+      "switching": "false",
+      "arrived": "false",
+      "captainReaction": "none"
+    }
+  },
+  {
+    "name": "Actual running",
+    "status": "PASS",
+    "evidence": {
+      "effects": "true",
+      "flag": "classic",
+      "motion": "full",
+      "suspended": "false",
+      "weatherMode": "adaptive",
+      "weather": "light",
+      "project": "audit-concurrent-1",
+      "state": "running",
+      "underway": "true",
+      "switching": "false",
+      "arrived": "false",
+      "captainReaction": "none"
+    }
+  },
+  {
+    "name": "Running helm visibly animates in calm and storm",
+    "status": "PASS",
+    "evidence": [
+      {
+        "weather": "calm",
+        "before": {
+          "transform": "matrix(0.997493, -0.0707639, 0.0707639, 0.997493, 0, 0)",
+          "animation": "harbor-steer"
+        },
+        "after": {
+          "transform": "matrix(0.999747, -0.0224913, 0.0224913, 0.999747, 0, 0)",
+          "animation": "harbor-steer"
+        }
+      },
+      {
+        "weather": "storm",
+        "before": {
+          "transform": "matrix(0.945036, 0.326968, -0.326968, 0.945036, 0, 0)",
+          "animation": "harbor-steer"
+        },
+        "after": {
+          "transform": "matrix(0.966854, 0.255329, -0.255329, 0.966854, 0, 0)",
+          "animation": "harbor-steer"
+        }
+      }
+    ]
+  },
+  {
+    "name": "OS reduced motion honored",
+    "status": "PASS"
+  },
+  {
+    "name": "Animations can be disabled",
+    "status": "PASS"
+  },
+  {
+    "name": "Browser reload leaves backend worker running",
+    "status": "PASS"
+  }
+]
