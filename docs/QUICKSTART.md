@@ -38,6 +38,12 @@ Confirmed organizational accounts add **Business** to provider/model names; norm
 
 Use **Find models** to search by provider, name or exact ID. **Model role** filters by Orchestrator, Worker or Reviewer; **All roles** clears that filter. **Show all models** expands a provider's catalog. Select an enabled, compatible model in **Orchestrator model** to choose your lead.
 
+### Optional Smart Worker Routing
+
+In the Worker routing settings, choose **Catalog Order** (the existing default), **Smart Routing**, or an explicit **Manual / Gold** model selection. In Smart mode, configure which eligible models you prefer for **Standard** tasks and which models may be used as **Premium** for difficult SubTasks. Planwharf records its complexity assessment, actual chosen model and reason. Under a user-approved MegaTask, an already enabled Premium model may be selected automatically **without another premium confirmation**. Exact Gold choices, Worker role eligibility, account access, quota controls and normal MegaTask approval are still enforced.
+
+With only one eligible model, Planwharf can still orchestrate dependent tasks and checkpoints, but there is no alternative model for Smart Routing to select. Do not assume this reduces token usage or subscription charges; a controlled direct-CLI comparison is planned but not completed. See [current capabilities and validation limits](CURRENT-CAPABILITIES.md).
+
 ## 4. Prepare and approve work
 
 Select the project recipient. Use **Grill me** to clarify the goal, or **Grill with the docs** to use its documentation. Save the answers, then use **Auto start** or send a concrete new work request in chat.

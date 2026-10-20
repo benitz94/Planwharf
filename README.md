@@ -30,6 +30,14 @@ music is selected explicitly and retained across sessions only with separate
 browser-storage consent. No media is uploaded or included in project exports.
 See [Soundtrack instructions and storage details](docs/SOUNDTRACK.md).
 
+## Smart Worker Routing and recent progress
+
+**Smart Worker Routing** is optional and preserves the existing Catalog Order mode until enabled. Models can be marked Standard or Premium; for an approved MegaTask, the Orchestrator may choose an eligible Premium Worker when task complexity justifies it, **without a second premium-specific approval**. Exact Gold/manual selections, role permissions and quota limits continue to apply. The assignment rationale is recorded and visible. The selection is heuristic, not a certified model-quality ranking or a promise of lower cost.
+
+Recent integrated work also improves native Codex Worker result validation, explicit rejection of stale completion evidence, real review/correction workflows, multi-project containment, checkpoint recovery, cross-tab Soundtrack ownership and Captain steering in Ship View. These changes have focused automated, browser and some real-Codex acceptance evidence; support for every provider and OS remains unverified.
+
+**Efficiency claims are still untested:** a future controlled benchmark will compare the same single coding model directly via CLI versus through Planwharf, accounting for *all* planning/review/worker usage, quality, wall-clock time and human intervention. We do not yet claim measurable token, time or monetary savings. See [Current capabilities and evidence](docs/CURRENT-CAPABILITIES.md).
+
 ## Planwharf at a glance
 
 ![Illustrated five-step Planwharf workflow](docs/demo-workflow.svg)
