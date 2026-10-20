@@ -128,6 +128,14 @@ Recorded chat sessions remain available through the session selector. **Copy out
 
 [Matt Pocock's skills](https://github.com/mattpocock/skills) can supply instructions to leads and workers. **Use Matt skills for all models** persists per notebook. **Check skills updates** checks the upstream catalog. A failed update retains a prior complete cache. If no complete cache is available, enablement requires a successful check or explicit opt-out before model execution.
 
+## Smart Worker Routing
+
+In addition to the existing catalog-order selection, Planwharf offers **opt-in Smart Worker Routing**. Configure Standard/Premium model-use preferences and routing limits in the model settings. These preferences do not change Allowed roles, provider account access or actual capability; only models that meet the existing restrictions are eligible. The Orchestrator assesses SubTask complexity, records its rationale and selected exact model in the assignment evidence, and can allocate a configured Premium model automatically when warranted.
+
+**No separate Premium approval is requested.** Existing MegaTask approval is still required, even in Automatic mode. Enabling Smart Routing and the relevant model preference is advance permission to consider that model for work already covered by the MegaTask's normal authorization. Explicit Gold/manual model selection takes precedence; never interpret a quota fallback or an HTTP 429 as authority to silently substitute an exact model. Saved assignments, checkpoints and account changes remain subject to execution identity and eligibility checks.
+
+Existing installations continue using Catalog Order until Smart is chosen. With only one eligible model, there is no multi-model choice, but the same planning, Worker evidence and checkpoint workflows remain useful. More orchestration may also require more model calls, particularly on small tasks. **Savings in tokens, time or currency have not been proven**; see [Current capabilities and evidence](CURRENT-CAPABILITIES.md).
+
 ## MegaTasks, SubTasks, Attempts and Results
 
 A **MegaTask** is the overall approved assignment. A **SubTask** is one bounded piece. An **Attempt** is one actual worker execution. A **Result** records outcome, summary, changed files, reported tests, blockers and next action. A **Checkpoint** records where continuation should begin.
