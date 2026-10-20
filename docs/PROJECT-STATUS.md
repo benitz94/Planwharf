@@ -13,6 +13,14 @@ Project containment: implementation and audit launches fail closed without a rea
 
 Task: `PLANWHARF-FINAL`. The final-scope acceptance is retained. The owner subsequently requested model role permissions and English publication guides; these additions do not introduce a new development phase or roadmap.
 
+## Updates through 20 October 2026
+
+The current `main` incorporates [PR #20](https://github.com/benitz94/Planwharf/pull/20) (verified native Codex structured-result transport, stale-result safeguards, truthful failed-review/provider diagnostics and real-model calculator acceptance) and [PR #21](https://github.com/benitz94/Planwharf/pull/21) (opt-in Smart Worker Routing with automatically selected, preconfigured Premium models under ordinary MegaTask approval). Gold exact-model selection remains preserved; Catalog Order is unchanged for existing installations. The Smart Routing PR records 312/312 active tests, 313 Windows engineering checks and [passing Linux offline CI](https://github.com/benitz94/Planwharf/actions/runs/39447322620). Rocco's real-model acceptance documents a working HarborQueue scheduler, a difficult recovery assignment, review/correction, and three running projects. These bounded trials do not prove a universal model ranking or monetary savings.
+
+Also integrated: [Soundtrack](SOUNDTRACK.md), same-profile/same-origin single-playback ownership, and [Captain steering](CAPTAIN-STEERING.md) with weather-dependent decorative motion. The selected project drives adaptive audio; weather does not establish execution health. See [Current capabilities and evidence](CURRENT-CAPABILITIES.md) for feature-by-feature scope, acceptance sources, single-model use and benchmark caveats.
+
+**Future study, not a published outcome:** Direct CLI versus Planwharf with the same model, repeated tasks, independent acceptance tests, full token/usage accounting and human-intervention measurements. There is currently **no substantiated percentage claim** that Planwharf saves money, tokens or time.
+
 ## Purpose
 
 Planwharf is a local project notebook and AI coding coordinator. Planwharf explains project goal, progress, history and next action. Orchestrator explains approved AI work, processes, exact model identities, quota and invocation usage. One backend owns durable state.
