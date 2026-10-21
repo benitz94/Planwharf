@@ -38,6 +38,20 @@ See [Soundtrack instructions and storage details](docs/SOUNDTRACK.md).
 
 The diagram is a conceptual overview, not a screenshot of the application. For practical details, see the [FAQ](docs/FAQ.md).
 
+## The team you didn't know you had
+
+**Planwharf puts a team at your service — a team you didn't know you had.**
+
+Having access to powerful AI models is not the same as having a visible, user-directed team. For example, ChatGPT offers different models, but a typical Codex CLI invocation starts with a selected model; any native subagents it uses follow the CLI's own workflow, rather than assignments managed in Planwharf's persistent project view. Their availability and visibility depend on the CLI version and configuration.
+
+**With Planwharf, you choose the crew and can follow what its managed agents are doing.** Assign eligible models to Orchestrator, Worker and Reviewer roles; inspect task dependencies, model identities, attempts, results and available usage evidence; approve a MegaTask; and deliberately Stop or Resume work. An optional Supervisor provides advisory diagnostics, not autonomous permission to change your project.
+
+**A team does not require a different model for every Worker.** When the connected CLI or API and your account allow multiple executions, several Worker assignments can use the *same* eligible model. Providers often expose more than one possible model or worker slot, but availability and concurrency are never guaranteed; even one eligible model can support a coordinated workflow where permitted.
+
+Planwharf does not claim to reveal every hidden internal subagent or thought process of an external provider. It makes **its own** team assignments, approvals, execution status and recorded evidence visible. Simple jobs may need just one Worker; complex jobs may benefit from a carefully coordinated team.
+
+**Your models. Your Workers. Your decisions. Your team.**
+
 ## Why Planwharf?
 
 AI coding CLIs can implement tasks, but running several of them separately leaves you to track decisions, assignments, progress and interrupted work yourself. Planwharf adds a **persistent project notebook and a coordinated execution workflow** around the AI tools you already use.
