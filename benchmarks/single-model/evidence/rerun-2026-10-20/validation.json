@@ -1,0 +1,21 @@
+{
+  "commands": [
+    {
+      "command": "node --test benchmarks/single-model/*.test.cjs",
+      "exitCode": 0,
+      "testsPassed": 30
+    },
+    {
+      "command": "git diff --cached --check",
+      "exitCode": 0
+    },
+    {
+      "command": "live paired rerun with native capability gate",
+      "outcome": "PREFLIGHT_BLOCKED",
+      "taskTrialsSubmitted": 0
+    }
+  ],
+  "frozenAcceptanceSha256": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "temporaryCredentialRemoved": true,
+  "productionEngineChanges": false
+}

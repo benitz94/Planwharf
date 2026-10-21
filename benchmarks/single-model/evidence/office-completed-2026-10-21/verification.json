@@ -1,0 +1,15 @@
+{
+  "completedSlots": 30,
+  "originalRowsUnchanged": true,
+  "homeCheckpointSha256": "4fd7b4ad7b3392cf71d0932a058e9d501674f6f9538d9b237e981422d5aaf081",
+  "officeTrials": 10,
+  "officeAccepted": 9,
+  "totalAccepted": 26,
+  "totalDefective": 4,
+  "officeMeasuredLaunches": 20,
+  "officeUnknownLaunches": 0,
+  "officeAcceptedComparisonPairs": 3,
+  "credentialAndUserPathScan": "Passed; word-boundary credential patterns and user path checks, no matches",
+  "allPublishedJson": "Parsed successfully",
+  "ownedBenchmarkProcessesRemaining": 0
+}

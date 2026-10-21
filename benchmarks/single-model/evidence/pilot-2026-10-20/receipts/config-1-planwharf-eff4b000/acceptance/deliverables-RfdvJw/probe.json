@@ -1,0 +1,8 @@
+{
+  "name": "deliverables",
+  "passed": false,
+  "exitCode": 1,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":false,\"detail\":\"Document API, tests and limitations\"}\n",
+  "stderr": ""
+}

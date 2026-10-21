@@ -1,0 +1,262 @@
+{
+  "schema": 1,
+  "studyId": "506515b2-2416-46d3-b794-b54bc30bd2ba",
+  "startedAt": "2026-10-21T07:19:44.105Z",
+  "kind": "LIVE_FULL_STUDY",
+  "protocolRevision": 2,
+  "baseline": "d9b4c21b3c9045c6069d99b2f18686a6da53fe8d",
+  "model": "gpt-5.6-luna",
+  "options": {
+    "model": "gpt-5.6-luna",
+    "pairs": 5,
+    "timeoutMs": 480000,
+    "maxCalls": 6,
+    "output": "[REDACTED USER PATH]"
+  },
+  "environment": {
+    "recordedAt": "2026-10-21T07:19:44.017Z",
+    "platform": "win32",
+    "release": "10.0.19045",
+    "arch": "x64",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1505M v5 @ 2.80GHz",
+    "logicalCpus": 8,
+    "memoryBytes": 34275356672,
+    "node": "v24.19.0",
+    "cli": {
+      "executable": "[REDACTED USER PATH]",
+      "version": "0.163.0-alpha.10.2",
+      "authenticated": true,
+      "authStatus": "Logged in using ChatGPT\n"
+    },
+    "requestedModel": "gpt-5.6-luna",
+    "modelInAuthenticatedCatalog": true,
+    "catalogVersion": "0.163.0-alpha.10.2",
+    "providerReportedResolvedVersion": null,
+    "cliProfile": {
+      "source": "Explicit CODEX_HOME override",
+      "configurationHash": "efacf9f5e2cb9eba28ecc2f05e3afe9976d27cf5ef3bb01b9c26b71d80aaeb5d",
+      "sqliteOverride": null
+    },
+    "sandbox": "workspace-write",
+    "approvalPolicy": "never",
+    "toolNetworkAccess": false,
+    "inferenceEffort": "shared CLI/profile default; no arm-specific override",
+    "configurationDifferences": [
+      "Planwharf disables native worker subagents and requests a structured final report; direct CLI retains its ordinary self-planning/test capabilities.",
+      "Planwharf uses native persistence/dispatch and one-model role roster; no hand-written decomposition is injected."
+    ],
+    "quotaSnapshot": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": false,
+      "pct": 13,
+      "leftPct": 87,
+      "source": "chatgpt",
+      "reason": null,
+      "planType": "pro",
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 13,
+          "leftPct": 87,
+          "resetAt": "2026-10-27T07:35:56.000Z",
+          "seconds": 604800
+        }
+      ]
+    },
+    "quotaAttribution": "Shared account activity cannot be attributed per trial; per-trial quota decrement UNKNOWN",
+    "billedCost": null,
+    "docs": "https://learn.chatgpt.com/docs/non-interactive-mode",
+    "baseline": "d9b4c21b3c9045c6069d99b2f18686a6da53fe8d"
+  },
+  "schedule": [
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-1",
+      "scenario": "baseline",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-2",
+      "scenario": "baseline",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-3",
+      "scenario": "baseline",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-4",
+      "scenario": "baseline",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-5",
+      "scenario": "baseline",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-1",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-2",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-3",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-4",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-5",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-1",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-2",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-3",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-4",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-5",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    }
+  ],
+  "specificationHashes": [
+    {
+      "id": "config",
+      "class": "small",
+      "title": "Validated configuration utility",
+      "module": "config.cjs",
+      "checkCount": 6,
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505"
+    },
+    {
+      "id": "rest-api",
+      "class": "medium",
+      "title": "Persistent REST item service",
+      "module": "api.cjs",
+      "checkCount": 8,
+      "specificationHash": "1f27bd14953b0fb26eb48e7281a72ff3194c97640b81aef7670abd2275dc4a4a"
+    },
+    {
+      "id": "scheduler",
+      "class": "complex",
+      "title": "Recoverable dependency scheduler",
+      "module": "scheduler.cjs",
+      "checkCount": 10,
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d"
+    }
+  ],
+  "sealedGraderHash": "be2341e1a993e108d52483143d0fcfd79e38f3b77e176e86853596bde6dabf36",
+  "protocol": {
+    "accounting": "Native provider per-response receipts, including interrupted responses, deduplicated by response ID across resume. Unreported provider usage remains UNKNOWN.",
+    "acceptance": "All presealed deterministic checks pass AND transport completes successfully; incomplete outcomes retain resource use",
+    "timeBoundMs": 480000,
+    "callBound": 6,
+    "interventions": "One predeclared recovery on first source change for medium/complex, no ad hoc fixes or hidden grader feedback",
+    "windows": "No visible windows. Only server.cjs and noninteractive CLI are used.",
+    "humanEffort": "Scripted HTTP/CLI actions recorded; actual human-time savings UNKNOWN",
+    "fullStudy": "Target five pairs per task only after an accepted pilot and explicit --pairs 5 invocation; no automatic provider spending"
+  }
+}

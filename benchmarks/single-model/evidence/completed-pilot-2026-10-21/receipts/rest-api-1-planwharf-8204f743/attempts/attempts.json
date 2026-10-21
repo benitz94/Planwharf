@@ -1,0 +1,33 @@
+{
+  "nextId": 3,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01",
+      "projectId": "benchmark-rest-api",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0",
+      "subTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "BLOCKED",
+      "exitCode": null,
+      "closedReason": "blocked"
+    },
+    {
+      "id": "attempt-2",
+      "taskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01",
+      "projectId": "benchmark-rest-api",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0",
+      "subTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "COMPLETE",
+      "exitCode": 0,
+      "closedReason": "complete"
+    }
+  ]
+}

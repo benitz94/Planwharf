@@ -1,0 +1,52 @@
+{
+  "home": {
+    "trialIds": [
+      "config-1-direct-7640a73c",
+      "config-1-planwharf-dc398dbc",
+      "config-2-planwharf-f8c430eb",
+      "config-2-direct-e0c8f4d6",
+      "config-3-direct-ab968201",
+      "config-3-planwharf-42f733f1",
+      "config-4-planwharf-7088d153",
+      "config-4-direct-8f7c7f9b",
+      "config-5-direct-f39f422d",
+      "config-5-planwharf-fed974c2",
+      "rest-api-1-planwharf-1fba722b",
+      "rest-api-1-direct-2b020c3c",
+      "rest-api-2-direct-9ff40b69",
+      "rest-api-2-planwharf-7ae1b225",
+      "rest-api-3-planwharf-259daad9",
+      "rest-api-3-direct-39c9a0f8",
+      "rest-api-4-direct-ff04c28b",
+      "rest-api-4-planwharf-65c5ad59",
+      "rest-api-5-planwharf-673b7c20",
+      "rest-api-5-direct-38919c4d"
+    ],
+    "manifest": "../full-paused-2026-10-21/manifest.json",
+    "rawEvidenceAvailableHere": false
+  },
+  "office": {
+    "trialIds": [
+      "scheduler-1-direct-9070454f",
+      "scheduler-1-planwharf-5fcae87c",
+      "scheduler-2-planwharf-65134225",
+      "scheduler-2-direct-3dfb023f",
+      "scheduler-3-direct-20659773",
+      "scheduler-3-planwharf-521fb89d",
+      "scheduler-4-planwharf-7a03c840",
+      "scheduler-4-direct-229b3ec7",
+      "scheduler-5-direct-fc70412e",
+      "scheduler-5-planwharf-61c22483"
+    ],
+    "manifest": "manifest.json",
+    "rawEvidenceAvailableHere": true
+  },
+  "comparability": {
+    "samePhysicalMachine": false,
+    "sameProfile": false,
+    "sameAccountContinuity": "UNKNOWN",
+    "resolvedModelSnapshot": "UNKNOWN",
+    "poolHomeOfficeTiming": false,
+    "pairedComparisons": "Office scheduler pairs 2..5 only; pair 1 operator replacement reported separately"
+  }
+}

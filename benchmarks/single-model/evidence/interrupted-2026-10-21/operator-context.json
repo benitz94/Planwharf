@@ -1,0 +1,9 @@
+{
+  "status": "INTERRUPTED_STUDY_NOT_COMPLETE_PILOT",
+  "completedTrialRecords": 3,
+  "incompleteTrial": "rest-api direct was running when operator stopped the owned process tree",
+  "reason": "User requested fresh work after an overnight host interruption and native provider DNS failures",
+  "unrunScheduledTrials": 2,
+  "compareWithOtherStudies": false,
+  "interpretation": "Retained historical observations; the 35,549,840 ms REST timeout includes the overnight gap and is not an engineering completion-time measurement."
+}

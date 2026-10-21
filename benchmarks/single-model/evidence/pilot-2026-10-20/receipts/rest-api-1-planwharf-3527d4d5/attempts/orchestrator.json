@@ -1,0 +1,482 @@
+{
+  "mode": "manual",
+  "grillPropose": false,
+  "grillKind": "off",
+  "usage": {
+    "benchmark-model": {
+      "used": 1
+    }
+  },
+  "enabled": {},
+  "providerEnabled": {},
+  "catalogVisibility": {},
+  "modelPolicies": {},
+  "providerPolicies": {},
+  "projects": {
+    "first-project": {
+      "status": "idle",
+      "doing": "No job on First project. Auto start to check the project then approve the plan.",
+      "plan": [],
+      "facts": null,
+      "jobId": null,
+      "jobTitle": null,
+      "attemptId": null,
+      "modelId": null,
+      "approved": false,
+      "waitingFor": "Auto start",
+      "next": "Auto start skips grill. Turn Grill me or Grill with the docs on to grill first.",
+      "workerLabel": null,
+      "resultPath": null,
+      "watchingSince": null,
+      "holdApproval": false,
+      "grillSkipped": false,
+      "docs": [],
+      "log": [],
+      "pendingAutoStart": null,
+      "checkpoint": null,
+      "dispatch": [],
+      "resumeRequested": false,
+      "deadlineHonored": false,
+      "workerPid": null,
+      "workerLog": null,
+      "workerAlive": false,
+      "tried": [],
+      "progressAt": null,
+      "progressKey": null,
+      "workerTail": "",
+      "workerActivity": "",
+      "jobFingerprint": null,
+      "jobDetail": null,
+      "jobRevisionId": null
+    },
+    "benchmark-rest-api": {
+      "status": "failed",
+      "doing": "Continue: Identical benchmark starting point: 0/1 slices complete.",
+      "plan": [
+        "MegaTask: Continue: Identical benchmark starting point",
+        "Objective: Goal: Persistent REST item service Implement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently rese…\n\nLatest commit: 3d7fd8c Identical benchmark starting point\n\nRecent:\n3d7fd8c Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "Latest git: 3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+        "Whole job — benchmark-model; parallel-ready; FAILED"
+      ],
+      "facts": {
+        "folder": "[REDACTED USER PATH]",
+        "fileCount": 5,
+        "names": [
+          ".git",
+          ".gitignore",
+          "api.cjs",
+          "README.md",
+          "TASK.md"
+        ],
+        "docs": [
+          "README.md"
+        ],
+        "git": true,
+        "head": "ref: refs/heads/main",
+        "branch": "main",
+        "lastCommit": "3d7fd8c Identical benchmark starting point",
+        "commitId": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+        "lastSubject": "Identical benchmark starting point",
+        "recent": [
+          "3d7fd8c Identical benchmark starting point"
+        ],
+        "dirty": [],
+        "diffStat": ""
+      },
+      "jobId": "task-ebeedaaa-4ae8-4445-be1d-11c55c432a7e",
+      "jobTitle": "Continue: Identical benchmark starting point",
+      "attemptId": "attempt-1",
+      "modelId": "benchmark-model",
+      "approved": true,
+      "waitingFor": "Structured worker results",
+      "next": "Review failed results and resume only the remaining work.",
+      "workerLabel": "Single exact benchmark model",
+      "resultPath": "[REDACTED USER PATH]",
+      "watchingSince": null,
+      "holdApproval": true,
+      "grillSkipped": false,
+      "docs": [],
+      "log": [
+        {
+          "at": "2026-10-20T17:08:38.168Z",
+          "text": "Read the repo and latest changes. Plan ready for approval."
+        }
+      ],
+      "pendingAutoStart": null,
+      "checkpoint": {
+        "id": "CP-67ee40a1-2bca-4996-ac5b-31c3fb1fa31f",
+        "projectId": "benchmark-rest-api",
+        "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "createdAt": "2026-10-20T17:08:42.982Z",
+        "reason": "worker failure",
+        "planRevisionId": 1,
+        "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+        "repoState": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        },
+        "dirtyFiles": [],
+        "completedSubTaskIds": [],
+        "pendingSubTaskIds": [],
+        "failedSubTaskIds": [
+          "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01"
+        ],
+        "activeAttemptIds": [],
+        "resultIds": [
+          "R-attempt-1"
+        ],
+        "summary": "0/1 slices complete. worker failure.",
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "jobId": "task-ebeedaaa-4ae8-4445-be1d-11c55c432a7e",
+        "jobFingerprint": "295af8b8fdfe862a32693c593a1be5bd27f291acd5a6b1713cf9e4f0bccddf7f",
+        "at": "2026-10-20T17:08:42.983Z"
+      },
+      "dispatch": [
+        {
+          "modelId": "benchmark-model",
+          "label": "Single exact benchmark model",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna",
+          "subTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+          "attemptId": "attempt-1",
+          "slice": "Whole job",
+          "resultPath": "[REDACTED USER PATH]",
+          "structuredResultPath": "[REDACTED USER PATH]",
+          "exitPath": "[REDACTED USER PATH]",
+          "logPath": "[REDACTED USER PATH]",
+          "folder": "[REDACTED USER PATH]",
+          "pid": 18808,
+          "alive": false,
+          "startedAt": "2026-10-20T17:08:41.108Z",
+          "sessionId": "d1e4c7d6-1ab8-452f-9a94-1245a54a73ac",
+          "observedAlive": false,
+          "validatedResultStatus": "FAILED",
+          "recordedSubTaskStatus": "FAILED"
+        }
+      ],
+      "resumeRequested": false,
+      "deadlineHonored": false,
+      "workerPid": 18808,
+      "workerLog": "[REDACTED USER PATH]",
+      "workerAlive": false,
+      "tried": [],
+      "progressAt": null,
+      "progressKey": null,
+      "workerTail": "",
+      "workerActivity": "Continue: Identical benchmark starting point: 0/1 slices complete.",
+      "jobFingerprint": "295af8b8fdfe862a32693c593a1be5bd27f291acd5a6b1713cf9e4f0bccddf7f",
+      "jobDetail": "Goal: Persistent REST item service Implement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently rese…\n\nLatest commit: 3d7fd8c Identical benchmark starting point\n\nRecent:\n3d7fd8c Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+      "jobRevisionId": 1,
+      "authorizedSessionId": "d1e4c7d6-1ab8-452f-9a94-1245a54a73ac",
+      "grillAsked": false,
+      "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+      "monitoring": {
+        "workers": 1,
+        "alive": 0
+      },
+      "megaTask": {
+        "id": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "projectId": "benchmark-rest-api",
+        "taskId": "task-ebeedaaa-4ae8-4445-be1d-11c55c432a7e",
+        "planRevisionId": 1,
+        "title": "Continue: Identical benchmark starting point",
+        "goal": "Goal: Persistent REST item service Implement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently rese…\n\nLatest commit: 3d7fd8c Identical benchmark starting point\n\nRecent:\n3d7fd8c Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "createdAt": "2026-10-20T17:08:39.915Z",
+        "approvedAt": "2026-10-20T17:08:39.945Z",
+        "status": "FAILED",
+        "orchestratorModelId": "benchmark-model",
+        "currentCheckpointId": "CP-67ee40a1-2bca-4996-ac5b-31c3fb1fa31f",
+        "completedAt": null,
+        "jobFingerprint": "295af8b8fdfe862a32693c593a1be5bd27f291acd5a6b1713cf9e4f0bccddf7f",
+        "detached": false,
+        "repoBefore": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED"
+        },
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "pauseRequested": false,
+        "timing": "discretion",
+        "deadlineAt": null,
+        "blockers": [],
+        "approvedMegaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "authorizedSessionId": "d1e4c7d6-1ab8-452f-9a94-1245a54a73ac",
+        "repoAfter": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        }
+      },
+      "subTasks": [
+        {
+          "id": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+          "title": "Whole job",
+          "detail": "Whole job",
+          "status": "FAILED",
+          "assignedModelId": "benchmark-model",
+          "attemptIds": [
+            "attempt-1"
+          ],
+          "resultId": "R-attempt-1",
+          "createdAt": "2026-10-20T17:08:39.916Z",
+          "completedAt": null,
+          "type": "IMPLEMENTATION",
+          "dependencies": [],
+          "proposedProvider": "codex",
+          "proposedCli": "gpt-5.6-luna",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna"
+        }
+      ]
+    }
+  },
+  "asks": [],
+  "orchestratorId": "benchmark-model",
+  "workerRouting": {
+    "mode": "catalog",
+    "maxPremiumPerMegaTask": null,
+    "maxPremiumConcurrent": null,
+    "fallback": "standard"
+  },
+  "routingPreferences": {},
+  "modelRoles": {},
+  "accountModelRoles": {},
+  "accountBindings": {},
+  "lastAccountKeys": {},
+  "briefingBaselines": {},
+  "researches": [],
+  "workerHistory": [],
+  "sessions": [
+    {
+      "id": "d1e4c7d6-1ab8-452f-9a94-1245a54a73ac",
+      "startedAt": "2026-10-20T17:08:37.436Z"
+    }
+  ],
+  "execution": {
+    "megaTasks": [
+      {
+        "id": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "projectId": "benchmark-rest-api",
+        "taskId": "task-ebeedaaa-4ae8-4445-be1d-11c55c432a7e",
+        "planRevisionId": 1,
+        "title": "Continue: Identical benchmark starting point",
+        "goal": "Goal: Persistent REST item service Implement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently rese…\n\nLatest commit: 3d7fd8c Identical benchmark starting point\n\nRecent:\n3d7fd8c Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "createdAt": "2026-10-20T17:08:39.915Z",
+        "approvedAt": "2026-10-20T17:08:39.945Z",
+        "status": "FAILED",
+        "orchestratorModelId": "benchmark-model",
+        "currentCheckpointId": "CP-67ee40a1-2bca-4996-ac5b-31c3fb1fa31f",
+        "completedAt": null,
+        "jobFingerprint": "295af8b8fdfe862a32693c593a1be5bd27f291acd5a6b1713cf9e4f0bccddf7f",
+        "detached": false,
+        "repoBefore": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED"
+        },
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "pauseRequested": false,
+        "timing": "discretion",
+        "deadlineAt": null,
+        "blockers": [],
+        "approvedMegaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "authorizedSessionId": "d1e4c7d6-1ab8-452f-9a94-1245a54a73ac",
+        "repoAfter": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        }
+      }
+    ],
+    "subTasks": [
+      {
+        "id": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+        "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "title": "Whole job",
+        "detail": "Whole job",
+        "status": "FAILED",
+        "assignedModelId": "benchmark-model",
+        "attemptIds": [
+          "attempt-1"
+        ],
+        "resultId": "R-attempt-1",
+        "createdAt": "2026-10-20T17:08:39.916Z",
+        "completedAt": null,
+        "type": "IMPLEMENTATION",
+        "dependencies": [],
+        "proposedProvider": "codex",
+        "proposedCli": "gpt-5.6-luna",
+        "provider": "codex",
+        "cli": "gpt-5.6-luna"
+      }
+    ],
+    "results": [
+      {
+        "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "subTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+        "attemptId": "attempt-1",
+        "resultId": "R-attempt-1",
+        "provider": "codex",
+        "cli": "gpt-5.6-luna",
+        "status": "FAILED",
+        "summary": "Worker process ended without a valid structured result and exit evidence.",
+        "filesChanged": [],
+        "tests": [],
+        "blockers": [
+          "Worker process ended without a valid structured result and exit evidence."
+        ],
+        "nextAction": "Review the evidence and resume the remaining work from an explicit checkpoint.",
+        "createdAt": "2026-10-20T17:08:42.382Z",
+        "exitCode": 1,
+        "evidenceKind": "TECHNICAL",
+        "evidencePath": "[REDACTED USER PATH]",
+        "assignedModelId": "benchmark-model",
+        "pid": 18808,
+        "startedAt": "2026-10-20T17:08:41.108Z"
+      }
+    ],
+    "checkpoints": [
+      {
+        "id": "CP-67ee40a1-2bca-4996-ac5b-31c3fb1fa31f",
+        "projectId": "benchmark-rest-api",
+        "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+        "createdAt": "2026-10-20T17:08:42.982Z",
+        "reason": "worker failure",
+        "planRevisionId": 1,
+        "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+        "repoState": {
+          "repoHead": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "cbecc3bf81ab538492dbe72775277aba44202e3f559a70d1e3ff25c793b89bff",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        },
+        "dirtyFiles": [],
+        "completedSubTaskIds": [],
+        "pendingSubTaskIds": [],
+        "failedSubTaskIds": [
+          "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01"
+        ],
+        "activeAttemptIds": [],
+        "resultIds": [
+          "R-attempt-1"
+        ],
+        "summary": "0/1 slices complete. worker failure.",
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "jobId": "task-ebeedaaa-4ae8-4445-be1d-11c55c432a7e",
+        "jobFingerprint": "295af8b8fdfe862a32693c593a1be5bd27f291acd5a6b1713cf9e4f0bccddf7f",
+        "at": "2026-10-20T17:08:42.983Z"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "EV-c6dedfa2-cfc2-47ce-87bb-72caddb22d14",
+        "projectId": "first-project",
+        "type": "PLAN_REVISION",
+        "summary": "Living Plan R1: ",
+        "reference": {
+          "planRevisionId": 1
+        },
+        "createdAt": "2026-10-20T17:08:37.527Z",
+        "key": "revision:first-project:1"
+      },
+      {
+        "id": "EV-a922c879-3037-49d2-8a4d-fd86c09f9e79",
+        "projectId": "benchmark-rest-api",
+        "type": "PLAN_REVISION",
+        "summary": "Living Plan R1: Persistent REST item service\n\nImplement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently resetting it. One server process owns a store; cross-process simultaneous writers are outside scope. Store format is an object {version:1,items:[...]}. Each item has exactly {id,title,done}; id matches /^[a-z][a-z0-9-]{0,31}$/, title is trimmed to 1..80 characters, done is boolean (defaults false on POST). Reject unknown body properties and incorrect types.\nRoutes: GET /items -> 200 array sorted by id; GET /items/:id -> 200 item or 404 JSON {error:string}; POST /items with {id,title,done?} -> 201 item and Location '/items/'+id, duplicate id ->409; PATCH /items/:id accepts a nonempty subset of {title,done}, preserves id, ->200 item or404; DELETE /items/:id ->204 no body or404. Unknown routes ->404. Malformed JSON and validation errors ->400 JSON {error:string}. Responses containing JSON must have application/json Content-Type. Reject request bodies over 16384 bytes with413 and never commit them. Successful mutations must be durable before the response. Serialize concurrent writes to avoid lost updates. Use atomic replacement of the store file so an interrupted commit leaves either old or new complete data. Await optional onStage(stage) immediately before replacement ('beforeCommit') and immediately after durable replacement ('afterCommit'), before sending the response. Tests may terminate the process synchronously in that hook. Recover correctly on a new process after either fault; beforeCommit preserves old data, afterCommit preserves new data even without a response. Leftover temporary files must not override the committed store. No authentication/public deployment is required; this is a local service.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+        "reference": {
+          "planRevisionId": 1
+        },
+        "createdAt": "2026-10-20T17:08:37.528Z",
+        "key": "revision:benchmark-rest-api:1"
+      },
+      {
+        "id": "EV-bcbf28a3-81f5-41ae-ad4f-35c986b34fb9",
+        "projectId": "benchmark-rest-api",
+        "type": "MEGATASK_PROPOSED",
+        "summary": "Continue: Identical benchmark starting point: 1 proposed slice(s).",
+        "reference": {
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff"
+        },
+        "createdAt": "2026-10-20T17:08:39.916Z"
+      },
+      {
+        "id": "EV-def74831-3834-4428-a710-253afc6b1909",
+        "projectId": "benchmark-rest-api",
+        "type": "MEGATASK_APPROVED",
+        "summary": "Approved Continue: Identical benchmark starting point.",
+        "reference": {
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff"
+        },
+        "createdAt": "2026-10-20T17:08:39.945Z"
+      },
+      {
+        "id": "EV-541449d1-f202-4743-9f95-505588caf4e2",
+        "projectId": "benchmark-rest-api",
+        "type": "SUBTASK_STARTED",
+        "summary": "Single exact benchmark model started Whole job.",
+        "reference": {
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+          "subTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+          "attemptId": "attempt-1",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna"
+        },
+        "createdAt": "2026-10-20T17:08:41.135Z"
+      },
+      {
+        "id": "EV-49e37579-03eb-4c7f-8f5d-fa30065655d1",
+        "projectId": "benchmark-rest-api",
+        "type": "SUBTASK_FAILED",
+        "summary": "Whole job: Worker process ended without a valid structured result and exit evidence.",
+        "reference": {
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+          "subTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+          "resultId": "R-attempt-1"
+        },
+        "createdAt": "2026-10-20T17:08:42.395Z"
+      },
+      {
+        "id": "EV-2359a881-6c00-4a67-9534-c789cfc858c4",
+        "projectId": "benchmark-rest-api",
+        "type": "CHECKPOINT_SAVED",
+        "summary": "0/1 slices complete. worker failure.",
+        "reference": {
+          "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+          "checkpointId": "CP-67ee40a1-2bca-4996-ac5b-31c3fb1fa31f"
+        },
+        "createdAt": "2026-10-20T17:08:42.983Z"
+      }
+    ],
+    "observations": {}
+  },
+  "selectedProjectId": "benchmark-rest-api"
+}

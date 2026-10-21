@@ -1,0 +1,849 @@
+{
+  "scope": "Independent native cumulative/unique-response audit. Unreported provider usage and billed cost remain UNKNOWN.",
+  "valid": true,
+  "trialsChecked": 20,
+  "knownCalls": 30,
+  "unknownCalls": 0,
+  "trials": [
+    {
+      "id": "config-1-direct-7640a73c",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d54-f3e2-7ea2-8eab-ea8d5b6a4b90",
+          "responseCount": 7,
+          "newResponses": 7,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 116453,
+            "cached_input_tokens": 105472,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5123,
+            "reasoning_output_tokens": 404,
+            "total_tokens": 121576
+          },
+          "allocated": {
+            "inputTokens": 116453,
+            "outputTokens": 5123,
+            "cachedInputTokens": 105472,
+            "reasoningTokens": 404
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-1-planwharf-dc398dbc",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d55-e4ba-7450-9a80-39c591c6a97f",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 79498,
+            "cached_input_tokens": 60288,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3383,
+            "reasoning_output_tokens": 346,
+            "total_tokens": 82881
+          },
+          "allocated": {
+            "inputTokens": 79498,
+            "outputTokens": 3383,
+            "cachedInputTokens": 60288,
+            "reasoningTokens": 346
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-2-planwharf-f8c430eb",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d56-ba45-7442-966a-9e60148d6253",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 84015,
+            "cached_input_tokens": 63872,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3344,
+            "reasoning_output_tokens": 374,
+            "total_tokens": 87359
+          },
+          "allocated": {
+            "inputTokens": 84015,
+            "outputTokens": 3344,
+            "cachedInputTokens": 63872,
+            "reasoningTokens": 374
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-2-direct-e0c8f4d6",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d57-6114-7a53-9897-bcef9f839c5f",
+          "responseCount": 8,
+          "newResponses": 8,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 141399,
+            "cached_input_tokens": 128256,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6941,
+            "reasoning_output_tokens": 234,
+            "total_tokens": 148340
+          },
+          "allocated": {
+            "inputTokens": 141399,
+            "outputTokens": 6941,
+            "cachedInputTokens": 128256,
+            "reasoningTokens": 234
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-3-direct-ab968201",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d58-55db-70a0-aa38-4d271eefb228",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 94374,
+            "cached_input_tokens": 82304,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3259,
+            "reasoning_output_tokens": 412,
+            "total_tokens": 97633
+          },
+          "allocated": {
+            "inputTokens": 94374,
+            "outputTokens": 3259,
+            "cachedInputTokens": 82304,
+            "reasoningTokens": 412
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-3-planwharf-42f733f1",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d59-204e-7f02-9a6f-8e7d3fa3fc37",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 84540,
+            "cached_input_tokens": 64128,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3593,
+            "reasoning_output_tokens": 381,
+            "total_tokens": 88133
+          },
+          "allocated": {
+            "inputTokens": 84540,
+            "outputTokens": 3593,
+            "cachedInputTokens": 64128,
+            "reasoningTokens": 381
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-4-planwharf-7088d153",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d59-dd08-78e3-b937-6633b4ecd12c",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 98799,
+            "cached_input_tokens": 78592,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3467,
+            "reasoning_output_tokens": 282,
+            "total_tokens": 102266
+          },
+          "allocated": {
+            "inputTokens": 98799,
+            "outputTokens": 3467,
+            "cachedInputTokens": 78592,
+            "reasoningTokens": 282
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-4-direct-8f7c7f9b",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d5a-8915-7fb0-8f9f-8a90d1c09ded",
+          "responseCount": 7,
+          "newResponses": 7,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 106704,
+            "cached_input_tokens": 95360,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3397,
+            "reasoning_output_tokens": 400,
+            "total_tokens": 110101
+          },
+          "allocated": {
+            "inputTokens": 106704,
+            "outputTokens": 3397,
+            "cachedInputTokens": 95360,
+            "reasoningTokens": 400
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-5-direct-f39f422d",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d5b-3173-7d02-9cdc-4b644bbb4997",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 88176,
+            "cached_input_tokens": 78208,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3000,
+            "reasoning_output_tokens": 275,
+            "total_tokens": 91176
+          },
+          "allocated": {
+            "inputTokens": 88176,
+            "outputTokens": 3000,
+            "cachedInputTokens": 78208,
+            "reasoningTokens": 275
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "config-5-planwharf-fed974c2",
+      "valid": true,
+      "knownCalls": 1,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d5b-e2a1-7ed3-9006-467314e02153",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 98275,
+            "cached_input_tokens": 78464,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3456,
+            "reasoning_output_tokens": 330,
+            "total_tokens": 101731
+          },
+          "allocated": {
+            "inputTokens": 98275,
+            "outputTokens": 3456,
+            "cachedInputTokens": 78464,
+            "reasoningTokens": 330
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-1-planwharf-1fba722b",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d5c-9949-7ab2-ad2d-62044201f27f",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 66403,
+            "cached_input_tokens": 30848,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5998,
+            "reasoning_output_tokens": 629,
+            "total_tokens": 72401
+          },
+          "allocated": {
+            "inputTokens": 66403,
+            "outputTokens": 5998,
+            "cachedInputTokens": 30848,
+            "reasoningTokens": 629
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d5d-548b-7620-870a-d73da5bb2d08",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 124446,
+            "cached_input_tokens": 78976,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5021,
+            "reasoning_output_tokens": 934,
+            "total_tokens": 129467
+          },
+          "allocated": {
+            "inputTokens": 124446,
+            "outputTokens": 5021,
+            "cachedInputTokens": 78976,
+            "reasoningTokens": 934
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-1-direct-2b020c3c",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d5e-40f7-75e2-bf47-b672cac7b616",
+          "responseCount": 3,
+          "newResponses": 3,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 47811,
+            "cached_input_tokens": 38528,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7588,
+            "reasoning_output_tokens": 736,
+            "total_tokens": 55399
+          },
+          "allocated": {
+            "inputTokens": 47811,
+            "outputTokens": 7588,
+            "cachedInputTokens": 38528,
+            "reasoningTokens": 736
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d5e-40f7-75e2-bf47-b672cac7b616",
+          "responseCount": 20,
+          "newResponses": 17,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 535097,
+            "cached_input_tokens": 490240,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 14891,
+            "reasoning_output_tokens": 1524,
+            "total_tokens": 549988
+          },
+          "allocated": {
+            "inputTokens": 487286,
+            "outputTokens": 7303,
+            "cachedInputTokens": 451712,
+            "reasoningTokens": 788
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-2-direct-9ff40b69",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d60-7dd3-7642-bba6-a37b1800f953",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 82719,
+            "cached_input_tokens": 67968,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 8047,
+            "reasoning_output_tokens": 601,
+            "total_tokens": 90766
+          },
+          "allocated": {
+            "inputTokens": 82719,
+            "outputTokens": 8047,
+            "cachedInputTokens": 67968,
+            "reasoningTokens": 601
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d60-7dd3-7642-bba6-a37b1800f953",
+          "responseCount": 14,
+          "newResponses": 9,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 335641,
+            "cached_input_tokens": 296320,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 12499,
+            "reasoning_output_tokens": 1908,
+            "total_tokens": 348140
+          },
+          "allocated": {
+            "inputTokens": 252922,
+            "outputTokens": 4452,
+            "cachedInputTokens": 228352,
+            "reasoningTokens": 1307
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-2-planwharf-7ae1b225",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d62-4648-77a1-ac5d-8283a1dfbb83",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 88186,
+            "cached_input_tokens": 65536,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7942,
+            "reasoning_output_tokens": 662,
+            "total_tokens": 96128
+          },
+          "allocated": {
+            "inputTokens": 88186,
+            "outputTokens": 7942,
+            "cachedInputTokens": 65536,
+            "reasoningTokens": 662
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d63-328e-7fa3-8180-eebd6949bef5",
+          "responseCount": 12,
+          "newResponses": 12,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 282015,
+            "cached_input_tokens": 251136,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6407,
+            "reasoning_output_tokens": 1427,
+            "total_tokens": 288422
+          },
+          "allocated": {
+            "inputTokens": 282015,
+            "outputTokens": 6407,
+            "cachedInputTokens": 251136,
+            "reasoningTokens": 1427
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-3-planwharf-259daad9",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d64-795e-7063-a9bc-511e84d4a15c",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 87046,
+            "cached_input_tokens": 65152,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7184,
+            "reasoning_output_tokens": 522,
+            "total_tokens": 94230
+          },
+          "allocated": {
+            "inputTokens": 87046,
+            "outputTokens": 7184,
+            "cachedInputTokens": 65152,
+            "reasoningTokens": 522
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d65-54d0-75b3-9d76-48ed056dcdc7",
+          "responseCount": 11,
+          "newResponses": 11,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 273012,
+            "cached_input_tokens": 239488,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 8639,
+            "reasoning_output_tokens": 1346,
+            "total_tokens": 281651
+          },
+          "allocated": {
+            "inputTokens": 273012,
+            "outputTokens": 8639,
+            "cachedInputTokens": 239488,
+            "reasoningTokens": 1346
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-3-direct-39c9a0f8",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d66-99d4-7cb1-b0b3-3c51018ad593",
+          "responseCount": 3,
+          "newResponses": 3,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 46581,
+            "cached_input_tokens": 38528,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6257,
+            "reasoning_output_tokens": 586,
+            "total_tokens": 52838
+          },
+          "allocated": {
+            "inputTokens": 46581,
+            "outputTokens": 6257,
+            "cachedInputTokens": 38528,
+            "reasoningTokens": 586
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d66-99d4-7cb1-b0b3-3c51018ad593",
+          "responseCount": 16,
+          "newResponses": 13,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 377148,
+            "cached_input_tokens": 328320,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 11095,
+            "reasoning_output_tokens": 1913,
+            "total_tokens": 388243
+          },
+          "allocated": {
+            "inputTokens": 330567,
+            "outputTokens": 4838,
+            "cachedInputTokens": 289792,
+            "reasoningTokens": 1327
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-4-direct-ff04c28b",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d68-63b4-73e0-8fdc-ed2972edf4e0",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 62120,
+            "cached_input_tokens": 49664,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6097,
+            "reasoning_output_tokens": 704,
+            "total_tokens": 68217
+          },
+          "allocated": {
+            "inputTokens": 62120,
+            "outputTokens": 6097,
+            "cachedInputTokens": 49664,
+            "reasoningTokens": 704
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d68-63b4-73e0-8fdc-ed2972edf4e0",
+          "responseCount": 20,
+          "newResponses": 16,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 528503,
+            "cached_input_tokens": 496768,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 13387,
+            "reasoning_output_tokens": 2659,
+            "total_tokens": 541890
+          },
+          "allocated": {
+            "inputTokens": 466383,
+            "outputTokens": 7290,
+            "cachedInputTokens": 447104,
+            "reasoningTokens": 1955
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-4-planwharf-65c5ad59",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d6a-7cd3-7ba2-ae31-7cf24ef3a714",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 87888,
+            "cached_input_tokens": 50432,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7476,
+            "reasoning_output_tokens": 734,
+            "total_tokens": 95364
+          },
+          "allocated": {
+            "inputTokens": 87888,
+            "outputTokens": 7476,
+            "cachedInputTokens": 50432,
+            "reasoningTokens": 734
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d6b-58ad-7703-acf8-4fcf80a35283",
+          "responseCount": 10,
+          "newResponses": 10,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 224482,
+            "cached_input_tokens": 197248,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5144,
+            "reasoning_output_tokens": 951,
+            "total_tokens": 229626
+          },
+          "allocated": {
+            "inputTokens": 224482,
+            "outputTokens": 5144,
+            "cachedInputTokens": 197248,
+            "reasoningTokens": 951
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-5-planwharf-673b7c20",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d6c-6ab2-70a0-adf6-874d6b34cec2",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 88171,
+            "cached_input_tokens": 49408,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 8058,
+            "reasoning_output_tokens": 618,
+            "total_tokens": 96229
+          },
+          "allocated": {
+            "inputTokens": 88171,
+            "outputTokens": 8058,
+            "cachedInputTokens": 49408,
+            "reasoningTokens": 618
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d6d-6792-7bb0-8b88-88d696980cad",
+          "responseCount": 11,
+          "newResponses": 11,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 257144,
+            "cached_input_tokens": 228352,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6369,
+            "reasoning_output_tokens": 920,
+            "total_tokens": 263513
+          },
+          "allocated": {
+            "inputTokens": 257144,
+            "outputTokens": 6369,
+            "cachedInputTokens": 228352,
+            "reasoningTokens": 920
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "rest-api-5-direct-38919c4d",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15d6e-765a-7793-bca6-d49116401408",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 71758,
+            "cached_input_tokens": 64128,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5613,
+            "reasoning_output_tokens": 541,
+            "total_tokens": 77371
+          },
+          "allocated": {
+            "inputTokens": 71758,
+            "outputTokens": 5613,
+            "cachedInputTokens": 64128,
+            "reasoningTokens": 541
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15d6e-765a-7793-bca6-d49116401408",
+          "responseCount": 14,
+          "newResponses": 9,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 294305,
+            "cached_input_tokens": 278016,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 10659,
+            "reasoning_output_tokens": 1871,
+            "total_tokens": 304964
+          },
+          "allocated": {
+            "inputTokens": 222547,
+            "outputTokens": 5046,
+            "cachedInputTokens": 213888,
+            "reasoningTokens": 1330
+          },
+          "errors": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "nextId": 3,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc-ST-01",
+      "projectId": "benchmark-scheduler",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc",
+      "subTaskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "BLOCKED",
+      "exitCode": null,
+      "closedReason": "blocked"
+    },
+    {
+      "id": "attempt-2",
+      "taskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc-ST-01",
+      "projectId": "benchmark-scheduler",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc",
+      "subTaskId": "MT-ed93ee4d-0add-4088-94b6-f825200e06bc-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "COMPLETE",
+      "exitCode": 0,
+      "closedReason": "complete"
+    }
+  ]
+}

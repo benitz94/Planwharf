@@ -1,0 +1,5 @@
+{
+  "status": 1,
+  "stdout": "",
+  "stderr": "WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T16:58:51.157242Z  WARN codex_state::runtime: failed to open memories db at [REDACTED USER PATH] failed to open memories DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T16:58:51.159058Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open memories DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n"
+}

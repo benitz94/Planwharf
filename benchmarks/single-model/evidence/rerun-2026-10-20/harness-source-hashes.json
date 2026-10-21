@@ -1,0 +1,34 @@
+{
+  "recordedAfterRerun": true,
+  "note": "Hashes of delivered harness; historical acceptance seal is also recorded in manifest",
+  "files": [
+    {
+      "name": "run.cjs",
+      "sha256": "3fac44a3b5fc6a0711a73ccdff11e9eb61d695d164ca7e498b07fceee3e483dd"
+    },
+    {
+      "name": "runtime.cjs",
+      "sha256": "6a055333b0c82fccf964ff21e9f7dcd22ae401d55fa705c2d5109158675f5ab6"
+    },
+    {
+      "name": "host.cjs",
+      "sha256": "471c6c40f06c2c857539452f1cd2e3dea9f20f4244ac095a86218d04878b136c"
+    },
+    {
+      "name": "preflight.cjs",
+      "sha256": "b61fd56589bed6a1ac0521802312c544b7e75dcd5d24faf1a17729453b782211"
+    },
+    {
+      "name": "tasks.cjs",
+      "sha256": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359"
+    },
+    {
+      "name": "analysis.cjs",
+      "sha256": "5219f321382da516a2881bdad02301f5e48e1697c2bb68ecad5671bba16ec8c9"
+    },
+    {
+      "name": "export.cjs",
+      "sha256": "b709a3c8cba40519c254654760ea329d652df22b01589f843776905ad4c0f091"
+    }
+  ]
+}

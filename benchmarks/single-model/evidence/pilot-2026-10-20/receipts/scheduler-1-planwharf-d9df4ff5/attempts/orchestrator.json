@@ -1,0 +1,482 @@
+{
+  "mode": "manual",
+  "grillPropose": false,
+  "grillKind": "off",
+  "usage": {
+    "benchmark-model": {
+      "used": 1
+    }
+  },
+  "enabled": {},
+  "providerEnabled": {},
+  "catalogVisibility": {},
+  "modelPolicies": {},
+  "providerPolicies": {},
+  "projects": {
+    "first-project": {
+      "status": "idle",
+      "doing": "No job on First project. Auto start to check the project then approve the plan.",
+      "plan": [],
+      "facts": null,
+      "jobId": null,
+      "jobTitle": null,
+      "attemptId": null,
+      "modelId": null,
+      "approved": false,
+      "waitingFor": "Auto start",
+      "next": "Auto start skips grill. Turn Grill me or Grill with the docs on to grill first.",
+      "workerLabel": null,
+      "resultPath": null,
+      "watchingSince": null,
+      "holdApproval": false,
+      "grillSkipped": false,
+      "docs": [],
+      "log": [],
+      "pendingAutoStart": null,
+      "checkpoint": null,
+      "dispatch": [],
+      "resumeRequested": false,
+      "deadlineHonored": false,
+      "workerPid": null,
+      "workerLog": null,
+      "workerAlive": false,
+      "tried": [],
+      "progressAt": null,
+      "progressKey": null,
+      "workerTail": "",
+      "workerActivity": "",
+      "jobFingerprint": null,
+      "jobDetail": null,
+      "jobRevisionId": null
+    },
+    "benchmark-scheduler": {
+      "status": "failed",
+      "doing": "Continue: Identical benchmark starting point: 0/1 slices complete.",
+      "plan": [
+        "MegaTask: Continue: Identical benchmark starting point",
+        "Objective: Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "Latest git: 772e31957c0af52ff6dc35418a0574dcb93b8a43",
+        "Whole job — benchmark-model; parallel-ready; FAILED"
+      ],
+      "facts": {
+        "folder": "[REDACTED USER PATH]",
+        "fileCount": 5,
+        "names": [
+          ".git",
+          ".gitignore",
+          "README.md",
+          "scheduler.cjs",
+          "TASK.md"
+        ],
+        "docs": [
+          "README.md"
+        ],
+        "git": true,
+        "head": "ref: refs/heads/main",
+        "branch": "main",
+        "lastCommit": "772e319 Identical benchmark starting point",
+        "commitId": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+        "lastSubject": "Identical benchmark starting point",
+        "recent": [
+          "772e319 Identical benchmark starting point"
+        ],
+        "dirty": [],
+        "diffStat": ""
+      },
+      "jobId": "task-14262e05-8d23-408f-9568-872181434e47",
+      "jobTitle": "Continue: Identical benchmark starting point",
+      "attemptId": "attempt-1",
+      "modelId": "benchmark-model",
+      "approved": true,
+      "waitingFor": "Structured worker results",
+      "next": "Review failed results and resume only the remaining work.",
+      "workerLabel": "Single exact benchmark model",
+      "resultPath": "[REDACTED USER PATH]",
+      "watchingSince": null,
+      "holdApproval": true,
+      "grillSkipped": false,
+      "docs": [],
+      "log": [
+        {
+          "at": "2026-10-20T17:08:52.720Z",
+          "text": "Read the repo and latest changes. Plan ready for approval."
+        }
+      ],
+      "pendingAutoStart": null,
+      "checkpoint": {
+        "id": "CP-d380116f-91a9-49bc-8836-75134a57f7d9",
+        "projectId": "benchmark-scheduler",
+        "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "createdAt": "2026-10-20T17:08:58.145Z",
+        "reason": "worker failure",
+        "planRevisionId": 1,
+        "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+        "repoState": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        },
+        "dirtyFiles": [],
+        "completedSubTaskIds": [],
+        "pendingSubTaskIds": [],
+        "failedSubTaskIds": [
+          "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01"
+        ],
+        "activeAttemptIds": [],
+        "resultIds": [
+          "R-attempt-1"
+        ],
+        "summary": "0/1 slices complete. worker failure.",
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "jobId": "task-14262e05-8d23-408f-9568-872181434e47",
+        "jobFingerprint": "283daa2b96a56d43a5ce9654197620097a59d79925545d442c8f2e03ec5b0a01",
+        "at": "2026-10-20T17:08:58.145Z"
+      },
+      "dispatch": [
+        {
+          "modelId": "benchmark-model",
+          "label": "Single exact benchmark model",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna",
+          "subTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+          "attemptId": "attempt-1",
+          "slice": "Whole job",
+          "resultPath": "[REDACTED USER PATH]",
+          "structuredResultPath": "[REDACTED USER PATH]",
+          "exitPath": "[REDACTED USER PATH]",
+          "logPath": "[REDACTED USER PATH]",
+          "folder": "[REDACTED USER PATH]",
+          "pid": 23452,
+          "alive": false,
+          "startedAt": "2026-10-20T17:08:55.690Z",
+          "sessionId": "0bba869c-596a-4da1-b6f8-2cea656d8004",
+          "observedAlive": false,
+          "validatedResultStatus": "FAILED",
+          "recordedSubTaskStatus": "FAILED"
+        }
+      ],
+      "resumeRequested": false,
+      "deadlineHonored": false,
+      "workerPid": 23452,
+      "workerLog": "[REDACTED USER PATH]",
+      "workerAlive": false,
+      "tried": [],
+      "progressAt": null,
+      "progressKey": null,
+      "workerTail": "",
+      "workerActivity": "Continue: Identical benchmark starting point: 0/1 slices complete.",
+      "jobFingerprint": "283daa2b96a56d43a5ce9654197620097a59d79925545d442c8f2e03ec5b0a01",
+      "jobDetail": "Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+      "jobRevisionId": 1,
+      "authorizedSessionId": "0bba869c-596a-4da1-b6f8-2cea656d8004",
+      "grillAsked": false,
+      "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+      "monitoring": {
+        "workers": 1,
+        "alive": 0
+      },
+      "megaTask": {
+        "id": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "projectId": "benchmark-scheduler",
+        "taskId": "task-14262e05-8d23-408f-9568-872181434e47",
+        "planRevisionId": 1,
+        "title": "Continue: Identical benchmark starting point",
+        "goal": "Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "createdAt": "2026-10-20T17:08:54.484Z",
+        "approvedAt": "2026-10-20T17:08:54.512Z",
+        "status": "FAILED",
+        "orchestratorModelId": "benchmark-model",
+        "currentCheckpointId": "CP-d380116f-91a9-49bc-8836-75134a57f7d9",
+        "completedAt": null,
+        "jobFingerprint": "283daa2b96a56d43a5ce9654197620097a59d79925545d442c8f2e03ec5b0a01",
+        "detached": false,
+        "repoBefore": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED"
+        },
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "pauseRequested": false,
+        "timing": "discretion",
+        "deadlineAt": null,
+        "blockers": [],
+        "approvedMegaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "authorizedSessionId": "0bba869c-596a-4da1-b6f8-2cea656d8004",
+        "repoAfter": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        }
+      },
+      "subTasks": [
+        {
+          "id": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+          "title": "Whole job",
+          "detail": "Whole job",
+          "status": "FAILED",
+          "assignedModelId": "benchmark-model",
+          "attemptIds": [
+            "attempt-1"
+          ],
+          "resultId": "R-attempt-1",
+          "createdAt": "2026-10-20T17:08:54.484Z",
+          "completedAt": null,
+          "type": "IMPLEMENTATION",
+          "dependencies": [],
+          "proposedProvider": "codex",
+          "proposedCli": "gpt-5.6-luna",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna"
+        }
+      ]
+    }
+  },
+  "asks": [],
+  "orchestratorId": "benchmark-model",
+  "workerRouting": {
+    "mode": "catalog",
+    "maxPremiumPerMegaTask": null,
+    "maxPremiumConcurrent": null,
+    "fallback": "standard"
+  },
+  "routingPreferences": {},
+  "modelRoles": {},
+  "accountModelRoles": {},
+  "accountBindings": {},
+  "lastAccountKeys": {},
+  "briefingBaselines": {},
+  "researches": [],
+  "workerHistory": [],
+  "sessions": [
+    {
+      "id": "0bba869c-596a-4da1-b6f8-2cea656d8004",
+      "startedAt": "2026-10-20T17:08:51.991Z"
+    }
+  ],
+  "execution": {
+    "megaTasks": [
+      {
+        "id": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "projectId": "benchmark-scheduler",
+        "taskId": "task-14262e05-8d23-408f-9568-872181434e47",
+        "planRevisionId": 1,
+        "title": "Continue: Identical benchmark starting point",
+        "goal": "Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+        "createdAt": "2026-10-20T17:08:54.484Z",
+        "approvedAt": "2026-10-20T17:08:54.512Z",
+        "status": "FAILED",
+        "orchestratorModelId": "benchmark-model",
+        "currentCheckpointId": "CP-d380116f-91a9-49bc-8836-75134a57f7d9",
+        "completedAt": null,
+        "jobFingerprint": "283daa2b96a56d43a5ce9654197620097a59d79925545d442c8f2e03ec5b0a01",
+        "detached": false,
+        "repoBefore": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED"
+        },
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "pauseRequested": false,
+        "timing": "discretion",
+        "deadlineAt": null,
+        "blockers": [],
+        "approvedMegaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "authorizedSessionId": "0bba869c-596a-4da1-b6f8-2cea656d8004",
+        "repoAfter": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        }
+      }
+    ],
+    "subTasks": [
+      {
+        "id": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+        "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "title": "Whole job",
+        "detail": "Whole job",
+        "status": "FAILED",
+        "assignedModelId": "benchmark-model",
+        "attemptIds": [
+          "attempt-1"
+        ],
+        "resultId": "R-attempt-1",
+        "createdAt": "2026-10-20T17:08:54.484Z",
+        "completedAt": null,
+        "type": "IMPLEMENTATION",
+        "dependencies": [],
+        "proposedProvider": "codex",
+        "proposedCli": "gpt-5.6-luna",
+        "provider": "codex",
+        "cli": "gpt-5.6-luna"
+      }
+    ],
+    "results": [
+      {
+        "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "subTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+        "attemptId": "attempt-1",
+        "resultId": "R-attempt-1",
+        "provider": "codex",
+        "cli": "gpt-5.6-luna",
+        "status": "FAILED",
+        "summary": "Worker process ended without a valid structured result and exit evidence.",
+        "filesChanged": [],
+        "tests": [],
+        "blockers": [
+          "Worker process ended without a valid structured result and exit evidence."
+        ],
+        "nextAction": "Review the evidence and resume the remaining work from an explicit checkpoint.",
+        "createdAt": "2026-10-20T17:08:57.566Z",
+        "exitCode": 1,
+        "evidenceKind": "TECHNICAL",
+        "evidencePath": "[REDACTED USER PATH]",
+        "assignedModelId": "benchmark-model",
+        "pid": 23452,
+        "startedAt": "2026-10-20T17:08:55.690Z"
+      }
+    ],
+    "checkpoints": [
+      {
+        "id": "CP-d380116f-91a9-49bc-8836-75134a57f7d9",
+        "projectId": "benchmark-scheduler",
+        "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+        "createdAt": "2026-10-20T17:08:58.145Z",
+        "reason": "worker failure",
+        "planRevisionId": 1,
+        "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+        "repoState": {
+          "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+          "dirtyFiles": [],
+          "comparable": true,
+          "gitReadable": true,
+          "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+          "disposition": "COMMITTED",
+          "commitIds": [],
+          "sourceChangesObserved": false
+        },
+        "dirtyFiles": [],
+        "completedSubTaskIds": [],
+        "pendingSubTaskIds": [],
+        "failedSubTaskIds": [
+          "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01"
+        ],
+        "activeAttemptIds": [],
+        "resultIds": [
+          "R-attempt-1"
+        ],
+        "summary": "0/1 slices complete. worker failure.",
+        "nextAction": "Review failed results and resume only the remaining work.",
+        "jobId": "task-14262e05-8d23-408f-9568-872181434e47",
+        "jobFingerprint": "283daa2b96a56d43a5ce9654197620097a59d79925545d442c8f2e03ec5b0a01",
+        "at": "2026-10-20T17:08:58.145Z"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "EV-e27cb156-b8aa-4a86-b7de-42c37c631903",
+        "projectId": "first-project",
+        "type": "PLAN_REVISION",
+        "summary": "Living Plan R1: ",
+        "reference": {
+          "planRevisionId": 1
+        },
+        "createdAt": "2026-10-20T17:08:52.063Z",
+        "key": "revision:first-project:1"
+      },
+      {
+        "id": "EV-ca5008c9-ffaf-41a7-b574-505267e72144",
+        "projectId": "benchmark-scheduler",
+        "type": "PLAN_REVISION",
+        "summary": "Living Plan R1: Recoverable dependency scheduler\n\nImplement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknown fields, invalid dependency arrays, repeated/self/unknown dependencies, cycles, and IDs already present. Dependencies may reference the same batch or previously enqueued jobs. Reject an invalid batch atomically: no partial changes to memory or storage. snapshot() returns a detached JSON object {version:1,jobs:[...]} with jobs sorted by id; each job has id,dependsOn,payload,status,attempt and optional result/error. Status values: pending/running/completed/failed/blocked. Initial attempt=0. run() returns a Promise of the final snapshot and starts all ready work up to concurrency, picking ready jobs in id order; it resolves only when no work remains running or runnable. Concurrent run() calls join the same drain (no duplicate execution). Call execute({id,payload,attempt}) asynchronously once per claimed attempt. Persist status running and incremented attempt BEFORE execute. Persist completed with its JSON result after success; rejected execution becomes failed with string error. Transitively mark descendants of failed or blocked jobs blocked, never execute them, and continue independent jobs. Completed work is never executed again on repeated run() or restart. Allow enqueue of additional work after a finished run.\nStorage: a JSON checkpoint {version:1,jobs:[...]} at file, atomically replaced on EVERY accepted enqueue, claim and terminal transition. Create missing parent directories; reject corrupt existing checkpoints. One scheduler process owns a file. On restart load all jobs; previously running jobs become pending, retaining attempt count, so the next claim increments it. This is at-least-once recovery: interrupted execute may repeat, acknowledged completed results must not repeat. Await optional onStage(stage,jobId) after a durable claimed ('claimed') or terminal completed ('completed') checkpoint and before moving on. Tests may synchronously terminate the process at those exact stages. A crash after claimed must recover the job as pending and execute attempt 2; after completed must retain the result and never replay it. Stale temporary files must not override committed checkpoints. Full JSON checkpoint inspection is the recovery invariant; a separate append-only journal is optional, not required. Use bounded finite tests, document at-least-once side-effect limitations, and include stress/concurrency and crash/restart tests.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+        "reference": {
+          "planRevisionId": 1
+        },
+        "createdAt": "2026-10-20T17:08:52.063Z",
+        "key": "revision:benchmark-scheduler:1"
+      },
+      {
+        "id": "EV-b5108371-4468-4721-9635-bbd81a9dbc43",
+        "projectId": "benchmark-scheduler",
+        "type": "MEGATASK_PROPOSED",
+        "summary": "Continue: Identical benchmark starting point: 1 proposed slice(s).",
+        "reference": {
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4"
+        },
+        "createdAt": "2026-10-20T17:08:54.485Z"
+      },
+      {
+        "id": "EV-71f35394-5b29-488d-b5e6-f6eb91a91c2f",
+        "projectId": "benchmark-scheduler",
+        "type": "MEGATASK_APPROVED",
+        "summary": "Approved Continue: Identical benchmark starting point.",
+        "reference": {
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4"
+        },
+        "createdAt": "2026-10-20T17:08:54.512Z"
+      },
+      {
+        "id": "EV-2f855cea-3ef1-4453-a7f9-6ff77ff14c53",
+        "projectId": "benchmark-scheduler",
+        "type": "SUBTASK_STARTED",
+        "summary": "Single exact benchmark model started Whole job.",
+        "reference": {
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+          "subTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+          "attemptId": "attempt-1",
+          "provider": "codex",
+          "cli": "gpt-5.6-luna"
+        },
+        "createdAt": "2026-10-20T17:08:55.718Z"
+      },
+      {
+        "id": "EV-9721e12f-ea50-45c4-8a16-fb6802b16d4a",
+        "projectId": "benchmark-scheduler",
+        "type": "SUBTASK_FAILED",
+        "summary": "Whole job: Worker process ended without a valid structured result and exit evidence.",
+        "reference": {
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+          "subTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+          "resultId": "R-attempt-1"
+        },
+        "createdAt": "2026-10-20T17:08:57.578Z"
+      },
+      {
+        "id": "EV-a7af946c-b285-46e0-aa52-2fd89ae26752",
+        "projectId": "benchmark-scheduler",
+        "type": "CHECKPOINT_SAVED",
+        "summary": "0/1 slices complete. worker failure.",
+        "reference": {
+          "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+          "checkpointId": "CP-d380116f-91a9-49bc-8836-75134a57f7d9"
+        },
+        "createdAt": "2026-10-20T17:08:58.145Z"
+      }
+    ],
+    "observations": {}
+  },
+  "selectedProjectId": "benchmark-scheduler"
+}

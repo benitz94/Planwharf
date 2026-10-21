@@ -1,0 +1,12 @@
+2026-10-21T08:56:55.251650Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-21T08:56:56.601161Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:56:59.767359Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:09.094014Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:17.641833Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:28.507572Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:37.714141Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:40.618212Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:48.343823Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:57:59.071886Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:58:02.008512Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339
+2026-10-21T08:58:04.713329Z ERROR codex_core::util: Custom tool call output is missing for call id: call_e3f92646c96c403d8d21890f15aa0339

@@ -1,0 +1,8 @@
+{
+  "name": "corrupt-store",
+  "passed": true,
+  "exitCode": 0,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":true}\n",
+  "stderr": ""
+}

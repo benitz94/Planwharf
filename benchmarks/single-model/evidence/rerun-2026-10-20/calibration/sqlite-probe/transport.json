@@ -1,0 +1,35 @@
+{
+  "exitCode": 1,
+  "signal": null,
+  "wallMs": 4036.9102000000003,
+  "timedOut": false,
+  "interrupted": false,
+  "diagnostics": [],
+  "threadId": null,
+  "usage": null,
+  "eventTypes": [],
+  "completed": false,
+  "failure": [],
+  "command": {
+    "executable": "[REDACTED USER PATH]",
+    "args": [
+      "exec",
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "-c",
+      "approval_policy=\"never\"",
+      "-c",
+      "sandbox_workspace_write.network_access=false",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[]",
+      "-C",
+      "[REDACTED USER PATH]",
+      "-m",
+      "gpt-5.6-luna",
+      "--ephemeral",
+      "-"
+    ]
+  },
+  "startedAt": "2026-10-20T18:03:31.350Z"
+}

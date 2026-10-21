@@ -1,0 +1,9 @@
+2026-10-20T18:19:04.641798Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-20T18:19:05.478163Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1
+2026-10-20T18:19:12.642199Z  WARN codex_sandboxing::violation: recorded sandbox violation: resource=filesystem backend=windows_sandbox reason=failed_to_write_file path=unknown
+2026-10-20T18:19:12.655338Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0 seconds
+Output:
+Failed to write file [REDACTED USER PATH]
+
+2026-10-20T18:19:14.506723Z  WARN codex_core::tasks: failed to flush rollout after emitting terminal turn event: thread 01a15a89-d38a-7ce1-8648-ad625e7354d4 not found

@@ -1,0 +1,14 @@
+# Full comparison protocol, revision 2
+
+This revision is frozen before the 30-trial study requested on 2026-10-21. Historical pilot records and conclusions are retained under their original protocol; they are not pooled into this study.
+
+- Five paired trials in each of configuration, persistent REST and recoverable scheduler: 30 trial records, sequential, alternating A/B and B/A order.
+- Exact model `gpt-5.6-luna`, native CLI `0.163.0-alpha.10.2`, one authenticated private profile, workspace-write native elevated task sandbox, never-ask policy and disabled task tool networking in both arms.
+- Eight-minute implementation limit and at most six CLI launches per trial. One predeclared implementation interruption for REST and scheduler, followed by each product's own recovery path. Actual application-process crash checks remain identical. No private acceptance feedback is supplied to agents.
+- REST disk-array ordering is unspecified; acceptance compares stored items by ID while still requiring sorted GET responses. The earlier parallel-write assertion incorrectly required sorted disk bytes. The public task now explicitly requires synchronous factory/store validation and handled HTTP mutation failures. Those are public requirements for both arms, with no supplied algorithm or implementation.
+- `regressions/rest-pilot-fixed.cjs` is an offline-only repair of the historical Planwharf output: it awaits queued request mutations inside the handler's catch boundary and validates existing storage at factory time. It passes all eight checks and is never copied into live workspaces. Fresh trial outputs may still fail; every outcome is retained without hand repairs or unplanned retries.
+- Usage is collected from native per-response `token_usage_record` receipts, including responses in interrupted processes. Resumed CLI sessions contain earlier response records; response IDs are deduplicated across calls. Separate Planwharf recovery sessions are both included. A process failure does not erase observed usage. Missing/conflicting receipts and provider-unreported in-flight usage remain UNKNOWN. These are provider-reported response tokens, not an inferred bill or quota decrement.
+- Acceptance, task and harness hashes plus the source commit are captured before execution. No production-engine optimization is made during the comparison.
+- A temporary system-required request keeps the managed benchmark process awake; it requests no display activation and clears on exit. All subprocesses stay in the background. No browser or terminal windows are opened.
+
+All 36 offline benchmark checks passed before launch. The full study remains explicitly opt-in and is never launched by normal CI. The historical snapshot is available in PR #23 at commit `fb0e75771a0b7ee7b3b98bd7374f2409a4b5bb0c`.

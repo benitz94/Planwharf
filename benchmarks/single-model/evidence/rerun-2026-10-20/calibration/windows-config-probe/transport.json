@@ -1,0 +1,57 @@
+{
+  "exitCode": 0,
+  "signal": null,
+  "wallMs": 46813.6184,
+  "timedOut": false,
+  "interrupted": false,
+  "diagnostics": [],
+  "threadId": "01a15a86-f260-7d13-93b6-020e6fe1d79c",
+  "usage": {
+    "inputTokens": 77028,
+    "outputTokens": 1037,
+    "cachedInputTokens": 70912,
+    "reasoningTokens": 317
+  },
+  "eventTypes": [
+    "thread.started",
+    "turn.started",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.completed",
+    "turn.completed"
+  ],
+  "completed": true,
+  "failure": [],
+  "command": {
+    "executable": "[REDACTED USER PATH]",
+    "args": [
+      "exec",
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "-c",
+      "approval_policy=\"never\"",
+      "-c",
+      "sandbox_workspace_write.network_access=false",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[]",
+      "-C",
+      "[REDACTED USER PATH]",
+      "-m",
+      "gpt-5.6-luna",
+      "-"
+    ]
+  },
+  "startedAt": "2026-10-20T18:15:55.564Z"
+}

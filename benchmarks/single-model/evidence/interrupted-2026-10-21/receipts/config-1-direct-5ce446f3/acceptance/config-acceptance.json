@@ -1,0 +1,36 @@
+{
+  "taskId": "config",
+  "passed": 6,
+  "total": 6,
+  "outcome": "independently-accepted",
+  "checks": [
+    {
+      "name": "defaults",
+      "passed": true
+    },
+    {
+      "name": "valid-boundaries",
+      "passed": true
+    },
+    {
+      "name": "invalid-values",
+      "passed": true
+    },
+    {
+      "name": "unknown-and-malformed",
+      "passed": true
+    },
+    {
+      "name": "independent-results",
+      "passed": true
+    },
+    {
+      "name": "deliverables",
+      "passed": true
+    }
+  ],
+  "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+  "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "evidenceDir": "[REDACTED USER PATH]",
+  "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+}

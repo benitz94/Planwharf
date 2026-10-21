@@ -1,0 +1,5 @@
+2026-10-20T18:07:39.758184Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-20T18:07:41.312654Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1
+2026-10-20T18:07:57.888140Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-10-20T18:07:58.134905Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`\\\"[REDACTED USER PATH]" -Command \\\"[System.IO.File]::WriteAllText('proof.txt', 'READY', [System.Text.UTF8Encoding]::new(\\\"'$false)); node -e \\\"const fs=require('\\\"'fs'); const assert=require('assert/strict'); assert.equal(fs.readFileSync('proof.txt','utf8'),'READY');\\\\\\\"\\\"` rejected: blocked by policy\")" }
+2026-10-20T18:08:04.544812Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out

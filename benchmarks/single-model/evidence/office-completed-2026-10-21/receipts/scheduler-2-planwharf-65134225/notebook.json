@@ -1,0 +1,60 @@
+{
+  "schema": 2,
+  "projects": [
+    {
+      "schema": 1,
+      "project": {
+        "id": "first-project",
+        "name": "First project"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-09T00:00:00.000Z",
+          "direction": "",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": []
+    },
+    {
+      "schema": 1,
+      "project": {
+        "id": "benchmark-scheduler",
+        "name": "Benchmark scheduler",
+        "folder": "[REDACTED USER PATH]"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-21T08:53:50.003Z",
+          "direction": "Recoverable dependency scheduler\n\nImplement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknown fields, invalid dependency arrays, repeated/self/unknown dependencies, cycles, and IDs already present. Dependencies may reference the same batch or previously enqueued jobs. Reject an invalid batch atomically: no partial changes to memory or storage. snapshot() returns a detached JSON object {version:1,jobs:[...]} with jobs sorted by id; each job has id,dependsOn,payload,status,attempt and optional result/error. Status values: pending/running/completed/failed/blocked. Initial attempt=0. run() returns a Promise of the final snapshot and starts all ready work up to concurrency, picking ready jobs in id order; it resolves only when no work remains running or runnable. Concurrent run() calls join the same drain (no duplicate execution). Call execute({id,payload,attempt}) asynchronously once per claimed attempt. Persist status running and incremented attempt BEFORE execute. Persist completed with its JSON result after success; rejected execution becomes failed with string error. Transitively mark descendants of failed or blocked jobs blocked, never execute them, and continue independent jobs. Completed work is never executed again on repeated run() or restart. Allow enqueue of additional work after a finished run.\nStorage: a JSON checkpoint {version:1,jobs:[...]} at file, atomically replaced on EVERY accepted enqueue, claim and terminal transition. Create missing parent directories; reject corrupt existing checkpoints. One scheduler process owns a file. On restart load all jobs; previously running jobs become pending, retaining attempt count, so the next claim increments it. This is at-least-once recovery: interrupted execute may repeat, acknowledged completed results must not repeat. Await optional onStage(stage,jobId) after a durable claimed ('claimed') or terminal completed ('completed') checkpoint and before moving on. Tests may synchronously terminate the process at those exact stages. A crash after claimed must recover the job as pending and execute attempt 2; after completed must retain the result and never replay it. Stale temporary files must not override committed checkpoints. Full JSON checkpoint inspection is the recovery invariant; a separate append-only journal is optional, not required. Use bounded finite tests, document at-least-once side-effect limitations, and include stress/concurrency and crash/restart tests.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": [
+        {
+          "id": "task-71e2d0a0-e60a-4647-a024-929462fa5711",
+          "projectId": "benchmark-scheduler",
+          "revision_id": 1,
+          "title": "Continue: Identical benchmark starting point",
+          "detail": "Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+          "status": "complete",
+          "timing": "discretion",
+          "executionVersion": 2,
+          "completedAt": "2026-10-21T08:55:59.798Z",
+          "attemptId": "attempt-2",
+          "megaTaskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "code": "PROVIDER_EXECUTION_FAILED",
+  "provider": "codex",
+  "adapter": "codex",
+  "model": "gpt-5.6-luna",
+  "exitCode": 1,
+  "message": "PROVIDER_EXECUTION_FAILED: codex / gpt-5.6-luna. Review the retained local output and retry after checking the provider CLI.",
+  "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+  "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: codex\nAdapter: codex\nExact model: gpt-5.6-luna\nExit code: 1\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+  "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20codex&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20codex%0AAdapter%3A%20codex%0AExact%20model%3A%20gpt-5.6-luna%0AExit%20code%3A%201%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+}

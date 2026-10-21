@@ -1,0 +1,28 @@
+{
+  "resultId": "R-attempt-2",
+  "attemptId": "attempt-2",
+  "subTaskId": "MT-47a3e746-150f-4a19-9b73-4a889a98b266-ST-01",
+  "megaTaskId": "MT-47a3e746-150f-4a19-9b73-4a889a98b266",
+  "status": "COMPLETE",
+  "summary": "Implemented the recoverable dependency scheduler with validation, atomic JSON checkpoints, dependency ordering, concurrency limits, failure blocking, restart recovery, stage hooks, and detached snapshots. Added documentation and automated tests.",
+  "filesChanged": [
+    "scheduler.cjs",
+    "test.cjs",
+    "README.md"
+  ],
+  "tests": [
+    {
+      "command": "node --test test.cjs",
+      "status": "PASSED",
+      "evidence": "3 tests passed, 0 failed."
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED",
+      "evidence": "No whitespace errors reported."
+    }
+  ],
+  "blockers": [],
+  "nextAction": "No remaining implementation work.",
+  "createdAt": "2026-10-21T09:14:00.000Z"
+}

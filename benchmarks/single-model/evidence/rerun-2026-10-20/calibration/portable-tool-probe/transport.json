@@ -1,0 +1,48 @@
+{
+  "exitCode": 0,
+  "signal": null,
+  "wallMs": 21136.9024,
+  "timedOut": false,
+  "interrupted": false,
+  "diagnostics": [],
+  "threadId": "01a15a84-3ba5-7bf3-9625-24065cf43924",
+  "usage": {
+    "inputTokens": 34855,
+    "outputTokens": 471,
+    "cachedInputTokens": 32256,
+    "reasoningTokens": 126
+  },
+  "eventTypes": [
+    "thread.started",
+    "turn.started",
+    "item.completed",
+    "item.completed",
+    "item.started",
+    "item.completed",
+    "item.completed",
+    "turn.completed"
+  ],
+  "completed": true,
+  "failure": [],
+  "command": {
+    "executable": "[REDACTED USER PATH]",
+    "args": [
+      "exec",
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "-c",
+      "approval_policy=\"never\"",
+      "-c",
+      "sandbox_workspace_write.network_access=false",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[]",
+      "-C",
+      "[REDACTED USER PATH]",
+      "-m",
+      "gpt-5.6-luna",
+      "-"
+    ]
+  },
+  "startedAt": "2026-10-20T18:12:53.422Z"
+}

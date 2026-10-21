@@ -10,7 +10,9 @@ const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-ci-'));
 const env = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, HOME: temporary, USERPROFILE: temporary, TMPDIR: temporary, TMP: temporary, TEMP: temporary, CI: 'true' };
 let failures = 0;
 function run(label, executable, args) {
-  const result = spawnSync(executable, args, { cwd: root, env, encoding: 'utf8', timeout: 60000, maxBuffer: 8 * 1024 * 1024 });
+  // The isolated test home has no operator trust config; scope trust to this checkout.
+  const commandArgs = executable === 'git' ? ['-c', 'safe.directory=' + root, ...args] : args;
+  const result = spawnSync(executable, commandArgs, { cwd: root, env, windowsHide: true, encoding: 'utf8', timeout: 60000, maxBuffer: 8 * 1024 * 1024 });
   const log = (result.stdout || '') + (result.stderr || '') + (result.error ? result.error.message : '');
   fs.writeFileSync(path.join(output, label.replace(/[^a-z0-9.-]/gi, '_') + '.log'), log);
   const ok = !result.error && result.status === 0;

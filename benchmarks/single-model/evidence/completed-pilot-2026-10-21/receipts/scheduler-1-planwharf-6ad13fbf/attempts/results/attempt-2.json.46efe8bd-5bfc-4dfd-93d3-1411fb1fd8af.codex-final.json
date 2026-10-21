@@ -1,0 +1,28 @@
+{
+  "resultId": "R-attempt-2",
+  "attemptId": "attempt-2",
+  "subTaskId": "MT-88558675-6f0a-456b-9398-23369f186f6a-ST-01",
+  "megaTaskId": "MT-88558675-6f0a-456b-9398-23369f186f6a",
+  "status": "COMPLETE",
+  "summary": "Implemented the recoverable dependency scheduler, added comprehensive Node test coverage, and documented the API and recovery limitations.",
+  "filesChanged": [
+    "scheduler.cjs",
+    "test.cjs",
+    "README.md"
+  ],
+  "tests": [
+    {
+      "command": "node --test test.cjs",
+      "status": "PASSED",
+      "evidence": "4 tests passed, 0 failed."
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASSED",
+      "evidence": "No whitespace errors reported."
+    }
+  ],
+  "blockers": [],
+  "nextAction": "No remaining work.",
+  "createdAt": "2026-10-21T06:42:00.000Z"
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "at": "2026-10-20T20:15:17.063Z",
+    "kind": "worker",
+    "exactModel": "gpt-5.6-luna",
+    "attemptId": "attempt-1",
+    "megaTaskId": "MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9",
+    "projectId": "benchmark-config",
+    "pid": 15600,
+    "logPath": "[REDACTED USER PATH]",
+    "resultPath": "[REDACTED USER PATH]",
+    "structuredResultPath": "[REDACTED USER PATH]",
+    "exitPath": "[REDACTED USER PATH]",
+    "launchMs": 15.584100000000035
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "model": "gpt-5.6-luna",
+  "maxCalls": 6,
+  "planFile": "[REDACTED USER PATH]",
+  "attemptsDir": "[REDACTED USER PATH]",
+  "callsFile": "[REDACTED USER PATH]"
+}

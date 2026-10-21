@@ -1,0 +1,39 @@
+✔ only accepted, unique, complete pairs enter resource comparisons; all outcomes remain visible (15.0688ms)
+✔ measured zeros survive; zero and unknown denominators never produce percentages or infinity (3.2046ms)
+✔ cached input and reasoning subsets are not added twice; billed cost and quota stay unknown (1.0141ms)
+✔ Planwharf usage must attest all roles; incomplete receipts cannot masquerade as full totals (2.462ms)
+✔ inconsistent cache receipt invalidates input instead of reporting impossible savings (0.8511ms)
+✔ bootstrap is paired and deterministic, and requires at least five comparable accepted pairs (479.5965ms)
+✔ blocked and timed-out pilot includes elapsed resources but no fabricated valid completion (2.6371ms)
+✔ recovery rates preserve unknown outcomes and include failed runs, separate from approvals (1.5835ms)
+✔ sanitize evidence removes common credentials and personal paths while preserving numeric usage (1.1936ms)
+✔ empty data remains inconclusive; ambiguous identities and invalid outcomes are rejected (2.2025ms)
+✔ Rust-style escaped and mixed Windows separators do not expose diagnostic user paths (0.9473ms)
+✔ plain report remains compact for an all-blocked three-category pilot (2.9803ms)
+✔ publication removes signed URL queries in parsed and raw native diagnostics (0.8849ms)
+✔ publication excludes source workspaces and symlinks, redacts parsed and raw receipts, and preserves outcomes (150.1919ms)
+✔ background shutdown retires completed native metadata PIDs and terminates only pending owned attempts (104.4217ms)
+✔ capability gate requires observed native editing, successful Node execution and matching independent receipt (2.2118ms)
+✔ successful model narration never masks read-only policy or Windows provisioning failure (0.5664ms)
+✔ live limits accept endpoints and reject missing, fractional and excessive budgets (2.296ms)
+✔ acceptance requires completed transport; timeouts, blocks and defects remain distinct (0.5014ms)
+✔ schedule pairs both arms once, counterbalances order and reserves faults for larger tasks (4.3313ms)
+✔ usage sums complete turns and preserves missing, invalid and failed receipts as unknown (0.7808ms)
+✔ independent starter repositories have identical content and Git history (4754.7903ms)
+✔ default command never invokes subprocesses or spends provider access (182.5577ms)
+✔ worker session receipt uses the latest cumulative usage without double-counting snapshots (6.7832ms)
+✔ CLI event transport requires exit zero, retains structured errors and enforces quiet permissions (40.1056ms)
+✔ specifications and deterministic starter bytes are identical across arms (128.8925ms)
+✔ known-correct config oracle is independently accepted; coercion mutant fails (2456.4274ms)
+✔ known-correct REST oracle passes real process restart and commit-stage crashes (6809.3504ms)
+✔ known-correct scheduler oracle passes graph, durable claims, crash and recovery invariants (4816.6275ms)
+✔ empty starters, missing exports and wrong partial reports never count as accepted (7164.3424ms)
+✔ grader rejects in-workspace evidence and invalid execution bounds (6.075ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21707.7734

@@ -1,0 +1,19 @@
+{
+  "nextId": 2,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+      "projectId": "benchmark-scheduler",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+      "subTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "FAILED",
+      "exitCode": 1,
+      "closedReason": "failed"
+    }
+  ]
+}

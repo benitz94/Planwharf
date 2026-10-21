@@ -1,0 +1,16 @@
+{
+  "nextId": 2,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-c10a6673-29cb-4902-8a91-7c4b10b1396b-ST-01",
+      "projectId": "benchmark-config",
+      "modelId": "benchmark-model",
+      "status": "active",
+      "megaTaskId": "MT-c10a6673-29cb-4902-8a91-7c4b10b1396b",
+      "subTaskId": "MT-c10a6673-29cb-4902-8a91-7c4b10b1396b-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]"
+    }
+  ]
+}

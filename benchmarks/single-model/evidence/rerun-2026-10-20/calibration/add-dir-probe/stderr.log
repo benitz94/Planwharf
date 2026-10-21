@@ -1,0 +1,5 @@
+2026-10-20T18:14:07.439611Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-20T18:14:07.662851Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1
+2026-10-20T18:14:13.655621Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings
+2026-10-20T18:14:16.081867Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`\\\"[REDACTED USER PATH]" -Command \\\"node -e \\\\\\\"const fs=require('fs'); const p='proof.txt'; try { const s=fs.readFileSync(p,'utf8'); console.log(JSON.stringify({exists:true, contents:s, exact:s==='READY\\\\\\\\\\\\\\\\n'})); } catch (e) { console.log(JSON.stringify({exists:false, error:e.code||e.message})); process.exitCode=1; }\\\\\\\"\\\"` rejected: blocked by policy\")" }
+2026-10-20T18:14:18.238674Z  WARN codex_core::tasks: failed to flush rollout after emitting terminal turn event: thread 01a15a85-3db4-79d0-86d5-91a1eabfd731 not found

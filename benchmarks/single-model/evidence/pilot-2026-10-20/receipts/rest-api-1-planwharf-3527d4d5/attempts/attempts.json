@@ -1,0 +1,19 @@
+{
+  "nextId": 2,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+      "projectId": "benchmark-rest-api",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+      "subTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "FAILED",
+      "exitCode": 1,
+      "closedReason": "failed"
+    }
+  ]
+}

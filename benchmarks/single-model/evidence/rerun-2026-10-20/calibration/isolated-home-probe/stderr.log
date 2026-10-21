@@ -1,0 +1,4 @@
+2026-10-20T18:06:15.062087Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-10-20T18:06:15.076137Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-20T18:06:15.146455Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1
+2026-10-20T18:06:35.149181Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1

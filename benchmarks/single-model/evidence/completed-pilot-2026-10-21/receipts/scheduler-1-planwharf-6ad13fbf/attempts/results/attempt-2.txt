@@ -1,0 +1,3 @@
+STATUS: COMPLETE
+REASON: Structured result and provider exit recorded.
+EXIT: 0

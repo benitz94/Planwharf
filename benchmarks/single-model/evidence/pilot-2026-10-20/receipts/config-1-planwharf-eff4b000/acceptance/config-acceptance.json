@@ -1,0 +1,42 @@
+{
+  "taskId": "config",
+  "passed": 0,
+  "total": 6,
+  "outcome": "failed",
+  "checks": [
+    {
+      "name": "defaults",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "valid-boundaries",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "invalid-values",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "unknown-and-malformed",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "independent-results",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "deliverables",
+      "passed": false,
+      "detail": "Document API, tests and limitations"
+    }
+  ],
+  "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+  "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "evidenceDir": "[REDACTED USER PATH]",
+  "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+}

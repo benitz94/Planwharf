@@ -1,0 +1,772 @@
+[
+  {
+    "id": "config-1-direct-cdf51f10",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "direct",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "blocked",
+    "wallMs": 1532.0826000000002,
+    "evaluationMs": 713.5225999999993,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "usage": null,
+        "wallMs": 799.6827000000003,
+        "exitCode": 1,
+        "threadId": null
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:28.172427Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:28.174248Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n",
+    "timing": {
+      "cliWallMs": 799.6827000000003,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 0,
+      "total": 6,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "invalid-values",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "independent-results",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "6f6f81b865dce994335d7bdba98236c6531cc381904fe8971da6225a76e4f6db",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "config-1-planwharf-eff4b000",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "planwharf",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "blocked",
+    "wallMs": 6492.308499999999,
+    "evaluationMs": 653.7065000000002,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": 1,
+        "sessionId": null,
+        "launchMs": 11.148999999999887
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "{\"event\":\"provider-launch\",\"at\":\"2026-10-20T17:08:34.144Z\",\"provider\":\"codex\",\"model\":\"gpt-5.6-luna\",\"executable\":\"[REDACTED USER PATH]\",\"cwd\":\"[REDACTED USER PATH]\",\"attempt\":\"attempt-1\"}\nWARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:34.354816Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:34.356311Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-20T17:08:30.371Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:30.386Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:30.423Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:30.442Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:30.452Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:32.829Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:34.061Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:35.926Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:35.935Z",
+        "route": "/api/orchestrator/stop",
+        "status": 400
+      }
+    ],
+    "lifecycle": {
+      "status": "failed",
+      "megaTaskId": "MT-f60d52ce-5b8e-4e64-8b2c-a89623e2a755",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "FAILED"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 11.148999999999887
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 0,
+      "total": 6,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "invalid-values",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "independent-results",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "6f6f81b865dce994335d7bdba98236c6531cc381904fe8971da6225a76e4f6db",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "rest-api-1-planwharf-3527d4d5",
+    "taskId": "rest-api",
+    "category": "medium",
+    "pairId": "rest-api-1",
+    "arm": "planwharf",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+    "starterHash": "ae5f280d9d7a9cc4baa1e32801e2865dbec71597a1fb80d2323b016667e593db",
+    "outcome": "blocked",
+    "wallMs": 6688.492200000001,
+    "evaluationMs": 877.0204000000012,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": 1,
+        "sessionId": null,
+        "launchMs": 10.860200000000077
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "{\"event\":\"provider-launch\",\"at\":\"2026-10-20T17:08:41.234Z\",\"provider\":\"codex\",\"model\":\"gpt-5.6-luna\",\"executable\":\"[REDACTED USER PATH]\",\"cwd\":\"[REDACTED USER PATH]\",\"attempt\":\"attempt-1\"}\nWARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:41.443299Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:41.445284Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-20T17:08:37.482Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:37.497Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:37.536Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:37.547Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:37.565Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:39.928Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:41.155Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:43.015Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:43.024Z",
+        "route": "/api/orchestrator/stop",
+        "status": 400
+      }
+    ],
+    "lifecycle": {
+      "status": "failed",
+      "megaTaskId": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "FAILED"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 10.860200000000077
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "rest-api",
+      "passed": 0,
+      "total": 8,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "crud",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "validation",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "parallel-writes",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "restart",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "before-commit-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "after-commit-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "corrupt-store",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "b1a016755479ac55ca0b5c9494ee295475448cacc0e5e52a2c1490d86f14b4f4",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "rest-api-1-direct-2429343d",
+    "taskId": "rest-api",
+    "category": "medium",
+    "pairId": "rest-api-1",
+    "arm": "direct",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+    "starterHash": "ae5f280d9d7a9cc4baa1e32801e2865dbec71597a1fb80d2323b016667e593db",
+    "outcome": "blocked",
+    "wallMs": 2087.246299999999,
+    "evaluationMs": 890.7803999999996,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "usage": null,
+        "wallMs": 1178.0349999999999,
+        "exitCode": 1,
+        "threadId": null
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:44.726060Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:44.727783Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n",
+    "timing": {
+      "cliWallMs": 1178.0349999999999,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "rest-api",
+      "passed": 0,
+      "total": 8,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "crud",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "validation",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "parallel-writes",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "restart",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "before-commit-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "after-commit-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "corrupt-store",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "b1a016755479ac55ca0b5c9494ee295475448cacc0e5e52a2c1490d86f14b4f4",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "scheduler-1-direct-d598fa7d",
+    "taskId": "scheduler",
+    "category": "complex",
+    "pairId": "scheduler-1",
+    "arm": "direct",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "starterHash": "7437b3eb0a039e7767e834a43d511f3e6c1d1cfeed2bc8472ce168d72cb5e950",
+    "outcome": "blocked",
+    "wallMs": 3926.573400000001,
+    "evaluationMs": 1117.3117999999995,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "usage": null,
+        "wallMs": 2791.0797999999995,
+        "exitCode": 1,
+        "threadId": null
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:47.468605Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:47.471219Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n",
+    "timing": {
+      "cliWallMs": 2791.0797999999995,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "scheduler",
+      "passed": 0,
+      "total": 10,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "graph-and-concurrency",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "failed-dependencies",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "batch-validation",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "joined-runs",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "detached-snapshots",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "restart-completed",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "claimed-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "completed-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "corrupt-checkpoint",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "abf9ab3d472e4554575678e4bad1a65338d9c27c7e4db6fd64d4c65d34fe80cf",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "scheduler-1-planwharf-d9df4ff5",
+    "taskId": "scheduler",
+    "category": "complex",
+    "pairId": "scheduler-1",
+    "arm": "planwharf",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "starterHash": "7437b3eb0a039e7767e834a43d511f3e6c1d1cfeed2bc8472ce168d72cb5e950",
+    "outcome": "blocked",
+    "wallMs": 7566.546700000003,
+    "evaluationMs": 1127.6010000000024,
+    "completed": false,
+    "timedOut": false,
+    "blocked": true,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": 1,
+        "sessionId": null,
+        "launchMs": 11.133200000000215
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "{\"event\":\"provider-launch\",\"at\":\"2026-10-20T17:08:55.821Z\",\"provider\":\"codex\",\"model\":\"gpt-5.6-luna\",\"executable\":\"[REDACTED USER PATH]\",\"cwd\":\"[REDACTED USER PATH]\",\"attempt\":\"attempt-1\"}\nWARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\n2026-10-20T17:08:56.028997Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file\n2026-10-20T17:08:56.031023Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file\nError: failed to initialize in-process app-server client: Access is denied. (os error 5)\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-20T17:08:52.027Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:52.039Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:52.073Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:52.089Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:52.099Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:54.496Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T17:08:55.736Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:56.970Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:58.193Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T17:08:58.202Z",
+        "route": "/api/orchestrator/stop",
+        "status": 400
+      }
+    ],
+    "lifecycle": {
+      "status": "failed",
+      "megaTaskId": "MT-9928119d-3539-4a36-bfbb-af4b489f36d4",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "FAILED"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 11.133200000000215
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "scheduler",
+      "passed": 0,
+      "total": 10,
+      "outcome": "failed",
+      "checks": [
+        {
+          "name": "graph-and-concurrency",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "failed-dependencies",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "batch-validation",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "joined-runs",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "detached-snapshots",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "restart-completed",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "claimed-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "completed-crash",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "corrupt-checkpoint",
+          "passed": false,
+          "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "abf9ab3d472e4554575678e4bad1a65338d9c27c7e4db6fd64d4c65d34fe80cf",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  }
+]

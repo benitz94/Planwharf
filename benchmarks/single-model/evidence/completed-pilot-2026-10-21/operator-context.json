@@ -1,0 +1,9 @@
+{
+  "status": "COMPLETE_SIX_TRIAL_PILOT",
+  "finishedAt": "2026-10-21T06:40:32.4661319Z",
+  "exitCode": 0,
+  "execution": "Managed hidden background session under the authenticated Windows operator, with native elevated workspace-write task sandbox, disabled task tool networking and never-ask approval policy",
+  "hostPower": "Temporary system-required sleep request for the wrapper lifetime, no display-required request and no permanent power setting changes",
+  "historicalAttempts": "Prior interrupted studies are separate, not pooled into this pilot",
+  "publicationChange": "After the pilot, exporter redaction was hardened for signed URLs and parsed JSONL; intentionally corrupt acceptance working stores are excluded. The frozen tasks, grader, production engine, scoring and measured outcomes are unchanged."
+}

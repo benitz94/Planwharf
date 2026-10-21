@@ -1,0 +1,21 @@
+{
+  "executable": "[REDACTED USER PATH]",
+  "args": [
+    "exec",
+    "--json",
+    "--sandbox",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "sandbox_workspace_write.network_access=false",
+    "-c",
+    "sandbox_workspace_write.writable_roots=[]",
+    "-C",
+    "[REDACTED USER PATH]",
+    "-m",
+    "gpt-5.6-luna",
+    "-"
+  ],
+  "promptHash": "c91584fb360335de779de316dd2d1f498e0b0690a6646e18ff80c4b3d5180466"
+}

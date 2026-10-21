@@ -1,0 +1,47 @@
+{
+  "taskId": "rest-api",
+  "passed": 5,
+  "total": 8,
+  "outcome": "completed-with-defects",
+  "checks": [
+    {
+      "name": "crud",
+      "passed": false,
+      "detail": "[REDACTED USER PATH]\r\nconst error = (message, status = 400) => Object.assign(new Error(message), { status });\r\n                                                       ^\r\n\r\nError: Duplicate id\r\n    at error ([REDACTED USER PATH]\r\n    at [REDACTED USER PATH]\r\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {\r\n  status: 409\r\n}\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+    },
+    {
+      "name": "validation",
+      "passed": true
+    },
+    {
+      "name": "parallel-writes",
+      "passed": false,
+      "detail": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    {\n      done: false,\n+     id: 'j01',\n+     title: 'Item 1'\n-     id: 'j00',\n-     title: 'Item 0'\n    },\n    {\n      done: false,\n+     id: 'j03',\n+     title: 'Item 3'\n-     id: 'j01',\n-     title: 'Item 1'\n    },\n    {\n      done: false,\n+     id: 'j05',\n+     title: 'Item 5'\n-     id: 'j02',\n-     title: 'Item 2'\n    },\n    {\n      done: false,\n+     id: 'j07',\n+     title: 'Item 7'\n-     id: 'j03',\n-     title: 'Item 3'\n    },\n    {\n      done: false,\n+     id: 'j09',\n+     title: 'Item 9'\n-     id: 'j04',\n-     title: 'Item 4'\n    },\n    {\n      done: false,\n+     id: 'j10',\n+     title: 'Item 10'\n-     id: 'j05',\n-     title: 'Item 5'\n    },\n    {\n      done: false,\n+     id: 'j12',\n+     title: 'Item 12'\n-     id: 'j06',\n-     title: 'Item 6'\n    },\n    {\n      done: false,\n+     id: 'j14',\n+     title: 'Item 14'\n-     id: 'j07',\n-     title: 'Item 7'\n    },\n    {\n      done: false,\n+     id: 'j00',\n+     title: 'Item 0'\n-     id: 'j08',\n-     title: 'Item 8'\n    },\n    {\n      done: false,\n+     id: 'j02',\n+     title: 'Item 2'\n-     id: 'j09',\n-     title: 'Item 9'\n    },\n    {\n      done: false,\n+     id: 'j04',\n+     title: 'Item 4'\n-     id: 'j10',\n-     title: 'Item 10'\n    },\n    {\n      done: false,\n+     id: 'j06',\n+     title: 'Item 6'\n-     id: 'j11',\n-     title: 'Item 11'\n    },\n    {\n      done: false,\n+     id: 'j08',\n+     title: 'Item 8'\n-     id: 'j12',\n-     title: 'Item 12'\n   "
+    },
+    {
+      "name": "restart",
+      "passed": true
+    },
+    {
+      "name": "before-commit-crash",
+      "passed": true
+    },
+    {
+      "name": "after-commit-crash",
+      "passed": true
+    },
+    {
+      "name": "corrupt-store",
+      "passed": false,
+      "detail": "Missing expected rejection."
+    },
+    {
+      "name": "deliverables",
+      "passed": true
+    }
+  ],
+  "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+  "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "evidenceDir": "[REDACTED USER PATH]",
+  "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+}

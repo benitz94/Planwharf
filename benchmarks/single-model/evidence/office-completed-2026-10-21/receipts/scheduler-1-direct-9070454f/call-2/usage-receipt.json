@@ -1,0 +1,203 @@
+{
+  "sessionId": "01a15da6-ecf3-7b41-b2a3-1d67214f31bf",
+  "source": "native provider token_usage_record",
+  "records": [
+    {
+      "responseId": "resp_0604398972d95474016ad87ca817c88191be6fe4874e178d1f",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:49:47.552Z",
+      "usage": {
+        "inputTokens": 14023,
+        "outputTokens": 176,
+        "cachedInputTokens": 10496,
+        "reasoningTokens": 33
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cab5e448191b399e6dfac024b66",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:49:49.673Z",
+      "usage": {
+        "inputTokens": 14276,
+        "outputTokens": 119,
+        "cachedInputTokens": 13824,
+        "reasoningTokens": 0
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cad7fcc81918b2ad7887430b546",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:50:14.973Z",
+      "usage": {
+        "inputTokens": 14454,
+        "outputTokens": 3889,
+        "cachedInputTokens": 14080,
+        "reasoningTokens": 1149
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cc6a0e48191ab59edb94d4eddd7",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:50:28.576Z",
+      "usage": {
+        "inputTokens": 18429,
+        "outputTokens": 2504,
+        "cachedInputTokens": 14336,
+        "reasoningTokens": 35
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87cd8a9948191a6afd3c2dd66dc5a",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:50:36.265Z",
+      "usage": {
+        "inputTokens": 21468,
+        "outputTokens": 189,
+        "cachedInputTokens": 0,
+        "reasoningTokens": 21
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87cdbd1f881918871592746c1492d",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:50:49.499Z",
+      "usage": {
+        "inputTokens": 21709,
+        "outputTokens": 2563,
+        "cachedInputTokens": 18304,
+        "reasoningTokens": 34
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87ce9d45881919c660fd142419df2",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:02.626Z",
+      "usage": {
+        "inputTokens": 24296,
+        "outputTokens": 1850,
+        "cachedInputTokens": 21504,
+        "reasoningTokens": 238
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87cf87a3881918162ad6b62c68f0f",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:07.403Z",
+      "usage": {
+        "inputTokens": 26170,
+        "outputTokens": 155,
+        "cachedInputTokens": 24064,
+        "reasoningTokens": 8
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87cfb3b908191896b28347b958547",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:16.618Z",
+      "usage": {
+        "inputTokens": 26480,
+        "outputTokens": 974,
+        "cachedInputTokens": 25984,
+        "reasoningTokens": 572
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d053d008191a7e00cd3fe947e0a",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:19.901Z",
+      "usage": {
+        "inputTokens": 27478,
+        "outputTokens": 117,
+        "cachedInputTokens": 26240,
+        "reasoningTokens": 11
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d07d95081918b8448e4b33a9b15",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:22.233Z",
+      "usage": {
+        "inputTokens": 27803,
+        "outputTokens": 106,
+        "cachedInputTokens": 21248,
+        "reasoningTokens": 11
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d0a229c8191b6b316f00d559a43",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:29.645Z",
+      "usage": {
+        "inputTokens": 28643,
+        "outputTokens": 748,
+        "cachedInputTokens": 27264,
+        "reasoningTokens": 456
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d122830819188735dda65c55663",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:36.052Z",
+      "usage": {
+        "inputTokens": 29415,
+        "outputTokens": 620,
+        "cachedInputTokens": 28416,
+        "reasoningTokens": 269
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d1b0a208191b55e72b1c1836613",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:43.278Z",
+      "usage": {
+        "inputTokens": 30059,
+        "outputTokens": 237,
+        "cachedInputTokens": 29184,
+        "reasoningTokens": 16
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d1f3b3c81918b7ddb218489c5df",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:47.792Z",
+      "usage": {
+        "inputTokens": 30476,
+        "outputTokens": 417,
+        "cachedInputTokens": 29824,
+        "reasoningTokens": 288
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d2478648191a082dd199e1cee97",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:50.824Z",
+      "usage": {
+        "inputTokens": 30917,
+        "outputTokens": 119,
+        "cachedInputTokens": 30336,
+        "reasoningTokens": 13
+      }
+    },
+    {
+      "responseId": "resp_0cdb4677c0b8dd21016ad87d26d3b08191acfd761e5e7911ba",
+      "turnId": "01a15da7-a7e0-7640-9e45-f792caaf15a8",
+      "at": "2026-10-21T08:51:54.441Z",
+      "usage": {
+        "inputTokens": 31220,
+        "outputTokens": 291,
+        "cachedInputTokens": 30720,
+        "reasoningTokens": 25
+      }
+    }
+  ],
+  "responseCount": 17,
+  "usage": {
+    "inputTokens": 417316,
+    "outputTokens": 15074,
+    "cachedInputTokens": 365824,
+    "reasoningTokens": 3179
+  },
+  "valid": true,
+  "unreportedProviderUsage": null,
+  "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+}

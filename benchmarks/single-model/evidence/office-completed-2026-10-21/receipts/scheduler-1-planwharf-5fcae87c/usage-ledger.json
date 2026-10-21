@@ -1,0 +1,224 @@
+[
+  {
+    "role": "worker",
+    "exactModel": "gpt-5.6-luna",
+    "attemptId": "attempt-1",
+    "responseReceipt": {
+      "sessionId": "01a15da9-04df-7332-ad44-1d4ec593e872",
+      "source": "native provider token_usage_record",
+      "records": [
+        {
+          "responseId": "resp_0d2d9838b467e3a2016ad87d31f3b88191889593a8432085cb",
+          "turnId": "01a15da9-0a50-7152-bd84-691bf97430cb",
+          "at": "2026-10-21T08:52:06.917Z",
+          "usage": {
+            "inputTokens": 14881,
+            "outputTokens": 473,
+            "cachedInputTokens": 0,
+            "reasoningTokens": 53
+          }
+        },
+        {
+          "responseId": "resp_0d2d9838b467e3a2016ad87d36f8b88191bb97eec90c4559a5",
+          "turnId": "01a15da9-0a50-7152-bd84-691bf97430cb",
+          "at": "2026-10-21T08:52:09.704Z",
+          "usage": {
+            "inputTokens": 15569,
+            "outputTokens": 149,
+            "cachedInputTokens": 14720,
+            "reasoningTokens": 0
+          }
+        },
+        {
+          "responseId": "resp_0d2d9838b467e3a2016ad87d39eedc81918e4a4b4d5ef15fd1",
+          "turnId": "01a15da9-0a50-7152-bd84-691bf97430cb",
+          "at": "2026-10-21T08:52:35.448Z",
+          "usage": {
+            "inputTokens": 16505,
+            "outputTokens": 3874,
+            "cachedInputTokens": 15360,
+            "reasoningTokens": 1045
+          }
+        },
+        {
+          "responseId": "resp_0d2d9838b467e3a2016ad87d52d32481919d79f9491b818371",
+          "turnId": "01a15da9-0a50-7152-bd84-691bf97430cb",
+          "at": "2026-10-21T08:52:47.673Z",
+          "usage": {
+            "inputTokens": 20469,
+            "outputTokens": 2344,
+            "cachedInputTokens": 16384,
+            "reasoningTokens": 48
+          }
+        }
+      ],
+      "responseCount": 4,
+      "usage": {
+        "inputTokens": 67424,
+        "outputTokens": 6840,
+        "cachedInputTokens": 46464,
+        "reasoningTokens": 1146
+      },
+      "valid": true,
+      "unreportedProviderUsage": null,
+      "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+    },
+    "usage": {
+      "inputTokens": 67424,
+      "outputTokens": 6840,
+      "cachedInputTokens": 46464,
+      "reasoningTokens": 1146
+    },
+    "exitCode": null,
+    "sessionId": "01a15da9-04df-7332-ad44-1d4ec593e872",
+    "launchMs": 5.8414000000000215,
+    "newResponseIds": [
+      "resp_0d2d9838b467e3a2016ad87d31f3b88191889593a8432085cb",
+      "resp_0d2d9838b467e3a2016ad87d36f8b88191bb97eec90c4559a5",
+      "resp_0d2d9838b467e3a2016ad87d39eedc81918e4a4b4d5ef15fd1",
+      "resp_0d2d9838b467e3a2016ad87d52d32481919d79f9491b818371"
+    ],
+    "accounting": "provider-reported response usage; duplicate response IDs counted once"
+  },
+  {
+    "role": "worker",
+    "exactModel": "gpt-5.6-luna",
+    "attemptId": "attempt-2",
+    "responseReceipt": {
+      "sessionId": "01a15da9-cfd3-7d01-a811-7f50db59091d",
+      "source": "native provider token_usage_record",
+      "records": [
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d64a88081919d52e22d1f6d303d",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:52:56.505Z",
+          "usage": {
+            "inputTokens": 14771,
+            "outputTokens": 329,
+            "cachedInputTokens": 0,
+            "reasoningTokens": 14
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d6872708191be79ae2350a0879b",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:52:58.971Z",
+          "usage": {
+            "inputTokens": 17266,
+            "outputTokens": 147,
+            "cachedInputTokens": 14592,
+            "reasoningTokens": 9
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d6b23f881919e127c9916e4a42c",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:15.291Z",
+          "usage": {
+            "inputTokens": 20304,
+            "outputTokens": 1994,
+            "cachedInputTokens": 17024,
+            "reasoningTokens": 1066
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d7bd19081918eb0f76407374e3c",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:18.113Z",
+          "usage": {
+            "inputTokens": 22322,
+            "outputTokens": 115,
+            "cachedInputTokens": 20096,
+            "reasoningTokens": 9
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d7de4248191aa7da095b01522f1",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:22.711Z",
+          "usage": {
+            "inputTokens": 22659,
+            "outputTokens": 490,
+            "cachedInputTokens": 22144,
+            "reasoningTokens": 220
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d833e808191ae054f372ecabd4a",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:33.669Z",
+          "usage": {
+            "inputTokens": 23173,
+            "outputTokens": 1607,
+            "cachedInputTokens": 22528,
+            "reasoningTokens": 0
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d8f8a7c8191b75144f480c3793f",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:38.128Z",
+          "usage": {
+            "inputTokens": 24804,
+            "outputTokens": 107,
+            "cachedInputTokens": 23040,
+            "reasoningTokens": 7
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d91e36c8191b551dde3efab83c5",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:43.660Z",
+          "usage": {
+            "inputTokens": 25050,
+            "outputTokens": 635,
+            "cachedInputTokens": 24576,
+            "reasoningTokens": 312
+          }
+        },
+        {
+          "responseId": "resp_01b91eab06d43f00016ad87d9787ac8191a77e3d2bc9491c50",
+          "turnId": "01a15da9-d0ee-7c12-a788-8dfa6e18e53b",
+          "at": "2026-10-21T08:53:46.912Z",
+          "usage": {
+            "inputTokens": 25761,
+            "outputTokens": 292,
+            "cachedInputTokens": 24832,
+            "reasoningTokens": 40
+          }
+        }
+      ],
+      "responseCount": 9,
+      "usage": {
+        "inputTokens": 196110,
+        "outputTokens": 5716,
+        "cachedInputTokens": 168832,
+        "reasoningTokens": 1677
+      },
+      "valid": true,
+      "unreportedProviderUsage": null,
+      "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+    },
+    "usage": {
+      "inputTokens": 196110,
+      "outputTokens": 5716,
+      "cachedInputTokens": 168832,
+      "reasoningTokens": 1677
+    },
+    "exitCode": 0,
+    "sessionId": "01a15da9-cfd3-7d01-a811-7f50db59091d",
+    "launchMs": 6.077600000004168,
+    "newResponseIds": [
+      "resp_01b91eab06d43f00016ad87d64a88081919d52e22d1f6d303d",
+      "resp_01b91eab06d43f00016ad87d6872708191be79ae2350a0879b",
+      "resp_01b91eab06d43f00016ad87d6b23f881919e127c9916e4a42c",
+      "resp_01b91eab06d43f00016ad87d7bd19081918eb0f76407374e3c",
+      "resp_01b91eab06d43f00016ad87d7de4248191aa7da095b01522f1",
+      "resp_01b91eab06d43f00016ad87d833e808191ae054f372ecabd4a",
+      "resp_01b91eab06d43f00016ad87d8f8a7c8191b75144f480c3793f",
+      "resp_01b91eab06d43f00016ad87d91e36c8191b551dde3efab83c5",
+      "resp_01b91eab06d43f00016ad87d9787ac8191a77e3d2bc9491c50"
+    ],
+    "accounting": "provider-reported response usage; duplicate response IDs counted once"
+  }
+]

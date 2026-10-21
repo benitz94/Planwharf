@@ -1,0 +1,8 @@
+{
+  "name": "before-commit-crash",
+  "passed": false,
+  "exitCode": 1,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":false,\"detail\":\"Fault stage was not reached: \\n\\n0 !== 86\\n\"}\n",
+  "stderr": ""
+}

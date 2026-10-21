@@ -1,0 +1,52 @@
+{
+  "taskId": "scheduler",
+  "passed": 10,
+  "total": 10,
+  "outcome": "independently-accepted",
+  "checks": [
+    {
+      "name": "graph-and-concurrency",
+      "passed": true
+    },
+    {
+      "name": "failed-dependencies",
+      "passed": true
+    },
+    {
+      "name": "batch-validation",
+      "passed": true
+    },
+    {
+      "name": "joined-runs",
+      "passed": true
+    },
+    {
+      "name": "detached-snapshots",
+      "passed": true
+    },
+    {
+      "name": "restart-completed",
+      "passed": true
+    },
+    {
+      "name": "claimed-crash",
+      "passed": true
+    },
+    {
+      "name": "completed-crash",
+      "passed": true
+    },
+    {
+      "name": "corrupt-checkpoint",
+      "passed": true
+    },
+    {
+      "name": "deliverables",
+      "passed": true
+    }
+  ],
+  "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d",
+  "graderHash": "be2341e1a993e108d52483143d0fcfd79e38f3b77e176e86853596bde6dabf36",
+  "evidenceDir": "[REDACTED USER PATH]",
+  "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+}

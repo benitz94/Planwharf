@@ -1,0 +1,539 @@
+{
+  "scope": "Independent native cumulative/unique-response audit. Unreported provider usage and billed cost remain UNKNOWN.",
+  "valid": true,
+  "trialsChecked": 10,
+  "knownCalls": 20,
+  "unknownCalls": 0,
+  "trials": [
+    {
+      "id": "scheduler-1-direct-9070454f",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15da6-ecf3-7b41-b2a3-1d67214f31bf",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 61182,
+            "cached_input_tokens": 52736,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6688,
+            "reasoning_output_tokens": 1217,
+            "total_tokens": 67870
+          },
+          "allocated": {
+            "inputTokens": 61182,
+            "outputTokens": 6688,
+            "cachedInputTokens": 52736,
+            "reasoningTokens": 1217
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15da6-ecf3-7b41-b2a3-1d67214f31bf",
+          "responseCount": 17,
+          "newResponses": 13,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 417316,
+            "cached_input_tokens": 365824,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 15074,
+            "reasoning_output_tokens": 3179,
+            "total_tokens": 432390
+          },
+          "allocated": {
+            "inputTokens": 356134,
+            "outputTokens": 8386,
+            "cachedInputTokens": 313088,
+            "reasoningTokens": 1962
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-1-planwharf-5fcae87c",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15da9-04df-7332-ad44-1d4ec593e872",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 67424,
+            "cached_input_tokens": 46464,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6840,
+            "reasoning_output_tokens": 1146,
+            "total_tokens": 74264
+          },
+          "allocated": {
+            "inputTokens": 67424,
+            "outputTokens": 6840,
+            "cachedInputTokens": 46464,
+            "reasoningTokens": 1146
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15da9-cfd3-7d01-a811-7f50db59091d",
+          "responseCount": 9,
+          "newResponses": 9,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 196110,
+            "cached_input_tokens": 168832,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5716,
+            "reasoning_output_tokens": 1677,
+            "total_tokens": 201826
+          },
+          "allocated": {
+            "inputTokens": 196110,
+            "outputTokens": 5716,
+            "cachedInputTokens": 168832,
+            "reasoningTokens": 1677
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-2-planwharf-65134225",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15daa-b8cc-7a30-a7f7-ba190d2f95a2",
+          "responseCount": 5,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 83915,
+            "cached_input_tokens": 62208,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7585,
+            "reasoning_output_tokens": 690,
+            "total_tokens": 91500
+          },
+          "allocated": {
+            "inputTokens": 83915,
+            "outputTokens": 7585,
+            "cachedInputTokens": 62208,
+            "reasoningTokens": 690
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15dab-8fe1-7363-98ee-5d2204a59dba",
+          "responseCount": 10,
+          "newResponses": 10,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 239843,
+            "cached_input_tokens": 209792,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 8902,
+            "reasoning_output_tokens": 1349,
+            "total_tokens": 248745
+          },
+          "allocated": {
+            "inputTokens": 239843,
+            "outputTokens": 8902,
+            "cachedInputTokens": 209792,
+            "reasoningTokens": 1349
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-2-direct-3dfb023f",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15dac-b28a-7920-a0b5-7b58c4dc89bb",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 63572,
+            "cached_input_tokens": 53632,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7318,
+            "reasoning_output_tokens": 1653,
+            "total_tokens": 70890
+          },
+          "allocated": {
+            "inputTokens": 63572,
+            "outputTokens": 7318,
+            "cachedInputTokens": 53632,
+            "reasoningTokens": 1653
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15dac-b28a-7920-a0b5-7b58c4dc89bb",
+          "responseCount": 15,
+          "newResponses": 11,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 379039,
+            "cached_input_tokens": 353024,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 14952,
+            "reasoning_output_tokens": 3094,
+            "total_tokens": 393991
+          },
+          "allocated": {
+            "inputTokens": 315467,
+            "outputTokens": 7634,
+            "cachedInputTokens": 299392,
+            "reasoningTokens": 1441
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-3-direct-20659773",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15dae-a49e-7461-ab2c-8cf02e16e507",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 61989,
+            "cached_input_tokens": 53376,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5647,
+            "reasoning_output_tokens": 915,
+            "total_tokens": 67636
+          },
+          "allocated": {
+            "inputTokens": 61989,
+            "outputTokens": 5647,
+            "cachedInputTokens": 53376,
+            "reasoningTokens": 915
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15dae-a49e-7461-ab2c-8cf02e16e507",
+          "responseCount": 12,
+          "newResponses": 8,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 257035,
+            "cached_input_tokens": 232320,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 9371,
+            "reasoning_output_tokens": 2007,
+            "total_tokens": 266406
+          },
+          "allocated": {
+            "inputTokens": 195046,
+            "outputTokens": 3724,
+            "cachedInputTokens": 178944,
+            "reasoningTokens": 1092
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-3-planwharf-521fb89d",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15daf-faf1-7ee2-8021-58724ac6393c",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 66915,
+            "cached_input_tokens": 46592,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3895,
+            "reasoning_output_tokens": 628,
+            "total_tokens": 70810
+          },
+          "allocated": {
+            "inputTokens": 66915,
+            "outputTokens": 3895,
+            "cachedInputTokens": 46592,
+            "reasoningTokens": 628
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15db0-8c3d-75c1-afaf-577fb35a0f5f",
+          "responseCount": 8,
+          "newResponses": 8,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 167172,
+            "cached_input_tokens": 140928,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 7217,
+            "reasoning_output_tokens": 1999,
+            "total_tokens": 174389
+          },
+          "allocated": {
+            "inputTokens": 167172,
+            "outputTokens": 7217,
+            "cachedInputTokens": 140928,
+            "reasoningTokens": 1999
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-4-planwharf-7a03c840",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15db1-a580-7993-ba50-03576d03b11f",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 67093,
+            "cached_input_tokens": 46336,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6437,
+            "reasoning_output_tokens": 1117,
+            "total_tokens": 73530
+          },
+          "allocated": {
+            "inputTokens": 67093,
+            "outputTokens": 6437,
+            "cachedInputTokens": 46336,
+            "reasoningTokens": 1117
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15db2-66db-74d1-9845-f9d5b36c8fae",
+          "responseCount": 9,
+          "newResponses": 9,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 197275,
+            "cached_input_tokens": 171008,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 4543,
+            "reasoning_output_tokens": 970,
+            "total_tokens": 201818
+          },
+          "allocated": {
+            "inputTokens": 197275,
+            "outputTokens": 4543,
+            "cachedInputTokens": 171008,
+            "reasoningTokens": 970
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-4-direct-229b3ec7",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+          "responseCount": 3,
+          "newResponses": 3,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 43878,
+            "cached_input_tokens": 33920,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6026,
+            "reasoning_output_tokens": 1086,
+            "total_tokens": 49904
+          },
+          "allocated": {
+            "inputTokens": 43878,
+            "outputTokens": 6026,
+            "cachedInputTokens": 33920,
+            "reasoningTokens": 1086
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+          "responseCount": 14,
+          "newResponses": 11,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 365506,
+            "cached_input_tokens": 320768,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 12342,
+            "reasoning_output_tokens": 2626,
+            "total_tokens": 377848
+          },
+          "allocated": {
+            "inputTokens": 321628,
+            "outputTokens": 6316,
+            "cachedInputTokens": 286848,
+            "reasoningTokens": 1540
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-5-direct-fc70412e",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15db4-e99e-71f1-bbfc-0dcab1048af2",
+          "responseCount": 4,
+          "newResponses": 4,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 59628,
+            "cached_input_tokens": 44544,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6837,
+            "reasoning_output_tokens": 1766,
+            "total_tokens": 66465
+          },
+          "allocated": {
+            "inputTokens": 59628,
+            "outputTokens": 6837,
+            "cachedInputTokens": 44544,
+            "reasoningTokens": 1766
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15db4-e99e-71f1-bbfc-0dcab1048af2",
+          "responseCount": 9,
+          "newResponses": 5,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 176977,
+            "cached_input_tokens": 144256,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 11075,
+            "reasoning_output_tokens": 3524,
+            "total_tokens": 188052
+          },
+          "allocated": {
+            "inputTokens": 117349,
+            "outputTokens": 4238,
+            "cachedInputTokens": 99712,
+            "reasoningTokens": 1758
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "id": "scheduler-5-planwharf-61c22483",
+      "valid": true,
+      "knownCalls": 2,
+      "unknownCalls": 0,
+      "issues": [],
+      "rows": [
+        {
+          "call": 0,
+          "sessionId": "01a15db6-65a4-7e41-b4f4-17133f4f2fbc",
+          "responseCount": 6,
+          "newResponses": 6,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 109875,
+            "cached_input_tokens": 86656,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6257,
+            "reasoning_output_tokens": 1308,
+            "total_tokens": 116132
+          },
+          "allocated": {
+            "inputTokens": 109875,
+            "outputTokens": 6257,
+            "cachedInputTokens": 86656,
+            "reasoningTokens": 1308
+          },
+          "errors": []
+        },
+        {
+          "call": 1,
+          "sessionId": "01a15db7-4a26-7263-9bfa-2ea6daddf395",
+          "responseCount": 9,
+          "newResponses": 9,
+          "availability": "MEASURED",
+          "cumulative": {
+            "input_tokens": 178435,
+            "cached_input_tokens": 131328,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 6855,
+            "reasoning_output_tokens": 1657,
+            "total_tokens": 185290
+          },
+          "allocated": {
+            "inputTokens": 178435,
+            "outputTokens": 6855,
+            "cachedInputTokens": 131328,
+            "reasoningTokens": 1657
+          },
+          "errors": []
+        }
+      ]
+    }
+  ]
+}

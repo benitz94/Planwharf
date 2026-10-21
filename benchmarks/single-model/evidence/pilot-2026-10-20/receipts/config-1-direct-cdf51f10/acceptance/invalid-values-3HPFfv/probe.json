@@ -1,0 +1,8 @@
+{
+  "name": "invalid-values",
+  "passed": false,
+  "exitCode": 1,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":false,\"detail\":\"Expected values to be strictly equal:\\n+ actual - expected\\n\\n+ 'undefined'\\n- 'function'\\n\"}\n",
+  "stderr": ""
+}

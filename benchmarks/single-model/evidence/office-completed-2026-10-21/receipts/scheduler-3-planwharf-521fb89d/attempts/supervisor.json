@@ -1,0 +1,34 @@
+{
+  "schema": 2,
+  "name": "Supervisor",
+  "configured": false,
+  "modelId": "",
+  "autoReview": false,
+  "alerts": [
+    {
+      "key": "cefe4029fef037c93f2468fc",
+      "projectId": "benchmark-scheduler",
+      "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+      "kind": "result-R-attempt-1",
+      "severity": "warning",
+      "title": "An assignment did not finish successfully",
+      "message": "Interrupted by Stop; partial evidence retained.",
+      "evidence": [
+        "R-attempt-1",
+        "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+        "BLOCKED"
+      ],
+      "actions": [
+        "inspect",
+        "ask",
+        "ignore"
+      ],
+      "id": "93969a37-89a7-4048-96f9-5da7f7b377d4",
+      "active": true,
+      "ignored": false,
+      "createdAt": "2026-10-21T09:00:12.452Z"
+    }
+  ],
+  "turns": [],
+  "autoCalls": []
+}

@@ -1,0 +1,2693 @@
+[
+  {
+    "id": "config-1-direct-5ce446f3",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "direct",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "accepted",
+    "wallMs": 83385.6294,
+    "evaluationMs": 1040.7312000000093,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "usage": {
+          "inputTokens": 88588,
+          "outputTokens": 3148,
+          "cachedInputTokens": 68224,
+          "reasoningTokens": 478
+        },
+        "wallMs": 82326.48869999999,
+        "exitCode": 0,
+        "threadId": "01a15af2-df10-7db0-b8bd-797786972209"
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "2026-10-20T20:13:48.892394Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n2026-10-20T20:14:49.359631Z  WARN codex_core_plugins::remote::remote_installed_plugin_sync: failed to download remote installed plugin bundle remote_plugin_id=plugin_connector_1p_2330815c823c8191941e5dc465bb899f plugin=openai-templates marketplace=openai-curated-remote error=failed to read remote plugin bundle download response from https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-9268-81f7-8926-83f58a34537f/raw?[REDACTED QUERY] error decoding response body\n2026-10-20T20:14:55.234717Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\n2026-10-20T20:15:03.658430Z  WARN codex_analytics::client: timed out or failed while flushing analytics events\n2026-10-20T20:15:05.244019Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\n",
+    "timing": {
+      "cliWallMs": 82326.48869999999,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 6,
+      "total": 6,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": true
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": true
+        },
+        {
+          "name": "invalid-values",
+          "passed": true
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": true
+        },
+        {
+          "name": "independent-results",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "87fc1039fb177f708e5eaa84354510e9e385d3132043eea4b530d706aa718f34",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "config-1-planwharf-ba0536ee",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "planwharf",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "accepted",
+    "wallMs": 451798.07349999994,
+    "evaluationMs": 931.9187999999849,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": {
+          "inputTokens": 77942,
+          "outputTokens": 2854,
+          "cachedInputTokens": 46464,
+          "reasoningTokens": 277
+        },
+        "exitCode": 0,
+        "sessionId": "01a15af4-397b-7321-a015-94584e57b1ed",
+        "launchMs": 15.584100000000035
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "t in a way forbidden by its access permissions. (os error 10013)\nERROR: Reconnecting... 2/5\n2026-10-20T20:17:28.041510Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-20T20:17:28.041768Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (3/5 in 876ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=3 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)\nERROR: Reconnecting... 3/5\n2026-10-20T20:17:28.951501Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-20T20:17:28.951848Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (4/5 in 1.722s)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=4 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)\nERROR: Reconnecting... 4/5\n2026-10-20T20:17:30.703279Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-20T20:17:30.703637Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (5/5 in 3.447s)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=5 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)\nERROR: Reconnecting... 5/5\n2026-10-20T20:17:34.183433Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-20T20:17:34.183685Z  WARN codex_core::client: falling back to HTTP\nwarning: Falling back from WebSockets to HTTPS transport. stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)\n2026-10-20T20:17:50.533501Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01\",\"megaTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9\",\"status\":\"COMPLETE\",\"summary\":\"The repository contains a stub CommonJS module and no test runner setup; the task contract is fully specified in TASK.md.\",\"filesChanged\":[],\"tests\":[],\"blockers\":[],\"nextAction\":\"Implement strict parsing/validation, add node:test coverage, and document usage and limitations.\",\"createdAt\":\"2026-10-20T20:15:15.683Z\"}\n2026-10-20T20:18:04.184742Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 210ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=1 max_retries=5 sampling_error=stream disconnected before completion: Transport error: network error: error decoding response body\nERROR: Reconnecting... 1/5\n2026-10-20T20:18:07.454930Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=5s\nERROR: Reconnecting... waiting for network\n2026-10-20T20:18:26.091732Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=10s\nERROR: Reconnecting... waiting for network\n2026-10-20T20:18:39.212196Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=20s\nERROR: Reconnecting... waiting for network\n2026-10-20T20:19:02.249769Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=40s\nERROR: Reconnecting... waiting for network\n2026-10-20T20:19:45.148670Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=60s\nERROR: Reconnecting... waiting for network\n2026-10-20T20:19:57.347428Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-20T20:20:50.722498Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=60s\nERROR: Reconnecting... waiting for network\napply patch\npatch: completed\n[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 9da183c719c8e52dcf53a35a34c8e4238755bb5c..5ce4a1dedfb8a2031d7315100724357c6d5776a7\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,20 @@\n # Validated configuration utility\n \n-Implementation and self-test documentation goes here.\n+`config.cjs` exports `parseConfig(text)`, which parses a JSON string containing\n+an object and returns a new `{ port, host, retries, logLevel }` object.\n+\n+Defaults are `3000`, `127.0.0.1`, `2`, and `info`. The accepted log levels are\n+`debug`, `info`, `warn`, and `error`. Ports must be integers from 1 to 65535,\n+retries must be integers from 0 to 10, and hosts must be 1–253 characters with\n+no whitespace. Unknown keys, invalid JSON, non-objects, nulls, and incorrect\n+types are rejected by throwing an `Error`; values are not coerced.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+Recovery limitation: parsing is deliberately stateless and does not read or\n+write configuration files. If parsing fails, the caller must supply corrected\n+JSON; there is no automatic recovery or persistence layer.\ndiff --git a/config.cjs b/config.cjs\nindex 9a3b89a31b98d088efe5ec02b49e0ea6d2092904..0a1838fbc17d54016cd7471f273341449d8b66ef\n--- a/config.cjs\n+++ b/config.cjs\n@@ -1,3 +1,57 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const DEFAULTS = Object.freeze({\n+  port: 3000,\n+  host: '127.0.0.1',\n+  retries: 2,\n+  logLevel: 'info',\n+});\n+const KEYS = new Set(Object.keys(DEFAULTS));\n+const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);\n+\n+function invalid(message) {\n+  throw new Error(`Invalid configuration: ${message}`);\n+}\n+\n+function parseConfig(text) {\n+  if (typeof text !== 'string') {\n+    invalid('input must be a JSON string');\n+  }\n+\n+  let value;\n+  try {\n+    value = JSON.parse(text);\n+  } catch {\n+    invalid('input is not valid JSON');\n+  }\n+\n+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n+    invalid('top-level value must be a plain object');\n+  }\n+\n+  for (const key of Object.keys(value)) {\n+    if (!KEYS.has(key)) invalid(`unknown key: ${key}`);\n+  }\n+\n+  const port = value.port === undefined ? DEFAULTS.port : value.port;\n+  const retries = value.retries === undefined ? DEFAULTS.retries : value.retries;\n+  const host = value.host === undefined ? DEFAULTS.host : value.host;\n+  const logLevel = value.logLevel === undefined ? DEFAULTS.logLevel : value.logLevel;\n+\n+  if (!Number.isInteger(port) || port < 1 || port > 65535) {\n+    invalid('port must be an integer from 1 to 65535');\n+  }\n+  if (!Number.isInteger(retries) || retries < 0 || retries > 10) {\n+    invalid('retries must be an integer from 0 to 10');\n+  }\n+  if (typeof host !== 'string' || host.length < 1 || host.length > 253 || /\\s/u.test(host)) {\n+    invalid('host must be 1 to 253 characters with no whitespace');\n+  }\n+  if (typeof logLevel !== 'string' || !LOG_LEVELS.has(logLevel)) {\n+    invalid('logLevel must be debug, info, warn, or error');\n+  }\n+\n+  return { port, host, retries, logLevel };\n+}\n+\n+module.exports = { parseConfig };\ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..077a53b686777913cff3d6d28aadf416cd81426d\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,50 @@\n+'use strict';\n+\n+const test = require('node:test');\n+const assert = require('node:assert/strict');\n+const { parseConfig } = require('./config.cjs');\n+\n+test('uses defaults for an empty object', () => {\n+  assert.deepEqual(parseConfig('{}'), {\n+    port: 3000,\n+    host: '127.0.0.1',\n+    retries: 2,\n+    logLevel: 'info',\n+  });\n+});\n+\n+test('accepts valid overrides and returns only the public fields', () => {\n+  assert.deepEqual(parseConfig(JSON.stringify({\n+    port: 65535, host: 'service.example', retries: 0, logLevel: 'debug',\n+  })), {\n+    port: 65535, host: 'service.example', retries: 0, logLevel: 'debug',\n+  });\n+});\n+\n+test('rejects malformed input, non-objects, and unknown keys', () => {\n+  for (const input of [42, null, [], '{', 'null', '[]', '{\"extra\":true}']) {\n+    assert.throws(() => parseConfig(input));\n+  }\n+});\n+\n+test('rejects null, wrong types, fractions, ranges, and whitespace hosts', () => {\n+  const invalidConfigs = [\n+    { port: null }, { port: 1.5 }, { port: 0 }, { port: 65536 },\n+    { retries: null }, { retries: 1.5 }, { retries: -1 }, { retries: 11 },\n+    { host: null }, { host: '' }, { host: 'has space' }, { host: 'has\\nnewline' },\n+    { logLevel: null }, { logLevel: 'trace' },\n+  ];\n+  for (const config of invalidConfigs) {\n+    assert.throws(() => parseConfig(JSON.stringify(config)));\n+  }\n+  assert.throws(() => parseConfig({}));\n+});\n+\n+test('does not coerce strings and returns independent result objects', () => {\n+  assert.throws(() => parseConfig(JSON.stringify({ port: '3000' })));\n+  const first = parseConfig('{}');\n+  first.port = 1234;\n+  assert.deepEqual(parseConfig('{}'), {\n+    port: 3000, host: '127.0.0.1', retries: 2, logLevel: 'info',\n+  });\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test test.cjs; git diff --check; git diff -- config.cjs test.cjs README.md; git status --short' in [REDACTED USER PATH]\n succeeded in 770ms:\n✔ uses defaults for an empty object (1.7952ms)\n✔ accepts valid overrides and returns only the public fields (0.2437ms)\n✔ rejects malformed input, non-objects, and unknown keys (0.4368ms)\n✔ rejects null, wrong types, fractions, ranges, and whitespace hosts (0.4409ms)\n✔ does not coerce strings and returns independent result objects (0.2614ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 121.3732\ndiff --git a/README.md b/README.md\nindex 9da183c..5ce4a1d 100644\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,20 @@\n # Validated configuration utility\n \n-Implementation and self-test documentation goes here.\n+`config.cjs` exports `parseConfig(text)`, which parses a JSON string containing\n+an object and returns a new `{ port, host, retries, logLevel }` object.\n+\n+Defaults are `3000`, `127.0.0.1`, `2`, and `info`. The accepted log levels are\n+`debug`, `info`, `warn`, and `error`. Ports must be integers from 1 to 65535,\n+retries must be integers from 0 to 10, and hosts must be 1–253 characters with\n+no whitespace. Unknown keys, invalid JSON, non-objects, nulls, and incorrect\n+types are rejected by throwing an `Error`; values are not coerced.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+Recovery limitation: parsing is deliberately stateless and does not read or\n+write configuration files. If parsing fails, the caller must supply corrected\n+JSON; there is no automatic recovery or persistence layer.\ndiff --git a/config.cjs b/config.cjs\nindex 9a3b89a..0a1838f 100644\n--- a/config.cjs\n+++ b/config.cjs\n@@ -1,3 +1,57 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const DEFAULTS = Object.freeze({\n+  port: 3000,\n+  host: '127.0.0.1',\n+  retries: 2,\n+  logLevel: 'info',\n+});\n+const KEYS = new Set(Object.keys(DEFAULTS));\n+const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);\n+\n+function invalid(message) {\n+  throw new Error(`Invalid configuration: ${message}`);\n+}\n+\n+function parseConfig(text) {\n+  if (typeof text !== 'string') {\n+    invalid('input must be a JSON string');\n+  }\n+\n+  let value;\n+  try {\n+    value = JSON.parse(text);\n+  } catch {\n+    invalid('input is not valid JSON');\n+  }\n+\n+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {\n+    invalid('top-level value must be a plain object');\n+  }\n+\n+  for (const key of Object.keys(value)) {\n+    if (!KEYS.has(key)) invalid(`unknown key: ${key}`);\n+  }\n+\n+  const port = value.port === undefined ? DEFAULTS.port : value.port;\n+  const retries = value.retries === undefined ? DEFAULTS.retries : value.retries;\n+  const host = value.host === undefined ? DEFAULTS.host : value.host;\n+  const logLevel = value.logLevel === undefined ? DEFAULTS.logLevel : value.logLevel;\n+\n+  if (!Number.isInteger(port) || port < 1 || port > 65535) {\n+    invalid('port must be an integer from 1 to 65535');\n+  }\n+  if (!Number.isInteger(retries) || retries < 0 || retries > 10) {\n+    invalid('retries must be an integer from 0 to 10');\n+  }\n+  if (typeof host !== 'string' || host.length < 1 || host.length > 253 || /\\s/u.test(host)) {\n+    invalid('host must be 1 to 253 characters with no whitespace');\n+  }\n+  if (typeof logLevel !== 'string' || !LOG_LEVELS.has(logLevel)) {\n+    invalid('logLevel must be debug, info, warn, or error');\n+  }\n+\n+  return { port, host, retries, logLevel };\n+}\n+\n+module.exports = { parseConfig };\n M README.md\n M config.cjs\n?? test.cjs\n\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01\",\"megaTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9\",\"status\":\"COMPLETE\",\"summary\":\"Implemented strict JSON configuration parsing with defaults, validation, unknown-key rejection, fresh result objects, automated tests, and README documentation.\",\"filesChanged\":[\"config.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"5 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; implementation and tests are complete.\",\"createdAt\":\"2026-10-20T20:15:15.683Z\"}\ntokens used\n34,332\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01\",\"megaTaskId\":\"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9\",\"status\":\"COMPLETE\",\"summary\":\"Implemented strict JSON configuration parsing with defaults, validation, unknown-key rejection, fresh result objects, automated tests, and README documentation.\",\"filesChanged\":[\"config.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"5 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; implementation and tests are complete.\",\"createdAt\":\"2026-10-20T20:15:15.683Z\"}\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-20T20:15:12.907Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:12.922Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T20:15:12.955Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:12.974Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:12.984Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:15.696Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T20:15:17.086Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:18.635Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:20.025Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:21.492Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:23.005Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:24.367Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:25.723Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:27.078Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:28.494Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:29.889Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:31.236Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:32.592Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:33.953Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:35.358Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:36.699Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:38.108Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:39.560Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:40.955Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:42.364Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:43.741Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:45.123Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:46.527Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:47.917Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:49.320Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:50.727Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:52.120Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:53.507Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:55.008Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:56.402Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:57.907Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:15:59.324Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:00.733Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:02.091Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:03.533Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:04.992Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:06.423Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:07.914Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:09.491Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:10.894Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:12.299Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:13.670Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:15.056Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:16.538Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:17.899Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:19.310Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:20.663Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:22.020Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:23.433Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:24.796Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:26.168Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:27.557Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:28.924Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:30.313Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:31.890Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:33.263Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:34.731Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:36.074Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:37.474Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:38.870Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:40.263Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:41.640Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:43.001Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:44.453Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:45.808Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:47.151Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:48.585Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:49.945Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:51.503Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:52.946Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:54.377Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:55.747Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:57.093Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:58.496Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:16:59.877Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:01.253Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:02.696Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:04.105Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:05.563Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:07.124Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:08.714Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:10.106Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:11.699Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:13.681Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:15.195Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:16.673Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:18.975Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:20.567Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:21.936Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:23.311Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:24.676Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:26.021Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:27.702Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:29.127Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:30.493Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:31.881Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:33.242Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:34.617Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:36.022Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:37.421Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:38.781Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:40.133Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:41.822Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:43.817Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:45.353Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:47.178Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:49.445Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:50.957Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:52.358Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:53.727Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:55.119Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:56.480Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:57.819Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:17:59.185Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:00.573Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:01.950Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:03.303Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:05.202Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:07.720Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:09.299Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:11.441Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:13.824Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:15.820Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:17.225Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:18.879Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:20.320Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:21.700Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:23.026Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:24.366Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:25.722Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:27.103Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:28.454Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:29.825Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:31.188Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:32.566Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:33.940Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:35.320Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:36.678Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:38.032Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:39.397Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:40.744Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:42.081Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:43.450Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:44.795Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:46.144Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:47.487Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:48.838Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:50.185Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:51.537Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:52.881Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:54.265Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:55.617Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:56.950Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:58.300Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:18:59.662Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:01.024Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:02.378Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:03.729Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:05.092Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:06.456Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:07.824Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:09.172Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:10.537Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:11.927Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:13.317Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:14.980Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:16.389Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:17.774Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:19.168Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:20.664Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:22.079Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:23.535Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:25.548Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:28.792Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:30.194Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:31.622Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:33.012Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:34.485Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:35.976Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:37.400Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:38.859Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:40.504Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:41.853Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:43.265Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:44.966Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:47.070Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:48.451Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:49.864Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:51.413Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:52.780Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:54.173Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:55.654Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:57.385Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:19:59.581Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:01.035Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:02.400Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:03.760Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:05.118Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:06.511Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:07.889Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:09.275Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:10.646Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:12.495Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:14.210Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:15.780Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:17.148Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:18.529Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:19.892Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:21.249Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:22.710Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:24.106Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:25.503Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:26.987Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:28.426Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:29.814Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:31.249Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:32.604Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:33.973Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:35.340Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:36.755Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:38.133Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:39.571Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:40.940Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:42.311Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:43.676Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:45.066Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:46.462Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:48.335Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:49.699Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:51.069Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:53.003Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:54.549Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:56.657Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:58.089Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:20:59.720Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:01.188Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:02.586Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:04.029Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:05.405Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:06.792Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:08.206Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:09.685Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:11.077Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:12.451Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:13.821Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:15.201Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:16.667Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:18.063Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:19.417Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:20.779Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:22.129Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:23.504Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:24.876Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:26.264Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:27.637Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:29.014Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:30.381Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:31.766Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:33.129Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:34.464Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:35.902Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:37.442Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:39.200Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:40.578Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:42.017Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:43.419Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:44.932Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:46.288Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:47.663Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:49.030Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:50.394Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:51.751Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:53.155Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:54.525Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:55.947Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:57.386Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:21:58.926Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:00.361Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:01.687Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:03.044Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:04.404Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:05.781Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:07.134Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:08.507Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:09.880Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:11.430Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:12.784Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:14.228Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:15.613Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:16.951Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:18.302Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:19.773Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:21.196Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:22.631Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:24.192Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:25.594Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:26.976Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:28.399Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:29.851Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:31.331Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:32.838Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:34.232Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:35.666Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:37.105Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:38.462Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:39.863Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:41.227Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:42.627Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:43.395Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      }
+    ],
+    "lifecycle": {
+      "status": "complete",
+      "megaTaskId": "MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 15.584100000000035
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 6,
+      "total": 6,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": true
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": true
+        },
+        {
+          "name": "invalid-values",
+          "passed": true
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": true
+        },
+        {
+          "name": "independent-results",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "74c1e5907dcb9dd6d14be4721ce71050d4724e60c6c1c44a481596526747706d",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "rest-api-1-planwharf-7d6da8b6",
+    "taskId": "rest-api",
+    "category": "medium",
+    "pairId": "rest-api-1",
+    "arm": "planwharf",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+    "starterHash": "ae5f280d9d7a9cc4baa1e32801e2865dbec71597a1fb80d2323b016667e593db",
+    "outcome": "timed_out",
+    "wallMs": 35549840.332899995,
+    "evaluationMs": 3555.877100005746,
+    "completed": false,
+    "timedOut": true,
+    "blocked": true,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": null,
+        "sessionId": "01a15afb-1f82-7c83-96a5-55651da90dd4",
+        "launchMs": 13.330899999999474
+      },
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-2",
+        "usage": null,
+        "exitCode": null,
+        "sessionId": "01a15afc-4a70-7d22-8af2-418461d60ab9",
+        "launchMs": 14.400199999989127
+      }
+    ],
+    "invocations": 2,
+    "usageScope": "all_calls",
+    "faultInjected": true,
+    "recoveryAttempted": true,
+    "restarts": 1,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 2,
+    "diagnostic": "eq.method === 'GET' && collection) return send(res, 200, items.slice().sort((a, b) => a.id.localeCompare(b.id))); if (req.method === 'GET' && member) { const x = items.find(i => i.id === id); return x ? send(res, 200, x) : send(res, 404, { error: 'Not found' }); } if ((req.method === 'POST' && collection) || (req.method === 'PATCH' && member)) { let b; try { b = JSON.parse(await readBody(req)); } catch (e) { return send(res, e.statusCode || 400, { error: e.statusCode === 413 ? e.message : 'Malformed JSON' }); } let next, result; if (req.method === 'POST') { if (!b || typeof b !== 'object' || Array.isArray(b) || Object.keys(b).some(k => !['id','title','done'].includes(k)) || typeof b.id !== 'string' || !ID.test(b.id) || typeof b.title !== 'string' || b.title.trim().length < 1 || b.title.length > 80 || (b.done !== undefined && typeof b.done !== 'boolean')) throw bad('Invalid item'); if (items.some(i => i.id === b.id)) return send(res, 409, { error: 'Duplicate id' }); result = { id: b.id, title: b.title.trim(), done: b.done === undefined ? false : b.done }; next = items.concat(result); } else { if (!b || typeof b !== 'object' || Array.isArray(b) || !Object.keys(b).length || Object.keys(b).some(k => !['title','done'].includes(k)) || ('title' in b && (typeof b.title !== 'string' || !b.title.trim() || b.title.length > 80)) || ('done' in b && typeof b.done !== 'boolean')) throw bad('Invalid patch'); const old = items.find(i => i.id === id); if (!old) return send(res, 404, { error: 'Not found' }); result = { ...old, ...b }; if ('title' in b) result.title = b.title.trim(); next = items.map(i => i.id === id ? result : i); } try { await commit(next); } catch (e) { return send(res, e.statusCode || 500, { error: e.message || 'Commit failed' }); } return send(res, req.method === 'POST' ? 201 : 200, result, req.method === 'POST' ? { location: `/items/${result.id}` } : {}); } if (req.method === 'DELETE' && member) { if (!items.some(i => i.id === id)) return send(res, 404, { error: 'Not found' }); try { await commit(items.filter(i => i.id !== id)); } catch (e) { return send(res, e.statusCode || 500, { error: e.message || 'Commit failed' }); } return send(res, 204); } return send(res, 404, { error: 'Not found' }); } catch (e) { return send(res, e.statusCode || 400, { error: e.message || 'Bad request' }); } });\n+}\n+module.exports = { createServer };\n\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-2056313b-7212-4b26-ac4f-34b36d939f5d-ST-01\",\"megaTaskId\":\"MT-2056313b-7212-4b26-ac4f-34b36d939f5d\",\"status\":\"BLOCKED\",\"summary\":\"The existing partial implementation has key correctness gaps: concurrent mutations can lose updates, malformed persisted titles are accepted, and oversized request handling can terminate the request before a 413 response. I’m tightening those behaviors and adding the required tests and documentation.\",\"filesChanged\":[],\"tests\":[],\"blockers\":[],\"nextAction\":\"Patch api.cjs, add test.cjs, update README.md, then run node --test test.cjs.\",\"createdAt\":\"2026-10-20T20:26:00.000Z\"}\n2026-10-20T20:25:09.598633Z  WARN codex_core_plugins::remote::remote_installed_plugin_sync: failed to download remote installed plugin bundle remote_plugin_id=plugin_connector_1p_2330815c823c8191941e5dc465bb899f plugin=openai-templates marketplace=openai-curated-remote error=failed to read remote plugin bundle download response from https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-9268-81f7-8926-83f58a34537f/raw?[REDACTED QUERY] error decoding response body\n2026-10-20T20:25:11.397135Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target [REDACTED USER PATH]\n2026-10-20T20:25:32.476121Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target [REDACTED USER PATH]\n2026-10-20T20:25:42.447632Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\napply patch\npatch: completed\n[REDACTED USER PATH]\ndiff --git a/api.cjs b/api.cjs\nindex 95d93b7e0a70e2b6f91b0e3fb6d2fac040149bfd..a69d60cfd51c09f0d0d22e54e64e82e593ea273a\n--- a/api.cjs\n+++ b/api.cjs\n@@ -6,7 +6,7 @@\n const ID = /^[a-z][a-z0-9-]{0,31}$/;\n const MAX_BODY = 16384;\n const bad = (message, statusCode = 400) => Object.assign(new Error(message), { statusCode });\n-const validItem = x => x && typeof x === 'object' && !Array.isArray(x) && Object.keys(x).sort().join(',') === 'done,id,title' && typeof x.id === 'string' && ID.test(x.id) && typeof x.title === 'string' && x.title.length >= 1 && x.title.length <= 80 && x.title.trim() && typeof x.done === 'boolean';\n+const validItem = x => x && typeof x === 'object' && !Array.isArray(x) && Object.keys(x).sort().join(',') === 'done,id,title' && typeof x.id === 'string' && ID.test(x.id) && typeof x.title === 'string' && x.title === x.title.trim() && x.title.length >= 1 && x.title.length <= 80 && typeof x.done === 'boolean';\n function load(file) {\n   try { const s = JSON.parse(fs.readFileSync(file, 'utf8')); if (!s || Array.isArray(s) || s.version !== 1 || !Array.isArray(s.items) || s.items.some(x => !validItem(x)) || new Set(s.items.map(x => x.id)).size !== s.items.length) throw Error(); return s.items.map(x => ({ ...x })); }\n   catch (e) { if (e.code === 'ENOENT') return []; throw Error('Malformed store'); }\n@@ -15,9 +15,9 @@\n function createServer({ file, onStage } = {}) {\n   if (typeof file !== 'string' || !file) throw TypeError('file is required');\n   const target = path.resolve(file); fs.mkdirSync(path.dirname(target), { recursive: true }); let items = load(target); const hook = typeof onStage === 'function' ? onStage : async () => {}; let queue = Promise.resolve();\n-  const commit = next => { const work = queue.then(async () => { await hook('beforeCommit'); await replace(target, JSON.stringify({ version: 1, items: next })); items = next; await hook('afterCommit'); }); queue = work.catch(() => {}); return work; };\n+  const commit = transform => { const work = queue.then(async () => { const { next, result } = transform(items); await hook('beforeCommit'); await replace(target, JSON.stringify({ version: 1, items: next })); items = next; await hook('afterCommit'); return result; }); queue = work.catch(() => {}); return work; };\n   const send = (res, code, value, headers = {}) => { if (value === undefined) return res.writeHead(code, headers).end(); const data = JSON.stringify(value); res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(data), ...headers }); res.end(data); };\n-  const readBody = req => new Promise((resolve, reject) => { const n = Number(req.headers['content-length']); if (Number.isFinite(n) && n > MAX_BODY) { req.resume(); return reject(bad('Request body too large', 413)); } let size = 0, chunks = [], done = false; req.on('data', c => { size += c.length; if (size > MAX_BODY && !done) { done = true; reject(bad('Request body too large', 413)); req.destroy(); } else if (!done) chunks.push(c); }); req.on('end', () => { if (!done) { done = true; resolve(Buffer.concat(chunks).toString()); } }); req.on('error', e => { if (!done) { done = true; reject(e); } }); });\n+  const readBody = req => new Promise((resolve, reject) => { const n = Number(req.headers['content-length']); if (Number.isFinite(n) && n > MAX_BODY) { req.resume(); return reject(bad('Request body too large', 413)); } let size = 0, chunks = [], done = false; req.on('data', c => { size += c.length; if (size > MAX_BODY && !done) { done = true; reject(bad('Request body too large', 413)); req.resume(); } else if (!done) chunks.push(c); }); req.on('end', () => { if (!done) { done = true; resolve(Buffer.concat(chunks).toString()); } }); req.on('error', e => { if (!done) { done = true; reject(e); } }); });\n   return http.createServer(async (req, res) => { try { const u = new URL(req.url, 'http://localhost'), p = u.pathname.split('/'), collection = p.length === 2 && p[1] === 'items', member = p.length === 3 && p[1] === 'items' && p[2]; let id; if (member) { try { id = decodeURIComponent(p[2]); } catch { return send(res, 404, { error: 'Not found' }); } } if (req.method === 'GET' && collection) return send(res, 200, items.slice().sort((a, b) => a.id.localeCompare(b.id))); if (req.method === 'GET' && member) { const x = items.find(i => i.id === id); return x ? send(res, 200, x) : send(res, 404, { error: 'Not found' }); } if ((req.method === 'POST' && collection) || (req.method === 'PATCH' && member)) { let b; try { b = JSON.parse(await readBody(req)); } catch (e) { return send(res, e.statusCode || 400, { error: e.statusCode === 413 ? e.message : 'Malformed JSON' }); } let next, result; if (req.method === 'POST') { if (!b || typeof b !== 'object' || Array.isArray(b) || Object.keys(b).some(k => !['id','title','done'].includes(k)) || typeof b.id !== 'string' || !ID.test(b.id) || typeof b.title !== 'string' || b.title.trim().length < 1 || b.title.length > 80 || (b.done !== undefined && typeof b.done !== 'boolean')) throw bad('Invalid item'); if (items.some(i => i.id === b.id)) return send(res, 409, { error: 'Duplicate id' }); result = { id: b.id, title: b.title.trim(), done: b.done === undefined ? false : b.done }; next = items.concat(result); } else { if (!b || typeof b !== 'object' || Array.isArray(b) || !Object.keys(b).length || Object.keys(b).some(k => !['title','done'].includes(k)) || ('title' in b && (typeof b.title !== 'string' || !b.title.trim() || b.title.length > 80)) || ('done' in b && typeof b.done !== 'boolean')) throw bad('Invalid patch'); const old = items.find(i => i.id === id); if (!old) return send(res, 404, { error: 'Not found' }); result = { ...old, ...b }; if ('title' in b) result.title = b.title.trim(); next = items.map(i => i.id === id ? result : i); } try { await commit(next); } catch (e) { return send(res, e.statusCode || 500, { error: e.message || 'Commit failed' }); } return send(res, req.method === 'POST' ? 201 : 200, result, req.method === 'POST' ? { location: `/items/${result.id}` } : {}); } if (req.method === 'DELETE' && member) { if (!items.some(i => i.id === id)) return send(res, 404, { error: 'Not found' }); try { await commit(items.filter(i => i.id !== id)); } catch (e) { return send(res, e.statusCode || 500, { error: e.message || 'Commit failed' }); } return send(res, 204); } return send(res, 404, { error: 'Not found' }); } catch (e) { return send(res, e.statusCode || 400, { error: e.message || 'Bad request' }); } });\n }\n module.exports = { createServer };\n\n2026-10-20T20:26:00.787087Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\n2026-10-20T20:26:01.000241Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] scope=Global\n2026-10-21T06:15:04.959506Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 203ms)... turn_id=01a15afc-50aa-7d12-a9e0-55cfa481b0b0 retries=1 max_retries=5 sampling_error=stream disconnected before completion: idle timeout waiting for websocket\n2026-10-21T06:15:05.865074Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: No such host is known. (os error 11001), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-21T06:15:05.869456Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (2/5 in 381ms)... turn_id=01a15afc-50aa-7d12-a9e0-55cfa481b0b0 retries=2 max_retries=5 sampling_error=stream disconnected before completion: No such host is known. (os error 11001)\nERROR: Reconnecting... 2/5\n2026-10-21T06:15:06.632708Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: No such host is known. (os error 11001), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-21T06:15:06.632974Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (3/5 in 749ms)... turn_id=01a15afc-50aa-7d12-a9e0-55cfa481b0b0 retries=3 max_retries=5 sampling_error=stream disconnected before completion: No such host is known. (os error 11001)\nERROR: Reconnecting... 3/5\n2026-10-21T06:15:07.506596Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: No such host is known. (os error 11001), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-21T06:15:07.506918Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (4/5 in 1.526s)... turn_id=01a15afc-50aa-7d12-a9e0-55cfa481b0b0 retries=4 max_retries=5 sampling_error=stream disconnected before completion: No such host is known. (os error 11001)\nERROR: Reconnecting... 4/5\n2026-10-21T06:15:09.089321Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: No such host is known. (os error 11001), url: wss://chatgpt.com/backend-api/codex/responses\n2026-10-21T06:15:09.089674Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (5/5 in 3.36s)... turn_id=01a15afc-50aa-7d12-a9e0-55cfa481b0b0 retries=5 max_retries=5 sampling_error=stream disconnected before completion: No such host is known. (os error 11001)\nERROR: Reconnecting... 5/5\n2026-10-21T06:15:09.247786Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-20T20:22:45.323Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:45.336Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T20:22:45.364Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:45.385Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:45.393Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:47.892Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-20T20:22:49.242Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:50.550Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:51.910Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:53.238Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:54.552Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:55.918Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:57.290Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:22:58.651Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:00.029Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:01.360Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:02.740Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:04.208Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:05.553Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:06.907Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:08.304Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:09.651Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:10.968Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:12.311Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:13.739Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:15.122Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:16.469Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:17.920Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:19.511Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:20.860Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:22.213Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:23.580Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:24.984Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:26.310Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:27.687Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:29.011Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:30.342Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:31.683Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:33.065Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:34.405Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:35.774Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:37.168Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:38.533Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:39.897Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:41.305Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:42.722Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:44.079Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:45.454Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:46.781Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:48.144Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:49.527Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:50.915Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:52.273Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:53.610Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:54.951Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:56.292Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:57.626Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:23:58.963Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:00.394Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:01.833Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:03.271Z",
+        "route": "/api/orchestrator/stop",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:03.301Z",
+        "route": "/api/execution?projectId=benchmark-rest-api",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:05.760Z",
+        "route": "/api/orchestrator/resume",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:07.083Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:08.373Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:09.706Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:11.040Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:12.390Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:13.764Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:15.104Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:16.429Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:17.754Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:19.086Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:20.441Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:21.792Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:23.130Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:24.481Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:25.820Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:27.161Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:28.487Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:29.825Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:31.156Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:32.483Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:33.810Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:35.156Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:36.489Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:37.841Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:39.185Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:40.518Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:41.872Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:43.217Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:44.533Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:45.888Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:47.276Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:48.658Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:49.997Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:51.398Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:52.732Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:54.081Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:55.403Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:56.731Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:58.040Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:24:59.424Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:00.757Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:02.072Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:03.405Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:04.726Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:06.075Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:07.394Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:08.712Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:10.121Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:12.118Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:13.487Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:15.028Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:16.400Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:17.819Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:19.244Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:20.651Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:22.074Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:23.448Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:24.822Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:26.201Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:27.576Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:28.957Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:30.445Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:31.811Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:33.169Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:34.531Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:35.909Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:37.247Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:38.589Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:40.001Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:41.372Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:42.710Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:44.124Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:45.572Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:47.183Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:48.631Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:49.981Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:51.402Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:52.779Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:54.158Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:55.607Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:56.973Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:58.361Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:25:59.811Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:01.203Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:02.594Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:04.202Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:05.558Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:07.049Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:08.449Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:09.823Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:11.204Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:13.376Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:15.276Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:16.614Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:18.018Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:19.341Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:20.665Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:22.116Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-20T20:26:23.469Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "error": "The operation was aborted due to timeout"
+      }
+    ],
+    "lifecycle": {
+      "status": "watching",
+      "megaTaskId": "MT-2056313b-7212-4b26-ac4f-34b36d939f5d",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "RUNNING"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 27.7310999999886
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "rest-api",
+      "passed": 1,
+      "total": 8,
+      "outcome": "completed-with-defects",
+      "checks": [
+        {
+          "name": "crud",
+          "passed": false,
+          "detail": "{\"error\":\"transform is not a function\"}\n\n500 !== 201\n"
+        },
+        {
+          "name": "validation",
+          "passed": false,
+          "detail": "{\"error\":\"transform is not a function\"}\n\n500 !== 201\n"
+        },
+        {
+          "name": "parallel-writes",
+          "passed": false,
+          "detail": "{\"error\":\"transform is not a function\"}\n\n500 !== 201\n"
+        },
+        {
+          "name": "restart",
+          "passed": false,
+          "detail": "{\"error\":\"transform is not a function\"}\n\n500 !== 201\n\n\n\n1 !== 0\n"
+        },
+        {
+          "name": "before-commit-crash",
+          "passed": false,
+          "detail": "Fault stage was not reached: \n\n0 !== 86\n"
+        },
+        {
+          "name": "after-commit-crash",
+          "passed": false,
+          "detail": "Fault stage was not reached: \n\n0 !== 86\n"
+        },
+        {
+          "name": "corrupt-store",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": false,
+          "detail": "Document API, tests and limitations"
+        }
+      ],
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "03d1c26c27eb7cc83659b9fcd19a3ee147a53c2c90117d332435aed27230773d",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": false
+  }
+]

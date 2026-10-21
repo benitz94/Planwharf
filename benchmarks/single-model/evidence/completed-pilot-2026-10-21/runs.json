@@ -1,0 +1,2503 @@
+[
+  {
+    "id": "config-1-direct-f9f41882",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "direct",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "accepted",
+    "wallMs": 57682.2521,
+    "evaluationMs": 939.2660000000033,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "usage": {
+          "inputTokens": 90593,
+          "outputTokens": 3173,
+          "cachedInputTokens": 79232,
+          "reasoningTokens": 310
+        },
+        "wallMs": 56730.1979,
+        "exitCode": 0,
+        "threadId": "01a15d24-5f7a-7941-83da-c3d0c00c856b"
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "2026-10-21T06:27:07.488038Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n2026-10-21T06:27:12.219251Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n",
+    "timing": {
+      "cliWallMs": 56730.1979,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 6,
+      "total": 6,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": true
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": true
+        },
+        {
+          "name": "invalid-values",
+          "passed": true
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": true
+        },
+        {
+          "name": "independent-results",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "1f677a9b3c3029888fd6d3d732ae4574f9eb88004095ea1772c4a418dfa7efee",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "config-1-planwharf-2aed05ea",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "planwharf",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "accepted",
+    "wallMs": 167492.90769999998,
+    "evaluationMs": 927.8991000000096,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": {
+          "inputTokens": 82768,
+          "outputTokens": 3382,
+          "cachedInputTokens": 47744,
+          "reasoningTokens": 354
+        },
+        "exitCode": 0,
+        "sessionId": "01a15d25-547c-7671-8c1d-de1be071a3ac",
+        "launchMs": 13.317399999999907
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "ns an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.\n2026-10-21T06:28:14.947608Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY]\n2026-10-21T06:28:14.947702Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-21T06:28:30.315273Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY]\n2026-10-21T06:28:40.276989Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] QUERY] QUERY] error decoding response body scope=Global\n2026-10-21T06:28:40.717332Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY]\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"FAILED\",\"summary\":\"placeholder\",\"filesChanged\":[],\"tests\":[],\"blockers\":[],\"nextAction\":\"\",\"createdAt\":\"2026-10-21T00:00:00.000Z\"}\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"COMPLETE\",\"summary\":\"I’m inspecting the existing project structure and package/test conventions, then I’ll implement the validator and add focused edge-case tests.\",\"filesChanged\":[],\"tests\":[],\"blockers\":[],\"nextAction\":\"Inspect repository files.\",\"createdAt\":\"2026-10-21T06:30:00.000Z\"}\nexec\n\"[REDACTED USER PATH]\" -Command \"Get-ChildItem -Force; Write-Output '--- files ---'; rg --files -g '\"'!node_modules'\"' -g '\"'!coverage'\"' | Sort-Object; Write-Output '--- git ---'; git status --short; git log -1 --oneline\" in [REDACTED USER PATH]\n succeeded in 630ms:\n\r\n    Directory: [REDACTED USER PATH]\r\nrf-2aed05ea\\workspace\r\n\r\nMode                 LastWriteTime         Length Name\r\n----                 -------------         ------ ----\r\nd--h-          21/10/2026    08:28                .git\r\n-a---          21/10/2026    08:28             20 .gitignore\r\n-a---          21/10/2026    08:28             80 config.cjs\r\n-a---          21/10/2026    08:28             89 README.md\r\n-a---          21/10/2026    08:28           1597 TASK.md\r\n--- files ---\r\nconfig.cjs\r\nREADME.md\r\nTASK.md\r\n--- git ---\r\n4b1d951 Identical benchmark starting point\n\r\n\n2026-10-21T06:29:27.201352Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY]\nexec\n\"[REDACTED USER PATH]\" -Command \"Write-Output '--- config.cjs ---'; Get-Content config.cjs; Write-Output '--- README.md ---'; Get-Content README.md; Write-Output '--- TASK.md ---'; Get-Content TASK.md; Write-Output '--- package files ---'; Get-ChildItem -Force -Name package*.json 2>\"'$null' in [REDACTED USER PATH]\n succeeded in 430ms:\n--- config.cjs ---\r\n'use strict';\r\n// Implement the public contract in TASK.md.\r\nmodule.exports = {};\r\n--- README.md ---\r\n# Validated configuration utility\r\n\r\nImplementation and self-test documentation goes here.\r\n--- TASK.md ---\r\nValidated configuration utility\r\n\r\nImplement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.\r\n\r\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.\r\n--- package files ---\r\n\n2026-10-21T06:29:47.420563Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] QUERY] QUERY]\n2026-10-21T06:29:50.977863Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"COMPLETE\",\"summary\":\"The repository is a minimal CommonJS project with a stub module and no existing test harness. I’m implementing strict parsing/validation from TASK.md, plus Node’s built-in test coverage and API documentation.\",\"filesChanged\":[],\"tests\":[],\"blockers\":[],\"nextAction\":\"Implement config.cjs, test.cjs, and README.md.\",\"createdAt\":\"2026-10-21T06:31:00.000Z\"}\napply patch\npatch: completed\n[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 9da183c719c8e52dcf53a35a34c8e4238755bb5c..195ffe32b0d54bace4b53449dff579ef5cecc3a4\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,23 @@\n # Validated configuration utility\n \n-Implementation and self-test documentation goes here.\n+`config.cjs` exports `parseConfig(text)`. It parses a JSON string containing an\n+object and returns a fresh object with exactly `port`, `host`, `retries`, and\n+`logLevel`. Missing fields use these defaults:\n+\n+- `port`: `3000`, an integer from 1 through 65535\n+- `host`: `127.0.0.1`, a 1–253 character string with no whitespace\n+- `retries`: `2`, an integer from 0 through 10\n+- `logLevel`: `info`, one of `debug`, `info`, `warn`, or `error`\n+\n+Invalid JSON, non-string input, non-object JSON values, unknown keys, explicit\n+nulls, incorrect types, and out-of-range values throw `Error`. The returned\n+object is newly created on every call and is not cached.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+Recovery limitation: this utility validates configuration syntax and values but\n+does not load files, access the network, or recover missing configuration data.\ndiff --git a/config.cjs b/config.cjs\nindex 9a3b89a31b98d088efe5ec02b49e0ea6d2092904..5ef16b57126472a63a48f2eda275dba7273ae305\n--- a/config.cjs\n+++ b/config.cjs\n@@ -1,3 +1,61 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const DEFAULTS = Object.freeze({\n+  port: 3000,\n+  host: '127.0.0.1',\n+  retries: 2,\n+  logLevel: 'info',\n+});\n+const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);\n+const ALLOWED_KEYS = new Set(Object.keys(DEFAULTS));\n+\n+function invalid(message) {\n+  throw new Error(`Invalid configuration: ${message}`);\n+}\n+\n+function parseConfig(text) {\n+  if (typeof text !== 'string') {\n+    invalid('input must be a JSON string');\n+  }\n+\n+  let input;\n+  try {\n+    input = JSON.parse(text);\n+  } catch {\n+    invalid('input is not valid JSON');\n+  }\n+\n+  if (input === null || Array.isArray(input) || typeof input !== 'object') {\n+    invalid('JSON value must be an object');\n+  }\n+\n+  for (const key of Object.keys(input)) {\n+    if (!ALLOWED_KEYS.has(key)) {\n+      invalid(`unknown key: ${key}`);\n+    }\n+  }\n+\n+  const result = {\n+    port: input.port === undefined ? DEFAULTS.port : input.port,\n+    host: input.host === undefined ? DEFAULTS.host : input.host,\n+    retries: input.retries === undefined ? DEFAULTS.retries : input.retries,\n+    logLevel: input.logLevel === undefined ? DEFAULTS.logLevel : input.logLevel,\n+  };\n+\n+  if (!Number.isInteger(result.port) || result.port < 1 || result.port > 65535) {\n+    invalid('port must be an integer from 1 to 65535');\n+  }\n+  if (!Number.isInteger(result.retries) || result.retries < 0 || result.retries > 10) {\n+    invalid('retries must be an integer from 0 to 10');\n+  }\n+  if (typeof result.host !== 'string' || result.host.length < 1 || result.host.length > 253 || /\\s/u.test(result.host)) {\n+    invalid('host must be 1 to 253 characters without whitespace');\n+  }\n+  if (typeof result.logLevel !== 'string' || !LOG_LEVELS.has(result.logLevel)) {\n+    invalid('logLevel must be debug, info, warn, or error');\n+  }\n+\n+  return result;\n+}\n+\n+module.exports = { parseConfig };\ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..946dac2f1775a06fef41b21798f43005045bd031\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,44 @@\n+'use strict';\n+\n+const test = require('node:test');\n+const assert = require('node:assert/strict');\n+const { parseConfig } = require('./config.cjs');\n+\n+test('uses defaults and returns the documented keys', () => {\n+  assert.deepStrictEqual(parseConfig('{}'), {\n+    port: 3000,\n+    host: '127.0.0.1',\n+    retries: 2,\n+    logLevel: 'info',\n+  });\n+});\n+\n+test('accepts valid overrides', () => {\n+  const config = parseConfig(JSON.stringify({ port: 65535, host: 'api.example', retries: 0, logLevel: 'debug' }));\n+  assert.deepStrictEqual(config, { port: 65535, host: 'api.example', retries: 0, logLevel: 'debug' });\n+  assert.notStrictEqual(config, parseConfig('{}'));\n+});\n+\n+test('rejects malformed input, non-objects, and unknown keys', () => {\n+  for (const input of [42, null, [], 'not json', '{\"extra\":true}']) {\n+    assert.throws(() => parseConfig(input));\n+  }\n+});\n+\n+test('rejects explicit null, incorrect types, and invalid ranges', () => {\n+  const invalidConfigs = [\n+    { port: null }, { port: 0 }, { port: 65536 }, { port: 1.5 }, { port: '3000' },\n+    { host: null }, { host: '' }, { host: 'a b' }, { host: 'a\\n' }, { host: 'x'.repeat(254) },\n+    { retries: null }, { retries: -1 }, { retries: 11 }, { retries: 1.1 }, { retries: '2' },\n+    { logLevel: null }, { logLevel: 'trace' }, { logLevel: 1 },\n+  ];\n+  for (const config of invalidConfigs) {\n+    assert.throws(() => parseConfig(JSON.stringify(config)), Error);\n+  }\n+});\n+\n+test('does not share mutable result state', () => {\n+  const first = parseConfig('{}');\n+  first.port = 8080;\n+  assert.equal(parseConfig('{}').port, 3000);\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command \"node --test test.cjs; Write-Output '--- diff ---'; git diff --check; git diff --stat; git status --short\" in [REDACTED USER PATH]\n succeeded in 1047ms:\n✔ uses defaults and returns the documented keys (2.4138ms)\n✔ accepts valid overrides (0.3395ms)\n✔ rejects malformed input, non-objects, and unknown keys (0.5882ms)\n✔ rejects explicit null, incorrect types, and invalid ranges (0.882ms)\n✔ does not share mutable result state (1.7551ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 153.2188\n--- diff ---\r\n README.md  | 22 +++++++++++++++++++++-\n config.cjs | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--\n 2 files changed, 81 insertions(+), 3 deletions(-)\n M README.md\n M config.cjs\n?? test.cjs\n\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"COMPLETE\",\"summary\":\"Implemented strict JSON configuration parsing with defaults, validation, fresh result objects, focused Node tests, and API documentation including self-test and recovery limitations.\",\"filesChanged\":[\"config.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"5 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; implementation and tests are complete.\",\"createdAt\":\"2026-10-21T06:32:00.000Z\"}\ncodex\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"COMPLETE\",\"summary\":\"Implemented strict configuration parsing, validation, tests, and documentation.\",\"filesChanged\":[\"config.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"5 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; implementation and tests are complete.\",\"createdAt\":\"2026-10-21T06:32:00.000Z\"}\n2026-10-21T06:30:46.574116Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\ntokens used\n38,406\n{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\"megaTaskId\":\"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\"status\":\"COMPLETE\",\"summary\":\"Implemented strict configuration parsing, validation, tests, and documentation.\",\"filesChanged\":[\"config.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"5 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; implementation and tests are complete.\",\"createdAt\":\"2026-10-21T06:32:00.000Z\"}\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-21T06:28:05.650Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:05.666Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:28:05.708Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:05.724Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:05.733Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:08.410Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:28:09.695Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:11.083Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:12.463Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:13.804Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:15.234Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:16.625Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:18.020Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:19.375Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:20.740Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:22.101Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:23.449Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:24.779Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:26.132Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:27.444Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:28.815Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:30.275Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:31.669Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:33.024Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:34.392Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:35.754Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:37.100Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:38.441Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:39.803Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:41.173Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:42.533Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:43.906Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:45.273Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:46.640Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:48.010Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:49.349Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:50.704Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:52.072Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:53.431Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:54.761Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:56.118Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:57.470Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:28:58.844Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:00.210Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:01.553Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:02.959Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:04.341Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:05.733Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:07.079Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:08.431Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:09.799Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:11.183Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:12.630Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:13.979Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:15.339Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:16.706Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:18.045Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:19.431Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:20.829Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:22.227Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:23.582Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:24.962Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:26.338Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:27.712Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:29.096Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:30.456Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:31.825Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:33.197Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:34.619Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:35.966Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:37.350Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:38.849Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:40.212Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:41.604Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:42.987Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:44.336Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:45.703Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:47.079Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:48.428Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:49.763Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:51.157Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:52.746Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:54.326Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:55.740Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:57.154Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:58.553Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:29:59.933Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:02.362Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:03.918Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:05.922Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:07.308Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:08.689Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:10.092Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:11.542Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:13.166Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:14.753Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:16.128Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:17.522Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:18.895Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:20.252Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:21.645Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:23.027Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:24.410Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:25.918Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:27.676Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:29.119Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:30.962Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:33.173Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:34.572Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:35.971Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:37.353Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:38.740Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:40.140Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:41.528Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:42.903Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:44.293Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:45.653Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:47.061Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:48.460Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:49.845Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:51.920Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      }
+    ],
+    "lifecycle": {
+      "status": "complete",
+      "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 13.317399999999907
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 6,
+      "total": 6,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": true
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": true
+        },
+        {
+          "name": "invalid-values",
+          "passed": true
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": true
+        },
+        {
+          "name": "independent-results",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "9f079aa3577f63d6b64c14caf00804b39f02365f083ad36d31c6dbecbc67ba95",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  },
+  {
+    "id": "rest-api-1-planwharf-8204f743",
+    "taskId": "rest-api",
+    "category": "medium",
+    "pairId": "rest-api-1",
+    "arm": "planwharf",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+    "starterHash": "ae5f280d9d7a9cc4baa1e32801e2865dbec71597a1fb80d2323b016667e593db",
+    "outcome": "defective",
+    "wallMs": 218363.042,
+    "evaluationMs": 3239.882500000007,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": null,
+        "sessionId": "01a15d27-e4df-7ec2-83b9-d5271295e765",
+        "launchMs": 15.681499999999687
+      },
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-2",
+        "usage": {
+          "inputTokens": 305033,
+          "outputTokens": 5318,
+          "cachedInputTokens": 275584,
+          "reasoningTokens": 855
+        },
+        "exitCode": 0,
+        "sessionId": "01a15d28-bc79-7693-a4df-0d41e4abda75",
+        "launchMs": 10.495999999999185
+      }
+    ],
+    "invocations": 2,
+    "usageScope": "all_calls",
+    "faultInjected": true,
+    "recoveryAttempted": true,
+    "restarts": 1,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 2,
+    "diagnostic": "atus, 400);\n+    assert.equal((await request(base, 'GET', '/unknown')).response.status, 404);\n+    assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), { version: 1, items: [] });\n+  });\n+});\n+\n+test('serializes concurrent mutations and rejects oversized bodies', async () => {\n+  await withServer(async base => {\n+    const responses = await Promise.all(Array.from({ length: 12 }, (_, i) => request(base, 'POST', '/items', { id: `item-${i}`, title: `Item ${i}` })));\n+    assert.ok(responses.every(x => x.response.status === 201));\n+    assert.equal((await request(base, 'GET', '/items')).body.length, 12);\n+    const oversized = await fetch(base + '/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: 'large', title: 'x'.repeat(20000) }) });\n+    assert.equal(oversized.status, 413);\n+    assert.equal((await request(base, 'GET', '/items/large')).response.status, 404);\n+  });\n+});\n+\n+test('malformed existing stores fail closed and staging hooks run around durable commits', async () => {\n+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rest-items-malformed-'));\n+  const file = path.join(dir, 'items.json');\n+  await fs.writeFile(file, '{not-json');\n+  const server = createServer({ file });\n+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));\n+  try { const address = server.address(); assert.equal((await request(`http://127.0.0.1:${address.port}`, 'GET', '/items')).response.status, 500); }\n+  finally { await new Promise(resolve => server.close(resolve)); await fs.rm(dir, { recursive: true, force: true }); }\n+\n+  const stages = [];\n+  await withServer(async (base, committedFile) => {\n+    const result = await request(base, 'POST', '/items', { id: 'one', title: 'One' });\n+    assert.equal(result.response.status, 201);\n+    assert.deepEqual(stages, ['beforeCommit', 'afterCommit']);\n+    assert.equal(JSON.parse(await fs.readFile(committedFile, 'utf8')).items[0].id, 'one');\n+  }, { onStage: stage => { stages.push(stage); } });\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test test.cjs' in [REDACTED USER PATH]\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01\",\"megaTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0\",\"status\":\"COMPLETE\",\"summary\":\"Initial tests exposed a test-harness issue rather than a service failure; I’m rerunning with full diagnostics and will correct only the focused test setup if needed.\",\"filesChanged\":[\"api.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"FAILED\",\"evidence\":\"All four tests reported failure; detailed assertion output was not captured in the first shell invocation.\"}],\"blockers\":[],\"nextAction\":\"Capture assertion diagnostics, fix tests or implementation, and rerun.\",\"createdAt\":\"2026-10-21T06:30:56.400Z\"}\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test test.cjs 2>&1' in [REDACTED USER PATH]\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test --test-reporter=tap test.cjs 2>&1' in [REDACTED USER PATH]\napply patch\npatch: completed\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 135c37de616cb330df4fc8f2f138c1fa04028a46..65c5f20a988b872e52a1f99e9dfe8fe15b70c6cc\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,32 @@\n # Persistent REST item service\n \n-Implementation and self-test documentation goes here.\n+`api.cjs` exports `createServer({ file, onStage })`. It returns an unbound\n+Node `http.Server`; the caller owns `listen()` and `close()`:\n+\n+```js\n+const { createServer } = require('./api.cjs');\n+const server = createServer({ file: '/var/lib/items.json' });\n+server.listen(0, '127.0.0.1');\n+```\n+\n+The service exposes `GET /items`, `GET /items/:id`, `POST /items`,\n+`PATCH /items/:id`, and `DELETE /items/:id`. Items use IDs matching\n+`^[a-z][a-z0-9-]{0,31}$`, trimmed titles of 1–80 characters, and boolean\n+`done` values. POST defaults `done` to `false`; unknown properties and invalid\n+JSON receive a JSON error response.\n+\n+Data is stored at the exact supplied path as `{ \"version\": 1, \"items\": [] }`.\n+Missing parent directories are created and a missing file starts empty. An\n+existing malformed store is rejected (the service returns an internal error\n+instead of resetting it). Mutations are serialized and committed through a\n+durable temporary file replacement. `onStage('beforeCommit')` runs immediately\n+before replacement and `onStage('afterCommit')` after the replacement and\n+directory sync; a hook may be used to test process-failure recovery. Temporary\n+files are never treated as stores. Cross-process concurrent writers are out of\n+scope.\n+\n+Run the self-test with:\n+\n+```sh\n+node --test test.cjs\n+```\ndiff --git a/api.cjs b/api.cjs\nindex 1010d423ff5e1762510487ea6fffcc26836985d3..97bbf68b187a008c1604bb96332b895946de190d\n--- a/api.cjs\n+++ b/api.cjs\n@@ -18,7 +18,7 @@\n async function load(file) { try { return parse(await fs.readFile(file, 'utf8'), file); } catch (e) { if (e.code === 'ENOENT') return { version: 1, items: [] }; throw e; } }\n async function replace(file, text) {\n   const dir = path.dirname(file), tmp = path.join(dir, `.${path.basename(file)}.${process.pid}.${crypto.randomUUID()}.tmp`); let h;\n-  try { h = await fs.open(tmp, 'wx', 0o600); await h.writeFile(text); await h.sync(); await h.close(); h = undefined; await fs.rename(tmp, file); const d = await fs.open(dir, 'r'); try { await d.sync(); } finally { await d.close(); } }\n+  try { h = await fs.open(tmp, 'wx', 0o600); await h.writeFile(text); await h.sync(); await h.close(); h = undefined; await fs.rename(tmp, file); const d = await fs.open(dir, 'r'); try { await d.sync(); } catch (e) { if (!['EPERM', 'EINVAL', 'ENOTSUP'].includes(e.code)) throw e; } finally { await d.close(); } }\n   catch (e) { if (h) await h.close().catch(() => {}); await fs.unlink(tmp).catch(() => {}); throw e; }\n }\n \ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..d042b870c0d509e73d7574d5160b2d11620924e6\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,78 @@\n+'use strict';\n+\n+const test = require('node:test');\n+const assert = require('node:assert/strict');\n+const fs = require('node:fs/promises');\n+const os = require('node:os');\n+const path = require('node:path');\n+const { createServer } = require('./api.cjs');\n+\n+async function withServer(fn, options = {}) {\n+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rest-items-'));\n+  const file = path.join(dir, 'nested', 'items.json');\n+  const server = createServer({ file, ...options });\n+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));\n+  const address = server.address();\n+  try { return await fn(`http://127.0.0.1:${address.port}`, file); }\n+  finally { await new Promise(resolve => server.close(resolve)); await fs.rm(dir, { recursive: true, force: true }); }\n+}\n+\n+async function request(base, method, route, body) {\n+  const response = await fetch(base + route, { method, headers: body === undefined ? undefined : { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });\n+  const text = await response.text();\n+  return { response, body: text ? JSON.parse(text) : undefined };\n+}\n+\n+test('CRUD persists, validates, sorts, and creates parent directories', async () => {\n+  await withServer(async (base, file) => {\n+    assert.equal((await request(base, 'POST', '/items', { id: 'z-item', title: '  Zed  ' })).response.status, 201);\n+    const created = await request(base, 'POST', '/items', { id: 'a-item', title: 'Alpha', done: true });\n+    assert.deepEqual(created.body, { id: 'a-item', title: 'Alpha', done: true });\n+    assert.equal(created.response.headers.get('location'), '/items/a-item');\n+    assert.deepEqual((await request(base, 'GET', '/items')).body.map(x => x.id), ['a-item', 'z-item']);\n+    assert.deepEqual((await request(base, 'PATCH', '/items/z-item', { done: true })).body, { id: 'z-item', title: 'Zed', done: true });\n+    assert.equal((await request(base, 'DELETE', '/items/a-item')).response.status, 204);\n+    assert.deepEqual(JSON.parse(await fs.readFile(file, 'utf8')), { version: 1, items: [{ id: 'z-item', title: 'Zed', done: true }] });\n+  });\n+});\n+\n+test('rejects malformed input and unknown routes without committing', async () => {\n+  await withServer(async (base, file) => {\n+    for (const body of [{ id: 'Bad', title: 'x' }, { id: 'ok', title: 'x', extra: 1 }, { id: 'ok', title: '' }]) {\n+      assert.equal((await request(base, 'POST', '/items', body)).response.status, 400);\n+    }\n+    const malformed = await fetch(base + '/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{' });\n+    assert.equal(malformed.status, 400);\n+    assert.equal((await request(base, 'GET', '/unknown')).response.status, 404);\n+    await assert.rejects(fs.readFile(file, 'utf8'), { code: 'ENOENT' });\n+  });\n+});\n+\n+test('serializes concurrent mutations and rejects oversized bodies', async () => {\n+  await withServer(async base => {\n+    const responses = await Promise.all(Array.from({ length: 12 }, (_, i) => request(base, 'POST', '/items', { id: `item-${i}`, title: `Item ${i}` })));\n+    assert.ok(responses.every(x => x.response.status === 201));\n+    assert.equal((await request(base, 'GET', '/items')).body.length, 12);\n+    const oversized = await fetch(base + '/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: 'large', title: 'x'.repeat(20000) }) });\n+    assert.equal(oversized.status, 413);\n+    assert.equal((await request(base, 'GET', '/items/large')).response.status, 404);\n+  });\n+});\n+\n+test('malformed existing stores fail closed and staging hooks run around durable commits', async () => {\n+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rest-items-malformed-'));\n+  const file = path.join(dir, 'items.json');\n+  await fs.writeFile(file, '{not-json');\n+  const server = createServer({ file });\n+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));\n+  try { const address = server.address(); assert.equal((await request(`http://127.0.0.1:${address.port}`, 'GET', '/items')).response.status, 500); }\n+  finally { await new Promise(resolve => server.close(resolve)); await fs.rm(dir, { recursive: true, force: true }); }\n+\n+  const stages = [];\n+  await withServer(async (base, committedFile) => {\n+    const result = await request(base, 'POST', '/items', { id: 'one', title: 'One' });\n+    assert.equal(result.response.status, 201);\n+    assert.deepEqual(stages, ['beforeCommit', 'afterCommit']);\n+    assert.equal(JSON.parse(await fs.readFile(committedFile, 'utf8')).items[0].id, 'one');\n+  }, { onStage: stage => { stages.push(stage); } });\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test --test-reporter=tap test.cjs 2>&1' in [REDACTED USER PATH]\n succeeded in 889ms:\nTAP version 13\n# Subtest: CRUD persists, validates, sorts, and creates parent directories\nok 1 - CRUD persists, validates, sorts, and creates parent directories\n  ---\n  duration_ms: 176.915\n  type: 'test'\n  ...\n# Subtest: rejects malformed input and unknown routes without committing\nok 2 - rejects malformed input and unknown routes without committing\n  ---\n  duration_ms: 48.3116\n  type: 'test'\n  ...\n# Subtest: serializes concurrent mutations and rejects oversized bodies\nok 3 - serializes concurrent mutations and rejects oversized bodies\n  ---\n  duration_ms: 125.9761\n  type: 'test'\n  ...\n# Subtest: malformed existing stores fail closed and staging hooks run around durable commits\nok 4 - malformed existing stores fail closed and staging hooks run around durable commits\n  ---\n  duration_ms: 20.609\n  type: 'test'\n  ...\n1..4\n# tests 4\n# suites 0\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 506.7838\n\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01\",\"megaTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0\",\"status\":\"COMPLETE\",\"summary\":\"Implemented and documented the persistent REST item service, added four automated test groups, and made durable replacement portable on Windows where directory fsync is unsupported. All tests pass.\",\"filesChanged\":[\"api.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test --test-reporter=tap test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed, 0 skipped.\"}],\"blockers\":[],\"nextAction\":\"None; the working files are ready for the Planwharf runner.\",\"createdAt\":\"2026-10-21T06:30:56.400Z\"}\nexec\n\"[REDACTED USER PATH]\" -Command 'git status --short; git diff --stat; git diff --check' in [REDACTED USER PATH]\n succeeded in 446ms:\n M README.md\n M api.cjs\n?? test.cjs\n README.md | 31 ++++++++++++++++++++++++++++++-\n api.cjs   | 50 ++++++++++++++++++++++++++++++++++++++++++++++++--\n 2 files changed, 78 insertions(+), 3 deletions(-)\n\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01\",\"megaTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0\",\"status\":\"COMPLETE\",\"summary\":\"Implemented and documented the persistent REST item service, added automated coverage, and handled Windows directory-fsync limitations. All tests pass.\",\"filesChanged\":[\"api.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test --test-reporter=tap test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed, 0 skipped.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; working files are ready for the Planwharf runner.\",\"createdAt\":\"2026-10-21T08:35:00.000Z\"}\n2026-10-21T06:34:26.068840Z ERROR codex_core::session: failed to record rollout items: thread 01a15d28-bc79-7693-a4df-0d41e4abda75 not found\n2026-10-21T06:34:26.068978Z ERROR codex_core::session: failed to record rollout items: thread 01a15d28-bc79-7693-a4df-0d41e4abda75 not found\n2026-10-21T06:34:26.069118Z ERROR codex_core::session: failed to record rollout items: thread 01a15d28-bc79-7693-a4df-0d41e4abda75 not found\ntokens used\n34,767\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0-ST-01\",\"megaTaskId\":\"MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0\",\"status\":\"COMPLETE\",\"summary\":\"Implemented and documented the persistent REST item service, added automated coverage, and handled Windows directory-fsync limitations. All tests pass.\",\"filesChanged\":[\"api.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test --test-reporter=tap test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed, 0 skipped.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"None; working files are ready for the Planwharf runner.\",\"createdAt\":\"2026-10-21T08:35:00.000Z\"}\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-21T06:30:53.782Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:53.796Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:30:53.826Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:53.845Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:53.855Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:56.415Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:30:57.747Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:30:59.120Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:00.481Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:01.862Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:03.253Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:04.614Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:05.979Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:07.380Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:08.755Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:10.115Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:11.510Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:12.908Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:14.684Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:16.748Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:18.247Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:19.635Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:21.195Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:22.782Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:24.289Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:25.821Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:27.326Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:28.827Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:30.304Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:31.870Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:33.466Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:35.064Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:36.635Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:38.102Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:39.629Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:41.182Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:42.726Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:45.291Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:47.446Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:48.868Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:50.427Z",
+        "route": "/api/orchestrator/stop",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:50.465Z",
+        "route": "/api/execution?projectId=benchmark-rest-api",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:52.969Z",
+        "route": "/api/orchestrator/resume",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:54.436Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:55.803Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:57.152Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:58.533Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:31:59.861Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:01.200Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:02.544Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:03.950Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:05.304Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:06.692Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:08.071Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:09.443Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:10.814Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:12.151Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:13.544Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:14.926Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:16.271Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:17.610Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:18.960Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:20.315Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:21.750Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:23.143Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:24.520Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:25.887Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:27.289Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:28.677Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:30.051Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:31.445Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:32.829Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:34.219Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:35.689Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:37.101Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:38.484Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:39.856Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:41.226Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:42.584Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:43.959Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:45.327Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:46.700Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:48.107Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:49.450Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:50.833Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:52.493Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:54.078Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:55.455Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:56.821Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:58.179Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:32:59.586Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:00.964Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:02.449Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:04.569Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:06.346Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:08.459Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:10.034Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:11.436Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:12.847Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:14.311Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:15.980Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:17.348Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:18.689Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:20.061Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:21.520Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:22.915Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:24.296Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:25.662Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:27.240Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:28.617Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:30.005Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:31.396Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:32.830Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:34.225Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:35.576Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:36.983Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:38.359Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:39.724Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:41.095Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:42.466Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:43.820Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:45.191Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:46.552Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:47.920Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:49.289Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:50.661Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:52.015Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:53.386Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:54.890Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:56.751Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:33:58.145Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:00.094Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:01.442Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:02.842Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:04.223Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:05.563Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:06.900Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:08.257Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:09.628Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:10.981Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:12.367Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:14.027Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:15.393Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:16.795Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:18.169Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:19.540Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:20.917Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:22.345Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:23.739Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:25.105Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:26.538Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:34:28.605Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      }
+    ],
+    "lifecycle": {
+      "status": "complete",
+      "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 26.177499999998872
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "rest-api",
+      "passed": 5,
+      "total": 8,
+      "outcome": "completed-with-defects",
+      "checks": [
+        {
+          "name": "crud",
+          "passed": false,
+          "detail": "[REDACTED USER PATH]\r\nconst error = (message, status = 400) => Object.assign(new Error(message), { status });\r\n                                                       ^\r\n\r\nError: Duplicate id\r\n    at error ([REDACTED USER PATH]\r\n    at [REDACTED USER PATH]\r\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {\r\n  status: 409\r\n}\r\n\r\nNode.js v24.19.0\r\nAssertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\\win\\async.c, line 94\r\n"
+        },
+        {
+          "name": "validation",
+          "passed": true
+        },
+        {
+          "name": "parallel-writes",
+          "passed": false,
+          "detail": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n    {\n      done: false,\n+     id: 'j01',\n+     title: 'Item 1'\n-     id: 'j00',\n-     title: 'Item 0'\n    },\n    {\n      done: false,\n+     id: 'j03',\n+     title: 'Item 3'\n-     id: 'j01',\n-     title: 'Item 1'\n    },\n    {\n      done: false,\n+     id: 'j05',\n+     title: 'Item 5'\n-     id: 'j02',\n-     title: 'Item 2'\n    },\n    {\n      done: false,\n+     id: 'j07',\n+     title: 'Item 7'\n-     id: 'j03',\n-     title: 'Item 3'\n    },\n    {\n      done: false,\n+     id: 'j09',\n+     title: 'Item 9'\n-     id: 'j04',\n-     title: 'Item 4'\n    },\n    {\n      done: false,\n+     id: 'j10',\n+     title: 'Item 10'\n-     id: 'j05',\n-     title: 'Item 5'\n    },\n    {\n      done: false,\n+     id: 'j12',\n+     title: 'Item 12'\n-     id: 'j06',\n-     title: 'Item 6'\n    },\n    {\n      done: false,\n+     id: 'j14',\n+     title: 'Item 14'\n-     id: 'j07',\n-     title: 'Item 7'\n    },\n    {\n      done: false,\n+     id: 'j00',\n+     title: 'Item 0'\n-     id: 'j08',\n-     title: 'Item 8'\n    },\n    {\n      done: false,\n+     id: 'j02',\n+     title: 'Item 2'\n-     id: 'j09',\n-     title: 'Item 9'\n    },\n    {\n      done: false,\n+     id: 'j04',\n+     title: 'Item 4'\n-     id: 'j10',\n-     title: 'Item 10'\n    },\n    {\n      done: false,\n+     id: 'j06',\n+     title: 'Item 6'\n-     id: 'j11',\n-     title: 'Item 11'\n    },\n    {\n      done: false,\n+     id: 'j08',\n+     title: 'Item 8'\n-     id: 'j12',\n-     title: 'Item 12'\n   "
+        },
+        {
+          "name": "restart",
+          "passed": true
+        },
+        {
+          "name": "before-commit-crash",
+          "passed": true
+        },
+        {
+          "name": "after-commit-crash",
+          "passed": true
+        },
+        {
+          "name": "corrupt-store",
+          "passed": false,
+          "detail": "Missing expected rejection."
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "671c5e06b182f06e17cce4bda69e5948725d3d20234878a4de4564cbd118ef5a",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": false
+  },
+  {
+    "id": "rest-api-1-direct-42481059",
+    "taskId": "rest-api",
+    "category": "medium",
+    "pairId": "rest-api-1",
+    "arm": "direct",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "3d7fd8c8a19aa49f2ac1ffd85c58a2130e41416d",
+    "starterHash": "ae5f280d9d7a9cc4baa1e32801e2865dbec71597a1fb80d2323b016667e593db",
+    "outcome": "defective",
+    "wallMs": 102639.13170000003,
+    "evaluationMs": 3135.0679000000237,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "usage": null,
+        "wallMs": 38113.624700000044,
+        "exitCode": 1,
+        "threadId": "01a15d2b-2b88-7b22-ae81-6e1889264948"
+      },
+      {
+        "usage": {
+          "inputTokens": 243494,
+          "outputTokens": 9613,
+          "cachedInputTokens": 226688,
+          "reasoningTokens": 1198
+        },
+        "wallMs": 61377.1128,
+        "exitCode": 0,
+        "threadId": "01a15d2b-2b88-7b22-ae81-6e1889264948"
+      }
+    ],
+    "invocations": 2,
+    "usageScope": "all_calls",
+    "faultInjected": true,
+    "recoveryAttempted": true,
+    "restarts": 1,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 1,
+    "diagnostic": "2026-10-21T06:34:32.909600Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n2026-10-21T06:34:58.435066Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target [REDACTED USER PATH]\n\n2026-10-21T06:35:10.901351Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n",
+    "timing": {
+      "cliWallMs": 99490.73750000005,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "rest-api",
+      "passed": 7,
+      "total": 8,
+      "outcome": "completed-with-defects",
+      "checks": [
+        {
+          "name": "crud",
+          "passed": true
+        },
+        {
+          "name": "validation",
+          "passed": true
+        },
+        {
+          "name": "parallel-writes",
+          "passed": false,
+          "detail": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  [\n    {\n      done: false,\n-     id: 'j00',\n-     title: 'Item 0'\n-   },\n-   {\n-     done: false,\n      id: 'j01',\n      title: 'Item 1'\n    },\n    {\n      done: false,\n...\n      done: false,\n+     id: 'j04',\n+     title: 'Item 4'\n-     id: 'j03',\n-     title: 'Item 3'\n    },\n    {\n      done: false,\n+     id: 'j06',\n+     title: 'Item 6'\n-     id: 'j04',\n-     title: 'Item 4'\n    },\n    {\n      done: false,\n+     id: 'j08',\n+     title: 'Item 8'\n-     id: 'j05',\n-     title: 'Item 5'\n    },\n    {\n      done: false,\n+     id: 'j10',\n+     title: 'Item 10'\n-     id: 'j06',\n-     title: 'Item 6'\n    },\n    {\n      done: false,\n+     id: 'j12',\n+     title: 'Item 12'\n-     id: 'j07',\n-     title: 'Item 7'\n    },\n    {\n      done: false,\n+     id: 'j14',\n+     title: 'Item 14'\n-     id: 'j08',\n-     title: 'Item 8'\n    },\n    {\n      done: false,\n+     id: 'j00',\n+     title: 'Item 0'\n-     id: 'j09',\n-     title: 'Item 9'\n    },\n    {\n      done: false,\n+     id: 'j03',\n+     title: 'Item 3'\n-     id: 'j10',\n-     title: 'Item 10'\n    },\n    {\n      done: false,\n+     id: 'j05',\n+     title: 'Item 5'\n-     id: 'j11',\n-     title: 'Item 11'\n    },\n    {\n      done: false,\n+     id: 'j07',\n+     title: 'Item 7'\n-     id: 'j12',\n-     title: 'Item 12'\n    },\n    {\n      done: false,\n+     id: 'j09',\n+     title: 'Item 9'\n-     id: 'j13',\n-     title: 'Item 13'\n    },\n    {\n      done: false,\n+     i"
+        },
+        {
+          "name": "restart",
+          "passed": true
+        },
+        {
+          "name": "before-commit-crash",
+          "passed": true
+        },
+        {
+          "name": "after-commit-crash",
+          "passed": true
+        },
+        {
+          "name": "corrupt-store",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "bc9438fbc8d936e342baa22d2cbef6bdf3455cbd391616487d2fe0c1ccec4234",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": false
+  },
+  {
+    "id": "scheduler-1-direct-e82bdd1b",
+    "taskId": "scheduler",
+    "category": "complex",
+    "pairId": "scheduler-1",
+    "arm": "direct",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "starterHash": "7437b3eb0a039e7767e834a43d511f3e6c1d1cfeed2bc8472ce168d72cb5e950",
+    "outcome": "accepted",
+    "wallMs": 123408.83659999992,
+    "evaluationMs": 2773.7793999999994,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "usage": null,
+        "wallMs": 51394.51060000004,
+        "exitCode": 1,
+        "threadId": "01a15d2c-bef6-7381-b66a-68f624f71c9a"
+      },
+      {
+        "usage": {
+          "inputTokens": 394248,
+          "outputTokens": 12522,
+          "cachedInputTokens": 375680,
+          "reasoningTokens": 3240
+        },
+        "wallMs": 69225.83439999993,
+        "exitCode": 0,
+        "threadId": "01a15d2c-bef6-7381-b66a-68f624f71c9a"
+      }
+    ],
+    "invocations": 2,
+    "usageScope": "all_calls",
+    "faultInjected": true,
+    "recoveryAttempted": true,
+    "restarts": 1,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 1,
+    "diagnostic": "2026-10-21T06:36:16.189852Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n2026-10-21T06:36:53.512677Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target [REDACTED USER PATH]\n\n2026-10-21T06:37:07.435995Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n",
+    "timing": {
+      "cliWallMs": 120620.34499999997,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "scheduler",
+      "passed": 10,
+      "total": 10,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "graph-and-concurrency",
+          "passed": true
+        },
+        {
+          "name": "failed-dependencies",
+          "passed": true
+        },
+        {
+          "name": "batch-validation",
+          "passed": true
+        },
+        {
+          "name": "joined-runs",
+          "passed": true
+        },
+        {
+          "name": "detached-snapshots",
+          "passed": true
+        },
+        {
+          "name": "restart-completed",
+          "passed": true
+        },
+        {
+          "name": "claimed-crash",
+          "passed": true
+        },
+        {
+          "name": "completed-crash",
+          "passed": true
+        },
+        {
+          "name": "corrupt-checkpoint",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "d0f89e19b355862997ded12c041b7582bed3bcd6d8292d46dc889bc5b8ac83e9",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": true
+  },
+  {
+    "id": "scheduler-1-planwharf-6ad13fbf",
+    "taskId": "scheduler",
+    "category": "complex",
+    "pairId": "scheduler-1",
+    "arm": "planwharf",
+    "scenario": "implementation-interruption",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "starterHash": "7437b3eb0a039e7767e834a43d511f3e6c1d1cfeed2bc8472ce168d72cb5e950",
+    "outcome": "accepted",
+    "wallMs": 131800.64360000007,
+    "evaluationMs": 2224.767000000109,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-1",
+        "usage": null,
+        "exitCode": null,
+        "sessionId": "01a15d2e-b3e5-78e3-94da-eb8b14a0a9d3",
+        "launchMs": 13.11790000000019
+      },
+      {
+        "role": "worker",
+        "exactModel": "gpt-5.6-luna",
+        "attemptId": "attempt-2",
+        "usage": {
+          "inputTokens": 148851,
+          "outputTokens": 5033,
+          "cachedInputTokens": 123520,
+          "reasoningTokens": 1519
+        },
+        "exitCode": 0,
+        "sessionId": "01a15d2f-a969-7930-a803-81fbf8868923",
+        "launchMs": 11.193400000003749
+      }
+    ],
+    "invocations": 2,
+    "usageScope": "all_calls",
+    "faultInjected": true,
+    "recoveryAttempted": true,
+    "restarts": 1,
+    "initialApprovals": 1,
+    "scriptedRecoveryActions": 2,
+    "diagnostic": "qual(JSON.parse(fs.readFileSync(file,'utf8')).jobs.map(j=>j.id),['zeta','alpha']);\n+});\n+\n+test('runs dependencies in order, respects concurrency, and persists results',async()=>{\n+ const {file}=tempFile(); let active=0,max=0; const seen=[];\n+ const s=createScheduler({file,concurrency:2,execute:async({id,attempt})=>{active++;max=Math.max(max,active);seen.push(`${id}:${attempt}`);await new Promise(r=>setTimeout(r,5));active--;return {id};}});\n+ await s.enqueue([{id:'b',dependsOn:['a']},{id:'c'},{id:'a'}]);\n+ const out=await Promise.all([s.run(),s.run()]);\n+ assert.equal(max,2); assert.deepEqual(seen,['a:1','c:1','b:1']); assert.deepEqual(out[0],out[1]);\n+ assert.deepEqual(s.snapshot().jobs.map(j=>[j.id,j.status,j.attempt]),[['a','completed',1],['b','completed',1],['c','completed',1]]);\n+ const restarted=createScheduler({file,concurrency:1,execute:async()=>{throw Error('should not run')}}); await restarted.run();\n+ assert.equal(restarted.snapshot().jobs.find(j=>j.id==='a').attempt,1);\n+});\n+\n+test('fails jobs, transitively blocks descendants, and continues independent work',async()=>{\n+ const {file}=tempFile(), stages=[];\n+ const s=createScheduler({file,concurrency:2,onStage:async(stage,id)=>stages.push(`${stage}:${id}`),execute:async({id})=>{if(id==='fail')throw new Error('nope');return id;}});\n+ await s.enqueue([{id:'child',dependsOn:['fail']},{id:'grand',dependsOn:['child']},{id:'fail'},{id:'independent'}]);\n+ const result=await s.run();\n+ assert.equal(result.jobs.find(j=>j.id==='fail').error,'nope');\n+ assert.deepEqual(result.jobs.filter(j=>j.status==='blocked').map(j=>j.id),['child','grand']);\n+ assert.equal(result.jobs.find(j=>j.id==='independent').status,'completed');\n+ assert.ok(stages.includes('claimed:fail')&&stages.includes('completed:independent'));\n+});\n+\n+test('recovers running jobs as pending and increments attempt',async()=>{\n+ const {file}=tempFile(); fs.mkdirSync(path.dirname(file),{recursive:true});\n+ fs.writeFileSync(file,JSON.stringify({version:1,jobs:[{id:'crash',dependsOn:[],payload:null,status:'running',attempt:1}]}));\n+ const calls=[]; const s=createScheduler({file,concurrency:1,execute:async x=>{calls.push(x);return 'ok';}});\n+ assert.equal(s.snapshot().jobs[0].status,'pending'); await s.run();\n+ assert.deepEqual(calls,[{id:'crash',payload:null,attempt:2}]);\n+ assert.equal(JSON.parse(fs.readFileSync(file,'utf8')).jobs[0].status,'completed');\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test test.cjs' in [REDACTED USER PATH]\n exited 1 in 734ms:\n✖ validates batches atomically and snapshots are sorted and detached (25.1424ms)\n✔ runs dependencies in order, respects concurrency, and persists results (36.8608ms)\n✔ fails jobs, transitively blocks descendants, and continues independent work (12.6102ms)\n✔ recovers running jobs as pending and increments attempt (24.72ms)\nℹ tests 4\nℹ suites 0\nℹ pass 3\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 214.9935\n\n✖ failing tests:\n\ntest at test.cjs:11:1\n✖ validates batches atomically and snapshots are sorted and detached (25.1424ms)\n  TypeError: Cannot set properties of null (setting 'x')\n      at TestContext.<anonymous> ([REDACTED USER PATH]\n      at async Test.run (node:internal/test_runner/test:1389:7)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)\n\napply patch\npatch: completed\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 2880155dcf65c607d61e6b687091418541400b5b..e7624878b5e20837a80dd79832daae64d2e6e963\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,30 @@\n # Recoverable dependency scheduler\n \n-Implementation and self-test documentation goes here.\n+`scheduler.cjs` exports `createScheduler({ file, concurrency, execute, onStage })`.\n+The factory validates its options and returns `enqueue`, `run`, and `snapshot`.\n+Jobs are JSON-checkpointed atomically, dependency-aware, and executed at most once\n+after a durable completion is recorded.\n+\n+## API\n+\n+`enqueue(jobs)` accepts jobs with an ID, optional `dependsOn`, and optional `payload`.\n+It rejects malformed, duplicate, unknown, cyclic, or otherwise invalid batches\n+without changing the existing checkpoint. `run()` returns the final sorted snapshot;\n+concurrent calls share one drain. `snapshot()` returns a detached snapshot.\n+\n+`onStage(stage, id)` is awaited after durable `claimed` and `completed` transitions.\n+On restart, jobs persisted as `running` are returned to `pending` and retried with an\n+incremented attempt number.\n+\n+## Self-test\n+\n+```text\n+node --test test.cjs\n+```\n+\n+## Recovery limitation\n+\n+This is at-least-once recovery. A process crash after `claimed` and before completion\n+can repeat the side effect, so `execute` should be idempotent or use its attempt/job\n+identity for deduplication. Atomic checkpoint replacement prevents stale temporary\n+files from superseding the committed checkpoint.\ndiff --git a/scheduler.cjs b/scheduler.cjs\nindex 8a4cb15f67cf1adbd313ade327c5fc4788d908fd..b8112a1b31bdca28c770bbe5387472af551d840b\n--- a/scheduler.cjs\n+++ b/scheduler.cjs\n@@ -1,7 +1,7 @@\n 'use strict';\n const fs=require('node:fs'),path=require('node:path');\n const ID=/^[a-z][a-z0-9-]{0,31}$/, OK=new Set(['pending','running','completed','failed','blocked']);\n-const copy=x=>JSON.parse(JSON.stringify(x)), estr=e=>e instanceof Error?e.message:String(e);\n+ const copy=x=>JSON.parse(JSON.stringify(x)), estr=e=>e instanceof Error?e.message:String(e);\n function createScheduler(o){\n  if(!o||typeof o!=='object')throw new TypeError('options are required'); const {file,concurrency,execute,onStage}=o;\n  if(typeof file!=='string'||!file)throw new TypeError('file must be a non-empty string');\n@@ -15,9 +15,9 @@\n  function ready(){return state.jobs.filter(j=>j.status==='pending'&&j.dependsOn.every(d=>state.jobs.find(x=>x.id===d)?.status==='completed')).sort((a,b)=>a.id.localeCompare(b.id))[0];}\n  async function claim(j){j.status='running';j.attempt++;save();if(onStage)await onStage('claimed',j.id);}\n  async function block(id){const bs=state.jobs.filter(j=>j.status==='pending'&&j.dependsOn.some(d=>d===id||state.jobs.find(x=>x.id===d)?.status==='failed'||state.jobs.find(x=>x.id===d)?.status==='blocked'));for(const j of bs){j.status='blocked';save();}for(const j of bs)await block(j.id);}\n- async function work(j){try{const r=await execute({id:j.id,payload:copy(j.payload),attempt:j.attempt});JSON.stringify(r);j.result=copy(r);j.status='completed';delete j.error;save();if(onStage)await onStage('completed',j.id);}catch(e){j.status='failed';j.error=estr(e);delete j.result;save();await block(j.id);}}\n+ async function work(j){let r;try{r=await execute({id:j.id,payload:copy(j.payload),attempt:j.attempt});if(JSON.stringify(r)===undefined)throw new TypeError('execute result must be JSON-serializable');}catch(e){j.status='failed';j.error=estr(e);delete j.result;save();await block(j.id);return;}j.result=copy(r);j.status='completed';delete j.error;save();if(onStage)await onStage('completed',j.id);}\n  async function drain(){if(recovered)save();for(;;){while(active.size<concurrency){const j=ready();if(!j)break;await claim(j);let p;p=work(j).finally(()=>active.delete(p));active.add(p);}if(active.size){await Promise.race(active);continue;}if(!state.jobs.some(j=>j.status==='pending'))break;for(const j of state.jobs.filter(j=>j.status==='pending')){j.status='blocked';save();}break;}return snapshot();}\n- function run(){if(!drainPromise)drainPromise=drain().finally(()=>{drainPromise=null});return drainPromise;}function snapshot(){return copy(state);}return{enqueue,run,snapshot};\n+ function run(){if(!drainPromise)drainPromise=drain().finally(()=>{drainPromise=null});return drainPromise;}function snapshot(){const result=copy(state);result.jobs.sort((a,b)=>a.id.localeCompare(b.id));return result;}return{enqueue,run,snapshot};\n }\n function validate(v){if(!v||v.version!==1||!Array.isArray(v.jobs))throw new Error('checkpoint must contain version 1 and jobs');const ids=new Set();for(const j of v.jobs){if(!j||typeof j.id!=='string'||!ID.test(j.id)||ids.has(j.id))throw new Error('invalid or duplicate checkpoint id');ids.add(j.id);if(!Array.isArray(j.dependsOn)||j.dependsOn.some(d=>typeof d!=='string')||new Set(j.dependsOn).size!==j.dependsOn.length||j.dependsOn.includes(j.id))throw new Error('invalid checkpoint dependencies');if(!OK.has(j.status)||!Number.isInteger(j.attempt)||j.attempt<0)throw new Error('invalid checkpoint job');for(const k of Object.keys(j))if(!['id','dependsOn','payload','status','attempt','result','error'].includes(k))throw new Error('unknown checkpoint field');}for(const j of v.jobs)for(const d of j.dependsOn)if(!ids.has(d))throw new Error('unknown checkpoint dependency');acyclic(v.jobs);}\n function acyclic(js){const m=new Map(js.map(j=>[j.id,j])),v=new Set(),done=new Set();function go(id){if(v.has(id))throw new Error('dependency cycle');if(done.has(id))return;v.add(id);for(const d of m.get(id).dependsOn)go(d);v.delete(id);done.add(id);}for(const j of js)go(j.id);}\ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..edb143e6b4a4dd82be28d6ba39cf3e99c2fec8c1\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,50 @@\n+'use strict';\n+const test=require('node:test');\n+const assert=require('node:assert/strict');\n+const fs=require('node:fs');\n+const os=require('node:os');\n+const path=require('node:path');\n+const {createScheduler}=require('./scheduler.cjs');\n+\n+function tempFile(){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'scheduler-'));return {dir,file:path.join(dir,'nested','checkpoint.json')};}\n+\n+test('validates batches atomically and snapshots are sorted and detached',async()=>{\n+ const {file}=tempFile(), s=createScheduler({file,concurrency:1,execute:async()=>({ok:true})});\n+ await assert.rejects(s.enqueue([{id:'good'},{id:'bad',dependsOn:['missing']}]),/unknown dependency/);\n+ assert.deepEqual(s.snapshot(),{version:1,jobs:[]});\n+ await s.enqueue([{id:'zeta',payload:{n:1}},{id:'alpha',payload:{}}]);\n+ const snap=s.snapshot(); assert.deepEqual(snap.jobs.map(j=>j.id),['alpha','zeta']);\n+ snap.jobs[0].payload.x=2; assert.equal(s.snapshot().jobs[0].payload.x,undefined);\n+ assert.deepEqual(JSON.parse(fs.readFileSync(file,'utf8')).jobs.map(j=>j.id),['zeta','alpha']);\n+});\n+\n+test('runs dependencies in order, respects concurrency, and persists results',async()=>{\n+ const {file}=tempFile(); let active=0,max=0; const seen=[];\n+ const s=createScheduler({file,concurrency:2,execute:async({id,attempt})=>{active++;max=Math.max(max,active);seen.push(`${id}:${attempt}`);await new Promise(r=>setTimeout(r,5));active--;return {id};}});\n+ await s.enqueue([{id:'b',dependsOn:['a']},{id:'c'},{id:'a'}]);\n+ const out=await Promise.all([s.run(),s.run()]);\n+ assert.equal(max,2); assert.deepEqual(seen,['a:1','c:1','b:1']); assert.deepEqual(out[0],out[1]);\n+ assert.deepEqual(s.snapshot().jobs.map(j=>[j.id,j.status,j.attempt]),[['a','completed',1],['b','completed',1],['c','completed',1]]);\n+ const restarted=createScheduler({file,concurrency:1,execute:async()=>{throw Error('should not run')}}); await restarted.run();\n+ assert.equal(restarted.snapshot().jobs.find(j=>j.id==='a').attempt,1);\n+});\n+\n+test('fails jobs, transitively blocks descendants, and continues independent work',async()=>{\n+ const {file}=tempFile(), stages=[];\n+ const s=createScheduler({file,concurrency:2,onStage:async(stage,id)=>stages.push(`${stage}:${id}`),execute:async({id})=>{if(id==='fail')throw new Error('nope');return id;}});\n+ await s.enqueue([{id:'child',dependsOn:['fail']},{id:'grand',dependsOn:['child']},{id:'fail'},{id:'independent'}]);\n+ const result=await s.run();\n+ assert.equal(result.jobs.find(j=>j.id==='fail').error,'nope');\n+ assert.deepEqual(result.jobs.filter(j=>j.status==='blocked').map(j=>j.id),['child','grand']);\n+ assert.equal(result.jobs.find(j=>j.id==='independent').status,'completed');\n+ assert.ok(stages.includes('claimed:fail')&&stages.includes('completed:independent'));\n+});\n+\n+test('recovers running jobs as pending and increments attempt',async()=>{\n+ const {file}=tempFile(); fs.mkdirSync(path.dirname(file),{recursive:true});\n+ fs.writeFileSync(file,JSON.stringify({version:1,jobs:[{id:'crash',dependsOn:[],payload:null,status:'running',attempt:1}]}));\n+ const calls=[]; const s=createScheduler({file,concurrency:1,execute:async x=>{calls.push(x);return 'ok';}});\n+ assert.equal(s.snapshot().jobs[0].status,'pending'); await s.run();\n+ assert.deepEqual(calls,[{id:'crash',payload:null,attempt:2}]);\n+ assert.equal(JSON.parse(fs.readFileSync(file,'utf8')).jobs[0].status,'completed');\n+});\n\nexec\n\"[REDACTED USER PATH]\" -Command 'node --test test.cjs; git diff --check; git status --short' in [REDACTED USER PATH]\n succeeded in 692ms:\n✔ validates batches atomically and snapshots are sorted and detached (24.3873ms)\n✔ runs dependencies in order, respects concurrency, and persists results (32.6828ms)\n✔ fails jobs, transitively blocks descendants, and continues independent work (10.5216ms)\n✔ recovers running jobs as pending and increments attempt (14.6136ms)\nℹ tests 4\nℹ suites 0\nℹ pass 4\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 204.3839\n M README.md\n M scheduler.cjs\n?? test.cjs\n\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a-ST-01\",\"megaTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a\",\"status\":\"COMPLETE\",\"summary\":\"Implementation, tests, and documentation are now in place. The scheduler persists atomic checkpoints, validates batches, orders dependencies, enforces concurrency, recovers running jobs, and returns sorted detached snapshots.\",\"filesChanged\":[\"scheduler.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"Review the changed files or run the self-test command in the workspace.\",\"createdAt\":\"2026-10-21T06:42:00.000Z\"}\ncodex\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a-ST-01\",\"megaTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a\",\"status\":\"COMPLETE\",\"summary\":\"Implemented the recoverable dependency scheduler, added comprehensive Node test coverage, and documented the API and recovery limitations.\",\"filesChanged\":[\"scheduler.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"No remaining work.\",\"createdAt\":\"2026-10-21T06:42:00.000Z\"}\ntokens used\n30,364\n{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a-ST-01\",\"megaTaskId\":\"MT-88558675-6f0a-456b-9398-23369f186f6a\",\"status\":\"COMPLETE\",\"summary\":\"Implemented the recoverable dependency scheduler, added comprehensive Node test coverage, and documented the API and recovery limitations.\",\"filesChanged\":[\"scheduler.cjs\",\"test.cjs\",\"README.md\"],\"tests\":[{\"command\":\"node --test test.cjs\",\"status\":\"PASSED\",\"evidence\":\"4 tests passed, 0 failed.\"},{\"command\":\"git diff --check\",\"status\":\"PASSED\",\"evidence\":\"No whitespace errors reported.\"}],\"blockers\":[],\"nextAction\":\"No remaining work.\",\"createdAt\":\"2026-10-21T06:42:00.000Z\"}\n\n",
+    "httpEvents": [
+      {
+        "at": "2026-10-21T06:38:20.147Z",
+        "route": "/api/plan",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:20.158Z",
+        "route": "/api/projects",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:38:20.194Z",
+        "route": "/api/orchestrator/lead",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:20.212Z",
+        "route": "/api/orchestrator/grill",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:20.222Z",
+        "route": "/api/focus",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:22.705Z",
+        "route": "/api/orchestrator/start",
+        "status": 201
+      },
+      {
+        "at": "2026-10-21T06:38:23.968Z",
+        "route": "/api/orchestrator/approve",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:25.417Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:26.769Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:28.109Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:29.451Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:30.830Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:32.247Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:33.651Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:35.017Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:36.441Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:37.774Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:39.114Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:40.466Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:41.990Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:43.352Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:44.710Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:46.066Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:47.433Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:48.832Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:50.209Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:51.555Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:52.916Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:54.245Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:55.573Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:56.916Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:58.277Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:38:59.603Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:00.997Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:02.346Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:03.691Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:05.037Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:06.369Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:07.729Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:09.109Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:10.449Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:11.794Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:13.144Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:14.513Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:15.874Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:17.225Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:18.583Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:19.958Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:21.331Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:22.921Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:24.389Z",
+        "route": "/api/orchestrator/stop",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:24.420Z",
+        "route": "/api/execution?projectId=benchmark-scheduler",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:26.836Z",
+        "route": "/api/orchestrator/resume",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:28.191Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:29.516Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:30.874Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:32.241Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:33.581Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:34.940Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:36.361Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:37.721Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:39.092Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:40.494Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:41.864Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:43.234Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:44.580Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:45.944Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:47.319Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:48.731Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:50.091Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:51.438Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:52.805Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:54.176Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:55.585Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:56.939Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:58.305Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:39:59.666Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:01.033Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:02.413Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:03.808Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:05.167Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:06.529Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:07.976Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:09.327Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:10.692Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:12.106Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:13.468Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:15.063Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:16.413Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:17.794Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:19.166Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:20.532Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:21.887Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:23.280Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:24.643Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:26.032Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:27.404Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      },
+      {
+        "at": "2026-10-21T06:40:29.437Z",
+        "route": "/api/orchestrator",
+        "status": 200
+      }
+    ],
+    "lifecycle": {
+      "status": "complete",
+      "megaTaskId": "MT-88558675-6f0a-456b-9398-23369f186f6a",
+      "subTasks": [
+        {
+          "type": "IMPLEMENTATION",
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    "timing": {
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": 24.31130000000394
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "scheduler",
+      "passed": 10,
+      "total": 10,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "graph-and-concurrency",
+          "passed": true
+        },
+        {
+          "name": "failed-dependencies",
+          "passed": true
+        },
+        {
+          "name": "batch-validation",
+          "passed": true
+        },
+        {
+          "name": "joined-runs",
+          "passed": true
+        },
+        {
+          "name": "detached-snapshots",
+          "passed": true
+        },
+        {
+          "name": "restart-completed",
+          "passed": true
+        },
+        {
+          "name": "claimed-crash",
+          "passed": true
+        },
+        {
+          "name": "completed-crash",
+          "passed": true
+        },
+        {
+          "name": "corrupt-checkpoint",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "d5375c7e5d13ccdbc15afe00fe105080f4bc8ca89ac71bcb597e5e2e70d8a6e7",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": true
+  }
+]

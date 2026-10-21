@@ -1,0 +1,9 @@
+{
+  "command": "node scripts/engineering/ci.cjs",
+  "exitCode": 0,
+  "engineeringChecks": 333,
+  "reportedTestsPassed": 349,
+  "reportedTestsFailed": 0,
+  "reportedTestsSkipped": 0,
+  "scope": "Complete offline engineering suite including continuation and publication regressions. Native test processes hidden, test home isolated. Final evidence and documentation receive patch/sanitization checks separately."
+}

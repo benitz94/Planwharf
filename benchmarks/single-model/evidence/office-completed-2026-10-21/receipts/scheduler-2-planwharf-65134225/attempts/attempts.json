@@ -1,0 +1,33 @@
+{
+  "nextId": 3,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991-ST-01",
+      "projectId": "benchmark-scheduler",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991",
+      "subTaskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "BLOCKED",
+      "exitCode": null,
+      "closedReason": "blocked"
+    },
+    {
+      "id": "attempt-2",
+      "taskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991-ST-01",
+      "projectId": "benchmark-scheduler",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991",
+      "subTaskId": "MT-96772353-2572-44bd-b0ac-2ca4423c7991-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "COMPLETE",
+      "exitCode": 0,
+      "closedReason": "complete"
+    }
+  ]
+}

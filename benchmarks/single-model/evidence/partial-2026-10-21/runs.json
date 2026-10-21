@@ -1,0 +1,89 @@
+[
+  {
+    "id": "config-1-direct-e717c2e0",
+    "taskId": "config",
+    "category": "small",
+    "pairId": "config-1",
+    "arm": "direct",
+    "scenario": "baseline",
+    "model": "gpt-5.6-luna",
+    "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+    "outcome": "accepted",
+    "wallMs": 45677.476200000005,
+    "evaluationMs": 1038.6626999999862,
+    "completed": true,
+    "timedOut": false,
+    "blocked": false,
+    "calls": [
+      {
+        "usage": {
+          "inputTokens": 93120,
+          "outputTokens": 3060,
+          "cachedInputTokens": 78976,
+          "reasoningTokens": 372
+        },
+        "wallMs": 44621.8502,
+        "exitCode": 0,
+        "threadId": "01a15d1c-7708-7b01-b7e8-aab883431d83"
+      }
+    ],
+    "invocations": 1,
+    "usageScope": "all_calls",
+    "faultInjected": false,
+    "recoveryAttempted": false,
+    "restarts": 0,
+    "initialApprovals": 0,
+    "scriptedRecoveryActions": 0,
+    "diagnostic": "2026-10-21T06:18:29.220305Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n",
+    "timing": {
+      "cliWallMs": 44621.8502,
+      "modelMs": null,
+      "waitingMs": null,
+      "retryMs": null,
+      "processLaunchMs": null
+    },
+    "interventions": null,
+    "requiredInitialSubmissions": 1,
+    "acceptance": {
+      "taskId": "config",
+      "passed": 6,
+      "total": 6,
+      "outcome": "independently-accepted",
+      "checks": [
+        {
+          "name": "defaults",
+          "passed": true
+        },
+        {
+          "name": "valid-boundaries",
+          "passed": true
+        },
+        {
+          "name": "invalid-values",
+          "passed": true
+        },
+        {
+          "name": "unknown-and-malformed",
+          "passed": true
+        },
+        {
+          "name": "independent-results",
+          "passed": true
+        },
+        {
+          "name": "deliverables",
+          "passed": true
+        }
+      ],
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+      "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+      "evidenceDir": "[REDACTED USER PATH]",
+      "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+    },
+    "artifactId": "09c84911db630fddd652a24a641f6cbdb494f59cf4ad44b0e9a530e4669b5068",
+    "quotaDecrement": null,
+    "billedCost": null,
+    "recovered": null
+  }
+]

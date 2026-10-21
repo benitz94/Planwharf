@@ -1,0 +1,60 @@
+{
+  "sessionId": "01a15da6-ecf3-7b41-b2a3-1d67214f31bf",
+  "source": "native provider token_usage_record",
+  "records": [
+    {
+      "responseId": "resp_0604398972d95474016ad87ca817c88191be6fe4874e178d1f",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:49:47.552Z",
+      "usage": {
+        "inputTokens": 14023,
+        "outputTokens": 176,
+        "cachedInputTokens": 10496,
+        "reasoningTokens": 33
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cab5e448191b399e6dfac024b66",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:49:49.673Z",
+      "usage": {
+        "inputTokens": 14276,
+        "outputTokens": 119,
+        "cachedInputTokens": 13824,
+        "reasoningTokens": 0
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cad7fcc81918b2ad7887430b546",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:50:14.973Z",
+      "usage": {
+        "inputTokens": 14454,
+        "outputTokens": 3889,
+        "cachedInputTokens": 14080,
+        "reasoningTokens": 1149
+      }
+    },
+    {
+      "responseId": "resp_0604398972d95474016ad87cc6a0e48191ab59edb94d4eddd7",
+      "turnId": "01a15da6-ef46-7593-9019-6fa84eea1630",
+      "at": "2026-10-21T08:50:28.576Z",
+      "usage": {
+        "inputTokens": 18429,
+        "outputTokens": 2504,
+        "cachedInputTokens": 14336,
+        "reasoningTokens": 35
+      }
+    }
+  ],
+  "responseCount": 4,
+  "usage": {
+    "inputTokens": 61182,
+    "outputTokens": 6688,
+    "cachedInputTokens": 52736,
+    "reasoningTokens": 1217
+  },
+  "valid": true,
+  "unreportedProviderUsage": null,
+  "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+}

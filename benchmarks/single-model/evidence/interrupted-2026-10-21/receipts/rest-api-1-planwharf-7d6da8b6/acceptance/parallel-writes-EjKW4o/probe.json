@@ -1,0 +1,8 @@
+{
+  "name": "parallel-writes",
+  "passed": false,
+  "exitCode": 1,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":false,\"detail\":\"{\\\"error\\\":\\\"transform is not a function\\\"}\\n\\n500 !== 201\\n\"}\n",
+  "stderr": ""
+}

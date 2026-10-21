@@ -1,0 +1,4 @@
+2026-10-20T18:08:59.040769Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-20T18:09:00.606549Z  WARN codex_http_client::custom_ca: encountered errors while loading native root certificates native_root_error_count=1
+2026-10-20T18:09:11.986186Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings
+2026-10-20T18:09:14.777825Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`\\\"[REDACTED USER PATH]" -Command \\\"node -e \\\\\\\"const fs=require('fs'); const s=fs.readFileSync('proof.txt','utf8'); if(s \\\"'!== '\\\"'READY\\\\\\\\n') process.exit(1); console.log('verified')\\\\\\\"\\\"` rejected: blocked by policy\")" }

@@ -1,0 +1,1 @@
+Continue the interrupted task from the existing files and the unchanged TASK.md. Complete all requirements, run your own tests and review your work. Do not open any visible windows or inspect other workspaces.

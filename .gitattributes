@@ -1,0 +1,2 @@
+# Preserve original whitespace in sanitized native measurement receipts.
+benchmarks/single-model/evidence/**/receipts/** -whitespace

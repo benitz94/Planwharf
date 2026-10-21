@@ -1,0 +1,116 @@
+OFFICE SCHEDULER PAIRS 2..5 ONLY
+All ten office observations and their usage are retained in runs.json and usage-audit.json. Pair 1 is separately reported in RESULTS.md.
+
+CONTROLLED SINGLE-MODEL BENCHMARK
+Single-model pilot; observed associations only, no universal performance or causal claim
+
+Executive summary
+1. Faster? 3 accepted measured pairs; direct median 94904.11, Planwharf median 108723.92; median paired difference 23263.29, percent difference 27.22%. inconclusive: fewer than five accepted pairs with comparable measurements.
+2. Fewer tokens? 3 accepted measured pairs; direct median 266406, Planwharf median 275348; median paired difference -21207, percent difference -7.96%. inconclusive: fewer than five accepted pairs with comparable measurements.
+3. Fewer human interventions? 0 accepted measured pairs; direct median UNKNOWN, Planwharf median UNKNOWN; median paired difference UNKNOWN, percent difference UNKNOWN%. inconclusive: fewer than five accepted pairs with comparable measurements. Initial approvals are reported separately.
+4. Better completion reliability? Direct 3/4; Planwharf 4/4 accepted. All outcomes below remain included; small samples do not establish an advantage.
+5. Better quality? Independent acceptance outcomes are reported; quality dimensions without independent evidence remain UNKNOWN.
+6. When worse? complex: observed Planwharf elapsed-time overhead warrants profiling planning, approval, launch and review stages in a separate follow-up.
+7. Actual financial savings? 0 accepted measured pairs; direct median UNKNOWN, Planwharf median UNKNOWN; median paired difference UNKNOWN, percent difference UNKNOWN%. inconclusive: fewer than five accepted pairs with comparable measurements. Only supplied actual billed receipts count; a fixed subscription is not a per-task expense.
+
+Environment and protocol
+{
+  "environment": {
+    "recordedAt": "2026-10-21T08:40:07.103Z",
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logicalCpus": 24,
+    "memoryBytes": 33752997888,
+    "node": "v24.18.0",
+    "cli": {
+      "executable": "[REDACTED USER PATH]",
+      "version": "0.163.0-alpha.10.2",
+      "authenticated": true,
+      "authStatus": "Logged in using ChatGPT\n"
+    },
+    "requestedModel": "gpt-5.6-luna",
+    "modelInAuthenticatedCatalog": true,
+    "catalogVersion": "0.163.0-alpha.10.2",
+    "providerReportedResolvedVersion": null,
+    "cliProfile": {
+      "source": "Explicit CODEX_HOME override",
+      "configurationHash": "e80328ba239c103e641e6434a2eb18b3e8b7ec0edb844b67f9a7e35b96cf5223",
+      "sqliteOverride": null
+    },
+    "sandbox": "workspace-write",
+    "approvalPolicy": "never",
+    "toolNetworkAccess": false,
+    "inferenceEffort": "shared CLI/profile default; no arm-specific override",
+    "configurationDifferences": [
+      "Planwharf disables native worker subagents and requests a structured final report; direct CLI retains its ordinary self-planning/test capabilities.",
+      "Planwharf uses native persistence/dispatch and one-model role roster; no hand-written decomposition is injected."
+    ],
+    "quotaSnapshot": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": false,
+      "pct": 13,
+      "leftPct": 87,
+      "source": "chatgpt",
+      "reason": null,
+      "planType": "pro",
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 13,
+          "leftPct": 87,
+          "resetAt": "2026-10-27T07:35:56.000Z",
+          "seconds": 604800
+        }
+      ]
+    },
+    "quotaAttribution": "Shared account activity cannot be attributed per trial; per-trial quota decrement UNKNOWN",
+    "billedCost": null,
+    "docs": "https://learn.chatgpt.com/docs/non-interactive-mode",
+    "baseline": "d9b4c21b3c9045c6069d99b2f18686a6da53fe8d"
+  }
+}
+
+All trial records (including failures, blocks and timeouts)
+id | task | pair | arm | outcome | wallMs | totalTokens | invocations | interventions | initialApprovals | restarts | quotaDecrement
+scheduler-2-planwharf-65134225 | scheduler | scheduler-2 | planwharf | accepted | 131121.77 | 340245 | 2 | UNKNOWN | 1 | 1 | UNKNOWN
+scheduler-2-direct-3dfb023f | scheduler | scheduler-2 | direct | defective | 127213.63 | 393991 | 2 | UNKNOWN | 0 | 1 | UNKNOWN
+scheduler-3-direct-20659773 | scheduler | scheduler-3 | direct | accepted | 85460.63 | 266406 | 2 | UNKNOWN | 0 | 1 | UNKNOWN
+scheduler-3-planwharf-521fb89d | scheduler | scheduler-3 | planwharf | accepted | 108723.92 | 245199 | 2 | UNKNOWN | 1 | 1 | UNKNOWN
+scheduler-4-planwharf-7a03c840 | scheduler | scheduler-4 | planwharf | accepted | 103952.57 | 275348 | 2 | UNKNOWN | 1 | 1 | UNKNOWN
+scheduler-4-direct-229b3ec7 | scheduler | scheduler-4 | direct | accepted | 111534.57 | 377848 | 2 | UNKNOWN | 0 | 1 | UNKNOWN
+scheduler-5-direct-fc70412e | scheduler | scheduler-5 | direct | accepted | 94904.11 | 188052 | 2 | UNKNOWN | 0 | 1 | UNKNOWN
+scheduler-5-planwharf-61c22483 | scheduler | scheduler-5 | planwharf | accepted | 128468.02 | 301422 | 2 | UNKNOWN | 1 | 1 | UNKNOWN
+
+Category aggregates and paired comparisons
+complex
+direct: 4 runs; accepted=3, defective=1, failed=0, blocked=0, timed_out=0; acceptance rate 0.75; recovery 3/4 attempts, outcome unknown=0, attempt status unknown=0.
+planwharf: 4 runs; accepted=4, defective=0, failed=0, blocked=0, timed_out=0; acceptance rate 1; recovery 4/4 attempts, outcome unknown=0, attempt status unknown=0.
+Accepted pairs=3; excluded pairs=1.
+metric | measured pairs | direct median | Planwharf median | paired difference | paired percent difference | percent interval
+wallMs | 3 | 94904.11 | 108723.92 | 23263.29 | 27.22 | inconclusive
+totalTokens | 3 | 266406 | 275348 | -21207 | -7.96 | inconclusive
+invocations | 3 | 2 | 2 | 0 | 0 | inconclusive
+interventions | 0 | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | inconclusive
+initialApprovals | 3 | 0 | 1 | 1 | UNKNOWN | inconclusive
+restarts | 3 | 1 | 1 | 0 | 0 | inconclusive
+billedCost | 0 | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | inconclusive
+quotaDecrement | 0 | UNKNOWN | UNKNOWN | UNKNOWN | UNKNOWN | inconclusive
+
+UNKNOWN measurement reasons (complete per-run availability remains in analysis JSON)
+- UNKNOWN: provider did not expose a reliable complete measurement: 8 run-metric cells; fields billedCost.
+- UNKNOWN: not measured: 88 run-metric cells; fields interventions, failedAttempts, modelMs, waitingMs, retryMs, cooldownMs, launchMs, followUpMs, investigationMs, recoveryMs, quotaDecrement.
+
+Limitations
+- A pilot cannot establish universal savings; provider load, caching, order, quota and configuration differences can confound comparisons.
+- Acceptance is an independent quality threshold, not proof that all accepted artifacts have identical maintainability, coverage or security.
+- Bootstrap intervals are exploratory, conditional on accepted measured pairs, and do not correct selection bias or multiple comparisons.
+- Unknown measurements are not zero. Measured-subset medians are labeled; incomplete totals are UNKNOWN.
+- Quota and subscription price cannot be converted into per-task cost. No monetary savings claim follows from tokens alone.
+- Sanitization is best effort; review receipts manually before publishing. Redaction cannot guarantee detection of arbitrary secrets.
+
+Recommendations (separate future phase)
+- complex: observed Planwharf elapsed-time overhead warrants profiling planning, approval, launch and review stages in a separate follow-up.

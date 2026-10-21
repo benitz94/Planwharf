@@ -1,0 +1,52 @@
+{
+  "taskId": "rest-api",
+  "passed": 0,
+  "total": 8,
+  "outcome": "failed",
+  "checks": [
+    {
+      "name": "crud",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "validation",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "parallel-writes",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "restart",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "before-commit-crash",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "after-commit-crash",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "corrupt-store",
+      "passed": false,
+      "detail": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    },
+    {
+      "name": "deliverables",
+      "passed": false,
+      "detail": "Document API, tests and limitations"
+    }
+  ],
+  "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f",
+  "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "evidenceDir": "[REDACTED USER PATH]",
+  "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+}

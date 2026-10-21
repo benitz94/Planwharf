@@ -1,0 +1,30 @@
+[
+  {
+    "at": "2026-10-21T06:30:57.725Z",
+    "kind": "worker",
+    "exactModel": "gpt-5.6-luna",
+    "attemptId": "attempt-1",
+    "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0",
+    "projectId": "benchmark-rest-api",
+    "pid": 26296,
+    "logPath": "[REDACTED USER PATH]",
+    "resultPath": "[REDACTED USER PATH]",
+    "structuredResultPath": "[REDACTED USER PATH]",
+    "exitPath": "[REDACTED USER PATH]",
+    "launchMs": 15.681499999999687
+  },
+  {
+    "at": "2026-10-21T06:31:52.950Z",
+    "kind": "worker",
+    "exactModel": "gpt-5.6-luna",
+    "attemptId": "attempt-2",
+    "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0",
+    "projectId": "benchmark-rest-api",
+    "pid": 21756,
+    "logPath": "[REDACTED USER PATH]",
+    "resultPath": "[REDACTED USER PATH]",
+    "structuredResultPath": "[REDACTED USER PATH]",
+    "exitPath": "[REDACTED USER PATH]",
+    "launchMs": 10.495999999999185
+  }
+]

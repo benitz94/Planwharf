@@ -1,0 +1,53 @@
+{
+  "download": {
+    "name": "@openai/codex",
+    "version": "0.163.0-alpha.10.2-win32-x64",
+    "url": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-alpha.10.2-win32-x64.tgz",
+    "integrity": "sha512-EinQXoAEVyEin9XPNDDW5aEH2GL3PQ8snI0/09fdUDwyurfFsUL0YuU8xART8ntk7m/GishXUpab1sSRey3Khw==",
+    "bytes": 167652463
+  },
+  "source": [
+    {
+      "file": "tasks.cjs",
+      "restoration": "CRLF",
+      "sha256": "be2341e1a993e108d52483143d0fcfd79e38f3b77e176e86853596bde6dabf36",
+      "matchesFrozen": true
+    },
+    {
+      "file": "run.cjs",
+      "restoration": "CRLF",
+      "sha256": "332fdc81dc0706c703f656aea020036827cc0b53ab76c446ae96e496c7fbe001",
+      "matchesFrozen": true
+    },
+    {
+      "file": "runtime.cjs",
+      "restoration": "CRLF",
+      "sha256": "e1dcc2bd765811f9c9a36d8cd4becf9edcea09323f167ef4f07fcbca2846c2cd",
+      "matchesFrozen": true
+    },
+    {
+      "file": "usage.cjs",
+      "restoration": "last-line-CRLF",
+      "sha256": "39de4aff763d23168f7f31a32b359f23c6899708ac41b1c6647df744ce76dfcf",
+      "matchesFrozen": true
+    },
+    {
+      "file": "host.cjs",
+      "restoration": "unchanged",
+      "sha256": "471c6c40f06c2c857539452f1cd2e3dea9f20f4244ac095a86218d04878b136c",
+      "matchesFrozen": true
+    },
+    {
+      "file": "analysis.cjs",
+      "restoration": "CRLF",
+      "sha256": "64d691698d601279198ce725b6a2a172e4a86add2192585f1a2ee94184da360e",
+      "matchesFrozen": true
+    },
+    {
+      "file": "preflight.cjs",
+      "restoration": "unchanged",
+      "sha256": "b61fd56589bed6a1ac0521802312c544b7e75dcd5d24faf1a17729453b782211",
+      "matchesFrozen": true
+    }
+  ]
+}

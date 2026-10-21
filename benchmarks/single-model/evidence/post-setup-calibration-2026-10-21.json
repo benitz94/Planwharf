@@ -1,0 +1,51 @@
+{
+  "scope": "Post-setup diagnostics only; separate from task-arm totals",
+  "probes": [
+    {
+      "id": "post-setup-capability",
+      "status": "blocked",
+      "edited": false,
+      "executed": false,
+      "verified": false,
+      "reason": "CLI transport did not complete",
+      "model": "gpt-5.6-luna",
+      "usage": null,
+      "invocations": 1,
+      "wallMs": 94.50319999999999,
+      "exitCode": 1,
+      "diagnostic": "Error: The system cannot find the path specified. (os error 3)\n\n",
+      "scope": "Calibration only. No task trials are submitted unless native editing and Node execution both work. Provider usage here is separate from arm totals."
+    },
+    {
+      "id": "post-setup-capability-absolute",
+      "status": "blocked",
+      "edited": false,
+      "executed": false,
+      "verified": false,
+      "reason": "Capability check timed out",
+      "model": "gpt-5.6-luna",
+      "usage": null,
+      "invocations": 1,
+      "wallMs": 90239.7538,
+      "exitCode": 1,
+      "diagnostic": "2026-10-20T20:09:58.525977Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-20T20:09:58.526158Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-20T20:09:58.573520Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-20T20:09:58.778827Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n2026-10-20T20:10:03.592789Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-20T20:10:03.863457Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-20T20:10:08.856244Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\n2026-10-20T20:10:18.875005Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-20T20:10:23.531689Z  WARN codex_core_plugins::manager: failed to refresh remote installed plugins cache error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/installed?[REDACTED QUERY] error decoding response body materialized_remote_plugin_count=0\n2026-10-20T20:10:23.762875Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] error decoding response body scope=Global\n2026-10-20T20:10:28.905866Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-20T20:10:44.026423Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 181ms)... turn_id=01a15aef-70d9-77c2-a976-583cb7ca82c0 retries=1 max_retries=5 sampling_error=workspace routing discovery timed out\n2026-10-20T20:10:46.069595Z  WARN codex_mcp::rmcp_client: MCP server startup failed server_name=\"codex_apps\" error=timed out awaiting tools/list after 30s\n2026-10-20T20:10:59.218862Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (2/5 in 369ms)... turn_id=01a15aef-70d9-77c2-a976-583cb7ca82c0 retries=2 max_retries=5 sampling_error=workspace routing discovery timed out\n2026-10-20T20:11:13.482677Z  WARN codex_core_plugins::remote::remote_installed_plugin_sync: failed to download remote installed plugin bundle remote_plugin_id=plugin_connector_1p_2330815c823c8191941e5dc465bb899f plugin=openai-templates marketplace=openai-curated-remote error=failed to read remote plugin bundle download response from https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-9268-81f7-8926-83f58a34537f/raw?[REDACTED QUERY] error decoding response body\n2026-10-20T20:11:14.609696Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (3/5 in 823ms)... turn_id=01a15aef-70d9-77c2-a976-583cb7ca82c0 retries=3 max_retries=5 sampling_error=workspace routing discovery timed out\n\n",
+      "scope": "Calibration only. No task trials are submitted unless native editing and Node execution both work. Provider usage here is separate from arm totals."
+    }
+  ],
+  "startupAttempts": [
+    {
+      "id": "study-05",
+      "outcome": "standalone runner terminated before manifest/trial records",
+      "taskTrialRecords": 0,
+      "providerUsage": null
+    },
+    {
+      "id": "saved-powershell-launch",
+      "outcome": "execution policy rejected saved script; policy was not modified"
+    },
+    {
+      "id": "detached-inline-launch",
+      "outcome": "runner did not survive host tool lifetime"
+    }
+  ]
+}

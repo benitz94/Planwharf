@@ -1,0 +1,103 @@
+[
+  {
+    "id": "add-dir-probe",
+    "usage": {
+      "inputTokens": 36126,
+      "outputTokens": 329,
+      "cachedInputTokens": 32640,
+      "reasoningTokens": 65
+    },
+    "threadId": "01a15a85-3db4-79d0-86d5-91a1eabfd731",
+    "completedTurn": true,
+    "wallMs": null
+  },
+  {
+    "id": "explicit-root-probe",
+    "usage": {
+      "inputTokens": 36349,
+      "outputTokens": 501,
+      "cachedInputTokens": 33920,
+      "reasoningTokens": 134
+    },
+    "threadId": "01a15a82-ee2b-7b50-9a11-da8052e63a60",
+    "completedTurn": true,
+    "wallMs": null
+  },
+  {
+    "id": "isolated-home-probe",
+    "usage": {
+      "inputTokens": 11803,
+      "outputTokens": 6,
+      "cachedInputTokens": 10496,
+      "reasoningTokens": 0
+    },
+    "threadId": "01a15a7e-0279-7050-b548-c9c302b66a5a",
+    "completedTurn": true,
+    "wallMs": 44472.1552
+  },
+  {
+    "id": "patch-probe",
+    "usage": {
+      "inputTokens": 36253,
+      "outputTokens": 445,
+      "cachedInputTokens": 34048,
+      "reasoningTokens": 134
+    },
+    "threadId": "01a15a80-95f1-7b71-92cb-8791afb8f612",
+    "completedTurn": true,
+    "wallMs": 35240.167
+  },
+  {
+    "id": "portable-tool-probe",
+    "usage": {
+      "inputTokens": 34855,
+      "outputTokens": 471,
+      "cachedInputTokens": 32256,
+      "reasoningTokens": 126
+    },
+    "threadId": "01a15a84-3ba5-7bf3-9625-24065cf43924",
+    "completedTurn": true,
+    "wallMs": 21136.9024
+  },
+  {
+    "id": "sqlite-probe",
+    "usage": null,
+    "threadId": null,
+    "completedTurn": false,
+    "wallMs": 4036.9102000000003
+  },
+  {
+    "id": "tool-probe",
+    "usage": {
+      "inputTokens": 24153,
+      "outputTokens": 495,
+      "cachedInputTokens": 22144,
+      "reasoningTokens": 296
+    },
+    "threadId": "01a15a7f-6037-7cc2-9f6a-a453cc4d1c53",
+    "completedTurn": true,
+    "wallMs": 37028.9368
+  },
+  {
+    "id": "windows-config-probe",
+    "usage": {
+      "inputTokens": 77028,
+      "outputTokens": 1037,
+      "cachedInputTokens": 70912,
+      "reasoningTokens": 317
+    },
+    "threadId": "01a15a86-f260-7d13-93b6-020e6fe1d79c",
+    "completedTurn": true,
+    "wallMs": 46813.6184
+  },
+  {
+    "id": "study-02-preflight",
+    "usage": {
+      "inputTokens": 25039,
+      "outputTokens": 385,
+      "cachedInputTokens": 22656,
+      "reasoningTokens": 55
+    },
+    "scope": "Recorded separately in preflight.json"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "status": "PARTIAL_STUDY_NOT_COMPLETE_PILOT",
+  "completedTrialRecords": 1,
+  "incompleteTrial": "config Planwharf attempt has artifacts but no completed trial record",
+  "reason": "Managed process no longer existed after the app connection changed",
+  "unrunScheduledTrials": 4,
+  "compareWithOtherStudies": false,
+  "interpretation": "Do not combine this direct-only row with another study to create a pair."
+}

@@ -1,0 +1,9 @@
+{
+  "attemptId": "attempt-1",
+  "exitCode": 1,
+  "resultVerified": false,
+  "signal": null,
+  "provider": "codex",
+  "model": "gpt-5.6-luna",
+  "createdAt": "2026-10-20T17:08:35.025Z"
+}

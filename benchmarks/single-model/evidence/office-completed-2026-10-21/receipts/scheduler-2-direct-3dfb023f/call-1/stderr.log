@@ -1,0 +1,2 @@
+2026-10-21T08:56:01.504214Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-10-21T08:56:38.950306Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid patch: multiple operations target [REDACTED USER PATH]

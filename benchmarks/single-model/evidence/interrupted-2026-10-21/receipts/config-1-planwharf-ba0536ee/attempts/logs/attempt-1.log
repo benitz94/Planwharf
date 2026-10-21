@@ -1,0 +1,425 @@
+{"event":"provider-launch","at":"2026-10-20T20:15:17.172Z","provider":"codex","model":"gpt-5.6-luna","executable":"[REDACTED USER PATH]","cwd":"[REDACTED USER PATH]","attempt":"attempt-1"}
+2026-10-20T20:15:17.637738Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+OpenAI Codex v0.163.0-alpha.10.2
+--------
+workdir: [REDACTED USER PATH]
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: none
+reasoning summaries: none
+session id: 01a15af4-397b-7321-a015-94584e57b1ed
+--------
+user
+You are the Planwharf worker for this project folder.
+
+Implement the job in this folder. Add tests. Do not wait for the user.
+
+Stay inside this folder. Do not rewrite unrelated files.
+
+Job: Whole job
+
+Your slice: Whole job
+
+Goal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…
+
+Latest commit: 4b1d951 Identical benchmark starting point
+
+Recent:
+4b1d951 Identical benchmark starting point
+
+Working tree clean.
+
+Read the repo, take the latest changes, and proceed with the notebook plan.
+
+SubTask: Whole job
+
+Source project (read only for research): [REDACTED USER PATH]
+
+Durable handoff:
+{"megaTask":{"id":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","projectId":"benchmark-config","taskId":"task-ccb1c210-bada-48b0-a06f-0655fe4fec8e","planRevisionId":1,"title":"Continue: Identical benchmark starting point","goal":"Goal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.","createdAt":"2026-10-20T20:15:15.683Z","approvedAt":"2026-10-20T20:15:15.708Z","status":"RUNNING","orchestratorModelId":"benchmark-model","currentCheckpointId":null,"completedAt":null,"jobFingerprint":"bd93d3bd5e6b05542e8d1c77d7fdc1396c125734d1da1f6501498ff60d27262b","detached":false,"repoBefore":{"repoHead":"4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb","dirtyFiles":[],"comparable":true,"gitReadable":true,"fingerprint":"5eb1a684a8cc70d44e4f3ebfae8f3c39a2192d3ceca5e1c34c7b76abbbdf8f5e","disposition":"COMMITTED"},"nextAction":"Review the proposed slices and approve this MegaTask.","pauseRequested":false,"timing":"discretion","deadlineAt":null,"blockers":[],"approvedMegaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","authorizedSessionId":"c91c2805-2685-4f61-ab57-21dec1e8937f"},"subTasks":[{"id":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","title":"Whole job","detail":"Whole job","status":"RUNNING","assignedModelId":"benchmark-model","attemptIds":["attempt-1"],"resultId":null,"createdAt":"2026-10-20T20:15:15.683Z","completedAt":null,"type":"IMPLEMENTATION","dependencies":[],"proposedProvider":"codex","proposedCli":"gpt-5.6-luna","provider":"codex","cli":"gpt-5.6-luna"}],"results":[],"notes":[]}
+
+Matt skills are disabled for this notebook. Do not load or invoke Matt skills for this request.
+
+When the slice is done, leave working files and tests on disk, then stop.
+
+Planwharf structured result contract:
+Return exactly one JSON object as your final response. Do not write the result file: the trusted CLI and Planwharf runner save your final response outside the project sandbox. Use these exact identity fields:
+{
+  "resultId": "R-attempt-1",
+  "attemptId": "attempt-1",
+  "subTaskId": "MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01",
+  "megaTaskId": "MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9",
+  "status": "COMPLETE | FAILED | BLOCKED",
+  "summary": "What actually happened",
+  "filesChanged": [],
+  "tests": [
+    {
+      "command": "Exact command or check",
+      "status": "PASSED | FAILED | NOT_RUN",
+      "evidence": "Observed outcome; do not invent execution"
+    }
+  ],
+  "blockers": [],
+  "nextAction": "Remaining work or recommended next step",
+  "createdAt": "ISO timestamp"
+}
+Use one status from the listed choices. Record only observed work and tests. No tests means an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.
+2026-10-20T20:15:22.334807Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]
+2026-10-20T20:15:22.334909Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-10-20T20:15:27.338216Z  WARN codex_core_plugins::manager: failed to warm featured plugin ids cache error=failed to send remote featured plugin request to https://chatgpt.com/backend-api/plugins/featured?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/plugins/featured?[REDACTED QUERY]
+2026-10-20T20:15:33.009599Z  WARN codex_core::session::startup_prewarm: startup websocket prewarm setup failed: workspace routing discovery timed out
+2026-10-20T20:15:38.031412Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]
+2026-10-20T20:15:47.658944Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] error decoding response body scope=Global
+2026-10-20T20:15:48.076949Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]
+2026-10-20T20:15:55.382319Z  WARN codex_mcp::rmcp_client: MCP server startup failed server_name="codex_apps" error=timed out awaiting tools/list after 30s
+2026-10-20T20:15:57.676309Z  WARN codex_core_plugins::remote::remote_installed_plugin_sync: failed to download remote installed plugin bundle remote_plugin_id=plugin_connector_1p_2330815c823c8191941e5dc465bb899f plugin=openai-templates marketplace=openai-curated-remote error=failed to send remote plugin bundle download request to https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-9268-81f7-8926-83f58a34537f/raw?[REDACTED QUERY] error sending request for url (https://sdmntprsouthcentralus.oaiusercontent.com/files/00000000-9268-81f7-8926-83f58a34537f/raw?[REDACTED QUERY]
+2026-10-20T20:16:03.196355Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 187ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=1 max_retries=5 sampling_error=workspace routing discovery timed out
+2026-10-20T20:16:18.397613Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (2/5 in 427ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=2 max_retries=5 sampling_error=workspace routing discovery timed out
+ERROR: Reconnecting... 2/5
+2026-10-20T20:16:33.842600Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (3/5 in 838ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=3 max_retries=5 sampling_error=workspace routing discovery timed out
+ERROR: Reconnecting... 3/5
+2026-10-20T20:16:50.271169Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+codex
+{"resultId":"R-attempt-1","attemptId":"attempt-1","subTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","status":"COMPLETE","summary":"Starting repository inspection and implementation.","filesChanged":[],"tests":[],"blockers":[],"nextAction":"Inspect files, implement config utility and tests, then run verification.","createdAt":"2026-10-20T20:15:15.683Z"}
+codex
+{"resultId":"R-attempt-1","attemptId":"attempt-1","subTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","status":"COMPLETE","summary":"I’m inspecting the existing project structure and package scripts before making the scoped implementation.","filesChanged":[],"tests":[],"blockers":[],"nextAction":"Read repository files and identify the test runner.","createdAt":"2026-10-20T20:15:15.683Z"}
+exec
+"[REDACTED USER PATH]" -Command "Get-ChildItem -Force; rg --files -g '"'!node_modules'"' -g '"'!*.lock'"' | Sort-Object; if (Test-Path package.json) { Get-Content package.json }" in [REDACTED USER PATH]
+ succeeded in 517ms:
+
+    Directory: [REDACTED USER PATH]
+rf-ba0536ee\workspace
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d--h-          20/10/2026    22:15                .git
+-a---          20/10/2026    22:15             20 .gitignore
+-a---          20/10/2026    22:15             80 config.cjs
+-a---          20/10/2026    22:15             89 README.md
+-a---          20/10/2026    22:15           1597 TASK.md
+config.cjs
+README.md
+TASK.md
+
+
+2026-10-20T20:17:10.796612Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+exec
+"[REDACTED USER PATH]" -Command 'Get-Content config.cjs; Get-Content README.md; Get-Content TASK.md; git status --short' in [REDACTED USER PATH]
+ succeeded in 759ms:
+'use strict';
+// Implement the public contract in TASK.md.
+module.exports = {};
+# Validated configuration utility
+
+Implementation and self-test documentation goes here.
+Validated configuration utility
+
+Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.
+
+Use CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.
+
+2026-10-20T20:17:20.879922Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)
+2026-10-20T20:17:21.964184Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-10-20T20:17:27.372758Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 208ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=1 max_retries=5 sampling_error=stream disconnected before completion: IO error: An existing connection was forcibly closed by the remote host. (os error 10054)
+2026-10-20T20:17:27.613751Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-20T20:17:27.614159Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (2/5 in 403ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=2 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+ERROR: Reconnecting... 2/5
+2026-10-20T20:17:28.041510Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-20T20:17:28.041768Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (3/5 in 876ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=3 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+ERROR: Reconnecting... 3/5
+2026-10-20T20:17:28.951501Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-20T20:17:28.951848Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (4/5 in 1.722s)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=4 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+ERROR: Reconnecting... 4/5
+2026-10-20T20:17:30.703279Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-20T20:17:30.703637Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (5/5 in 3.447s)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=5 max_retries=5 sampling_error=stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+ERROR: Reconnecting... 5/5
+2026-10-20T20:17:34.183433Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013), url: wss://chatgpt.com/backend-api/codex/responses
+2026-10-20T20:17:34.183685Z  WARN codex_core::client: falling back to HTTP
+warning: Falling back from WebSockets to HTTPS transport. stream disconnected before completion: An attempt was made to access a socket in a way forbidden by its access permissions. (os error 10013)
+2026-10-20T20:17:50.533501Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+codex
+{"resultId":"R-attempt-1","attemptId":"attempt-1","subTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","status":"COMPLETE","summary":"The repository contains a stub CommonJS module and no test runner setup; the task contract is fully specified in TASK.md.","filesChanged":[],"tests":[],"blockers":[],"nextAction":"Implement strict parsing/validation, add node:test coverage, and document usage and limitations.","createdAt":"2026-10-20T20:15:15.683Z"}
+2026-10-20T20:18:04.184742Z  WARN codex_core::responses_retry: stream disconnected - retrying sampling request (1/5 in 210ms)... turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd retries=1 max_retries=5 sampling_error=stream disconnected before completion: Transport error: network error: error decoding response body
+ERROR: Reconnecting... 1/5
+2026-10-20T20:18:07.454930Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=5s
+ERROR: Reconnecting... waiting for network
+2026-10-20T20:18:26.091732Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=10s
+ERROR: Reconnecting... waiting for network
+2026-10-20T20:18:39.212196Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=20s
+ERROR: Reconnecting... waiting for network
+2026-10-20T20:19:02.249769Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=40s
+ERROR: Reconnecting... waiting for network
+2026-10-20T20:19:45.148670Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=60s
+ERROR: Reconnecting... waiting for network
+2026-10-20T20:19:57.347428Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-10-20T20:20:50.722498Z  WARN codex_core::responses_retry: stream connection failed; waiting to retry turn_id=01a15af4-757f-74c2-9a27-6ba30938f5cd error=Connection failed: error sending request retry_delay=60s
+ERROR: Reconnecting... waiting for network
+apply patch
+patch: completed
+[REDACTED USER PATH]
+[REDACTED USER PATH]
+[REDACTED USER PATH]
+diff --git a/README.md b/README.md
+index 9da183c719c8e52dcf53a35a34c8e4238755bb5c..5ce4a1dedfb8a2031d7315100724357c6d5776a7
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,20 @@
+ # Validated configuration utility
+ 
+-Implementation and self-test documentation goes here.
++`config.cjs` exports `parseConfig(text)`, which parses a JSON string containing
++an object and returns a new `{ port, host, retries, logLevel }` object.
++
++Defaults are `3000`, `127.0.0.1`, `2`, and `info`. The accepted log levels are
++`debug`, `info`, `warn`, and `error`. Ports must be integers from 1 to 65535,
++retries must be integers from 0 to 10, and hosts must be 1–253 characters with
++no whitespace. Unknown keys, invalid JSON, non-objects, nulls, and incorrect
++types are rejected by throwing an `Error`; values are not coerced.
++
++Run the self-tests with:
++
++```sh
++node --test test.cjs
++```
++
++Recovery limitation: parsing is deliberately stateless and does not read or
++write configuration files. If parsing fails, the caller must supply corrected
++JSON; there is no automatic recovery or persistence layer.
+diff --git a/config.cjs b/config.cjs
+index 9a3b89a31b98d088efe5ec02b49e0ea6d2092904..0a1838fbc17d54016cd7471f273341449d8b66ef
+--- a/config.cjs
++++ b/config.cjs
+@@ -1,3 +1,57 @@
+ 'use strict';
+-// Implement the public contract in TASK.md.
+-module.exports = {};
++
++const DEFAULTS = Object.freeze({
++  port: 3000,
++  host: '127.0.0.1',
++  retries: 2,
++  logLevel: 'info',
++});
++const KEYS = new Set(Object.keys(DEFAULTS));
++const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);
++
++function invalid(message) {
++  throw new Error(`Invalid configuration: ${message}`);
++}
++
++function parseConfig(text) {
++  if (typeof text !== 'string') {
++    invalid('input must be a JSON string');
++  }
++
++  let value;
++  try {
++    value = JSON.parse(text);
++  } catch {
++    invalid('input is not valid JSON');
++  }
++
++  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
++    invalid('top-level value must be a plain object');
++  }
++
++  for (const key of Object.keys(value)) {
++    if (!KEYS.has(key)) invalid(`unknown key: ${key}`);
++  }
++
++  const port = value.port === undefined ? DEFAULTS.port : value.port;
++  const retries = value.retries === undefined ? DEFAULTS.retries : value.retries;
++  const host = value.host === undefined ? DEFAULTS.host : value.host;
++  const logLevel = value.logLevel === undefined ? DEFAULTS.logLevel : value.logLevel;
++
++  if (!Number.isInteger(port) || port < 1 || port > 65535) {
++    invalid('port must be an integer from 1 to 65535');
++  }
++  if (!Number.isInteger(retries) || retries < 0 || retries > 10) {
++    invalid('retries must be an integer from 0 to 10');
++  }
++  if (typeof host !== 'string' || host.length < 1 || host.length > 253 || /\s/u.test(host)) {
++    invalid('host must be 1 to 253 characters with no whitespace');
++  }
++  if (typeof logLevel !== 'string' || !LOG_LEVELS.has(logLevel)) {
++    invalid('logLevel must be debug, info, warn, or error');
++  }
++
++  return { port, host, retries, logLevel };
++}
++
++module.exports = { parseConfig };
+diff --git a/test.cjs b/test.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..077a53b686777913cff3d6d28aadf416cd81426d
+--- /dev/null
++++ b/test.cjs
+@@ -0,0 +1,50 @@
++'use strict';
++
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const { parseConfig } = require('./config.cjs');
++
++test('uses defaults for an empty object', () => {
++  assert.deepEqual(parseConfig('{}'), {
++    port: 3000,
++    host: '127.0.0.1',
++    retries: 2,
++    logLevel: 'info',
++  });
++});
++
++test('accepts valid overrides and returns only the public fields', () => {
++  assert.deepEqual(parseConfig(JSON.stringify({
++    port: 65535, host: 'service.example', retries: 0, logLevel: 'debug',
++  })), {
++    port: 65535, host: 'service.example', retries: 0, logLevel: 'debug',
++  });
++});
++
++test('rejects malformed input, non-objects, and unknown keys', () => {
++  for (const input of [42, null, [], '{', 'null', '[]', '{"extra":true}']) {
++    assert.throws(() => parseConfig(input));
++  }
++});
++
++test('rejects null, wrong types, fractions, ranges, and whitespace hosts', () => {
++  const invalidConfigs = [
++    { port: null }, { port: 1.5 }, { port: 0 }, { port: 65536 },
++    { retries: null }, { retries: 1.5 }, { retries: -1 }, { retries: 11 },
++    { host: null }, { host: '' }, { host: 'has space' }, { host: 'has\nnewline' },
++    { logLevel: null }, { logLevel: 'trace' },
++  ];
++  for (const config of invalidConfigs) {
++    assert.throws(() => parseConfig(JSON.stringify(config)));
++  }
++  assert.throws(() => parseConfig({}));
++});
++
++test('does not coerce strings and returns independent result objects', () => {
++  assert.throws(() => parseConfig(JSON.stringify({ port: '3000' })));
++  const first = parseConfig('{}');
++  first.port = 1234;
++  assert.deepEqual(parseConfig('{}'), {
++    port: 3000, host: '127.0.0.1', retries: 2, logLevel: 'info',
++  });
++});
+
+exec
+"[REDACTED USER PATH]" -Command 'node --test test.cjs; git diff --check; git diff -- config.cjs test.cjs README.md; git status --short' in [REDACTED USER PATH]
+ succeeded in 770ms:
+✔ uses defaults for an empty object (1.7952ms)
+✔ accepts valid overrides and returns only the public fields (0.2437ms)
+✔ rejects malformed input, non-objects, and unknown keys (0.4368ms)
+✔ rejects null, wrong types, fractions, ranges, and whitespace hosts (0.4409ms)
+✔ does not coerce strings and returns independent result objects (0.2614ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 121.3732
+diff --git a/README.md b/README.md
+index 9da183c..5ce4a1d 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,20 @@
+ # Validated configuration utility
+ 
+-Implementation and self-test documentation goes here.
++`config.cjs` exports `parseConfig(text)`, which parses a JSON string containing
++an object and returns a new `{ port, host, retries, logLevel }` object.
++
++Defaults are `3000`, `127.0.0.1`, `2`, and `info`. The accepted log levels are
++`debug`, `info`, `warn`, and `error`. Ports must be integers from 1 to 65535,
++retries must be integers from 0 to 10, and hosts must be 1–253 characters with
++no whitespace. Unknown keys, invalid JSON, non-objects, nulls, and incorrect
++types are rejected by throwing an `Error`; values are not coerced.
++
++Run the self-tests with:
++
++```sh
++node --test test.cjs
++```
++
++Recovery limitation: parsing is deliberately stateless and does not read or
++write configuration files. If parsing fails, the caller must supply corrected
++JSON; there is no automatic recovery or persistence layer.
+diff --git a/config.cjs b/config.cjs
+index 9a3b89a..0a1838f 100644
+--- a/config.cjs
++++ b/config.cjs
+@@ -1,3 +1,57 @@
+ 'use strict';
+-// Implement the public contract in TASK.md.
+-module.exports = {};
++
++const DEFAULTS = Object.freeze({
++  port: 3000,
++  host: '127.0.0.1',
++  retries: 2,
++  logLevel: 'info',
++});
++const KEYS = new Set(Object.keys(DEFAULTS));
++const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);
++
++function invalid(message) {
++  throw new Error(`Invalid configuration: ${message}`);
++}
++
++function parseConfig(text) {
++  if (typeof text !== 'string') {
++    invalid('input must be a JSON string');
++  }
++
++  let value;
++  try {
++    value = JSON.parse(text);
++  } catch {
++    invalid('input is not valid JSON');
++  }
++
++  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
++    invalid('top-level value must be a plain object');
++  }
++
++  for (const key of Object.keys(value)) {
++    if (!KEYS.has(key)) invalid(`unknown key: ${key}`);
++  }
++
++  const port = value.port === undefined ? DEFAULTS.port : value.port;
++  const retries = value.retries === undefined ? DEFAULTS.retries : value.retries;
++  const host = value.host === undefined ? DEFAULTS.host : value.host;
++  const logLevel = value.logLevel === undefined ? DEFAULTS.logLevel : value.logLevel;
++
++  if (!Number.isInteger(port) || port < 1 || port > 65535) {
++    invalid('port must be an integer from 1 to 65535');
++  }
++  if (!Number.isInteger(retries) || retries < 0 || retries > 10) {
++    invalid('retries must be an integer from 0 to 10');
++  }
++  if (typeof host !== 'string' || host.length < 1 || host.length > 253 || /\s/u.test(host)) {
++    invalid('host must be 1 to 253 characters with no whitespace');
++  }
++  if (typeof logLevel !== 'string' || !LOG_LEVELS.has(logLevel)) {
++    invalid('logLevel must be debug, info, warn, or error');
++  }
++
++  return { port, host, retries, logLevel };
++}
++
++module.exports = { parseConfig };
+ M README.md
+ M config.cjs
+?? test.cjs
+
+codex
+{"resultId":"R-attempt-1","attemptId":"attempt-1","subTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","status":"COMPLETE","summary":"Implemented strict JSON configuration parsing with defaults, validation, unknown-key rejection, fresh result objects, automated tests, and README documentation.","filesChanged":["config.cjs","test.cjs","README.md"],"tests":[{"command":"node --test test.cjs","status":"PASSED","evidence":"5 tests passed, 0 failed."},{"command":"git diff --check","status":"PASSED","evidence":"No whitespace errors reported."}],"blockers":[],"nextAction":"None; implementation and tests are complete.","createdAt":"2026-10-20T20:15:15.683Z"}
+tokens used
+34,332
+{"resultId":"R-attempt-1","attemptId":"attempt-1","subTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9-ST-01","megaTaskId":"MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9","status":"COMPLETE","summary":"Implemented strict JSON configuration parsing with defaults, validation, unknown-key rejection, fresh result objects, automated tests, and README documentation.","filesChanged":["config.cjs","test.cjs","README.md"],"tests":[{"command":"node --test test.cjs","status":"PASSED","evidence":"5 tests passed, 0 failed."},{"command":"git diff --check","status":"PASSED","evidence":"No whitespace errors reported."}],"blockers":[],"nextAction":"None; implementation and tests are complete.","createdAt":"2026-10-20T20:15:15.683Z"}

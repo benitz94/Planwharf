@@ -1,0 +1,2692 @@
+{
+  "schema": 1,
+  "study": "Single-model pilot; observed associations only, no universal performance or causal claim",
+  "conventions": {
+    "percentDifference": "100 * (Planwharf - direct) / direct, per accepted pair; negative favors Planwharf for resource metrics",
+    "tokenTotal": "inputTokens + outputTokens; cached input and reasoning are separately reported subsets, never added again",
+    "invocation": "Agent CLI invocations across all roles; provider internal inference count UNKNOWN",
+    "usage": "Planwharf requires usageScope=all_calls; missing receipts stay UNKNOWN. Billed cost is actual supplied cost only.",
+    "pairedTime": "Accepted-pair elapsed wall time only; all incomplete elapsed time and consumption remain in allRunsMetrics"
+  },
+  "overall": {
+    "arms": {
+      "direct": {
+        "runCount": 1,
+        "outcomes": {
+          "accepted": 1,
+          "defective": 0,
+          "failed": 0,
+          "blocked": 0,
+          "timed_out": 0
+        },
+        "nonAcceptedCount": 0,
+        "acceptedRate": 1,
+        "failureRate": 0,
+        "recovery": {
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "attemptStatusUnknown": 0,
+          "outcomeUnknown": 0,
+          "rate": null
+        },
+        "allRunsMetrics": {
+          "wallMs": {
+            "median": 45677.476200000005,
+            "sum": 45677.476200000005,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 45677.476200000005,
+            "max": 45677.476200000005
+          },
+          "totalTokens": {
+            "median": 96180,
+            "sum": 96180,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 96180,
+            "max": 96180
+          },
+          "inputTokens": {
+            "median": 93120,
+            "sum": 93120,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 93120,
+            "max": 93120
+          },
+          "outputTokens": {
+            "median": 3060,
+            "sum": 3060,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 3060,
+            "max": 3060
+          },
+          "cachedInputTokens": {
+            "median": 78976,
+            "sum": 78976,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 78976,
+            "max": 78976
+          },
+          "reasoningTokens": {
+            "median": 372,
+            "sum": 372,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 372,
+            "max": 372
+          },
+          "billedCost": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "invocations": {
+            "median": 1,
+            "sum": 1,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 1,
+            "max": 1
+          },
+          "interventions": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "initialApprovals": {
+            "median": 0,
+            "sum": 0,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 0,
+            "max": 0
+          },
+          "restarts": {
+            "median": 0,
+            "sum": 0,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 0,
+            "max": 0
+          },
+          "failedAttempts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "modelMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "waitingMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "retryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "cooldownMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "launchMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "followUpMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "investigationMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "recoveryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "quotaDecrement": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          }
+        },
+        "acceptedMetrics": {
+          "wallMs": {
+            "median": 45677.476200000005,
+            "sum": 45677.476200000005,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 45677.476200000005,
+            "max": 45677.476200000005
+          },
+          "totalTokens": {
+            "median": 96180,
+            "sum": 96180,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 96180,
+            "max": 96180
+          },
+          "inputTokens": {
+            "median": 93120,
+            "sum": 93120,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 93120,
+            "max": 93120
+          },
+          "outputTokens": {
+            "median": 3060,
+            "sum": 3060,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 3060,
+            "max": 3060
+          },
+          "cachedInputTokens": {
+            "median": 78976,
+            "sum": 78976,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 78976,
+            "max": 78976
+          },
+          "reasoningTokens": {
+            "median": 372,
+            "sum": 372,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 372,
+            "max": 372
+          },
+          "billedCost": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "invocations": {
+            "median": 1,
+            "sum": 1,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 1,
+            "max": 1
+          },
+          "interventions": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "initialApprovals": {
+            "median": 0,
+            "sum": 0,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 0,
+            "max": 0
+          },
+          "restarts": {
+            "median": 0,
+            "sum": 0,
+            "measuredCount": 1,
+            "unknownCount": 0,
+            "availability": "measured",
+            "min": 0,
+            "max": 0
+          },
+          "failedAttempts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "modelMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "waitingMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "retryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "cooldownMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "launchMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "followUpMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "investigationMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "recoveryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          },
+          "quotaDecrement": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 1,
+            "availability": "UNKNOWN for missing runs; median describes measured subset only",
+            "min": null,
+            "max": null
+          }
+        }
+      },
+      "planwharf": {
+        "runCount": 0,
+        "outcomes": {
+          "accepted": 0,
+          "defective": 0,
+          "failed": 0,
+          "blocked": 0,
+          "timed_out": 0
+        },
+        "nonAcceptedCount": 0,
+        "acceptedRate": null,
+        "failureRate": null,
+        "recovery": {
+          "attempted": 0,
+          "succeeded": 0,
+          "failed": 0,
+          "attemptStatusUnknown": 0,
+          "outcomeUnknown": 0,
+          "rate": null
+        },
+        "allRunsMetrics": {
+          "wallMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "totalTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "inputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "outputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "cachedInputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "reasoningTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "billedCost": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "invocations": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "interventions": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "initialApprovals": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "restarts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "failedAttempts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "modelMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "waitingMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "retryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "cooldownMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "launchMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "followUpMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "investigationMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "recoveryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "quotaDecrement": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          }
+        },
+        "acceptedMetrics": {
+          "wallMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "totalTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "inputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "outputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "cachedInputTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "reasoningTokens": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "billedCost": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "invocations": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "interventions": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "initialApprovals": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "restarts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "failedAttempts": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "modelMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "waitingMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "retryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "cooldownMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "launchMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "followUpMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "investigationMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "recoveryMs": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          },
+          "quotaDecrement": {
+            "median": null,
+            "sum": null,
+            "measuredCount": 0,
+            "unknownCount": 0,
+            "availability": "UNKNOWN: no runs",
+            "min": null,
+            "max": null
+          }
+        }
+      }
+    },
+    "equalQualityPairs": {
+      "acceptedPairCount": 0,
+      "acceptedPairs": [],
+      "excludedPairs": [
+        {
+          "taskId": "config",
+          "pairId": "config-1",
+          "reason": "missing arm",
+          "runIds": [
+            "config-1-direct-e717c2e0"
+          ]
+        }
+      ],
+      "metrics": {
+        "wallMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "totalTokens": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "inputTokens": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "outputTokens": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "cachedInputTokens": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "reasoningTokens": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "billedCost": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "invocations": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "interventions": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "initialApprovals": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "restarts": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "failedAttempts": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "modelMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "waitingMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "retryMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "cooldownMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "launchMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "followUpMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "investigationMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "recoveryMs": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        },
+        "quotaDecrement": {
+          "comparablePairs": 0,
+          "unknownPairs": 0,
+          "directMedian": null,
+          "planwharfMedian": null,
+          "medianPairedDifference": null,
+          "medianPairedPercentDifference": null,
+          "percentDenominatorPairs": 0,
+          "zeroDenominatorPairs": 0,
+          "differenceInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          },
+          "percentInterval": {
+            "lower": null,
+            "upper": null,
+            "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+          }
+        }
+      }
+    }
+  },
+  "categories": {
+    "small": {
+      "arms": {
+        "direct": {
+          "runCount": 1,
+          "outcomes": {
+            "accepted": 1,
+            "defective": 0,
+            "failed": 0,
+            "blocked": 0,
+            "timed_out": 0
+          },
+          "nonAcceptedCount": 0,
+          "acceptedRate": 1,
+          "failureRate": 0,
+          "recovery": {
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "attemptStatusUnknown": 0,
+            "outcomeUnknown": 0,
+            "rate": null
+          },
+          "allRunsMetrics": {
+            "wallMs": {
+              "median": 45677.476200000005,
+              "sum": 45677.476200000005,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 45677.476200000005,
+              "max": 45677.476200000005
+            },
+            "totalTokens": {
+              "median": 96180,
+              "sum": 96180,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 96180,
+              "max": 96180
+            },
+            "inputTokens": {
+              "median": 93120,
+              "sum": 93120,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 93120,
+              "max": 93120
+            },
+            "outputTokens": {
+              "median": 3060,
+              "sum": 3060,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 3060,
+              "max": 3060
+            },
+            "cachedInputTokens": {
+              "median": 78976,
+              "sum": 78976,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 78976,
+              "max": 78976
+            },
+            "reasoningTokens": {
+              "median": 372,
+              "sum": 372,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 372,
+              "max": 372
+            },
+            "billedCost": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "invocations": {
+              "median": 1,
+              "sum": 1,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 1,
+              "max": 1
+            },
+            "interventions": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "initialApprovals": {
+              "median": 0,
+              "sum": 0,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 0,
+              "max": 0
+            },
+            "restarts": {
+              "median": 0,
+              "sum": 0,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 0,
+              "max": 0
+            },
+            "failedAttempts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "modelMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "waitingMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "retryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "cooldownMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "launchMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "followUpMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "investigationMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "recoveryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "quotaDecrement": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            }
+          },
+          "acceptedMetrics": {
+            "wallMs": {
+              "median": 45677.476200000005,
+              "sum": 45677.476200000005,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 45677.476200000005,
+              "max": 45677.476200000005
+            },
+            "totalTokens": {
+              "median": 96180,
+              "sum": 96180,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 96180,
+              "max": 96180
+            },
+            "inputTokens": {
+              "median": 93120,
+              "sum": 93120,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 93120,
+              "max": 93120
+            },
+            "outputTokens": {
+              "median": 3060,
+              "sum": 3060,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 3060,
+              "max": 3060
+            },
+            "cachedInputTokens": {
+              "median": 78976,
+              "sum": 78976,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 78976,
+              "max": 78976
+            },
+            "reasoningTokens": {
+              "median": 372,
+              "sum": 372,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 372,
+              "max": 372
+            },
+            "billedCost": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "invocations": {
+              "median": 1,
+              "sum": 1,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 1,
+              "max": 1
+            },
+            "interventions": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "initialApprovals": {
+              "median": 0,
+              "sum": 0,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 0,
+              "max": 0
+            },
+            "restarts": {
+              "median": 0,
+              "sum": 0,
+              "measuredCount": 1,
+              "unknownCount": 0,
+              "availability": "measured",
+              "min": 0,
+              "max": 0
+            },
+            "failedAttempts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "modelMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "waitingMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "retryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "cooldownMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "launchMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "followUpMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "investigationMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "recoveryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            },
+            "quotaDecrement": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 1,
+              "availability": "UNKNOWN for missing runs; median describes measured subset only",
+              "min": null,
+              "max": null
+            }
+          }
+        },
+        "planwharf": {
+          "runCount": 0,
+          "outcomes": {
+            "accepted": 0,
+            "defective": 0,
+            "failed": 0,
+            "blocked": 0,
+            "timed_out": 0
+          },
+          "nonAcceptedCount": 0,
+          "acceptedRate": null,
+          "failureRate": null,
+          "recovery": {
+            "attempted": 0,
+            "succeeded": 0,
+            "failed": 0,
+            "attemptStatusUnknown": 0,
+            "outcomeUnknown": 0,
+            "rate": null
+          },
+          "allRunsMetrics": {
+            "wallMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "totalTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "inputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "outputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "cachedInputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "reasoningTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "billedCost": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "invocations": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "interventions": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "initialApprovals": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "restarts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "failedAttempts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "modelMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "waitingMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "retryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "cooldownMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "launchMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "followUpMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "investigationMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "recoveryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "quotaDecrement": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            }
+          },
+          "acceptedMetrics": {
+            "wallMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "totalTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "inputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "outputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "cachedInputTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "reasoningTokens": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "billedCost": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "invocations": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "interventions": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "initialApprovals": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "restarts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "failedAttempts": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "modelMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "waitingMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "retryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "cooldownMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "launchMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "followUpMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "investigationMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "recoveryMs": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            },
+            "quotaDecrement": {
+              "median": null,
+              "sum": null,
+              "measuredCount": 0,
+              "unknownCount": 0,
+              "availability": "UNKNOWN: no runs",
+              "min": null,
+              "max": null
+            }
+          }
+        }
+      },
+      "equalQualityPairs": {
+        "acceptedPairCount": 0,
+        "acceptedPairs": [],
+        "excludedPairs": [
+          {
+            "taskId": "config",
+            "pairId": "config-1",
+            "reason": "missing arm",
+            "runIds": [
+              "config-1-direct-e717c2e0"
+            ]
+          }
+        ],
+        "metrics": {
+          "wallMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "totalTokens": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "inputTokens": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "outputTokens": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "cachedInputTokens": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "reasoningTokens": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "billedCost": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "invocations": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "interventions": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "initialApprovals": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "restarts": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "failedAttempts": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "modelMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "waitingMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "retryMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "cooldownMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "launchMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "followUpMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "investigationMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "recoveryMs": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          },
+          "quotaDecrement": {
+            "comparablePairs": 0,
+            "unknownPairs": 0,
+            "directMedian": null,
+            "planwharfMedian": null,
+            "medianPairedDifference": null,
+            "medianPairedPercentDifference": null,
+            "percentDenominatorPairs": 0,
+            "zeroDenominatorPairs": 0,
+            "differenceInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            },
+            "percentInterval": {
+              "lower": null,
+              "upper": null,
+              "status": "inconclusive: fewer than five accepted pairs with comparable measurements"
+            }
+          }
+        }
+      }
+    }
+  },
+  "runs": [
+    {
+      "id": "config-1-direct-e717c2e0",
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-1",
+      "arm": "direct",
+      "scenario": "baseline",
+      "model": "gpt-5.6-luna",
+      "startingCommit": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+      "starterHash": "8b23bba54b083a02d68c183a72280feaf640efeb4407dc95f1e1fa335748f0b6",
+      "outcome": "accepted",
+      "wallMs": 45677.476200000005,
+      "evaluationMs": 1038.6626999999862,
+      "completed": true,
+      "timedOut": false,
+      "blocked": false,
+      "calls": [
+        {
+          "usage": {
+            "inputTokens": 93120,
+            "outputTokens": 3060,
+            "cachedInputTokens": 78976,
+            "reasoningTokens": 372
+          },
+          "wallMs": 44621.8502,
+          "exitCode": 0,
+          "threadId": "01a15d1c-7708-7b01-b7e8-aab883431d83"
+        }
+      ],
+      "invocations": 1,
+      "usageScope": "all_calls",
+      "faultInjected": false,
+      "recoveryAttempted": false,
+      "restarts": 0,
+      "initialApprovals": 0,
+      "scriptedRecoveryActions": 0,
+      "diagnostic": "2026-10-21T06:18:29.220305Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n",
+      "timing": {
+        "cliWallMs": 44621.8502,
+        "modelMs": null,
+        "waitingMs": null,
+        "retryMs": null,
+        "processLaunchMs": null
+      },
+      "interventions": null,
+      "requiredInitialSubmissions": 1,
+      "acceptance": {
+        "taskId": "config",
+        "passed": 6,
+        "total": 6,
+        "outcome": "independently-accepted",
+        "checks": [
+          {
+            "name": "defaults",
+            "passed": true
+          },
+          {
+            "name": "valid-boundaries",
+            "passed": true
+          },
+          {
+            "name": "invalid-values",
+            "passed": true
+          },
+          {
+            "name": "unknown-and-malformed",
+            "passed": true
+          },
+          {
+            "name": "independent-results",
+            "passed": true
+          },
+          {
+            "name": "deliverables",
+            "passed": true
+          }
+        ],
+        "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505",
+        "graderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+        "evidenceDir": "[REDACTED USER PATH]",
+        "scope": "Deterministic behavioral checks; documentation/self-test presence does not establish maintainability or test coverage quality. Child processes are not an OS sandbox."
+      },
+      "artifactId": "09c84911db630fddd652a24a641f6cbdb494f59cf4ad44b0e9a530e4669b5068",
+      "quotaDecrement": null,
+      "billedCost": null,
+      "recovered": null,
+      "metrics": {
+        "wallMs": {
+          "value": 45677.476200000005,
+          "availability": "measured"
+        },
+        "totalTokens": {
+          "value": 96180,
+          "availability": "measured"
+        },
+        "inputTokens": {
+          "value": 93120,
+          "availability": "measured"
+        },
+        "outputTokens": {
+          "value": 3060,
+          "availability": "measured"
+        },
+        "cachedInputTokens": {
+          "value": 78976,
+          "availability": "measured"
+        },
+        "reasoningTokens": {
+          "value": 372,
+          "availability": "measured"
+        },
+        "billedCost": {
+          "value": null,
+          "availability": "UNKNOWN: provider did not expose a reliable complete measurement"
+        },
+        "invocations": {
+          "value": 1,
+          "availability": "measured"
+        },
+        "interventions": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "initialApprovals": {
+          "value": 0,
+          "availability": "measured"
+        },
+        "restarts": {
+          "value": 0,
+          "availability": "measured"
+        },
+        "failedAttempts": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "modelMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "waitingMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "retryMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "cooldownMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "launchMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "followUpMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "investigationMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "recoveryMs": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        },
+        "quotaDecrement": {
+          "value": null,
+          "availability": "UNKNOWN: not measured"
+        }
+      },
+      "providerInternalInferences": {
+        "value": null,
+        "availability": "UNKNOWN: agent invocation counts do not expose provider internal inference calls"
+      }
+    }
+  ],
+  "limitations": [
+    "A pilot cannot establish universal savings; provider load, caching, order, quota and configuration differences can confound comparisons.",
+    "Acceptance is an independent quality threshold, not proof that all accepted artifacts have identical maintainability, coverage or security.",
+    "Bootstrap intervals are exploratory, conditional on accepted measured pairs, and do not correct selection bias or multiple comparisons.",
+    "Unknown measurements are not zero. Measured-subset medians are labeled; incomplete totals are UNKNOWN.",
+    "Quota and subscription price cannot be converted into per-task cost. No monetary savings claim follows from tokens alone.",
+    "Sanitization is best effort; review receipts manually before publishing. Redaction cannot guarantee detection of arbitrary secrets."
+  ]
+}

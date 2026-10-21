@@ -1,0 +1,60 @@
+{
+  "schema": 2,
+  "projects": [
+    {
+      "schema": 1,
+      "project": {
+        "id": "first-project",
+        "name": "First project"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-09T00:00:00.000Z",
+          "direction": "",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": []
+    },
+    {
+      "schema": 1,
+      "project": {
+        "id": "benchmark-rest-api",
+        "name": "Benchmark rest-api",
+        "folder": "[REDACTED USER PATH]"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-21T06:30:53.786Z",
+          "direction": "Persistent REST item service\n\nImplement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently resetting it. One server process owns a store; cross-process simultaneous writers are outside scope. Store format is an object {version:1,items:[...]}. Each item has exactly {id,title,done}; id matches /^[a-z][a-z0-9-]{0,31}$/, title is trimmed to 1..80 characters, done is boolean (defaults false on POST). Reject unknown body properties and incorrect types.\nRoutes: GET /items -> 200 array sorted by id; GET /items/:id -> 200 item or 404 JSON {error:string}; POST /items with {id,title,done?} -> 201 item and Location '/items/'+id, duplicate id ->409; PATCH /items/:id accepts a nonempty subset of {title,done}, preserves id, ->200 item or404; DELETE /items/:id ->204 no body or404. Unknown routes ->404. Malformed JSON and validation errors ->400 JSON {error:string}. Responses containing JSON must have application/json Content-Type. Reject request bodies over 16384 bytes with413 and never commit them. Successful mutations must be durable before the response. Serialize concurrent writes to avoid lost updates. Use atomic replacement of the store file so an interrupted commit leaves either old or new complete data. Await optional onStage(stage) immediately before replacement ('beforeCommit') and immediately after durable replacement ('afterCommit'), before sending the response. Tests may terminate the process synchronously in that hook. Recover correctly on a new process after either fault; beforeCommit preserves old data, afterCommit preserves new data even without a response. Leftover temporary files must not override the committed store. No authentication/public deployment is required; this is a local service.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": [
+        {
+          "id": "task-8b5507cb-b2c3-41b0-9f13-2884c06bf8d3",
+          "projectId": "benchmark-rest-api",
+          "revision_id": 1,
+          "title": "Continue: Identical benchmark starting point",
+          "detail": "Goal: Persistent REST item service Implement api.cjs exporting createServer({file,onStage}), returning an unbound node:http Server. The caller calls server.listen(0,'127.0.0.1') and closes it. No server starts at import. Persist all items as JSON at the exact file path; create missing parent directories, treat a nonexistent file as empty, and reject an existing malformed store rather than silently rese…\n\nLatest commit: 3d7fd8c Identical benchmark starting point\n\nRecent:\n3d7fd8c Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+          "status": "complete",
+          "timing": "discretion",
+          "executionVersion": 2,
+          "completedAt": "2026-10-21T06:34:28.509Z",
+          "attemptId": "attempt-2",
+          "megaTaskId": "MT-296a4bc2-2919-49da-a1e6-bf21552dd3a0"
+        }
+      ]
+    }
+  ]
+}

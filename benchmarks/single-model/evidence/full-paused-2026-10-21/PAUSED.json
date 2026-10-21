@@ -1,0 +1,35 @@
+{
+  "status": "OPERATOR_PAUSED",
+  "pausedAt": "2026-10-21T07:51:24.046Z",
+  "reason": "User leaving; resume from office requested",
+  "completedTrials": 20,
+  "targetTrials": 30,
+  "accepted": 17,
+  "partialAttempts": [
+    {
+      "id": "scheduler-1-direct-b382c893",
+      "calls": [
+        {
+          "call": "call-1",
+          "threadId": "01a15d70-9920-78f2-80df-63873866e30a",
+          "reportedUsage": {
+            "inputTokens": 43641,
+            "outputTokens": 5033,
+            "cachedInputTokens": 38528,
+            "reasoningTokens": 1706
+          }
+        }
+      ]
+    }
+  ],
+  "remainingUnstartedTrials": 9,
+  "sourceFreeze": "../protocol-v2-freeze.json",
+  "publishedSourceCommit": "0a272e748fa0076bf1b696003fbfe9281c3b4960",
+  "resumeRequirements": [
+    "Preserve all completed rows and raw evidence; do not rerun them silently.",
+    "Record the operator pause and interrupted active trial separately from the planned implementation interruption.",
+    "Verify frozen hashes, same CLI/model/account/profile and workspace availability before continuation.",
+    "If office environment differs, retain this cohort separately and disclose the environment change; do not silently pool timing data.",
+    "Do not copy credentials or the authenticated private profile into the repository."
+  ]
+}

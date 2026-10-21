@@ -1,0 +1,8 @@
+{
+  "name": "corrupt-store",
+  "passed": false,
+  "exitCode": 1,
+  "signal": null,
+  "stdout": "BENCHMARK_RESULT {\"passed\":false,\"detail\":\"Missing expected rejection.\"}\n",
+  "stderr": "[REDACTED USER PATH]\r\n  let x; try { x = JSON.parse(text); } catch { throw new Error(`Malformed store: ${file}`); }\r\n                                                     ^\r\n\r\nError: Malformed store: [REDACTED USER PATH]\r\n    at parse ([REDACTED USER PATH]\r\n    at load ([REDACTED USER PATH]\r\n\r\nNode.js v24.19.0\r\n"
+}

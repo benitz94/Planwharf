@@ -1,0 +1,6 @@
+{
+  "outcome": "NOT_EVALUATED",
+  "requestedVersion": "0.144.3",
+  "metadataUrl": "https://registry.npmjs.org/@openai%2Fcodex/0.144.3-win32-x64",
+  "diagnostic": "Metadata fetch failed with native EACCES before HTTP response; no archive/binary downloaded; no portable CLI or inference executed. Network permission request was aborted; no grant obtained."
+}

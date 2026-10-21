@@ -1,0 +1,92 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "resultId",
+    "attemptId",
+    "subTaskId",
+    "megaTaskId",
+    "status",
+    "summary",
+    "filesChanged",
+    "tests",
+    "blockers",
+    "nextAction",
+    "createdAt"
+  ],
+  "properties": {
+    "resultId": {
+      "type": "string",
+      "const": "R-attempt-1"
+    },
+    "attemptId": {
+      "type": "string",
+      "const": "attempt-1"
+    },
+    "subTaskId": {
+      "type": "string",
+      "const": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff-ST-01"
+    },
+    "megaTaskId": {
+      "type": "string",
+      "const": "MT-7ca290fc-13eb-4544-972b-6f3a9ab39dff"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "COMPLETE",
+        "FAILED",
+        "BLOCKED"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "filesChanged": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command",
+          "status",
+          "evidence"
+        ],
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASSED",
+              "FAILED",
+              "NOT_RUN"
+            ]
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nextAction": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  }
+}

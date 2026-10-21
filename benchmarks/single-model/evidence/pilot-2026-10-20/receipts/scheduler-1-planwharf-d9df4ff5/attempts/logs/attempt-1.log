@@ -1,0 +1,6 @@
+{"event":"provider-launch","at":"2026-10-20T17:08:55.821Z","provider":"codex","model":"gpt-5.6-luna","executable":"[REDACTED USER PATH]","cwd":"[REDACTED USER PATH]","attempt":"attempt-1"}
+WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)
+WARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path "[REDACTED USER PATH]"
+2026-10-20T17:08:56.028997Z  WARN codex_state::runtime: failed to open goals db at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file
+2026-10-20T17:08:56.031023Z  WARN codex_rollout::state_db: failed to initialize state runtime: failed to initialize state runtime at [REDACTED USER PATH] failed to open goals DB at [REDACTED USER PATH] error returned from database: (code: 14) unable to open database file: error returned from database: (code: 14) unable to open database file: (code: 14) unable to open database file
+Error: failed to initialize in-process app-server client: Access is denied. (os error 5)

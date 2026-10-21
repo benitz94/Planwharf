@@ -1,0 +1,1892 @@
+{
+  "id": "benchmark-scheduler",
+  "name": "Benchmark scheduler",
+  "projectSkills": {
+    "available": true,
+    "deliveryEnabled": false,
+    "mode": "auto",
+    "enabled": [],
+    "deliveries": []
+  },
+  "folder": "[REDACTED USER PATH]",
+  "github": null,
+  "repository": null,
+  "goal": "Recoverable dependency scheduler\n\nImplement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknown fields, invalid dependency arrays, repeated/self/unknown dependencies, cycles, and IDs already present. Dependencies may reference the same batch or previously enqueued jobs. Reject an invalid batch atomically: no partial changes to memory or storage. snapshot() returns a detached JSON object {version:1,jobs:[...]} with jobs sorted by id; each job has id,dependsOn,payload,status,attempt and optional result/error. Status values: pending/running/completed/failed/blocked. Initial attempt=0. run() returns a Promise of the final snapshot and starts all ready work up to concurrency, picking ready jobs in id order; it resolves only when no work remains running or runnable. Concurrent run() calls join the same drain (no duplicate execution). Call execute({id,payload,attempt}) asynchronously once per claimed attempt. Persist status running and incremented attempt BEFORE execute. Persist completed with its JSON result after success; rejected execution becomes failed with string error. Transitively mark descendants of failed or blocked jobs blocked, never execute them, and continue independent jobs. Completed work is never executed again on repeated run() or restart. Allow enqueue of additional work after a finished run.\nStorage: a JSON checkpoint {version:1,jobs:[...]} at file, atomically replaced on EVERY accepted enqueue, claim and terminal transition. Create missing parent directories; reject corrupt existing checkpoints. One scheduler process owns a file. On restart load all jobs; previously running jobs become pending, retaining attempt count, so the next claim increments it. This is at-least-once recovery: interrupted execute may repeat, acknowledged completed results must not repeat. Await optional onStage(stage,jobId) after a durable claimed ('claimed') or terminal completed ('completed') checkpoint and before moving on. Tests may synchronously terminate the process at those exact stages. A crash after claimed must recover the job as pending and execute attempt 2; after completed must retain the result and never replay it. Stale temporary files must not override committed checkpoints. Full JSON checkpoint inspection is the recovery invariant; a separate append-only journal is optional, not required. Use bounded finite tests, document at-least-once side-effect limitations, and include stress/concurrency and crash/restart tests.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+  "notes": [],
+  "stateArt": "",
+  "open": [],
+  "status": "complete",
+  "label": "Evidence complete",
+  "doing": "Continue: Identical benchmark starting point: 1/1 slices complete.",
+  "plan": [
+    "MegaTask: Continue: Identical benchmark starting point",
+    "Objective: Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+    "Latest git: 772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "Whole job — benchmark-model; parallel-ready; COMPLETE"
+  ],
+  "facts": {
+    "folder": "[REDACTED USER PATH]",
+    "fileCount": 6,
+    "names": [
+      ".git",
+      ".gitignore",
+      "README.md",
+      "scheduler.cjs",
+      "TASK.md",
+      "test.cjs"
+    ],
+    "docs": [
+      "README.md"
+    ],
+    "git": true,
+    "head": "ref: refs/heads/main",
+    "branch": "main",
+    "lastCommit": "772e319 Identical benchmark starting point",
+    "commitId": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "lastSubject": "Identical benchmark starting point",
+    "recent": [
+      "772e319 Identical benchmark starting point"
+    ],
+    "dirty": [
+      " M README.md",
+      " M scheduler.cjs",
+      "?? test.cjs"
+    ],
+    "diffStat": "README.md | 20 +++++++- scheduler.cjs | 149 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++- 2 files changed, 166 insertions(+), 3 deletions(-)"
+  },
+  "goldModel": null,
+  "jobTitle": "Continue: Identical benchmark starting point",
+  "jobId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+  "attemptId": "attempt-2",
+  "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+  "megaTask": {
+    "id": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+    "projectId": "benchmark-scheduler",
+    "taskId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+    "planRevisionId": 1,
+    "title": "Continue: Identical benchmark starting point",
+    "goal": "Goal: Recoverable dependency scheduler Implement scheduler.cjs exporting createScheduler({file,concurrency,execute,onStage}). concurrency must be integer 1..8; execute must be a function. The factory returns {enqueue,run,snapshot}. enqueue(jobs) is async, accepts a batch of {id,dependsOn?,payload?}, defaults dependsOn=[] and payload=null. IDs match /^[a-z][a-z0-9-]{0,31}$/; reject duplicate IDs, unknow…\n\nLatest commit: 772e319 Identical benchmark starting point\n\nRecent:\n772e319 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+    "createdAt": "2026-10-21T08:59:35.870Z",
+    "approvedAt": "2026-10-21T08:59:35.882Z",
+    "status": "COMPLETE",
+    "orchestratorModelId": "benchmark-model",
+    "currentCheckpointId": "CP-a8ec69ce-af39-400e-8708-62c271bd8178",
+    "completedAt": "2026-10-21T09:01:21.752Z",
+    "jobFingerprint": "d7c90c83c5fd049c9c30991e03df4b66584da8dd0d63a34b35f52621cc0cc0da",
+    "detached": false,
+    "repoBefore": {
+      "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+      "dirtyFiles": [],
+      "comparable": true,
+      "gitReadable": true,
+      "fingerprint": "b9db8466b1719b5a40908391829bf2bb4b8bcd35f55bf55d4f162cd28dd1d79c",
+      "disposition": "COMMITTED"
+    },
+    "nextAction": "No remaining implementation work.",
+    "pauseRequested": false,
+    "timing": "discretion",
+    "deadlineAt": null,
+    "blockers": [],
+    "approvedMegaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+    "authorizedSessionId": "1ddeec83-9285-4906-ae96-0c0193b66692",
+    "interruptedAttemptIds": [],
+    "deadlineError": null,
+    "repoAfter": {
+      "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+      "dirtyFiles": [
+        " M README.md",
+        " M scheduler.cjs",
+        "?? test.cjs"
+      ],
+      "comparable": true,
+      "gitReadable": true,
+      "fingerprint": "698fa0e4f43ef25c036b4d9202badc869fc5c35c91d6a5411a1b4b16a7b20e85",
+      "disposition": "UNCOMMITTED",
+      "commitIds": [],
+      "sourceChangesObserved": true
+    }
+  },
+  "subTasks": [
+    {
+      "id": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+      "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+      "title": "Whole job",
+      "detail": "Whole job",
+      "status": "COMPLETE",
+      "assignedModelId": "benchmark-model",
+      "attemptIds": [
+        "attempt-1",
+        "attempt-2"
+      ],
+      "resultId": "R-attempt-2",
+      "createdAt": "2026-10-21T08:59:35.870Z",
+      "completedAt": "2026-10-21T09:01:21.749Z",
+      "type": "IMPLEMENTATION",
+      "dependencies": [],
+      "proposedProvider": "codex",
+      "proposedCli": "gpt-5.6-luna",
+      "provider": "codex",
+      "cli": "gpt-5.6-luna"
+    }
+  ],
+  "checkpointId": "CP-a8ec69ce-af39-400e-8708-62c271bd8178",
+  "resumableCheckpoints": [],
+  "modelId": "benchmark-model",
+  "workerLabel": "Single exact benchmark model",
+  "waitingFor": "Nothing. Structured results are complete.",
+  "next": "No remaining implementation work.",
+  "step": "done",
+  "pipeline": [
+    {
+      "id": "check",
+      "label": "Check",
+      "state": "done"
+    },
+    {
+      "id": "grill",
+      "label": "Grill",
+      "state": "done"
+    },
+    {
+      "id": "plan",
+      "label": "Plan",
+      "state": "done"
+    },
+    {
+      "id": "approve",
+      "label": "Approve",
+      "state": "done"
+    },
+    {
+      "id": "assign",
+      "label": "Assign",
+      "state": "done"
+    },
+    {
+      "id": "watch",
+      "label": "Watch",
+      "state": "done"
+    }
+  ],
+  "crew": [
+    {
+      "role": "Orchestrator",
+      "name": "Single exact benchmark model",
+      "doing": "Verified STATUS: COMPLETE and folder output."
+    },
+    {
+      "role": "Worker",
+      "name": "Single exact benchmark model",
+      "doing": "Evidence complete."
+    }
+  ],
+  "resultPath": "[REDACTED USER PATH]",
+  "watchingSince": null,
+  "approved": true,
+  "sessionId": "1ddeec83-9285-4906-ae96-0c0193b66692",
+  "canStart": true,
+  "canResume": false,
+  "canStop": false,
+  "pendingAutoStart": false,
+  "dispatch": [
+    {
+      "modelId": "benchmark-model",
+      "label": "Single exact benchmark model",
+      "provider": "codex",
+      "cli": "gpt-5.6-luna",
+      "subTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+      "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+      "attemptId": "attempt-2",
+      "slice": "Whole job",
+      "resultPath": "[REDACTED USER PATH]",
+      "structuredResultPath": "[REDACTED USER PATH]",
+      "exitPath": "[REDACTED USER PATH]",
+      "logPath": "[REDACTED USER PATH]",
+      "folder": "[REDACTED USER PATH]",
+      "pid": 60928,
+      "alive": false,
+      "startedAt": "2026-10-21T09:00:13.627Z",
+      "sessionId": "1ddeec83-9285-4906-ae96-0c0193b66692",
+      "observedAlive": false,
+      "validatedResultStatus": "COMPLETE",
+      "recordedSubTaskStatus": "COMPLETE",
+      "diagnostic": null,
+      "activitySession": {
+        "id": "benchmark-scheduler:MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b:attempt-2",
+        "projectId": "benchmark-scheduler",
+        "jobId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+        "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+        "subTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+        "attemptId": "attempt-2",
+        "recordedSessionId": "1ddeec83-9285-4906-ae96-0c0193b66692",
+        "role": "worker",
+        "provider": "codex",
+        "adapter": "codex",
+        "model": "gpt-5.6-luna",
+        "modelId": "benchmark-model",
+        "startedAt": "2026-10-21T09:00:13.627Z",
+        "completedAt": "2026-10-21T09:01:21.749Z",
+        "reportedResultAt": "2026-10-21T09:03:00.000Z",
+        "processState": "ended",
+        "state": "completed",
+        "historical": false,
+        "validatedResultStatus": "COMPLETE",
+        "recordedResultStatus": "COMPLETE",
+        "exitCode": 0,
+        "capabilities": {
+          "configuredAdapter": "codex",
+          "expectedFormat": "plain",
+          "detailedEventsExpected": false,
+          "liveDeliveryVerified": false,
+          "validatedResults": false
+        },
+        "latestActivity": {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        },
+        "latestConfirmedActivity": null,
+        "reportedOutcomes": [],
+        "technicalEvidence": {
+          "entries": [
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 2880155dcf65c607d61e6b687091418541400b5b..3a75fd830d02bb291e24aa34b8a40937fb29b44f\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,21 @@\n # Recoverable dependency scheduler\n\n-Implementation and self-test documentation goes here.\n+`require('./scheduler.cjs').createScheduler({ file, concurrency, execute, onStage })`\n+creates a persistent dependency scheduler. Add batches with `await enqueue(jobs)`,\n+start or join processing with `await run()`, and inspect a detached checkpoint with\n+`snapshot()`. Job IDs are lowercase hyphenated names (up to 32 characters), and\n+validation rejects unknown fields, duplicate/unknown dependencies, cycles, and\n+duplicate IDs atomically.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+The checkpoint is atomically replaced for every enqueue, claim, and terminal\n+transition. A job persisted as `running` is recovered as `pending` and retried\n+with an incremented attempt, providing at-least-once execution. A completed\n+result is durable and is not replayed. Consequently, an `execute` side effect\n+can happen twice if the process crashes after the side effect but before its\n+completion checkpoint; callers should make external effects idempotent.\ndiff --git a/scheduler.cjs b/scheduler.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..7cef18b75be7ca75e812a5deb4f6da071d7596a8\n--- /dev/null\n+++ b/scheduler.cjs\n@@ -0,0 +1,143 @@\n+'use strict';\n+\n+const fs = require('node:fs');\n+const fsp = fs.promises;\n+const path = require('node:path');\n+\n+const ID = /^[a-z][a-z0-9-]{0,31}$/;\n+const FIELDS = new Set(['id', 'dependsOn', 'payload']);\n+const JOB_FIELDS = new Set(['id', 'dependsOn', 'payload', 'status', 'attempt', 'result', 'error']);\n+\n+function ownKeysOnly(value, allowed) {\n+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k =&gt; allowed.has(k));\n+}\n+\n+function clone(value) {\n+  return JSON.parse(JSON.stringify(value));\n+}\n+\n+function createScheduler(options) {\n+  if (!options || typeof options !== 'object') throw new TypeError('options must be an object');\n+  const { file, concurrency, execute, onStage } = options;\n+  if (typeof file !== 'string' || !file) throw new TypeError('file must be a non-empty string');\n+  if (!Number.isInteger(concurrency) || concurrency &lt; 1 || concurrency &gt; 8) throw new RangeError('concurrency must be an integer from 1 to 8');\n+  if (typeof execute !== 'function') throw new TypeError('execute must be a function');\n+  if (onStage !== undefined && typeof onStage !== 'function') throw new TypeError('onStage must be a function');\n+\n+  const jobs = new Map();\n+  let writeTail = Promise.resolve();\n+  let drainPromise = null;\n+\n+  function checkpoint() {\n+    return { version: 1, jobs: [...jobs.values()].sort((a, b) =&gt; a.id.localeCompare(b.id)).map(j =&gt; clone(j)) };\n+  }\n+\n+  function queuePersist() {\n+    let data;\n+    try { data = JSON.stringify(checkpoint()) + '\\n'; }\n+    catch (e) { throw new TypeError(`checkpoint is not JSON-serializable: ${e.message}`); }\n+    const tmp = `${file}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;\n+    writeTail = writeTail.then(async () =&gt; {\n+      await fsp.mkdir(path.dirname(path.resolve(file)), { recursive: true });\n+      await fsp.writeFile(tmp, data, 'utf8');\n+      await fsp.rename(tmp, file);\n+    }).catch(async e =&gt; { try { await fsp.unlink(tmp); } catch {} throw e; });\n+    return writeTail;\n+  }\n+\n+  function validateLoaded(raw) {\n+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.version !=\n[excerpt truncated]"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "exec\n\"[REDACTED USER PATH]\" -Command 'git status --short; git diff --stat; git diff -- scheduler.cjs | Select-Object -First 80' in [REDACTED USER PATH]\n succeeded in 249ms:\n M README.md\n M scheduler.cjs\n?? test.cjs\n README.md     |  20 +++++++-\n scheduler.cjs | 144 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 2 files changed, 161 insertions(+), 3 deletions(-)\ndiff --git a/scheduler.cjs b/scheduler.cjs\nindex 9a3b89a..7cef18b 100644\n--- a/scheduler.cjs\n+++ b/scheduler.cjs\n@@ -1,3 +1,143 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const fs = require('node:fs');\n+const fsp = fs.promises;\n+const path = require('node:path');\n+\n+const ID = /^[a-z][a-z0-9-]{0,31}$/;\n+const FIELDS = new Set(['id', 'dependsOn', 'payload']);\n+const JOB_FIELDS = new Set(['id', 'dependsOn', 'payload', 'status', 'attempt', 'result', 'error']);\n+\n+function ownKeysOnly(value, allowed) {\n+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k =&gt; allowed.has(k));\n+}\n+\n+function clone(value) {\n+  return JSON.parse(JSON.stringify(value));\n+}\n+\n+function createScheduler(options) {\n+  if (!options || typeof options !== 'object') throw new TypeError('options must be an object');\n+  const { file, concurrency, execute, onStage } = options;\n+  if (typeof file !== 'string' || !file) throw new TypeError('file must be a non-empty string');\n+  if (!Number.isInteger(concurrency) || concurrency &lt; 1 || concurrency &gt; 8) throw new RangeError('concurrency must be an integer from 1 to 8');\n+  if (typeof execute !== 'function') throw new TypeError('execute must be a function');\n+  if (onStage !== undefined && typeof onStage !== 'function') throw new TypeError('onStage must be a function');\n+\n+  const jobs = new Map();\n+  let writeTail = Promise.resolve();\n+  let drainPromise = null;\n+\n+  function checkpoint() {\n+    return { version: 1, jobs: [...jobs.values()].sort((a, b) =&gt; a.id.localeCompare(b.id)).map(j =&gt; clone(j)) };\n+  }\n+\n+  function queuePersist() {\n+    let data;\n+    try { data = JSON.stringify(checkpoint()) + '\\n'; }\n+    catch (e) { throw new TypeError(`checkpoint is not JSON-serializable: ${e.message}`); }\n+    const tmp = `${file}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;\n+    writeTail = writeTail.then(async () =&gt; {\n+      await fsp.mkdir(path.dirname(path.resolve(file)), { recursive: true });\n+      await fsp.writeFile(tmp, data, 'utf8');\n+      await fsp.rename(tmp, file);\n+    }).catch(async e =&gt; { try { await fsp.unlink(tmp); } catch {} throw e; });\n+    return writeTail;\n+  }\n+\n+  function validateLoaded(raw) {\n+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.version !== 1 || !Array.isArray(raw.jobs)) throw new Error('invalid checkpoint');\n+    const seen = new Set();\n+    for (const j of raw.jobs) {\n+      if (!ownKeysOnly(j, JOB_FIELDS) || typeof j.id !== 'string' || !ID.test(j.id) || seen.has(j.id)) throw new Error('invalid checkpoint job');\n+      seen.add(j.id);\n+      if (!Array.isArray(j.dependsOn) || j.dependsOn.some(d =&gt; typeof d !== 'string' || !ID.test(d)) || new Set(j.dependsOn).size !== j.dependsOn.length) throw new Error('invalid checkpoint dependencies');\n+      if (!['pending', 'running', 'completed', 'failed', 'blocked'].includes(j.status) || !Number.isInteger(j.attempt) || j.attempt &lt; 0) throw new Error('invalid checkpoint status');\n+      if (j.status === 'completed' && !Object.prototype.hasOwnProperty.call(j, 'result')) throw new Error('completed job lacks result');\n+      if (j.status === 'failed' && typeof j.error !== 'string') throw new Error('failed job lacks error');\n+    }\n+    for (const j of raw.jobs) for (const d of j.dependsOn) if (!seen.has(d) || d === j.id) throw new Error('invalid checkpoint dependency');\n+    const map =\n[excerpt truncated]"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "tokens used\n33,461"
+            }
+          ],
+          "truncated": true,
+          "warnings": [
+            "Unsupported structured payload omitted; raw source content is not displayed.",
+            "Technical evidence is a bounded truncated excerpt, not the full source log.",
+            "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+            "Reported output and zero exit codes do not establish validated success."
+          ]
+        },
+        "events": [
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: +",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const file = await tempFile(); const calls = [];",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const out = await s.run();",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + assert.deepEqual(calls, ['a', 'b']); assert.equal(out.jobs[1].result, 3);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + assert.deepEqual(s.snapshot(), out); assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).version, 1);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: +",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const file = await tempFile(); let calls = 0;",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + assert.equal(s.snapshot().jobs.length, 0);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const out = await s.run(); assert.equal(calls, 1); assert.equal(out.jobs.find(j =&gt; j.id === 'c').status, 'blocked');",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: +",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const file = await tempFile(); let calls = 0; let release;",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + while (!release) await new Promise(r =&gt; setImmediate(r)); release(); await Promise.all([p1, p2]); assert.equal(calls, 1);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + assert.equal((await s2.run()).jobs[0].status, 'completed'); assert.equal(calls, 1);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: exec",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: \"[REDACTED USER PATH]\" -Command 'node --test test.cjs; git status --short' in [REDACTED USER PATH]",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: succeeded in 294ms:",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ runs dependencies in id order with concurrency and persists results (15.2313ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ rejects invalid batches atomically and blocks descendants (13.3046ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ joins concurrent run calls and recovers running checkpoints (5.3817ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ tests 3",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ suites 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ pass 3",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ fail 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ cancelled 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ skipped 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ todo 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ duration_ms 85.427",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: M README.md",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: M scheduler.cjs",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ?? test.cjs",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: codex",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "unknown",
+            "classification": "unknown",
+            "provenance": "unknown",
+            "state": "unknown",
+            "validated": false,
+            "friendly": "Unclassified worker activity.",
+            "technical": {
+              "protocol": "unknown"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: tokens used",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: 33,461",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "unknown",
+            "classification": "unknown",
+            "provenance": "unknown",
+            "state": "unknown",
+            "validated": false,
+            "friendly": "Unclassified worker activity.",
+            "technical": {
+              "protocol": "unknown"
+            }
+          }
+        ],
+        "warnings": []
+      },
+      "historicalAssignment": false,
+      "assignmentJobTitle": "Continue: Identical benchmark starting point",
+      "assignmentStatus": "complete"
+    }
+  ],
+  "activitySessionPagination": {
+    "available": true,
+    "total": 2,
+    "pageSize": 24
+  },
+  "activitySessions": [
+    {
+      "id": "benchmark-scheduler:MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b:attempt-2",
+      "projectId": "benchmark-scheduler",
+      "jobId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+      "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+      "subTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+      "attemptId": "attempt-2",
+      "recordedSessionId": "1ddeec83-9285-4906-ae96-0c0193b66692",
+      "role": "worker",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-5.6-luna",
+      "modelId": "benchmark-model",
+      "startedAt": "2026-10-21T09:00:13.627Z",
+      "completedAt": "2026-10-21T09:01:21.749Z",
+      "reportedResultAt": "2026-10-21T09:03:00.000Z",
+      "processState": "ended",
+      "state": "completed",
+      "historical": false,
+      "validatedResultStatus": "COMPLETE",
+      "recordedResultStatus": "COMPLETE",
+      "exitCode": 0,
+      "capabilities": {
+        "configuredAdapter": "codex",
+        "expectedFormat": "plain",
+        "detailedEventsExpected": false,
+        "liveDeliveryVerified": false,
+        "validatedResults": false
+      },
+      "latestActivity": {
+        "provider": "codex",
+        "adapter": "codex",
+        "model": "gpt-5.6-luna",
+        "protocol": "unknown",
+        "classification": "unknown",
+        "provenance": "unknown",
+        "state": "unknown",
+        "validated": false,
+        "friendly": "Unclassified worker activity.",
+        "technical": {
+          "protocol": "unknown"
+        }
+      },
+      "latestConfirmedActivity": null,
+      "reportedOutcomes": [],
+      "technicalEvidence": {
+        "entries": [
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 2880155dcf65c607d61e6b687091418541400b5b..3a75fd830d02bb291e24aa34b8a40937fb29b44f\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,21 @@\n # Recoverable dependency scheduler\n\n-Implementation and self-test documentation goes here.\n+`require('./scheduler.cjs').createScheduler({ file, concurrency, execute, onStage })`\n+creates a persistent dependency scheduler. Add batches with `await enqueue(jobs)`,\n+start or join processing with `await run()`, and inspect a detached checkpoint with\n+`snapshot()`. Job IDs are lowercase hyphenated names (up to 32 characters), and\n+validation rejects unknown fields, duplicate/unknown dependencies, cycles, and\n+duplicate IDs atomically.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+The checkpoint is atomically replaced for every enqueue, claim, and terminal\n+transition. A job persisted as `running` is recovered as `pending` and retried\n+with an incremented attempt, providing at-least-once execution. A completed\n+result is durable and is not replayed. Consequently, an `execute` side effect\n+can happen twice if the process crashes after the side effect but before its\n+completion checkpoint; callers should make external effects idempotent.\ndiff --git a/scheduler.cjs b/scheduler.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..7cef18b75be7ca75e812a5deb4f6da071d7596a8\n--- /dev/null\n+++ b/scheduler.cjs\n@@ -0,0 +1,143 @@\n+'use strict';\n+\n+const fs = require('node:fs');\n+const fsp = fs.promises;\n+const path = require('node:path');\n+\n+const ID = /^[a-z][a-z0-9-]{0,31}$/;\n+const FIELDS = new Set(['id', 'dependsOn', 'payload']);\n+const JOB_FIELDS = new Set(['id', 'dependsOn', 'payload', 'status', 'attempt', 'result', 'error']);\n+\n+function ownKeysOnly(value, allowed) {\n+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k =&gt; allowed.has(k));\n+}\n+\n+function clone(value) {\n+  return JSON.parse(JSON.stringify(value));\n+}\n+\n+function createScheduler(options) {\n+  if (!options || typeof options !== 'object') throw new TypeError('options must be an object');\n+  const { file, concurrency, execute, onStage } = options;\n+  if (typeof file !== 'string' || !file) throw new TypeError('file must be a non-empty string');\n+  if (!Number.isInteger(concurrency) || concurrency &lt; 1 || concurrency &gt; 8) throw new RangeError('concurrency must be an integer from 1 to 8');\n+  if (typeof execute !== 'function') throw new TypeError('execute must be a function');\n+  if (onStage !== undefined && typeof onStage !== 'function') throw new TypeError('onStage must be a function');\n+\n+  const jobs = new Map();\n+  let writeTail = Promise.resolve();\n+  let drainPromise = null;\n+\n+  function checkpoint() {\n+    return { version: 1, jobs: [...jobs.values()].sort((a, b) =&gt; a.id.localeCompare(b.id)).map(j =&gt; clone(j)) };\n+  }\n+\n+  function queuePersist() {\n+    let data;\n+    try { data = JSON.stringify(checkpoint()) + '\\n'; }\n+    catch (e) { throw new TypeError(`checkpoint is not JSON-serializable: ${e.message}`); }\n+    const tmp = `${file}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;\n+    writeTail = writeTail.then(async () =&gt; {\n+      await fsp.mkdir(path.dirname(path.resolve(file)), { recursive: true });\n+      await fsp.writeFile(tmp, data, 'utf8');\n+      await fsp.rename(tmp, file);\n+    }).catch(async e =&gt; { try { await fsp.unlink(tmp); } catch {} throw e; });\n+    return writeTail;\n+  }\n+\n+  function validateLoaded(raw) {\n+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.version !=\n[excerpt truncated]"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "exec\n\"[REDACTED USER PATH]\" -Command 'git status --short; git diff --stat; git diff -- scheduler.cjs | Select-Object -First 80' in [REDACTED USER PATH]\n succeeded in 249ms:\n M README.md\n M scheduler.cjs\n?? test.cjs\n README.md     |  20 +++++++-\n scheduler.cjs | 144 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-\n 2 files changed, 161 insertions(+), 3 deletions(-)\ndiff --git a/scheduler.cjs b/scheduler.cjs\nindex 9a3b89a..7cef18b 100644\n--- a/scheduler.cjs\n+++ b/scheduler.cjs\n@@ -1,3 +1,143 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const fs = require('node:fs');\n+const fsp = fs.promises;\n+const path = require('node:path');\n+\n+const ID = /^[a-z][a-z0-9-]{0,31}$/;\n+const FIELDS = new Set(['id', 'dependsOn', 'payload']);\n+const JOB_FIELDS = new Set(['id', 'dependsOn', 'payload', 'status', 'attempt', 'result', 'error']);\n+\n+function ownKeysOnly(value, allowed) {\n+  return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k =&gt; allowed.has(k));\n+}\n+\n+function clone(value) {\n+  return JSON.parse(JSON.stringify(value));\n+}\n+\n+function createScheduler(options) {\n+  if (!options || typeof options !== 'object') throw new TypeError('options must be an object');\n+  const { file, concurrency, execute, onStage } = options;\n+  if (typeof file !== 'string' || !file) throw new TypeError('file must be a non-empty string');\n+  if (!Number.isInteger(concurrency) || concurrency &lt; 1 || concurrency &gt; 8) throw new RangeError('concurrency must be an integer from 1 to 8');\n+  if (typeof execute !== 'function') throw new TypeError('execute must be a function');\n+  if (onStage !== undefined && typeof onStage !== 'function') throw new TypeError('onStage must be a function');\n+\n+  const jobs = new Map();\n+  let writeTail = Promise.resolve();\n+  let drainPromise = null;\n+\n+  function checkpoint() {\n+    return { version: 1, jobs: [...jobs.values()].sort((a, b) =&gt; a.id.localeCompare(b.id)).map(j =&gt; clone(j)) };\n+  }\n+\n+  function queuePersist() {\n+    let data;\n+    try { data = JSON.stringify(checkpoint()) + '\\n'; }\n+    catch (e) { throw new TypeError(`checkpoint is not JSON-serializable: ${e.message}`); }\n+    const tmp = `${file}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;\n+    writeTail = writeTail.then(async () =&gt; {\n+      await fsp.mkdir(path.dirname(path.resolve(file)), { recursive: true });\n+      await fsp.writeFile(tmp, data, 'utf8');\n+      await fsp.rename(tmp, file);\n+    }).catch(async e =&gt; { try { await fsp.unlink(tmp); } catch {} throw e; });\n+    return writeTail;\n+  }\n+\n+  function validateLoaded(raw) {\n+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || raw.version !== 1 || !Array.isArray(raw.jobs)) throw new Error('invalid checkpoint');\n+    const seen = new Set();\n+    for (const j of raw.jobs) {\n+      if (!ownKeysOnly(j, JOB_FIELDS) || typeof j.id !== 'string' || !ID.test(j.id) || seen.has(j.id)) throw new Error('invalid checkpoint job');\n+      seen.add(j.id);\n+      if (!Array.isArray(j.dependsOn) || j.dependsOn.some(d =&gt; typeof d !== 'string' || !ID.test(d)) || new Set(j.dependsOn).size !== j.dependsOn.length) throw new Error('invalid checkpoint dependencies');\n+      if (!['pending', 'running', 'completed', 'failed', 'blocked'].includes(j.status) || !Number.isInteger(j.attempt) || j.attempt &lt; 0) throw new Error('invalid checkpoint status');\n+      if (j.status === 'completed' && !Object.prototype.hasOwnProperty.call(j, 'result')) throw new Error('completed job lacks result');\n+      if (j.status === 'failed' && typeof j.error !== 'string') throw new Error('failed job lacks error');\n+    }\n+    for (const j of raw.jobs) for (const d of j.dependsOn) if (!seen.has(d) || d === j.id) throw new Error('invalid checkpoint dependency');\n+    const map =\n[excerpt truncated]"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "tokens used\n33,461"
+          }
+        ],
+        "truncated": true,
+        "warnings": [
+          "Unsupported structured payload omitted; raw source content is not displayed.",
+          "Technical evidence is a bounded truncated excerpt, not the full source log.",
+          "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+          "Reported output and zero exit codes do not establish validated success."
+        ]
+      },
+      "events": [
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: +",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const file = await tempFile(); const calls = [];",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const out = await s.run();",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + assert.deepEqual(calls, ['a', 'b']); assert.equal(out.jobs[1].result, 3);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + assert.deepEqual(s.snapshot(), out); assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).version, 1);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: +",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const file = await tempFile(); let calls = 0;",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + assert.equal(s.snapshot().jobs.length, 0);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const out = await s.run(); assert.equal(calls, 1); assert.equal(out.jobs.find(j =&gt; j.id === 'c').status, 'blocked');",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: +",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const file = await tempFile(); let calls = 0; let release;",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + while (!release) await new Promise(r =&gt; setImmediate(r)); release(); await Promise.all([p1, p2]); assert.equal(calls, 1);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + assert.equal((await s2.run()).jobs[0].status, 'completed'); assert.equal(calls, 1);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: exec",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: \"[REDACTED USER PATH]\" -Command 'node --test test.cjs; git status --short' in [REDACTED USER PATH]",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: succeeded in 294ms:",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ runs dependencies in id order with concurrency and persists results (15.2313ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ rejects invalid batches atomically and blocks descendants (13.3046ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ joins concurrent run calls and recovers running checkpoints (5.3817ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ tests 3",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ suites 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ pass 3",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ fail 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ cancelled 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ skipped 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ todo 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ duration_ms 85.427",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: M README.md",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: M scheduler.cjs",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ?? test.cjs",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: codex",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: tokens used",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: 33,461",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "id": "benchmark-scheduler:MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b:attempt-1",
+      "projectId": "benchmark-scheduler",
+      "jobId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+      "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+      "subTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01",
+      "attemptId": "attempt-1",
+      "recordedSessionId": null,
+      "role": "worker",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-5.6-luna",
+      "modelId": "benchmark-model",
+      "startedAt": "2026-10-21T08:59:36.427Z",
+      "completedAt": null,
+      "reportedResultAt": "2026-10-21T09:00:12.142Z",
+      "processState": "recorded",
+      "state": "unknown",
+      "historical": true,
+      "validatedResultStatus": null,
+      "recordedResultStatus": "BLOCKED",
+      "exitCode": null,
+      "capabilities": {
+        "configuredAdapter": "codex",
+        "expectedFormat": "plain",
+        "detailedEventsExpected": false,
+        "liveDeliveryVerified": false,
+        "validatedResults": false
+      },
+      "latestActivity": null,
+      "latestConfirmedActivity": null,
+      "reportedOutcomes": [],
+      "technicalEvidence": {
+        "entries": [],
+        "truncated": false,
+        "warnings": [
+          "No supported original technical evidence is retained for this assignment.",
+          "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+          "Reported output and zero exit codes do not establish validated success."
+        ]
+      },
+      "events": [],
+      "warnings": [
+        "No readable assignment output is retained in this view.",
+        "No matching backend-validated structured result is recorded."
+      ]
+    }
+  ],
+  "checkpoint": {
+    "id": "CP-a8ec69ce-af39-400e-8708-62c271bd8178",
+    "projectId": "benchmark-scheduler",
+    "megaTaskId": "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b",
+    "createdAt": "2026-10-21T09:00:12.440Z",
+    "reason": "stop",
+    "planRevisionId": 1,
+    "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+    "repoState": {
+      "repoHead": "772e31957c0af52ff6dc35418a0574dcb93b8a43",
+      "dirtyFiles": [
+        " D scheduler.cjs"
+      ],
+      "comparable": false,
+      "gitReadable": true,
+      "fingerprint": null,
+      "disposition": "UNCOMMITTED",
+      "commitIds": [],
+      "sourceChangesObserved": null
+    },
+    "dirtyFiles": [
+      " D scheduler.cjs"
+    ],
+    "completedSubTaskIds": [],
+    "pendingSubTaskIds": [
+      "MT-f32fd0e8-b30e-4c0a-892f-a92dbabf256b-ST-01"
+    ],
+    "failedSubTaskIds": [],
+    "activeAttemptIds": [
+      "attempt-1"
+    ],
+    "resultIds": [
+      "R-attempt-1"
+    ],
+    "summary": "0/1 slices complete. stop.",
+    "nextAction": "Review remaining slices and resume this checkpoint.",
+    "jobId": "task-eccb9c28-1f5b-4336-acb8-57eacf0984c3",
+    "jobFingerprint": "d7c90c83c5fd049c9c30991e03df4b66584da8dd0d63a34b35f52621cc0cc0da",
+    "at": "2026-10-21T09:00:12.440Z"
+  },
+  "timing": null,
+  "deadlineAt": null,
+  "canGrillDocs": true,
+  "docsAvailability": "available",
+  "docs": [
+    "README.md"
+  ],
+  "grillSkipped": false,
+  "log": [
+    {
+      "at": "2026-10-21T08:59:35.040Z",
+      "text": "Read the repo and latest changes. Plan ready for approval."
+    }
+  ],
+  "workerPid": 60928,
+  "workerAlive": false,
+  "workerLog": "[REDACTED USER PATH]",
+  "workerTail": "",
+  "workerActivity": "Continue: Identical benchmark starting point: 1/1 slices complete.",
+  "orchestratorDoing": "Verified STATUS: COMPLETE and folder output.",
+  "orchestratorId": "benchmark-model",
+  "orchestratorLabel": "Single exact benchmark model",
+  "monitoring": {
+    "workers": 1,
+    "alive": 0
+  },
+  "progressAt": null,
+  "tried": [],
+  "analysis": "Verified STATUS: COMPLETE and folder output. Continue: Identical benchmark starting point: 1/1 slices complete. Waiting for: Nothing. Structured results are complete.."
+}

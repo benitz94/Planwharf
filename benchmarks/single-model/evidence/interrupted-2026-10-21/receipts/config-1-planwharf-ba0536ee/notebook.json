@@ -1,0 +1,60 @@
+{
+  "schema": 2,
+  "projects": [
+    {
+      "schema": 1,
+      "project": {
+        "id": "first-project",
+        "name": "First project"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-09T00:00:00.000Z",
+          "direction": "",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": []
+    },
+    {
+      "schema": 1,
+      "project": {
+        "id": "benchmark-config",
+        "name": "Benchmark config",
+        "folder": "[REDACTED USER PATH]"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "",
+          "createdAt": "2026-10-20T20:15:12.915Z",
+          "direction": "Validated configuration utility\n\nImplement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+          "state": "",
+          "closed": [],
+          "open": []
+        }
+      ],
+      "tasks": [
+        {
+          "id": "task-ccb1c210-bada-48b0-a06f-0655fe4fec8e",
+          "projectId": "benchmark-config",
+          "revision_id": 1,
+          "title": "Continue: Identical benchmark starting point",
+          "detail": "Goal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+          "status": "complete",
+          "timing": "discretion",
+          "executionVersion": 2,
+          "completedAt": "2026-10-20T20:22:43.352Z",
+          "attemptId": "attempt-1",
+          "megaTaskId": "MT-0ba0803b-ce90-4752-bb51-4229eb5c51a9"
+        }
+      ]
+    }
+  ]
+}

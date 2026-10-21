@@ -1,0 +1,15 @@
+{
+  "frozenAt": "2026-10-21T07:19:41.375Z",
+  "sourceCommit": "afdb4e77e0e9b6514ba12b6bf40cd3886b450455",
+  "previousLocalCommit": "bf5edda7103baa25205db5a507d4991ed851ec9e",
+  "previousRemoteCommit": "fb0e75771a0b7ee7b3b98bd7374f2409a4b5bb0c",
+  "hashes": {
+    "tasks.cjs": "be2341e1a993e108d52483143d0fcfd79e38f3b77e176e86853596bde6dabf36",
+    "run.cjs": "332fdc81dc0706c703f656aea020036827cc0b53ab76c446ae96e496c7fbe001",
+    "runtime.cjs": "e1dcc2bd765811f9c9a36d8cd4becf9edcea09323f167ef4f07fcbca2846c2cd",
+    "usage.cjs": "39de4aff763d23168f7f31a32b359f23c6899708ac41b1c6647df744ce76dfcf",
+    "host.cjs": "471c6c40f06c2c857539452f1cd2e3dea9f20f4244ac095a86218d04878b136c",
+    "analysis.cjs": "64d691698d601279198ce725b6a2a172e4a86add2192585f1a2ee94184da360e",
+    "preflight.cjs": "b61fd56589bed6a1ac0521802312c544b7e75dcd5d24faf1a17729453b782211"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "home": {
+    "direct": {
+      "trials": 10,
+      "outcomes": {
+        "accepted": 9,
+        "defective": 1,
+        "failed": 0,
+        "blocked": 0,
+        "timed_out": 0
+      }
+    },
+    "planwharf": {
+      "trials": 10,
+      "outcomes": {
+        "accepted": 8,
+        "defective": 2,
+        "failed": 0,
+        "blocked": 0,
+        "timed_out": 0
+      }
+    }
+  },
+  "office": {
+    "direct": {
+      "trials": 5,
+      "outcomes": {
+        "accepted": 4,
+        "defective": 1,
+        "failed": 0,
+        "blocked": 0,
+        "timed_out": 0
+      }
+    },
+    "planwharf": {
+      "trials": 5,
+      "outcomes": {
+        "accepted": 5,
+        "defective": 0,
+        "failed": 0,
+        "blocked": 0,
+        "timed_out": 0
+      }
+    }
+  },
+  "operatorAborted": {
+    "pairId": "scheduler-1",
+    "arm": "direct",
+    "previousId": "scheduler-1-direct-b382c893",
+    "reason": "Operator-aborted on home machine; fresh replacement on office machine, not a native session resume",
+    "reportedUsage": {
+      "inputTokens": 43641,
+      "outputTokens": 5033,
+      "cachedInputTokens": 38528,
+      "reasoningTokens": 1706
+    },
+    "additionalInFlightUsage": null,
+    "includeInPairedComparison": false
+  }
+}

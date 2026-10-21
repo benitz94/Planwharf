@@ -1,0 +1,1866 @@
+{
+  "id": "benchmark-config",
+  "name": "Benchmark config",
+  "projectSkills": {
+    "available": true,
+    "deliveryEnabled": false,
+    "mode": "auto",
+    "enabled": [],
+    "deliveries": []
+  },
+  "folder": "[REDACTED USER PATH]",
+  "github": null,
+  "repository": null,
+  "goal": "Validated configuration utility\n\nImplement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.",
+  "notes": [],
+  "stateArt": "",
+  "open": [],
+  "status": "complete",
+  "label": "Evidence complete",
+  "doing": "Continue: Identical benchmark starting point: 1/1 slices complete.",
+  "plan": [
+    "MegaTask: Continue: Identical benchmark starting point",
+    "Objective: Goal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+    "Latest git: 4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "Whole job — benchmark-model; parallel-ready; COMPLETE"
+  ],
+  "facts": {
+    "folder": "[REDACTED USER PATH]",
+    "fileCount": 6,
+    "names": [
+      ".git",
+      ".gitignore",
+      "config.cjs",
+      "README.md",
+      "TASK.md",
+      "test.cjs"
+    ],
+    "docs": [
+      "README.md"
+    ],
+    "git": true,
+    "head": "ref: refs/heads/main",
+    "branch": "main",
+    "lastCommit": "4b1d951 Identical benchmark starting point",
+    "commitId": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+    "lastSubject": "Identical benchmark starting point",
+    "recent": [
+      "4b1d951 Identical benchmark starting point"
+    ],
+    "dirty": [
+      " M README.md",
+      " M config.cjs",
+      "?? test.cjs"
+    ],
+    "diffStat": "README.md | 22 +++++++++++++++++++++- config.cjs | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-- 2 files changed, 81 insertions(+), 3 deletions(-)"
+  },
+  "goldModel": null,
+  "jobTitle": "Continue: Identical benchmark starting point",
+  "jobId": "task-291dd5b8-5312-4b48-9ec7-396fa6cfe3a2",
+  "attemptId": "attempt-1",
+  "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+  "megaTask": {
+    "id": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+    "projectId": "benchmark-config",
+    "taskId": "task-291dd5b8-5312-4b48-9ec7-396fa6cfe3a2",
+    "planRevisionId": 1,
+    "title": "Continue: Identical benchmark starting point",
+    "goal": "Goal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.",
+    "createdAt": "2026-10-21T06:28:08.394Z",
+    "approvedAt": "2026-10-21T06:28:08.421Z",
+    "status": "COMPLETE",
+    "orchestratorModelId": "benchmark-model",
+    "currentCheckpointId": null,
+    "completedAt": "2026-10-21T06:30:51.222Z",
+    "jobFingerprint": "c13a6a6b36133de3d2d1efc852d9e50af3587f450529adeddb85f54618bf32bd",
+    "detached": false,
+    "repoBefore": {
+      "repoHead": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+      "dirtyFiles": [],
+      "comparable": true,
+      "gitReadable": true,
+      "fingerprint": "5eb1a684a8cc70d44e4f3ebfae8f3c39a2192d3ceca5e1c34c7b76abbbdf8f5e",
+      "disposition": "COMMITTED"
+    },
+    "nextAction": "None; implementation and tests are complete.",
+    "pauseRequested": false,
+    "timing": "discretion",
+    "deadlineAt": null,
+    "blockers": [],
+    "approvedMegaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+    "authorizedSessionId": "d4e18cac-cba6-4cbb-baba-c3a71c8a5103",
+    "repoAfter": {
+      "repoHead": "4b1d951b72a1552ccd2e3f1f6fc6a203a1ffcecb",
+      "dirtyFiles": [
+        " M README.md",
+        " M config.cjs",
+        "?? test.cjs"
+      ],
+      "comparable": true,
+      "gitReadable": true,
+      "fingerprint": "96cf69725f826eb6e09afed31ffe8169ed7e18d517442cd52db002b0e337840d",
+      "disposition": "UNCOMMITTED",
+      "commitIds": [],
+      "sourceChangesObserved": true
+    },
+    "deadlineError": null
+  },
+  "subTasks": [
+    {
+      "id": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+      "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+      "title": "Whole job",
+      "detail": "Whole job",
+      "status": "COMPLETE",
+      "assignedModelId": "benchmark-model",
+      "attemptIds": [
+        "attempt-1"
+      ],
+      "resultId": "R-attempt-1",
+      "createdAt": "2026-10-21T06:28:08.395Z",
+      "completedAt": "2026-10-21T06:30:51.210Z",
+      "type": "IMPLEMENTATION",
+      "dependencies": [],
+      "proposedProvider": "codex",
+      "proposedCli": "gpt-5.6-luna",
+      "provider": "codex",
+      "cli": "gpt-5.6-luna"
+    }
+  ],
+  "checkpointId": null,
+  "resumableCheckpoints": [],
+  "modelId": "benchmark-model",
+  "workerLabel": "Single exact benchmark model",
+  "waitingFor": "Nothing. Structured results are complete.",
+  "next": "None; implementation and tests are complete.",
+  "step": "done",
+  "pipeline": [
+    {
+      "id": "check",
+      "label": "Check",
+      "state": "done"
+    },
+    {
+      "id": "grill",
+      "label": "Grill",
+      "state": "done"
+    },
+    {
+      "id": "plan",
+      "label": "Plan",
+      "state": "done"
+    },
+    {
+      "id": "approve",
+      "label": "Approve",
+      "state": "done"
+    },
+    {
+      "id": "assign",
+      "label": "Assign",
+      "state": "done"
+    },
+    {
+      "id": "watch",
+      "label": "Watch",
+      "state": "done"
+    }
+  ],
+  "crew": [
+    {
+      "role": "Orchestrator",
+      "name": "Single exact benchmark model",
+      "doing": "Verified STATUS: COMPLETE and folder output."
+    },
+    {
+      "role": "Worker",
+      "name": "Single exact benchmark model",
+      "doing": "Evidence complete."
+    }
+  ],
+  "resultPath": "[REDACTED USER PATH]",
+  "watchingSince": null,
+  "approved": true,
+  "sessionId": "d4e18cac-cba6-4cbb-baba-c3a71c8a5103",
+  "canStart": true,
+  "canResume": false,
+  "canStop": false,
+  "pendingAutoStart": false,
+  "dispatch": [
+    {
+      "modelId": "benchmark-model",
+      "label": "Single exact benchmark model",
+      "provider": "codex",
+      "cli": "gpt-5.6-luna",
+      "subTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+      "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+      "attemptId": "attempt-1",
+      "slice": "Whole job",
+      "resultPath": "[REDACTED USER PATH]",
+      "structuredResultPath": "[REDACTED USER PATH]",
+      "exitPath": "[REDACTED USER PATH]",
+      "logPath": "[REDACTED USER PATH]",
+      "folder": "[REDACTED USER PATH]",
+      "pid": 29324,
+      "alive": false,
+      "startedAt": "2026-10-21T06:28:09.642Z",
+      "sessionId": "d4e18cac-cba6-4cbb-baba-c3a71c8a5103",
+      "observedAlive": false,
+      "validatedResultStatus": "COMPLETE",
+      "recordedSubTaskStatus": "COMPLETE",
+      "diagnostic": null,
+      "activitySession": {
+        "id": "benchmark-config:MT-988e54c2-82e6-4c7b-a193-3825ff81de47:attempt-1",
+        "projectId": "benchmark-config",
+        "jobId": "task-291dd5b8-5312-4b48-9ec7-396fa6cfe3a2",
+        "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+        "subTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+        "attemptId": "attempt-1",
+        "recordedSessionId": "d4e18cac-cba6-4cbb-baba-c3a71c8a5103",
+        "role": "worker",
+        "provider": "codex",
+        "adapter": "codex",
+        "model": "gpt-5.6-luna",
+        "modelId": "benchmark-model",
+        "startedAt": "2026-10-21T06:28:09.642Z",
+        "completedAt": "2026-10-21T06:30:51.210Z",
+        "reportedResultAt": "2026-10-21T06:32:00.000Z",
+        "processState": "ended",
+        "state": "completed",
+        "historical": false,
+        "validatedResultStatus": "COMPLETE",
+        "recordedResultStatus": "COMPLETE",
+        "exitCode": 0,
+        "capabilities": {
+          "configuredAdapter": "codex",
+          "expectedFormat": "plain",
+          "detailedEventsExpected": false,
+          "liveDeliveryVerified": false,
+          "validatedResults": false
+        },
+        "latestActivity": {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        },
+        "latestConfirmedActivity": null,
+        "reportedOutcomes": [],
+        "technicalEvidence": {
+          "entries": [
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "2026-10-21T06:28:10.218387Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\nOpenAI Codex v0.163.0-alpha.10.2\n--------\nworkdir: [REDACTED USER PATH]\nmodel: gpt-5.6-luna\nprovider: openai\napproval: never\nsandbox: workspace-write [workdir, /tmp, $TMPDIR]\nreasoning effort: none\nreasoning summaries: none\nsession id: 01a15d25-547c-7671-8c1d-de1be071a3ac\n--------\nuser\nYou are the Planwharf worker for this project folder.\n\nImplement the job in this folder. Add tests. Do not wait for the user.\n\nStay inside this folder. Do not rewrite unrelated files.\n\nJob: Whole job\n\nYour slice: Whole job\n\nGoal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.\n\nSubTask: Whole job\n\nSource project (read only for research): [REDACTED USER PATH]\n\nDurable handoff:"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "Matt skills are disabled for this notebook. Do not load or invoke Matt skills for this request.\n\nWhen the slice is done, leave working files and tests on disk, then stop.\n\nPlanwharf structured result contract:\nReturn exactly one JSON object as your final response. Do not write the result file: the trusted CLI and Planwharf runner save your final response outside the project sandbox. Use these exact identity fields:"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "  \"resultId\": \"R-attempt-1\",\n  \"attemptId\": \"attempt-1\",\n  \"subTaskId\": \"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\n  \"megaTaskId\": \"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\n  \"status\": \"COMPLETE | FAILED | BLOCKED\",\n  \"summary\": \"What actually happened\",\n  \"filesChanged\": [],\n  \"tests\": ["
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "      \"command\": \"Exact command or check\",\n      \"status\": \"PASSED | FAILED | NOT_RUN\",\n      \"evidence\": \"Observed outcome; do not invent execution\"\n    }\n  ],\n  \"blockers\": [],\n  \"nextAction\": \"Remaining work or recommended next step\",\n  \"createdAt\": \"ISO timestamp\"\n}\nUse one status from the listed choices. Record only observed work and tests. No tests means an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.\n2026-10-21T06:28:14.947608Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-21T06:28:14.947702Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-21T06:28:30.315273Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-21T06:28:40.276989Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] error decoding response body scope=Global\n2026-10-21T06:28:40.717332Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\ncodex"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "codex"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "exec\n\"[REDACTED USER PATH]\" -Command \"Get-ChildItem -Force; Write-Output '--- files ---'; rg --files -g '\"'!node_modules'\"' -g '\"'!coverage'\"' | Sort-Object; Write-Output '--- git ---'; git status --short; git log -1 --oneline\" in [REDACTED USER PATH]\n succeeded in 630ms:\n\n    Directory: [REDACTED USER PATH]\nrf-2aed05ea\\workspace\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd--h-          21/10/2026    08:28                .git\n-a---          21/10/2026    08:28             20 .gitignore\n-a---          21/10/2026    08:28             80 config.cjs\n-a---          21/10/2026    08:28             89 README.md\n-a---          21/10/2026    08:28           1597 TASK.md\n--- files ---\nconfig.cjs\nREADME.md\nTASK.md\n--- git ---\n4b1d951 Identical benchmark starting point\n\n\n2026-10-21T06:29:27.201352Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\nexec\n\"[REDACTED USER PATH]\" -Command \"Write-Output '--- config.cjs ---'; Get-Content config.cjs; Write-Output '--- README.md ---'; Get-Content README.md; Write-Output '--- TASK.md ---'; Get-Content TASK.md; Write-Output '--- package files ---'; Get-ChildItem -Force -Name package*.json 2&gt;\"'$null' in [REDACTED USER PATH]\n succeeded in 430ms:\n--- config.cjs ---\n'use strict';\n// Implement the public contract in TASK.md.\nmodule.exports = {};\n--- README.md ---\n# Validated configuration utility\n\nImplementation and self-test documentation goes here.\n--- TASK.md ---\nValidated configuration utility\n\nImplement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.\n--- package files ---\n\n2026-10-21T06:29:47.420563Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (http\n[excerpt truncated]"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "apply patch\npatch: completed\n[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 9da183c719c8e52dcf53a35a34c8e4238755bb5c..195ffe32b0d54bace4b53449dff579ef5cecc3a4\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,23 @@\n # Validated configuration utility\n\n-Implementation and self-test documentation goes here.\n+`config.cjs` exports `parseConfig(text)`. It parses a JSON string containing an\n+object and returns a fresh object with exactly `port`, `host`, `retries`, and\n+`logLevel`. Missing fields use these defaults:\n+\n+- `port`: `3000`, an integer from 1 through 65535\n+- `host`: `127.0.0.1`, a 1–253 character string with no whitespace\n+- `retries`: `2`, an integer from 0 through 10\n+- `logLevel`: `info`, one of `debug`, `info`, `warn`, or `error`\n+\n+Invalid JSON, non-string input, non-object JSON values, unknown keys, explicit\n+nulls, incorrect types, and out-of-range values throw `Error`. The returned\n+object is newly created on every call and is not cached.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+Recovery limitation: this utility validates configuration syntax and values but\n+does not load files, access the network, or recover missing configuration data.\ndiff --git a/config.cjs b/config.cjs\nindex 9a3b89a31b98d088efe5ec02b49e0ea6d2092904..5ef16b57126472a63a48f2eda275dba7273ae305\n--- a/config.cjs\n+++ b/config.cjs\n@@ -1,3 +1,61 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const DEFAULTS = Object.freeze({\n+  port: 3000,\n+  host: '127.0.0.1',\n+  retries: 2,\n+  logLevel: 'info',\n+});\n+const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);\n+const ALLOWED_KEYS = new Set(Object.keys(DEFAULTS));\n+\n+function invalid(message) {\n+  throw new Error(`Invalid configuration: ${message}`);\n+}\n+\n+function parseConfig(text) {\n+  if (typeof text !== 'string') {\n+    invalid('input must be a JSON string');\n+  }\n+\n+  let input;\n+  try {\n+    input = JSON.parse(text);\n+  } catch {\n+    invalid('input is not valid JSON');\n+  }\n+\n+  if (input === null || Array.isArray(input) || typeof input !== 'object') {\n+    invalid('JSON value must be an object');\n+  }\n+\n+  for (const key of Object.keys(input)) {\n+    if (!ALLOWED_KEYS.has(key)) {\n+      invalid(`unknown key: ${key}`);\n+    }\n+  }\n+\n+  const result = {\n+    port: input.port === undefined ? DEFAULTS.port : input.port,\n+    host: input.host === undefined ? DEFAULTS.host : input.host,\n+    retries: input.retries === undefined ? DEFAULTS.retries : input.retries,\n+    logLevel: input.logLevel === undefined ? DEFAULTS.logLevel : input.logLevel,\n+  };\n+\n+  if (!Number.isInteger(result.port) || result.port &lt; 1 || result.port &gt; 65535) {\n+    invalid('port must be an integer from 1 to 65535');\n+  }\n+  if (!Number.isInteger(result.retries) || result.retries &lt; 0 || result.retries &gt; 10) {\n+    invalid('retries must be an integer from 0 to 10');\n+  }\n+  if (typeof result.host !== 'string' || result.host.length &lt; 1 || result.host.length &gt; 253 || /\\s/u.test(result.host)) {\n+    invalid('host must be 1 to 253 characters without whitespace');\n+  }\n+  if (typeof result.logLevel !== 'string' || !LOG_LEVELS.has(result.logLevel)) {\n+    invalid('logLevel must be debug, info, warn, or error');\n+  }\n+\n+  return result;\n+}\n+\n+module.exports = { parseConfig };\ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..946dac2f1775a06fef41b21798f43005045bd031\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,44 @@\n+'use strict';\n+\n+const test = require('node:test');\n+const assert = require('node:assert/strict');\n+const { parseConfig } = require('./config.cjs');\n+\n+test('uses defaults and\n[excerpt truncated]"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "codex"
+            },
+            {
+              "protocol": "plain",
+              "provenance": "reported",
+              "output": "2026-10-21T06:30:46.574116Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\ntokens used\n38,406"
+            }
+          ],
+          "truncated": true,
+          "warnings": [
+            "Unsupported structured payload omitted; raw source content is not displayed.",
+            "Malformed structured evidence was omitted.",
+            "Technical evidence is a bounded truncated excerpt, not the full source log.",
+            "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+            "Reported output and zero exit codes do not establish validated success."
+          ]
+        },
+        "events": [
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: +",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + const invalidConfigs = [",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + ];",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + assert.throws(() =&gt; parseConfig(JSON.stringify(config)), Error);",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: +",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: + first.port = 8080;",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Unclassified worker output.",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: exec",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: \"[REDACTED USER PATH]\" -Command \"node --test test.cjs; Write-Output '--- diff ---'; git diff --check; git diff --stat; git status --short\" in [REDACTED USER PATH]",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: succeeded in 1047ms:",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ uses defaults and returns the documented keys (2.4138ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ accepts valid overrides (0.3395ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ rejects malformed input, non-objects, and unknown keys (0.5882ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ rejects explicit null, incorrect types, and invalid ranges (0.882ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ✔ does not share mutable result state (1.7551ms)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ tests 5",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ suites 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ pass 5",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ fail 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ cancelled 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ skipped 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ todo 0",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ℹ duration_ms 153.2188",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: --- diff ---",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: README.md | 22 +++++++++++++++++++++-",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: config.cjs | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: 2 files changed, 81 insertions(+), 3 deletions(-)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: M README.md",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: M config.cjs",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: ?? test.cjs",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: codex",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "unknown",
+            "classification": "unknown",
+            "provenance": "unknown",
+            "state": "unknown",
+            "validated": false,
+            "friendly": "Unclassified worker activity.",
+            "technical": {
+              "protocol": "unknown"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: codex",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "unknown",
+            "classification": "unknown",
+            "provenance": "unknown",
+            "state": "unknown",
+            "validated": false,
+            "friendly": "Unclassified worker activity.",
+            "technical": {
+              "protocol": "unknown"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: 2026-10-21T06:30:46.574116Z WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: tokens used",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "plain",
+            "classification": "unknown",
+            "provenance": "reported",
+            "state": "observed",
+            "validated": false,
+            "friendly": "Worker update: 38,406",
+            "technical": {
+              "protocol": "plain"
+            }
+          },
+          {
+            "provider": "codex",
+            "adapter": "codex",
+            "model": "gpt-5.6-luna",
+            "protocol": "unknown",
+            "classification": "unknown",
+            "provenance": "unknown",
+            "state": "unknown",
+            "validated": false,
+            "friendly": "Unclassified worker activity.",
+            "technical": {
+              "protocol": "unknown"
+            }
+          }
+        ],
+        "warnings": []
+      },
+      "historicalAssignment": false,
+      "assignmentJobTitle": "Continue: Identical benchmark starting point",
+      "assignmentStatus": "complete"
+    }
+  ],
+  "activitySessionPagination": {
+    "available": true,
+    "total": 1,
+    "pageSize": 24
+  },
+  "activitySessions": [
+    {
+      "id": "benchmark-config:MT-988e54c2-82e6-4c7b-a193-3825ff81de47:attempt-1",
+      "projectId": "benchmark-config",
+      "jobId": "task-291dd5b8-5312-4b48-9ec7-396fa6cfe3a2",
+      "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+      "subTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+      "attemptId": "attempt-1",
+      "recordedSessionId": "d4e18cac-cba6-4cbb-baba-c3a71c8a5103",
+      "role": "worker",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-5.6-luna",
+      "modelId": "benchmark-model",
+      "startedAt": "2026-10-21T06:28:09.642Z",
+      "completedAt": "2026-10-21T06:30:51.210Z",
+      "reportedResultAt": "2026-10-21T06:32:00.000Z",
+      "processState": "ended",
+      "state": "completed",
+      "historical": false,
+      "validatedResultStatus": "COMPLETE",
+      "recordedResultStatus": "COMPLETE",
+      "exitCode": 0,
+      "capabilities": {
+        "configuredAdapter": "codex",
+        "expectedFormat": "plain",
+        "detailedEventsExpected": false,
+        "liveDeliveryVerified": false,
+        "validatedResults": false
+      },
+      "latestActivity": {
+        "provider": "codex",
+        "adapter": "codex",
+        "model": "gpt-5.6-luna",
+        "protocol": "unknown",
+        "classification": "unknown",
+        "provenance": "unknown",
+        "state": "unknown",
+        "validated": false,
+        "friendly": "Unclassified worker activity.",
+        "technical": {
+          "protocol": "unknown"
+        }
+      },
+      "latestConfirmedActivity": null,
+      "reportedOutcomes": [],
+      "technicalEvidence": {
+        "entries": [
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "2026-10-21T06:28:10.218387Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\nOpenAI Codex v0.163.0-alpha.10.2\n--------\nworkdir: [REDACTED USER PATH]\nmodel: gpt-5.6-luna\nprovider: openai\napproval: never\nsandbox: workspace-write [workdir, /tmp, $TMPDIR]\nreasoning effort: none\nreasoning summaries: none\nsession id: 01a15d25-547c-7671-8c1d-de1be071a3ac\n--------\nuser\nYou are the Planwharf worker for this project folder.\n\nImplement the job in this folder. Add tests. Do not wait for the user.\n\nStay inside this folder. Do not rewrite unrelated files.\n\nJob: Whole job\n\nYour slice: Whole job\n\nGoal: Validated configuration utility Implement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info…\n\nLatest commit: 4b1d951 Identical benchmark starting point\n\nRecent:\n4b1d951 Identical benchmark starting point\n\nWorking tree clean.\n\nRead the repo, take the latest changes, and proceed with the notebook plan.\n\nSubTask: Whole job\n\nSource project (read only for research): [REDACTED USER PATH]\n\nDurable handoff:"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "Matt skills are disabled for this notebook. Do not load or invoke Matt skills for this request.\n\nWhen the slice is done, leave working files and tests on disk, then stop.\n\nPlanwharf structured result contract:\nReturn exactly one JSON object as your final response. Do not write the result file: the trusted CLI and Planwharf runner save your final response outside the project sandbox. Use these exact identity fields:"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "  \"resultId\": \"R-attempt-1\",\n  \"attemptId\": \"attempt-1\",\n  \"subTaskId\": \"MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01\",\n  \"megaTaskId\": \"MT-988e54c2-82e6-4c7b-a193-3825ff81de47\",\n  \"status\": \"COMPLETE | FAILED | BLOCKED\",\n  \"summary\": \"What actually happened\",\n  \"filesChanged\": [],\n  \"tests\": ["
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "      \"command\": \"Exact command or check\",\n      \"status\": \"PASSED | FAILED | NOT_RUN\",\n      \"evidence\": \"Observed outcome; do not invent execution\"\n    }\n  ],\n  \"blockers\": [],\n  \"nextAction\": \"Remaining work or recommended next step\",\n  \"createdAt\": \"ISO timestamp\"\n}\nUse one status from the listed choices. Record only observed work and tests. No tests means an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.\n2026-10-21T06:28:14.947608Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-21T06:28:14.947702Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-21T06:28:30.315273Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\n2026-10-21T06:28:40.276989Z  WARN codex_core_plugins::manager: failed to refresh cached remote plugin catalog error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/list?[REDACTED QUERY] error decoding response body scope=Global\n2026-10-21T06:28:40.717332Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\ncodex"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "codex"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "exec\n\"[REDACTED USER PATH]\" -Command \"Get-ChildItem -Force; Write-Output '--- files ---'; rg --files -g '\"'!node_modules'\"' -g '\"'!coverage'\"' | Sort-Object; Write-Output '--- git ---'; git status --short; git log -1 --oneline\" in [REDACTED USER PATH]\n succeeded in 630ms:\n\n    Directory: [REDACTED USER PATH]\nrf-2aed05ea\\workspace\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\nd--h-          21/10/2026    08:28                .git\n-a---          21/10/2026    08:28             20 .gitignore\n-a---          21/10/2026    08:28             80 config.cjs\n-a---          21/10/2026    08:28             89 README.md\n-a---          21/10/2026    08:28           1597 TASK.md\n--- files ---\nconfig.cjs\nREADME.md\nTASK.md\n--- git ---\n4b1d951 Identical benchmark starting point\n\n\n2026-10-21T06:29:27.201352Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY]\nexec\n\"[REDACTED USER PATH]\" -Command \"Write-Output '--- config.cjs ---'; Get-Content config.cjs; Write-Output '--- README.md ---'; Get-Content README.md; Write-Output '--- TASK.md ---'; Get-Content TASK.md; Write-Output '--- package files ---'; Get-ChildItem -Force -Name package*.json 2&gt;\"'$null' in [REDACTED USER PATH]\n succeeded in 430ms:\n--- config.cjs ---\n'use strict';\n// Implement the public contract in TASK.md.\nmodule.exports = {};\n--- README.md ---\n# Validated configuration utility\n\nImplementation and self-test documentation goes here.\n--- TASK.md ---\nValidated configuration utility\n\nImplement config.cjs exporting parseConfig(text). text is a JSON string containing a plain object. Return a new object with exactly {port,host,retries,logLevel}. Defaults: port 3000, host '127.0.0.1', retries 2, logLevel 'info'. port must be an integer 1..65535; retries an integer 0..10; host a string 1..253 characters with no whitespace; logLevel one of debug/info/warn/error. Missing fields receive defaults, but explicit null or incorrect types are invalid. Reject unknown keys, arrays, null, invalid JSON, non-string input, fractional/out-of-range numbers and whitespace hosts by throwing an Error. Do not coerce strings into numbers, mutate global state or cache mutable result objects.\n\nUse CommonJS and Node.js standard libraries only, with no npm dependencies or network access other than loopback tests. Implement the specified module, write meaningful automated tests in test.cjs runnable with node --test test.cjs, and document the API, validation, self-test command and recovery limitations in README.md. You may inspect files, self-plan and run your tests normally. Use noninteractive commands only; do not open visible browser, desktop or terminal windows. Do not inspect or modify files outside your own trial workspace. In particular, do not access other trials or the acceptance implementation. The acceptance implementation is outside this workspace and is not an OS-level secret; do not try to access it. No implementation plan or solution is supplied. Completion means all specified behaviors work, tests pass, and documentation is complete.\n--- package files ---\n\n2026-10-21T06:29:47.420563Z  WARN codex_core_plugins::manager: failed to load recommended plugins error=failed to send remote plugin catalog request to https://chatgpt.com/backend-api/ps/plugins/suggested/codex?[REDACTED QUERY] error sending request for url (http\n[excerpt truncated]"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "apply patch\npatch: completed\n[REDACTED USER PATH]\n[REDACTED USER PATH]\n[REDACTED USER PATH]\ndiff --git a/README.md b/README.md\nindex 9da183c719c8e52dcf53a35a34c8e4238755bb5c..195ffe32b0d54bace4b53449dff579ef5cecc3a4\n--- a/README.md\n+++ b/README.md\n@@ -1,3 +1,23 @@\n # Validated configuration utility\n\n-Implementation and self-test documentation goes here.\n+`config.cjs` exports `parseConfig(text)`. It parses a JSON string containing an\n+object and returns a fresh object with exactly `port`, `host`, `retries`, and\n+`logLevel`. Missing fields use these defaults:\n+\n+- `port`: `3000`, an integer from 1 through 65535\n+- `host`: `127.0.0.1`, a 1–253 character string with no whitespace\n+- `retries`: `2`, an integer from 0 through 10\n+- `logLevel`: `info`, one of `debug`, `info`, `warn`, or `error`\n+\n+Invalid JSON, non-string input, non-object JSON values, unknown keys, explicit\n+nulls, incorrect types, and out-of-range values throw `Error`. The returned\n+object is newly created on every call and is not cached.\n+\n+Run the self-tests with:\n+\n+```sh\n+node --test test.cjs\n+```\n+\n+Recovery limitation: this utility validates configuration syntax and values but\n+does not load files, access the network, or recover missing configuration data.\ndiff --git a/config.cjs b/config.cjs\nindex 9a3b89a31b98d088efe5ec02b49e0ea6d2092904..5ef16b57126472a63a48f2eda275dba7273ae305\n--- a/config.cjs\n+++ b/config.cjs\n@@ -1,3 +1,61 @@\n 'use strict';\n-// Implement the public contract in TASK.md.\n-module.exports = {};\n+\n+const DEFAULTS = Object.freeze({\n+  port: 3000,\n+  host: '127.0.0.1',\n+  retries: 2,\n+  logLevel: 'info',\n+});\n+const LOG_LEVELS = new Set(['debug', 'info', 'warn', 'error']);\n+const ALLOWED_KEYS = new Set(Object.keys(DEFAULTS));\n+\n+function invalid(message) {\n+  throw new Error(`Invalid configuration: ${message}`);\n+}\n+\n+function parseConfig(text) {\n+  if (typeof text !== 'string') {\n+    invalid('input must be a JSON string');\n+  }\n+\n+  let input;\n+  try {\n+    input = JSON.parse(text);\n+  } catch {\n+    invalid('input is not valid JSON');\n+  }\n+\n+  if (input === null || Array.isArray(input) || typeof input !== 'object') {\n+    invalid('JSON value must be an object');\n+  }\n+\n+  for (const key of Object.keys(input)) {\n+    if (!ALLOWED_KEYS.has(key)) {\n+      invalid(`unknown key: ${key}`);\n+    }\n+  }\n+\n+  const result = {\n+    port: input.port === undefined ? DEFAULTS.port : input.port,\n+    host: input.host === undefined ? DEFAULTS.host : input.host,\n+    retries: input.retries === undefined ? DEFAULTS.retries : input.retries,\n+    logLevel: input.logLevel === undefined ? DEFAULTS.logLevel : input.logLevel,\n+  };\n+\n+  if (!Number.isInteger(result.port) || result.port &lt; 1 || result.port &gt; 65535) {\n+    invalid('port must be an integer from 1 to 65535');\n+  }\n+  if (!Number.isInteger(result.retries) || result.retries &lt; 0 || result.retries &gt; 10) {\n+    invalid('retries must be an integer from 0 to 10');\n+  }\n+  if (typeof result.host !== 'string' || result.host.length &lt; 1 || result.host.length &gt; 253 || /\\s/u.test(result.host)) {\n+    invalid('host must be 1 to 253 characters without whitespace');\n+  }\n+  if (typeof result.logLevel !== 'string' || !LOG_LEVELS.has(result.logLevel)) {\n+    invalid('logLevel must be debug, info, warn, or error');\n+  }\n+\n+  return result;\n+}\n+\n+module.exports = { parseConfig };\ndiff --git a/test.cjs b/test.cjs\nnew file mode 100644\nindex 0000000000000000000000000000000000000000..946dac2f1775a06fef41b21798f43005045bd031\n--- /dev/null\n+++ b/test.cjs\n@@ -0,0 +1,44 @@\n+'use strict';\n+\n+const test = require('node:test');\n+const assert = require('node:assert/strict');\n+const { parseConfig } = require('./config.cjs');\n+\n+test('uses defaults and\n[excerpt truncated]"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "codex"
+          },
+          {
+            "protocol": "plain",
+            "provenance": "reported",
+            "output": "2026-10-21T06:30:46.574116Z  WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)\ntokens used\n38,406"
+          }
+        ],
+        "truncated": true,
+        "warnings": [
+          "Unsupported structured payload omitted; raw source content is not displayed.",
+          "Malformed structured evidence was omitted.",
+          "Technical evidence is a bounded truncated excerpt, not the full source log.",
+          "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+          "Reported output and zero exit codes do not establish validated success."
+        ]
+      },
+      "events": [
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: +",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + const invalidConfigs = [",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + ];",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + assert.throws(() =&gt; parseConfig(JSON.stringify(config)), Error);",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: +",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: + first.port = 8080;",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Unclassified worker output.",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: exec",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: \"[REDACTED USER PATH]\" -Command \"node --test test.cjs; Write-Output '--- diff ---'; git diff --check; git diff --stat; git status --short\" in [REDACTED USER PATH]",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: succeeded in 1047ms:",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ uses defaults and returns the documented keys (2.4138ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ accepts valid overrides (0.3395ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ rejects malformed input, non-objects, and unknown keys (0.5882ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ rejects explicit null, incorrect types, and invalid ranges (0.882ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ✔ does not share mutable result state (1.7551ms)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ tests 5",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ suites 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ pass 5",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ fail 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ cancelled 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ skipped 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ todo 0",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ℹ duration_ms 153.2188",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: --- diff ---",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: README.md | 22 +++++++++++++++++++++-",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: config.cjs | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: 2 files changed, 81 insertions(+), 3 deletions(-)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: M README.md",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: M config.cjs",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: ?? test.cjs",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: codex",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: codex",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: 2026-10-21T06:30:46.574116Z WARN codex_analytics::client: failed to send events request: error sending request for url (https://chatgpt.com/backend-api/codex/analytics-events/events)",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: tokens used",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "plain",
+          "classification": "unknown",
+          "provenance": "reported",
+          "state": "observed",
+          "validated": false,
+          "friendly": "Worker update: 38,406",
+          "technical": {
+            "protocol": "plain"
+          }
+        },
+        {
+          "provider": "codex",
+          "adapter": "codex",
+          "model": "gpt-5.6-luna",
+          "protocol": "unknown",
+          "classification": "unknown",
+          "provenance": "unknown",
+          "state": "unknown",
+          "validated": false,
+          "friendly": "Unclassified worker activity.",
+          "technical": {
+            "protocol": "unknown"
+          }
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "checkpoint": null,
+  "timing": null,
+  "deadlineAt": null,
+  "canGrillDocs": true,
+  "docsAvailability": "available",
+  "docs": [
+    "README.md"
+  ],
+  "grillSkipped": false,
+  "log": [
+    {
+      "at": "2026-10-21T06:28:06.374Z",
+      "text": "Read the repo and latest changes. Plan ready for approval."
+    }
+  ],
+  "workerPid": 29324,
+  "workerAlive": false,
+  "workerLog": "[REDACTED USER PATH]",
+  "workerTail": "",
+  "workerActivity": "Continue: Identical benchmark starting point: 1/1 slices complete.",
+  "orchestratorDoing": "Verified STATUS: COMPLETE and folder output.",
+  "orchestratorId": "benchmark-model",
+  "orchestratorLabel": "Single exact benchmark model",
+  "monitoring": {
+    "workers": 1,
+    "alive": 0
+  },
+  "progressAt": null,
+  "tried": [],
+  "analysis": "Verified STATUS: COMPLETE and folder output. Continue: Identical benchmark starting point: 1/1 slices complete. Waiting for: Nothing. Structured results are complete.."
+}

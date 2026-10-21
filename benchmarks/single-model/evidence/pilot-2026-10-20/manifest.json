@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "studyId": "b77df1e5-ab86-44a4-bb08-3f64a9ce1a33",
+  "startedAt": "2026-10-20T17:08:27.298Z",
+  "kind": "LIVE_PILOT",
+  "baseline": "d9b4c21b3c9045c6069d99b2f18686a6da53fe8d",
+  "model": "gpt-5.6-luna",
+  "options": {
+    "model": "gpt-5.6-luna",
+    "pairs": 1,
+    "timeoutMs": 60000,
+    "maxCalls": 3,
+    "output": "..\\benchmark-pilot-private\\study-01"
+  },
+  "environment": {
+    "recordedAt": "2026-10-20T17:08:27.222Z",
+    "platform": "win32",
+    "release": "10.0.19045",
+    "arch": "x64",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1505M v5 @ 2.80GHz",
+    "logicalCpus": 8,
+    "memoryBytes": 34275356672,
+    "node": "v24.19.0",
+    "cli": {
+      "executable": "[REDACTED USER PATH]",
+      "version": "0.163.0-alpha.10.2",
+      "authenticated": true,
+      "authStatus": "WARNING: failed to clean up stale arg0 temp dirs: Access is denied. (os error 5)\nWARNING: proceeding, even though we could not create PATH aliases: Access is denied. (os error 5) at path \"[REDACTED USER PATH]\"\nLogged in using ChatGPT\n"
+    },
+    "requestedModel": "gpt-5.6-luna",
+    "modelInAuthenticatedCatalog": true,
+    "catalogVersion": "0.163.0-alpha.10.2",
+    "providerReportedResolvedVersion": null,
+    "sandbox": "workspace-write",
+    "approvalPolicy": "never",
+    "toolNetworkAccess": false,
+    "inferenceEffort": "shared CLI/profile default; no arm-specific override",
+    "configurationDifferences": [
+      "Planwharf disables native worker subagents and requests a structured final report; direct CLI retains its ordinary self-planning/test capabilities.",
+      "Planwharf uses native persistence/dispatch and one-model role roster; no hand-written decomposition is injected."
+    ],
+    "quotaSnapshot": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": false,
+      "pct": 12,
+      "leftPct": 88,
+      "source": "chatgpt",
+      "reason": null,
+      "planType": "pro",
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 12,
+          "leftPct": 88,
+          "resetAt": "2026-10-27T07:35:57.000Z",
+          "seconds": 604800
+        }
+      ]
+    },
+    "quotaAttribution": "Shared account activity cannot be attributed per trial; per-trial quota decrement UNKNOWN",
+    "billedCost": null,
+    "docs": "https://learn.chatgpt.com/docs/non-interactive-mode",
+    "baseline": "d9b4c21b3c9045c6069d99b2f18686a6da53fe8d"
+  },
+  "schedule": [
+    {
+      "taskId": "config",
+      "category": "small",
+      "pairId": "config-1",
+      "scenario": "baseline",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    },
+    {
+      "taskId": "rest-api",
+      "category": "medium",
+      "pairId": "rest-api-1",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "planwharf",
+        "direct"
+      ]
+    },
+    {
+      "taskId": "scheduler",
+      "category": "complex",
+      "pairId": "scheduler-1",
+      "scenario": "implementation-interruption",
+      "arms": [
+        "direct",
+        "planwharf"
+      ]
+    }
+  ],
+  "specificationHashes": [
+    {
+      "id": "config",
+      "class": "small",
+      "title": "Validated configuration utility",
+      "module": "config.cjs",
+      "checkCount": 6,
+      "specificationHash": "e58cccd9982a702aefc8d2fd0297e0b9feeae5f3b389c2aee06419fb56f27505"
+    },
+    {
+      "id": "rest-api",
+      "class": "medium",
+      "title": "Persistent REST item service",
+      "module": "api.cjs",
+      "checkCount": 8,
+      "specificationHash": "df00935afe2ac6a424193137840970535fd26b7b00fc18495701073c1d66a73f"
+    },
+    {
+      "id": "scheduler",
+      "class": "complex",
+      "title": "Recoverable dependency scheduler",
+      "module": "scheduler.cjs",
+      "checkCount": 10,
+      "specificationHash": "cd58203b4144d719b4d7c11f30e3c62949b27412b427e194da5c244c81da9a5d"
+    }
+  ],
+  "sealedGraderHash": "d3f2d6fb9e31cc7f6f88843726f62d36ffa49b8df90f461ccdde80bbfb6dc359",
+  "protocol": {
+    "acceptance": "All presealed deterministic checks pass AND transport completes successfully; incomplete outcomes retain resource use",
+    "timeBoundMs": 60000,
+    "callBound": 3,
+    "interventions": "One predeclared recovery on first source change for medium/complex, no ad hoc fixes or hidden grader feedback",
+    "windows": "No visible windows. Only server.cjs and noninteractive CLI are used.",
+    "humanEffort": "Scripted HTTP/CLI actions recorded; actual human-time savings UNKNOWN",
+    "fullStudy": "Target five pairs per task only after an accepted pilot and explicit --pairs 5 invocation; no automatic provider spending"
+  }
+}

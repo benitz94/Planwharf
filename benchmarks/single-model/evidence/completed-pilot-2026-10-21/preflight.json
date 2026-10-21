@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "edited": true,
+  "executed": true,
+  "verified": true,
+  "reason": "Capability check passed",
+  "model": "gpt-5.6-luna",
+  "usage": {
+    "inputTokens": 40813,
+    "outputTokens": 538,
+    "cachedInputTokens": 37120,
+    "reasoningTokens": 132
+  },
+  "invocations": 1,
+  "wallMs": 22294.064899999998,
+  "exitCode": 0,
+  "diagnostic": "2026-10-21T06:26:49.282393Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-21T06:26:49.322386Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out\n2026-10-21T06:26:49.523039Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n\nI’ll create `capability.cjs` with the requested export, then use Node to assert it and create `verification.json`.\n\n\nCreated and verified successfully:\n\n- [capability.cjs]([REDACTED USER PATH]\n- [verification.json]([REDACTED USER PATH]\n\nNode assertion passed with exit code 0.",
+  "scope": "Calibration only. No task trials are submitted unless native editing and Node execution both work. Provider usage here is separate from arm totals."
+}

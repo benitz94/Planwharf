@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "edited": true,
+  "executed": true,
+  "verified": true,
+  "reason": "Capability check passed",
+  "model": "gpt-5.6-luna",
+  "usage": {
+    "inputTokens": 38078,
+    "outputTokens": 455,
+    "cachedInputTokens": 33280,
+    "reasoningTokens": 140
+  },
+  "invocations": 1,
+  "wallMs": 25406.9272,
+  "exitCode": 0,
+  "diagnostic": "2026-10-21T07:19:45.140837Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell\n\nI’ll create the module with `apply_patch`, then run Node to require it, assert the nonce, and create `verification.json`.\n\n\nCompleted successfully. Node required and asserted `capability.cjs`, then wrote `verification.json` with the requested contents.",
+  "scope": "Calibration only. No task trials are submitted unless native editing and Node execution both work. Provider usage here is separate from arm totals."
+}

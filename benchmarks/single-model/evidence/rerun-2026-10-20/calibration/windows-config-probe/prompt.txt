@@ -1,0 +1,1 @@
+Use apply_patch to create proof.txt containing READY and a newline. Verify its contents with node -e if execution is permitted. No windows, browsers or network. Report accurate results.

@@ -1,0 +1,19 @@
+{
+  "nextId": 2,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "taskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+      "projectId": "benchmark-config",
+      "modelId": "benchmark-model",
+      "status": "closed",
+      "megaTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47",
+      "subTaskId": "MT-988e54c2-82e6-4c7b-a193-3825ff81de47-ST-01",
+      "research": false,
+      "resultPath": "[REDACTED USER PATH]",
+      "resultStatus": "COMPLETE",
+      "exitCode": 0,
+      "closedReason": "complete"
+    }
+  ]
+}

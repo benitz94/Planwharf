@@ -1,0 +1,57 @@
+{
+  "schema": 2,
+  "name": "Supervisor",
+  "configured": false,
+  "modelId": "",
+  "autoReview": false,
+  "alerts": [
+    {
+      "key": "010b068291dac6d666c566e9",
+      "projectId": "benchmark-config",
+      "megaTaskId": "MT-f60d52ce-5b8e-4e64-8b2c-a89623e2a755",
+      "kind": "execution-blocked",
+      "severity": "warning",
+      "title": "Work needs attention",
+      "message": "Resume from checkpoint.",
+      "evidence": [
+        "failed",
+        "attempt-1",
+        "MT-f60d52ce-5b8e-4e64-8b2c-a89623e2a755"
+      ],
+      "actions": [
+        "inspect",
+        "ask",
+        "ignore"
+      ],
+      "id": "1b6e992c-e739-4da1-9e0f-19d1561dfbeb",
+      "active": true,
+      "ignored": false,
+      "createdAt": "2026-10-20T17:08:35.916Z"
+    },
+    {
+      "key": "4cc82c79e4a0719a69015188",
+      "projectId": "benchmark-config",
+      "megaTaskId": "MT-f60d52ce-5b8e-4e64-8b2c-a89623e2a755",
+      "kind": "result-R-attempt-1",
+      "severity": "warning",
+      "title": "An assignment did not finish successfully",
+      "message": "Worker process ended without a valid structured result and exit evidence.",
+      "evidence": [
+        "R-attempt-1",
+        "MT-f60d52ce-5b8e-4e64-8b2c-a89623e2a755-ST-01",
+        "FAILED"
+      ],
+      "actions": [
+        "inspect",
+        "ask",
+        "ignore"
+      ],
+      "id": "1ac67a68-8b7d-45fe-b4ae-4535fa7ded01",
+      "active": true,
+      "ignored": false,
+      "createdAt": "2026-10-20T17:08:35.916Z"
+    }
+  ],
+  "turns": [],
+  "autoCalls": []
+}

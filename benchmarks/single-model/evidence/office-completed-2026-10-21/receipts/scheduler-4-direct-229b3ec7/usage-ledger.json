@@ -1,0 +1,261 @@
+[
+  {
+    "threadId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+    "exitCode": 1,
+    "usage": {
+      "inputTokens": 43878,
+      "outputTokens": 6026,
+      "cachedInputTokens": 33920,
+      "reasoningTokens": 1086
+    },
+    "responseReceipt": {
+      "sessionId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+      "source": "native provider token_usage_record",
+      "records": [
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fcc86548191aec56967bd40f909",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:11.467Z",
+          "usage": {
+            "inputTokens": 13111,
+            "outputTokens": 186,
+            "cachedInputTokens": 10496,
+            "reasoningTokens": 22
+          }
+        },
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fcfa5108191bb149e6fdd56d05c",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:35.733Z",
+          "usage": {
+            "inputTokens": 13516,
+            "outputTokens": 3648,
+            "cachedInputTokens": 12928,
+            "reasoningTokens": 1034
+          }
+        },
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fe6dc848191aeda6bdddcd24da7",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:46.949Z",
+          "usage": {
+            "inputTokens": 17251,
+            "outputTokens": 2192,
+            "cachedInputTokens": 10496,
+            "reasoningTokens": 30
+          }
+        }
+      ],
+      "responseCount": 3,
+      "usage": {
+        "inputTokens": 43878,
+        "outputTokens": 6026,
+        "cachedInputTokens": 33920,
+        "reasoningTokens": 1086
+      },
+      "valid": true,
+      "unreportedProviderUsage": null,
+      "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+    },
+    "newResponseIds": [
+      "resp_0b135ddeec3d6d8e016ad87fcc86548191aec56967bd40f909",
+      "resp_0b135ddeec3d6d8e016ad87fcfa5108191bb149e6fdd56d05c",
+      "resp_0b135ddeec3d6d8e016ad87fe6dc848191aeda6bdddcd24da7"
+    ],
+    "accounting": "provider-reported response usage; duplicate response IDs counted once"
+  },
+  {
+    "threadId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+    "exitCode": 0,
+    "usage": {
+      "inputTokens": 321628,
+      "outputTokens": 6316,
+      "cachedInputTokens": 286848,
+      "reasoningTokens": 1540
+    },
+    "responseReceipt": {
+      "sessionId": "01a15db3-34d0-7000-841f-e9fc8369c6b7",
+      "source": "native provider token_usage_record",
+      "records": [
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fcc86548191aec56967bd40f909",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:11.467Z",
+          "usage": {
+            "inputTokens": 13111,
+            "outputTokens": 186,
+            "cachedInputTokens": 10496,
+            "reasoningTokens": 22
+          }
+        },
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fcfa5108191bb149e6fdd56d05c",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:35.733Z",
+          "usage": {
+            "inputTokens": 13516,
+            "outputTokens": 3648,
+            "cachedInputTokens": 12928,
+            "reasoningTokens": 1034
+          }
+        },
+        {
+          "responseId": "resp_0b135ddeec3d6d8e016ad87fe6dc848191aeda6bdddcd24da7",
+          "turnId": "01a15db3-35f1-79f1-9635-2f09fa51fab8",
+          "at": "2026-10-21T09:03:46.949Z",
+          "usage": {
+            "inputTokens": 17251,
+            "outputTokens": 2192,
+            "cachedInputTokens": 10496,
+            "reasoningTokens": 30
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad87ff931d48191b0253474eb086b58",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:03:59.084Z",
+          "usage": {
+            "inputTokens": 20910,
+            "outputTokens": 496,
+            "cachedInputTokens": 19328,
+            "reasoningTokens": 323
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad87fff22708191b13f3d4df2ebccdb",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:14.877Z",
+          "usage": {
+            "inputTokens": 23953,
+            "outputTokens": 2586,
+            "cachedInputTokens": 20736,
+            "reasoningTokens": 126
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad8801235f881918d61e5064df77f2e",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:20.638Z",
+          "usage": {
+            "inputTokens": 26563,
+            "outputTokens": 105,
+            "cachedInputTokens": 23808,
+            "reasoningTokens": 7
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad880148934819197cf824d9403e3be",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:27.406Z",
+          "usage": {
+            "inputTokens": 26903,
+            "outputTokens": 605,
+            "cachedInputTokens": 26368,
+            "reasoningTokens": 386
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad8801b3b2c8191932c98addfb51bbd",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:35.930Z",
+          "usage": {
+            "inputTokens": 30286,
+            "outputTokens": 1049,
+            "cachedInputTokens": 13312,
+            "reasoningTokens": 459
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad880245dd48191b0978f4e984fc101",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:39.840Z",
+          "usage": {
+            "inputTokens": 31359,
+            "outputTokens": 294,
+            "cachedInputTokens": 30080,
+            "reasoningTokens": 31
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad880283a6c819189a93d22d9237075",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:43.275Z",
+          "usage": {
+            "inputTokens": 31677,
+            "outputTokens": 171,
+            "cachedInputTokens": 31232,
+            "reasoningTokens": 14
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad8802bdc848191b84e09fb7bfaa07a",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:46.399Z",
+          "usage": {
+            "inputTokens": 31872,
+            "outputTokens": 129,
+            "cachedInputTokens": 26752,
+            "reasoningTokens": 27
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad8802e59a08191837e4ba4d47539c3",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:51.604Z",
+          "usage": {
+            "inputTokens": 32210,
+            "outputTokens": 560,
+            "cachedInputTokens": 31488,
+            "reasoningTokens": 167
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad880343f14819196f3c3c028acf238",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:54.494Z",
+          "usage": {
+            "inputTokens": 32794,
+            "outputTokens": 95,
+            "cachedInputTokens": 32000,
+            "reasoningTokens": 0
+          }
+        },
+        {
+          "responseId": "resp_0fc15193bfb7e5f1016ad880366a208191865f7883b38b808f",
+          "turnId": "01a15db3-e039-7e62-9628-d95904348854",
+          "at": "2026-10-21T09:04:57.457Z",
+          "usage": {
+            "inputTokens": 33101,
+            "outputTokens": 226,
+            "cachedInputTokens": 31744,
+            "reasoningTokens": 0
+          }
+        }
+      ],
+      "responseCount": 14,
+      "usage": {
+        "inputTokens": 365506,
+        "outputTokens": 12342,
+        "cachedInputTokens": 320768,
+        "reasoningTokens": 2626
+      },
+      "valid": true,
+      "unreportedProviderUsage": null,
+      "scope": "Provider-reported completed responses only. Unreported in-flight usage remains UNKNOWN; no estimate or billed-cost claim."
+    },
+    "newResponseIds": [
+      "resp_0fc15193bfb7e5f1016ad87ff931d48191b0253474eb086b58",
+      "resp_0fc15193bfb7e5f1016ad87fff22708191b13f3d4df2ebccdb",
+      "resp_0fc15193bfb7e5f1016ad8801235f881918d61e5064df77f2e",
+      "resp_0fc15193bfb7e5f1016ad880148934819197cf824d9403e3be",
+      "resp_0fc15193bfb7e5f1016ad8801b3b2c8191932c98addfb51bbd",
+      "resp_0fc15193bfb7e5f1016ad880245dd48191b0978f4e984fc101",
+      "resp_0fc15193bfb7e5f1016ad880283a6c819189a93d22d9237075",
+      "resp_0fc15193bfb7e5f1016ad8802bdc848191b84e09fb7bfaa07a",
+      "resp_0fc15193bfb7e5f1016ad8802e59a08191837e4ba4d47539c3",
+      "resp_0fc15193bfb7e5f1016ad880343f14819196f3c3c028acf238",
+      "resp_0fc15193bfb7e5f1016ad880366a208191865f7883b38b808f"
+    ],
+    "accounting": "provider-reported response usage; duplicate response IDs counted once"
+  }
+]

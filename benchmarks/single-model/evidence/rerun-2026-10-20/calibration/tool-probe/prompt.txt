@@ -1,0 +1,1 @@
+Create proof.txt containing exactly READY. Run Node to read it and assert its contents. Use only noninteractive commands; no windows, no browser, no network. Finish with VERIFIED only if both actions worked.
