@@ -32,6 +32,14 @@ You can open and use the local project notebook without invoking AI. To perform 
 
 ## AI models and orchestration
 
+### Can I make a team using only one AI model?
+
+Yes, when your connected CLI or API and account permit the required executions. Multiple Planwharf Worker assignments may use the same eligible model; separate model subscriptions are not necessary just to assign different tasks. Concurrent execution is provider- and account-dependent, and Planwharf does not promise a minimum number of simultaneous workers. Simple work may still be dispatched to a single Worker.
+
+### How is Planwharf different from native Codex CLI subagents?
+
+ChatGPT offers multiple models, while a typical Codex CLI invocation uses a selected model and may coordinate native subagents according to its own capabilities and settings. Planwharf adds a separate, persistent **user-managed** coordination layer: visible provider/model assignments, approved task graphs, Worker and Reviewer roles, attempt evidence, optional advisory Supervisor, and deliberate Stop/Resume controls. It does not claim to expose every internal provider subagent or replace native CLI capabilities.
+
 ### Can I coordinate Codex, Grok and Gemini in one project?
 
 Planwharf includes native adapters for Codex, Grok and Antigravity, plus documented direct API and compatible CLI connection options. Configure the actual connection and exact model IDs that your account supports. Availability and compatibility vary by provider and environment; not every model/combination has been tested. See [external providers](EXTERNAL-PROVIDERS.md).
