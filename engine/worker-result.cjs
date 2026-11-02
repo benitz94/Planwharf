@@ -9,7 +9,7 @@ function validateResult(result, identity) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) return false;
   for (const key of ['resultId', 'attemptId', 'subTaskId', 'megaTaskId']) if (typeof result[key] !== 'string' || !result[key] || result[key] !== identity[key]) return false;
   if (!statuses.includes(result.status) || typeof result.summary !== 'string' || !result.summary.trim() || typeof result.nextAction !== 'string'
-    || typeof result.createdAt !== 'string' || !Number.isFinite(Date.parse(result.createdAt))) return false;
+    || result.createdAt !== undefined && (typeof result.createdAt !== 'string' || !Number.isFinite(Date.parse(result.createdAt)))) return false;
   for (const key of ['filesChanged', 'tests', 'blockers']) if (!Array.isArray(result[key])) return false;
   if (!result.filesChanged.every(file => typeof file === 'string') || !result.blockers.every(item => typeof item === 'string')) return false;
   if (!result.tests.every(test => test && typeof test.command === 'string' && ['PASSED', 'FAILED', 'NOT_RUN'].includes(test.status) && typeof test.evidence === 'string')) return false;
@@ -21,12 +21,13 @@ function readValidatedResult(file, identity, exitFile) {
   if (!validateResult(result, identity) || !exit || exit.attemptId !== identity.attemptId || !Number.isInteger(exit.exitCode)) return null;
   if (identity.provider && exit.provider !== identity.provider || identity.cli && exit.model !== identity.cli) return null;
   if (result.status === 'COMPLETE' && exit.exitCode !== 0) return null;
-  return { ...result, exitCode: exit.exitCode, evidencePath: file };
+  // The runner stamps the exit record, so a worker need not spend a call on the clock.
+  return { ...result, createdAt: result.createdAt || exit.createdAt, exitCode: exit.exitCode, evidencePath: file };
 }
 function resultContract(opts) {
   if (!opts.structuredResultPath) return '';
   const template = { resultId: opts.resultId, attemptId: opts.attempt, subTaskId: opts.subTaskId, megaTaskId: opts.megaTaskId,
-    status: 'COMPLETE | FAILED | BLOCKED', summary: 'What actually happened', filesChanged: [], tests: [{ command: 'Exact command or check', status: 'PASSED | FAILED | NOT_RUN', evidence: 'Observed outcome; do not invent execution' }], blockers: [], nextAction: 'Remaining work or recommended next step', createdAt: 'ISO timestamp' };
+    status: 'COMPLETE | FAILED | BLOCKED', summary: 'What actually happened', filesChanged: [], tests: [{ command: 'Exact command or check', status: 'PASSED | FAILED | NOT_RUN', evidence: 'Observed outcome; do not invent execution' }], blockers: [], nextAction: 'Remaining work or recommended next step' };
   return `Planwharf structured result contract:\nWrite one UTF-8 JSON object to ${opts.structuredResultPath}. If a write_result tool is provided, submit the JSON through that tool instead of writing the result with write_file. Use these exact identity fields:\n${JSON.stringify(template, null, 2)}\nUse one status from the listed choices. Record only observed work and tests. No tests means an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.`;
 }
 function reportExists(result, folder) {

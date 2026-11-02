@@ -265,6 +265,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   }
   orchestra = createOrchestrator({
     phase2,
+    runExclusive: work => enqueue(work),
     readPlan: () => readPlan(planFile),
     completeTasks: completions => enqueue(async () => {
       const current = await readPlan(planFile);
@@ -784,6 +785,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!asked.ok) throw new RequestError(400, asked.reason || 'Invalid data.');
         return json(200, asked);
       }
+      if (request.method === 'POST' && pathname === '/api/orchestrator/autonomy') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || typeof input.enabled !== 'boolean' || Object.keys(input).some(key => !['projectId', 'enabled'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const result = await enqueue(() => orchestra.setAutonomy(input.projectId, input.enabled));
+        if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
+        return json(200, result.snapshot);
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/mode') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);
@@ -1174,6 +1183,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (state.projects.some(row => row.status === 'watching') || (state.researches || []).some(row => row.status === 'watching')) await enqueue(() => updates.busy ? orchestra.snapshot() : orchestra.tick());
       } catch (error) { console.error('Execution monitoring failed:', error.message); }
       finally { monitoring = false; }
+      if (!closing && !updates.busy) void orchestra.autonomyTick().catch(error => console.error('Project autonomy failed:', error.message));
     }, monitorIntervalMs);
     monitorTimer.unref();
   });

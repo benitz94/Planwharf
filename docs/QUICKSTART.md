@@ -42,7 +42,7 @@ Use **Find models** to search by provider, name or exact ID. **Model role** filt
 
 Select the project recipient. Use **Grill me** to clarify the goal, or **Grill with the docs** to use its documentation. Save the answers, then use **Auto start** or send a concrete new work request in chat.
 
-Review the proposed **MegaTask**: goal, smaller **SubTasks**, exact models and dependencies. Choose **Approve MegaTask**. New work needs approval in Manual and Automatic modes. Preparing a plan is not evidence that a worker has started.
+Review the proposed **MegaTask**: goal, smaller **SubTasks**, exact models and dependencies. Choose **Approve MegaTask**. New work needs approval in Manual and Automatic modes, unless you turn on [project autonomy](PROJECT-AUTONOMY.md) for that project. Preparing a plan is not evidence that a worker has started.
 
 ## 5. Follow the actual result
 

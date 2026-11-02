@@ -96,13 +96,13 @@ function createExecutionBridge(options) {
     persist();
     return mega;
   }
-  function approve(projectId, megaTaskId) {
+  function approve(projectId, megaTaskId, policy = null) {
     const mega = target(projectId, megaTaskId);
     if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposed MegaTask can be approved.');
     mega.blockers = proposalBlockers(mega);
     if (mega.blockers.length) { persist(); throw new Error(mega.blockers.join(' ')); }
     mega.approvedAt = now(); mega.status = 'RUNNING'; mega.approvedMegaTaskId = mega.id; mega.authorizedSessionId = options.sessionId;
-    event(projectId, 'MEGATASK_APPROVED', `Approved ${mega.title}.`, { megaTaskId }); persist();
+    event(projectId, 'MEGATASK_APPROVED', policy ? `Approved ${mega.title} by the project autonomy setting.` : `Approved ${mega.title}.`, { megaTaskId }); persist();
     return mega;
   }
   function identity(mega, sub, attemptId) { return { megaTaskId: mega.id, subTaskId: sub.id, attemptId, resultId: 'R-' + attemptId, provider: sub.provider, cli: sub.cli }; }

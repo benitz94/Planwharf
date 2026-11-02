@@ -6,6 +6,8 @@ Preserve personal notebook data, existing workspace changes, and historical raw 
 
 Use isolated notebooks and attempts for validation. Repository inspection must not dispatch personal projects or automatically push, merge, reset, or overwrite their source files.
 
+Do not report work as done, tested, or verified without having run the command and seen its result. Applies to every model and provider. State what was not run. A check that cannot fail is not evidence.
+
 Keep provider/model IDs explicit. The lead has full tool access for inspection and coordination; workers implement jobs. Never silently substitute another provider or fabricate model access, quotas, or completion evidence.
 
 

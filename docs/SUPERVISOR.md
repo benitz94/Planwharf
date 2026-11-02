@@ -54,6 +54,8 @@ recent conversation. AI answers are advisory text; they cannot dispatch, approve
 change permissions, or edit project files. Calls are recorded under the existing
 Reviewer role. No fourth provider/model role is introduced.
 
+With **project autonomy** on, a newly detected alert also sends the lead one bounded nudge. The backend writes that message from the detected facts. See [PROJECT-AUTONOMY.md](PROJECT-AUTONOMY.md).
+
 Optional automatic analysis is off by default. Once explicitly enabled with a
 Reviewer, only a newly detected anomaly can trigger analysis, capped at three
 calls per hour. This is event driven, not continuous LLM polling. Busy periods or

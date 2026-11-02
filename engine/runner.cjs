@@ -480,7 +480,7 @@ function spawnWorker(info) {
   const logFd = fs.openSync(logPath, 'a');
   try {
     const child = spawn(process.execPath, [__filename, '--job-file', inputPath], {
-      cwd: info.folder, detached: true, stdio: ['ignore', logFd, logFd], windowsHide: true, env: { ...process.env }
+      cwd: info.folder, detached: true, stdio: ['ignore', logFd, logFd], windowsHide: true, env: { ...process.env, ...(info.env || {}) }
     });
     child.unref();
     return { pid: child.pid, logPath, inputPath };

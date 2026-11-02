@@ -412,7 +412,11 @@
     const grillTriggers = approve || resume || stop || busy
       ? ''
       : `<button type="button" class="${kind === 'me' ? 'primary' : 'secondary'}" data-grill-kind="me" data-grill-start="${escape(id)}">Grill me</button><button type="button" class="${kind === 'docs' ? 'primary' : 'secondary'}" data-grill-kind="docs" data-grill-start="${escape(id)}"${docsOk ? '' : ' disabled'}>Grill with the docs</button>`;
-    return `${approve}${grillTriggers}${resume}${stop}${pause}`;
+    const autonomy = orchestra.autonomy?.[id];
+    const autonomyOn = Boolean(autonomy?.enabled);
+    const autonomyToggle = orchestra.mode === 'auto' || autonomyOn ? `<button type="button" class="secondary" data-autonomy="${escape(id)}" data-autonomy-enable="${autonomyOn ? 'false' : 'true'}">${autonomyOn ? 'Turn off project autonomy' : 'Turn on project autonomy'}</button>` : '';
+    const autonomyNote = autonomy?.stopReason ? `<span class="muted" role="status">Autonomy stopped: ${escape(autonomy.stopReason)}</span>` : '';
+    return `${approve}${grillTriggers}${resume}${stop}${pause}${autonomyToggle}${autonomyNote}`;
   }
 
   function workerState(row, part) {
@@ -895,6 +899,12 @@
       const researchResume = event.target && event.target.getAttribute && event.target.getAttribute('data-research-resume');
       const leadId = event.target && event.target.getAttribute && event.target.getAttribute('data-lead');
       const modelId = event.target && event.target.getAttribute && event.target.getAttribute('data-model');
+      const autonomyId = event.target && event.target.getAttribute && event.target.getAttribute('data-autonomy');
+      if (autonomyId) {
+        orchestra = await post('/api/orchestrator/autonomy', { projectId: autonomyId, enabled: event.target.getAttribute('data-autonomy-enable') === 'true' });
+        render();
+        return;
+      }
       const pauseId = event.target && event.target.getAttribute && event.target.getAttribute('data-pause');
       const stopId = event.target && event.target.getAttribute && event.target.getAttribute('data-stop');
       const resumeId = event.target && event.target.getAttribute && event.target.getAttribute('data-resume');

@@ -15,7 +15,7 @@ Planwharf is a local project notebook and coordinator for coding workers. You ke
 3. **Create a project.** Choose **Add project**, enter a name and a concrete goal, set **Projects folder** to an existing absolute directory such as `C:\Projects`, and click **Save projects folder**. Leave **Create a new subfolder using the project name** selected for a new project. Saving the project creates its folder, without starting workers.
 4. **Clarify the goal.** Use **Grill me** or **Grill with the docs** and save your answers. Include acceptance criteria, technology constraints, files to preserve, and how the result should be tested.
 5. **Prepare the work.** Use **Auto start**, or send a new work request for the selected project in the orchestrator chat. Review the proposed MegaTask: its goal, workers, smaller SubTasks, dependencies, and order. If enabled Matt skills have no complete cache yet, wait for the skills check, retry **Check skills updates**, or explicitly turn off **Use Matt skills for all models** before model requests.
-6. **Approve that assignment.** Choose **Approve MegaTask** or the approval action shown in **Next**. Some controls describe this as **Approve run**. New MegaTasks require approval in both Manual and Automatic modes. A proposal or chat reply alone does not mean a worker has started.
+6. **Approve that assignment.** Choose **Approve MegaTask** or the approval action shown in **Next**. Some controls describe this as **Approve run**. New MegaTasks require approval in both Manual and Automatic modes, unless you turn on [project autonomy](PROJECT-AUTONOMY.md) for that project. A proposal or chat reply alone does not mean a worker has started.
 7. **Check the result.** Follow **Now**, **Progress**, **Next**, and **Workers**. When the assignment completes, read the reported changes, tests, blockers, and next action, then open the output in the linked project folder and test it. Completion does not automatically create a commit, push to GitHub, or publish the product.
 
 For a small first goal, try: “Build a local HTML counter with increment and reset buttons. Keep it dependency-free, explain how to open it, and verify both buttons.” Use a new project folder for this experiment.
@@ -145,7 +145,7 @@ A conversational research request proposes a separate research MegaTask. Review 
 | Explicit port occupied | Choose another port, or omit `--port` to allow default-port fallback. |
 | Cannot save projects folder | Use an existing absolute directory accessible to your Windows account. |
 | Waiting for Grill | Answer and save the questions, or choose **Skip grill**. |
-| Proposed MegaTask has not started | Review and approve that exact MegaTask, including in Automatic mode. |
+| Proposed MegaTask has not started | Review and approve that exact MegaTask, including in Automatic mode unless [project autonomy](PROJECT-AUTONOMY.md) is on. |
 | Skills block model execution | Retry **Check skills updates**, or explicitly disable **Use Matt skills for all models**. |
 | No eligible worker / Unavailable | Check the model's exact route, CLI login, availability, enabled state, eligibility, and shared quota. |
 | Native CLI executable not found | Install the CLI or set its executable override to the native binary. |

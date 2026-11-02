@@ -66,7 +66,7 @@ Node.js and any provider CLIs are installed separately.
 1. Download `Planwharf-vX.Y.Z.zip` from the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest), extract the complete application folder, install Node.js, and on Windows open `Planwharf.exe`.
 2. Choose **Add project**, write a concrete goal, and link a new or existing project folder.
 3. For AI work, authenticate a supported coding CLI or add an API connection with authorized exact model IDs, then enable available lead/worker models. Chat subscriptions do not automatically grant API or CLI access. Use Grill to clarify the goal, then **Auto start** or chat to prepare an assignment.
-4. Review the proposed MegaTask, workers, and dependencies. Choose **Approve MegaTask**; Automatic mode also requires approval of new work.
+4. Review the proposed MegaTask, workers, and dependencies. Choose **Approve MegaTask**; Automatic mode also requires approval of new work, unless you turn on [project autonomy](docs/PROJECT-AUTONOMY.md) for that project.
 5. Follow **Progress**, **Now**, **Next**, and **Workers**, then test the output in the project folder. Completion does not automatically commit, push, or publish it.
 
 The [first project guide](docs/HOW-TO.md) explains each step, a separate practice notebook, checkpoints, providers, and troubleshooting. The remaining README sections provide reference details.
@@ -220,7 +220,7 @@ Labels are for display; they never select a provider. Configuration errors disab
 
 On the verified account, GPT-6 Astra, GPT-6 Luna, GPT-6 Sol, GPT-6.1 Sol, GPT-5.6 Luna, and GPT-5.5 completed inference checks. Gemini Pro and Flash were used through Antigravity. GPT-5 and GPT-5 mini were explicitly rejected by Codex with this ChatGPT account and remain **Unavailable**. Grok 4.6 is switched off after a credit/spending-limit HTTP 403. These checks describe one account and date, rather than universal model availability.
 
-Choose a lead in **Functions** or the Orchestrator view. **Auto start** inspects the project, proposes Grill when configured, prepares a job, and waits for **Approve run**. Auto-start jobs require that approval even in Automatic mode. New jobs propose a persistent MegaTask and its dependent slices before execution. Approval binds to the exact MegaTask; Automatic mode does not bypass that approval. Worker tool permissions do not require repeated interactive confirmation.
+Choose a lead in **Functions** or the Orchestrator view. **Auto start** inspects the project, proposes Grill when configured, prepares a job, and waits for **Approve run**. Auto-start jobs require that approval even in Automatic mode, unless [project autonomy](docs/PROJECT-AUTONOMY.md) is on. New jobs propose a persistent MegaTask and its dependent slices before execution. Approval binds to the exact MegaTask; Automatic mode does not bypass that approval. Worker tool permissions do not require repeated interactive confirmation.
 
 Enabled models are candidates, not a requirement to use every model for every task. Selection considers task type, provider quota, local counters, and failures. Implementation/difficult work may be split across up to three workers. Slice ownership and integration still require care.
 

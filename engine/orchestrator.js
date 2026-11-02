@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const autonomy = require('./autonomy.cjs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const Plan = require('../plan.js');
@@ -937,7 +938,7 @@ function jobFromFacts(revision, facts) {
     facts && facts.lastCommit ? `Latest commit: ${facts.lastCommit}` : (facts && facts.git ? 'Git present.' : 'No git history.'),
     recent.length ? `Recent:\n${recent.join('\n')}` : '',
     dirty.length ? `Uncommitted:\n${dirty.join('\n')}` : 'Working tree clean.',
-    'Read the repo, take the latest changes, and proceed with the notebook plan.'
+    goal ? 'Work toward the goal. Read only what that needs.' : 'Read the repo, take the latest changes, and proceed with the notebook plan.'
   ].filter(Boolean).join('\n\n');
   return { title, detail };
 }
@@ -1046,6 +1047,7 @@ function createOrchestrator(options) {
   const stateFile = dir ? path.join(dir, 'orchestrator.json') : null;
   const ledger = dir ? createInvocationLedger(dir) : null;
   const supervisor = require('./supervisor.cjs').createSupervisor({ dir, now, review: reviewSnapshot });
+  const autonomyActive = projectId => { const settings = store.autonomy?.[projectId]; return Boolean(settings?.enabled && settings.sessionId === sessionId && store.mode === 'auto'); };
   const askProvider = opts.askModel, launchWorker = opts.spawnWorker, abortProvider = opts.abortAsk;
   let activeLeadInvocation = null;
   if (typeof abortProvider === 'function' && ledger) opts.abortAsk = () => {
@@ -1065,6 +1067,7 @@ function createOrchestrator(options) {
   };
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
+    if (autonomyActive(info.projectId)) info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
     const id = ledger.start({ role: 'worker', projectId: info.projectId, megaTaskId: info.megaTaskId, subTaskId: info.subTaskId, attemptId: info.attemptId,
       provider: info.worker.providerId || info.worker.provider, model: info.worker.cli, modelId: info.worker.id, accountKey: info.worker.accountKey, accountType: info.worker.accountType, reason: info.job?.kind === 'research' ? 'approved research' : 'approved work' });
@@ -1072,7 +1075,7 @@ function createOrchestrator(options) {
     catch (error) { ledger.finish(id, 'FAILED'); throw error; }
   };
 
-  let store = { mode: 'manual', grillPropose: true, grillKind: 'me', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
+  let store = { autonomy: {}, mode: 'manual', grillPropose: true, grillKind: 'me', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
   let thinkingLive = null;
   let askToken = 0;
   let plansLive = emptyPlans();
@@ -1085,6 +1088,7 @@ function createOrchestrator(options) {
       const parsed = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
       if (parsed && typeof parsed === 'object') {
         store = {
+          autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           grillPropose: parsed.grillPropose === false ? false : true,
           grillKind: parsed.grillKind === 'docs' ? 'docs' : (parsed.grillPropose === false || parsed.grillKind === 'off' ? 'off' : 'me'),
@@ -1804,6 +1808,7 @@ function createOrchestrator(options) {
       sessions: clone(store.sessions),
       workerHistory: clone(store.workerHistory),
       mode: store.mode === 'auto' ? 'auto' : 'manual',
+      autonomy: clone(store.autonomy),
       grillPropose: store.grillPropose !== false,
       grillKind: store.grillPropose === false ? 'off' : (store.grillKind === 'docs' ? 'docs' : 'me'),
       models: roster(),
@@ -2360,6 +2365,88 @@ function createOrchestrator(options) {
     return tick();
   }
 
+  // Authority lasts one session: a restart must never resume it silently.
+  for (const settings of Object.values(store.autonomy)) if (settings?.enabled && settings.sessionId !== sessionId) settings.enabled = false;
+  async function setAutonomy(projectId, enabled) {
+    const plan = await opts.readPlan();
+    if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
+    store.autonomy[projectId] = enabled ? autonomy.createSettings(sessionId, now()) : { enabled: false };
+    note(projectId, enabled ? 'Project autonomy enabled for this session.' : 'Project autonomy disabled.');
+    persist();
+    return { ok: true, snapshot: await tick(projectId) };
+  }
+
+  function stopAutonomy(projectId, settings, reason) {
+    settings.stopReason = reason;
+    note(projectId, 'Project autonomy stopped: ' + reason);
+    persist();
+  }
+  async function askLeadDecision(projectId, item, settings, question) {
+    const lead = leadModel();
+    if (!lead || typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
+    let spoken;
+    try {
+      spoken = await opts.askModel({ question, model: lead, projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
+    } catch (error) { stopAutonomy(projectId, settings, 'LEAD_FAILED: ' + error.message); return; }
+    const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
+    const decision = spoken?.failure ? null : autonomy.parseDecision(text);
+    if (!decision) { stopAutonomy(projectId, settings, 'UNREADABLE_LEAD_DECISION'); return; }
+    if (decision.assumptions.length) { settings.assumptions = [...settings.assumptions, ...decision.assumptions].slice(-50); note(projectId, 'Lead assumptions: ' + decision.assumptions.join('; ')); }
+    if (decision.done) { stopAutonomy(projectId, settings, 'GOAL_REACHED'); return; }
+    if (!decision.next) { persist(); return; }
+    if (settings.approved.length >= autonomy.LIMITS.maxMegaTasks) { stopAutonomy(projectId, settings, 'MEGATASK_LIMIT'); return; }
+    const prepared = typeof opts.prepareTask === 'function' ? await opts.prepareTask(projectId, decision.next, () => autonomyActive(projectId)) : { ok: false, reason: 'task preparation is unavailable' };
+    if (!prepared?.ok) note(projectId, 'Autonomous next step was not prepared: ' + (prepared?.reason || 'unknown reason'));
+    persist();
+  }
+  async function runAutonomyStep(row, view) {
+    const projectId = row.id, settings = store.autonomy[projectId];
+    const alerts = view.supervisor?.projects?.find(entry => entry.projectId === projectId)?.alerts || [];
+    const step = autonomy.nextStep({ mode: store.mode, sessionId, settings, row, alerts, now: Date.parse(now()) });
+    if (step.type === 'none') return;
+    if (step.type === 'limit') return stopAutonomy(projectId, settings, step.reason);
+    const exclusive = opts.runExclusive || (work => work());
+    const plan = await opts.readPlan();
+    const item = notebookProjects(plan).find(entry => entry.project.id === projectId);
+    if (!item) return;
+    if (step.type === 'start') {
+      settings.started = true; persist();
+      if (typeof opts.applyStart !== 'function') return stopAutonomy(projectId, settings, 'START_UNAVAILABLE');
+      const started = await opts.applyStart(projectId, { timing: 'discretion', grillContext: 'Autonomous mode: no user interview. Decide open questions yourself and report your assumptions.' });
+      if (!started?.ok) stopAutonomy(projectId, settings, 'START_FAILED: ' + (started?.reason || 'unknown reason'));
+      return;
+    }
+    if (step.type === 'approve') {
+      settings.approved.push(step.megaTaskId); persist();
+      const approved = await exclusive(() => approve(projectId, step.megaTaskId, { actor: 'autonomy-setting' }));
+      if (!approved?.ok) stopAutonomy(projectId, settings, 'APPROVAL_REFUSED: ' + (approved?.reason || 'unknown reason'));
+      return;
+    }
+    const goal = item.revisions.at(-1)?.direction;
+    if (step.type === 'evaluate') {
+      settings.evaluated.push(step.megaTaskId); persist();
+      const results = (view.execution?.results || []).filter(result => result.megaTaskId === step.megaTaskId);
+      return askLeadDecision(projectId, item, settings, autonomy.evaluationPrompt({ name: item.project.name, goal, results }));
+    }
+    settings.nudgedKeys.push(step.alert.key); settings.nudgeTimes = [...settings.nudgeTimes, now()].slice(-20); persist();
+    note(projectId, 'Supervisor nudged the lead: ' + step.alert.title);
+    return askLeadDecision(projectId, item, settings, autonomy.nudgePrompt({ name: item.project.name, goal, alert: step.alert }));
+  }
+  // One pass at a time: a lead decision can outlast several monitoring intervals.
+  let autonomyRunning = false;
+  async function autonomyTick() {
+    if (autonomyRunning || shuttingDown || !Object.values(store.autonomy).some(settings => settings?.enabled)) return;
+    autonomyRunning = true;
+    try {
+      const view = snapshot(await opts.readPlan());
+      for (const row of view.projects) {
+        if (!store.autonomy[row.id]?.enabled) continue;
+        try { await runAutonomyStep(row, view); }
+        catch (error) { stopAutonomy(row.id, store.autonomy[row.id], 'AUTONOMY_ERROR: ' + error.message); }
+      }
+    } finally { autonomyRunning = false; }
+  }
+
   async function setGrillPropose(enabled, kind) {
     store.grillPropose = enabled !== false;
     if (!store.grillPropose) store.grillKind = 'off';
@@ -2814,7 +2901,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     persist(); return { ok: true, snapshot: snapshot(await opts.readPlan()) };
   }
 
-  async function approve(projectId, megaTaskId) {
+  async function approve(projectId, megaTaskId, policy = null) {
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
     const plan = await opts.readPlan();
     const item = notebookProjects(plan).find(row => row.project.id === projectId);
@@ -2832,7 +2919,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       if (!mega) return { ok: false, reason: 'No MegaTask proposal is available.' };
       if (typeof megaTaskId !== 'string') return { ok: false, reason: 'Approve requires the explicit proposed MegaTask ID.' };
       if (megaTaskId && megaTaskId !== mega.id) return { ok: false, reason: 'Approval targets a different MegaTask from the current proposal.' };
-      try { bridge.approve(projectId, megaTaskId); } catch (error) { return { ok: false, reason: error.message }; }
+      try { bridge.approve(projectId, megaTaskId, policy); } catch (error) { return { ok: false, reason: error.message }; }
       row.authorizedSessionId = sessionId;
       return { ok: true, megaTaskId: mega.id, snapshot: await tick(projectId) };
     }
@@ -3222,7 +3309,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { tick, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { tick, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
