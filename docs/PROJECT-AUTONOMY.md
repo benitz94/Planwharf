@@ -27,3 +27,7 @@ While autonomy is on, workers run with a Git setting that makes every `git push`
 ## Costs
 
 Each lead review and each nudge is a model call, recorded under the Orchestrator role in **AI usage**. Detecting an alert uses no model.
+
+## Known limit: a worker's claim is not proof
+
+On 2026-11-03, `grok-4.7` with `--json-schema` made one model call and reported files and passing tests that did not exist. The lead's review found the empty folder and asked for the work again. Planwharf does not use that option with Grok. A recorded result is still the worker's own report: inspect the output before relying on it.
