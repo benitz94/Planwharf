@@ -21,8 +21,8 @@ function commandActivity(command) {
 function toolActivity(name, input = {}) {
   if (typeof input === 'string') { try { input = JSON.parse(input); } catch { input = {}; } }
   const target = fileName(input.AbsolutePath || input.TargetFile || input.file_path || input.path || input.file || input.filename);
-  if (/view_file|read_file|read_text|open_file/i.test(name)) return `Reading ${target || 'a project file'}.`;
-  if (/write_to_file|write_file|replace_file|edit_file|apply_patch|replace_string|multi_replace/i.test(name)) {
+  if (/^Read$|view_file|read_file|read_text|open_file/i.test(name)) return `Reading ${target || 'a project file'}.`;
+  if (/^(?:Write|Edit|MultiEdit|NotebookEdit)$|write_to_file|write_file|replace_file|edit_file|apply_patch|replace_string|multi_replace/i.test(name)) {
     const patch = input.patch || input.input || input.CodeContent || '';
     const patchTarget = typeof patch === 'string' ? fileName(patch.match(/\*\*\* (?:Update|Add) File:\s*([^\r\n]+)/)?.[1]) : '';
     return `Writing project files${target || patchTarget ? `: ${target || patchTarget}` : ''}.`;
@@ -30,7 +30,7 @@ function toolActivity(name, input = {}) {
   if (/run_command|exec_command|command_execution|shell|terminal|bash/i.test(name)) return commandActivity(input.CommandLine || input.command || input.cmd || '');
   if (/command_status/i.test(name)) return 'Checking the result of a running command.';
   if (/search|grep/i.test(name)) return `Searching project files${target ? ` near ${target}` : ''}.`;
-  if (/list_dir|list_files|find_by_name/i.test(name)) return 'Inspecting project folders.';
+  if (/^Glob$|list_dir|list_files|find_by_name/i.test(name)) return 'Inspecting project folders.';
   if (/browser|screenshot/i.test(name)) return 'Checking the application in the browser.';
   if (/web|fetch|browse/i.test(name)) return 'Reading documentation and online sources.';
   if (/finish/i.test(name)) return 'Preparing the final work report.';

@@ -9,6 +9,9 @@ const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
 const { modelRouteError } = require('./model-routing.cjs');
 const { createExecutionBridge } = require('./execution.cjs');
+const { renameWithRetry } = require('./atomic-rename.cjs');
+const refusals = require('./provider-refusal.cjs');
+const projectChecks = require('./project-checks.cjs');
 const { linkedWorkspace, requireWorkerWorkspace, within, safeGitWorkspace, gitEnvironment } = require('./project-workspace.cjs');
 const { executionNext, homeNext } = require('./execution-next.cjs');
 const { loadCatalog, providerViews } = require('./provider-catalog.cjs');
@@ -237,8 +240,8 @@ function sliceCount(job, facts, eligible) {
   const dirty = facts && Array.isArray(facts.dirty) ? facts.dirty.length : 0;
   const pool = Number.isFinite(eligible) && eligible > 0 ? eligible : 1;
   if (pool <= 1) return 1;
-  if (kind === 'hard') return Math.min(3, pool);
-  if (kind === 'build') return Math.min(3, pool);
+  if (kind === 'hard') return Math.min(2, pool);
+  if (kind === 'build') return Math.min(2, pool);
   if (dirty >= 4) return Math.min(2, pool);
   return 1;
 }
@@ -272,16 +275,13 @@ function dispatchPlan(workers, job, facts) {
     ? ['Review the approved scope and report findings.', 'Review correctness and edge cases; report findings.', 'Review tests and verification evidence; report findings.']
     : list.length === 1
     ? ['Whole job']
-    : list.length === 2
-      ? [
-        dirty ? 'Inspect uncommitted changes, docs, and pin the slice' : 'Inspect the folder, git, and docs. Pin the slice.',
-        'Implement the bounded slice and add tests.'
-      ]
-      : [
-        dirty ? 'Inspect uncommitted changes, docs, and pin the slice' : 'Inspect the folder, git, and docs. Pin the slice. Do not implement yet.',
-        'Implement the bounded slice in the project folder.',
-        'Add and run tests for the slice. Fix what fails.'
-      ];
+    // Build, then an independent check by a second model. A separate inspection slice cost
+    // minutes in the 2026-11-03 benchmark and its result was redone by the next slice.
+    : [
+      dirty ? 'Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.'
+        : 'Implement the whole job in the project folder, with automated tests. Run the tests before you finish.',
+      'Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
+    ];
   return list.map((worker, index) => ({
     modelId: worker.id,
     label: worker.label || worker.id,
@@ -1148,13 +1148,15 @@ function createOrchestrator(options) {
     fs.mkdirSync(path.dirname(stateFile), { recursive: true });
     const temporary = stateFile + '.' + crypto.randomUUID() + '.tmp';
     fs.writeFileSync(temporary, JSON.stringify(store) + '\n', { encoding: 'utf8', flag: 'wx' });
-    fs.renameSync(temporary, stateFile);
+    renameWithRetry(temporary, stateFile);
   }
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
     resolveWorker: (worker, sub) => sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker' ? worker : resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)),
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
+    onRefusal: (modelId, reason) => { refusals.recordRefusal(store, modelId, reason, now()); persist(); },
+    replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive }),
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
   function entry(id) {
@@ -1310,7 +1312,7 @@ function createOrchestrator(options) {
       const temporary = file + '.' + crypto.randomUUID() + '.tmp';
       const fd = fs.openSync(temporary, 'wx');
       try { fs.writeFileSync(fd, JSON.stringify(payload, null, 2) + '\n', 'utf8'); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-      fs.renameSync(temporary, file);
+      renameWithRetry(temporary, file);
     }
     row.checkpoint = { ...payload, path: file };
     const live = attempts.getActiveAttempt({ projectId: id, taskId: job && job.id })
@@ -1546,6 +1548,12 @@ function createOrchestrator(options) {
       if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
+      // A lead whose provider just refused work (credits, quota) hands over to another provider.
+      if (picked && refusals.activeRefusal(store, picked.id, Date.parse(now()))) {
+        const provider = picked.providerId || picked.provider;
+        const other = list.find(item => (item.providerId || item.provider) !== provider && canOrchestrate(item) && !usagePolicy(item, plansLive).blocked && !planExhausted(plansLive, item.quotaPoolId || item.plan));
+        if (other) return { ...other, fallbackFrom: picked.id };
+      }
     }
     return null;
   }
@@ -1584,6 +1592,8 @@ function createOrchestrator(options) {
       const used = usedOf(store.usage, item.id);
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
+      const refused = refusals.activeRefusal(store, item.id, Date.parse(now()));
+      if (refused) Object.assign(resolved, { available: false, unavailableReason: 'Provider refused work until ' + refused.until + ': ' + refused.reason });
       return resolved;
     });
   }
@@ -2382,15 +2392,30 @@ function createOrchestrator(options) {
     persist();
   }
   async function askLeadDecision(projectId, item, settings, question) {
-    const lead = leadModel();
-    if (!lead || typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
-    let spoken;
-    try {
-      spoken = await opts.askModel({ question, model: lead, projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
-    } catch (error) { stopAutonomy(projectId, settings, 'LEAD_FAILED: ' + error.message); return; }
-    const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
-    const decision = spoken?.failure ? null : autonomy.parseDecision(text);
-    if (!decision) { stopAutonomy(projectId, settings, 'UNREADABLE_LEAD_DECISION'); return; }
+    if (typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
+    // One retry with a lead from another provider: a refusal, a timeout or an unreadable reply
+    // from one model must not end autonomy while another eligible lead exists.
+    let decision = null, failure = null;
+    const tried = new Set();
+    for (let round = 0; round < 2 && !decision; round += 1) {
+      let lead = leadModel();
+      if (lead && tried.has(lead.id)) {
+        const used = new Set([...tried].map(id => roster().find(model => model.id === id)).filter(Boolean).map(model => model.providerId || model.provider));
+        lead = roster().find(model => !tried.has(model.id) && !used.has(model.providerId || model.provider) && canOrchestrate(model) && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)) || null;
+      }
+      if (!lead) break;
+      tried.add(lead.id);
+      let spoken;
+      try {
+        spoken = await opts.askModel({ question, model: lead, projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
+      } catch (error) { failure = 'LEAD_FAILED: ' + error.message; continue; }
+      const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
+      const refused = spoken?.failure ? refusals.refusalReason(text) : null;
+      if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, `Lead ${lead.label || lead.id} refused work: ${refused}`); }
+      decision = spoken?.failure ? null : autonomy.parseDecision(text);
+      if (!decision) { failure = 'UNREADABLE_LEAD_DECISION'; note(projectId, `Lead ${lead.label || lead.id} gave no readable decision${spoken?.failure ? ' (' + spoken.failure + ')' : ''}.`); }
+    }
+    if (!decision) { stopAutonomy(projectId, settings, failure || 'NO_LEAD_AVAILABLE'); return; }
     if (decision.assumptions.length) { settings.assumptions = [...settings.assumptions, ...decision.assumptions].slice(-50); note(projectId, 'Lead assumptions: ' + decision.assumptions.join('; ')); }
     if (decision.done) { stopAutonomy(projectId, settings, 'GOAL_REACHED'); return; }
     if (!decision.next) { persist(); return; }
@@ -2398,6 +2423,22 @@ function createOrchestrator(options) {
     const prepared = typeof opts.prepareTask === 'function' ? await opts.prepareTask(projectId, decision.next, () => autonomyActive(projectId)) : { ok: false, reason: 'task preparation is unavailable' };
     if (!prepared?.ok) note(projectId, 'Autonomous next step was not prepared: ' + (prepared?.reason || 'unknown reason'));
     persist();
+  }
+  // The lead chooses the crew for a multi-slice MegaTask. Any failure keeps the proposal as it is.
+  async function assignByLead(projectId, item, megaTaskId) {
+    let subs;
+    try { subs = bridge.paint(bridge.target(projectId, megaTaskId)).subTasks || []; } catch { return; }
+    const lead = leadModel();
+    if (subs.length < 2 || !lead || typeof opts.askModel !== 'function') return;
+    const workers = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, subs[0]) && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan));
+    if (workers.length < 2) return;
+    const question = autonomy.assignmentPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), workers: workers.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider })) });
+    let spoken;
+    try { spoken = await opts.askModel({ question, model: lead, projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return; }
+    if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
+    const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, workers.map(model => model.id));
+    if (!choice) { note(projectId, 'Lead crew choice was unreadable; keeping the proposed crew.'); return; }
+    try { bridge.reassign(projectId, megaTaskId, choice.assign, choice.why); } catch (error) { note(projectId, 'Lead crew choice was refused: ' + error.message); }
   }
   async function runAutonomyStep(row, view) {
     const projectId = row.id, settings = store.autonomy[projectId];
@@ -2418,6 +2459,7 @@ function createOrchestrator(options) {
     }
     if (step.type === 'approve') {
       settings.approved.push(step.megaTaskId); persist();
+      await assignByLead(projectId, item, step.megaTaskId);
       const approved = await exclusive(() => approve(projectId, step.megaTaskId, { actor: 'autonomy-setting' }));
       if (!approved?.ok) stopAutonomy(projectId, settings, 'APPROVAL_REFUSED: ' + (approved?.reason || 'unknown reason'));
       return;
@@ -2426,7 +2468,17 @@ function createOrchestrator(options) {
     if (step.type === 'evaluate') {
       settings.evaluated.push(step.megaTaskId); persist();
       const results = (view.execution?.results || []).filter(result => result.megaTaskId === step.megaTaskId);
-      return askLeadDecision(projectId, item, settings, autonomy.evaluationPrompt({ name: item.project.name, goal, results }));
+      const folder = linkedWorkspace(item.project.folder);
+      let checks = null;
+      try { checks = folder ? await projectChecks.runChecks(folder, { env: autonomy.pushGuardEnvironment() }) : null; } catch { checks = null; }
+      if (checks) note(projectId, `Planwharf ran ${checks.label}: ${checks.timedOut ? 'timed out' : checks.exitCode === 0 ? 'passed' : 'failed, exit ' + checks.exitCode} in ${checks.seconds} s.`);
+      // Clear evidence needs no lead call: two or more slices (build, then an independent check) all
+      // complete without blockers, and a fresh passing test run. Anything less goes to the lead.
+      if (autonomy.cleanFinish(results, checks)) {
+        note(projectId, 'Goal accepted without a lead call: every slice finished without blockers and the fresh test run passed.');
+        return stopAutonomy(projectId, settings, 'GOAL_REACHED');
+      }
+      return askLeadDecision(projectId, item, settings, autonomy.evaluationPrompt({ name: item.project.name, goal, results, checks }));
     }
     settings.nudgedKeys.push(step.alert.key); settings.nudgeTimes = [...settings.nudgeTimes, now()].slice(-20); persist();
     note(projectId, 'Supervisor nudged the lead: ' + step.alert.title);

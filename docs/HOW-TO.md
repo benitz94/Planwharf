@@ -91,8 +91,9 @@ Choose the lead in **Functions** or the Orchestrator view. The lead receives pro
 | `codex` | Codex | `PLANWHARF_CODEX` |
 | `antigravity` | Antigravity (`agy`) | `PLANWHARF_ANTIGRAVITY` |
 | `grok` | Grok | `PLANWHARF_GROK` |
+| `claude` | Claude Code (`claude`) | `PLANWHARF_CLAUDE` |
 
-Install and authenticate the CLIs you intend to use. On Windows, executable overrides must point to native executables. Planwharf also checks the usual Grok and Antigravity locations under `%USERPROFILE%\.grok\bin` and `%USERPROFILE%\.gemini\bin`, and resolves Codex's native binary, including npm package installations.
+Install and authenticate the CLIs you intend to use. On Windows, executable overrides must point to native executables. Planwharf also checks the usual Grok and Antigravity locations under `%USERPROFILE%\.grok\bin` and `%USERPROFILE%\.gemini\bin`, checks Claude Code under `%USERPROFILE%\.local\bin` (or `~/.local/bin`), and resolves Codex's native binary, including npm package installations. For Claude Code, run `claude auth login`, restart Planwharf, refresh models and enable the desired roles; see [subscription CLI setup](EXTERNAL-PROVIDERS.md#claude-code-subscription-cli).
 
 A model label does not select a provider or grant account access. Enabled, available, eligible, and quota remaining are separate conditions. Planwharf rejects incompatible routes and reports account or launch failures without silently substituting another provider. Provider catalogs can refresh from the installed adapter; the current interface includes **Refresh Grok models**. A listed model is not proof of a successful inference with your account. Historical verification reports describe the account and date tested, rather than what every new user can access.
 

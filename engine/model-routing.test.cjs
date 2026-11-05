@@ -6,7 +6,7 @@ const { normalizeModels, pickWorker } = require('./orchestrator.js');
 const { launchSpec } = require('./providers.cjs');
 const { cliModelOf } = require('./runner.cjs');
 
-for (const [provider, cli] of [['codex', 'gpt-6-astra'], ['grok', 'grok-4.6'], ['antigravity', 'claude-opus-future'], ['antigravity', 'gemini-future']]) {
+for (const [provider, cli] of [['codex', 'gpt-6-astra'], ['grok', 'grok-4.6'], ['antigravity', 'claude-opus-future'], ['antigravity', 'gemini-future'], ['claude', 'claude-sonnet-fixture']]) {
   assert.equal(resolveCliModel({ provider, cli }), cli);
 }
 for (const cli of ['qwen/future-exact-id', 'kimi-future-exact-id', 'Claude/custom-id', 'new-vendor:model+version']) {
@@ -27,7 +27,7 @@ assert.equal(invalid.available, false);
 assert.equal(invalid.enabled, false);
 assert.match(invalid.unavailableReason, /mismatch/);
 assert.equal(pickWorker([foreign]), null);
-for (const provider of ['claude', 'qwen', 'kimi', '__proto__', 'bogus']) {
+for (const provider of ['qwen', 'kimi', '__proto__', 'bogus']) {
   assert.match(modelRouteError({ provider, cli: 'any-exact-id', modelRouting: 'configured' }), /unsupported provider/);
 }
 assert.equal(resolveCliModel({ id: 'grok-label', cli: 'grok-4.6' }), null, 'Labels and IDs never infer a provider');

@@ -15,7 +15,7 @@ test('real configured CLI receives dedicated skill once and records only stdin t
 });
 test('worker job carries dedicated instructions once and records exact attempt identity', t => {
  const dir = fixture(t), prompt = 'UNIQUE-WORKER-PROCEDURE', d = delivery(dir, prompt), model = cliModel(dir, receivingScript);
- const job = { folder: dir, result: path.join(dir, 'result.txt'), projectId: d.projectId, attempt: d.attemptId, title: 'Fixture only', detail: 'Inspect isolated fixture.', skillsPrompt: prompt, skillDelivery: d, model };
+ const job = { linkedFolder: dir, folder: dir, result: path.join(dir, 'result.txt'), projectId: d.projectId, attempt: d.attemptId, title: 'Fixture only', detail: 'Inspect isolated fixture.', skillsPrompt: prompt, skillDelivery: d, model };
  const input = path.join(dir, 'job.json'); fs.writeFileSync(input, JSON.stringify(job));
  assert.equal(parseArgs(['node', 'runner', '--job-file', input]).skillsPrompt, prompt);
  assert.equal(promptFor(job).split(prompt).length - 1, 1);

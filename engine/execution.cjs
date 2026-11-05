@@ -8,6 +8,7 @@ const { linkedWorkspace, within, safeGitWorkspace, gitEnvironment } = require('.
 const { executionNext } = require('./execution-next.cjs');
 const { adapterFor } = require('./provider-adapters.cjs');
 const { checkpointDiff } = require('./project-history.cjs');
+const { refusalReason } = require('./provider-refusal.cjs');
 const clone = value => structuredClone(value);
 const fingerprint = job => crypto.createHash('sha256').update(JSON.stringify([job.id, job.title, job.detail, job.revision_id || null, ...(job.goldModel ? [job.goldModel] : [])])).digest('hex');
 
@@ -133,6 +134,24 @@ function createExecutionBridge(options) {
     attempts.closeAttempt({ attemptId: part.attemptId, reason: result.status.toLowerCase() });
     event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
   }
+  // A provider that refused the slice for credits or quota did no work: close that attempt,
+  // put the model on cooldown, and give the slice to another eligible model.
+  function rerouteRefusal(mega, sub, part) {
+    if (typeof options.onRefusal !== 'function' || typeof options.replacement !== 'function' || (sub.refusalReroutes || 0) >= 2) return false;
+    let text = ''; try { text = fs.readFileSync(part.logPath, 'utf8'); } catch {}
+    const reason = refusalReason(text);
+    if (!reason) return false;
+    options.onRefusal(sub.assignedModelId, reason);
+    const next = options.replacement(sub, [sub.assignedModelId]);
+    if (!next) return false;
+    attempts.closeAttempt({ attemptId: part.attemptId, reason: 'provider refused' });
+    const from = sub.assignedModelId;
+    Object.assign(sub, { status: 'PENDING', refusalReroutes: (sub.refusalReroutes || 0) + 1, fallbackFrom: from, assignedModelId: next.id, proposedProvider: next.provider, proposedCli: next.cli });
+    part.alive = false; part.refused = reason;
+    event(mega.projectId, 'MODEL_REFUSAL_FALLBACK', `${from} refused the slice (${reason}). Reassigned to ${next.id}.`, { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: next.id });
+    persist();
+    return true;
+  }
   function reconcile(mega) {
     const row = rowFor(mega.projectId, mega.id);
     for (const sub of subtasks(mega).filter(sub => sub.status === 'RUNNING')) {
@@ -143,6 +162,7 @@ function createExecutionBridge(options) {
       if (part.observedAlive) continue;
       const result = readValidatedResult(part.structuredResultPath, identity(mega, sub, part.attemptId), part.exitPath);
       const valid = result && (sub.type !== 'RESEARCH' || result.status !== 'COMPLETE' || reportExists(result, part.folder));
+      if (!valid && rerouteRefusal(mega, sub, part)) continue;
       collect(mega, sub, part, valid ? result : technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
     }
     row.workerAlive = (row.dispatch || []).some(part => part.alive);
@@ -396,6 +416,24 @@ function createExecutionBridge(options) {
     if (!mega.currentCheckpointId) checkpoint(item, job, mega, 'application update');
     paint(mega); persist(); return mega;
   }
-  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore };
+  // The lead may reassign the slices of a proposed MegaTask before approval.
+  function reassign(projectId, megaTaskId, modelIds, why = '') {
+    const mega = target(projectId, megaTaskId);
+    if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposed MegaTask can be reassigned.');
+    const subs = subtasks(mega);
+    if (!Array.isArray(modelIds) || modelIds.length !== subs.length) throw new Error('One model per slice is required.');
+    const chosen = modelIds.map((id, index) => {
+      const model = models().find(item => item.id === id && item.enabled && item.available !== false);
+      if (!model || options.workerEligible && !options.workerEligible(model, subs[index])) throw new Error(`Model ${id} cannot take slice ${index + 1}.`);
+      return model;
+    });
+    if (subs.every((sub, index) => sub.assignedModelId === chosen[index].id)) return mega;
+    subs.forEach((sub, index) => Object.assign(sub, { assignedModelId: chosen[index].id, proposedProvider: chosen[index].provider, proposedCli: chosen[index].cli }));
+    mega.blockers = proposalBlockers(mega);
+    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${subs.map((sub, index) => `${sub.title} to ${chosen[index].label || chosen[index].id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
+    paint(mega); persist();
+    return mega;
+  }
+  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign };
 }
 module.exports = { createExecutionBridge, repoState };

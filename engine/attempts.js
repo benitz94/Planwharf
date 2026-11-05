@@ -62,7 +62,7 @@
     function writeUnlocked(store) {
       const temporary = file + '.' + crypto.randomUUID() + '.tmp';
       fs.writeFileSync(temporary, JSON.stringify(store) + '\n', { encoding: 'utf8', flag: 'wx' });
-      fs.renameSync(temporary, file);
+      require('./atomic-rename.cjs').renameWithRetry(temporary, file);
     }
 
     return {

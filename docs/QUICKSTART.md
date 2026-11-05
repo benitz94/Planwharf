@@ -18,7 +18,7 @@ Example goal: "Build a local HTML counter with increment and reset buttons. Keep
 
 ## 3. Choose providers, models and allowed roles
 
-Install and authenticate the coding CLIs you want to use: **Codex / ChatGPT**, **Grok CLI**, or **Antigravity / Gemini**. Provider/account availability determines which exact models you can actually run.
+Install and authenticate the coding CLIs you want to use: **Codex / ChatGPT**, **Grok CLI**, **Antigravity / Gemini**, or **Claude Code**. For Claude Code, run `claude auth login`, restart Planwharf and enable the desired models under **Claude Code**; see [setup and limitations](EXTERNAL-PROVIDERS.md#claude-code-subscription-cli). Provider/account availability determines which exact models you can actually run.
 
 For other providers, open **Usage and permissions → Add API / CLI connection**. Direct OpenAI-compatible and Anthropic Messages APIs accept your endpoint, key environment variable name and exact model IDs. Configured CLIs require a supported structured event protocol and explicit permission arguments. See [external connection setup](EXTERNAL-PROVIDERS.md). API billing is separate from chat subscriptions; configured access is not proof of successful inference.
 

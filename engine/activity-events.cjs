@@ -20,10 +20,10 @@ function sanitize(value, limit = LIMITS.text) {
 function activityCapabilities(context = {}) {
   const adapter = context.adapter || context.provider;
   const api = adapter === 'api';
-  const structured = adapter === 'antigravity' || api || context.lead === true && (adapter === 'codex' || adapter === 'grok');
+  const structured = adapter === 'antigravity' || adapter === 'claude' || api || context.lead === true && (adapter === 'codex' || adapter === 'grok');
   return {
     configuredAdapter: sanitize(adapter || 'unknown', 80),
-    expectedFormat: structured ? api ? 'planwharf-api-bridge' : adapter === 'antigravity' ? 'stream-json' : adapter === 'codex' ? 'json' : 'streaming-messages-json' : adapter === 'codex' || adapter === 'grok' ? 'plain' : 'unknown',
+    expectedFormat: structured ? api ? 'planwharf-api-bridge' : adapter === 'antigravity' || adapter === 'claude' ? 'stream-json' : adapter === 'codex' ? 'json' : 'streaming-messages-json' : adapter === 'codex' || adapter === 'grok' ? 'plain' : 'unknown',
     detailedEventsExpected: structured,
     liveDeliveryVerified: false,
     validatedResults: false
@@ -47,7 +47,7 @@ function normalizeEvent(row, context, describe) {
   const block = row.content_block || row.event?.content_block;
   if (item?.type === 'file_change' && item.changes !== undefined && !Array.isArray(item.changes)) return unknown(context);
   const protocol = step ? 'antigravity-step' : item || row.type === 'thread.started' || /^turn\./.test(row.type || '') ? 'item-events' : block || row.type === 'assistant' || row.type === 'result' ? 'message-events' : row.event === 'result' || row.event === 'init' ? 'antigravity-result' : 'unknown';
-  const compatible = { codex: ['item-events'], api: ['item-events'], antigravity: ['antigravity-step', 'antigravity-result'], grok: ['message-events'] };
+  const compatible = { codex: ['item-events'], api: ['item-events'], antigravity: ['antigravity-step', 'antigravity-result'], grok: ['message-events'], claude: ['message-events'] };
   const adapter = context.adapter || context.provider;
   const expected = Object.hasOwn(compatible, adapter) ? compatible[adapter] : null;
   if (expected && protocol !== 'unknown' && !expected.includes(protocol)) return unknown(context, protocol);

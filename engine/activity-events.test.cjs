@@ -33,6 +33,14 @@ assert.doesNotMatch(JSON.stringify(agy), /confidential source|\/private/);
 const block = event({ type: 'content_block_start', content_block: { type: 'tool_use', name: 'read_file', input: { path: '/private/config.js' } } }, { provider: 'grok' });
 assert.equal(block.protocol, 'message-events');
 assert.equal(block.classification, 'read');
+for (const [name, classification] of [['Read', 'read'], ['Write', 'working'], ['Edit', 'working'], ['Glob', 'read'], ['Bash', 'test']]) {
+  const translated = event({ type: 'assistant', message: { content: [{ type: 'tool_use', name, input: { file_path: '/private/fixture.txt', content: 'PRIVATE-FILE-CONTENT', command: 'node --test' } }] } }, { provider: 'claude' });
+  assert.equal(translated.classification, classification);
+  assert.equal(translated.provenance, 'observed'); assert.equal(translated.validated, false);
+  assert.doesNotMatch(JSON.stringify(translated), /PRIVATE-FILE-CONTENT/);
+}
+assert.equal(activityCapabilities({ adapter: 'claude' }).expectedFormat, 'stream-json');
+assert.equal(event({ type: 'item.started', item: { type: 'command_execution', command: 'node --test' } }, { adapter: 'claude' }).provenance, 'unknown');
 const itemShape = { type: 'item.started', item: { type: 'command_execution', command: 'npm test' } };
 assert.equal(event(itemShape, { adapter: 'antigravity' }).provenance, 'unknown');
 assert.equal(event({ event: 'step_update', step_update: { step_type: 'tool', tool_name: 'run_command', parameters: { command: 'npm test' } } }, { adapter: 'codex' }).provenance, 'unknown');

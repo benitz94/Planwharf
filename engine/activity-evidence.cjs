@@ -35,7 +35,7 @@ function technicalEvidence(tail, context = {}) {
     }
   };
   const adapter = context.adapter || context.provider;
-  const known = ['codex', 'api', 'antigravity', 'grok'].includes(adapter);
+  const known = ['codex', 'api', 'antigravity', 'grok', 'claude'].includes(adapter);
   if (!known) warn('Adapter identity is unknown; protocol excerpts are not verified provider evidence.');
   let raw = Buffer.from(String(tail || ''));
   if (raw.length > LIMITS.tailBytes) {
@@ -81,6 +81,14 @@ function technicalEvidence(tail, context = {}) {
         if (typeof command === 'string') entry.command = field(command, LIMITS.commandBytes);
       }
       warn('Antigravity excerpts contain retained tool command/state metadata only; detailed output is not verified.');
+    } else if (adapter === 'claude') {
+      const block = row.content_block || row.event?.content_block;
+      const tool = block?.type === 'tool_use' ? block : row.type === 'assistant' && Array.isArray(row.message?.content) ? row.message.content.find(part => part?.type === 'tool_use') : null;
+      if (!tool || typeof tool.name !== 'string') { warn('Unsupported structured payload omitted; raw source content is not displayed.'); continue; }
+      entry = { protocol: 'message-events', provenance: 'observed', eventType: field(row.type, 80), tool: field(tool.name, 120) };
+      // File payloads, read results and arbitrary tool outputs stay in the raw log.
+      if (['Bash', 'PowerShell'].includes(tool.name) && typeof tool.input?.command === 'string') entry.command = field(tool.input.command, LIMITS.commandBytes);
+      warn('Claude Code excerpts contain retained tool metadata only; detailed output is not verified.');
     } else { warn('Unsupported structured payload omitted; raw source content is not displayed.'); continue; }
     if (typeof row.timestamp === 'string' && Number.isFinite(Date.parse(row.timestamp))) entry.sourceTimestamp = field(row.timestamp, 80);
     append(entry);

@@ -47,7 +47,7 @@ function assignmentSession({ projectId, row = {}, part = {}, execution = {}, tai
   // Never relabel historical work from today's mutable model catalog.
   const provider = part.providerId || part.provider || result?.provider || null;
   const model = part.cli || result?.cli || null;
-  const adapter = part.adapter || (['codex', 'grok', 'antigravity'].includes(provider) ? provider : null);
+  const adapter = part.adapter || (['codex', 'grok', 'antigravity', 'claude'].includes(provider) ? provider : null);
   const identity = result && { resultId: 'R-' + attemptId, attemptId, megaTaskId, subTaskId: sub.id };
   const validated = Boolean(result && provider && model && result.provider === provider && result.cli === model && result.evidenceKind !== 'TECHNICAL' && validateResult(result, identity) && (result.status !== 'COMPLETE' || result.exitCode === 0));
   const role = sub ? assignmentRole(sub) : ['worker', 'reviewer'].includes(part.role) ? part.role : null;

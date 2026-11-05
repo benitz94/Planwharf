@@ -7,9 +7,10 @@ It is off by default. To use it, select **Automatic** mode and choose **Turn on 
 ## What happens
 
 1. Planwharf starts the project without a clarification interview. The lead decides open questions itself and reports its assumptions.
-2. Each proposed MegaTask is approved by your setting. The timeline records "by the project autonomy setting".
-3. When a MegaTask finishes, the lead reviews the recorded results. It either declares the goal reached or names the next objective.
-4. When the Supervisor detects a new alert, the backend writes a message from the detected facts and sends it to the lead.
+2. A build job is split into two slices: one model implements the whole job with tests, then a model from another provider verifies it, concentrating on what the tests do not cover, and fixes what fails. Before approval the lead picks the worker for each slice: the fastest capable builder first, then the most thorough checker. If its reply is unusable, the proposed crew stays.
+3. Each proposed MegaTask is approved by your setting. The timeline records "by the project autonomy setting".
+4. When a MegaTask finishes, Planwharf runs the project's tests itself (`npm test`, or `node --test` when test files exist) If every slice finished without blockers and the tests pass, the goal is reached without a lead call. Otherwise Planwharf gives the lead the fresh result. The lead reviews it with the recorded results, without running commands, and either declares the goal reached or names the next objective.
+5. When the Supervisor detects a new alert, the backend writes a message from the detected facts and sends it to the lead.
 
 Model text can only declare the goal reached or name an objective. It cannot approve work, change settings, or stop workers.
 
@@ -17,7 +18,8 @@ Model text can only declare the goal reached or name an objective. It cannot app
 
 - At most 5 approved MegaTasks per activation, and 3 Supervisor nudges per hour. Reaching the MegaTask limit stops autonomy and shows the reason.
 - **Pause** and **Stop** are always respected. A stopped or checkpointed project is not restarted.
-- An unreadable lead reply stops autonomy. Nothing is guessed from it.
+- An unreadable or failed lead reply is retried once with a lead from another provider. If that also fails, autonomy stops. Nothing is guessed from it.
+- A worker or lead refused for credits, quota or a usage limit is skipped for an hour, and its slice moves to another eligible model. The timeline records the switch.
 - Provider quota thresholds still apply.
 
 ## Pushes
@@ -26,7 +28,7 @@ While autonomy is on, workers run with a Git setting that makes every `git push`
 
 ## Costs
 
-Each lead review and each nudge is a model call, recorded under the Orchestrator role in **AI usage**. Detecting an alert uses no model.
+Each crew choice, lead review and nudge is a model call, recorded under the Orchestrator role in **AI usage**. Detecting an alert and running the project's tests use no model.
 
 ## Known limit: a worker's claim is not proof
 

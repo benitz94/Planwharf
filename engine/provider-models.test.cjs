@@ -53,7 +53,7 @@ const { createProviderModels } = require('./provider-models.cjs');
   const planFile = path.join(dir, 'notebook.json');
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
   const cacheFile = path.join(dir, 'catalogs.json');
-  const fixtureProviders = ['codex', 'grok', 'antigravity'].map(adapter => ({ id: adapter + '-cache', adapter, account: { key: 'isolated-account' }, label: adapter }));
+  const fixtureProviders = ['codex', 'grok', 'antigravity', 'claude'].map(adapter => ({ id: adapter + '-cache', adapter, account: { key: 'isolated-account' }, label: adapter }));
   const freshModels = () => fixtureProviders.flatMap(provider => [
     { id: provider.id + '-retired', providerId: provider.id, cli: provider.adapter + '-retired', available: true, enabled: true, roles: { orchestrator: true, worker: false, reviewer: true } },
     { id: provider.id + '-current', providerId: provider.id, cli: provider.adapter + '-current', available: false, enabled: true }

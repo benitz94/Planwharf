@@ -350,6 +350,14 @@
           "unavailableReason": "Antigravity access to this exact model is unverified. Refresh models for the active CLI login."
         }
       ]
+    },
+    {
+      "id": "claude",
+      "label": "Claude Code",
+      "adapter": "claude",
+      "enabled": true,
+      "quotaPoolId": "Claude",
+      "models": []
     }
   ]
 }

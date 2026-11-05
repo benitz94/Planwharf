@@ -67,7 +67,7 @@ Home notes support add, pin/unpin and delete. Notes persist per project independ
 
 ## Providers, exact models and role permissions
 
-Supported execution adapters are Codex / ChatGPT, Grok CLI and Antigravity / Gemini. Install and authenticate the CLI separately. Planwharf uses its existing account; it has no accounts/login system and no paid API dependency.
+Supported native CLI execution adapters are Codex / ChatGPT, Grok CLI, Antigravity / Gemini and Claude Code. [Claude Code setup and limitations](EXTERNAL-PROVIDERS.md#claude-code-subscription-cli) describe subscription login and exact model discovery. Install and authenticate the CLI separately. Planwharf uses its existing account; it has no accounts/login system and no paid API dependency.
 
 Enable the provider and select each model's **Allowed roles**:
 
@@ -99,7 +99,7 @@ Normal accounts keep the existing provider and model names. Confirmed team, Busi
 
 The account is the CLI login used by workers, which may differ from the account open in your browser. For Grok, stop active work before changing accounts, use the CLI's logout/login flow, then use **Refresh models** or reopen Planwharf. Account changes invalidate old availability and remaining-quota readings. Roles are saved separately using a local opaque account identifier; returning to a recognized account restores its role flags. Existing settings are adopted by the first recognized account; a newly seen account starts with no roles selected and needs explicit configuration.
 
-Only the current CLI login is usable; Planwharf does not keep both accounts signed in or silently fall back between them. Codex classification uses selected-workspace plan metadata; Grok classification uses the CLI's team principal metadata. Antigravity currently exposes no verified account-type/identity interface in this integration, so it keeps its existing names and automatic per-account role separation is unavailable. No credentials, email addresses or raw login profiles are copied into exports or invocation evidence.
+Only the current CLI login is usable; Planwharf does not keep both accounts signed in or silently fall back between them. Codex classification uses selected-workspace plan metadata; Grok classification uses the CLI's team principal metadata. Antigravity and Claude Code currently have no verified account-type/identity binding in this integration, so it keeps its existing names and automatic per-account role separation is unavailable. No credentials, email addresses or raw login profiles are copied into exports or invocation evidence.
 
 ### Reading remaining quota
 

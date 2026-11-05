@@ -59,7 +59,7 @@ function make(plan, inspectFolder, extra) {
   assert.equal(pickWorker(models, { job: { title: 'inspect' }, skip: ['gemini'] }).id, 'grok');
   assert.equal(lastActivity('hello\nWriting calculator.py'), 'Writing calculator.py');
   assert.match(interpretActivity('Writing calculator.py\n', { fileCount: 3 }, true), /Writing project files/);
-  assert.equal(sliceCount({ title: 'Implement the parser', detail: 'Write code.' }, {}, 3), 3);
+  assert.equal(sliceCount({ title: 'Implement the parser', detail: 'Write code.' }, {}, 3), 2);
   assert.equal(sliceCount({ title: 'Check the repo' }, {}, 3), 1);
   assert.equal(ORCH_NAME, 'Orchestrator');
   assert.deepEqual(parseGrillQuestions('["Is this the calculator slice? Recommended: yes."]'), ['Is this the calculator slice? Recommended: yes.']);
@@ -149,7 +149,7 @@ function make(plan, inspectFolder, extra) {
   assert.ok(full.some(item => item.id === 'gpt-6-astra' && item.kind === 'premium' && item.available === true));
   assert.equal(canOrchestrate(full.find(item => item.id === 'gpt-6-astra')), true);
   const crew = pickWorkers(full, { job: { title: 'Implement the parser', detail: 'Write code.' }, facts: { dirty: ['a', 'b', 'c', 'd'] } });
-  assert.equal(crew.length, 3);
+  assert.equal(crew.length, 2);
   assert.equal(crew[0].id, 'luna');
   assert.ok(full.filter(item => item.plan === 'ChatGPT').length > 1);
   assert.ok(full.filter(item => item.plan === 'Grok').length > 1);

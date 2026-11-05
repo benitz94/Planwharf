@@ -17,3 +17,4 @@
 .soundtrack-player :focus-visible, .soundtrack-settings :focus-visible { outline: 2px solid var(--accent, #3b82f6); outline-offset: 3px; }
 body.ship-view .soundtrack-player { left: .6rem; top: 4.5rem; bottom: auto; transform: none; max-width: min(720px, calc(100vw - 1.2rem)); background: var(--dialog-bg, #15212f); }
 @media (max-width: 650px) { .soundtrack-player { width: calc(100vw - 1.2rem); font-size: .7rem; padding: .35rem; } .soundtrack-player .soundtrack-current { flex-basis: 100%; max-width: 100%; } .soundtrack-player button { padding: .3rem; } .soundtrack-player .soundtrack-field { font-size: .7rem; } }
+body:has(.soundtrack-player:not([hidden])) { padding-bottom: 4.5rem; }

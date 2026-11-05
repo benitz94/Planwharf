@@ -32,7 +32,7 @@ const options = {
   const orchestra = createOrchestrator(options);
   await orchestra.setOrchestrator('fixture-1');
   await orchestra.approve('alpha');
-  assert.equal(launches.length, 3);
+  assert.equal(launches.length, 2);
   await orchestra.stop('alpha');
   const before = launches.length;
   const requested = await orchestra.ask('Implement the parser and resume support for Sayaku.', 'beta');
@@ -58,7 +58,7 @@ const options = {
 
   const approved = await orchestra.approve('beta');
   const parts = approved.snapshot.projects.find(row => row.id === 'beta').dispatch;
-  assert.equal(parts.length, 3);
+  assert.equal(parts.length, 2);
   const launchCount = launches.length, killCount = killed.length;
   assert.equal((await orchestra.stopWorker('alpha', parts[0].pid)).ok, false, 'PID must belong to the requested project');
   failKill = true;
@@ -68,7 +68,7 @@ const options = {
   assert.equal(stopped.ok, true);
   assert.deepEqual(killed.slice(killCount), [parts[0].pid]);
   assert.equal(alive.has(parts[1].pid), true);
-  assert.equal(alive.has(parts[2].pid), true);
+  // Build jobs now run two slices (implement, verify); there is no third worker.
   assert.equal((await orchestra.stopWorker('beta', parts[0].pid)).ok, false);
   for (let i = 0; i < 3; i++) await orchestra.tick();
   assert.equal(launches.length, launchCount, 'Monitor must not replace a worker stopped by the user');

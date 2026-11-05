@@ -45,13 +45,17 @@ function providerEnvironment(provider, inherited = process.env, platform = proce
 }
 
 function executable(provider) {
-  const names = { grok: 'grok', codex: 'codex', antigravity: 'agy' };
+  const names = { grok: 'grok', codex: 'codex', antigravity: 'agy', claude: 'claude' };
   const name = names[provider];
   if (!name) return null;
   const override = process.env['PLANWHARF_' + provider.toUpperCase()];
+  if (provider === 'claude' && override) {
+    try { return fs.statSync(override).isFile() ? override : null; } catch { return null; }
+  }
   if (override && fs.existsSync(override)) return override;
   const pinned = provider === 'grok' ? path.join(os.homedir(), '.grok', 'bin', 'grok.exe')
-    : provider === 'antigravity' ? path.join(os.homedir(), '.gemini', 'bin', 'agy.exe') : '';
+    : provider === 'antigravity' ? path.join(os.homedir(), '.gemini', 'bin', 'agy.exe')
+    : provider === 'claude' ? path.join(os.homedir(), '.local', 'bin', process.platform === 'win32' ? 'claude.exe' : 'claude') : '';
   if (pinned && fs.existsSync(pinned)) return pinned;
   for (const dir of (process.env.PATH || '').split(path.delimiter)) {
     if (provider === 'codex' && process.platform === 'win32') {
@@ -94,7 +98,14 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   let args;
   let stdin;
   let promptFile;
-  if (adapter === 'grok') {
+  const final = require('./structured-final.cjs');
+  const finalSchema = !lead && model.apiResultOutputPath && model.apiResultIdentity && final.supportsFinalResult({ adapter }) ? JSON.stringify(final.resultSchema(model.apiResultIdentity)) : null;
+  if (adapter === 'claude') {
+    args = ['-p', '--model', cli, '--output-format', 'stream-json', '--verbose', '--include-partial-messages',
+      ...require('./claude.cjs').isolatedArgs, '--disallowedTools', 'Agent,Task', '--permission-mode', alwaysApprove ? 'bypassPermissions' : 'dontAsk'];
+    if (finalSchema) args.push('--json-schema', finalSchema);
+    stdin = prompt;
+  } else if (adapter === 'grok') {
     args = ['--cwd', folder, '-m', cli, '--no-subagents', '--max-turns', lead ? '8' : '50',
       '--permission-mode', alwaysApprove ? 'auto' : 'dontAsk', '--output-format', lead ? 'streaming-messages-json' : 'plain'];
     if (alwaysApprove) args.push('--always-approve');

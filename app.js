@@ -1456,13 +1456,16 @@
     try {
       const settings = await request('/api/settings');
       $('projects-root').value = settings.projectsRoot || '';
-      $('project-create-folder').checked = Boolean(settings.projectsRoot);
-      $('project-form').elements.folder.disabled = $('project-create-folder').checked;
+      $('project-create-folder').checked = Boolean(settings.projectsRoot) && !$('project-form').elements.folder.value.trim();
     } catch (error) { $('project-error').textContent = error.message; $('project-error').hidden = false; }
     finally { $('project-create-folder').disabled = false; }
   });
+  // Typing an existing folder always wins over creating a new subfolder.
+  $('project-form').elements.folder.addEventListener('input', () => {
+    if ($('project-form').elements.folder.value.trim()) $('project-create-folder').checked = false;
+  });
   $('project-create-folder').addEventListener('change', () => {
-    $('project-form').elements.folder.disabled = $('project-create-folder').checked;
+    if ($('project-create-folder').checked) $('project-form').elements.folder.value = '';
   });
   async function saveProjectsRoot() {
     const settings = await request('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectsRoot: $('projects-root').value }) });
@@ -1540,7 +1543,7 @@
     $('project-error').hidden = true;
     try {
       const form = $('project-form');
-      const createFolder = Boolean($('project-create-folder').checked);
+      const createFolder = Boolean($('project-create-folder').checked) && !form.elements.folder.value.trim();
       if (createFolder) await saveProjectsRoot();
       const saved = await request('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version, createFolder, project: { name: form.elements.name.value, direction: form.elements.direction.value, folder: createFolder ? '' : form.elements.folder.value, github: form.elements.github.value } }) });
       const added = saved.plan.projects.at(-1);

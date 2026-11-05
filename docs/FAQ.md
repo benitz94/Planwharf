@@ -34,7 +34,7 @@ You can open and use the local project notebook without invoking AI. To perform 
 
 ### Can I coordinate Codex, Grok and Gemini in one project?
 
-Planwharf includes native adapters for Codex, Grok and Antigravity, plus documented direct API and compatible CLI connection options. Configure the actual connection and exact model IDs that your account supports. Availability and compatibility vary by provider and environment; not every model/combination has been tested. See [external providers](EXTERNAL-PROVIDERS.md).
+Planwharf includes native adapters for Codex, Grok, Antigravity and Claude Code, plus documented direct API and compatible CLI connection options. Configure the actual connection and exact model IDs that your account supports. Availability and compatibility vary by provider and environment; not every model/combination has been tested. See [external providers](EXTERNAL-PROVIDERS.md).
 
 ### What is the difference between Orchestrator, Worker and Reviewer?
 

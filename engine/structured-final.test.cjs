@@ -32,3 +32,21 @@ test('other adapters and empty output yield nothing', () => {
   assert.equal(readFinalResult('grok', JSON.stringify({ structuredOutput: value })), null);
   assert.equal(readFinalResult('claude', ''), null);
 });
+
+test('a COMPLETE result naming a missing file fails; deletions and other statuses do not', () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const { spawnSync } = require('node:child_process');
+  const { missingClaims, rejectMissingClaims } = require('./worker-result.cjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-claims-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'real.txt'), 'x');
+    const claim = (status, filesChanged) => ({ status, filesChanged, blockers: [] });
+    assert.deepEqual(missingClaims(claim('COMPLETE', ['real.txt', path.join(dir, 'real.txt')]), dir), []);
+    assert.deepEqual(missingClaims(claim('COMPLETE', ['ghost.txt']), dir), ['ghost.txt']);
+    assert.deepEqual(missingClaims(claim('BLOCKED', ['ghost.txt']), dir), []);
+    const rejected = rejectMissingClaims(claim('COMPLETE', ['ghost.txt']), dir);
+    assert.equal(rejected.status, 'FAILED'); assert.match(rejected.blockers[0], /ghost\.txt/);
+    spawnSync('git', ['init', '-q'], { cwd: dir }); fs.writeFileSync(path.join(dir, 'gone.txt'), 'x'); spawnSync('git', ['add', 'gone.txt'], { cwd: dir }); fs.rmSync(path.join(dir, 'gone.txt'));
+    assert.deepEqual(missingClaims(claim('COMPLETE', ['gone.txt']), dir), []);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

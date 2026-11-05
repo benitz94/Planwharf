@@ -1,0 +1,226 @@
+TAP version 13
+# Subtest: bundled music has complete CC0 provenance and exact local audio hashes
+ok 1 - bundled music has complete CC0 provenance and exact local audio hashes
+  ---
+  duration_ms: 32.43
+  type: 'test'
+  ...
+# Subtest: Soundtrack modules and verified manifest are explicitly served by the existing app
+ok 2 - Soundtrack modules and verified manifest are explicitly served by the existing app
+  ---
+  duration_ms: 82.4149
+  type: 'test'
+  ...
+# Subtest: bundled audio has a binary media type and bounded seek ranges
+ok 3 - bundled audio has a binary media type and bounded seek ranges
+  ---
+  duration_ms: 48.9811
+  type: 'test'
+  ...
+# Subtest: media routes cannot expose personal files, traversal or file paths
+ok 4 - media routes cannot expose personal files, traversal or file paths
+  ---
+  duration_ms: 22.3756
+  type: 'test'
+  ...
+# Subtest: bundled library permits fixed local audio filenames and rejects traversal or remote URLs
+ok 5 - bundled library permits fixed local audio filenames and rejects traversal or remote URLs
+  ---
+  duration_ms: 1.8883
+  type: 'test'
+  ...
+# Subtest: selected personal audio stays local, unsupported formats fail clearly and object URLs revoke
+ok 6 - selected personal audio stays local, unsupported formats fail clearly and object URLs revoke
+  ---
+  duration_ms: 0.9757
+  type: 'test'
+  ...
+# Subtest: only consented files persist and a browser copy survives original removal
+ok 7 - only consented files persist and a browser copy survives original removal
+  ---
+  duration_ms: 0.6055
+  type: 'test'
+  ...
+# Subtest: storage quota failures do not imply a file was persisted
+ok 8 - storage quota failures do not imply a file was persisted
+  ---
+  duration_ms: 1.0938
+  type: 'test'
+  ...
+# Subtest: untrusted manifest metadata is plain bounded text and does not become a media URL
+ok 9 - untrusted manifest metadata is plain bounded text and does not become a media URL
+  ---
+  duration_ms: 0.2052
+  type: 'test'
+  ...
+# Subtest: stored records cannot borrow bundled track identities
+ok 10 - stored records cannot borrow bundled track identities
+  ---
+  duration_ms: 0.3349
+  type: 'test'
+  ...
+# Subtest: bundled audio is rejected clearly when the browser does not support its format
+ok 11 - bundled audio is rejected clearly when the browser does not support its format
+  ---
+  duration_ms: 0.279
+  type: 'test'
+  ...
+# Subtest: one owner across controllers; pause, disable, silence and disposal permit explicit transfer
+ok 12 - one owner across controllers; pause, disable, silence and disposal permit explicit transfer
+  ---
+  duration_ms: 10.1101
+  type: 'test'
+  ...
+# Subtest: cancelling a pending ownership claim cannot resurrect playback or block another tab
+ok 13 - cancelling a pending ownership claim cannot resurrect playback or block another tab
+  ---
+  duration_ms: 1.068
+  type: 'test'
+  ...
+# Subtest: unavailable or failing Web Locks prevents unsafe audio and gives actionable feedback
+ok 14 - unavailable or failing Web Locks prevents unsafe audio and gives actionable feedback
+  ---
+  duration_ms: 0.59
+  type: 'test'
+  ...
+# Subtest: catalog refresh cancels an acquired pending load and frees the other player
+ok 15 - catalog refresh cancels an acquired pending load and frees the other player
+  ---
+  duration_ms: 1.6309
+  type: 'test'
+  ...
+# Subtest: fresh and restored installations never start audio without a Play gesture
+ok 16 - fresh and restored installations never start audio without a Play gesture
+  ---
+  duration_ms: 0.3433
+  type: 'test'
+  ...
+# Subtest: another active tab denies Play without snapshot retries, and Pause releases ownership
+ok 17 - another active tab denies Play without snapshot retries, and Pause releases ownership
+  ---
+  duration_ms: 0.5339
+  type: 'test'
+  ...
+# Subtest: adaptive playback follows confirmed selected-project states, unchanged snapshots do not restart
+ok 18 - adaptive playback follows confirmed selected-project states, unchanged snapshots do not restart
+  ---
+  duration_ms: 0.5229
+  type: 'test'
+  ...
+# Subtest: manual Pause and Stop survive state and project changes until explicit Play
+ok 19 - manual Pause and Stop survive state and project changes until explicit Play
+  ---
+  duration_ms: 0.8146
+  type: 'test'
+  ...
+# Subtest: autoplay and unsupported media failures require an explicit retry, never snapshot loops
+ok 20 - autoplay and unsupported media failures require an explicit retry, never snapshot loops
+  ---
+  duration_ms: 0.7296
+  type: 'test'
+  ...
+# Subtest: disabled playback cancels a resolving track without old-promise resurrection
+ok 21 - disabled playback cancels a resolving track without old-promise resurrection
+  ---
+  duration_ms: 0.5232
+  type: 'test'
+  ...
+# Subtest: continuous playlists advance, repeat, shuffle and ignore execution changes
+ok 22 - continuous playlists advance, repeat, shuffle and ignore execution changes
+  ---
+  duration_ms: 2.4395
+  type: 'test'
+  ...
+# Subtest: volume/mute and seek are bounded and saved without playback activation
+ok 23 - volume/mute and seek are bounded and saved without playback activation
+  ---
+  duration_ms: 0.2569
+  type: 'test'
+  ...
+# Subtest: user playlist editing is inert and protects bundled playlists
+ok 24 - user playlist editing is inert and protects bundled playlists
+  ---
+  duration_ms: 0.9933
+  type: 'test'
+  ...
+# Subtest: missing file resolution gives safe actionable feedback without leaking exception paths
+ok 25 - missing file resolution gives safe actionable feedback without leaking exception paths
+  ---
+  duration_ms: 0.2939
+  type: 'test'
+  ...
+# Subtest: explicit Silence stays silent even when pressing Play in adaptive mode
+ok 26 - explicit Silence stays silent even when pressing Play in adaptive mode
+  ---
+  duration_ms: 0.1762
+  type: 'test'
+  ...
+# Subtest: catalog refresh and manual selection expose newly imported tracks without another controller
+ok 27 - catalog refresh and manual selection expose newly imported tracks without another controller
+  ---
+  duration_ms: 0.5556
+  type: 'test'
+  ...
+# Subtest: rapid state changes cancel bounded fades and settle obsolete requests
+ok 28 - rapid state changes cancel bounded fades and settle obsolete requests
+  ---
+  duration_ms: 0.5392
+  type: 'test'
+  ...
+# Subtest: invalid restored configuration cannot enable Soundtrack or inject protected playlists
+ok 29 - invalid restored configuration cannot enable Soundtrack or inject protected playlists
+  ---
+  duration_ms: 0.2983
+  type: 'test'
+  ...
+# Subtest: a newer project track wins when asynchronous resolution completes out of order
+ok 30 - a newer project track wins when asynchronous resolution completes out of order
+  ---
+  duration_ms: 0.3276
+  type: 'test'
+  ...
+# Subtest: fade volume changes preserve current gain and use the latest volume on remaining steps
+ok 31 - fade volume changes preserve current gain and use the latest volume on remaining steps
+  ---
+  duration_ms: 0.3683
+  type: 'test'
+  ...
+# Subtest: restoring user playlists and volume is separate from restoring playback authorization
+ok 32 - restoring user playlists and volume is separate from restoring playback authorization
+  ---
+  duration_ms: 0.5878
+  type: 'test'
+  ...
+# Subtest: Manual next and previous select individual tracks while respecting Pause
+ok 33 - Manual next and previous select individual tracks while respecting Pause
+  ---
+  duration_ms: 0.3409
+  type: 'test'
+  ...
+# Subtest: catalog refresh and returning to the current track cancel attenuation instead of leaving muted playback
+ok 34 - catalog refresh and returning to the current track cancel attenuation instead of leaving muted playback
+  ---
+  duration_ms: 0.4864
+  type: 'test'
+  ...
+# Subtest: Pause and Play preserve position when the browser expands relative source URLs
+ok 35 - Pause and Play preserve position when the browser expands relative source URLs
+  ---
+  duration_ms: 0.4366
+  type: 'test'
+  ...
+# Subtest: Pause and Disable abort an outstanding media Play without restoring authorization
+ok 36 - Pause and Disable abort an outstanding media Play without restoring authorization
+  ---
+  duration_ms: 0.5292
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 294.6163

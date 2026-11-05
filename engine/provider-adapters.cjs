@@ -2,6 +2,10 @@
 
 // Mechanics live here; catalog policy and user ordering live in configuration.
 const adapters = {
+  claude: { nativeModel: /^claude-[a-zA-Z0-9][a-zA-Z0-9._-]*$/, sourceProtectedResearch: false,
+    account: () => require('./provider-accounts.cjs').unknownAccount(),
+    quota: () => require('./claude-usage.cjs').readClaudeUsage(),
+    discover: () => require('./claude.cjs').listClaude() },
   codex: { nativeModel: /^gpt-/, sourceProtectedResearch: true,
     account: provider => require('./provider-accounts.cjs').codexAccount(provider),
     quota: () => require('./planUsage.js').readChatGpt(require('node:os').homedir(), fetch),
@@ -33,7 +37,7 @@ for (const [id, adapter] of Object.entries(adapters)) {
   adapter.environment = (inherited, platform) => require('./provider-runtime.cjs').providerEnvironment(id, inherited, platform);
   adapter.terminate = pid => require('./runner.cjs').killWorker(pid);
   adapter.resultIdentity = model => ({ provider: model.providerId || model.provider, model: model.cli, ...(model.accountKey ? { accountKey: model.accountKey } : {}) });
-  adapter.capabilities = { canCode: true, canResearch: true, canUseTools: true, canInspectFilesystem: true, supportsStreaming: true };
+  adapter.capabilities = { canCode: true, canResearch: id !== 'claude', canUseTools: true, canInspectFilesystem: true, supportsStreaming: true };
 }
 function registerAdapter(id, adapter) {
   if (typeof id !== 'string' || !id || Object.hasOwn(adapters, id)) throw new Error('Adapter ID must be unique.');

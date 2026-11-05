@@ -1,4 +1,5 @@
 'use strict';
+const { MAX_OUTPUT_CHARS, supportsFinalResult, readFinalResult } = require('./structured-final.cjs');
 
 const fs = require('node:fs');
 const { requireWorkerWorkspace, linkedWorkspace } = require('./project-workspace.cjs');
@@ -8,7 +9,7 @@ const { spawn, spawnSync } = require('node:child_process');
 const { launchSpec, providerEnvironment } = require('./providers.cjs');
 const { resolveCliModel } = require('./model-routing.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
-const { readJSON, validateResult, resultContract, reportExists } = require('./worker-result.cjs');
+const { readJSON, validateResult, rejectMissingClaims, resultContract, reportExists } = require('./worker-result.cjs');
 
 function which(cmd) {
   const pathEnv = process.env.PATH || '';
@@ -242,9 +243,28 @@ function dropThinkingPrefix(answer, thinking) {
 function parseAskLine(acc, row) {
   if (!acc || typeof acc !== 'object') return acc;
   if (!row || typeof row !== 'object') return acc;
+  if (acc.expectedModel) {
+    const reported = row.type === 'assistant' ? row.message?.model : row.type === 'system' && row.subtype === 'init' ? row.model : null;
+    if (reported === acc.expectedModel) acc.modelSeen = true;
+    if (reported && reported !== acc.expectedModel) {
+      acc.failure = 'PROVIDER_MODEL_IDENTITY_CHANGED';
+      acc.error = 'PROVIDER_MODEL_IDENTITY_CHANGED: Claude Code returned a different model.';
+    }
+    if (row.type === 'result') {
+      acc.resultSeen = true;
+      if (row.is_error !== false || row.subtype !== 'success') {
+        acc.failure ||= 'provider';
+        acc.error ||= typeof row.result === 'string' && row.result.trim() ? row.result : (Array.isArray(row.errors) ? row.errors.filter(item => typeof item === 'string').join('; ') : '') || 'Claude Code did not report success.';
+      }
+      if (row.usage && Number.isSafeInteger(row.usage.input_tokens) && Number.isSafeInteger(row.usage.output_tokens)) {
+        acc.tokens = { input: row.usage.input_tokens, output: row.usage.output_tokens,
+          ...(Number.isSafeInteger(row.usage.cache_read_input_tokens) ? { cachedInput: row.usage.cache_read_input_tokens } : {}) };
+      }
+    }
+  }
   if (row.type === 'error' || row.type === 'turn.failed' || row.type === 'result' && row.is_error === true) {
-    acc.failure = 'provider';
-    acc.error = typeof row.message === 'string' ? row.message : typeof row.error?.message === 'string' ? row.error.message : typeof row.result === 'string' ? row.result : 'Provider reported a failed turn.';
+    acc.failure ||= 'provider';
+    acc.error ||= typeof row.message === 'string' ? row.message : typeof row.error?.message === 'string' ? row.error.message : typeof row.result === 'string' ? row.result : 'Provider reported a failed turn.';
   }
   if (row.type === 'turn.completed' && row.usage && Number.isSafeInteger(row.usage.input_tokens) && Number.isSafeInteger(row.usage.output_tokens)) acc.tokens = { input: row.usage.input_tokens, output: row.usage.output_tokens, ...(Number.isSafeInteger(row.usage.cached_input_tokens) ? { cachedInput: row.usage.cached_input_tokens } : {}) };
   if (row.event === 'step_update' && row.step_update) {
@@ -267,7 +287,7 @@ function parseAskLine(acc, row) {
     if (Number.isFinite(row.duration_ms)) acc.ms = row.duration_ms;
     if (typeof row.result === 'string' && row.result.trim()) {
       const text = dropThinkingPrefix(row.result, acc.thinking);
-      if (!String(acc.answer || '').trim()) acc.answer = text;
+      if (acc.expectedModel || !String(acc.answer || '').trim()) acc.answer = text;
     }
     return acc;
   }
@@ -297,8 +317,8 @@ function parseAskLine(acc, row) {
   return acc;
 }
 
-function createAskStream() {
-  const acc = { thinking: '', answer: '', ms: null, rest: '' };
+function createAskStream(expectedModel) {
+  const acc = { thinking: '', answer: '', ms: null, rest: '', ...(expectedModel ? { expectedModel } : {}) };
   function push(chunk) {
     acc.rest += String(chunk || '');
     const lines = acc.rest.split(/\r?\n/);
@@ -317,6 +337,9 @@ function createAskStream() {
       acc.rest = '';
     }
     const thinking = String(acc.thinking || '').trim();
+    if (acc.expectedModel && (!acc.resultSeen || !acc.modelSeen) && !acc.failure) {
+      acc.failure = 'PROVIDER_PROTOCOL_CHANGED'; acc.error = 'PROVIDER_PROTOCOL_CHANGED: Claude Code returned no final result or exact model identity.';
+    }
     const answer = dropThinkingPrefix(acc.answer, thinking);
     return { thinking, answer, ms: acc.ms, ...(acc.tokens ? { tokens: acc.tokens } : {}), ...(acc.failure ? { failure: acc.failure, error: acc.error } : {}) };
   }
@@ -412,8 +435,9 @@ function askOrchestrator(info) {
       if (supervisorChild) { resolve({ failure: 'busy', answer: 'A Supervisor response is already in progress.' }); return; }
     } else abortAsk();
     const child = spawn(spec.command, spec.args, { cwd: work, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+    child.stdout.setEncoding('utf8');
     if (info.purpose === 'supervisor') supervisorChild = child; else askChild = child;
-    const stream = createAskStream();
+    const stream = createAskStream(spec.adapter === 'claude' ? spec.model : undefined);
     let settled = false;
     let stderr = '';
     const tick = () => {
@@ -521,7 +545,7 @@ function run(argv = process.argv) {
   let settled = false;
   let pending = '';
   let providerStderr = '';
-  const apiUsageStream = spec.adapter === 'api' ? createAskStream() : null;
+  const apiUsageStream = spec.adapter === 'api' || spec.adapter === 'claude' ? createAskStream(spec.adapter === 'claude' ? spec.model : undefined) : null;
   const agyProtocol = (spec.adapter || spec.provider) === 'antigravity' || spec.outputProtocol === 'antigravity-jsonl';
   const saveDiagnostic = (reason, exitCode) => {
     const diagnostic = diagnoseProvider(opts.model, reason, exitCode);
@@ -529,10 +553,14 @@ function run(argv = process.argv) {
     return diagnostic.message;
   };
   const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+  child.stdout.setEncoding('utf8');
   child.stderr.on('data', chunk => { process.stderr.write(chunk); providerStderr = (providerStderr + chunk).slice(-4000); });
+  const finalAdapter = opts.structuredResultPath && supportsFinalResult({ adapter: spec.adapter || spec.provider }) ? spec.adapter || spec.provider : null;
+  let finalOutput = '';
   child.stdout.on('data', chunk => {
     process.stdout.write(chunk);
     apiUsageStream?.push(chunk);
+    if (finalAdapter && finalOutput.length < MAX_OUTPUT_CHARS) finalOutput += chunk;
     if (!agyProtocol) return;
     pending += String(chunk);
     const lines = pending.split(/\r?\n/); pending = lines.pop() || '';
@@ -551,13 +579,21 @@ function run(argv = process.argv) {
     if (settled) return;
     settled = true;
     if (pending.trim()) { try { const row = JSON.parse(pending); if (row.event === 'result' && row.result) finalStatus = row.result.status; } catch (_) {} }
-    const reportedFailure = agyProtocol && finalStatus !== 'SUCCESS';
-    const usage = apiUsageStream?.finish().tokens;
+    const parsedOutput = apiUsageStream?.finish();
+    const reportedFailure = agyProtocol && finalStatus !== 'SUCCESS' || spec.adapter === 'claude' && Boolean(parsedOutput?.failure);
+    const usage = parsedOutput?.tokens;
+    if (spec.adapter === 'claude' && parsedOutput?.failure) providerStderr = parsedOutput.error || parsedOutput.failure;
     if (usage) fs.writeFileSync(opts.result + '.usage.json', JSON.stringify(usage) + '\n');
     const exitCode = code == null || (code === 0 && reportedFailure) ? 1 : code;
     if (opts.structuredResultPath) {
-      const result = readJSON(opts.structuredResultPath);
+      const finalResult = finalAdapter && !readJSON(opts.structuredResultPath) ? readFinalResult(finalAdapter, finalOutput) : null;
+      if (finalResult) fs.writeFileSync(opts.structuredResultPath, JSON.stringify(finalResult, null, 2) + '\n');
       const identity = { resultId: opts.resultId, attemptId: opts.attempt, subTaskId: opts.subTaskId, megaTaskId: opts.megaTaskId };
+      let result = readJSON(opts.structuredResultPath);
+      if (validateResult(result, identity)) {
+        const checked = rejectMissingClaims(result, opts.folder);
+        if (checked !== result) { result = checked; fs.writeFileSync(opts.structuredResultPath, JSON.stringify(result, null, 2) + '\n'); }
+      }
       const valid = validateResult(result, identity) && (opts.kind !== 'research' || result.status !== 'COMPLETE' || reportExists(result, opts.folder));
       fs.writeFileSync(opts.exitPath, JSON.stringify({ attemptId: opts.attempt, exitCode, signal, provider: spec.provider, model: spec.model, createdAt: new Date().toISOString() }) + '\n');
       const status = valid && (result.status !== 'COMPLETE' || exitCode === 0) ? result.status : 'FAILED';

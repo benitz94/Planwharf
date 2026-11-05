@@ -54,6 +54,9 @@
   let projectId = null;
   let toastTimer;
   let chatSig = '';
+  // The reader's place in the chat survives re-renders and a recreated thread element.
+  let chatScroll = { top: 0, nearBottom: true };
+  let chatSettledSig = '';
   let catalogSearch = '';
   let searchControl;
   let modelRoleFilter = 'all';
@@ -369,7 +372,24 @@
     const items = turns.slice().reverse();
     const sig = sessionFilter + chatSignature(turns);
     if (sig === chatSig && el.childElementCount) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+    if (!el.dataset.scrollWatch) {
+      el.dataset.scrollWatch = '1';
+      el.addEventListener('scroll', () => { chatScroll = { top: el.scrollTop, nearBottom: el.scrollHeight - el.scrollTop - el.clientHeight < 96 }; }, { passive: true });
+    }
+    const nearBottom = chatScroll.nearBottom;
+    // While a reply streams in, only the pending turn changes: update it alone so a re-render
+    // never interrupts the reader's scrolling.
+    const settledSig = sessionFilter + JSON.stringify(turns.map(item => [item.at, item.question, item.answer, item.ms, item.thinking]));
+    const pendingEl = el.querySelector('.chat-turn.is-pending');
+    if (sending && pendingProjectId === projectId && pendingEl && settledSig === chatSettledSig) {
+      chatSig = sig;
+      const live = orchestra.thinking;
+      const liveMs = live && Number.isFinite(live.ms) ? live.ms : (pendingStarted ? Date.now() - pendingStarted : 0);
+      pendingEl.innerHTML = `<div class="chat-you"><p>${escape(pendingText)}</p></div><div class="chat-bot">${thinkHtml((live && live.thinking) || '', liveMs, true)}${live && live.draft ? `<p class="chat-draft">${escape(live.draft)}</p>` : ''}</div>`;
+      if (nearBottom) el.scrollTop = el.scrollHeight;
+      return;
+    }
+    chatSettledSig = settledSig;
     chatSig = sig;
     if (!items.length && !sending) {
       el.innerHTML = '<div class="chat-empty"><p>Select a project recipient, then discuss the work or give an explicit command.</p><ul><li>Start</li><li>Resume</li><li>Stop</li><li>Skip grill</li><li>Switch to automatic</li><li>How much quota is left?</li></ul></div>';
@@ -386,7 +406,8 @@
       return `<article class="chat-turn${item.order ? ' is-order' : ''}"><div class="chat-you"><p>${escape(item.question)}</p>${item.goldModel ? `<p class="muted">Gold model: ${escape(item.goldModel.provider)}/${escape(item.goldModel.cli)} (${escape(item.goldModel.id)})</p>` : ''}</div><div class="chat-bot">${order}${thinkHtml(item.thinking, item.ms, false)}<p data-chat-output>${escape(item.answer)}</p>${diagnosticHtml(item.diagnostic)}<button type="button" class="secondary compact chat-copy-output" data-copy-output>Copy output</button><time>${escape(clock(item.at))}${elapsed}</time></div></article>`;
     }).join('') + pending;
     if (el.dataset.restoreScroll !== undefined) { el.scrollTop = Number(el.dataset.restoreScroll) || 0; delete el.dataset.restoreScroll; }
-    else if (nearBottom || sending && pendingProjectId === projectId || !items.length) el.scrollTop = el.scrollHeight;
+    else if (nearBottom || !items.length) el.scrollTop = el.scrollHeight;
+    else el.scrollTop = chatScroll.top;
   }
 
   function checkpointBanner(row) {
@@ -745,6 +766,7 @@
     if (!targetProjectId || !(orchestra.projects || []).some(row => row.id === targetProjectId)) { notice('Select the project recipient before sending.'); return; }
     const myGen = ++sendGen;
     sending = true;
+    chatScroll.nearBottom = true;
     pendingText = text;
     pendingProjectId = targetProjectId;
     pendingStarted = Date.now();

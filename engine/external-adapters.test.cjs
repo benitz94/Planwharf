@@ -80,7 +80,7 @@ test('API lead and structured worker run through real child processes without se
     const model = { ...lead, cli: 'exact-worker', policy: { alwaysApprove: false } };
     const spec = launchSpec(lead, project, 'Fixture', true); assert.ok(!spec.args.join(' ').includes('secret-fixture')); assert.ok(!spec.stdin.includes('secret-fixture'));
     const jobFile = path.join(folder, 'job.json');
-    fs.writeFileSync(jobFile, JSON.stringify({ folder: project, result: path.join(folder, 'result.txt'), title: 'Fixture', detail: 'Fixture', attempt: 'fixture', model,
+    fs.writeFileSync(jobFile, JSON.stringify({ linkedFolder: project, folder: project, result: path.join(folder, 'result.txt'), title: 'Fixture', detail: 'Fixture', attempt: 'fixture', model,
       structuredResultPath: output, exitPath: path.join(folder, 'exit.json'), megaTaskId: identity.megaTaskId, subTaskId: identity.subTaskId, resultId: identity.resultId }));
     const receipt = await new Promise((resolve, reject) => {
       const child = spawn(process.execPath, [path.join(__dirname, 'runner.cjs'), '--job-file', jobFile], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = '', stderr = '';

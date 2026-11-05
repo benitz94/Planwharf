@@ -1,6 +1,6 @@
 'use strict';
 const { adapterFor } = require('./provider-adapters.cjs');
-const defaults = { codex: ['ChatGPT', 'ChatGPT'], grok: ['Grok', 'Grok'], antigravity: ['Gemini', 'Gemini'] };
+const defaults = { codex: ['ChatGPT', 'ChatGPT'], grok: ['Grok', 'Grok'], antigravity: ['Gemini', 'Gemini'], claude: ['Claude Code', 'Claude'] };
 function providerConfiguration(provider) {
   const keys = ['baseUrl', 'authEnv', 'subscriptionIncluded', 'apiProtocol', 'maxOutputTokens', 'maxTurns', 'requestTimeoutMs', 'cliCommand', 'cliArgs', 'yoloArgs', 'restrictedArgs', 'outputProtocol'];
   return Object.fromEntries(keys.filter(key => provider[key] !== undefined).map(key => [key, provider[key]]));

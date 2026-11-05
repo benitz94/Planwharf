@@ -49,9 +49,24 @@ function leadInstructions() {
   ].join('\n');
 }
 
-function evaluationPrompt({ name, goal, results }) {
+function checksText(checks) {
+  if (checks === undefined) return [];
+  if (!checks) return ['Planwharf found no recognised test entry point (package.json test script or test files) in the project folder.'];
+  const verdict = checks.timedOut ? 'TIMED OUT' : checks.exitCode === 0 ? 'PASSED' : `FAILED (exit ${checks.exitCode})`;
+  return [`Planwharf ran \`${checks.label}\` in the project folder just now: ${verdict} in ${checks.seconds} s. Output tail:`, '```', checks.output || '(no output)', '```',
+    'This run is fresh evidence. Do not run commands or edit files yourself: decide from the goal, the results and this run.'];
+}
+
+// True when the evidence is clear enough to end without asking the lead.
+function cleanFinish(results, checks) {
+  const list = Array.isArray(results) ? results : [];
+  if (list.length < 2 || !checks || checks.timedOut || checks.exitCode !== 0) return false;
+  return list.every(result => result.status === 'COMPLETE' && !(Array.isArray(result.blockers) && result.blockers.length));
+}
+
+function evaluationPrompt({ name, goal, results, checks }) {
   const lines = (results || []).slice(-6).map(result => `- ${result.status}: ${result.summary || 'no summary'}`);
-  return [`Autonomous review of project ${name}. The current MegaTask finished.`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']), leadInstructions()].join('\n');
+  return [`Autonomous review of project ${name}. The current MegaTask finished.`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']), ...checksText(checks), leadInstructions()].join('\n');
 }
 
 // Text comes from backend-detected facts, so no model runs to raise a nudge.
@@ -72,4 +87,24 @@ function parseDecision(text) {
   return { done: parsed.done, next: parsed.done ? null : next, assumptions };
 }
 
-module.exports = { LIMITS, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision };
+// Before approval the lead picks who does each slice, instead of the catalog order.
+function assignmentPrompt({ name, goal, slices, workers }) {
+  return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
+    'The MegaTask has these slices, run in order:', ...slices.map((slice, index) => `${index + 1}. ${slice}`),
+    'Available workers:', ...workers.map(worker => `- ${worker.id}: ${worker.label} (provider ${worker.provider})`),
+    'Choose one worker per slice. For the first slice prefer the fastest worker that can build the whole job correctly: the later slice checks and fixes it. For each later slice pick the most thorough checker from a different provider than the slice before it, so the work is checked independently.',
+    'Do not run commands or read files: decide from this message only.',
+    'Reply with one JSON object and nothing else: {"assign":["worker id for slice 1", "..."],"why":"one sentence"}.'].join('\n');
+}
+
+function parseAssignment(text, count, allowed) {
+  if (typeof text !== 'string') return null;
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start < 0 || end < start) return null;
+  let parsed; try { parsed = JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  const ids = Array.isArray(parsed?.assign) ? parsed.assign : null;
+  if (!ids || ids.length !== count || !ids.every(id => typeof id === 'string' && allowed.includes(id))) return null;
+  return { assign: ids, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
+}
+
+module.exports = { LIMITS, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
