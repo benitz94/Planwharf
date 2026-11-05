@@ -61,7 +61,6 @@ textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); 
 .home-goal p { -webkit-text-fill-color: var(--ink); color: var(--ink); background: none; }
 .frame #orchestrator-view { padding-bottom: 0; }
 .orch-shell { grid-template-columns: minmax(320px, 1.45fr) minmax(320px, 1fr); }
-body.harbor-enabled .orch-chat, body.harbor-enabled .orch-board { background: var(--workspace-wash); }
 .orch-chat { border-color: var(--rule); }
 .orch-chat-head { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; padding: 22px; background: var(--workspace-surface); border-color: var(--rule); }
 .workspace-pane-title { margin: 0 0 14px; font-size: 22px; font-weight: 600; letter-spacing: -.035em; color: var(--ink); }

@@ -1,15 +1,14 @@
-# Supervisor and sailing ship
+# Supervisor
 
 The Supervisor button in the application header opens a dedicated third view.
 Project Home and Orchestrator remain available from that view. This places
-monitoring and questions outside the Orchestrator command thread and outside
-Harbor settings. The freely editable name is under **Name and Reviewer settings**;
+monitoring and questions outside the Orchestrator command thread. The freely editable name is under **Name and Reviewer settings**;
 blank names show `Supervisor`, with an 80-character limit and text-only rendering.
 
 ## Live monitoring and alerts
 
 The Supervisor consumes the existing Orchestrator backend snapshots. It introduces
-no additional status polling and no AI calls to animate or monitor the ship.
+no additional status polling.
 Its summary, Worker assignments, Reviewer assignments and recent project events
 refer to the selected project. Pending review work is distinguished from live
 review processes; validated results and process liveness remain separate evidence.
@@ -64,16 +63,6 @@ alerts remain available. Questions and settings persist in `supervisor.json` und
 the backend attempts directory. Interrupted answers are marked as interrupted on
 backend restart rather than shown as still running.
 
-## Sailing ship
-
-The ship is now a large three-masted sailing vessel with rigging, multiple sails,
-bowsprit and a recognizable hull. Flag selection also changes hull and sail
-appearance, including circuit, star, stripe and weathered pirate treatments.
-Existing lifecycle state mapping, reduced motion, hidden-page suspension, inert
-full-viewport rendering and browser-local preferences remain in use. Dense
-Orchestrator surfaces retain enough opacity for text contrast; the enlarged ship
-improves visibility without moving controls.
-
 ## Validation boundaries
 
 `engine/supervisor.test.cjs` exercises live HTTP endpoints, persistent alerts,
@@ -81,9 +70,3 @@ project/role isolation, model permission revocation, read-only API child process
 rejection of malicious tool calls, exact model identity and concurrent lead/advisory
 requests. It uses local fixtures, not paid provider inference.
 
-`verify-harbor-browser.cjs` drives a real Edge instance and isolated backend,
-including name editing in the dedicated section, factual and fixture Reviewer
-questions, alerts and evidence dialogs, Ignore persistence, project isolation,
-ship state transitions, flags, both themes/views and browser restart persistence.
-Detailed run results and screenshots are retained in `validation/harbor-*`.
-Historical evidence from before this extension remains unchanged.
