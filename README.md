@@ -18,18 +18,6 @@ Planwharf can use [Matt Pocock's open-source skills](https://github.com/mattpoco
 
 [Quick start](docs/QUICKSTART.md) | [FAQ](docs/FAQ.md) | [Complete user guide](docs/USER-GUIDE.md) | [Project status](docs/PROJECT-STATUS.md) | [First project guide](docs/HOW-TO.md) | [Continue work](docs/CONTINUE-WORK.md) · [Phase 2 execution contract](docs/PLANWHARF-PHASE-2.md) · [Startup verification](docs/STARTUP-VERIFICATION-2026-10-13.md)
 
-## Soundtrack
-
-Optional browser-local music is available in **Settings → Soundtrack** and the
-compact workspace/Ship View player. It is disabled by default and requires an
-explicit Play gesture after startup. Adaptive mode follows only the selected
-project's existing execution state; Continuous and Manual modes, editable user
-playlists, Silence mappings, volume, mute, seek and repeat are available. Four
-CC0 recordings ship locally with verified source/license manifests. Personal
-music is selected explicitly and retained across sessions only with separate
-browser-storage consent. No media is uploaded or included in project exports.
-See [Soundtrack instructions and storage details](docs/SOUNDTRACK.md).
-
 ## Planwharf at a glance
 
 ![Illustrated five-step Planwharf workflow](docs/demo-workflow.svg)
