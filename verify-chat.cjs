@@ -114,7 +114,7 @@ const errors = [];
   await until(`!document.getElementById('side-panel').hidden && document.getElementById('side-title').textContent === 'Team'`, 'team panel');
   clean(await layout(), 'desktop with team');
   await evaluate(`(() => { const select = document.querySelector('#side-body [data-lead-select]'); select.value = 'lead-a'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
-  await until(`document.querySelector('#side-body .badge.running')?.closest('.member')?.innerText.includes('Lead A')`, 'lead badge');
+  await until(`document.querySelector('#side-body .badge.lead-badge')?.closest('.member')?.innerText.includes('Lead A')`, 'lead badge');
   const roles = async id => (await (await fetch(appUrl + '/api/orchestrator?readOnly=1')).json()).models.find(model => model.id === id).roles;
   if ((await roles('check-b')).worker) await click(`[data-role-toggle="check-b"][data-role="worker"]`);
   await until(`document.querySelector('[data-role-toggle="check-b"][data-role="worker"]')?.getAttribute('aria-pressed') === 'false'`, 'checker no longer builds');

@@ -57,6 +57,44 @@
   const PROVIDER_COLOURS = { codex: '#10a37f', openai: '#10a37f', claude: '#d97757', anthropic: '#d97757', grok: '#6b7280', xai: '#6b7280', antigravity: '#4285f4', gemini: '#4285f4', google: '#4285f4', api: '#8b5cf6' };
   const providerOf = id => models().find(model => model.id === id)?.provider || '';
   const providerDot = provider => `<span class="prov" style="background:${PROVIDER_COLOURS[String(provider).toLowerCase()] || '#9ca3af'}" title="${escape(provider || 'unknown provider')}" aria-hidden="true"></span>`;
+  // Small line icons (24px grid, drawn with the current text colour).
+  const ICONS = {
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    team: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.4 3.6 5.2"/>',
+    progress: '<path d="M5 20v-6M12 20V5M19 20v-10"/>',
+    usage: '<path d="M3.5 18a9 9 0 1 1 17 0"/><path d="M12 14l4-4"/>',
+    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+    folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    build: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+    verify: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    review: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    watch: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+    lead: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    alert: '<path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+    play: '<path d="M7 5v14l12-7z"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    box: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    power: '<path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/>',
+    plug: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
+    chip: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+    rocket: '<path d="M9 15l-3-3c1.5-4 5-9 14-9 0 9-5 12.5-9 14z"/><path d="M5.5 14.5c-1 1-1.5 3.5-1.5 5.5 2 0 4.5-.5 5.5-1.5"/><circle cx="15" cy="9" r="1.5"/>',
+    send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
+    pause: '<path d="M9 5v14M15 5v14"/>',
+    research: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'
+  };
+  const ic = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
+  const tile = (name, tone) => `<span class="tile ${tone}" aria-hidden="true">${ic(name)}</span>`;
+  const head = (name, tone, text) => `<h3 class="head">${tile(name, tone)}<span>${text}</span></h3>`;
+  // Each role has its own colour and icon, used the same way everywhere.
+  const ROLE_LOOK = { Build: ['build', 'r-build'], Verify: ['verify', 'r-verify'], Review: ['review', 'r-review'], Research: ['research', 'r-review'], Watch: ['watch', 'r-watch'], Lead: ['lead', 'r-lead'] };
   const VERIFY_PREFIX = 'Verify the work independently';
   const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' s' : ms < 3600000 ? Math.round(ms / 60000) + ' min' : (ms / 3600000).toFixed(1) + ' h';
   const STOP_REASONS = {
@@ -90,7 +128,7 @@
     const rows = state.orchestra?.projects || [];
     $('project-list').innerHTML = rows.length ? rows.map(row => {
       const status = projectStatus(row);
-      return `<button type="button" class="project-item" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}"><span class="dot ${status.kind === 'running' ? 'running' : status.kind === 'attention' ? 'attention' : ''}" aria-hidden="true"></span><span class="name">${escape(row.name)}</span></button>`;
+      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${tile('folder', 'p-' + (status.kind || 'idle'))}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(status.text)}</span></span></button>`;
     }).join('') : '<p class="muted small">No projects yet.</p>';
   }
   function renderHeader() {
@@ -113,12 +151,12 @@
       .replace(/^Completed (.+)$/, 'Finished: $1')
       .replace(/^Approved (.+)$/, 'You approved: $1');
     const short = summary.length > 260 ? summary.slice(0, 257) + '…' : summary;
-    if (/COMPLETED|REACHED|APPROVED/.test(type)) return { icon: '✓', kind: 'good', text: short };
-    if (/FAILED|BLOCKED|STOPPED|REFUS/.test(type)) return { icon: '!', kind: 'bad', text: short };
-    if (/STARTED/.test(type)) return { icon: '▶', kind: '', text: short };
-    if (/PLAN_REVISION/.test(type)) return { icon: '✎', kind: '', text: 'Plan updated: ' + short.replace(/^Living Plan R\d+:\s*/, '') };
-    if (/PROPOSED|ASSIGNED|PLAN/.test(type)) return { icon: '✎', kind: '', text: short };
-    return { icon: '·', kind: '', text: short };
+    if (/COMPLETED|REACHED|APPROVED/.test(type)) return { icon: 'check', kind: 'good', text: short };
+    if (/FAILED|BLOCKED|STOPPED|REFUS/.test(type)) return { icon: 'alert', kind: 'bad', text: short };
+    if (/STARTED/.test(type)) return { icon: 'play', kind: 'start', text: short };
+    if (/PLAN_REVISION/.test(type)) return { icon: 'pencil', kind: 'plan', text: 'Plan updated: ' + short.replace(/^Living Plan R\d+:\s*/, '') };
+    if (/PROPOSED|ASSIGNED|PLAN/.test(type)) return { icon: 'pencil', kind: 'plan', text: short };
+    return { icon: 'clock', kind: '', text: short };
   }
   const SHOWN_EVENTS = /PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED)|CHECKPOINT|GOAL|AUTONOMY/;
   const clock = at => { const date = new Date(at); return Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; };
@@ -126,19 +164,21 @@
   function welcomeCard() {
     const leads = models().filter(model => model.roleEligibility?.orchestrator && model.available !== false);
     const current = lead();
-    return `<div class="card"><h2>Welcome aboard, captain</h2>
-      <p>Planwharf runs a team of AI models for you. You give the goal; a <b>lead</b> plans it, a <b>builder</b> writes the code and a <b>verifier</b> checks and fixes it.</p>
-      <ol class="steps">
-        <li class="${current ? 'done' : ''}">Choose your lead.</li>
-        <li class="${(state.orchestra?.projects || []).length ? 'done' : ''}">Create a project: a name, what to build, and a folder.</li>
-        <li>Press <b>Let the crew do it</b> and watch the work here.</li>
+    const hasProject = (state.orchestra?.projects || []).length > 0;
+    const step = (n, done, text) => `<li class="${done ? 'done' : ''}"><span class="num" aria-hidden="true">${done ? ic('check') : n}</span><span>${text}</span></li>`;
+    return `<div class="card welcome"><h2 class="head">${tile('rocket', 't-accent')}<span>Welcome aboard, captain</span></h2>
+      <p>Planwharf runs a team of AI models for you. You give the goal; a <b class="c-lead">lead</b> plans it, a <b class="c-build">builder</b> writes the code and a <b class="c-verify">verifier</b> checks and fixes it.</p>
+      <ol class="steps numbered">
+        ${step(1, Boolean(current), 'Choose your lead.')}
+        ${step(2, hasProject, 'Create a project: a name, what to build, and a folder.')}
+        ${step(3, false, 'Press <b>Let the crew do it</b> and watch the work here.')}
       </ol>
       <div class="row"><label class="sr-only" for="welcome-lead">Lead</label><select id="welcome-lead" data-lead-select><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>
-      ${(state.orchestra?.projects || []).length ? '' : '<button type="button" class="btn btn-primary" data-action="new-project">+ New project</button>'}</div></div>`;
+      ${hasProject ? '' : `<button type="button" class="btn btn-primary" data-action="new-project">${ic('plus')}New project</button>`}</div></div>`;
   }
   function startCard(row) {
     const missing = readiness(row);
-    return `<div class="card"><h3>${escape(row.name)}</h3><p>${escape(row.goal || 'No goal written yet.')}</p>
+    return `<div class="card"><h3 class="head">${tile('folder', 't-accent')}<span>${escape(row.name)}</span></h3><p>${escape(row.goal || 'No goal written yet.')}</p>
       <p class="muted small path">Folder: ${escape(row.folder || 'not set')}</p>
       ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" data-panel="${item.panel}">${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}
       <div class="row"><button type="button" class="btn" data-action="grill" ${lead() ? '' : 'disabled'}>Ask me questions first</button></div></div>`;
@@ -165,28 +205,29 @@
       const s = String(sub.status || 'PENDING').toUpperCase();
       const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
       const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
-      return `<li class="step ${s.toLowerCase()}">${providerDot(providerOf(sub.assignedModelId))}<span class="step-main"><b>${escape(role)}</b> · ${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${escape(label)}</span></li>`;
+      const [roleIcon, roleTone] = ROLE_LOOK[role] || ROLE_LOOK.Build;
+      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
     };
     const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
     const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
     if (status === 'READY_FOR_APPROVAL') {
       const auto = autonomyOf(row.id)?.enabled;
-      return `<div class="card crew"><h3>The lead proposes this work</h3><p>${escape(mega.title || '')}</p>${steps}
-        ${auto ? '<p class="small muted">The crew approves this by itself.</p>' : '<div class="row"><button type="button" class="btn btn-primary" data-action="approve">Approve and start</button><span class="small muted">Or tell the lead what to change.</span></div>'}</div>`;
+      return `<div class="card crew proposal"><h3 class="head">${tile('lead', 'r-lead')}<span>The lead proposes this work</span></h3><p>${escape(mega.title || '')}</p>${steps}
+        ${auto ? '<p class="small muted">The crew approves this by itself.</p>' : `<div class="row"><button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="small muted">Or tell the lead what to change.</span></div>`}</div>`;
     }
     if (status === 'COMPLETE') {
       const took = duration(Date.parse(mega.completedAt) - Date.parse(mega.approvedAt || mega.createdAt));
       const repo = state.repo[row.id];
       if (!repo && row.folder) loadRepo(row.id);
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
-      return `<div class="card crew done"><h3>✓ Work finished</h3><p>${escape(mega.title || '')}</p>
-        <div class="facts"><span><b>${done}/${subs.length}</b> steps done</span>${took ? `<span><b>${took}</b></span>` : ''}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></div>
+      return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
+        <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
         ${steps}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
-        <div class="row"><button type="button" class="btn btn-small" data-panel="files">See changed files</button><button type="button" class="btn btn-small" data-panel="usage">See usage</button></div></div>`;
+        <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3>Work stopped</h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}
-        ${row.canResume ? '<div class="row"><button type="button" class="btn btn-primary" data-action="resume">Resume</button></div>' : ''}</div>`;
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}
+        ${row.canResume ? `<div class="row"><button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button></div>` : ''}</div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
     // Plain-language activity of the model working now; the raw log only when nothing else is readable.
@@ -194,7 +235,7 @@
     const friendly = (running?.activitySession?.events || []).map(event => event.friendly).filter(Boolean).slice(-6);
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
-    return `<div class="card crew live"><h3><span class="pulse" aria-hidden="true"></span> Crew at work${since ? ` · ${since}` : ''}</h3><p>${escape(mega.title || '')}</p>${bar}${steps}
+    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${steps}
       ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
   }
 
@@ -203,7 +244,7 @@
   function alertsCard(row) {
     const alerts = alertsFor(row.id);
     if (!alerts.length) return '';
-    return `<div class="card crew attention" role="alert"><h3>⚠ Something needs a look</h3>${alerts.map(alert => `<div class="alert-row"><p><b>${escape(alert.title)}</b><br><span class="small">${escape(alert.message || '')}</span></p><button type="button" class="btn btn-small" data-ignore-alert="${escape(alert.id)}">Ignore</button></div>`).join('')}
+    return `<div class="card crew attention" role="alert"><h3 class="head">${tile('alert', 't-warn')}<span>Something needs a look</span></h3>${alerts.map(alert => `<div class="alert-row"><p><b>${escape(alert.title)}</b><br><span class="small">${escape(alert.message || '')}</span></p><button type="button" class="btn btn-small" data-ignore-alert="${escape(alert.id)}">Ignore</button></div>`).join('')}
       <p class="small muted">Planwharf checks the work itself; this is a reason to look, not proof that something broke.</p></div>`;
   }
 
@@ -240,7 +281,7 @@
   }
   function eventHtml(event) {
     const view = eventView(event);
-    return `<div class="event ${view.kind}"><span class="icon" aria-hidden="true">${view.icon}</span><span>${escape(view.text)}</span><time>${escape(clock(event.createdAt))}</time></div>`;
+    return `<div class="event ${view.kind}"><span class="icon" aria-hidden="true">${ic(view.icon)}</span><span>${escape(view.text)}</span><time>${escape(clock(event.createdAt))}</time></div>`;
   }
 
   function renderActions() {
@@ -251,13 +292,13 @@
     const working = auto?.enabled && !auto.stopReason;
     const missing = readiness(row);
     const parts = [];
-    if (working) parts.push('<button type="button" class="btn btn-danger" data-action="autonomy-off">Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>');
+    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>`);
     // One clear next action at a time.
-    else if (row.status === 'needs_approval') parts.push('<button type="button" class="btn btn-primary" data-action="approve">Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>');
-    else if (row.canStop) parts.push('<button type="button" class="btn btn-danger" data-action="stop">Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>');
-    else if (row.canResume) parts.push('<button type="button" class="btn btn-primary" data-action="resume">Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>');
+    else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
+    else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
+    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
     else {
-      parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">Let the crew do it</button>`);
+      parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
       parts.push(`<span class="status-text">${escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
@@ -286,10 +327,11 @@
     const unavailable = model.available === false;
     const chip = (role, label, help) => {
       const eligible = model.roleEligibility?.[role] !== false;
-      return `<button type="button" class="chip" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${label}</button>`;
+      const [icon, tone] = ROLE_LOOK[label] || ROLE_LOOK.Build;
+      return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
     const optional = ['reviewer', 'supervisor'].filter(role => model.roleEligibility?.[role] !== false);
-    return `<div class="member"><div class="info"><div class="label">${providerDot(model.provider)}${escape(model.label)}${model.id === state.orchestra?.orchestratorId ? ' <span class="badge running">Lead</span>' : ''}</div>
+    return `<div class="member"><div class="info"><div class="label">${providerDot(model.provider)}${escape(model.label)}${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
       ${left != null ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
       <div class="chips">${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
@@ -301,17 +343,17 @@
     const leads = all.filter(model => model.roleEligibility?.orchestrator && model.available !== false);
     const active = all.filter(model => !onBench(model));
     const bench = all.filter(onBench);
-    return `<div class="section"><h3>Lead</h3><p class="explain">Talks with you, plans the work and picks who does what.</p>
+    return `<div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section"><h3>On the team</h3><p class="explain"><b>Build</b> writes code and tests. <b>Verify</b> checks the work and fixes it, ideally a model from another company. <b>Review</b> and <b>Watch</b> are optional.</p>
+      <div class="section">${head('team', 't-accent', 'On the team')}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> and <b class="c-watch">Watch</b> are optional.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
-      <div class="section"><h3>Bench</h3><p class="explain">Available but not used. Press a role to bring a model in.</p>
+      <div class="section">${head('pause', 't-muted', 'Bench')}<p class="explain">Available but not used. Press a role to bring a model in.</p>
         ${bench.length ? bench.map(memberHtml).join('') : '<p class="muted small">The bench is empty.</p>'}</div>
-      <div class="section"><h3>AI tools</h3><p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
+      <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
-          <div class="chips"><button type="button" class="chip" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
-        <button type="button" class="btn btn-small" data-action="refresh-models">Look for models again</button></div>
-      <div class="section"><h3>Connect a model by API</h3><p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
+          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
+        <button type="button" class="btn btn-small" data-action="refresh-models">${ic('refresh')}Look for models again</button></div>
+      <div class="section">${head('plug', 't-violet', 'Connect a model by API')}<p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
         <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
           <label class="small" for="api-label">Name</label><input id="api-label" name="label" required maxlength="100" placeholder="DeepSeek">
           <label class="small" for="api-url">API address</label><input id="api-url" name="baseUrl" required placeholder="https://api.deepseek.com/v1">
@@ -328,9 +370,9 @@
     const subs = row.subTasks || row.megaTask?.subTasks || [];
     const label = id => models().find(model => model.id === id)?.label || id || 'not assigned';
     const events = (state.orchestra?.execution?.timeline || []).filter(event => event.projectId === row.id).slice(-15).reverse();
-    return `<div class="section"><h3>Now</h3><p><span class="pill ${status.kind}">${escape(status.text)}</span></p>${row.next ? `<p class="small">${escape(row.next)}</p>` : ''}</div>
-      ${subs.length ? `<div class="section"><h3>Steps</h3><ul class="status-list">${subs.map(sub => `<li><span class="badge ${escape(String(sub.status || '').toLowerCase())}">${escape(String(sub.status || 'planned').toLowerCase())}</span><span>${escape(String(sub.title || '').slice(0, 140))}<br><span class="muted small">${escape(label(sub.assignedModelId || sub.modelId))}</span></span></li>`).join('')}</ul></div>` : ''}
-      <div class="section"><h3>Recent activity</h3>${events.length ? `<ul class="status-list">${events.map(event => `<li><span class="muted small">${escape(clock(event.createdAt))}</span><span class="small">${escape(String(event.summary || '').slice(0, 200))}</span></li>`).join('')}</ul>` : '<p class="muted small">Nothing yet.</p>'}</div>
+    return `<div class="section">${head('play', 't-accent', 'Now')}<p><span class="pill ${status.kind}">${escape(status.text)}</span></p>${row.next ? `<p class="small">${escape(row.next)}</p>` : ''}</div>
+      ${subs.length ? `<div class="section">${head('progress', 't-blue', 'Steps')}<ul class="status-list">${subs.map(sub => `<li><span class="badge ${escape(String(sub.status || '').toLowerCase())}">${escape(String(sub.status || 'planned').toLowerCase())}</span><span>${escape(String(sub.title || '').slice(0, 140))}<br><span class="muted small">${escape(label(sub.assignedModelId || sub.modelId))}</span></span></li>`).join('')}</ul></div>` : ''}
+      <div class="section">${head('clock', 't-violet', 'Recent activity')}${events.length ? `<ul class="status-list">${events.map(event => `<li><span class="muted small">${escape(clock(event.createdAt))}</span><span class="small">${escape(String(event.summary || '').slice(0, 200))}</span></li>`).join('')}</ul>` : '<p class="muted small">Nothing yet.</p>'}</div>
       <p class="small muted path">Folder: ${escape(row.folder || 'not set')}</p>`;
   }
   function usagePanel() {
@@ -339,9 +381,9 @@
     const seconds = ms => Number.isFinite(ms) ? (ms >= 60000 ? Math.round(ms / 60000) + ' min' : Math.round(ms / 1000) + ' s') : '—';
     const tokens = row => Number.isFinite(row.outputTokens) ? `${row.outputTokens.toLocaleString()} out` : 'not reported';
     const rows = list => (list || []).map(row => `<span>${escape(row.model)}</span><span class="v">${row.calls} · ${seconds(row.durationMs)} · ${escape(tokens(row))}</span>`).join('');
-    return `<div class="section"><h3>Quota left</h3>${plans.length ? plans.map(plan => `<div class="member"><div class="info"><div class="label">${escape(plan.label)}</div><div class="meta">${plan.readable && Number.isFinite(plan.leftPct) ? plan.leftPct + '% left' : escape(plan.reason || 'Not reported by this provider')}</div>${plan.readable && Number.isFinite(plan.leftPct) ? `<div class="bar${plan.leftPct < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, plan.leftPct))}%"></span></div>` : ''}</div></div>`).join('') : '<p class="muted small">No provider reports quota.</p>'}</div>
-      <div class="section"><h3>Lead calls</h3><div class="kv">${rows(usage.orchestrator) || '<span class="muted small">None yet.</span>'}</div></div>
-      <div class="section"><h3>Crew work</h3><div class="kv">${rows(usage.workers) || '<span class="muted small">None yet.</span>'}</div></div>
+    return `<div class="section">${head('usage', 't-accent', 'Quota left')}${plans.length ? plans.map(plan => `<div class="member"><div class="info"><div class="label">${escape(plan.label)}</div><div class="meta">${plan.readable && Number.isFinite(plan.leftPct) ? plan.leftPct + '% left' : escape(plan.reason || 'Not reported by this provider')}</div>${plan.readable && Number.isFinite(plan.leftPct) ? `<div class="bar${plan.leftPct < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, plan.leftPct))}%"></span></div>` : ''}</div></div>`).join('') : '<p class="muted small">No provider reports quota.</p>'}</div>
+      <div class="section">${head('lead', 'r-lead', 'Lead calls')}<div class="kv">${rows(usage.orchestrator) || '<span class="muted small">None yet.</span>'}</div></div>
+      <div class="section">${head('build', 'r-build', 'Crew work')}<div class="kv">${rows(usage.workers) || '<span class="muted small">None yet.</span>'}</div></div>
       <p class="small muted">Calls · time · output tokens. A provider that does not report tokens shows “not reported”, never a guess.</p>`;
   }
 
@@ -362,11 +404,11 @@
       const kind = CHANGE_KIND[code] || CHANGE_KIND[code[0]] || 'changed';
       return `<li><span class="badge">${escape(kind)}</span><span class="small" style="overflow-wrap:anywhere">${escape(line.slice(3))}</span></li>`;
     }).join('');
-    return `<div class="section"><h3>Not yet saved in Git</h3><p class="explain">Files the crew or you changed since the last commit on <b>${escape(local.branch || 'the current branch')}</b>.</p>
+    return `<div class="section">${head('file', 't-blue', 'Not yet saved in Git')}<p class="explain">Files the crew or you changed since the last commit on <b>${escape(local.branch || 'the current branch')}</b>.</p>
       ${changes.length ? `<ul class="status-list">${list}</ul>` : '<p class="small">Nothing changed. The folder matches the last commit.</p>'}
       ${Number.isFinite(local.uncommitted) && local.uncommitted > changes.length ? `<p class="small muted">Showing ${changes.length} of ${local.uncommitted}.</p>` : ''}</div>
       <p class="small muted path">${escape(row.folder)}${entry.checkedAt ? ' · checked ' + escape(clock(entry.checkedAt)) : ''}</p>
-      <button type="button" class="btn btn-small" data-action="repo-refresh">Check again</button>`;
+      <button type="button" class="btn btn-small" data-action="repo-refresh">${ic('refresh')}Check again</button>`;
   }
   async function loadRepo(id, force = false) {
     if (state.repo[id]?.loading) return;
@@ -381,23 +423,23 @@
     const row = project();
     const dark = currentTheme() === 'dark';
     const mode = state.orchestra?.mode;
-    return `${row ? `<div class="section"><h3>This project</h3><form id="folder-form" class="stack"><label class="small" for="folder-input">Folder on your computer</label>
+    return `${row ? `<div class="section">${head('folder', 't-accent', 'This project')}<form id="folder-form" class="stack"><label class="small" for="folder-input">Folder on your computer</label>
         <input id="folder-input" name="folder" value="${escape(row.folder || '')}" placeholder="C:\\Projects\\my-website" maxlength="1000">
-        <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">Save folder</button></form></div>` : ''}
-      <div class="section"><h3>New projects</h3><form id="root-form" class="stack"><label class="small" for="root-input">Default folder for new projects</label>
+        <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">${ic('folder')}Save folder</button></form></div>` : ''}
+      <div class="section">${head('plus', 't-blue', 'New projects')}<form id="root-form" class="stack"><label class="small" for="root-input">Default folder for new projects</label>
         <input id="root-input" name="root" value="${escape(state.settings?.projectsRoot || '')}" placeholder="C:\\Projects" maxlength="1000">
         <p class="explain">When you leave the folder empty on a new project, Planwharf creates it here.</p>
         <p class="error" id="root-error" role="alert"></p><button type="submit" class="btn btn-small">Save</button></form></div>
-      <div class="section"><h3>Approvals</h3><p class="explain">${mode === 'auto' ? 'The lead may start approved work without asking each time.' : 'The lead asks you before each piece of work starts.'}</p>
-        <button type="button" class="btn btn-small" data-action="toggle-mode">${mode === 'auto' ? 'Ask me before each step' : 'Let the lead start approved work'}</button></div>
-      <div class="section"><h3>Look</h3><button type="button" class="btn btn-small" data-action="theme">${dark ? 'Use light theme' : 'Use dark theme'}</button></div>
-      <div class="section"><h3>Move a project</h3><p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
-        <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">Save ${escape(row.name)} to a file</a>` : ''}
-        <label class="btn btn-small">Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
+      <div class="section">${head('verify', 'r-verify', 'Approvals')}<p class="explain">${mode === 'auto' ? 'The lead may start approved work without asking each time.' : 'The lead asks you before each piece of work starts.'}</p>
+        <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
+      <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div></div>
+      <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
+        <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
+        <label class="btn btn-small">${ic('folder')}Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
         <p class="error" id="import-error" role="alert"></p></div>
       ${updatesSection()}
-      ${row ? `<div class="section"><h3>Remove project</h3><p class="explain">Removes ${escape(row.name)} from Planwharf. The folder and its files stay on your computer.</p>${armedButton('remove-project', 'Remove project', 'Yes, remove it')}</div>` : ''}
-      <div class="section"><h3>Quit</h3><p class="explain">Unfinished work is saved and can be resumed next time.</p>${armedButton('quit', 'Quit Planwharf', 'Yes, quit now')}</div>`;
+      ${row ? `<div class="section">${head('trash', 't-bad', 'Remove project')}<p class="explain">Removes ${escape(row.name)} from Planwharf. The folder and its files stay on your computer.</p>${armedButton('remove-project', 'Remove project', 'Yes, remove it')}</div>` : ''}
+      <div class="section">${head('power', 't-muted', 'Quit')}<p class="explain">Unfinished work is saved and can be resumed next time.</p>${armedButton('quit', 'Quit Planwharf', 'Yes, quit now')}</div>`;
   }
   // Dangerous buttons need a second press; nothing opens a browser dialog.
   const armedButton = (action, label, confirmLabel) => state.armed === action
@@ -405,7 +447,7 @@
     : `<button type="button" class="btn btn-small" data-arm="${action}">${label}</button>`;
   function updatesSection() {
     const u = state.updates;
-    if (!u) return '<div class="section"><h3>Updates</h3><button type="button" class="btn btn-small" data-action="check-updates">Check for updates</button></div>';
+    if (!u) return `<div class="section">${head('refresh', 't-accent', 'Updates')}<button type="button" class="btn btn-small" data-action="check-updates">${ic('refresh')}Check for updates</button></div>`;
     const busy = ['downloading', 'checkpointing', 'restarting', 'checking'].includes(u.state);
     const line = busy ? { downloading: 'Downloading the update…', checkpointing: 'Saving unfinished work…', restarting: 'Restarting…', checking: 'Checking…' }[u.state]
       : u.state === 'error' ? 'Could not check: ' + (u.reason || 'unknown error')
@@ -414,7 +456,7 @@
     const install = u.available && u.canInstall && !busy
       ? armedButton('install-update', 'Update and restart', state.updateNeedsConfirm ? 'Work is running: save it and update' : 'Yes, update now') : '';
     const download = u.available && !u.canInstall && u.releaseUrl ? `<a href="${escape(u.releaseUrl)}" target="_blank" rel="noopener noreferrer">Download it</a>` : '';
-    return `<div class="section"><h3>Updates</h3><p class="explain">${escape(line)}</p><div class="row">${install}${download}<button type="button" class="btn btn-small" data-action="check-updates" ${busy ? 'disabled' : ''}>Check again</button></div></div>`;
+    return `<div class="section">${head('refresh', 't-accent', 'Updates')}<p class="explain">${escape(line)}</p><div class="row">${install}${download}<button type="button" class="btn btn-small" data-action="check-updates" ${busy ? 'disabled' : ''}>Check again</button></div></div>`;
   }
   async function loadUpdates(check = false) {
     try { state.updates = await (check ? post('/api/app/updates/check', {}) : getJson('/api/app/updates')); } catch { /* Offline checks never interrupt work. */ }
@@ -632,6 +674,9 @@
   pulse(); setInterval(pulse, 3000);
   loadUpdates(); setInterval(loadUpdates, 60000);
 
+  // Tabs keep their name for screen readers and as a tooltip when only the icon fits.
+  document.querySelectorAll('.tab').forEach(tab => { tab.title = tab.textContent.trim(); tab.innerHTML = `<span class="tab-label">${escape(tab.textContent.trim())}</span>`; });
+  document.querySelectorAll('[data-icon]').forEach(el => el.insertAdjacentHTML('afterbegin', ic(el.dataset.icon)));
   const theme = store.get('theme', null);
   if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
   getJson('/api/settings').then(value => { state.settings = value; }).catch(() => {});

@@ -12,14 +12,14 @@
   <div class="shell" id="shell">
     <aside class="side side-left" id="projects-panel" aria-label="Projects">
       <div class="side-head">
-        <strong class="brand">Planwharf</strong>
+        <strong class="brand"><span class="brand-mark" data-icon="lead" aria-hidden="true"></span>Planwharf</strong>
         <button type="button" class="icon-btn only-narrow" data-close-side="projects-panel" aria-label="Close projects">✕</button>
       </div>
-      <button type="button" class="btn btn-primary full" id="new-project">+ New project</button>
+      <button type="button" class="btn btn-primary full" id="new-project" data-icon="plus">New project</button>
       <nav id="project-list" class="project-list" aria-label="Your projects"></nav>
       <div class="side-foot">
         <span id="update-notice"></span>
-        <button type="button" class="link-quiet" data-panel="settings">Settings</button>
+        <button type="button" class="link-quiet" data-panel="settings" data-icon="settings">Settings</button>
       </div>
     </aside>
 
@@ -31,11 +31,11 @@
           <span id="project-status" class="pill" role="status"></span>
         </div>
         <nav class="panel-tabs" aria-label="Side panels">
-          <button type="button" class="tab" data-panel="team" aria-pressed="false">Team</button>
-          <button type="button" class="tab" data-panel="progress" aria-pressed="false">Progress</button>
-          <button type="button" class="tab" data-panel="usage" aria-pressed="false">Usage</button>
-          <button type="button" class="tab" data-panel="files" aria-pressed="false">Files</button>
-          <button type="button" class="tab" data-panel="settings" aria-pressed="false">Settings</button>
+          <button type="button" class="tab" data-panel="team" data-icon="team" aria-pressed="false">Team</button>
+          <button type="button" class="tab" data-panel="progress" data-icon="progress" aria-pressed="false">Progress</button>
+          <button type="button" class="tab" data-panel="usage" data-icon="usage" aria-pressed="false">Usage</button>
+          <button type="button" class="tab" data-panel="files" data-icon="file" aria-pressed="false">Files</button>
+          <button type="button" class="tab" data-panel="settings" data-icon="settings" aria-pressed="false">Settings</button>
         </nav>
       </header>
 
@@ -47,7 +47,7 @@
         <form id="composer" class="composer" autocomplete="off">
           <label class="sr-only" for="composer-input">Message to the lead</label>
           <textarea id="composer-input" rows="1" placeholder="Tell the lead what you want built…"></textarea>
-          <button type="submit" class="btn btn-primary" id="send">Send</button>
+          <button type="submit" class="btn btn-primary" id="send" data-icon="send">Send</button>
         </form>
         <p class="hint">You are the captain: you set the goal and the team, the crew does the work. Try “open team” or “show usage”.</p>
       </footer>
