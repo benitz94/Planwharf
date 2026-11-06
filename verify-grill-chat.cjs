@@ -61,7 +61,7 @@ let browserError;
   };
   await command('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1100, deviceScaleFactor: 1, mobile: false });
   await fetch(appUrl + '/api/orchestrator/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 'fixture-lead' }) });
-  await command('Page.navigate', { url: appUrl + '/#orchestrator' });
+  await command('Page.navigate', { url: appUrl + '/advanced#orchestrator' });
   for (let i = 0; i < 100 && !await evaluate("Boolean(document.getElementById('dashboard-orch-project')?.options.length > 1)"); i++) await pause(25);
   await evaluate(`(() => { const select = document.getElementById('dashboard-orch-project'); select.value = ${JSON.stringify(targetId)}; select.dispatchEvent(new Event('change')); })()`);
   for (let i = 0; i < 100 && !await evaluate(`Boolean(document.querySelector('#dashboard-orchestrator [data-grill-start="${targetId}"][data-grill-kind="me"]'))`); i++) await pause(25);

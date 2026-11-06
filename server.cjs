@@ -313,7 +313,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     return { ok: true, plan: next, version: version(next), snapshot, phase: prepared.phase || (prepared.job ? 'plan' : 'grill') };
   }
   const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {});
-  const staticFiles = { '/supervisor-ui.js': ['supervisor-ui.js', 'text/javascript'], '/supervisor.css': ['supervisor.css', 'text/css'], '/update-ui.js': ['update-ui.js', 'text/javascript'], '/layout-ui.js': ['layout-ui.js', 'text/javascript'], '/model-policy-ui.js': ['model-policy-ui.js', 'text/javascript'], '/notifications.js': ['notifications.js', 'text/javascript'], '/quota.js': ['quota.js', 'text/javascript'], '/home-ui.js': ['home-ui.js', 'text/javascript'], '/window-ui.js': ['window-ui.js', 'text/javascript'], '/': ['index.html', 'text/html'], '/index.html': ['index.html', 'text/html'], '/orchestrator.html': ['orchestrator.html', 'text/html'], '/orch.js': ['orch.js', 'text/javascript'], '/app.js': ['app.js', 'text/javascript'], '/plan.js': ['plan.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/models.js': ['models.js', 'text/javascript'], '/models.json': ['models.json', 'application/json'], '/engine/attempts.js': ['engine/attempts.js', 'text/javascript'], '/engine/sentinel.js': ['engine/sentinel.js', 'text/javascript'] };
+  const staticFiles = { '/supervisor-ui.js': ['supervisor-ui.js', 'text/javascript'], '/supervisor.css': ['supervisor.css', 'text/css'], '/update-ui.js': ['update-ui.js', 'text/javascript'], '/layout-ui.js': ['layout-ui.js', 'text/javascript'], '/model-policy-ui.js': ['model-policy-ui.js', 'text/javascript'], '/notifications.js': ['notifications.js', 'text/javascript'], '/quota.js': ['quota.js', 'text/javascript'], '/home-ui.js': ['home-ui.js', 'text/javascript'], '/window-ui.js': ['window-ui.js', 'text/javascript'], '/': ['chat.html', 'text/html'], '/advanced': ['index.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'], '/index.html': ['index.html', 'text/html'], '/orchestrator.html': ['orchestrator.html', 'text/html'], '/orch.js': ['orch.js', 'text/javascript'], '/app.js': ['app.js', 'text/javascript'], '/plan.js': ['plan.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/models.js': ['models.js', 'text/javascript'], '/models.json': ['models.json', 'application/json'], '/engine/attempts.js': ['engine/attempts.js', 'text/javascript'], '/engine/sentinel.js': ['engine/sentinel.js', 'text/javascript'] };
   staticFiles['/browser-settings-ui.js'] = ['browser-settings-ui.js', 'text/javascript'];
   staticFiles['/workspace-ui.js'] = ['workspace-ui.js', 'text/javascript'];
   staticFiles['/workspace.css'] = ['workspace.css', 'text/css'];
@@ -350,12 +350,17 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       // Model discovery is explicit or startup-only; status polling never spawns provider CLIs.
       if (refreshModels && request.method === 'POST' && pathname === '/api/orchestrator/propose') await providerModels.refresh();
       if (request.method === 'GET' && pathname === '/' && (loc.searchParams.get('watch') === '1' || loc.searchParams.get('view') === 'watch')) {
-        response.writeHead(302, { Location: '/#orchestrator' });
+        response.writeHead(302, { Location: '/advanced#orchestrator' });
+        response.end();
+        return;
+      }
+      if (request.method === 'GET' && pathname === '/' && loc.searchParams.has('window')) {
+        response.writeHead(302, { Location: '/advanced' + loc.search });
         response.end();
         return;
       }
       if (request.method === 'GET' && pathname === '/orchestrator.html') {
-        response.writeHead(302, { Location: '/#orchestrator' });
+        response.writeHead(302, { Location: '/advanced#orchestrator' });
         response.end();
         return;
       }

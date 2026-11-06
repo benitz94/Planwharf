@@ -96,7 +96,7 @@ async function shot(name, selector) {
   await command('Runtime.enable'); await command('Network.enable'); await command('Page.enable');
   await command('Emulation.setDeviceMetricsOverride', { width: 1480, height: 1050, deviceScaleFactor: 1, mobile: false });
   browserStage = 'application-navigation';
-  await command('Page.navigate', { url: base + '/#orchestrator' });
+  await command('Page.navigate', { url: base + '/advanced#orchestrator' });
   await until(() => evaluate("document.body.dataset.orchReady==='1' && document.querySelector('[data-workspace-session]')?.options.length>=2"), 'workspace real sessions');
   await click('[data-workspace-panel=sessions]');
   assert.equal(await evaluate("document.querySelector('[data-activity-mode=friendly]').getAttribute('aria-pressed')"), 'true');

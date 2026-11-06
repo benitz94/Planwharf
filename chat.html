@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planwharf</title>
+  <link rel="stylesheet" href="chat.css">
+  <script src="chat-ui.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#composer-input">Skip to the message box</a>
+  <div class="shell" id="shell">
+    <aside class="side side-left" id="projects-panel" aria-label="Projects">
+      <div class="side-head">
+        <strong class="brand">Planwharf</strong>
+        <button type="button" class="icon-btn only-narrow" data-close-side="projects-panel" aria-label="Close projects">✕</button>
+      </div>
+      <button type="button" class="btn btn-primary full" id="new-project">+ New project</button>
+      <nav id="project-list" class="project-list" aria-label="Your projects"></nav>
+      <div class="side-foot">
+        <a class="link-quiet" href="/advanced">Advanced view</a>
+      </div>
+    </aside>
+
+    <main class="main" id="main">
+      <header class="topbar">
+        <button type="button" class="icon-btn only-narrow" data-open-side="projects-panel" aria-label="Show projects">☰</button>
+        <div class="topbar-title">
+          <h1 id="project-title">Welcome</h1>
+          <span id="project-status" class="pill" role="status"></span>
+        </div>
+        <nav class="panel-tabs" aria-label="Side panels">
+          <button type="button" class="tab" data-panel="team" aria-pressed="false">Team</button>
+          <button type="button" class="tab" data-panel="progress" aria-pressed="false">Progress</button>
+          <button type="button" class="tab" data-panel="usage" aria-pressed="false">Usage</button>
+          <button type="button" class="tab" data-panel="files" aria-pressed="false">Files</button>
+          <button type="button" class="tab" data-panel="settings" aria-pressed="false">Settings</button>
+        </nav>
+      </header>
+
+      <section id="thread" class="thread" aria-live="polite" aria-label="Conversation"></section>
+
+      <footer class="composer-wrap">
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <div id="action-bar" class="action-bar"></div>
+        <form id="composer" class="composer" autocomplete="off">
+          <label class="sr-only" for="composer-input">Message to the lead</label>
+          <textarea id="composer-input" rows="1" placeholder="Tell the lead what you want built…"></textarea>
+          <button type="submit" class="btn btn-primary" id="send">Send</button>
+        </form>
+        <p class="hint">You are the captain: you set the goal and the team, the crew does the work. Try “open team” or “show usage”.</p>
+      </footer>
+    </main>
+
+    <aside class="side side-right" id="side-panel" aria-label="Details" hidden>
+      <div class="side-head">
+        <h2 id="side-title">Team</h2>
+        <button type="button" class="icon-btn" id="side-close" aria-label="Close panel">✕</button>
+      </div>
+      <div id="side-body" class="side-body"></div>
+    </aside>
+  </div>
+
+  <dialog id="project-dialog" aria-labelledby="project-dialog-title">
+    <form id="project-form" method="dialog">
+      <h2 id="project-dialog-title">New project</h2>
+      <label>Name<input name="name" required maxlength="120" placeholder="My website"></label>
+      <label>What should the crew build?<textarea name="direction" rows="4" required maxlength="10000" placeholder="Describe the result you want, in plain words."></textarea></label>
+      <label>Folder on your computer<input name="folder" maxlength="1000" placeholder="C:\Projects\my-website"></label>
+      <p class="muted small" id="folder-help">Use an existing folder, or leave it empty to create one in your projects folder.</p>
+      <p class="error" id="project-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn" value="cancel" id="project-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" value="create">Create project</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

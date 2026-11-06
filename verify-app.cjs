@@ -53,7 +53,10 @@ function runCli(args) {
   opts.fetchPlans = async () => ['ChatGPT', 'Grok'].map(id => ({ id, label: id, readable: true, pct: 18, leftPct: 82, windows: [] }));
   const opened = await listen(opts);
   runningServer = opened.server;
-  const page = await fetch(opened.url + '/');
+  const chat = await fetch(opened.url + '/');
+  assert.equal(chat.status, 200);
+  assert.match(await chat.text(), /chat-ui\.js/, 'The root opens the chat view');
+  const page = await fetch(opened.url + '/advanced');
   assert.equal(page.status, 200);
   const html = await page.text();
   assert.match(html, /For you/);

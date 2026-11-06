@@ -61,7 +61,7 @@ let browserError;
     await pause(100);
   };
   await viewport(1440);
-  await command('Page.navigate', { url: appUrl + '/#orchestrator' });
+  await command('Page.navigate', { url: appUrl + '/advanced#orchestrator' });
   for (let i = 0; i < 100; i++) {
     if (await evaluate("document.querySelectorAll('.layout-splitter').length === 2 && !document.getElementById('orchestrator-view').hidden")) break;
     await pause(50);

@@ -49,6 +49,8 @@ Node.js and any provider CLIs are installed separately.
 
 ## Start here
 
+Planwharf opens on a chat with your lead model. You are the captain: you set the goal and the team, the crew builds and verifies, and you can stop it at any time. The [chat view guide](docs/CHAT-VIEW.md) explains the screen in two minutes. The steps below describe the full **Advanced view**, still available at `/advanced`.
+
 1. Download `Planwharf-vX.Y.Z.zip` from the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest), extract the complete application folder, install Node.js, and on Windows open `Planwharf.exe`.
 2. Choose **Add project**, write a concrete goal, and link a new or existing project folder.
 3. For AI work, authenticate a supported coding CLI or add an API connection with authorized exact model IDs, then enable available lead/worker models. Chat subscriptions do not automatically grant API or CLI access. Use Grill to clarify the goal, then **Auto start** or chat to prepare an assignment.

@@ -10,6 +10,8 @@ This guide describes the current application, including model role permissions. 
 
 ## Planwharf and Orchestrator
 
+The app opens on the [chat view](CHAT-VIEW.md): chat with the lead in the centre, projects on the left, and Team, Progress, Usage, Files and Settings panels on the right. This guide describes the **Advanced view** at `/advanced`, which keeps every control.
+
 Planwharf answers **"What is happening with my project?"** Orchestrator answers **"What are the AIs doing?"** They share one local backend, notebook and durable execution state.
 
 Home is the project overview. Orchestrator contains chat, model/provider settings, processes, worker evidence, remaining quota and AI usage. Opening Home does not invoke a model. Deterministic commands such as Stop, model toggles and quota/status inquiries use local paths; reasoning and clarification may invoke your selected lead.
@@ -75,6 +77,7 @@ Enable the provider and select each model's **Allowed roles**:
 | --- | --- | --- |
 | Orchestrator | Reason, inspect and coordinate as the selected lead. | Dispatching that model for implementation or review when those roles are disabled. |
 | Worker | Approved implementation and supported research work. | Acting as the selected lead or reviewer when those roles are disabled. |
+| Verifier | The verify slice of a build job: an independent check of the builder's work, with fixes. Planwharf prefers a Verifier from another provider. | Building the job. With no Verifier available the job runs as one slice and Planwharf only runs the tests. |
 | Reviewer | Approved review/audit work and findings. | Implementation when Worker is disabled, or coordination when Orchestrator is disabled. |
 
 Roles are independent permissions, not rankings. Several can be enabled together, or all can be disabled. Changes affect subsequent assignments; a role toggle does not terminate work already running. Use Stop if you need to interrupt it.

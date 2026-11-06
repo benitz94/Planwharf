@@ -27,7 +27,7 @@ let command;
     return result.result.value;
   };
   await command('Emulation.setDeviceMetricsOverride', { width: 1365, height: 1100, deviceScaleFactor: 1, mobile: false });
-  await command('Page.navigate', { url: appUrl });
+  await command('Page.navigate', { url: appUrl + '/advanced' });
   for (let i = 0; i < 100; i++) {
     if (await evaluate("document.getElementById('revision-badge')?.textContent.includes('R2')")) break;
     await pause(50);
