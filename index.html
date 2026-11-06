@@ -31,7 +31,6 @@
   <script src="orch.js" defer></script>
   <script src="layout-ui.js" defer></script>
   <script src="update-ui.js" defer></script>
-  <script src="project-skills-ui.js" defer></script>
   <script src="browser-settings-ui.js" defer></script>
   <script src="workspace-ui.js" defer></script>
 </head>
@@ -74,14 +73,9 @@
           </button>
         </div>
       </header>
-      <section class="runtime-controls" aria-label="Model and skills settings">
-        <label class="choice"><input type="checkbox" id="matt-skills-enabled" checked> Use Matt skills for all models</label>
-        <small class="muted">Applies to new model requests and worker launches.</small>
-        <p id="matt-skills-status" class="muted" role="status">Checking Matt skills at startup...</p>
-        <button type="button" id="matt-skills-refresh" class="secondary compact">Check skills updates</button>
+      <section class="runtime-controls" aria-label="Model settings">
         <button type="button" id="provider-models-refresh" class="secondary compact">Refresh models</button>
         <p id="provider-models-status" class="muted" role="status"></p>
-        <details id="project-skills-panel"></details>
       </section>
       <main id="project-view">
 
@@ -96,7 +90,7 @@
         </div>
         <details id="project-details" class="project-details"><summary>Living Plan | History | Decisions | Revisions | Runs | Checkpoints | Technical details</summary>
         <div id="project-place" class="project-place"><span class="place-item"><small>Folder</small> —</span><span class="place-item"><small>GitHub</small> —</span><span class="place-actions"><button type="button" class="secondary" data-place="set">Set place</button></span></div>
-        <div class="details-controls">          <span id="skills-version" class="skills-version">mattpocock/skills · main</span>
+        <div class="details-controls">
           <span class="local">on your computer</span>
           <div class="history-control"><label for="revision-select">Version</label><select id="revision-select" disabled></select></div>
 </div>
@@ -127,8 +121,6 @@
               <p class="muted">Change the lead any time. Provider usage is a percentage shared by every model on that plan.</p>
             </div>
             <div id="run-modes" class="run-modes"><button type="button" class="primary" data-mode="manual">Manual</button><button type="button" class="secondary" data-mode="auto">Automatic</button><button type="button" class="primary" data-auto-start>Auto start</button></div>
-            <p id="skills-check" class="muted">mattpocock/skills · main</p>
-            <button type="button" id="skills-refresh" class="secondary">Check skills</button>
             <details id="fleet" class="fleet"><summary>Workers and plans</summary><p class="muted fleet-hint">ChatGPT and Grok each have several models, plus Gemini. Provider usage is shared. If ChatGPT is exhausted, every ChatGPT model is exhausted.</p></details>
             <p class="footnote">One job per project. Planwharf is the notebook: state of the art, set the work, turn functions on or off. The Orchestrator dashboard watches every model, process, and usage in real time. Stop kills workers and saves a checkpoint. Approve run starts engine/runner.cjs.</p><button id="new-task" class="secondary" disabled>Add a job</button>
             </details></div>

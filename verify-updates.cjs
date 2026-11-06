@@ -18,7 +18,7 @@ const calls = [];
 const updateState = { state: 'available', currentVersion: 'v1.0.0', latestVersion: 'v1.0.1', available: true, canInstall: true, releaseUrl: 'https://github.com/benitz94/Planwharf/releases/tag/v1.0.1' };
 const updateManager = { snapshot: () => updateState, check: async () => updateState, install: async confirm => { calls.push(confirm); return confirm ? { ok: true, restarting: true } : { requiresConfirmation: true }; }, busy: false };
 fs.writeFileSync(planFile, JSON.stringify(isolatedPlan));
-const server = createServer({ skillsEnabled: false, planFile, models: [], updateManager, fetchPlans: async () => [] });
+const server = createServer({ planFile, models: [], updateManager, fetchPlans: async () => [] });
 let browser;
 let ws;
 let command;

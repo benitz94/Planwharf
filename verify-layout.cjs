@@ -16,7 +16,7 @@ const profile = path.join(output, `chromium-profile-${Date.now()}`);
 const planFile = path.join(output, `browser-plan-${Date.now()}.json`);
 const isolatedPlan = Plan.example(); isolatedPlan.tasks = []; isolatedPlan.project = { id: 'layout-probe', name: 'Layout probe' };
 fs.writeFileSync(planFile, JSON.stringify(isolatedPlan));
-const server = createServer({ skillsEnabled: false, planFile, models: [], fetchPlans: async () => [] });
+const server = createServer({ planFile, models: [], fetchPlans: async () => [] });
 let browser;
 let ws;
 let command;

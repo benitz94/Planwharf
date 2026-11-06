@@ -1,6 +1,6 @@
 # Third-party acknowledgments
 
-Planwharf uses [Matt Pocock's skills](https://github.com/mattpocock/skills) as optional instructions for its coding agents. Thank you to Matt Pocock and the contributors for sharing this work. The skills are licensed under MIT; the original copyright and permission notice is preserved in [the license copy](licenses/mattpocock-skills-MIT.txt) and in downloaded revision caches.
+Coding agents that develop Planwharf can use [Matt Pocock's skills](https://github.com/mattpocock/skills) from `.agents/skills`. The app itself no longer delivers skills to models. The skills are licensed under MIT; the original notice is preserved in [the license copy](licenses/mattpocock-skills-MIT.txt).
 
 Planwharf integrates with separately installed tools from [OpenAI Codex](https://github.com/openai/codex), [Grok Build](https://github.com/xai-org/grok-build), and Antigravity/Gemini. These integrations keep their own terms, licenses and account requirements. Provider CLI binaries, credentials and subscription access are not included in the Planwharf download. There is no implied endorsement or affiliation.
 

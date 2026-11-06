@@ -134,7 +134,7 @@ function findEdge() { return findBrowser(); }
 
 function listen(opts) {
   const windows = opts.windows || createAppWindows({ onWindowClosed: () => server.quitApp && server.quitApp(), open: (url, view) => openWindow(url, path.join(opts.attemptsDir, 'windows', view), { browser: launchBrowser(opts) }) });
-  const server = createServer({ planFile: opts.planFile, attemptsDir: opts.attemptsDir, models: opts.models, fetchPlans: opts.fetchPlans, syncSkills: opts.syncSkills !== false, skillsEnabled: opts.skillsEnabled !== false, spawnWorker, isProcessAlive, killWorker, askModel: askOrchestrator, abortAsk, abortSupervisor,
+  const server = createServer({ planFile: opts.planFile, attemptsDir: opts.attemptsDir, models: opts.models, fetchPlans: opts.fetchPlans, spawnWorker, isProcessAlive, killWorker, askModel: askOrchestrator, abortAsk, abortSupervisor,
     updateManager: opts.updateManager, restartAfterUpdate: opts.restartAfterUpdate, appWindows: windows, quitApp: () => server.quitApp && server.quitApp(),
     openWatchWindow: url => windows.openView('orchestrator', url), openPlanWindow: url => windows.openView('planwharf', url) });
   server.windows = windows;

@@ -14,9 +14,8 @@ const basePlan = Plan.example(); basePlan.tasks = []; basePlan.project = { id: '
 const isolatedPlan = Plan.createProject(basePlan, { name: 'New imported project', direction: 'Build a small scheduling tool.' });
 const targetId = isolatedPlan.projects.at(-1).project.id;
 const calls = [], launches = [];
-const skills = { snapshot: () => ({ sha: 'fixture', skillCount: 1, catalogComplete: true }), ensure: async () => {}, prompt: () => 'Isolated Matt catalog', read: () => 'Matt grilling fixture: ask the frontier and wait.' };
 fs.writeFileSync(planFile, JSON.stringify(isolatedPlan));
-const server = createServer({ planFile, skills, skillsEnabled: true, refreshModels: false, fetchPlans: null,
+const server = createServer({ planFile, refreshModels: false, fetchPlans: null,
   models: [{ id: 'fixture-lead', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'default' }],
   inspectFolder: () => ({ git: false, names: [], dirty: [] }), readRepository: () => ({ local: {}, remote: {}, comparison: {} }),
   askModel: info => { calls.push(info); return { answer: 'Q1: Who will use the scheduling tool? Recommended: a small volunteer team.' }; },
@@ -70,7 +69,7 @@ let browserError;
   for (let i = 0; i < 100 && !await evaluate("document.getElementById('dashboard-orch-ask-thread').textContent.includes('Q1: Who will use')"); i++) await pause(25);
   assert.ok(await evaluate("document.getElementById('dashboard-orch-ask-thread').textContent.includes('Q1: Who will use')"));
   assert.equal(calls.length, 1); assert.equal(calls[0].projectId, targetId); assert.equal(calls[0].grillKind, 'me'); assert.equal(calls[0].allowActions, false);
-  assert.match(calls[0].skillsPrompt, /Matt grilling fixture/);
+  assert.match(calls[0].extraPrompt, /ACTIVE GRILL ME SESSION/);
   assert.equal(await evaluate("document.getElementById('grill-dialog').open"), false);
   assert.equal(await evaluate("document.getElementById('auto-start-dialog').open"), false);
   assert.equal(await evaluate("document.getElementById('orchestrator-view').hidden"), false);
@@ -85,7 +84,7 @@ let browserError;
   await pause(100);
   const screenshot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
   fs.writeFileSync(path.join(output, 'grill-in-chat.png'), Buffer.from(screenshot.data, 'base64'));
-  const report = 'PASS: new project without a folder, Show Orchestrator Grill click, real lead fixture turn with Matt instructions, follow-up in chat, no modal/Auto start or worker dispatch.\n';
+  const report = 'PASS: new project without a folder, Show Orchestrator Grill click, real lead fixture turn with Grill me instructions, follow-up in chat, no modal/Auto start or worker dispatch.\n';
   fs.writeFileSync(path.join(output, 'report.txt'), report); console.log(report.trim());
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (command) { try { await command('Browser.close'); } catch (_) {} }

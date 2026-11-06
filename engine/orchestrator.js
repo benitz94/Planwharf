@@ -356,11 +356,11 @@ function parseGrillQuestions(text) {
   return lines.filter(line => /recommended:/i.test(line) || /\?/.test(line)).slice(0, 8);
 }
 
-function grillPrompt(item, facts, skillText, docs) {
+function grillPrompt(item, facts, docs) {
   const latest = item.revisions.at(-1);
   return [
-    'You are running Matt Pocock grilling for this Planwharf project.',
-    skillText ? `Skill:\n${skillText}` : 'Ask the frontier in one round. Word each question so yes accepts your recommended answer.',
+    'You are interviewing the user about this Planwharf project before any planning.',
+    'Ask only what blocks a good plan: the open decisions at the frontier, in one round. Word each question so yes accepts your recommended answer.',
     `Project: ${item.project.name}`,
     latest && latest.direction ? `Goal: ${latest.direction}` : '',
     item.project.folder ? `Folder: ${item.project.folder}` : '',
@@ -1866,7 +1866,6 @@ function createOrchestrator(options) {
         return {
           id: item.project.id,
           name: item.project.name,
-          projectSkills: typeof opts.projectSkillState === 'function' ? clone(opts.projectSkillState(item.project.id)) : null,
           folder: item.project.folder || null,
           github: item.project.github || null,
           repository: row.repository && row.repository.folder === (item.project.folder || null) && row.repository.github === (item.project.github || null) ? clone(row.repository) : null,
@@ -2716,10 +2715,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       const fallback = answerQuestion(q, snap, projectId);
       const lead = leadModel();
       const history = recentContext(conversation || []);
-      if (grillKind && opts.mattSkillsEnabled?.(row?.id || projectId) === false) {
-        answer = 'Matt skills are disabled. Enable Use Matt skills to start Matt grilling.';
-      } else if (grillKind && typeof opts.askModel !== 'function') {
-        answer = 'An orchestrator model connection is required for Matt grilling. Select an available lead and retry.';
+      if (grillKind && typeof opts.askModel !== 'function') {
+        answer = 'An orchestrator model connection is required for Grill me. Select an available lead and retry.';
       } else if (typeof opts.askModel === 'function' && !lead) {
         answer = 'Pick an orchestrator model first (GPT-6 Astra, Grok 4.7, …). I coordinate workers; I do not do the job.';
       } else if (typeof opts.askModel === 'function' && lead) {
@@ -2808,7 +2805,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         } catch (error) {
           if (token !== askToken) return finishCancelled();
           ms = Date.now() - started;
-          diagnostic = error?.code === 'PROJECT_SKILL_INTERVIEW_UNAVAILABLE' || grillKind && /Matt .*skill/i.test(error?.message || '') ? null : diagnoseProvider(lead, error?.message || 'CLI error');
+          diagnostic = diagnoseProvider(lead, error?.message || 'CLI error');
           answer = diagnostic ? diagnostic.message : error.message;
         }
         thinkingLive = null;
@@ -2998,18 +2995,11 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   async function composeGrillRound(item, facts, kind) {
     const latest = item.revisions.at(-1);
     const docs = kind === 'docs' ? collectDocs(facts) : [];
-    const skillsEnabled = opts.mattSkillsEnabled?.(item.project.id) !== false;
-    const skillText = skillsEnabled && typeof opts.readSkill === 'function'
-      ? (opts.readSkill('skills/productivity/grilling/SKILL.md', item.project.id) || '')
-      : '';
-    const docsSkill = skillsEnabled && kind === 'docs' && typeof opts.readSkill === 'function'
-      ? (opts.readSkill('skills/engineering/grill-with-docs/SKILL.md', item.project.id) || '')
-      : '';
     const lead = leadModel();
-    if (skillsEnabled && typeof opts.askModel === 'function' && lead) {
+    if (typeof opts.askModel === 'function' && lead) {
       try {
         const spoken = await opts.askModel({
-          question: grillPrompt(item, facts, [docsSkill, skillText].filter(Boolean).join('\n\n'), docs),
+          question: grillPrompt(item, facts, docs),
           model: lead,
           clarificationKind: kind,
           projectId: item.project.id,
@@ -3020,8 +3010,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         const text = spoken && typeof spoken === 'object' && !Array.isArray(spoken) ? spoken.answer : spoken;
         const parsed = parseGrillQuestions(leadEnvelope(text).answer);
         if (parsed.length) return parsed;
-      } catch (error) {
-        if (error.code === 'PROJECT_SKILL_INTERVIEW_UNAVAILABLE') throw error;
+      } catch (_) {
+        // The deterministic frontier below is the fallback.
       }
     }
     return Plan.grillFrontier({
@@ -3089,7 +3079,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const liveOpen = open.length && !genericOpen;
     const sessionGrill = store.grillPropose !== false && store.grillKind !== 'off' && !row.grillSkipped && !source?.grillContext;
     if (liveOpen && !source?.grillContext) {
-      note(projectId, 'Auto start: waiting on Matt grilling answers.');
+      note(projectId, 'Auto start: waiting on Grill me answers.');
       persist();
       await tick(projectId);
       return { ok: true, phase: 'grill', job: null, facts, clearJob };
@@ -3107,7 +3097,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         return { ok: false, reason: error.message };
       }
       row.grillAsked = true;
-      note(projectId, opts.mattSkillsEnabled?.(projectId) === false ? `Auto start: clarification (${kind}), Matt skills disabled.` : `Auto start: clarification interview (${kind}); inspect Skill delivery records for instruction provenance.`);
+      note(projectId, `Auto start: clarification interview (${kind}).`);
       persist();
       await tick(projectId);
       return {

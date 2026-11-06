@@ -13,26 +13,6 @@ function advisoryError(model, plans = []) {
   return null;
 }
 const keyFor = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 24);
-// Only bounded assignment metadata reaches monitoring or advisory evidence.
-// Skill procedures, receipt paths and caller-provided success claims are excluded.
-function skillFacts(source, projectId) {
-  const text = (value, max = 200) => typeof value === 'string' ? value.replace(/[\x00-\x1f\x7f]/g, ' ').slice(0, max) : '';
-  const list = (value, max) => Array.isArray(value) ? value.slice(-max).filter(row => row && typeof row === 'object' && !Array.isArray(row)) : [];
-  if (!source || source.available !== true || source.projectId && source.projectId !== projectId) return { projectId, available: false, enabled: [], deliveries: [] };
-  const transports = ['cli-stdin-written-consumption-unverified', 'api-adapter-stdin-written-http-unverified', 'prompt-file-prepared-read-unverified'];
-  const skill = row => ({ id: text(row.id), name: text(row.name, 120), source: text(row.source, 80), contentHash: /^[a-f0-9]{64}$/.test(row.contentHash) ? row.contentHash : '' });
-  return { projectId, available: true, deliveryEnabled: source.deliveryEnabled === true, mode: source.mode === 'manual' ? 'manual' : 'auto',
-    enabled: list(source.enabled, 100).filter(row => !row.projectId || row.projectId === projectId).map(skill),
-    deliveries: list(source.deliveries, 100).filter(row => row.projectId === projectId).slice(-12).map(row => ({
-      recordId: text(row.recordId || row.id), projectId, taskId: text(row.taskId), attemptId: text(row.attemptId),
-      role: ['orchestrator', 'worker', 'reviewer', 'supervisor'].includes(row.role) ? row.role : 'unknown',
-      provider: text(row.provider, 512) || 'unknown', model: text(row.model, 512) || 'unknown', at: text(row.at, 80),
-      attached: row.attached === true, submitted: row.submitted === true,
-      transport: transports.includes(row.transport) ? row.transport : 'unknown',
-      skills: list(row.skills, 30).map(skill), rejected: list(row.rejected, 30).map(item => ({ id: text(item.id), reason: text(item.reason, 240) })),
-      loaded: 'unverified', followed: 'unverified', verified: false
-    })) };
-}
 function projectFacts(snapshot, projectId, now = Date.now()) {
   const row = snapshot.projects?.find(row => row.id === projectId);
   if (!row) throw new Error('Select an existing project.');
@@ -78,7 +58,7 @@ function projectFacts(snapshot, projectId, now = Date.now()) {
     : `${row.name}: no workers are active. ${row.next || ''}`;
   const timeline = (snapshot.execution?.timeline || []).filter(event => event.projectId === projectId).slice(-12).map(event => ({ id: event.id, summary: event.summary, at: event.createdAt }));
   return { projectId, name: row.name, status: row.status, megaTaskId: row.megaTaskId, summary, next: row.next || '', active,
-    workers, alerts, timeline, projectSkills: skillFacts(row.projectSkills, projectId), canPause: Boolean(active && row.megaTaskId && row.status === 'watching'), checkpointId: row.checkpointId || null };
+    workers, alerts, timeline, canPause: Boolean(active && row.megaTaskId && row.status === 'watching'), checkpointId: row.checkpointId || null };
 }
 function createSupervisor({ dir, review, now = () => new Date().toISOString() }) {
   const file = dir ? path.join(dir, 'supervisor.json') : null;
@@ -151,9 +131,6 @@ function createSupervisor({ dir, review, now = () => new Date().toISOString() })
         turn.answer = ['Live evidence (no AI interpretation):', facts.summary,
           ...selected.map(w => `${w.role === 'reviewer' ? 'Reviewer' : 'Worker'} ${w.provider}/${w.model}: ${w.task} — ${w.status}. ${w.summary}`),
           ...facts.alerts.map(a => `Attention: ${a.title}. ${a.message}`), facts.next ? 'Next recorded action: ' + facts.next : '',
-          facts.projectSkills.available ? `Project Skills: delivery ${facts.projectSkills.deliveryEnabled ? 'enabled' : 'disabled'}; ${facts.projectSkills.enabled.length} approved enabled Skills. Loading, procedure compliance and verified outcomes remain unverified.` : 'Project Skills evidence unavailable.',
-          facts.projectSkills.enabled.length ? 'Enabled Skills (first 20): ' + facts.projectSkills.enabled.slice(0, 20).map(row => row.id).join(', ') : '',
-          ...facts.projectSkills.deliveries.map(row => `Skill assignment ${row.recordId}: ${row.role} ${row.provider}/${row.model}; task ${row.taskId || 'not retained'}, attempt ${row.attemptId || 'not retained'}; Skills (first 10): ${row.skills.slice(0, 10).map(item => item.id).join(', ') || 'none'}; ${row.submitted ? 'recorded transport submission' : row.attached ? 'attached; submission unverified' : 'no Skills attached'}; ${row.transport}.`),
           'Select a Supervisor model for interpretation of this evidence.'].filter(Boolean).join('\n\n');
       }
       turn.status = 'complete';

@@ -195,11 +195,6 @@
     "reason": "Not admitted: full transitive fixture/provider/process/filesystem isolation review is outstanding; not executed and no pass/fail claim"
   },
   {
-    "file": "engine/skills.test.cjs",
-    "included": false,
-    "reason": "Not admitted: full transitive fixture/provider/process/filesystem isolation review is outstanding; not executed and no pass/fail claim"
-  },
-  {
     "file": "engine/startup.test.cjs",
     "included": false,
     "reason": "Not admitted: full transitive fixture/provider/process/filesystem isolation review is outstanding; not executed and no pass/fail claim"

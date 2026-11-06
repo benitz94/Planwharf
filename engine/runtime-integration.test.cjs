@@ -6,7 +6,6 @@ const os = require('node:os');
 const path = require('node:path');
 const Plan = require('../plan.js');
 const { createServer } = require('../server.cjs');
-const { createSkillsCache, SKILL_FILES } = require('./skills.js');
 const { askPrompt, promptFor } = require('./runner.cjs');
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-runtime-'));
@@ -21,10 +20,6 @@ const plan = { schema: 2, projects: ['alpha', 'beta'].map(id => {
   return item;
 }) };
 fs.writeFileSync(planFile, JSON.stringify(plan));
-const files = [...SKILL_FILES, 'skills/engineering/tdd/SKILL.md', 'skills/engineering/implement/SKILL.md', 'skills/engineering/research/SKILL.md'];
-let revision = 'aaaaaaaaaaaa', broken = false;
-const fetchSkills = async url => ({ ok: !(broken && url.endsWith('/tdd/SKILL.md')), status: broken ? 503 : 200, text: async () => url.includes('/commits/') ? JSON.stringify({ sha: revision, commit: { committer: { date: '2026-10-12T00:00:00Z' } } }) : url.includes('/git/trees/') ? JSON.stringify({ tree: files.map(path => ({ path, type: 'blob' })), truncated: false }) : `---\nname: ${url.split('/').at(-2)}\ndescription: Fixture Matt skill\n---\n# Fixture skill ${revision}\n` });
-const skills = createSkillsCache({ dir: path.join(dir, 'skills'), fetchImpl: fetchSkills });
 const models = [
   { id: 'codex-fixture', label: 'Codex fixture', provider: 'codex', cli: 'gpt-fixture', enabled: true, kind: 'premium' },
   { id: 'grok-fixture', label: 'Grok fixture', provider: 'grok', cli: 'grok-fixture', enabled: true, available: false, kind: 'premium' },
@@ -32,7 +27,7 @@ const models = [
 ];
 let grokIds = ['grok-fixture'], nextPid = 1000;
 const launches = [], calls = [], alive = new Set();
-const options = { phase2: false, planFile, attemptsDir, models, skills, syncSkills: true, refreshModels: true,
+const options = { phase2: false, planFile, attemptsDir, models, refreshModels: true,
   discoverModels: async provider => ({ ok: true, ids: provider.adapter === 'grok' ? grokIds : models.filter(model => model.provider === provider.id).map(model => model.cli) }), fetchPlans: async () => [],
   inspectFolder: folder => ({ folder, fileCount: 1, names: [], git: false }),
   spawnWorker: info => { launches.push(info); alive.add(++nextPid); return { pid: nextPid }; },
@@ -49,9 +44,6 @@ async function post(route, data) {
 async function stopServer() { await new Promise(resolve => server.close(resolve)); }
 (async () => {
   await start();
-  const status = await (await fetch(base() + '/api/skills')).json();
-  assert.equal(status.enabled, true);
-  await skills.ensure();
   const refreshed = await post('/api/models/refresh', {});
   assert.equal(refreshed.models.find(model => model.id === 'grok-fixture').available, true, 'New CLI login must replace stale account availability');
   for (const model of models) {
@@ -59,8 +51,8 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
     await post('/api/orchestrator/ask', { question: 'Explain the current state.', projectId: 'alpha' });
     const info = calls.at(-1);
     assert.equal(info.model.provider, model.provider);
-    assert.match(info.skillsPrompt, /MATT SKILLS/);
-    assert.match(askPrompt(info), /aaaaaaaaaaaa/);
+    assert.equal(info.extraPrompt, undefined, 'No skill instructions reach the lead');
+    assert.doesNotMatch(askPrompt(info), /Matt|SKILL\.md/);
   }
   await post('/api/orchestrator/ask', { question: 'Explain the first detail.', projectId: 'alpha', chatSessionId: 'view-a' });
   assert.equal(calls.at(-1).state.history.length, 0, 'A newly opened chat cannot inherit prior session prompts');
@@ -68,21 +60,6 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
   assert.equal(calls.at(-1).state.history.length, 1);
   await post('/api/orchestrator/ask', { question: 'Explain a different detail.', projectId: 'alpha', chatSessionId: 'view-b' });
   assert.equal(calls.at(-1).state.history.length, 0, 'Reopening creates an independent lead context while preserving history');
-  await post('/api/skills/settings', { enabled: false });
-  await post('/api/orchestrator/ask', { question: 'Explain the current state.', projectId: 'alpha' });
-  assert.doesNotMatch(calls.at(-1).skillsPrompt, /CATALOG/);
-  assert.match(calls.at(-1).skillsPrompt, /disabled/);
-  await post('/api/skills/settings', { enabled: true });
-  const goodText = skills.read(files[0]);
-  revision = 'bbbbbbbbbbbb'; broken = true;
-  const failed = await skills.ensure();
-  assert.equal(failed.status, 'cached'); assert.equal(failed.sha, 'aaaaaaaaaaaa');
-  assert.equal(skills.read(files[0]), goodText, 'Partial update cannot replace a complete revision');
-  broken = false;
-  assert.equal((await skills.ensure()).sha, 'bbbbbbbbbbbb');
-  const restoredCache = createSkillsCache({ dir: path.join(dir, 'skills'), fetchImpl: fetchSkills });
-  assert.equal(restoredCache.snapshot().sha, 'bbbbbbbbbbbb');
-  assert.match(restoredCache.prompt('lead'), /bbbbbbbbbbbb/);
 
   await post('/api/orchestrator/approve', { projectId: 'alpha' });
   await post('/api/orchestrator/stop', { projectId: 'alpha' });
@@ -104,7 +81,7 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
   await post('/api/orchestrator/approve', { projectId: 'alpha' });
   assert.match(launches.at(-1).job.detail, /Audit Sayaku/);
   assert.doesNotMatch(launches.at(-1).job.detail, /Historical NPC task/);
-  assert.match(promptFor({ title: launches.at(-1).job.title, detail: launches.at(-1).job.detail }), /MATT SKILLS/);
+  assert.doesNotMatch(promptFor({ title: launches.at(-1).job.title, detail: launches.at(-1).job.detail }), /Matt|SKILL\.md/);
   await post('/api/orchestrator/stop', { projectId: 'alpha' });
   for (const selected of models) {
     for (const model of models) await post('/api/orchestrator/model', { id: model.id, enabled: model.id === selected.id });
@@ -112,7 +89,7 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
     await post('/api/orchestrator/ask', { question: `Audit Sayaku with ${selected.label}.`, projectId: 'alpha' });
     await post('/api/orchestrator/approve', { projectId: 'alpha' });
     assert.equal(launches.at(-1).worker.provider, selected.provider);
-    assert.match(launches.at(-1).job.detail, /MATT SKILLS/);
+    assert.doesNotMatch(launches.at(-1).job.detail, /Matt|SKILL\.md/);
     assert.equal(launches.at(-1).job.kind, 'audit');
     assert.doesNotMatch(promptFor({ kind: 'audit', detail: launches.at(-1).job.detail }), /Implement the job in this folder/);
     await post('/api/orchestrator/stop', { projectId: 'alpha' });
@@ -120,7 +97,6 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
   grokIds = [];
   const switched = await post('/api/models/refresh', {});
   assert.equal(switched.models.find(model => model.id === 'grok-fixture').available, false);
-  await post('/api/skills/settings', { enabled: false });
   await stopServer();
   const stateFile = path.join(attemptsDir, 'orchestrator.json');
   const stored = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
@@ -128,11 +104,11 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
   fs.writeFileSync(stateFile, JSON.stringify(stored));
   const beforeRestart = launches.length;
   await start();
-  assert.equal((await (await fetch(base() + '/api/skills')).json()).enabled, false, 'Global skill switch survives restart');
+  assert.equal((await fetch(base() + '/api/skills')).status, 404, 'The skills API is gone');
   const startup = await (await fetch(base() + '/api/orchestrator')).json();
   assert.equal(launches.length, beforeRestart, 'Startup cannot dispatch old tasks, even with saved Automatic mode');
   assert.equal(startup.projects.find(row => row.id === 'beta').status, 'needs_approval');
-  console.log('OK: all-provider Matt skills, persistent opt-out, atomic updates, exact Grok refresh, fresh current-request tasks, preserved history and startup dispatch barrier.');
+  console.log('OK: no skill instructions for any provider, exact Grok refresh, fresh current-request tasks, preserved history and startup dispatch barrier.');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (server?.listening) await stopServer();
   const resolved = path.resolve(dir);

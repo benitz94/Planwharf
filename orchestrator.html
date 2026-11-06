@@ -25,7 +25,6 @@
   <script src="orch.js" defer></script>
   <script src="layout-ui.js" defer></script>
   <script src="update-ui.js" defer></script>
-  <script src="project-skills-ui.js" defer></script>
   <script src="browser-settings-ui.js" defer></script>
 </head>
 <body class="orch-app">
@@ -50,7 +49,6 @@
         <label for="orch-project">Project recipient</label>
         <select id="orch-project"><option value="">Select a project</option></select>
         <p class="muted" id="orch-ask-hint">Command the orchestrator for the selected project. The recipient stays in sync with Planwharf. Use explicit Start or Resume commands to launch implementation workers.</p>
-        <details id="project-skills-panel" class="runtime-controls"></details>
         <p id="orch-grill-status" class="muted" role="status" hidden></p>
       </div>
       <div id="orch-ask-thread" class="orch-chat-thread"></div>

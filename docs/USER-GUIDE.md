@@ -118,7 +118,7 @@ Reset times appear when reliably available. Unread does not mean full or exhaust
 
 **AI usage** shows orchestrator calls by provider/model, durations and recent invocations. Worker usage shows attempts, durations and COMPLETE / FAILED / BLOCKED outcomes. The local ledger records exact identity, project/task/attempt links, reason, timestamps and available process exit. Provider-reported lead tokens appear only when available reliably; unknown counts remain absent. This is operational evidence, not a billing estimate.
 
-## Chat and skills
+## Chat
 
 Chat uses the selected project recipient. Ordinary discussion does not automatically dispatch implementation. A new work request prepares a fresh assignment; an explicit Resume continues the existing checkpointed assignment.
 
@@ -126,7 +126,6 @@ The lead receives a compact project briefing, recent relevant results, checkpoin
 
 Recorded chat sessions remain available through the session selector. **Copy output** copies one answer; **Copy displayed conversation** copies the visible exchanges. Stop for a pending chat response cancels that model response; project Stop is the execution/checkpoint control.
 
-[Matt Pocock's skills](https://github.com/mattpocock/skills) can supply instructions to leads and workers. **Use Matt skills for all models** persists per notebook. **Check skills updates** checks the upstream catalog. A failed update retains a prior complete cache. If no complete cache is available, enablement requires a successful check or explicit opt-out before model execution.
 
 ## MegaTasks, SubTasks, Attempts and Results
 
@@ -187,7 +186,6 @@ Optional **Notifications: On** requests local browser permission for completion,
 | No eligible worker/reviewer | Check provider enablement, the required allowed role, capability, quota and the exact proposed assignment. |
 | Model cannot be selected as lead | Check Orchestrator compatibility, its role flag, provider enablement and quota. |
 | REMAINING UNREAD | Check provider sign-in/interface support; do not infer a fake percentage. |
-| Skills cache blocks execution | Check skills updates or explicitly turn off skills for new requests. |
 | Resume needs confirmation | Review repository and plan changes against the saved checkpoint. |
 | UI still shows old behavior after an update | Quit application and relaunch to load the updated backend. |
 | Historical logs use another language | Original evidence and user-authored data are preserved; current product text is English. |

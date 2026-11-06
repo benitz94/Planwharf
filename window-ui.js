@@ -130,35 +130,10 @@
       if (toast) toast.textContent = 'Output copied.';
     } catch (error) { if (toast) toast.textContent = `Could not copy chat: ${error.message}`; }
   });
-  let skillsSaving = false, skillsVersion = 0;
-  const skillsDate = value => {
+  const formatDate = value => {
     const date = new Date(value);
     return value && Number.isFinite(date.getTime()) ? date.toLocaleString('en-GB', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'not recorded';
   };
-  function displaySkills(data) {
-    const control = document.getElementById('matt-skills-enabled');
-    const status = document.getElementById('matt-skills-status');
-    if (!Number.isSafeInteger(data.skillCount) || data.skillCount < 0) {
-      if (control) { control.disabled = true; control.dataset.legacyBackend = 'true'; }
-      if (status) status.textContent = 'Previous Planwharf backend detected. Its legacy cache does not report a complete skill catalog or confirm use by all models. Use Quit application, then relaunch Planwharf; reopening the window reuses the old backend.';
-      return;
-    }
-    if (control?.dataset.legacyBackend) { control.disabled = false; delete control.dataset.legacyBackend; }
-    if (control && !control.disabled) control.checked = data.enabled !== false;
-    if (!status) return;
-    const revision = data.sha ? data.sha.slice(0, 7) : 'unavailable';
-    const usage = data.enabled === false ? 'Matt skills OFF for new model requests.' : 'Matt skills ON for all models.';
-    const dates = `Revision date: ${skillsDate(data.date)}. Installed locally: ${skillsDate(data.installedAt)}. Last checked: ${skillsDate(data.checkedAt)}.`;
-    status.textContent = data.checking ? `${usage} Checking for updates... ${dates}` : data.status === 'current' && data.skillCount > 0 && data.catalogComplete !== false
-      ? `${usage} ${data.skillCount} skills. ${data.updated ? 'Installed' : 'Up to date with'} latest main revision ${revision}. ${dates}`
-      : data.status === 'current' || data.status === 'incomplete' ? `Matt skills catalog incomplete at revision ${revision}. Check skills updates before running models with Matt skills enabled.`
-      : `${usage} Update status: ${data.status || 'unknown'}; revision ${revision}. ${dates} ${data.error || ''}`;
-  }
-  async function refreshSkills() {
-    if (skillsSaving) return;
-    const version = skillsVersion;
-    try { const response = await fetch('/api/skills'); const data = response.ok ? await response.json() : null; if (data && !skillsSaving && version === skillsVersion) displaySkills(data); } catch {}
-  }
   function displayProviderStatus(data) {
     const status = document.getElementById('provider-models-status');
     if (!status) return;
@@ -167,7 +142,7 @@
     status.textContent = providers.map(provider => {
       const name = provider.label || provider.providerId || 'Provider';
       if (provider.status === 'disabled') return `${name}: provider disabled.`;
-      const checked = provider.checkedAt ? ` Last checked: ${skillsDate(provider.checkedAt)}.` : '';
+      const checked = provider.checkedAt ? ` Last checked: ${formatDate(provider.checkedAt)}.` : '';
       const access = provider.preservingPreviousAvailability === true
         ? ' Last verified availability is retained for the same account.'
         : provider.preservingPreviousAvailability === false
@@ -188,20 +163,6 @@
       displayProviderStatus(data);
     } catch {}
   }
-  document.getElementById('matt-skills-enabled')?.addEventListener('change', async event => {
-    const control = event.target, enabled = control.checked;
-    skillsSaving = true; skillsVersion += 1;
-    control.disabled = true;
-    try { const data = await post('/api/skills/settings', { enabled }); control.disabled = false; displaySkills(data); }
-    catch (error) { control.checked = !enabled; document.getElementById('matt-skills-status').textContent = error.message; }
-    finally { skillsSaving = false; control.disabled = false; }
-  });
-  document.getElementById('matt-skills-refresh')?.addEventListener('click', async event => {
-    event.target.disabled = true;
-    try { displaySkills(await post('/api/skills', undefined)); }
-    catch (error) { document.getElementById('matt-skills-status').textContent = error.message; }
-    finally { event.target.disabled = false; }
-  });
   document.getElementById('provider-models-refresh')?.addEventListener('click', async event => {
     event.target.disabled = true;
     const status = document.getElementById('provider-models-status');
@@ -213,7 +174,7 @@
     } catch (error) { status.textContent = error.message; }
     finally { event.target.disabled = false; }
   });
-  if (document.getElementById('matt-skills-status')) { refreshSkills(); refreshProviderStatus(); setInterval(() => { refreshSkills(); refreshProviderStatus(); }, 4000); }
+  if (document.getElementById('provider-models-status')) { refreshProviderStatus(); setInterval(refreshProviderStatus, 4000); }
   async function post(url, value) {
     const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
     const data = await response.json();

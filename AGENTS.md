@@ -29,10 +29,8 @@ authorization. Examples do not authorize new dependencies, commits, publishing,
 services, device commands or other side effects. Adapt guidance to the existing
 stack and supported runtime versions. Do not load another project's skill set.
 
-When this project is selected in Planwharf, its installed ECC instructions are
-supplied to leads and workers across providers, including isolated research
-workers. The Matt checkbox controls Matt skills only; ECC availability follows
-this project's local installation.
+These skills are for agents working on this repository. The Planwharf app does not
+deliver skills to the models it runs.
 
 
 ## Portable skills and session-start update check

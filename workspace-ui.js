@@ -47,15 +47,6 @@
       launchForm.querySelector('[data-close]')?.remove();
       body.append(launchForm);
     }
-    const skillsPanel = document.getElementById('project-skills-panel');
-    if (skillsPanel && skillsPanel.id === 'project-skills-panel') {
-      const skills = document.createElement('section');
-      skills.className = 'workspace-project-skills';
-      skills.setAttribute('aria-label', 'Selected project skills');
-      const heading = document.createElement('h2'); heading.textContent = 'Project skills';
-      skills.append(heading, skillsPanel);
-      document.querySelector('#orchestrator-view [data-workspace-pane="overview"]')?.append(skills);
-    }
     const runtime = document.querySelector('.runtime-controls');
     if (runtime) {
       runtime.querySelector('small')?.remove();

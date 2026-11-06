@@ -38,7 +38,7 @@ async function startup(root) {
     const before = fs.readFileSync(planFile);
     const result = spawnSync(process.execPath, [path.join(root, 'planwharf.cjs'), 'status', '--plan', planFile, '--attempts-dir', path.join(temporary, 'attempts')], { encoding: 'utf8', timeout: 10000, env: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, HOME: temporary, USERPROFILE: temporary, TMPDIR: temporary } });
     if (result.error || result.status !== 0) throw Error('CLI status failed: ' + (result.error?.message || result.stderr));
-    server = createServer({ planFile, attemptsDir: path.join(temporary, 'server-attempts'), models: [], skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: async () => [], askModel: () => { throw Error('Inference forbidden'); }, spawnWorker: () => { throw Error('Dispatch forbidden'); } });
+    server = createServer({ planFile, attemptsDir: path.join(temporary, 'server-attempts'), models: [], refreshModels: false, fetchPlans: async () => [], askModel: () => { throw Error('Inference forbidden'); }, spawnWorker: () => { throw Error('Dispatch forbidden'); } });
     await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
     const response = await fetch(`http://127.0.0.1:${server.address().port}/`, { signal: AbortSignal.timeout(5000) });
     if (!response.ok || !(await response.text()).includes('Planwharf')) throw Error('Isolated HTTP startup failed');

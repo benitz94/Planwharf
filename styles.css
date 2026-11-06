@@ -257,7 +257,6 @@ body.orch-app .mark {
 .theme-toggle svg { display: block; }
 html[data-theme="dark"] .theme-moon,
 html[data-theme="light"] .theme-sun { display: none; }
-.skills-version { display: none; }
 .local {
   font-family: "JetBrains Mono", Consolas, monospace;
   font-size: 10px;
@@ -1337,7 +1336,6 @@ body.orch-app {
 @media (max-width: 800px) {
   .frame main, .topbar { padding-left: 16px; padding-right: 16px; }
   .local { display: none; }
-  .skills-version { max-width: 18ch; }
   .topbar { flex-direction: unset; }
   h1 { font-size: 20px; }
   .project-place { flex-direction: column; align-items: stretch; }
@@ -1535,19 +1533,3 @@ body[data-layout-height-resizing] { cursor: row-resize; user-select: none; }
 
 .workspace-sessions select { min-width:0; max-width:100%; width:100%; }
 .workspace-sessions pre { min-width:0; max-width:100%; overflow-x:auto; }
-#project-skills-panel {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-#project-skills-panel *, #project-skills-panel *::before, #project-skills-panel *::after {
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-#project-skills-panel input[type="checkbox"] {
-  width: auto;
-  margin-inline: 0 .4rem;
-}
-#project-skills-panel textarea {
-  width: 100%;
-}

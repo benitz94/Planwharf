@@ -14,7 +14,7 @@ Planwharf is a local project notebook and coordinator for coding workers. You ke
 2. **Open Planwharf.** Double-click `Planwharf.exe`. You can open the notebook without a coding CLI. To generate answers or execute coding jobs, install and sign in to at least one supported CLI, then enable available models for the lead and workers.
 3. **Create a project.** Choose **Add project**, enter a name and a concrete goal, set **Projects folder** to an existing absolute directory such as `C:\Projects`, and click **Save projects folder**. Leave **Create a new subfolder using the project name** selected for a new project. Saving the project creates its folder, without starting workers.
 4. **Clarify the goal.** Use **Grill me** or **Grill with the docs** and save your answers. Include acceptance criteria, technology constraints, files to preserve, and how the result should be tested.
-5. **Prepare the work.** Use **Auto start**, or send a new work request for the selected project in the orchestrator chat. Review the proposed MegaTask: its goal, workers, smaller SubTasks, dependencies, and order. If enabled Matt skills have no complete cache yet, wait for the skills check, retry **Check skills updates**, or explicitly turn off **Use Matt skills for all models** before model requests.
+5. **Prepare the work.** Use **Auto start**, or send a new work request for the selected project in the orchestrator chat. Review the proposed MegaTask: its goal, workers, smaller SubTasks, dependencies, and order.
 6. **Approve that assignment.** Choose **Approve MegaTask** or the approval action shown in **Next**. Some controls describe this as **Approve run**. New MegaTasks require approval in both Manual and Automatic modes, unless you turn on [project autonomy](PROJECT-AUTONOMY.md) for that project. A proposal or chat reply alone does not mean a worker has started.
 7. **Check the result.** Follow **Now**, **Progress**, **Next**, and **Workers**. When the assignment completes, read the reported changes, tests, blockers, and next action, then open the output in the linked project folder and test it. Completion does not automatically create a commit, push to GitHub, or publish the product.
 
@@ -80,7 +80,7 @@ The selected project and chat **Project recipient** stay synchronized. Check tha
 
 The usual inspect/implement/test slices run in dependency order. Explicit independent slices may run in parallel, subject to the three-worker limit. Waiting dependencies do not launch workers. Saved results and completed SubTasks remain available when work is resumed.
 
-## Leads, providers, models, and skills
+## Leads, providers, and models
 
 Choose the lead in **Functions** or the Orchestrator view. The lead receives project and repository context plus coordination instructions. Its CLI has local/network tool access; workers receive implementation assignments. CLI implementation jobs run without repeated interactive permission prompts. Review the linked folder and proposed work before approval.
 
@@ -99,7 +99,6 @@ A model label does not select a provider or grant account access. Enabled, avail
 
 An enabled model is a candidate, not a promise that every model will run on every job. Selection uses eligibility, available quota, task needs, and failure history. Legacy model `cost`, `limit`, and `used` values are local assignment counters. The current provider catalog is kept separately from provider quota readings; those counters are not subscription percentages or token billing.
 
-Matt skills are enabled by default for leads and workers. Startup checks the upstream revision and installs a complete catalog before activating it. A failed update retains a prior complete cache. If no complete cache exists, model execution waits for a successful check or an explicit opt-out. **Use Matt skills for all models** persists per notebook and applies to subsequent requests and launches.
 
 ## Progress, results, and quotas
 
@@ -147,7 +146,6 @@ A conversational research request proposes a separate research MegaTask. Review 
 | Cannot save projects folder | Use an existing absolute directory accessible to your Windows account. |
 | Waiting for Grill | Answer and save the questions, or choose **Skip grill**. |
 | Proposed MegaTask has not started | Review and approve that exact MegaTask, including in Automatic mode unless [project autonomy](PROJECT-AUTONOMY.md) is on. |
-| Skills block model execution | Retry **Check skills updates**, or explicitly disable **Use Matt skills for all models**. |
 | No eligible worker / Unavailable | Check the model's exact route, CLI login, availability, enabled state, eligibility, and shared quota. |
 | Native CLI executable not found | Install the CLI or set its executable override to the native binary. |
 | Paused or failed | Read results and attempt logs, resolve the cause, then choose the matching checkpoint to **Resume**. |

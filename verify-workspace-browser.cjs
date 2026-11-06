@@ -44,7 +44,7 @@ const models = [
   { id: 'supervisor-fixture', label: 'Fixture Supervisor only', provider: 'api', cli: 'exact-fixture-supervisor', enabled: true, available: true, limit: 200, roles: { orchestrator: false, worker: false, reviewer: false, supervisor: true } }
 ];
 let aiCalls = 0, launches = 0;
-const server = createServer({ planFile, attemptsDir, models, skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 60000,
+const server = createServer({ planFile, attemptsDir, models, refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 60000,
   inspectFolder: () => ({ git: false, names: [], fileCount: 0 }), isProcessAlive: () => false,
   spawnWorker: () => { launches++; throw Error('Browser fixture cannot dispatch'); }, killWorker: () => { throw Error('Browser fixture cannot terminate workers'); },
   askModel: async info => { assert.equal(info.purpose, 'supervisor'); assert.equal(info.model.id, 'supervisor-fixture'); assert.equal(info.allowActions, false); aiCalls++; return { answer: 'Fixture Supervisor advice from isolated injected provider.', provider: 'api', model: 'exact-fixture-supervisor' }; }

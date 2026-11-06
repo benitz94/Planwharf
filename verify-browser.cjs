@@ -10,7 +10,7 @@ const output = process.env.PLANWHARF_VALIDATION_DIR || path.join(__dirname, 'val
 fs.mkdirSync(output, { recursive: true });
 const planFile = path.join(output, `browser-plan-${Date.now()}.json`);
 fs.writeFileSync(planFile, fs.readFileSync(path.join(__dirname, 'fixtures', 'notebook.json')));
-const server = createServer({ skillsEnabled: false, planFile, models: [], fetchPlans: async () => [] });
+const server = createServer({ planFile, models: [], fetchPlans: async () => [] });
 let browser;
 let session;
 let command;

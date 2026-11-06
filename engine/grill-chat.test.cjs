@@ -8,14 +8,12 @@ const Plan = require('../plan.js');
 const { createServer } = require('../server.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { parseModels, listAntigravity } = require('./antigravity.cjs');
-const skills = { snapshot: () => ({ sha: 'isolated', skillCount: 1, catalogComplete: true }), ensure: async () => {}, prompt: () => 'Isolated Matt skill catalog',
-  read: name => name.endsWith('grilling/SKILL.md') ? 'MATT GRILLING FIXTURE: ask the frontier and wait for answers.' : 'MATT DOCS FIXTURE' };
 async function fixture(extra = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-grill-chat-')), file = path.join(dir, 'notebook.json');
   const plan = Plan.example(); plan.tasks = []; plan.project = { id: 'isolated', name: 'Isolated Grill' }; fs.writeFileSync(file, JSON.stringify(plan));
   const calls = [], launches = [];
   const server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), models: [{ id: 'lead', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'default' }], refreshModels: false, fetchPlans: null,
-    skills, skillsEnabled: true, readRepository: () => ({ local: {}, remote: {}, comparison: {} }), inspectFolder: () => ({ git: false, dirty: [], names: [] }),
+    readRepository: () => ({ local: {}, remote: {}, comparison: {} }), inspectFolder: () => ({ git: false, dirty: [], names: [] }),
     askModel: info => { calls.push(info); return { answer: 'Q1: What is the first outcome? Recommended: a small working prototype.' }; },
     spawnWorker: info => { launches.push(info); throw new Error('Grill must never launch a worker'); }, ...extra });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -25,13 +23,13 @@ async function fixture(extra = {}) {
   };
   return { calls, launches, plan, file, request, async close() { await new Promise(resolve => server.close(resolve)); assert.ok(dir.startsWith(os.tmpdir() + path.sep)); fs.rmSync(dir, { recursive: true, force: true }); } };
 }
-test('Grill starts a real lead turn with Matt instructions and keeps follow-up decisions in chat without a source folder', async () => {
+test('Grill starts a real lead turn with Grill me instructions and keeps follow-up decisions in chat without a source folder', async () => {
   const f = await fixture();
   try {
     await f.request('/api/orchestrator/lead', { id: 'lead' });
     const first = await f.request('/api/orchestrator/ask', { projectId: 'isolated', chatSessionId: 'grill-session', question: 'Grill me', grillKind: 'me' });
     assert.match(first.answer, /Q1/); assert.equal(first.asks[0].order, null); assert.equal(first.asks[0].grillKind, 'me');
-    assert.equal(f.calls[0].grillKind, 'me'); assert.equal(f.calls[0].allowActions, false); assert.match(f.calls[0].skillsPrompt, /MATT GRILLING FIXTURE/);
+    assert.equal(f.calls[0].grillKind, 'me'); assert.equal(f.calls[0].allowActions, false); assert.match(f.calls[0].extraPrompt, /ACTIVE GRILL ME SESSION/); assert.doesNotMatch(f.calls[0].extraPrompt, /Matt/);
     assert.equal(f.calls[0].state.currentRequest.projectId, 'isolated'); assert.equal(f.calls[0].state.currentRequest.grillKind, 'me');
     await f.request('/api/orchestrator/ask', { projectId: 'isolated', chatSessionId: 'grill-session', question: 'Implement the prototype with a minimal API and no database.' });
     assert.equal(f.calls[1].grillKind, 'me'); assert.match(JSON.stringify(f.calls[1].state.history), /Grill me/);
@@ -46,16 +44,7 @@ test('Grill starts a real lead turn with Matt instructions and keeps follow-up d
     await f.request('/api/orchestrator/ask', { projectId: 'isolated', question: 'Grill me', grillKind: 'invalid' }, 400);
   } finally { await f.close(); }
 });
-test('missing or disabled Matt skills and missing lead are reported in the conversation', async () => {
-  for (const extra of [{ skillsEnabled: false }, { skills: { ...skills, read: () => '' } }]) {
-    const f = await fixture(extra);
-    try {
-      await f.request('/api/orchestrator/lead', { id: 'lead' });
-      const result = await f.request('/api/orchestrator/ask', { projectId: 'isolated', question: 'Grill me' });
-      assert.match(result.answer, /Matt .*skill/i); assert.equal(f.calls.length, 0); assert.equal(f.launches.length, 0);
-      assert.equal(result.asks[0].answer, result.answer);
-    } finally { await f.close(); }
-  }
+test('a missing lead is reported in the conversation', async () => {
   const f = await fixture();
   try {
     const result = await f.request('/api/orchestrator/ask', { projectId: 'isolated', question: 'Grill me' });

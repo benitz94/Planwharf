@@ -60,23 +60,6 @@
       applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     });
   }
-  if ($('skills-refresh') && typeof $('skills-refresh').addEventListener === 'function') {
-    $('skills-refresh').addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/skills', { method: 'POST' });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || 'Save failed.');
-        orchestra.skills = body;
-        fillSkills(body);
-        $('toast').textContent = body.status === 'current' && !body.behind
-          ? `Skills match GitHub main (${String(body.sha || '').slice(0, 7)}).`
-          : (body.behind ? 'GitHub main has a newer skills commit. Cached copy stays until the next successful fetch.' : 'Could not reach GitHub for mattpocock/skills.');
-        clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 6000);
-      } catch (error) {
-        notice(translateError(error.message));
-      }
-    });
-  }
 
   const seenKey = id => `planwharf_seen_${id}`;
   function getSeenRevision(pId) {
@@ -488,27 +471,6 @@
     }
   }
 
-  function fillSkills(info) {
-    const skills = info || orchestra.skills;
-    const short = skills && skills.sha ? String(skills.sha).slice(0, 7) : '…';
-    const when = skills && skills.date ? new Date(skills.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-    const state = !skills ? ''
-      : skills.status === 'current' && !skills.behind ? ' · current with main'
-      : skills.behind ? ' · update on main'
-      : skills.status === 'cached' ? ' · cached'
-      : skills.status === 'offline' ? ' · offline'
-      : '';
-    const text = skills
-      ? `mattpocock/skills · ${skills.ref || 'main'} · ${short}${when ? ' · ' + when : ''}${state}`
-      : 'mattpocock/skills · main';
-    const title = skills && skills.sha ? `${skills.repo}@${skills.ref} ${skills.sha}` : 'mattpocock/skills main';
-    ['skills-version', 'skills-check'].forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      el.textContent = text;
-      el.title = title;
-    });
-  }
 
   function defaultDeadlineValue() {
     const d = new Date();
@@ -569,7 +531,7 @@
     render();
     fillYard();
     $('toast').textContent = body.phase === 'grill'
-      ? 'Matt grilling started from mattpocock/skills main. Answer the round, then work can start.'
+      ? 'Grill me started. Answer the round, then work can start.'
       : 'Repo read. Monitor shows the plan and who will take the job. Approve to assign.';
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 6000);
     revealMonitor();
@@ -766,7 +728,6 @@
     renderPlace();
     renderFleet();
     fillRunningCount();
-    fillSkills(orchestra.skills);
     fillOrchLead();
     renderAskThread(orchestra.asks);
     const el = $('orchestrator');

@@ -13,7 +13,7 @@ function generate(input = {}) {
     browser: { kind: select(input.browser?.kind, ['edge', 'chrome']), available: input.browser?.available === true },
     adapters: ['codex', 'grok', 'gemini'].map(id => ({ id, available: input.adapters?.[id]?.available === true, version: version(input.adapters?.[id]?.version) })),
     tests: ['claims', 'attempts', 'browser', 'release'].map(id => ({ id, result: select(input.tests?.[id], ['pass', 'fail', 'unavailable', 'not-run']) })),
-    configuration: { skillsEnabled: input.configuration?.skillsEnabled === true },
+    configuration: {},
     excluded: ['prompts', 'conversations', 'source', 'credentials', 'paths', 'raw logs', 'environment'] };
 }
 function preview(input) {

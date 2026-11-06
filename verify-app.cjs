@@ -50,8 +50,6 @@ function runCli(args) {
 
   const opts = parseArgs([process.execPath, 'planwharf.cjs', '--no-window', '--plan', planFile, '--attempts-dir', attemptsDir, '--port', '0']);
   opts.models = [];
-  opts.syncSkills = false;
-  opts.skillsEnabled = false;
   opts.fetchPlans = async () => ['ChatGPT', 'Grok'].map(id => ({ id, label: id, readable: true, pct: 18, leftPct: 82, windows: [] }));
   const opened = await listen(opts);
   runningServer = opened.server;
@@ -77,11 +75,11 @@ function runCli(args) {
   assert.match(html, /Auto start/);
   assert.match(html, /Grill with the docs/);
   assert.match(html, /id="theme-toggle"/);
-  assert.match(html, /id="skills-version"/);
+  assert.doesNotMatch(html, /skills-version|matt-skills/);
   assert.match(html, /id="orch-ask-form"/);
   assert.match(html, /id="orch-lead"/);
   assert.match(html, /Ask the orchestrator/);
-  assert.match(html, /mattpocock\/skills/);
+  assert.doesNotMatch(html, /mattpocock\/skills/);
   const orchPage = await fetch(opened.url + '/orchestrator.html');
   assert.equal(orchPage.status, 200);
   const orchHtml = await orchPage.text();
