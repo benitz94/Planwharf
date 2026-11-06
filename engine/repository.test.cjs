@@ -80,7 +80,7 @@ let server;
   assert.match(askPrompt(questionInfo), /full local tool access/);
   assert.equal(packState({ projects: [{ id: 'other', folder: '/other', github: 'https://github.com/owner/other' }] }, null).others[0].folder, '/other');
   const planFile = path.join(dir, 'notebook.json'); fs.writeFileSync(planFile, JSON.stringify(notebook));
-  server = createServer({ skillsEnabled: false, planFile, models: [], fetchPlans: async () => [] });
+  server = createServer({planFile, models: [], fetchPlans: async () => [] });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   assert.equal((await fetch(base + '/api/repository?projectId=missing')).status, 400);

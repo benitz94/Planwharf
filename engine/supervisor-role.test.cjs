@@ -13,9 +13,9 @@ const api = { id: 'advisory', provider: 'api', cli: 'exact-fixture', enabled: tr
 const snapshot = model => ({ models: model ? [model] : [], plans: [], projects: [{ id: 'a', name: 'Alpha', status: 'idle' }], execution: { subTasks: [], results: [], megaTasks: [], timeline: [] } });
 
 test('fourth permission is opt-in, preserves old roles, and never authorizes implementation or review', () => {
-  assert.deepEqual(ROLE_IDS, ['orchestrator', 'worker', 'reviewer', 'supervisor']);
+  assert.deepEqual(ROLE_IDS, ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor']);
   for (const provider of ['api', 'codex', 'grok', 'antigravity']) {
-    assert.deepEqual(withModelRoles({ ...api, provider }, legacy).roles, { ...legacy, supervisor: false });
+    assert.deepEqual(withModelRoles({ ...api, provider }, legacy).roles, { ...legacy, verifier: legacy.worker, supervisor: false });
   }
   assert.equal(withModelRoles(api).roles.supervisor, false);
   const opted = withModelRoles(api, { orchestrator: false, worker: false, reviewer: false, supervisor: true });
@@ -89,20 +89,20 @@ test('HTTP migrates legacy and per-account permissions; generic enabling cannot 
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile); fs.mkdirSync(attemptsDir);
   fs.writeFileSync(path.join(attemptsDir, 'orchestrator.json'), JSON.stringify({ modelRoles: { [api.id]: legacy }, projects: {}, asks: [] }));
   const start = async () => {
-    server = createServer({ planFile, attemptsDir, models: [api], skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000, fetchPlans: null,
+    server = createServer({ planFile, attemptsDir, models: [api],refreshModels: false, monitorIntervalMs: 60000, fetchPlans: null,
       readAccount: () => account, discoverModels: async () => ({ ok: true, ids: [api.cli] }), askModel: () => { calls++; throw Error('No provider inference allowed'); } });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); base = 'http://127.0.0.1:' + server.address().port;
   };
   const request = async (route, value) => { const response = await fetch(base + route, value === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }); const data = await response.json(); assert.equal(response.status, 200, JSON.stringify(data)); return data; };
   const roles = state => state.models.find(m => m.id === api.id).roles;
   try {
-    await start(); assert.deepEqual(roles(await request('/api/orchestrator?readOnly=1')), { ...legacy, supervisor: false });
+    await start(); assert.deepEqual(roles(await request('/api/orchestrator?readOnly=1')), { ...legacy, verifier: legacy.worker, supervisor: false });
     assert.equal(roles(await request('/api/orchestrator/model', { id: api.id, enabled: true })).supervisor, false);
     assert.equal(roles(await request('/api/catalog/settings', { providerId: api.provider, allModelsEnabled: true })).supervisor, false);
     const opted = roles(await request('/api/models/roles', { id: api.id, roles: { orchestrator: false, worker: false, reviewer: false, supervisor: true } }));
-    assert.deepEqual(opted, { orchestrator: false, worker: false, reviewer: false, supervisor: true });
+    assert.deepEqual(opted, { orchestrator: false, worker: false, verifier: true, reviewer: false, supervisor: true });
     account = { key: 'business-fixture', type: 'business' };
-    assert.deepEqual(roles(await request('/api/orchestrator?readOnly=1')), { orchestrator: false, worker: false, reviewer: false, supervisor: false });
+    assert.deepEqual(roles(await request('/api/orchestrator?readOnly=1')), { orchestrator: false, worker: false, verifier: false, reviewer: false, supervisor: false });
     account = { key: 'personal-fixture', type: 'normal' };
     assert.deepEqual(roles(await request('/api/orchestrator?readOnly=1')), opted);
     await new Promise(resolve => server.close(resolve)); await start();
@@ -118,7 +118,7 @@ test('HTTP blocks exhausted internal budgets without invocation, debits accepted
     const plan = structuredClone(require('../fixtures/starter-notebook.json')); plan.projects = [plan.projects[0]]; plan.projects[0].project = { id: 'a', name: 'Budget fixture' }; plan.projects[0].tasks = [];
     fs.writeFileSync(planFile, JSON.stringify(plan)); fs.mkdirSync(attemptsDir);
     fs.writeFileSync(path.join(attemptsDir, 'orchestrator.json'), JSON.stringify({ usage: { [model.id]: { used: scenario.used } }, projects: {}, asks: [] }));
-    const start = async () => { server = createServer({ planFile, attemptsDir, models: [model], skillsEnabled: false, refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
+    const start = async () => { server = createServer({ planFile, attemptsDir, models: [model],refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
       askModel: async () => { calls++; return { answer: 'Bounded budget fixture', tokens: { input: 1, output: 2 } }; } });
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); base = 'http://127.0.0.1:' + server.address().port; };
     const request = async (route, value) => { const response = await fetch(base + route, value === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }); const data = await response.json(); assert.equal(response.status, 200, JSON.stringify(data)); return data; };

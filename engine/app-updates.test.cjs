@@ -105,7 +105,7 @@ test('update API requires consent and does not checkpoint on checks or declined 
   const f = fixture(), file = path.join(f.root, 'notebook.json'); let checkpoints = 0;
   const plan = require('../plan.js').example(); plan.tasks = []; plan.project = { id: 'isolated', name: 'Isolated' }; fs.writeFileSync(file, JSON.stringify(plan));
   const manager = createUpdateManager({ root: f.root, fetchImpl: f.fetchImpl, activeCount: async () => 1, checkpoint: async () => { checkpoints++; }, restart: async () => {} });
-  const server = createServer({ planFile: file, attemptsDir: path.join(f.root, 'attempts'), models: [], fetchPlans: null, skillsEnabled: false, refreshModels: false, updateManager: manager });
+  const server = createServer({ planFile: file, attemptsDir: path.join(f.root, 'attempts'), models: [], fetchPlans: null,refreshModels: false, updateManager: manager });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const post = (route, data) => fetch('http://127.0.0.1:' + server.address().port + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   try {
@@ -142,7 +142,7 @@ test('desktop boot checks updates once without installing or launching any worke
   let checks = 0, installs = 0, app;
   const updater = { check: async () => { checks++; return {}; }, snapshot: () => ({}), install: async () => { installs++; }, busy: false };
   try {
-    app = await require('../planwharf.cjs').runApp({ planFile: file, attemptsDir: path.join(f.root, 'boot-attempts'), port: 0, noWindow: true, models: [], fetchPlans: null, skillsEnabled: false, syncSkills: false, updateManager: updater,
+    app = await require('../planwharf.cjs').runApp({ planFile: file, attemptsDir: path.join(f.root, 'boot-attempts'), port: 0, noWindow: true, models: [], fetchPlans: null,updateManager: updater,
       windows: { closeAll() {}, status() { return {}; } } });
     assert.equal(checks, 1); assert.equal(installs, 0);
     assert.deepEqual(JSON.parse(fs.readFileSync(file)), plan);

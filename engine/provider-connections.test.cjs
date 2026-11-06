@@ -20,7 +20,7 @@ test('connections and provider policies persist without provider calls and futur
   fs.writeFileSync(planFile, JSON.stringify(plan));
   let server, base;
   const start = async () => {
-    server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models: [], skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+    server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models: [],refreshModels: false, monitorIntervalMs: 60000,
       askModel: () => { throw Error('No inference allowed'); }, spawnWorker: () => { throw Error('No dispatch allowed'); }, fetchPlans: async () => [] });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); base = 'http://127.0.0.1:' + server.address().port;
   };

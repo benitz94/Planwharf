@@ -22,7 +22,7 @@ const { compactState, recentContext } = require('./briefing.cjs');
 const Quota = require('../quota.js');
 const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
-const { ROLE_IDS, withModelRoles, roleEligibility, permitsAssignment, assignmentRole } = require('./model-roles.cjs');
+const { ROLE_IDS, VERIFY_SLICE, isVerifySlice, withModelRoles, roleEligibility, permitsAssignment, assignmentRole } = require('./model-roles.cjs');
 const { assignmentSession, projectActivitySessions, pagedProjectActivitySessions, readRecordedTail, SESSION_LIMIT } = require('./activity-sessions.cjs');
 
 const LABELS = {
@@ -253,12 +253,18 @@ function pickWorkers(models, options) {
   const eligible = normalizeModels(models).filter(item => (
     item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, opts.plans || []).blocked && (item.providerCatalog || usedOf(baseUsage, item.id) + item.cost <= item.limit) && !planExhausted(opts.plans, item.quotaPoolId || item.plan)
   )).length;
-  const want = Math.max(1, Number(opts.count) || sliceCount(opts.job, opts.facts, eligible));
+  const building = assignmentRole(opts.job) === 'worker' && opts.job?.kind !== 'research';
+  // The verifier also fixes code, so it needs the same coding capability as the builder.
+  const verifyJob = building ? { ...opts.job, kind: 'verify', title: VERIFY_SLICE, detail: 'Run the tests and fix what fails.' } : null;
+  const want = Math.max(1, Number(opts.count) || sliceCount(opts.job, opts.facts, building ? Math.max(eligible, 2) : eligible));
   const workers = [];
   const usage = { ...baseUsage };
   let pool = Array.isArray(models) ? models.slice() : [];
   for (let i = 0; i < want; i++) {
-    const chosen = pickWorker(pool, { ...opts, usage });
+    const verifying = building && i > 0;
+    const provider = workers[0] && (workers[0].providerId || workers[0].provider);
+    const ordered = verifying ? [...pool.filter(item => item && (item.providerId || item.provider) !== provider), ...pool.filter(item => item && (item.providerId || item.provider) === provider)] : pool;
+    const chosen = pickWorker(ordered, { ...opts, usage, ...(verifying ? { job: verifyJob } : {}) });
     if (!chosen) break;
     workers.push(chosen);
     pool = pool.filter(item => item && item.id !== chosen.id);
@@ -280,7 +286,7 @@ function dispatchPlan(workers, job, facts) {
     : [
       dirty ? 'Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.'
         : 'Implement the whole job in the project folder, with automated tests. Run the tests before you finish.',
-      'Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
+      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
     ];
   return list.map((worker, index) => ({
     modelId: worker.id,
@@ -1387,7 +1393,7 @@ function createOrchestrator(options) {
     const id = item.project.id;
     const row = entry(id);
     const assigned = row.dispatch?.length ? row.dispatch.map(part => roster().find(model => model.id === part.modelId)) : [chosen];
-    if (assigned.some(model => !model?.enabled || model.available === false || !permitsAssignment(model, job))) {
+    if (assigned.some((model, index) => !model?.enabled || model.available === false || !permitsAssignment(model, isVerifySlice(row.dispatch?.[index]?.slice) ? { kind: 'verify' } : job))) {
       row.status = 'blocked_no_worker'; row.next = 'Review the assigned models: their enabled roles do not permit this work.';
       return false;
     }
@@ -2429,13 +2435,15 @@ function createOrchestrator(options) {
     try { subs = bridge.paint(bridge.target(projectId, megaTaskId)).subTasks || []; } catch { return; }
     const lead = leadModel();
     if (subs.length < 2 || !lead || typeof opts.askModel !== 'function') return;
-    const workers = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, subs[0]) && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan));
-    if (workers.length < 2) return;
-    const question = autonomy.assignmentPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), workers: workers.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider })) });
+    const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
+    const candidates = subs.map(sub => roster().filter(model => usable(model) && permitsAssignment(model, sub)));
+    // With one allowed model per slice the user's roles already decide the crew: no lead call.
+    if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
+    const question = autonomy.assignmentPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
     let spoken;
     try { spoken = await opts.askModel({ question, model: lead, projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return; }
     if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
-    const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, workers.map(model => model.id));
+    const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, candidates.map(list => list.map(model => model.id)));
     if (!choice) { note(projectId, 'Lead crew choice was unreadable; keeping the proposed crew.'); return; }
     try { bridge.reassign(projectId, megaTaskId, choice.assign, choice.why); } catch (error) { note(projectId, 'Lead crew choice was refused: ' + error.message); }
   }

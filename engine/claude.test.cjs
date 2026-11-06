@@ -88,7 +88,7 @@ test('isolated notebook exposes Claude catalog and persists explicit roles witho
   const provider = { id: 'claude', label: 'Claude Code', adapter: 'claude', quotaPoolId: 'Claude', enabled: true, models: [] };
   let discoveries = 0;
   const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), providers: [provider], refreshModels: true,
-    skillsEnabled: false, syncSkills: false, fetchPlans: async () => [require('./claude-usage.cjs').parseClaudeUsage({ five_hour: { utilization: 18 }, seven_day: { utilization: 16 } })],
+  fetchPlans: async () => [require('./claude-usage.cjs').parseClaudeUsage({ five_hour: { utilization: 18 }, seven_day: { utilization: 16 } })],
     discoverModels: async p => { assert.equal(p.adapter, 'claude'); discoveries++; return parseModels([{ value: 'sonnet', resolvedModel: cli, displayName: 'Fixture Sonnet' }]); },
     spawnWorker: () => { throw Error('Inspection must never launch a worker'); }, askModel: () => { throw Error('Inspection must never invoke inference'); } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -107,6 +107,6 @@ test('isolated notebook exposes Claude catalog and persists explicit roles witho
   const saved = await fetch(base + '/api/models/roles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: model.id, roles }) });
   assert.equal(saved.status, 200);
   const enabled = (await saved.json()).models.find(m => m.id === model.id);
-  assert.equal(enabled.enabled, true); assert.deepEqual(enabled.roles, roles);
+  assert.equal(enabled.enabled, true); assert.deepEqual(enabled.roles, { ...roles, verifier: false });
   assert.ok(fs.readFileSync(planFile).equals(before), 'Catalog and role changes leave the isolated notebook untouched');
 });

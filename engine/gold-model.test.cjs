@@ -32,7 +32,7 @@ test('bulk roles persist independently; Gold survives restart and blocks quota f
   let server, base, remaining = 80;
   const launches = [], live = new Set(), leadCalls = [];
   async function start() {
-    server = createServer({ planFile: file, attemptsDir, models, skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+    server = createServer({ planFile: file, attemptsDir, models,refreshModels: false, monitorIntervalMs: 60000,
       fetchPlans: async () => models.slice(0, 2).map(model => ({ id: model.id === 'gold' ? 'Grok' : 'ChatGPT', readable: true, leftPct: model.id === 'gold' ? remaining : 80 })),
       inspectFolder: () => ({ git: false, dirty: [], names: [] }),
       readRepository: () => ({ local: {}, remote: {}, comparison: {} }),

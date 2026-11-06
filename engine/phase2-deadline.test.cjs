@@ -188,7 +188,7 @@ test('background monitoring expires a deadline with no open window and stops the
   const launches = [], ownedPids = [];
   const windows = createAppWindows({ open: () => { throw new Error('This test must not open a browser'); } });
   const server = createServer({ planFile, attemptsDir, models: [{ id: 'process-fixture', provider: 'codex', cli: 'gpt-6-luna', kind: 'default', enabled: true, available: true, cost: 1, limit: 100 }],
-    fetchPlans: null, refreshModels: false, syncSkills: false, skillsEnabled: false, monitorIntervalMs: 25, appWindows: windows,
+    fetchPlans: null, refreshModels: false,monitorIntervalMs: 25, appWindows: windows,
     inspectFolder: () => ({ git: false, dirty: [], names: [], fileCount: 0 }), isProcessAlive, killWorker,
     spawnWorker: info => {
       const childPidFile = path.join(dir, info.attemptId + '.child-pid');

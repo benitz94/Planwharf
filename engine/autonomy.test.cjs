@@ -140,7 +140,7 @@ test('full loop on a real server: starts, approves, works, reassesses, continues
   const model = { id: 'lead', label: 'Lead', provider: 'codex', adapter: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'default', plan: 'Fixture', providerCatalog: true, roles: { orchestrator: true, worker: true, reviewer: false, supervisor: false }, policy: { alwaysApprove: true, minRemainingPercent: null, warningRemainingPercent: null, fallbackModelId: null } };
   const launches = [], questions = [], replies = ['{"done":false,"next":"Add the missing docs","assumptions":["English docs"]}', '{"done":true,"next":null}'];
   const denied = () => { throw Error('windows are not used here'); };
-  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models: [model], skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 50,
+  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models: [model],refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 50,
     openFolder: denied, openUrl: denied, openWatchWindow: denied, openPlanWindow: denied,
     spawnWorker(info) {
       launches.push(info);

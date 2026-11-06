@@ -116,7 +116,7 @@ test('HTTP status, quota, stop acknowledgements and mode use no model; export an
   plan.projects = ['ai-companion-desktop', 'raceengineer'].map(id => ({ ...structuredClone(plan.projects[0]), project: { id, name: id }, tasks: [] }));
   const file = path.join(dir, 'notebook.json'); fs.writeFileSync(file, JSON.stringify(plan));
   let calls = 0, inspections = 0;
-  const server = createServer({ planFile: file, skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000, models: [{ id: 'fixture', provider: 'codex', cli: 'gpt-6-luna', enabled: true }], askModel: async () => { calls++; return 'Reasoned reply'; }, inspectFolder: () => { inspections++; return { git: false, dirty: [] }; }, fetchPlans: async () => [{ id: 'ChatGPT', label: 'ChatGPT', readable: true, leftPct: 82 }] });
+  const server = createServer({ planFile: file,refreshModels: false, monitorIntervalMs: 60000, models: [{ id: 'fixture', provider: 'codex', cli: 'gpt-6-luna', enabled: true }], askModel: async () => { calls++; return 'Reasoned reply'; }, inspectFolder: () => { inspections++; return { git: false, dirty: [] }; }, fetchPlans: async () => [{ id: 'ChatGPT', label: 'ChatGPT', readable: true, leftPct: 82 }] });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const request = async (route, data) => { const res = await fetch(`http://127.0.0.1:${server.address().port}` + route, data === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); return { status: res.status, data: await res.json() }; };
   try {

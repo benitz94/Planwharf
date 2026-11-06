@@ -12,7 +12,7 @@ let server;
   await fs.mkdir(projectsRoot);
   await writePlan(planFile, JSON.parse(await fs.readFile(path.join(__dirname, '../fixtures/notebook.json'), 'utf8')));
   async function start(save) {
-    server = createServer({ skillsEnabled: false, planFile, models: [], fetchPlans: async () => [], ...(save ? { save } : {}) });
+    server = createServer({planFile, models: [], fetchPlans: async () => [], ...(save ? { save } : {}) });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     return `http://127.0.0.1:${server.address().port}`;
   }

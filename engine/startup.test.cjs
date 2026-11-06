@@ -103,7 +103,7 @@ test('desktop close shuts down a real isolated backend and releases its notebook
     let app;
     const browser = new EventEmitter(); browser.kill = () => browser.emit('exit', 0);
     const windows = createAppWindows({ open: () => browser, onWindowClosed: () => app.server.quitApp() });
-    runApp({ planFile: ${JSON.stringify(planFile)}, attemptsDir: ${JSON.stringify(attemptsDir)}, port: 0, models: [], fetchPlans: async () => [], skillsEnabled: false, syncSkills: false, windows }).then(value => {
+    runApp({ planFile: ${JSON.stringify(planFile)}, attemptsDir: ${JSON.stringify(attemptsDir)}, port: 0, models: [], fetchPlans: async () => [],windows }).then(value => {
       app = value;
       process.on('message', message => { if (message === 'close') browser.emit('exit', 0); });
       process.send({ url: app.url });
@@ -242,7 +242,7 @@ test('an occupied default port selects the next port without touching the notebo
   await new Promise(resolve => blocker.listen(0, '127.0.0.1', resolve));
   let app;
   try {
-    app = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: blocker.address().port, models: [], syncSkills: false, skillsEnabled: false, fetchPlans: async () => [] });
+    app = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: blocker.address().port, models: [],fetchPlans: async () => [] });
     assert.ok(app.port > blocker.address().port);
     assert.equal((await fetch(app.url + '/')).status, 200);
     assert.deepEqual(fs.readFileSync(planFile), before);

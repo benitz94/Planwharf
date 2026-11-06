@@ -15,7 +15,7 @@ plan.tasks = [];
 plan.project = { id: 'isolated-chat', name: 'Isolated chat' };
 fs.writeFileSync(planFile, JSON.stringify(plan));
 const calls = [];
-const server = createServer({ skillsEnabled: false,
+const server = createServer({
   planFile,
   attemptsDir: path.join(dir, 'attempts'),
   models: [{ id: 'astra-fixture', label: 'GPT-6 Astra', provider: 'codex', cli: 'gpt-6-astra', enabled: true, available: true, kind: 'premium', limit: 200 }],

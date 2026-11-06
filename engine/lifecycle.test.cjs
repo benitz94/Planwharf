@@ -63,7 +63,7 @@ function make() {
   const notebookFile = path.join(dir, 'http-plan.json');
   fs.writeFileSync(notebookFile, JSON.stringify(notebook));
   const httpDir = path.join(dir, 'http-attempts');
-  const serverOptions = { skillsEnabled: false, planFile: notebookFile, attemptsDir: httpDir, fetchPlans: null,
+  const serverOptions = {planFile: notebookFile, attemptsDir: httpDir, fetchPlans: null,
     models: [{ ...model, kind: 'default' }], inspectFolder: () => ({ names: [], fileCount: 0 }),
     spawnWorker: () => ({ pid: 2001 }), isProcessAlive: () => true, killWorker: pid => killed.push(pid) };
   let server = createServer(serverOptions);

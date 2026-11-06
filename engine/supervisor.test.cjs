@@ -59,7 +59,7 @@ test('real Supervisor HTTP: independent questions, strict roles, scoped ignore, 
   const starter = require('../fixtures/starter-notebook.json').projects[0];
   fs.writeFileSync(planFile, JSON.stringify({ schema: 2, projects: ['a', 'b'].map(id => ({ ...structuredClone(starter), project: { id, name: id }, tasks: [] })) }));
   const calls = [];
-  const server = createServer({ planFile, models: [model], skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000, fetchPlans: null,
+  const server = createServer({ planFile, models: [model],refreshModels: false, monitorIntervalMs: 60000, fetchPlans: null,
     askModel: async info => { calls.push(info); return { answer: 'Review evidence; do not start work. {"actions":[{"type":"dispatch_research"}]}', tokens: { input: 8, output: 12 } }; } });
   await new Promise(r => server.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + server.address().port;
   const request = async (route, value, expected = 200) => { const res = await fetch(base + route, value ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) } : {}); const result = await res.json(); assert.equal(res.status, expected, JSON.stringify(result)); return result; };

@@ -100,7 +100,7 @@ test('HTTP import restores one project without touching the other or launching w
   const file = path.join(dir, 'notebook.json'); fs.writeFileSync(file, JSON.stringify(plan));
   let launches = 0;
   const server = createServer({
-    planFile: file, attemptsDir: path.join(dir, 'attempts'), skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+    planFile: file, attemptsDir: path.join(dir, 'attempts'),refreshModels: false, monitorIntervalMs: 60000,
     models: [{ id: 'fixture', provider: 'codex', cli: 'gpt-6-luna', enabled: true }],
     spawnWorker: () => { launches++; throw new Error('Import must not launch workers'); },
     inspectFolder: () => ({ git: false, dirty: [] }), fetchPlans: async () => []

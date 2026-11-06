@@ -144,7 +144,7 @@ test('policy API persists, lead and approved workers use automatic fallback with
   let server, base, used = 75, reply = null;
   const launches = [], live = new Set();
   async function start() {
-    server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), models, skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+    server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), models,refreshModels: false, monitorIntervalMs: 60000,
       fetchPlans: async () => [{ id: 'ChatGPT', readable: true, leftPct: 100 - used }, { id: 'Grok', readable: true, leftPct: 95 }],
       inspectFolder: () => ({ git: false, dirty: [], names: [] }), askModel: () => { if (reply) return reply; throw new Error('Inference forbidden'); },
       spawnWorker: info => { launches.push(info); const pid = 1000 + launches.length; live.add(pid); return { pid }; }, isProcessAlive: pid => live.has(pid), killWorker: pid => live.delete(pid) });

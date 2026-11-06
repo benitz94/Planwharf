@@ -51,7 +51,7 @@ test('desktop launcher configures a single shared window by default', async () =
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
   let server;
   try {
-    ({ server } = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: 0, models: [], fetchPlans: async () => [], skillsEnabled: false, syncSkills: false }));
+    ({ server } = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: 0, models: [], fetchPlans: async () => [] }));
     const heartbeat = server.windows.heartbeat({ id: 'shared', view: 'orchestrator' });
     assert.deepEqual(heartbeat.views, { planwharf: true, orchestrator: true });
     assert.equal(heartbeat.requestedView, 'planwharf', 'Both views use the same desktop window');
@@ -67,7 +67,7 @@ test('project notes and visits persist, are isolated, and do not conflict with r
   const planFile = path.join(dir, 'notebook.json');
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
   let server, url;
-  async function start() { server = createServer({ skillsEnabled: false, planFile, models: [], fetchPlans: async () => [] }); await new Promise(r => server.listen(0, '127.0.0.1', r)); url = `http://127.0.0.1:${server.address().port}`; }
+  async function start() { server = createServer({planFile, models: [], fetchPlans: async () => [] }); await new Promise(r => server.listen(0, '127.0.0.1', r)); url = `http://127.0.0.1:${server.address().port}`; }
   async function stop() { await new Promise(r => server.close(r)); }
   async function post(endpoint, input) { const r = await fetch(url + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }); assert.ok(r.ok, await r.clone().text()); return r.json(); }
   try {

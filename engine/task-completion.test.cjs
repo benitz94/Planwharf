@@ -25,7 +25,7 @@ fs.writeFileSync(path.join(attemptsDir, 'attempts.json'), JSON.stringify({ nextI
 const stateFile = path.join(attemptsDir, 'orchestrator.json');
 fs.writeFileSync(stateFile, JSON.stringify({ mode: 'auto', projects: { demo: { status: 'watching', jobId: task.id, jobFingerprint: jobFingerprint(task), attemptId: 'attempt-1', resultPath, workerPid: 111, workerAlive: true, dispatch: [{ modelId: 'fixture', pid: 111, alive: true, resultPath }, { modelId: 'fixture', pid: 222, alive: true, resultPath: slicePath }] } } }));
 async function start() {
-  server = createServer({ phase2: false, planFile: file, attemptsDir, models: [model], skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
+  server = createServer({ phase2: false, planFile: file, attemptsDir, models: [model],refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
     inspectFolder: () => ({ folder: dir, fileCount: 0, names: [] }),
     isProcessAlive: () => false, spawnWorker: () => { launches++; throw new Error('No real workers allowed.'); }, killWorker: () => { throw new Error('Historical PIDs must not be killed.'); } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -68,7 +68,7 @@ async function get(base, route) { const response = await fetch(base + route, { s
   fs.mkdirSync(queuedDir);
   fs.writeFileSync(path.join(queuedDir, 'orchestrator.json'), JSON.stringify({ mode: 'auto', projects: {} }));
   fs.writeFileSync(file, JSON.stringify({ ...project, tasks: [] }));
-  server = createServer({ phase2: false, planFile: file, attemptsDir: queuedDir, models: [model], skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
+  server = createServer({ phase2: false, planFile: file, attemptsDir: queuedDir, models: [model],refreshModels: false, fetchPlans: null, monitorIntervalMs: 60000,
     inspectFolder: () => ({ folder: dir, fileCount: 0, names: [] }), isProcessAlive: () => false,
     spawnWorker: info => { fs.writeFileSync(info.resultPath, raw); return { pid: 333 }; }, killWorker: () => { throw new Error('Completed PIDs must not be killed.'); } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

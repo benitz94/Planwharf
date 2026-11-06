@@ -15,7 +15,7 @@ async function fixture(t, folderState = 'linked') {
   if (folderState === 'unlinked') delete plan.projects[0].project.folder;
   const file = path.join(dir, 'notebook.json'); fs.writeFileSync(file, JSON.stringify(plan));
   const launches = [], inspections = [], asks = [], live = new Set();
-  const server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), skillsEnabled: false, syncSkills: false, refreshModels: false, monitorIntervalMs: 60000,
+  const server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'),refreshModels: false, monitorIntervalMs: 60000,
     models: [{ id: 'fixture', label: 'Fixture', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, limit: 100 }], fetchPlans: async () => [],
     inspectFolder: folder => { inspections.push(folder); return { folder, git: false, dirty: [], names: [], fileCount: 0 }; },
     spawnWorker: info => { launches.push(info); const pid = 1000 + launches.length; live.add(pid); return { pid }; },

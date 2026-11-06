@@ -90,7 +90,7 @@ const { createProviderModels } = require('./provider-models.cjs');
   assert.deepEqual(restartedModels[0].roles, { orchestrator: true, worker: false, reviewer: true });
   let releaseDiscovery, startupCalls = 0;
   const pending = new Promise(resolve => { releaseDiscovery = resolve; });
-  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), skillsEnabled: false, fetchPlans: null, refreshModels: true,
+  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'),fetchPlans: null, refreshModels: true,
     models: [{ id: 'gpt-5', cli: 'gpt-5', provider: 'codex', enabled: false, available: false, unavailableReason: 'Old rejected model probe' }, { id: 'retired-startup', cli: 'gpt-retired', provider: 'codex', enabled: true, available: true }],
     discoverModels: () => { startupCalls++; return pending; } });
   try {

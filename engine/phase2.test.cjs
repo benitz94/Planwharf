@@ -14,7 +14,7 @@ const models = [1, 2, 3].map(n => ({ id: `fixture-${n}`, label: `Fixture ${n}`, 
 const launches = [], live = new Set(), killed = [];
 let pid = 1000, head = 'initial', server, base, killAllowed = true;
 async function start() {
-  server = createServer({ planFile: file, attemptsDir, models, fetchPlans: null, skillsEnabled: false, syncSkills: false, refreshModels: false, monitorIntervalMs: 60000,
+  server = createServer({ planFile: file, attemptsDir, models, fetchPlans: null,refreshModels: false, monitorIntervalMs: 60000,
     inspectFolder: folder => ({ folder, git: true, head, dirty: [], names: [], fileCount: 0 }),
     spawnWorker: info => { const processId = ++pid; launches.push({ ...info, pid: processId }); live.add(processId); return { pid: processId }; },
     isProcessAlive: processId => live.has(processId), killWorker: processId => { if (!killAllowed) return false; killed.push(processId); return live.delete(processId); },

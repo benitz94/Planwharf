@@ -75,7 +75,7 @@ test('an idle backend checks linked repositories with no open UI or running jobs
   const original = JSON.stringify(plan); fs.writeFileSync(file, original);
   let checked, timer, calls = 0;
   const observed = new Promise(resolve => checked = resolve);
-  const server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), models: [], skillsEnabled: false, refreshModels: false, monitorIntervalMs: 20,
+  const server = createServer({ planFile: file, attemptsDir: path.join(dir, 'attempts'), models: [],refreshModels: false, monitorIntervalMs: 20,
     readRepository: async project => { calls++; const result = { checkedAt: new Date().toISOString(), folder: null, github: project.github, comparison: { status: 'behind', behind: 1 } }; checked(); return result; },
     spawnWorker: () => { throw Error('Repository monitoring cannot dispatch'); }, fetchPlans: async () => [] });
   try {

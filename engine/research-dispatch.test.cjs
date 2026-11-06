@@ -33,7 +33,7 @@ const alive = new Set();
 const spawnWorker = info => { const pid = 600000 + launches.length; launches.push(info); alive.add(pid); fs.writeFileSync(info.logPath, 'Reading original GitHub source.\n'); return { pid, logPath: info.logPath }; };
 let replyAction = action;
 let base;
-const server = createServer({ phase2: false, skillsEnabled: false, planFile, attemptsDir: path.join(dir, 'attempts'), models, inspectFolder: () => ({ fileCount: 1, names: ['personal.txt'], git: false }), fetchPlans: async () => [],
+const server = createServer({ phase2: false,planFile, attemptsDir: path.join(dir, 'attempts'), models, inspectFolder: () => ({ fileCount: 1, names: ['personal.txt'], git: false }), fetchPlans: async () => [],
   spawnWorker, isProcessAlive: pid => alive.has(pid), killWorker: pid => alive.delete(pid),
   askModel: async info => {
     const answer = JSON.stringify({ answer: 'Research assignment proposed.', actions: [replyAction] });

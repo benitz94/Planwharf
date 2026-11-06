@@ -6,7 +6,7 @@ const path = require('node:path');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'orch.js'), 'utf8'), context);
 const { sessionHtml, evidenceText, roles, roleAllowed } = context.PlanwharfWorkspaceUI;
-assert.deepEqual(Array.from(roles), ['orchestrator', 'worker', 'reviewer', 'supervisor']);
+assert.deepEqual(Array.from(roles), ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor']);
 assert.equal(roleAllowed({ roles: { reviewer: true } }, 'supervisor'), false);
 assert.equal(roleAllowed({ roles: { supervisor: true } }, 'supervisor'), false);
 assert.equal(roleAllowed({ roles: { supervisor: true }, roleEligibility: { supervisor: true } }, 'supervisor'), true);

@@ -43,7 +43,34 @@ test('the crew reply must name one allowed worker per slice', () => {
   assert.deepEqual(autonomy.parseAssignment('{"assign":["b","a"],"why":"fast"}', 2, ['a', 'b']), { assign: ['b', 'a'], why: 'fast' });
   assert.equal(autonomy.parseAssignment('{"assign":["b"]}', 2, ['a', 'b']), null);
   assert.equal(autonomy.parseAssignment('{"assign":["z","a"]}', 2, ['a', 'b']), null);
-  assert.match(autonomy.assignmentPrompt({ name: 'P', goal: 'G', slices: ['one', 'two'], workers: [{ id: 'a', label: 'A', provider: 'x' }] }), /different provider/);
+  const prompt = autonomy.assignmentPrompt({ name: 'P', goal: 'G', slices: ['one', 'two'], candidates: [[{ id: 'a', label: 'A', provider: 'x' }], [{ id: 'b', label: 'B', provider: 'y' }]] });
+  assert.match(prompt, /different provider/);
+  assert.match(prompt, /Allowed: a \(A, provider x\)/);
+  assert.doesNotMatch(prompt, /fastest/, 'speed cannot be judged from a model name');
+  assert.equal(autonomy.parseAssignment('{"assign":["a","a"]}', 2, [['a'], ['b']]), null, 'each slice has its own allowed list');
+  assert.deepEqual(autonomy.parseAssignment('{"assign":["a","b"]}', 2, [['a'], ['b']]).assign, ['a', 'b']);
+});
+
+test('the Verifier role takes the verify slice', () => {
+  const { withModelRoles, permitsAssignment, assignmentRole, VERIFY_SLICE } = require('./model-roles.cjs');
+  const { pickWorkers } = require('./orchestrator.js');
+  const job = { title: 'Build it', detail: 'Implement the feature with tests.' };
+  assert.equal(assignmentRole({ title: VERIFY_SLICE + ': run the tests' }), 'verifier');
+  assert.equal(assignmentRole(job), 'worker');
+  // Saved before the role existed: a Worker keeps verifying, a model without Worker does not.
+  assert.equal(withModelRoles({ id: 'a', roles: { worker: true } }).roles.verifier, true);
+  assert.equal(withModelRoles({ id: 'a', roles: { worker: false } }).roles.verifier, false);
+  const model = (id, provider, roles) => ({ id, label: id, provider, cli: id, modelRouting: 'configured', enabled: true, available: true, kind: 'default', roles });
+  const builder = model('astra', 'codex', { worker: true, verifier: false });
+  const checker = model('opus', 'claude', { worker: false, verifier: true });
+  const sameProvider = model('luna', 'codex', { worker: false, verifier: true });
+  assert.equal(permitsAssignment(checker, { title: VERIFY_SLICE }), true);
+  assert.equal(permitsAssignment(checker, job), false, 'a Verifier-only model never builds');
+  const crew = pickWorkers([sameProvider, builder, checker], { job, usage: {} });
+  assert.deepEqual(crew.map(item => item.id), ['astra', 'opus'], 'the verifier comes from another provider when one exists');
+  const alone = pickWorkers([builder], { job, usage: {} });
+  assert.deepEqual(alone.map(item => item.id), ['astra'], 'with no Verifier the job is one slice');
+  assert.equal(dispatchPlan(alone, job, {})[0].slice, 'Whole job');
 });
 
 test('project checks run node --test when test files exist and report a failure', async () => {
@@ -88,7 +115,7 @@ test('full loop: the lead picks the crew, a refusal reroutes, checks feed the ve
   const models = [model('a', 'codex', 'gpt-6-luna'), model('b', 'grok', 'grok-4.7'), model('c', 'claude', 'claude-opus-5-5')];
   const launches = [], asks = [];
   const denied = () => { throw Error('windows are not used here'); };
-  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models, skillsEnabled: false, syncSkills: false, refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 50,
+  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models, refreshModels: false, fetchPlans: async () => [], monitorIntervalMs: 50,
     openFolder: denied, openUrl: denied, openWatchWindow: denied, openPlanWindow: denied,
     spawnWorker(info) {
       launches.push(info);
@@ -104,7 +131,7 @@ test('full loop: the lead picks the crew, a refusal reroutes, checks feed the ve
     isProcessAlive: () => false, killWorker: () => {}, abortAsk: () => {},
     askModel: async info => {
       asks.push({ model: info.model.id, question: info.question });
-      if (/Available workers:/.test(info.question)) return { answer: '{"assign":["c","b"],"why":"c builds, b checks"}' };
+      if (/Each lists the models allowed/.test(info.question)) return { answer: '{"assign":["c","b"],"why":"c builds, b checks"}' };
       if (info.model.id === 'a') return { answer: 'I think it is fine.', failure: 'process' };
       return { answer: '{"done":true,"next":null,"assumptions":["checked by b"]}' };
     } });

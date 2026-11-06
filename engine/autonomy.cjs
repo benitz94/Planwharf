@@ -88,22 +88,24 @@ function parseDecision(text) {
 }
 
 // Before approval the lead picks who does each slice, instead of the catalog order.
-function assignmentPrompt({ name, goal, slices, workers }) {
+// Each slice lists only the models whose roles allow it (Worker builds, Verifier checks).
+function assignmentPrompt({ name, goal, slices, candidates }) {
   return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
-    'The MegaTask has these slices, run in order:', ...slices.map((slice, index) => `${index + 1}. ${slice}`),
-    'Available workers:', ...workers.map(worker => `- ${worker.id}: ${worker.label} (provider ${worker.provider})`),
-    'Choose one worker per slice. For the first slice prefer the fastest worker that can build the whole job correctly: the later slice checks and fixes it. For each later slice pick the most thorough checker from a different provider than the slice before it, so the work is checked independently.',
+    'The MegaTask has these slices, run in order. Each lists the models allowed to take it:',
+    ...slices.map((slice, index) => `${index + 1}. ${slice}\n   Allowed: ${candidates[index].map(worker => `${worker.id} (${worker.label}, provider ${worker.provider})`).join('; ')}`),
+    'Choose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.',
     'Do not run commands or read files: decide from this message only.',
     'Reply with one JSON object and nothing else: {"assign":["worker id for slice 1", "..."],"why":"one sentence"}.'].join('\n');
 }
 
 function parseAssignment(text, count, allowed) {
+  const allowedAt = index => Array.isArray(allowed[0]) ? allowed[index] : allowed;
   if (typeof text !== 'string') return null;
   const start = text.indexOf('{'), end = text.lastIndexOf('}');
   if (start < 0 || end < start) return null;
   let parsed; try { parsed = JSON.parse(text.slice(start, end + 1)); } catch { return null; }
   const ids = Array.isArray(parsed?.assign) ? parsed.assign : null;
-  if (!ids || ids.length !== count || !ids.every(id => typeof id === 'string' && allowed.includes(id))) return null;
+  if (!ids || ids.length !== count || !ids.every((id, index) => typeof id === 'string' && allowedAt(index).includes(id))) return null;
   return { assign: ids, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 

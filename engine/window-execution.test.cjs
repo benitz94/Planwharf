@@ -14,7 +14,7 @@ test('closing UI views neither kills workers nor disables backend monitoring', a
   let launched, reads = 0; const killed = [];
   const windows = createAppWindows({ open: () => null });
   windows.heartbeat({ id: 'p', view: 'planwharf' }); windows.heartbeat({ id: 'o', view: 'orchestrator' });
-  const server = createServer({ skillsEnabled: false, planFile, appWindows: windows, monitorIntervalMs: 40, fetchPlans: null,
+  const server = createServer({planFile, appWindows: windows, monitorIntervalMs: 40, fetchPlans: null,
     models: [{ id: 'isolated', label: 'Isolated mock worker', provider: 'antigravity', cli: 'gemini-3.1-pro-high', enabled: true, kind: 'default' }],
     inspectFolder: () => { reads++; return { names: [], fileCount: 0 }; },
     spawnWorker: info => { launched = info; return { pid: 2001 }; }, isProcessAlive: () => { reads++; return true; }, killWorker: pid => killed.push(pid) });

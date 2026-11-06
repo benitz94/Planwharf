@@ -41,7 +41,7 @@ test('account switching isolates roles, invalidates quota and stale access, and 
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
   let account = { key: 'fixture-personal', type: 'normal' }, catalogOk = true, discoveryCalls = 0, aiCalls = 0, server, origin;
   async function start() {
-    server = createServer({ planFile, attemptsDir, skillsEnabled: false, monitorIntervalMs: 60000,
+    server = createServer({ planFile, attemptsDir,monitorIntervalMs: 60000,
       models: [{ id: 'grok-fixture', label: 'Grok fixture', provider: 'grok', cli: 'grok-fixture', enabled: true, available: true }],
       readAccount: () => account, discoverModels: async () => { discoveryCalls++; return catalogOk ? { ok: true, ids: ['grok-fixture'] } : { ok: false, reason: 'Fixture listing unavailable' }; },
       fetchPlans: async () => [{ id: 'Grok', readable: true, leftPct: account.type === 'business' ? 0 : 82, exhausted: account.type === 'business' }],
@@ -68,24 +68,24 @@ test('account switching isolates roles, invalidates quota and stale access, and 
     await request('/api/models/roles', { id: 'grok-fixture', roles: business });
     account = { key: 'fixture-personal', type: 'normal' };
     state = await request('/api/orchestrator?readOnly=1');
-    assert.deepEqual(model(state).roles, personal); assert.equal(model(state).label, 'Grok fixture');
+    assert.deepEqual(model(state).roles, { ...personal, verifier: true }); assert.equal(model(state).label, 'Grok fixture');
     const beforePoll = discoveryCalls;
     await request('/api/orchestrator?readOnly=1'); await request('/api/orchestrator?readOnly=1');
     assert.equal(discoveryCalls, beforePoll, 'Unchanged login polling does not spawn catalog checks');
     catalogOk = false; account = { key: 'fixture-business', type: 'business' };
     state = await request('/api/orchestrator?readOnly=1');
-    assert.deepEqual(model(state).roles, business); assert.equal(model(state).available, false, 'A failed new-account check must not inherit old-account model access');
+    assert.deepEqual(model(state).roles, { ...business, verifier: true }); assert.equal(model(state).available, false, 'A failed new-account check must not inherit old-account model access');
     assert.match(model(state).availabilityWarning, /listing unavailable/);
     account = { key: 'fixture-personal', type: 'normal' };
     await request('/api/orchestrator?readOnly=1');
     account = { key: 'fixture-business', type: 'business' };
     await new Promise(resolve => server.close(resolve)); await start();
-    state = await request('/api/orchestrator?readOnly=1'); assert.deepEqual(model(state).roles, business);
+    state = await request('/api/orchestrator?readOnly=1'); assert.deepEqual(model(state).roles, { ...business, verifier: true });
     assert.equal(model(state).available, false, 'A login change while the backend is stopped also invalidates old account access');
     await new Promise(resolve => server.close(resolve)); await start();
     state = await request('/api/orchestrator?readOnly=1');
     assert.equal(model(state).available, false, 'Repeated restart during failed discovery cannot resurrect a historical catalog for the unchanged invalidated account');
-    assert.deepEqual(model(state).roles, business, 'Access invalidation never rewrites account-scoped role choices');
+    assert.deepEqual(model(state).roles, { ...business, verifier: true }, 'Access invalidation never rewrites account-scoped role choices');
     assert.equal(aiCalls, 0);
   } finally { if (server?.listening) await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -95,7 +95,7 @@ test('failed cache invalidation does not commit switched account identity and re
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
   let account = { key: 'fixture-account-a', type: 'normal' }, catalogOk = true, server, origin;
   async function start() {
-    server = createServer({ planFile, attemptsDir, skillsEnabled: false, refreshModels: false, monitorIntervalMs: 60000,
+    server = createServer({ planFile, attemptsDir,refreshModels: false, monitorIntervalMs: 60000,
       models: [{ id: 'grok-fixture', provider: 'grok', cli: 'grok-fixture', enabled: true, available: true }], readAccount: () => account,
       discoverModels: async () => catalogOk ? { ok: true, ids: ['grok-fixture'] } : { ok: false, reason: 'Synthetic outage' }, fetchPlans: null,
       askModel: () => { throw Error('No inference authorized'); } });

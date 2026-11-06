@@ -2,7 +2,7 @@
 // Shared pure presentation contract; no backend authority or provider calls.
 (() => {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const roles = ['orchestrator', 'worker', 'reviewer', 'supervisor'];
+  const roles = ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor'];
   const roleAllowed = (model, role) => role === 'supervisor' ? model.roles?.supervisor === true && model.roleEligibility?.supervisor === true : model.roles?.[role] === true;
   function evidenceText(session) {
     const evidence = session?.technicalEvidence;
@@ -547,7 +547,7 @@
     if (!roleFilterControl && typeof document.createElement === 'function' && typeof el.before === 'function') {
       const label = document.createElement('label'); label.textContent = 'Model role';
       roleFilterControl = document.createElement('select'); roleFilterControl.setAttribute('aria-label', 'Filter models by role');
-      roleFilterControl.innerHTML = '<option value="all">All roles</option><option value="orchestrator">Orchestrator</option><option value="worker">Worker</option><option value="reviewer">Reviewer</option><option value="supervisor">Supervisor</option>';
+      roleFilterControl.innerHTML = '<option value="all">All roles</option><option value="orchestrator">Orchestrator</option><option value="worker">Worker</option><option value="verifier">Verifier</option><option value="reviewer">Reviewer</option><option value="supervisor">Supervisor</option>';
       roleFilterControl.addEventListener('change', () => { modelRoleFilter = roleFilterControl.value; renderBoard(); });
       label.append(roleFilterControl); el.before(label);
     }

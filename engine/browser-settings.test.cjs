@@ -13,7 +13,7 @@ const Plan = require('../plan.js');
 test('browser choice persists through HTTP and rejects missing executables', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-browser-choice-'));
   const planFile = path.join(dir, 'notebook.json'); fs.writeFileSync(planFile, JSON.stringify(Plan.example()));
-  const server = createServer({ planFile, models: [], skillsEnabled: false, refreshModels: false, fetchPlans: null });
+  const server = createServer({ planFile, models: [],refreshModels: false, fetchPlans: null });
   try {
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const base = `http://127.0.0.1:${server.address().port}`;
