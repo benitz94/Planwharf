@@ -81,6 +81,29 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .event.good .icon { background: var(--accent-soft); color: var(--ok); }
 .event.bad .icon { background: var(--bad-soft); color: var(--bad); }
 .event time { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.prov { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; flex: none; vertical-align: 1px; }
+.card.crew h3 { display: flex; align-items: center; gap: 8px; }
+.card.crew.live { border-color: var(--accent); }
+.card.crew.done { border-color: var(--accent); background: linear-gradient(0deg, var(--surface), var(--surface)) padding-box, var(--accent-soft); }
+.card.crew.attention { border-color: var(--warn); }
+.crew-steps { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.step { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.step .prov { margin-top: 7px; }
+.step-main { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.step.running { border-color: var(--accent); }
+.step.complete .step-main { color: var(--muted); }
+.progress { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 10px; }
+.progress > span { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+.alert-row { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+.alert-row p { margin: 0; overflow-wrap: anywhere; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0; font-size: 14px; }
+.preview summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.preview pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.45 ui-monospace, Consolas, monospace; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; max-height: 180px; overflow: auto; margin: 6px 0 0; }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--accent-soft); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } .progress > span { transition: none; } }
+.badge.working, .badge.running { background: var(--accent-soft); color: var(--ok); }
+.badge.done { background: var(--accent-soft); color: var(--ok); }
 .dots::after { content: "…"; animation: blink 1.2s infinite steps(4); }
 @keyframes blink { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .dots::after { animation: none; } }
@@ -108,6 +131,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .btn-primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
 .btn-danger { color: var(--bad); border-color: var(--bad); }
+a.btn, label.btn { display: inline-block; text-decoration: none; color: inherit; }
 .btn-small { padding: 4px 10px; font-size: 13px; border-radius: 8px; }
 .full { width: 100%; }
 .icon-btn { border: 0; background: transparent; font-size: 18px; padding: 4px 8px; border-radius: 8px; cursor: pointer; }
@@ -121,7 +145,8 @@ a { color: var(--accent); }
 
 .section { margin-bottom: 22px; }
 .stack { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-.stack input { width: 100%; font-weight: 400; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.stack select { width: 100%; }
+.stack input:not([type="checkbox"]) { width: 100%; font-weight: 400; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
 .section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 8px; }
 .section .explain { font-size: 13px; color: var(--muted); margin: -4px 0 10px; }
 .member { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--bg); }

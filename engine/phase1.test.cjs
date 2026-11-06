@@ -38,7 +38,7 @@ test('one application window opens, switches views, focuses and reopens without 
   windows.heartbeat({ view: 'planwharf', id: 'p', closed: true }); opened[0].child.emit('exit');
   assert.deepEqual(windows.status(), { planwharf: false, orchestrator: false });
   windows.openView('orchestrator', 'http://127.0.0.1:4173/orchestrator.html');
-  assert.equal(opened.length, 2); assert.equal(opened[1].url, 'http://127.0.0.1:4173/#orchestrator');
+  assert.equal(opened.length, 2); assert.equal(opened[1].url, 'http://127.0.0.1:4173/');
   windows.openView('planwharf', opened[0].url); assert.equal(opened.length, 2, 'Launch in flight must not open a second window');
   windows.heartbeat({ view: 'planwharf', id: 'p2' });
   clock += 16000; assert.deepEqual(windows.status(), { planwharf: false, orchestrator: false });

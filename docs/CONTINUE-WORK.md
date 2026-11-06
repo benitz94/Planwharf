@@ -1,15 +1,8 @@
 # Continue work: import a project export and resume
 
-Planwharf restores a `planwharf-project-export` (schema 1) file as a **new** notebook project. You can then resume paused MegaTasks from Home using the existing checkpoint controls.
+Planwharf restores a `planwharf-project-export` (schema 1) file as a **new** notebook project. You can then resume paused work with **Resume** in the chat.
 
 This is the Planwharf-native version of a pattern other local coordinators keep: keep the plan, notes, task status and checkpoints when you move machines or notebooks, and continue only after you confirm the folder on this PC.
-
-## Import project vs Import revision
-
-| Control | Where | What it restores |
-| --- | --- | --- |
-| **Import project** | Projects rail | A full export: Living Plan revisions, tasks, notes, checkpoints and summarized execution. Creates a new project. |
-| **Import** on The plan | Plan card | One revision JSON object (`title`, goal, state, decisions, questions). Does not create a project or restore execution. |
 
 ## What is restored
 
@@ -20,7 +13,7 @@ This is the Planwharf-native version of a pattern other local coordinators keep:
 - Execution MegaTasks, SubTasks, structured results, checkpoints and timeline events for that project
 - A continue hint: `resume` when a paused MegaTask has a checkpoint, `approve` when work is waiting for approval
 
-Folder and GitHub URL come only from the values you confirm in the import dialog. The path stored in the export is a hint, not a silent copy.
+The folder stored in the export is a hint, not a silent copy: the imported project starts without a folder. Set it in **Settings → This project**.
 
 ## What is not restored
 
@@ -30,15 +23,15 @@ Folder and GitHub URL come only from the values you confirm in the import dialog
 - Global Settings, model catalogs, or other projects in the notebook
 - Automatic worker launch
 
-Resume still needs the linked folder for implementation work, and it still uses Home checkpoint comparison. It does not restore a model's internal conversation memory.
+Resume still needs the linked folder for implementation work, and it still compares the folder with the checkpoint. It does not restore a model's internal conversation memory.
 
 ## How to continue
 
-1. On the source notebook, open Home and choose **Export project**.
+1. On the source computer, open **Settings → Move a project** and press **Save … to a file**.
 2. Copy the JSON file to the destination PC, together with the project source folder if you still need the files.
-3. In the destination Planwharf, choose **Import project**, select the export, and confirm **Folder on this PC** (and GitHub URL if you use one).
-4. Planwharf selects the new project and opens Home. If a checkpoint was restored, the toast says **Resume from checkpoint on Home**.
-5. Review **Since your last visit** / checkpoint comparison, then **Resume** when you want workers to continue.
+3. On the destination computer, open **Settings → Move a project → Open a project file** and choose the export.
+4. Planwharf selects the new project. Set its folder in **Settings → This project**.
+5. If a checkpoint was restored, press **Resume** when you want workers to continue; Planwharf asks for confirmation if the folder differs from the checkpoint.
 
 ## HTTP
 

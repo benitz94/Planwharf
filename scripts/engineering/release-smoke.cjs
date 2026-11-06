@@ -2,7 +2,7 @@
 const fs = require('node:fs'); const os = require('node:os'); const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
-const required = ['index.html', 'planwharf.cjs', 'planwharf.cmd', 'planwharf.sh', 'Planwharf.exe', 'plan.js', 'server.cjs', 'fixtures/starter-notebook.json'];
+const required = ['chat.html', 'planwharf.cjs', 'planwharf.cmd', 'planwharf.sh', 'Planwharf.exe', 'plan.js', 'server.cjs', 'fixtures/starter-notebook.json'];
 function inspectDirectory(root) {
   const missing = required.filter(name => !fs.existsSync(path.join(root, name)));
   if (missing.length) throw Error('RELEASE_MISSING: ' + missing.join(', '));

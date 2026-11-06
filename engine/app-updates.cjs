@@ -63,7 +63,7 @@ function unpack(data, expectedVersion) {
     if (size > MAX_EXPANDED || digest(bytes) !== file.sha256) throw new Error('Update file checksum failed: ' + file.path);
     file.bytes = bytes;
   }
-  for (const required of ['planwharf.cjs', 'server.cjs', 'index.html', 'engine/app-updates.cjs', 'engine/apply-update.cjs', 'fixtures/starter-notebook.json']) if (!names.has(required)) throw new Error('Incomplete update package: ' + required);
+  for (const required of ['planwharf.cjs', 'server.cjs', 'chat.html', 'engine/app-updates.cjs', 'engine/apply-update.cjs', 'fixtures/starter-notebook.json']) if (!names.has(required)) throw new Error('Incomplete update package: ' + required);
   return bundle;
 }
 async function bounded(response, maximum) {

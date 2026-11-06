@@ -47,7 +47,7 @@ function createAppWindows({ open, focus = focusNative, now = Date.now, ttl = 150
   }
   function launch(view = 'planwharf') {
     if (closed) return false;
-    const url = separateWindows ? origin + '/?window=' + view + (view === 'orchestrator' ? '#orchestrator' : '') : origin + (requestedView === 'orchestrator' ? '/#orchestrator' : '/');
+    const url = origin + '/';
     if (now() - (launching.get(view) || -Infinity) < ttl) return true;
     const child = open(url, view);
     if (!child) return false;

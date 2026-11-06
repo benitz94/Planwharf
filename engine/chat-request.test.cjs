@@ -49,7 +49,7 @@ async function main() {
   assert.equal(other.status, 413, 'Other routes retain their 64 KiB request limit');
   assert.match((await other.json()).error, /Revision too large/);
   assert.deepEqual(JSON.parse(fs.readFileSync(planFile, 'utf8')), plan, 'Chat must not change notebook content');
-  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../orchestrator.html'), 'utf8'), /id="orch-ask-input"[^>]*maxlength="2000"/);
+  assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '../chat.html'), 'utf8'), /maxlength="2000"/, 'The chat box accepts long messages');
   console.log('OK: isolated HTTP chat accepts >64 KiB Unicode, enforces 1 MiB, preserves other request limits and notebook data.');
 }
 

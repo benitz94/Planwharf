@@ -7,12 +7,12 @@ function contrast(a, b) {
   const values = [luminance(a), luminance(b)].sort((x, y) => y - x); return (values[0] + 0.05) / (values[1] + 0.05);
 }
 function inspect(read) {
-  const html = read('index.html'), css = read('styles.css');
+  const html = read('chat.html'), css = read('chat.css');
   const dialogs = [...html.matchAll(/<dialog\b([^>]*)>/g)].map(match => ({ id: /\bid="([^"]+)"/.exec(match[1])?.[1], explicitAccessibleName: /aria-label(?:ledby)?=/.test(match[1]) }));
-  const light = /html\[data-theme="light"\]\s*\{([^}]+)/.exec(css)?.[1] || '';
-  const cyan = /--cyan:\s*(#[a-f0-9]{6})/i.exec(light)?.[1];
-  const ink = /--mark-ink:\s*(#[a-f0-9]{6})/i.exec(light)?.[1];
-  return { lightPrimaryTokenContrast: cyan && ink ? contrast(cyan, ink) : null, evidence: 'static source only; no browser or assistive technology execution', dialogs, unnamedDialogs: dialogs.filter(x => !x.explicitAccessibleName).map(x => x.id), focusRulePresent: css.includes(':focus-visible'), motionPreferencePresent: harbor.includes('prefers-reduced-motion'), liveRegionPresent: html.includes('aria-live="polite"') };
+  const light = /:root\s*\{([^}]+)/.exec(css)?.[1] || '';
+  const accent = /--accent:\s*(#[a-f0-9]{6})/i.exec(light)?.[1];
+  const ink = /--accent-text:\s*(#[a-f0-9]{6})/i.exec(light)?.[1];
+  return { lightPrimaryTokenContrast: accent && ink ? contrast(accent, ink) : null, evidence: 'static source only; no browser or assistive technology execution', dialogs, unnamedDialogs: dialogs.filter(x => !x.explicitAccessibleName).map(x => x.id), focusRulePresent: css.includes(':focus-visible'), motionPreferencePresent: css.includes('prefers-reduced-motion'), liveRegionPresent: html.includes('aria-live="polite"') };
 }
 if (require.main === module) {
   const ref = process.argv[2];

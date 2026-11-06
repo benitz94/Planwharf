@@ -14,7 +14,7 @@ const { createOrchestrator } = require('./orchestrator.js');
 const { createAttemptEngine } = require('./attempts.js');
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-updates-'));
-  const sources = { 'planwharf.cjs': 'old app', 'server.cjs': 'old server', 'index.html': 'old page',
+  const sources = { 'planwharf.cjs': 'old app', 'server.cjs': 'old server', 'chat.html': 'old page',
     'engine/app-updates.cjs': fs.readFileSync(path.join(__dirname, 'app-updates.cjs'), 'utf8'),
     'engine/apply-update.cjs': fs.readFileSync(path.join(__dirname, 'apply-update.cjs'), 'utf8'), 'fixtures/starter-notebook.json': '{}' };
   const manifest = { schema: 1, version: 'v1.0.0', files: {} };
@@ -71,10 +71,10 @@ test('applying an update preserves notebooks, settings, credentials and evidence
     for (const [name, value] of Object.entries(personal)) { const file = path.join(f.root, name); fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, value); }
     const stage = path.join(f.root, '.planwharf-updates/test'); fs.mkdirSync(stage, { recursive: true }); fs.writeFileSync(path.join(stage, 'package.json.gz'), f.bytes);
     const job = { root: f.root, stage, installed: f.manifest, version: 'v1.0.1' };
-    fs.writeFileSync(path.join(f.root, 'index.html.update-tmp'), 'existing evidence');
+    fs.writeFileSync(path.join(f.root, 'chat.html.update-tmp'), 'existing evidence');
     assert.throws(() => apply(job), /temporary file/);
     assert.equal(fs.readFileSync(path.join(f.root, 'planwharf.cjs'), 'utf8'), 'old app');
-    fs.unlinkSync(path.join(f.root, 'index.html.update-tmp'));
+    fs.unlinkSync(path.join(f.root, 'chat.html.update-tmp'));
     apply(job); assert.equal(installation(f.root).version, 'v1.0.1'); assert.equal(fs.readFileSync(path.join(f.root, 'planwharf.cjs'), 'utf8'), 'new app');
     for (const [name, value] of Object.entries(personal)) assert.equal(fs.readFileSync(path.join(f.root, name), 'utf8'), value);
     verifyLocal(f.root, installation(f.root), Object.keys(f.manifest.files));

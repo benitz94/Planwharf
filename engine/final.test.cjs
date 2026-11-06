@@ -107,9 +107,6 @@ test('separate windows open together, focus independently, and closing one prese
   opened[0].child.emit('exit', 0); assert.deepEqual(windows.status(), { planwharf: false, orchestrator: true });
   windows.closeAll();
 });
-test('notification selection only includes important local evidence', () => {
-  assert.deepEqual(require('../notifications.js').important([{ type: 'SUBTASK_STARTED' }, { type: 'CHECKPOINT_SAVED' }, { type: 'MEGATASK_COMPLETED' }]).map(event => event.type), ['CHECKPOINT_SAVED', 'MEGATASK_COMPLETED']);
-});
 test('HTTP status, quota, stop acknowledgements and mode use no model; export and notes stay scoped', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-final-http-'));
   const plan = structuredClone(require('../fixtures/starter-notebook.json'));

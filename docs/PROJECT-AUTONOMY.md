@@ -2,7 +2,7 @@
 
 Project autonomy lets the orchestrator carry one project forward without waiting for you. You can still step in at any time.
 
-It is off by default. To use it, select **Automatic** mode and choose **Turn on project autonomy** for the project. The setting lasts for the current Planwharf session: after a restart, turn it on again.
+It is off by default. To use it, press **Let the crew do it** at the bottom of the chat; Planwharf also switches approvals to automatic. **Stop the crew** turns it off. The setting lasts for the current Planwharf session: after a restart, turn it on again.
 
 ## What happens
 
@@ -28,7 +28,7 @@ While autonomy is on, workers run with a Git setting that makes every `git push`
 
 ## Costs
 
-Each crew choice, lead review and nudge is a model call, recorded under the Orchestrator role in **AI usage**. Detecting an alert and running the project's tests use no model.
+Each crew choice, lead review and nudge is a model call, recorded under **Lead calls** in **Usage**. Detecting an alert and running the project's tests use no model.
 
 ## Known limit: a worker's claim is not proof
 

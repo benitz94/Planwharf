@@ -13,7 +13,7 @@ const { inspectZip, inspectDirectory, startup } = require('./release-smoke.cjs')
     console.log(inspectZip(path.join(dir, 'Planwharf-v0.0.0.zip')).trim());
     await startup(packaged);
     const bad = path.join(dir, 'missing.zip');
-    const make = spawnSync('python', ['-c', "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1],'w'); z.writestr('Planwharf/index.html','fixture'); z.close()", bad], { timeout: 5000 });
+    const make = spawnSync('python', ['-c', "import zipfile,sys; z=zipfile.ZipFile(sys.argv[1],'w'); z.writestr('Planwharf/chat.html','fixture'); z.close()", bad], { timeout: 5000 });
     if (make.error || make.status !== 0) throw Error('Could not create negative ZIP fixture');
     assert.throws(() => inspectZip(bad), /Required ZIP content missing/);
     console.log('PASS incomplete ZIP rejected');

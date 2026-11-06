@@ -19,7 +19,8 @@ const basePlan = Plan.example(); basePlan.tasks = []; basePlan.project = { id: '
 const plan = Plan.createProject(basePlan, { name: 'Recipe site', direction: 'Build a small recipe website.' });
 const projectId = plan.projects.at(-1).project.id;
 fs.writeFileSync(planFile, JSON.stringify(plan));
-const calls = [];
+const calls = [], launches = [], live = new Set();
+let pid = 4000;
 const server = createServer({ planFile, refreshModels: false, fetchPlans: null,
   models: [
     { id: 'lead-a', label: 'Lead A', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'default' },
@@ -28,7 +29,17 @@ const server = createServer({ planFile, refreshModels: false, fetchPlans: null,
   inspectFolder: () => ({ git: true, names: ['index.html'], dirty: [] }),
   readRepository: () => ({ local: { exists: true, readable: true, writable: true, git: true, branch: 'main', changes: [' M index.html', '?? notes.txt'], uncommitted: 2 }, remote: {}, comparison: {} }),
   askModel: async info => { calls.push(info); await pause(1500); return { answer: 'Fine: a recipe site with a list page and a detail page.' }; },
-  spawnWorker: () => { throw new Error('The chat browser check must never launch a worker'); } });
+  monitorIntervalMs: 300,
+  // Fake crew: a worker is a pid that stays alive until the check writes its result.
+  spawnWorker: info => { const processId = ++pid; launches.push({ ...info, pid: processId }); live.add(processId); if (info.logPath) { try { fs.mkdirSync(path.dirname(info.logPath), { recursive: true }); fs.writeFileSync(info.logPath, 'Writing index.html\nAdding the recipe list\n'); } catch {} } return { pid: processId }; },
+  isProcessAlive: processId => live.has(processId), killWorker: processId => live.delete(processId) });
+function finish(info) {
+  const result = { resultId: info.resultId, attemptId: info.attemptId, subTaskId: info.subTaskId, megaTaskId: info.megaTaskId, status: 'COMPLETE', summary: 'Finished ' + info.job.title,
+    filesChanged: ['index.html'], tests: [{ command: 'node --test', status: 'PASSED', evidence: 'fixture' }], blockers: [], nextAction: 'None', createdAt: new Date().toISOString() };
+  fs.writeFileSync(info.structuredResultPath, JSON.stringify(result));
+  fs.writeFileSync(info.exitPath, JSON.stringify({ attemptId: info.attemptId, exitCode: 0, provider: info.worker.provider, model: info.worker.cli }));
+  fs.writeFileSync(info.resultPath, 'STATUS: COMPLETE\nEXIT: 0\n'); live.delete(info.pid);
+}
 let browser, ws, command, browserError;
 const errors = [];
 (async () => {
@@ -66,7 +77,8 @@ const errors = [];
   const until = async (expression, label, ms = 8000) => {
     const end = Date.now() + ms;
     while (Date.now() < end) { if (await evaluate(expression)) return; await pause(100); }
-    throw new Error('Timed out waiting for: ' + label);
+    const seen = await evaluate(`(document.getElementById('thread').innerText.slice(-700) + '\\n--- bar: ' + document.getElementById('action-bar').innerText + '\\n--- notice: ' + document.getElementById('toast').innerText)`).catch(() => '');
+    throw new Error('Timed out waiting for: ' + label + '\n' + seen);
   };
   const viewport = (width, height = 900) => command('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
   const click = selector => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) throw new Error('missing ' + ${JSON.stringify(selector)}); el.click(); return true; })()`);
@@ -98,7 +110,7 @@ const errors = [];
   await command("Page.captureScreenshot", { format: "png" }).then(shot => fs.writeFileSync(path.join(output, "chat-first-run.png"), Buffer.from(shot.data, "base64")));
 
   // Team: choose the lead, then give the second model the Verify role only.
-  await click('[data-panel="team"]');
+  await click('.tab[data-panel="team"]');
   await until(`!document.getElementById('side-panel').hidden && document.getElementById('side-title').textContent === 'Team'`, 'team panel');
   clean(await layout(), 'desktop with team');
   await evaluate(`(() => { const select = document.querySelector('#side-body [data-lead-select]'); select.value = 'lead-a'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
@@ -110,7 +122,7 @@ const errors = [];
   assert.equal((await roles('check-b')).verifier, true);
 
   // Settings: set the folder without leaving the page.
-  await click('[data-panel="settings"]');
+  await click('.tab[data-panel="settings"]');
   await until(`document.getElementById('folder-input')`, 'settings panel');
   await evaluate(`(() => { document.getElementById('folder-input').value = ${JSON.stringify(folder)}; document.getElementById('folder-form').requestSubmit(); return true; })()`);
   await until(`!document.querySelector('#action-bar [data-action="autonomy-on"]')?.disabled`, 'crew ready to start');
@@ -120,6 +132,64 @@ const errors = [];
   await until(`document.querySelector('#thread .dots') !== null`, 'pending turn');
   await until(`document.getElementById('thread').innerText.includes('Fine: a recipe site')`, 'lead answer', 15000);
   assert.equal(calls.length, 1);
+
+  // Crew: proposal, approval, live work with progress, then the result.
+  const proposed = await fetch(appUrl + '/api/orchestrator/propose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, title: 'Recipe site, first version', goal: 'List and detail pages',
+    subTasks: [{ title: 'Build the list and detail pages with tests', detail: 'Fixture build', assignedModelId: 'lead-a' }, { title: 'Verify the work independently against the job: run the tests', detail: 'Fixture verify', assignedModelId: 'check-b', dependsOn: [0] }] }) });
+  assert.equal(proposed.status, 201, await proposed.clone().text());
+  await until(`document.getElementById('thread').innerText.includes('The lead proposes this work')`, 'proposal card', 10000);
+  assert.match(await evaluate(`document.querySelector('.card.crew').innerText`), /Build[\s\S]*Lead A[\s\S]*Verify[\s\S]*Checker B/);
+  await click('[data-action="approve"]');
+  await until(`document.querySelector('.card.crew.live')?.innerText.includes('0 of 2 steps done')`, 'live crew card', 15000);
+  await until(`document.querySelector('.card.crew.live .preview pre')?.innerText.includes('recipe list')`, 'builder preview', 15000);
+  clean(await layout(), 'crew at work');
+  await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-crew.png'), Buffer.from(shot.data, 'base64')));
+  finish(launches[0]);
+  await until(`document.querySelector('.card.crew.live')?.innerText.includes('1 of 2 steps done')`, 'first step done', 15000);
+  assert.equal(launches.length, 2, 'The verify step starts after the build step');
+  finish(launches[1]);
+  await until(`document.querySelector('.card.crew.done')?.innerText.includes('2/2')`, 'result card', 15000);
+  await until(`/2 files not yet committed/.test(document.querySelector('.card.crew.done').innerText)`, 'changed files counted');
+  await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-done.png'), Buffer.from(shot.data, 'base64')));
+  assert.equal(calls.length, 1, 'Showing the crew never calls a model');
+
+  // Settings: dangerous buttons need a second press and can be cancelled.
+  await say('settings');
+  await until(`document.querySelector('[data-arm="quit"]')`, 'quit button');
+  await click('[data-arm="quit"]');
+  await until(`document.querySelector('[data-action="quit"]')?.textContent === 'Yes, quit now'`, 'quit confirmation');
+  await click('[data-action="disarm"]');
+  await until(`document.querySelector('[data-arm="quit"]')`, 'quit cancelled');
+  assert.match(await evaluate(`document.getElementById('side-body').innerText`), /updates/i);
+
+  // Move a project: save it to a file, then open that file as a new project.
+  const href = await evaluate(`document.querySelector('a[href^="/api/project-export"]').getAttribute('href')`);
+  const exported = await fetch(appUrl + href);
+  assert.equal(exported.status, 200);
+  const bundleFile = path.join(output, 'recipe-export.json');
+  fs.writeFileSync(bundleFile, await exported.text());
+  const input = await command('Runtime.evaluate', { expression: `document.getElementById('import-file')` });
+  await command('DOM.enable');
+  await command('DOM.setFileInputFiles', { files: [bundleFile], objectId: input.result.objectId });
+  await until(`document.querySelectorAll('.project-item').length === 3`, 'imported project', 15000);
+  await click(`[data-project="${projectId}"]`);
+  await until(`document.getElementById('project-title').textContent === 'Recipe site'`, 'back to the first copy');
+
+  // AI tools can be turned off and on from Team.
+  await say('team');
+  await until(`document.querySelector('[data-provider-toggle="claude"]')`, 'provider switch');
+  await click('[data-provider-toggle="claude"]');
+  await until(`document.querySelector('[data-provider-toggle="claude"]')?.getAttribute('aria-pressed') === 'false'`, 'provider off');
+  await click('[data-provider-toggle="claude"]');
+  await until(`document.querySelector('[data-provider-toggle="claude"]')?.getAttribute('aria-pressed') === 'true'`, 'provider on');
+
+  // API connection: typing survives the automatic refresh, then the new tool appears.
+  await evaluate(`(() => { document.querySelector('#api-form').closest('details').open = true; const box = document.getElementById('api-label'); box.focus(); box.value = 'Fixture API'; box.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+  await pause(5000);
+  assert.equal(await evaluate(`document.getElementById('api-label')?.value`), 'Fixture API', 'The 4-second refresh keeps what the user typed');
+  await evaluate(`(() => { const form = document.getElementById('api-form'); form.baseUrl.value = 'https://api.example.test/v1'; form.authEnv.value = 'FIXTURE_API_KEY'; form.modelIds.value = 'fixture-chat'; form.toolsEnabled.checked = true; form.requestSubmit(); return true; })()`);
+  await until(`document.querySelector('[data-provider-toggle="fixture-api"]')`, 'API connection listed', 10000);
+  await until(`[...document.querySelectorAll('#side-body .member .label')].some(el => el.textContent.includes('fixture-chat'))`, 'API model on the bench', 10000);
 
   // Local commands open panels and need confirmation for team changes, without a model call.
   await say('show usage');
@@ -143,7 +213,7 @@ const errors = [];
   await until(`document.getElementById('side-panel').hidden`, 'Escape closes the panel');
 
   // Dark theme keeps text readable.
-  await viewport(1280); await click('[data-panel="settings"]'); await until(`document.querySelector('[data-action="theme"]')`, 'theme button');
+  await viewport(1280); await click('.tab[data-panel="settings"]'); await until(`document.querySelector('[data-action="theme"]')`, 'theme button');
   await click('[data-action="theme"]');
   const contrast = await evaluate(`(() => { const s = getComputedStyle(document.body); return [s.backgroundColor, s.color]; })()`);
   assert.notEqual(contrast[0], contrast[1]);

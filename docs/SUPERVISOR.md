@@ -1,9 +1,14 @@
 # Supervisor
 
-The Supervisor button in the application header opens a dedicated third view.
-Project Home and Orchestrator remain available from that view. This places
-monitoring and questions outside the Orchestrator command thread. The freely editable name is under **Name and Reviewer settings**;
-blank names show `Supervisor`, with an 80-character limit and text-only rendering.
+The Supervisor is Planwharf's watch over running work. Its deterministic checks need
+no model. In the chat view, each active warning appears as a **Something needs a
+look** card in the conversation, with **Ignore**. The optional **Watch** role in Team
+marks a model for Supervisor work.
+
+The earlier dedicated Supervisor screen, with **Inspect evidence**, **Ask Supervisor**,
+the name field and the automatic-analysis switch, was removed with the old interface
+on 2026-11-06. The backend features below remain, and saved settings still apply.
+Only the deterministic alerts and Ignore have controls in the chat view.
 
 ## Live monitoring and alerts
 

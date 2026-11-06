@@ -10,7 +10,8 @@
   };
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
-    sending: false, repo: {}, pendingText: '', pendingSince: 0, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false
+    sending: false, repo: {}, pendingText: '', pendingSince: 0, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
+    updates: null, windowTitle: null, armed: null
   };
 
   // ---------- backend ----------
@@ -49,7 +50,15 @@
   };
   const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false);
   const verifiers = () => models().filter(model => model.roles?.verifier && model.enabled && model.available !== false);
-  const onBench = model => !model.roles?.orchestrator && !model.roles?.worker && !model.roles?.verifier;
+  const ROLE_KEYS = ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor'];
+  const onBench = model => !ROLE_KEYS.some(role => model.roles?.[role]);
+  const NO_ROLES = Object.fromEntries(ROLE_KEYS.map(role => [role, false]));
+  // One colour per provider, so the same company is recognisable everywhere.
+  const PROVIDER_COLOURS = { codex: '#10a37f', openai: '#10a37f', claude: '#d97757', anthropic: '#d97757', grok: '#6b7280', xai: '#6b7280', antigravity: '#4285f4', gemini: '#4285f4', google: '#4285f4', api: '#8b5cf6' };
+  const providerOf = id => models().find(model => model.id === id)?.provider || '';
+  const providerDot = provider => `<span class="prov" style="background:${PROVIDER_COLOURS[String(provider).toLowerCase()] || '#9ca3af'}" title="${escape(provider || 'unknown provider')}" aria-hidden="true"></span>`;
+  const VERIFY_PREFIX = 'Verify the work independently';
+  const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' s' : ms < 3600000 ? Math.round(ms / 60000) + ' min' : (ms / 3600000).toFixed(1) + ' h';
   const STOP_REASONS = {
     GOAL_REACHED: 'Goal reached', MEGATASK_LIMIT: 'Stopped: step limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available',
     START_UNAVAILABLE: 'Stopped: could not start', TIME_LIMIT: 'Stopped: time limit reached'
@@ -89,13 +98,20 @@
     $('project-title').textContent = row ? row.name : 'Welcome';
     const status = projectStatus(row);
     const pill = $('project-status'); pill.textContent = status.text; pill.className = 'pill ' + status.kind;
-    document.title = row ? `${row.name} · Planwharf` : 'Planwharf';
+    document.title = state.windowTitle || (row ? `${row.name} · Planwharf` : 'Planwharf');
     document.querySelectorAll('.tab').forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.panel === state.panel)));
   }
 
   function eventView(event) {
     const type = String(event.type || '');
-    const summary = String(event.summary || '').replace(/\s+/g, ' ').trim();
+    // Plain words: no internal states, no repeated titles, no long verify prefix.
+    const summary = String(event.summary || '').replace(/\s+/g, ' ').trim()
+      .replace(/Verify the work independently against the job:?\s*/gi, 'Check: ')
+      .replace(/^(.+?): Finished \1\.?$/, 'Step done: $1')
+      .replace(/\.\s*(COMMITTED|COMPLETE|COMPLETED)\.?$/, '.')
+      .replace(/: (\d+) proposed slice\(s\)\.?$/, (_, count) => `: proposed in ${count} step${count === '1' ? '' : 's'}.`)
+      .replace(/^Completed (.+)$/, 'Finished: $1')
+      .replace(/^Approved (.+)$/, 'You approved: $1');
     const short = summary.length > 260 ? summary.slice(0, 257) + '…' : summary;
     if (/COMPLETED|REACHED|APPROVED/.test(type)) return { icon: '✓', kind: 'good', text: short };
     if (/FAILED|BLOCKED|STOPPED|REFUS/.test(type)) return { icon: '!', kind: 'bad', text: short };
@@ -135,6 +151,62 @@
     return missing;
   }
 
+  // The current piece of work: proposal, live crew, or the result.
+  function crewCard(row) {
+    const mega = row.megaTask;
+    const subs = row.subTasks || [];
+    if (!mega || !subs.length) return '';
+    const status = String(mega.status || '').toUpperCase();
+    const done = subs.filter(sub => sub.status === 'COMPLETE').length;
+    const pct = Math.round(done / subs.length * 100);
+    const step = sub => {
+      const verify = String(sub.title || '').startsWith(VERIFY_PREFIX);
+      const role = sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : verify ? 'Verify' : 'Build';
+      const s = String(sub.status || 'PENDING').toUpperCase();
+      const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
+      const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
+      return `<li class="step ${s.toLowerCase()}">${providerDot(providerOf(sub.assignedModelId))}<span class="step-main"><b>${escape(role)}</b> · ${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${escape(label)}</span></li>`;
+    };
+    const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
+    const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
+    if (status === 'READY_FOR_APPROVAL') {
+      const auto = autonomyOf(row.id)?.enabled;
+      return `<div class="card crew"><h3>The lead proposes this work</h3><p>${escape(mega.title || '')}</p>${steps}
+        ${auto ? '<p class="small muted">The crew approves this by itself.</p>' : '<div class="row"><button type="button" class="btn btn-primary" data-action="approve">Approve and start</button><span class="small muted">Or tell the lead what to change.</span></div>'}</div>`;
+    }
+    if (status === 'COMPLETE') {
+      const took = duration(Date.parse(mega.completedAt) - Date.parse(mega.approvedAt || mega.createdAt));
+      const repo = state.repo[row.id];
+      if (!repo && row.folder) loadRepo(row.id);
+      const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
+      return `<div class="card crew done"><h3>✓ Work finished</h3><p>${escape(mega.title || '')}</p>
+        <div class="facts"><span><b>${done}/${subs.length}</b> steps done</span>${took ? `<span><b>${took}</b></span>` : ''}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></div>
+        ${steps}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
+        <div class="row"><button type="button" class="btn btn-small" data-panel="files">See changed files</button><button type="button" class="btn btn-small" data-panel="usage">See usage</button></div></div>`;
+    }
+    if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
+      return `<div class="card crew attention"><h3>Work stopped</h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}
+        ${row.canResume ? '<div class="row"><button type="button" class="btn btn-primary" data-action="resume">Resume</button></div>' : ''}</div>`;
+    }
+    const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
+    // Plain-language activity of the model working now; the raw log only when nothing else is readable.
+    const running = (row.dispatch || []).find(part => part && part.alive) || null;
+    const friendly = (running?.activitySession?.events || []).map(event => event.friendly).filter(Boolean).slice(-6);
+    const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
+    const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
+    return `<div class="card crew live"><h3><span class="pulse" aria-hidden="true"></span> Crew at work${since ? ` · ${since}` : ''}</h3><p>${escape(mega.title || '')}</p>${bar}${steps}
+      ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
+  }
+
+  // Deterministic warnings from the Supervisor checks (no model call): stalled, failed or conflicting work.
+  const alertsFor = id => (state.orchestra?.supervisor?.projects || []).find(entry => entry.projectId === id)?.alerts?.filter(alert => alert.active !== false && !alert.ignored) || [];
+  function alertsCard(row) {
+    const alerts = alertsFor(row.id);
+    if (!alerts.length) return '';
+    return `<div class="card crew attention" role="alert"><h3>⚠ Something needs a look</h3>${alerts.map(alert => `<div class="alert-row"><p><b>${escape(alert.title)}</b><br><span class="small">${escape(alert.message || '')}</span></p><button type="button" class="btn btn-small" data-ignore-alert="${escape(alert.id)}">Ignore</button></div>`).join('')}
+      <p class="small muted">Planwharf checks the work itself; this is a reason to look, not proof that something broke.</p></div>`;
+  }
+
   function renderThread() {
     const thread = $('thread');
     const row = project();
@@ -142,7 +214,7 @@
     const events = row ? (state.orchestra?.execution?.timeline || []).filter(event => event.projectId === row.id && SHOWN_EVENTS.test(event.type || '')).slice(-60) : [];
     const live = state.orchestra?.thinking;
     const pendingHere = state.sending && state.pendingProject === state.projectId;
-    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), models().map(model => model.roles?.worker).join(), row?.folder, (state.orchestra?.projects || []).length, projectStatus(row).text]);
+    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, (state.orchestra?.projects || []).length, projectStatus(row).text]);
     if (sig === state.threadSig) return;
     state.threadSig = sig;
     const nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
@@ -154,6 +226,7 @@
     if (!row) html = welcomeCard();
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
     html += items.map(item => item.html).join('');
+    if (row) html += crewCard(row) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(state.pendingText)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
@@ -179,12 +252,13 @@
     const missing = readiness(row);
     const parts = [];
     if (working) parts.push('<button type="button" class="btn btn-danger" data-action="autonomy-off">Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>');
+    // One clear next action at a time.
+    else if (row.status === 'needs_approval') parts.push('<button type="button" class="btn btn-primary" data-action="approve">Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>');
+    else if (row.canStop) parts.push('<button type="button" class="btn btn-danger" data-action="stop">Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>');
+    else if (row.canResume) parts.push('<button type="button" class="btn btn-primary" data-action="resume">Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>');
     else {
       parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">Let the crew do it</button>`);
-      if (row.canStop) parts.push('<button type="button" class="btn btn-danger" data-action="stop">Stop work</button>');
-      if (missing.length) parts.push(`<span class="status-text">${escape(missing[0].text)}</span>`);
-      else if (row.canResume) parts.push('<span class="status-text">Work was paused. Press the button to continue.</span>');
-      else parts.push('<span class="status-text">Ready. The crew will plan, build, check and stop when the goal is reached.</span>');
+      parts.push(`<span class="status-text">${escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
   }
@@ -196,6 +270,11 @@
     side.hidden = false;
     const body = ({ team: teamPanel, progress: progressPanel, usage: usagePanel, files: filesPanel, settings: settingsPanel }[state.panel] || teamPanel)();
     if (body === state.sideSig) return;
+    // Never wipe what the user is typing or an open section; an action forces the redraw.
+    const sideBody = $('side-body');
+    const busy = sideBody.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || sideBody.querySelector('form[data-dirty], details[open]');
+    if (state.sideSig && busy && state.sideRendered === state.panel) return;
+    state.sideRendered = state.panel;
     state.sideSig = body;
     const scroll = $('side-body').scrollTop;
     $('side-title').textContent = { team: 'Team', progress: 'Progress', usage: 'Usage', files: 'Changed files', settings: 'Settings' }[state.panel] || 'Team';
@@ -209,10 +288,11 @@
       const eligible = model.roleEligibility?.[role] !== false;
       return `<button type="button" class="chip" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${label}</button>`;
     };
-    return `<div class="member"><div class="info"><div class="label">${escape(model.label)}${model.id === state.orchestra?.orchestratorId ? ' <span class="badge running">Lead</span>' : ''}</div>
+    const optional = ['reviewer', 'supervisor'].filter(role => model.roleEligibility?.[role] !== false);
+    return `<div class="member"><div class="info"><div class="label">${providerDot(model.provider)}${escape(model.label)}${model.id === state.orchestra?.orchestratorId ? ' <span class="badge running">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
       ${left != null ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
-      <div class="chips">${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}
+      <div class="chips">${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   function teamPanel() {
@@ -223,11 +303,23 @@
     const bench = all.filter(onBench);
     return `<div class="section"><h3>Lead</h3><p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section"><h3>On the team</h3><p class="explain"><b>Build</b> writes code and tests. <b>Verify</b> checks the work and fixes it, ideally a model from another company.</p>
+      <div class="section"><h3>On the team</h3><p class="explain"><b>Build</b> writes code and tests. <b>Verify</b> checks the work and fixes it, ideally a model from another company. <b>Review</b> and <b>Watch</b> are optional.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
-      <div class="section"><h3>Bench</h3><p class="explain">Available but not used. Press Build or Verify to bring a model in.</p>
+      <div class="section"><h3>Bench</h3><p class="explain">Available but not used. Press a role to bring a model in.</p>
         ${bench.length ? bench.map(memberHtml).join('') : '<p class="muted small">The bench is empty.</p>'}</div>
-      <p class="small muted">Reviewer and Supervisor roles, providers and model policies are in the <a href="/advanced#orchestrator">Advanced view</a>.</p>`;
+      <div class="section"><h3>AI tools</h3><p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
+        ${(state.orchestra?.providers || []).map(provider => `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
+          <div class="chips"><button type="button" class="chip" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
+        <button type="button" class="btn btn-small" data-action="refresh-models">Look for models again</button></div>
+      <div class="section"><h3>Connect a model by API</h3><p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
+        <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
+          <label class="small" for="api-label">Name</label><input id="api-label" name="label" required maxlength="100" placeholder="DeepSeek">
+          <label class="small" for="api-url">API address</label><input id="api-url" name="baseUrl" required placeholder="https://api.deepseek.com/v1">
+          <label class="small" for="api-protocol">Type</label><select id="api-protocol" name="apiProtocol"><option value="openai">OpenAI-compatible</option><option value="anthropic">Anthropic Messages</option></select>
+          <label class="small" for="api-env">Environment variable with the key</label><input id="api-env" name="authEnv" placeholder="DEEPSEEK_API_KEY" pattern="[A-Za-z_][A-Za-z0-9_]*">
+          <label class="small" for="api-models">Exact model IDs, separated by commas</label><input id="api-models" name="modelIds" required placeholder="deepseek-chat">
+          <label class="small"><input type="checkbox" name="toolsEnabled"> These models can use tools (needed to build code)</label>
+          <p class="error" id="api-error" role="alert"></p><button type="submit" class="btn btn-small">Connect</button></form></details></div>`;
   }
   function progressPanel() {
     const row = project();
@@ -283,7 +375,7 @@
       const result = await getJson('/api/repository?projectId=' + encodeURIComponent(id) + (force ? '&refresh=1' : ''));
       state.repo[id] = { ...result.repository };
     } catch (error) { state.repo[id] = { error: error.message }; }
-    state.sideSig = ''; renderSide();
+    state.sideSig = ''; renderSide(); renderThread();
   }
   function settingsPanel() {
     const row = project();
@@ -299,7 +391,38 @@
       <div class="section"><h3>Approvals</h3><p class="explain">${mode === 'auto' ? 'The lead may start approved work without asking each time.' : 'The lead asks you before each piece of work starts.'}</p>
         <button type="button" class="btn btn-small" data-action="toggle-mode">${mode === 'auto' ? 'Ask me before each step' : 'Let the lead start approved work'}</button></div>
       <div class="section"><h3>Look</h3><button type="button" class="btn btn-small" data-action="theme">${dark ? 'Use light theme' : 'Use dark theme'}</button></div>
-      <p class="small muted">Providers, accounts, model policies and the Reviewer and Supervisor roles are in the <a href="/advanced#orchestrator">Advanced view</a>.</p>`;
+      <div class="section"><h3>Move a project</h3><p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
+        <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">Save ${escape(row.name)} to a file</a>` : ''}
+        <label class="btn btn-small">Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
+        <p class="error" id="import-error" role="alert"></p></div>
+      ${updatesSection()}
+      ${row ? `<div class="section"><h3>Remove project</h3><p class="explain">Removes ${escape(row.name)} from Planwharf. The folder and its files stay on your computer.</p>${armedButton('remove-project', 'Remove project', 'Yes, remove it')}</div>` : ''}
+      <div class="section"><h3>Quit</h3><p class="explain">Unfinished work is saved and can be resumed next time.</p>${armedButton('quit', 'Quit Planwharf', 'Yes, quit now')}</div>`;
+  }
+  // Dangerous buttons need a second press; nothing opens a browser dialog.
+  const armedButton = (action, label, confirmLabel) => state.armed === action
+    ? `<div class="row"><button type="button" class="btn btn-danger btn-small" data-action="${action}">${confirmLabel}</button><button type="button" class="btn btn-small" data-action="disarm">Cancel</button></div>`
+    : `<button type="button" class="btn btn-small" data-arm="${action}">${label}</button>`;
+  function updatesSection() {
+    const u = state.updates;
+    if (!u) return '<div class="section"><h3>Updates</h3><button type="button" class="btn btn-small" data-action="check-updates">Check for updates</button></div>';
+    const busy = ['downloading', 'checkpointing', 'restarting', 'checking'].includes(u.state);
+    const line = busy ? { downloading: 'Downloading the update…', checkpointing: 'Saving unfinished work…', restarting: 'Restarting…', checking: 'Checking…' }[u.state]
+      : u.state === 'error' ? 'Could not check: ' + (u.reason || 'unknown error')
+      : u.available ? `Planwharf ${u.latestVersion} is available${u.currentVersion ? ` (you have ${u.currentVersion})` : ''}.`
+      : u.currentVersion ? `Planwharf ${u.currentVersion} is up to date.` : 'Version unknown in a source checkout.';
+    const install = u.available && u.canInstall && !busy
+      ? armedButton('install-update', 'Update and restart', state.updateNeedsConfirm ? 'Work is running: save it and update' : 'Yes, update now') : '';
+    const download = u.available && !u.canInstall && u.releaseUrl ? `<a href="${escape(u.releaseUrl)}" target="_blank" rel="noopener noreferrer">Download it</a>` : '';
+    return `<div class="section"><h3>Updates</h3><p class="explain">${escape(line)}</p><div class="row">${install}${download}<button type="button" class="btn btn-small" data-action="check-updates" ${busy ? 'disabled' : ''}>Check again</button></div></div>`;
+  }
+  async function loadUpdates(check = false) {
+    try { state.updates = await (check ? post('/api/app/updates/check', {}) : getJson('/api/app/updates')); } catch { /* Offline checks never interrupt work. */ }
+    renderUpdateNotice(); state.sideSig = ''; renderSide();
+  }
+  function renderUpdateNotice() {
+    const u = state.updates;
+    $('update-notice').innerHTML = u?.available ? `<button type="button" class="link-quiet" data-panel="settings">Update available: ${escape(u.latestVersion || '')}</button>` : '';
   }
   const currentTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   async function saveFolder(form) {
@@ -326,7 +449,7 @@
   async function act(work, done) {
     try { const snapshot = await work(); if (snapshot && snapshot.projects) state.orchestra = { ...state.orchestra, ...snapshot }; if (done) toast(done); }
     catch (error) { toast(error.message); }
-    await refresh({ tick: false });
+    state.sideSig = ''; await refresh({ tick: false });
   }
   function openPanel(name) { state.panel = state.panel === name ? null : name; store.set('panel', state.panel); render(); }
 
@@ -344,7 +467,7 @@
       const wanted = bench[1].replace(/^(the |il |la )/, '');
       const model = models().find(item => item.label.toLowerCase().includes(wanted) || item.id.toLowerCase() === wanted);
       if (!model) { toast(`No model named “${wanted}”.`); return true; }
-      state.confirm = { text: `Put ${model.label} on the bench? It will not build, verify or lead until you bring it back.`, run: () => setRoles(model.id, { orchestrator: false, worker: false, verifier: false }) };
+      state.confirm = { text: `Put ${model.label} on the bench? It will have no role until you bring it back.`, run: () => setRoles(model.id, NO_ROLES) };
       render(); return true;
     }
     return false;
@@ -386,6 +509,41 @@
       return current?.canStop ? post('/api/orchestrator/stop', { projectId: row.id }) : snap;
     }, 'The crew stopped. Work so far is saved.');
   }
+  async function importProject(file) {
+    const error = $('import-error'); if (error) error.textContent = '';
+    try {
+      if (file.size > 4 * 1024 * 1024) throw new Error('This file is larger than 4 MB.');
+      let bundle; try { bundle = JSON.parse(await file.text()); } catch { throw new Error('This is not a Planwharf project file.'); }
+      const { version } = await getJson('/api/plan');
+      const result = await post('/api/project-import', { version, bundle });
+      if (result.projectId) { state.projectId = result.projectId; store.set('project', result.projectId); }
+      toast(result.continue ? 'Project opened. Check its folder in Settings, then press Resume.' : 'Project opened. Check its folder in Settings.');
+      await refresh();
+    } catch (failure) { if ($('import-error')) $('import-error').textContent = failure.message; else toast(failure.message); }
+  }
+  async function addConnection(form) {
+    const error = $('api-error'); error.textContent = '';
+    const data = new FormData(form);
+    const label = String(data.get('label') || '').trim();
+    const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').replace(/^(?![a-z])/, 'api-').slice(0, 60) || 'api';
+    const authEnv = String(data.get('authEnv') || '').trim();
+    const input = { id, label, adapter: 'api', baseUrl: String(data.get('baseUrl') || '').trim(), apiProtocol: data.get('apiProtocol'),
+      modelIds: String(data.get('modelIds') || '').split(',').map(item => item.trim()).filter(Boolean), toolsEnabled: data.get('toolsEnabled') === 'on', ...(authEnv ? { authEnv } : {}) };
+    try { const snapshot = await post('/api/providers/connections', input); state.orchestra = { ...state.orchestra, ...snapshot }; form.reset(); toast(`${label} connected. Give its models a role to use them.`); state.sideSig = ''; await refresh({ tick: false }); }
+    catch (failure) { error.textContent = failure.message.replace(/^API_CONFIGURATION_INVALID:\s*/, ''); }
+  }
+  async function removeProject() {
+    const row = project(); if (!row) return;
+    await act(async () => { const { version } = await getJson('/api/plan'); await post('/api/remove-project', { version, projectId: row.id }); state.projectId = null; store.set('project', null); }, `${row.name} removed. Its folder is untouched.`);
+  }
+  async function installUpdate() {
+    try {
+      const result = await post('/api/app/updates/install', { confirmRunning: Boolean(state.updateNeedsConfirm) });
+      if (result.requiresConfirmation) { state.updateNeedsConfirm = true; state.armed = 'install-update'; toast('Some work is running. Press again to save it and update.'); }
+      else toast('Planwharf is updating and will restart. Unfinished work can be resumed.');
+    } catch (error) { toast(error.message); }
+    await loadUpdates();
+  }
   async function createProject(form) {
     const error = $('project-error'); error.textContent = '';
     const data = Object.fromEntries(new FormData(form));
@@ -413,8 +571,10 @@
     if (target.dataset.closeSide) { $(target.dataset.closeSide).classList.remove('open'); return; }
     if (target.id === 'new-project' || target.dataset.action === 'new-project') { $('project-error').textContent = ''; $('project-dialog').showModal(); return; }
     if (target.id === 'project-cancel') { $('project-dialog').close(); return; }
+    if (target.dataset.ignoreAlert) { act(() => post('/api/supervisor/ignore', { projectId: state.projectId, alertId: target.dataset.ignoreAlert }), 'Warning ignored.'); return; }
+    if (target.dataset.arm) { state.armed = target.dataset.arm; state.sideSig = ''; renderSide(); return; }
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
-    if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, { orchestrator: false, worker: false, verifier: false }); return; }
+    if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
     if (action === 'autonomy-on') autonomyOn();
     else if (action === 'autonomy-off') autonomyOff();
@@ -422,11 +582,23 @@
     else if (action === 'theme') { document.documentElement.dataset.theme = currentTheme() === 'dark' ? 'light' : 'dark'; store.set('theme', document.documentElement.dataset.theme); state.sideSig = ''; renderSide(); }
     else if (action === 'toggle-mode') act(() => post('/api/orchestrator/mode', { mode: state.orchestra?.mode === 'auto' ? 'manual' : 'auto' }), 'Saved.');
     else if (action === 'repo-refresh') loadRepo(state.projectId, true);
+    else if (action === 'approve') act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.');
+    else if (action === 'resume') act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.');
+    else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
+    else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');
+    else if (action === 'check-updates') loadUpdates(true);
+    else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
+    else if (action === 'remove-project') { state.armed = null; removeProject(); }
+    else if (action === 'quit') { state.armed = null; post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message)); }
+    else if (action === 'install-update') installUpdate();
     else if (action === 'grill') send('Grill me', { grillKind: 'me' });
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });
-  document.addEventListener('change', event => { if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value); });
+  document.addEventListener('change', event => {
+    if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value);
+    else if (event.target.id === 'import-file' && event.target.files?.[0]) importProject(event.target.files[0]);
+  });
   $('composer').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('composer-input'); const text = input.value.trim();
@@ -436,12 +608,29 @@
   });
   $('composer-input').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('composer').requestSubmit(); } });
   $('composer-input').addEventListener('input', event => { const el = event.target; el.style.height = 'auto'; el.style.height = Math.min(200, el.scrollHeight) + 'px'; });
+  $('side-body').addEventListener('input', event => { const form = event.target.closest('form'); if (form) form.dataset.dirty = '1'; });
   $('project-form').addEventListener('submit', event => { event.preventDefault(); createProject(event.target); });
   document.addEventListener('submit', event => {
     if (event.target.id === 'folder-form') { event.preventDefault(); saveFolder(event.target); }
     else if (event.target.id === 'root-form') { event.preventDefault(); saveRoot(event.target); }
+    else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }
   });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.panel && !$('project-dialog').open) { state.panel = null; store.set('panel', null); render(); } });
+
+  const windowId = 'chat-' + Math.random().toString(36).slice(2, 10);
+  let focusSeen = 0;
+  async function pulse() {
+    try {
+      const data = await post('/api/app/heartbeat', { id: windowId, view: 'planwharf', focusSeen });
+      if (data.title && data.title !== state.windowTitle) { state.windowTitle = data.title; document.title = data.title; }
+      focusSeen = data.focusVersion || 0;
+      if (data.focus) window.focus();
+    } catch { /* A disconnected page is not a request to stop work. */ }
+  }
+  window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/app/heartbeat', new Blob([JSON.stringify({ id: windowId, view: 'planwharf', closed: true })], { type: 'application/json' })); } catch {} });
+  window.addEventListener('pageshow', pulse);
+  pulse(); setInterval(pulse, 3000);
+  loadUpdates(); setInterval(loadUpdates, 60000);
 
   const theme = store.get('theme', null);
   if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;

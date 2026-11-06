@@ -43,7 +43,7 @@ async function post(base, payload, headers = {}) {
   assert.equal((await post(restarted.base, { version: saved.version, draft: { ...draft, title: '' } })).status, 400);
   assert.equal((await post(restarted.base, { version: saved.version, draft }, { Origin: 'http://other.example' })).status, 403);
   assert.equal((await fetch(restarted.base + '/server.cjs')).status, 404);
-  assert.equal((await fetch(restarted.base + '/index.html')).status, 200);
+  assert.equal((await fetch(restarted.base + '/')).status, 200);
   assert.equal(await fs.readFile(file, 'utf8'), snapshot);
   const failing = await start({ save: async () => { throw new Error('Disk write unavailable'); } });
   const failed = await post(failing.base, { version: saved.version, draft });

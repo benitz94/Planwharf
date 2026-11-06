@@ -330,7 +330,7 @@ async function runApp(opts) {
   process.on('SIGTERM', shutdown);
   server.updates.check().catch(error => console.error('Update check failed:', error.message));
   if (!opts.noWindow) server.windows.openApp(url);
-  console.log(`Planwharf\n${url}\nOrchestrator: ${url}/#orchestrator\nPlan: ${opts.planFile}\nDesktop launch opens one window. Use Show Orchestrator / Show Planwharf to switch views. Closing the desktop window saves checkpoints and quits. Quit application or Ctrl+C also shuts down.`);
+  console.log(`Planwharf\n${url}\nPlan: ${opts.planFile}\nDesktop launch opens one window. Closing the desktop window saves checkpoints and quits. Quit application or Ctrl+C also shuts down.`);
   return { server, url };
 }
 

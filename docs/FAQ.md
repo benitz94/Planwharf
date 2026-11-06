@@ -52,11 +52,11 @@ Creating a notebook project or discussing an idea does not start coding. For exe
 
 ### Can I pause or stop a coding run and resume later?
 
-Yes. **Pause after current tasks** lets active tasks finish without starting new ones. **Stop** terminates active workers and saves a checkpoint while preserving partial work. **Resume** uses checkpoint and repository-state checks to continue unfinished tasks; it does not automatically replay completed SubTasks. See the [user guide](USER-GUIDE.md).
+Yes. **Stop work** terminates active workers and saves a checkpoint while preserving partial work. **Resume** uses checkpoint and repository-state checks to continue unfinished tasks; it does not automatically replay completed SubTasks. See the [user guide](USER-GUIDE.md).
 
 ### Can I import a project I exported on another PC?
 
-Yes. **Import project** restores a Planwharf export as a new notebook project. Confirm the folder on this PC; the export does not overwrite an existing project or start workers. Resume from Home when a checkpoint was restored. Source files and credentials are not inside the export. See [Continue work](CONTINUE-WORK.md).
+Yes. **Settings → Move a project → Open a project file** restores a Planwharf export as a new project. Set its folder on this PC in Settings; the export does not overwrite an existing project or start workers. Press **Resume** when a checkpoint was restored. Source files and credentials are not inside the export. See [Continue work](CONTINUE-WORK.md).
 
 ### What happens if an AI worker fails?
 

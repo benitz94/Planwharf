@@ -1089,7 +1089,7 @@ function make(plan, inspectFolder, extra) {
     const windowBody = await windowHttp.json();
     assert.equal(windowBody.ok, true);
     assert.equal(windowBody.opened, true);
-    assert.match(windowBody.url, /\/#orchestrator$/);
+    assert.match(windowBody.url, /:\d+\/$/);
     assert.equal(openedWindows[0], windowBody.url);
   } finally {
     await new Promise(resolve => stopHttpServer.close(resolve));
