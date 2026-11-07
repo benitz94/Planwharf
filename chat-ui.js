@@ -656,6 +656,9 @@
       return current?.canStop ? post('/api/orchestrator/stop', { projectId: row.id }) : snap;
     }, 'The crew stopped. Work so far is saved.');
   }
+  function quitApp() {
+    post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message));
+  }
   async function importProject(file) {
     const error = $('import-error'); if (error) error.textContent = '';
     try {
@@ -738,7 +741,9 @@
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
-    else if (action === 'quit') { state.armed = null; post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message)); }
+    else if (action === 'quit') { state.armed = null; quitApp(); }
+    // Quit is always in the top bar; it asks once in the chat before closing.
+    else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
     else if (action === 'focus-input') $('composer-input').focus();

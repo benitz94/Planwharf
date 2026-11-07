@@ -302,3 +302,5 @@ dialog input, dialog textarea, .card select, .side-body select { font-weight: 40
 /* Any text colour. */
 .ink.custom { position: relative; }
 .ink.custom input[type="color"] { width: 18px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
+
+.tab.tab-quit { color: var(--bad); }

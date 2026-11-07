@@ -244,6 +244,10 @@ const errors = [];
   const contrast = await evaluate(`(() => { const s = getComputedStyle(document.body); return [s.backgroundColor, s.color]; })()`);
   assert.notEqual(contrast[0], contrast[1]);
   assert.ok(!(await evaluate(`Boolean(document.querySelector('[data-ink]'))`)), 'text colours only in the dark theme');
+  await click('[data-action="quit-ask"]');
+  await until(`document.getElementById('thread').innerText.includes('Quit Planwharf?')`, 'quit asks first');
+  await click('[data-action="confirm-no"]');
+  await until(`!document.getElementById('thread').innerText.includes('Quit Planwharf?')`, 'No keeps Planwharf open');
   assert.deepEqual(errors, [], 'No script errors on the page');
   console.log('verify-chat: ok');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
