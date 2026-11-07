@@ -13,12 +13,48 @@ let child = null, win = null, url = null, quitting = false;
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 
-function startServer() {
+const STARTER = path.join(APP_DIR, 'fixtures', 'starter-notebook.json');
+const projectNames = file => { try { return (JSON.parse(fs.readFileSync(file, 'utf8')).projects || []).map(p => p && p.project && p.project.name); } catch { return null; } };
+
+// Someone who used the ZIP (portable) version can bring its projects, settings and history.
+// The files are copied, never moved: the ZIP version keeps its own copy.
+async function offerImport(data, plan) {
+  const marker = path.join(data, 'desktop-import.json');
+  if (fs.existsSync(marker)) return;
+  const mine = fs.existsSync(plan) ? projectNames(plan) : [];
+  const starter = projectNames(STARTER) || [];
+  const fresh = mine !== null && mine.every(name => starter.includes(name));
+  if (!fresh) { fs.writeFileSync(marker, JSON.stringify({ decided: 'kept own projects', at: new Date().toISOString() })); return; }
+  for (;;) {
+    const { response } = await dialog.showMessageBox({
+      type: 'question', title: 'Planwharf', buttons: ['Choose the folder…', 'Start without them'], defaultId: 0, cancelId: 1, noLink: true,
+      message: 'Do you already use Planwharf from the ZIP download?',
+      detail: 'Choose the folder where Planwharf.exe or planwharf.sh is, and the app copies your projects, team and history from there.\n\nClose the other Planwharf first. The ZIP version keeps its own copy: from now on use one version at a time.'
+    });
+    if (response !== 0) { fs.writeFileSync(marker, JSON.stringify({ decided: 'started without import', at: new Date().toISOString() })); return; }
+    const pick = await dialog.showOpenDialog({ title: 'Folder of your Planwharf ZIP version', properties: ['openDirectory'] });
+    if (pick.canceled || !pick.filePaths[0]) continue;
+    const from = pick.filePaths[0];
+    const names = projectNames(path.join(from, 'plan.json'));
+    if (!names) { await dialog.showMessageBox({ type: 'warning', title: 'Planwharf', message: 'No Planwharf projects in that folder.', detail: `${from} has no readable plan.json. Choose the folder that contains Planwharf.exe or planwharf.sh.` }); continue; }
+    // Keep whatever the desktop app had, then copy the notebook and its history folder.
+    const backup = path.join(data, 'before-import-' + new Date().toISOString().replace(/[:.]/g, '-'));
+    fs.mkdirSync(backup, { recursive: true });
+    for (const name of ['plan.json', '.attempts-plan']) if (fs.existsSync(path.join(data, name))) fs.renameSync(path.join(data, name), path.join(backup, name));
+    fs.copyFileSync(path.join(from, 'plan.json'), plan);
+    if (fs.existsSync(path.join(from, '.attempts-plan'))) fs.cpSync(path.join(from, '.attempts-plan'), path.join(data, '.attempts-plan'), { recursive: true });
+    fs.writeFileSync(marker, JSON.stringify({ decided: 'imported', from, projects: names, backup, at: new Date().toISOString() }, null, 2));
+    return;
+  }
+}
+
+async function startServer() {
   const data = path.join(app.getPath('userData'), 'data');
   fs.mkdirSync(data, { recursive: true });
-  // A first start gets the same starter notebook as the portable version.
   const plan = path.join(data, 'plan.json');
-  if (!fs.existsSync(plan)) fs.copyFileSync(path.join(APP_DIR, 'fixtures', 'starter-notebook.json'), plan, fs.constants.COPYFILE_EXCL);
+  await offerImport(data, plan);
+  // A first start gets the same starter notebook as the portable version.
+  if (!fs.existsSync(plan)) fs.copyFileSync(STARTER, plan, fs.constants.COPYFILE_EXCL);
   const env = {
     ...process.env,
     ELECTRON_RUN_AS_NODE: '1', // the child and every helper it starts run as plain Node
@@ -80,6 +116,8 @@ app.on('before-quit', event => {
   }
 });
 app.on('window-all-closed', () => app.quit());
+
+module.exports = { offerImport };
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);

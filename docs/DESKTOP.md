@@ -21,7 +21,7 @@ Your projects and settings are stored in:
 - Windows: `%APPDATA%\Planwharf\data`
 - Linux: `~/.config/Planwharf/data`
 
-The desktop app starts with an empty notebook. To bring a project from the portable version, use **Settings > Move a project**: save it to a file there, and open the file here.
+On its first start, the desktop app asks whether you already use the ZIP version. Choose that folder (the one with `Planwharf.exe` or `planwharf.sh`) and it copies your projects, team and history. The ZIP version keeps its own copy, so use one version at a time. It asks only once; later you can still move single projects with **Settings > Move a project**.
 
 Closing the window saves unfinished work and stops Planwharf, as in the portable version. A log of each start is in `desktop.log` in the data folder.
 
