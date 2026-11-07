@@ -34,7 +34,9 @@ Apri **Team**. **Ogni progetto ha la sua squadra**: quello che cambi qui vale so
 1. **Lead:** scegli il modello che parla con te e organizza il lavoro.
 2. **Build** (costruttore, blu): premilo su almeno un modello. Scrive il codice e i test.
 3. **Verify** (controllore, arancione): premilo su un altro modello, meglio se di un'altra azienda. Ricontrolla il lavoro e corregge quello che non va. Senza controllore il lavoro parte lo stesso, ma lo controllano solo i test.
-4. **Review** (verde acqua) e **Watch** (rosa) sono facoltativi: il primo legge il lavoro e segnala problemi senza toccare i file, il secondo sorveglia il lavoro in corso.
+4. **Review** (verde acqua) è facoltativo: legge il lavoro e segnala problemi senza toccare i file.
+
+Non serve scegliere nessuno per sorvegliare: Planwharf tiene d'occhio da solo il lavoro in corso. Se un modello resta fermo dieci minuti, si blocca o fallisce, avvisa il lead, che decide cosa fare.
 
 Il pannello è diviso in due: **On the team** (in squadra, con il bordo colorato) e **Bench** (in panchina, più chiari e tratteggiati). Per mandare un modello in panchina premi **Bench**, oppure scrivi in chat `metti <nome> in panchina`. Per riportarlo in squadra premi uno dei suoi ruoli.
 

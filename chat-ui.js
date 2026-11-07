@@ -391,13 +391,13 @@
       const [icon, tone] = ROLE_LOOK[label] || ROLE_LOOK.Build;
       return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
-    const optional = ['reviewer', 'supervisor'].filter(role => model.roleEligibility?.[role] !== false);
+    const optional = ['reviewer'].filter(role => model.roleEligibility?.[role] !== false);
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
       ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
-      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
+      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   function teamPanel() {
@@ -410,7 +410,7 @@
     return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> and <b class="c-watch">Watch</b> are optional.</p>
+      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>

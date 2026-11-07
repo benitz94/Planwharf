@@ -50,7 +50,8 @@ Open **Team**. Each model shows one button per role:
 | Build | Worker | Writes the code and its tests. | Check its own work as the verifier. |
 | Verify | Verifier | Checks the builder's work independently and fixes what fails. Planwharf prefers a verifier from another company. | Build the job. With no verifier the job runs as one step and Planwharf only runs the tests. |
 | Review (optional) | Reviewer | Reads the work and reports problems, without changing files. | Implementation. |
-| Watch (optional) | Supervisor | An AI that watches running work and warns you. See [Supervisor](SUPERVISOR.md). | Changing the project. |
+
+Nobody needs to be picked to watch the work: Planwharf always does it by itself and tells the lead when something stalls or fails ([Supervisor](SUPERVISOR.md)).
 
 A model with no role sits on the **bench** and is never used. Roles are permissions, not rankings: changing them affects the next assignment, not work already running. A role a model cannot do is shown disabled.
 

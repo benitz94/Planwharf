@@ -12,7 +12,6 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
 | Build | Writes the code and the tests. |
 | Verify | Checks the builder's work independently, preferably from another provider, and fixes what fails. |
 | Review (optional) | Reads the work and reports problems, without changing files. |
-| Watch (optional) | An AI that watches running work. |
 | Bench | Available, but not used until you give it a role. |
 
 ## The screen
