@@ -53,7 +53,7 @@ function homeNext(item, row = {}, durable = {}) {
   }
   if (row?.status === 'needs_approval') return 'Approve the prepared job.';
   if (row?.canResume) return 'Resume from checkpoint.';
-  if (item.revisions?.at(-1)?.open?.length) return 'Answer the current Grill question.';
+  if (item.revisions?.at(-1)?.open?.length) return 'Tell the lead what to build.';
   return 'Review the Living Plan.';
 }
 

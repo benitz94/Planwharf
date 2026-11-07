@@ -50,7 +50,8 @@ Open **Team**. Each model shows one button per role:
 | Build | Worker | Writes the code and its tests. | Check its own work as the verifier. |
 | Verify | Verifier | Checks the builder's work independently and fixes what fails. Planwharf prefers a verifier from another company. | Build the job. With no verifier the job runs as one step and Planwharf only runs the tests. |
 | Review (optional) | Reviewer | Reads the work and reports problems, without changing files. | Implementation. |
-| Watch (optional) | Supervisor | An AI that watches running work and warns you. See [Supervisor](SUPERVISOR.md). | Changing the project. |
+
+Nobody needs to be picked to watch the work: Planwharf always does it by itself and tells the lead when something stalls or fails ([Supervisor](SUPERVISOR.md)).
 
 A model with no role sits on the **bench** and is never used. Roles are permissions, not rankings: changing them affects the next assignment, not work already running. A role a model cannot do is shown disabled.
 
@@ -68,7 +69,6 @@ Confirmed team, Business or Enterprise accounts add **Business** to model names.
 
 Write in the chat what you want. Ordinary conversation never starts work by itself.
 
-- **Ask me questions first** starts a short interview (Grill): one question at a time, each with the lead's suggested answer.
 - When the lead proposes work, a card shows the steps and who does each. **Approve and start** launches it; to change it, tell the lead.
 - **Let the crew do it** turns on [project autonomy](PROJECT-AUTONOMY.md). The crew then plans, approves its own steps within limits, builds, verifies and stops when the goal is reached or a limit is hit. **Stop the crew** turns it off.
 
@@ -120,7 +120,7 @@ Planwharf checks for the latest release when it starts, without downloading anyt
 These earlier controls are not available in the current screen:
 
 - personal notes;
-- **Grill with the docs**;
+- the clarification interview (Grill);
 - **Pause after current tasks** and **Finish by** deadlines;
 - Gold model;
 - per-model and per-provider usage policies (Always approve / YOLO);

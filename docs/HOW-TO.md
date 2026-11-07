@@ -39,9 +39,8 @@ For your first try, use a new folder rather than an important repository.
 
 ## 5. Start
 
-You have two options:
+Two ways:
 
-- **Ask me questions first:** the lead asks one question at a time, each with its suggested answer, to sharpen the goal. Answer in the chat.
 - **Let the crew do it:** the crew plans, builds, verifies and stops when the goal is reached or a limit is hit.
 
 If you prefer to approve each piece of work yourself, describe the work in the chat. When the lead proposes it, press **Approve and start**.

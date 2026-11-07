@@ -2,8 +2,8 @@
 
 The Supervisor is Planwharf's watch over running work. Its deterministic checks need
 no model. In the chat view, each active warning appears as a **Something needs a
-look** card in the conversation, with **Ignore**. The optional **Watch** role in Team
-marks a model for Supervisor work.
+look** card in the conversation, with **Ignore**. It is always on and needs no
+role in Team. During automatic work, each new alert is passed to the lead, which decides what to do.
 
 The earlier dedicated Supervisor screen, with **Inspect evidence**, **Ask Supervisor**,
 the name field and the automatic-analysis switch, was removed with the old interface

@@ -180,8 +180,7 @@
     const missing = readiness(row);
     return `<div class="card"><h3 class="head">${tile('folder', 't-accent')}<span>${escape(row.name)}</span></h3><p>${hasGoal(row) ? escape(row.goal) : 'Write below what you want built. When the lead has understood, press <b>Use as the goal</b> under your message.'}</p>
       <p class="muted small path">Folder: ${escape(row.folder || 'not set')}</p>
-      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" ${item.panel ? `data-panel="${item.panel}"` : `data-action="${item.action}"`}>${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}
-      <div class="row"><button type="button" class="btn" data-action="grill" ${lead() ? '' : 'disabled'}>Ask me questions first</button></div></div>`;
+      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" ${item.panel ? `data-panel="${item.panel}"` : `data-action="${item.action}"`}>${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}</div>`;
   }
   function readiness(row) {
     const missing = [];
@@ -321,7 +320,7 @@
     // A chat message never starts work by itself; say so under the last one and offer the next step.
     const lastAsk = asks.at(-1);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
-    if (row && lastAsk && !busy && !pendingHere && lastAsk.question !== 'Grill me' && lastAsk.question?.trim() !== row.goal?.trim()) {
+    if (row && lastAsk && !busy && !pendingHere && lastAsk.question?.trim() !== row.goal?.trim()) {
       state.goalCandidate = lastAsk.question;
       html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
     }
@@ -392,13 +391,13 @@
       const [icon, tone] = ROLE_LOOK[label] || ROLE_LOOK.Build;
       return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
-    const optional = ['reviewer', 'supervisor'].filter(role => model.roleEligibility?.[role] !== false);
+    const optional = ['reviewer'].filter(role => model.roleEligibility?.[role] !== false);
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
       ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
-      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
+      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   function teamPanel() {
@@ -411,7 +410,7 @@
     return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> and <b class="c-watch">Watch</b> are optional.</p>
+      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>
@@ -657,6 +656,9 @@
       return current?.canStop ? post('/api/orchestrator/stop', { projectId: row.id }) : snap;
     }, 'The crew stopped. Work so far is saved.');
   }
+  function quitApp() {
+    post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message));
+  }
   async function importProject(file) {
     const error = $('import-error'); if (error) error.textContent = '';
     try {
@@ -739,9 +741,10 @@
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
-    else if (action === 'quit') { state.armed = null; post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message)); }
+    else if (action === 'quit') { state.armed = null; quitApp(); }
+    // Quit is always in the top bar; it asks once in the chat before closing.
+    else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
-    else if (action === 'grill') send('Grill me', { grillKind: 'me' });
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }

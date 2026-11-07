@@ -7,7 +7,7 @@ This is the Planwharf-native version of a pattern other local coordinators keep:
 ## What is restored
 
 - Project name (a colliding id becomes `name-2`)
-- Living Plan revisions (`manual`, `grill`, or `import`)
+- Living Plan revisions
 - Tasks, with any `running` status saved as `paused`
 - Pinned and AI-relevant notes
 - Execution MegaTasks, SubTasks, structured results, checkpoints and timeline events for that project

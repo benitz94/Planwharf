@@ -688,21 +688,6 @@ function parseOrder(question, snap, projectId) {
   if (projectCommand('approve run|approva|approve')) {
     return { action: 'approve', projectId: row && row.id, name: row && row.name };
   }
-  if (projectCommand('skip grill|salta grill|skip the grill')) {
-    return { action: 'skip', projectId: row && row.id, name: row && row.name };
-  }
-  if (/\bgrill\b/i.test(ql) && /\b(off|disable|spegni|disattiva)\b/i.test(ql)) {
-    return { action: 'grillPropose', enabled: false };
-  }
-  if (/\bgrill with the docs\b/i.test(ql)) {
-    return { action: 'grillPropose', enabled: true, kind: 'docs' };
-  }
-  if (/\bgrill me\b/i.test(ql) && !/\bskip\b/i.test(ql)) {
-    return { action: 'grillPropose', enabled: true, kind: 'me' };
-  }
-  if (/\bgrill\b/i.test(ql) && /\b(on|enable|accendi|attiva)\b/i.test(ql) && !named) {
-    return { action: 'grillPropose', enabled: true };
-  }
   if (projectCommand('auto start|avvia|start')) {
     return { action: 'start', projectId: row && row.id, name: row && row.name };
   }
@@ -1082,7 +1067,7 @@ function createOrchestrator(options) {
     catch (error) { ledger.finish(id, 'FAILED'); throw error; }
   };
 
-  let store = { autonomy: {}, mode: 'manual', grillPropose: true, grillKind: 'me', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
+  let store = { autonomy: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
   let thinkingLive = null;
   let askToken = 0;
   let plansLive = emptyPlans();
@@ -1097,8 +1082,9 @@ function createOrchestrator(options) {
         store = {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
-          grillPropose: parsed.grillPropose === false ? false : true,
-          grillKind: parsed.grillKind === 'docs' ? 'docs' : (parsed.grillPropose === false || parsed.grillKind === 'off' ? 'off' : 'me'),
+          // The clarification interview was removed: it stays off whatever an older state file says.
+          grillPropose: false,
+          grillKind: 'off',
           usage: parsed.usage && typeof parsed.usage === 'object' ? parsed.usage : {},
           enabled: parsed.enabled && typeof parsed.enabled === 'object' ? parsed.enabled : {},
           providerEnabled: parsed.providerEnabled || {},
@@ -2135,21 +2121,6 @@ function createOrchestrator(options) {
       row.workerActivity = '';
     }
 
-    if (open.length) {
-      row.status = 'waiting_on_you';
-      row.doing = `${open.length} open question${open.length === 1 ? '' : 's'} on ${item.project.name}. Grill me first. The orchestrator does not assign a worker yet.`;
-      row.waitingFor = 'Grill me answers';
-      row.next = row.pendingAutoStart
-        ? 'In For you open Grill me, answer, Save answers. Or Skip grill on this Monitor row to plan anyway.'
-        : 'In For you open Grill me, answer the questions, then Save answers.';
-      row.workerLabel = null;
-      row.watchingSince = null;
-      row.facts = null;
-      row.dispatch = [];
-      row.approved = false;
-      row.holdApproval = false;
-      return row;
-    }
     if (!job && row.pendingAutoStart && store.grillPropose !== false && !row.grillSkipped && !grillDone(item)) {
       let docs = [];
       if (item.project.folder) {
@@ -2181,12 +2152,10 @@ function createOrchestrator(options) {
     if (!job) {
       row.status = 'idle';
       row.doing = row.pendingAutoStart
-        ? `Auto start is waiting to plan ${item.project.name} after grill.`
-        : `No job on ${item.project.name}. Auto start to check the project${store.grillPropose !== false ? ', grill if Grill me or Grill with the docs is on,' : ''} then approve the plan.`;
+        ? `Auto start is waiting to plan ${item.project.name}.`
+        : `No job on ${item.project.name}. Tell the lead what to build, or let the crew do it.`;
       row.waitingFor = 'Auto start';
-      row.next = store.grillPropose !== false
-        ? 'Grill me or Grill with the docs starts the orchestrator with that grill. Auto start skips grill when both are off.'
-        : 'Auto start skips grill. Turn Grill me or Grill with the docs on to grill first.';
+      row.next = 'Tell the lead what to build, or let the crew do it.';
       row.workerLabel = null;
       row.attemptId = null;
       row.watchingSince = null;
@@ -3144,7 +3113,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const genericOpen = Plan.isGenericFrontier(open);
     const liveOpen = open.length && !genericOpen;
     const sessionGrill = store.grillPropose !== false && store.grillKind !== 'off' && !row.grillSkipped && !source?.grillContext;
-    if (liveOpen && !source?.grillContext) {
+    if (false && liveOpen && !source?.grillContext) { // open questions no longer hold the start
       note(projectId, 'Auto start: waiting on Grill me answers.');
       persist();
       await tick(projectId);

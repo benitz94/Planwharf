@@ -10,7 +10,7 @@ Planwharf is a local project notebook and AI coding coordinator. Planwharf expla
 
 ## Implemented capabilities
 
-- Living Plan revisions, Grill, project folders, personal notes with optional AI relevance.
+- Living Plan revisions, project folders, personal notes with optional AI relevance.
 - Approved MegaTasks, dependent SubTasks, real local coding workers and structured Results.
 - Stop, graceful pause, existing deadlines, checkpoints, changed-repository confirmation and Resume without replaying completed work.
 - Business labels from provider-reported login metadata, account-scoped roles and account-change cache invalidation.

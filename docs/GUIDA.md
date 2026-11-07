@@ -36,7 +36,9 @@ Apri **Team**. **Ogni progetto ha la sua squadra**: quello che cambi qui vale so
 1. **Lead:** scegli il modello che parla con te e organizza il lavoro.
 2. **Build** (costruttore, blu): premilo su almeno un modello. Scrive il codice e i test.
 3. **Verify** (controllore, arancione): premilo su un altro modello, meglio se di un'altra azienda. Ricontrolla il lavoro e corregge quello che non va. Senza controllore il lavoro parte lo stesso, ma lo controllano solo i test.
-4. **Review** (verde acqua) e **Watch** (rosa) sono facoltativi: il primo legge il lavoro e segnala problemi senza toccare i file, il secondo sorveglia il lavoro in corso.
+4. **Review** (verde acqua) è facoltativo: legge il lavoro e segnala problemi senza toccare i file.
+
+Non serve scegliere nessuno per sorvegliare: Planwharf tiene d'occhio da solo il lavoro in corso. Se un modello resta fermo dieci minuti, si blocca o fallisce, avvisa il lead, che decide cosa fare.
 
 Il pannello è diviso in due: **On the team** (in squadra, con il bordo colorato) e **Bench** (in panchina, più chiari e tratteggiati). Per mandare un modello in panchina premi **Bench**, oppure scrivi in chat `metti <nome> in panchina`. Per riportarlo in squadra premi uno dei suoi ruoli.
 
@@ -66,10 +68,9 @@ Per la prima prova usa una cartella nuova, non un progetto importante.
 
 ## 5. Far partire il lavoro
 
-Hai tre strade:
+Hai due strade:
 
 - **Let the crew do it** (lascia fare alla squadra): la squadra pianifica, costruisce, controlla e si ferma quando l'obiettivo è raggiunto o quando arriva a un limite. Se il pulsante è grigio, la riga accanto ti dice cosa manca, e la scheda in chat ha un pulsante che apre il pannello giusto.
-- **Ask me questions first** (fammi prima delle domande): il lead ti fa una domanda alla volta, ognuna con una risposta suggerita, per chiarire l'obiettivo. Rispondi in chat.
 - **Approvare tu ogni passo:** descrivi il lavoro in chat. Il lead risponde con una proposta, cioè i passi e chi fa cosa, e tu premi **Approve and start** (approva e parti), oppure gli dici cosa cambiare.
 
 ## 6. Seguire il lavoro
