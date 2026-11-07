@@ -1,0 +1,81 @@
+{
+  "workspace": "grok",
+  "passed": 12,
+  "total": 12,
+  "byCategory": {
+    "locks": {
+      "passed": 4,
+      "total": 4
+    },
+    "concurrency": {
+      "passed": 6,
+      "total": 6
+    },
+    "crash": {
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "results": [
+    {
+      "category": "locks",
+      "name": "a lock left by a dead process is taken over",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "init works with a stale lock in a fresh directory",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "a lock held by a live process gives LOCK_TIMEOUT after about 5 seconds",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "a lock without a PID is held while new and stale after 2 seconds",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel appends from 8 processes lose nothing and never repeat a seq",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel polls on one cursor deliver every event exactly once",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "only one of many parallel stream-creates succeeds",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel processes meeting a stale lock still exclude each other",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "readers never see a partial import",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "a mixed parallel workload keeps every invariant",
+      "pass": true
+    },
+    {
+      "category": "crash",
+      "name": "killing an import at any moment leaves none or all of it",
+      "pass": true
+    },
+    {
+      "category": "crash",
+      "name": "killing appends at random moments never corrupts the store",
+      "pass": true
+    }
+  ]
+}

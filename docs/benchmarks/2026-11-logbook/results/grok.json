@@ -1,0 +1,386 @@
+{
+  "workspace": "grok",
+  "passed": 65,
+  "total": 65,
+  "byCategory": {
+    "deliverables": {
+      "passed": 2,
+      "total": 2
+    },
+    "cli": {
+      "passed": 9,
+      "total": 9
+    },
+    "store": {
+      "passed": 9,
+      "total": 9
+    },
+    "streams": {
+      "passed": 6,
+      "total": 6
+    },
+    "append": {
+      "passed": 6,
+      "total": 6
+    },
+    "read": {
+      "passed": 4,
+      "total": 4
+    },
+    "compact": {
+      "passed": 2,
+      "total": 2
+    },
+    "cursors": {
+      "passed": 4,
+      "total": 4
+    },
+    "limits": {
+      "passed": 3,
+      "total": 3
+    },
+    "import": {
+      "passed": 8,
+      "total": 8
+    },
+    "locks": {
+      "passed": 4,
+      "total": 4
+    },
+    "concurrency": {
+      "passed": 6,
+      "total": 6
+    },
+    "crash": {
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "results": [
+    {
+      "category": "deliverables",
+      "name": "README.md is present",
+      "pass": true
+    },
+    {
+      "category": "deliverables",
+      "name": "logbook.test.js passes with node --test",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "stdout is exactly one JSON line ending in a newline",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "missing datadir, missing command and unknown command are USAGE",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "usage errors come before NOT_INITIALIZED",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "wrong positional counts are USAGE",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "flags of another command, repeated flags and missing values are USAGE",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "flags may appear anywhere after the command",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "a value flag takes the next argument even if it starts with --",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "NOT_INITIALIZED for a missing directory and for a directory without db.json",
+      "pass": true
+    },
+    {
+      "category": "cli",
+      "name": "error output has ok false, a message and a code",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "init creates nested directories and the exact empty store",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "init twice is ALREADY_INITIALIZED and leaves data untouched",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "an external edit made while unlocked is honoured",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "a corrupt db.json is CORRUPT_STORE and stays untouched",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "a leftover db.json.tmp is ignored and overwritten",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "read-only commands do not rewrite db.json",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "db.json is replaced by a rename, never rewritten in place",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "the lock is removed after success and after errors",
+      "pass": true
+    },
+    {
+      "category": "store",
+      "name": "names such as constructor and ids such as __proto__ are ordinary keys",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "stream names follow the naming rule",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "stream-list is sorted by code unit and counts stored events",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "head gives exactly its four fields",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "stream-delete checks events, then cursors, and --force removes everything",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "a stream emptied by compaction can be deleted without --force",
+      "pass": true
+    },
+    {
+      "category": "streams",
+      "name": "status sums stored and compacted events",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "append assigns seqs and default ids",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "append checks stream, type, payload, id, conflict, limit in that order",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "type, id and payload rules",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "idempotent append uses deep equality",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "a taken default id is DUPLICATE_ID and changes nothing",
+      "pass": true
+    },
+    {
+      "category": "append",
+      "name": "seqs are never reused after compaction",
+      "pass": true
+    },
+    {
+      "category": "read",
+      "name": "read returns events, honours --from and --count, and reports hasMore",
+      "pass": true
+    },
+    {
+      "category": "read",
+      "name": "read errors and their order",
+      "pass": true
+    },
+    {
+      "category": "read",
+      "name": "read returns at most 1000 events",
+      "pass": true
+    },
+    {
+      "category": "read",
+      "name": "get returns one event and checks seq, compaction and range",
+      "pass": true
+    },
+    {
+      "category": "compact",
+      "name": "compact removes events, frees ids and raises cursors",
+      "pass": true
+    },
+    {
+      "category": "compact",
+      "name": "compact errors, the no-op and emptying the stream",
+      "pass": true
+    },
+    {
+      "category": "cursors",
+      "name": "cursor-create, cursor-list and cursor-delete",
+      "pass": true
+    },
+    {
+      "category": "cursors",
+      "name": "poll delivers in order, persists the position and reports hasMore",
+      "pass": true
+    },
+    {
+      "category": "cursors",
+      "name": "poll after compaction starts from compactBefore",
+      "pass": true
+    },
+    {
+      "category": "cursors",
+      "name": "poll errors and the count cap",
+      "pass": true
+    },
+    {
+      "category": "limits",
+      "name": "100 streams at most",
+      "pass": true
+    },
+    {
+      "category": "limits",
+      "name": "10000 stored events per stream at most, idempotent appends still succeed",
+      "pass": true
+    },
+    {
+      "category": "limits",
+      "name": "1000 cursors at most",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "import appends in file order and creates streams",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "import paths are relative to the working directory",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "an empty file imports nothing",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "each import error aborts the whole import",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "within a line the checks run name, type, payload, id; the first bad line wins",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "a repeated id in the file is DUPLICATE_ID even with identical data",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "import limits are counted line by line, skipped lines do not count",
+      "pass": true
+    },
+    {
+      "category": "import",
+      "name": "import ids collide with later default ids",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "a lock left by a dead process is taken over",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "init works with a stale lock in a fresh directory",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "a lock held by a live process gives LOCK_TIMEOUT after about 5 seconds",
+      "pass": true
+    },
+    {
+      "category": "locks",
+      "name": "a lock without a PID is held while new and stale after 2 seconds",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel appends from 8 processes lose nothing and never repeat a seq",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel polls on one cursor deliver every event exactly once",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "only one of many parallel stream-creates succeeds",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "parallel processes meeting a stale lock still exclude each other",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "readers never see a partial import",
+      "pass": true
+    },
+    {
+      "category": "concurrency",
+      "name": "a mixed parallel workload keeps every invariant",
+      "pass": true
+    },
+    {
+      "category": "crash",
+      "name": "killing an import at any moment leaves none or all of it",
+      "pass": true
+    },
+    {
+      "category": "crash",
+      "name": "killing appends at random moments never corrupts the store",
+      "pass": true
+    }
+  ]
+}
