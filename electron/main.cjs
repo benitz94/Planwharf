@@ -6,6 +6,7 @@ const { app, BrowserWindow, shell, dialog, Menu } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
 const APP_DIR = path.join(__dirname, 'app');
 let child = null, win = null, url = null, quitting = false;
@@ -16,32 +17,78 @@ app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(
 const STARTER = path.join(APP_DIR, 'fixtures', 'starter-notebook.json');
 const projectNames = file => { try { return (JSON.parse(fs.readFileSync(file, 'utf8')).projects || []).map(p => p && p.project && p.project.name); } catch { return null; } };
 
-// Someone who used the ZIP (portable) version can bring its projects, settings and history.
+// Where the ZIP (portable) version keeps its projects: next to its own planwharf.cjs, wherever it was unpacked.
+// Found without asking: a running copy says where its notebook is; otherwise the usual folders are searched.
+async function findPortable(exclude) {
+  const found = new Map();
+  const add = dir => {
+    dir = path.resolve(dir);
+    if (exclude.some(x => dir.toLowerCase().startsWith(path.resolve(x).toLowerCase()))) return;
+    const names = projectNames(path.join(dir, 'plan.json'));
+    if (!names || !names.length) return;
+    let time = 0; try { time = fs.statSync(path.join(dir, 'plan.json')).mtimeMs; } catch {}
+    found.set(dir.toLowerCase(), { dir, names, time });
+  };
+  for (let port = 4173; port <= 4193; port++) {
+    try {
+      const r = await fetch(`http://127.0.0.1:${port}/api/app`, { signal: AbortSignal.timeout(400) });
+      const info = await r.json();
+      if (info && typeof info.planFile === 'string') add(path.dirname(info.planFile));
+    } catch {}
+  }
+  const roots = new Set();
+  for (const name of ['home', 'desktop', 'documents', 'downloads']) { try { roots.add(app.getPath(name)); } catch {} }
+  roots.add(path.join(os.homedir(), '.local', 'share', 'planwharf'));
+  let budget = 20000;
+  const skip = new Set(['node_modules', 'AppData', 'Library', 'Application Data', '$Recycle.Bin', 'Windows', 'Program Files']);
+  const walk = (dir, depth) => {
+    if (budget-- <= 0) return;
+    let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    if (entries.some(e => e.isFile() && e.name === 'planwharf.cjs') && entries.some(e => e.isFile() && e.name === 'plan.json')) add(dir);
+    if (depth === 0) return;
+    for (const e of entries) if (e.isDirectory() && !e.name.startsWith('.') && !skip.has(e.name)) walk(path.join(dir, e.name), depth - 1);
+  };
+  for (const root of roots) walk(root, 3);
+  return [...found.values()].sort((a, b) => b.time - a.time);
+}
+
+// Someone who used the ZIP version gets its projects, settings and history.
 // The files are copied, never moved: the ZIP version keeps its own copy.
-async function offerImport(data, plan) {
+async function offerImport(data, plan, { find = findPortable } = {}) {
   const marker = path.join(data, 'desktop-import.json');
   if (fs.existsSync(marker)) return;
   const mine = fs.existsSync(plan) ? projectNames(plan) : [];
   const starter = projectNames(STARTER) || [];
   const fresh = mine !== null && mine.every(name => starter.includes(name));
   if (!fresh) { fs.writeFileSync(marker, JSON.stringify({ decided: 'kept own projects', at: new Date().toISOString() })); return; }
+  const candidates = (await find([data, APP_DIR])).filter(c => !c.names.every(name => starter.includes(name)));
+  // Nothing to bring: start as a new user, without questions.
+  if (!candidates.length) { fs.writeFileSync(marker, JSON.stringify({ decided: 'nothing found', at: new Date().toISOString() })); return; }
+  let from = candidates[0].dir, names = candidates[0].names;
   for (;;) {
+    const shown = names.slice(0, 8).join(', ') + (names.length > 8 ? ` and ${names.length - 8} more` : '');
     const { response } = await dialog.showMessageBox({
-      type: 'question', title: 'Planwharf', buttons: ['Choose the folder…', 'Start without them'], defaultId: 0, cancelId: 1, noLink: true,
-      message: 'Do you already use Planwharf from the ZIP download?',
-      detail: 'Choose the folder where Planwharf.exe or planwharf.sh is, and the app copies your projects, team and history from there.\n\nClose the other Planwharf first. The ZIP version keeps its own copy: from now on use one version at a time.'
+      type: 'question', title: 'Planwharf', buttons: ['Bring them', 'Start without them', 'Use another folder…'], defaultId: 0, cancelId: 1, noLink: true,
+      message: `You already have ${names.length} Planwharf project${names.length === 1 ? '' : 's'} on this computer. Bring ${names.length === 1 ? 'it' : 'them'} into the app?`,
+      detail: `${shown}\n\nFound in ${from}. They are copied with your team and history; the other Planwharf keeps its own copy, so from now on use one at a time.`
     });
-    if (response !== 0) { fs.writeFileSync(marker, JSON.stringify({ decided: 'started without import', at: new Date().toISOString() })); return; }
-    const pick = await dialog.showOpenDialog({ title: 'Folder of your Planwharf ZIP version', properties: ['openDirectory'] });
+    if (response === 1) { fs.writeFileSync(marker, JSON.stringify({ decided: 'started without import', at: new Date().toISOString() })); return; }
+    if (response === 0) break;
+    const pick = await dialog.showOpenDialog({ title: 'Folder with Planwharf.exe or planwharf.sh', properties: ['openDirectory'] });
     if (pick.canceled || !pick.filePaths[0]) continue;
-    const from = pick.filePaths[0];
-    const names = projectNames(path.join(from, 'plan.json'));
-    if (!names) { await dialog.showMessageBox({ type: 'warning', title: 'Planwharf', message: 'No Planwharf projects in that folder.', detail: `${from} has no readable plan.json. Choose the folder that contains Planwharf.exe or planwharf.sh.` }); continue; }
+    const other = projectNames(path.join(pick.filePaths[0], 'plan.json'));
+    if (!other) { await dialog.showMessageBox({ type: 'warning', title: 'Planwharf', message: 'No Planwharf projects in that folder.', detail: `${pick.filePaths[0]} has no readable plan.json.` }); continue; }
+    from = pick.filePaths[0]; names = other;
+  }
+  {
     // Keep whatever the desktop app had, then copy the notebook and its history folder.
     const backup = path.join(data, 'before-import-' + new Date().toISOString().replace(/[:.]/g, '-'));
     fs.mkdirSync(backup, { recursive: true });
-    for (const name of ['plan.json', '.attempts-plan']) if (fs.existsSync(path.join(data, name))) fs.renameSync(path.join(data, name), path.join(backup, name));
+    // plan.json.settings.json (team, look) and plan.json.browser.json travel with the notebook.
+    const sideFiles = dir => { try { return fs.readdirSync(dir).filter(name => name.startsWith('plan.json.')); } catch { return []; } };
+    for (const name of ['plan.json', '.attempts-plan', ...sideFiles(data)]) if (fs.existsSync(path.join(data, name))) fs.renameSync(path.join(data, name), path.join(backup, name));
     fs.copyFileSync(path.join(from, 'plan.json'), plan);
+    for (const name of sideFiles(from)) fs.copyFileSync(path.join(from, name), path.join(data, name));
     if (fs.existsSync(path.join(from, '.attempts-plan'))) fs.cpSync(path.join(from, '.attempts-plan'), path.join(data, '.attempts-plan'), { recursive: true });
     fs.writeFileSync(marker, JSON.stringify({ decided: 'imported', from, projects: names, backup, at: new Date().toISOString() }, null, 2));
     return;
@@ -117,7 +164,7 @@ app.on('before-quit', event => {
 });
 app.on('window-all-closed', () => app.quit());
 
-module.exports = { offerImport };
+module.exports = { offerImport, findPortable };
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
