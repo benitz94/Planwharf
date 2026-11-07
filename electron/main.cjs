@@ -142,7 +142,8 @@ function createWindow() {
   const local = target => { try { return new URL(target).origin === new URL(url).origin; } catch { return false; } };
   win.webContents.setWindowOpenHandler(({ url: target }) => { if (/^https?:/.test(target) && !local(target)) shell.openExternal(target); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (event, target) => { if (!local(target)) { event.preventDefault(); if (/^https?:/.test(target)) shell.openExternal(target); } });
-  win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  // Only writing to the clipboard (the Copy button on replies) is allowed; camera, location and the rest stay off.
+  win.webContents.session.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'clipboard-sanitized-write'));
   win.loadURL(url + '/');
   win.on('closed', () => { win = null; });
 }
