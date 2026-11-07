@@ -88,7 +88,8 @@
     rocket: '<path d="M9 15l-3-3c1.5-4 5-9 14-9 0 9-5 12.5-9 14z"/><path d="M5.5 14.5c-1 1-1.5 3.5-1.5 5.5 2 0 4.5-.5 5.5-1.5"/><circle cx="15" cy="9" r="1.5"/>',
     send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
     pause: '<path d="M9 5v14M15 5v14"/>',
-    research: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'
+    research: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'
   };
   const ic = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
   const tile = (name, tone) => `<span class="tile ${tone}" aria-hidden="true">${ic(name)}</span>`;
@@ -113,6 +114,15 @@
     if (/complete/.test(status)) return { text: 'Done', kind: 'done' };
     return { text: 'Ready', kind: '' };
   }
+  // Who is working right now on a project: a live crew process, or the lead answering in this window.
+  function workingNow(row) {
+    if (!row) return null;
+    const part = (row.dispatch || []).find(item => item && item.alive);
+    if (part) return { who: modelLabel(part.modelId) || part.label || row.workerLabel || 'The crew', since: Date.parse(part.startedAt || '') };
+    if (state.sending && state.pendingProject === row.id) return { who: lead()?.label || 'The lead', since: state.pendingSince };
+    return null;
+  }
+  const workingText = work => `${work.who} is working${Number.isFinite(work.since) ? ' · ' + (duration(Date.now() - work.since) || '1 s') : ''}`;
   const sessionFor = id => { if (!state.sessions[id]) { state.sessions[id] = 'chat-' + Math.random().toString(36).slice(2, 10); store.set('sessions', state.sessions); } return state.sessions[id]; };
   const modelLabel = id => models().find(model => model.id === id)?.label || null;
 
@@ -127,15 +137,20 @@
   function renderProjects() {
     const rows = state.orchestra?.projects || [];
     $('project-list').innerHTML = rows.length ? rows.map(row => {
-      const status = projectStatus(row);
-      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${tile('folder', 'p-' + (status.kind || 'idle'))}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(status.text)}</span></span></button>`;
+      const status = projectStatus(row), work = workingNow(row);
+      const icon = work ? `<span class="tile p-running spinning" aria-hidden="true">${ic('lead')}</span>` : tile('folder', 'p-' + (status.kind || 'idle'));
+      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${icon}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(work ? workingText(work) : status.text)}</span></span></button>`;
     }).join('') : '<p class="muted small">No projects yet.</p>';
+    // The compass in the logo turns while anything is being worked on.
+    const busy = rows.some(row => workingNow(row));
+    document.querySelector('.brand-mark')?.classList.toggle('spinning', busy);
+    document.querySelector('.brand')?.setAttribute('title', busy ? 'Planwharf is working' : 'Planwharf');
   }
   function renderHeader() {
     const row = project();
     $('project-title').textContent = row ? row.name : 'Welcome';
-    const status = projectStatus(row);
-    const pill = $('project-status'); pill.textContent = status.text; pill.className = 'pill ' + status.kind;
+    const status = projectStatus(row), work = workingNow(row);
+    const pill = $('project-status'); pill.textContent = work ? workingText(work) : status.text; pill.className = 'pill ' + (work ? 'running' : status.kind);
     document.title = state.windowTitle || (row ? `${row.name} · Planwharf` : 'Planwharf');
     document.querySelectorAll('.tab').forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.panel === state.panel)));
   }
@@ -334,7 +349,7 @@
     const failed = Boolean(item.diagnostic);
     const elapsed = Number.isFinite(item.ms) ? ` · ${Math.max(1, Math.round(item.ms / 1000))} s` : '';
     return `<div class="msg you"><div class="bubble">${escape(item.question)}</div></div>
-      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
+      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
   }
   function eventHtml(event) {
     const view = eventView(event);
@@ -446,7 +461,22 @@
     const seconds = ms => Number.isFinite(ms) ? (ms >= 60000 ? Math.round(ms / 60000) + ' min' : Math.round(ms / 1000) + ' s') : '—';
     const tokens = row => Number.isFinite(row.outputTokens) ? `${row.outputTokens.toLocaleString()} out` : 'not reported';
     const rows = list => (list || []).map(row => `<span>${escape(row.model)}</span><span class="v">${row.calls} · ${seconds(row.durationMs)} · ${escape(tokens(row))}</span>`).join('');
-    return `<div class="section">${head('usage', 't-accent', 'Quota left')}${plans.length ? plans.map(plan => `<div class="member"><div class="info"><div class="label">${escape(plan.label)}</div><div class="meta">${plan.readable && Number.isFinite(plan.leftPct) ? plan.leftPct + '% left' : escape(plan.reason || 'Not reported by this provider')}</div>${plan.readable && Number.isFinite(plan.leftPct) ? `<div class="bar${plan.leftPct < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, plan.leftPct))}%"></span></div>` : ''}</div></div>`).join('') : '<p class="muted small">No provider reports quota.</p>'}</div>
+    // Each limit the provider reports (5-hour, weekly, ...) gets its own bar and reset time.
+    const windowName = name => ({ '5-hour': '5 hours', weekly: 'Week' })[name] || String(name || 'Limit').replace(/[_-]+/g, ' ').replace(/^./, c => c.toUpperCase());
+    const resetText = at => {
+      const time = Date.parse(at || '');
+      if (!Number.isFinite(time) || time <= Date.now()) return '';
+      const date = new Date(time), sameDay = date.toDateString() === new Date().toDateString();
+      return ' · resets ' + (sameDay ? '' : date.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) + ' ') + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+    const bar = left => `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>`;
+    const limits = plan => {
+      const windows = (plan.windows || []).filter(w => Number.isFinite(w?.leftPct));
+      if (!plan.readable || (!windows.length && !Number.isFinite(plan.leftPct))) return `<div class="meta">${escape(plan.reason || 'Not reported by this provider')}</div>`;
+      if (!windows.length) return `<div class="meta">${plan.leftPct}% left</div>${bar(plan.leftPct)}`;
+      return windows.map(w => `<div class="meta"><b>${escape(windowName(w.name))}</b>: ${w.leftPct}% left${escape(resetText(w.resetAt))}</div>${bar(w.leftPct)}`).join('');
+    };
+    return `<div class="section">${head('usage', 't-accent', 'Quota left')}${plans.length ? plans.map(plan => `<div class="member"><div class="info"><div class="label">${escape(plan.label)}</div>${limits(plan)}</div></div>`).join('') : '<p class="muted small">No provider reports quota.</p>'}</div>
       <div class="section">${head('lead', 'r-lead', 'Lead calls')}<div class="kv">${rows(usage.orchestrator) || '<span class="muted small">None yet.</span>'}</div></div>
       <div class="section">${head('build', 'r-build', 'Crew work')}<div class="kv">${rows(usage.workers) || '<span class="muted small">None yet.</span>'}</div></div>
       <p class="small muted">Calls · time · output tokens. A provider that does not report tokens shows “not reported”, never a guess.</p>`;
@@ -711,6 +741,25 @@
     } catch (failure) { error.textContent = failure.message; }
   }
 
+  // One click copies a lead reply as plain text, like the copy button in other chat apps.
+  async function copyReply(button) {
+    const text = button.closest('.msg')?.querySelector('.bubble')?.innerText || '';
+    if (!text) return;
+    let done = false;
+    try { await navigator.clipboard.writeText(text); done = true; } catch {}
+    if (!done) {
+      const area = document.createElement('textarea');
+      area.value = text; area.setAttribute('readonly', ''); area.style.position = 'fixed'; area.style.opacity = '0';
+      document.body.appendChild(area); area.select();
+      try { done = document.execCommand('copy'); } catch {}
+      area.remove();
+    }
+    const label = button.querySelector('span');
+    if (label) { label.textContent = done ? 'Copied' : 'Copy failed'; setTimeout(() => { label.textContent = 'Copy'; }, 1600); }
+    button.classList.toggle('done', done);
+    setTimeout(() => button.classList.remove('done'), 1600);
+  }
+
   // ---------- events ----------
   document.addEventListener('click', event => {
     const target = event.target.closest('button, a');
@@ -727,6 +776,7 @@
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
+    if (action === 'copy-msg') { copyReply(target); return; }
     if (action === 'autonomy-on') autonomyOn();
     else if (action === 'autonomy-off') autonomyOff();
     else if (action === 'stop') act(() => post('/api/orchestrator/stop', { projectId: state.projectId }), 'Work stopped and saved.');

@@ -202,7 +202,7 @@ function createExecutionBridge(options) {
     try {
       const handoff = { megaTask: mega, subTasks: subtasks(mega), results: data.results.filter(result => result.megaTaskId === mega.id), checkpoint: data.checkpoints.find(cp => cp.id === mega.currentCheckpointId), notes: (item.home?.notes || []).filter(note => note.aiRelevant === true) };
       const launched = spawnWorker({ ...part, linkedFolder: item.project.folder, projectId: mega.projectId, worker, ...identity(mega, sub, attemptId), job: { title: sub.title, kind: sub.type === 'RESEARCH' ? 'research' : sub.type === 'AUDIT' ? 'audit' : job.kind,
-        detail: `${job.detail}\n\nSubTask: ${sub.detail}\n\nSource project (read only for research): ${item.project.folder}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
+        detail: `${job.detail}\n\nSubTask: ${sub.detail}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
       if (!Number.isInteger(launched?.pid) || launched.pid <= 0) throw new Error('Worker did not start.');
       Object.assign(part, { pid: launched.pid, alive: true, observedAlive: true, logPath: launched.logPath || part.logPath });
       row.workerPid = part.pid; row.workerLog = part.logPath;

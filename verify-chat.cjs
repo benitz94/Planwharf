@@ -138,6 +138,9 @@ const errors = [];
   await until(`document.querySelector('#thread .dots') !== null`, 'pending turn');
   await until(`document.getElementById('thread').innerText.includes('Fine: a recipe site')`, 'lead answer', 15000);
   assert.equal(calls.length, 1);
+  // Each lead reply has a copy button; one click copies the reply and says so.
+  await click('#thread .msg.lead [data-action="copy-msg"]');
+  await until(`/Copied|Copy failed/.test(document.querySelector('#thread .msg.lead [data-action="copy-msg"]').innerText)`, 'copy feedback');
   // A chat message starts nothing; the page says so and offers to make it the goal.
   await until(`document.querySelector('[data-action="use-goal"]') && document.getElementById('thread').innerText.includes('nothing has started yet')`, 'goal hint');
   await click('[data-action="use-goal"]');

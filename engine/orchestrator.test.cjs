@@ -111,12 +111,12 @@ function make(plan, inspectFolder, extra) {
   assert.equal(leadOrder.action, 'lead');
   assert.equal(leadOrder.id, 'grok');
   assert.equal(parseOrder('Start Demo', { models: [], projects: [{ id: 'demo', name: 'Demo' }] }).action, 'start');
-  assert.equal(parseOrder('Skip grill on Demo', { models: [], projects: [{ id: 'demo', name: 'Demo' }] }).action, 'skip');
+  // The clarification interview (Grill) is gone: its chat commands are ordinary messages now.
+  assert.equal(parseOrder('Skip grill on Demo', { models: [], projects: [{ id: 'demo', name: 'Demo' }] }), null);
   assert.equal(parseOrder('Switch to automatic', { models: [], projects: [{ id: 'demo', name: 'Demo' }] }).action, 'mode');
   assert.equal(parseOrder('Switch to automatic', { models: [], projects: [] }).mode, 'auto');
   assert.equal(parseOrder('Switch to manual', { models: [], projects: [] }).mode, 'manual');
-  assert.equal(parseOrder('Grill off', { models: [], projects: [] }).action, 'grillPropose');
-  assert.equal(parseOrder('Grill off', { models: [], projects: [] }).enabled, false);
+  assert.equal(parseOrder('Grill off', { models: [], projects: [] }), null);
   assert.equal(parseOrder('How far did we go with Demo?', { models: [], projects: [{ id: 'demo', name: 'Demo', status: 'idle' }] }), null);
   assert.equal(parseOrder('Implement the parser on Demo', { models: [], projects: [{ id: 'demo', name: 'Demo', status: 'idle' }] }), null);
   assert.equal(parseOrder('Smista i worker su Demo', { models: [], projects: [{ id: 'demo', name: 'Demo', status: 'needs_approval' }] }), null);
@@ -157,7 +157,8 @@ function make(plan, inspectFolder, extra) {
 
   const questions = make(notebook({ folder: 'D:\\demo', open: ['What is in scope?'] }));
   let snap = await questions.orchestra.tick();
-  assert.equal(snap.projects[0].status, 'waiting_on_you');
+  // Open questions no longer hold the project back: the lead decides them.
+  assert.notEqual(snap.projects[0].status, 'waiting_on_you');
   assert.equal(questions.attempts.getAttempts().length, 0);
   const askedLive = await questions.orchestra.ask('Are you monitoring the worker?');
   assert.equal(askedLive.ok, true);
@@ -341,15 +342,7 @@ function make(plan, inspectFolder, extra) {
   const autoChat = await idle.orchestra.ask('Switch to automatic');
   assert.equal(autoChat.order, 'mode');
   assert.equal(autoChat.snapshot.mode, 'auto');
-  const grillChat = await idle.orchestra.ask('Grill off');
-  assert.equal(grillChat.order, 'grillPropose');
-  assert.equal(grillChat.snapshot.grillPropose, false);
-  assert.equal(grillChat.snapshot.grillKind, 'off');
-  const grillMeOrder = parseOrder('Grill me', { models: [], projects: [] });
-  assert.equal(grillMeOrder.action, 'grillPropose');
-  assert.equal(grillMeOrder.kind, 'me');
-  const grillDocsOrder = parseOrder('Grill with the docs', { models: [], projects: [] });
-  assert.equal(grillDocsOrder.kind, 'docs');
+  assert.equal(parseOrder('Grill me', { models: [], projects: [] }), null);
   assert.equal(switched.snapshot.models.find(item => item.id === 'gemini').enabled, false);
   assert.equal(snap.projects[0].status, 'idle');
   assert.equal(snap.projects[0].waitingFor, 'Auto start');
@@ -358,45 +351,13 @@ function make(plan, inspectFolder, extra) {
 
   const fresh = make(notebook({ folder: 'D:\\demo', open: [], tasks: [], fresh: true }));
   snap = await fresh.orchestra.tick();
-  assert.equal(snap.grillPropose, true);
-  assert.equal(snap.grillKind, 'me');
+  // Without the interview a fresh project goes straight to planning.
+  assert.equal(snap.grillPropose, false);
   assert.equal(snap.projects[0].status, 'idle');
   assert.equal(snap.projects[0].canStart, true);
   const proposed = await fresh.orchestra.startAutoTask('demo');
   assert.equal(proposed.ok, true);
-  assert.equal(proposed.phase, 'grill');
-  assert.ok(Array.isArray(proposed.questions) && proposed.questions.length);
-  assert.ok(proposed.questions.every(question => /Recommended:/i.test(question)));
-  snap = await fresh.orchestra.tick();
-  assert.equal(snap.projects[0].status, 'propose_grill');
-  assert.equal(snap.projects[0].pendingAutoStart, true);
-  assert.equal(snap.projects[0].canGrillDocs, true);
-  assert.ok(snap.projects[0].docs.includes('README.md'));
-  assert.match(snap.projects[0].doing, /Grill with the docs/);
-  assert.equal(snap.projects[0].step, 'grill');
-  assert.equal(snap.projects[0].pipeline.find(item => item.id === 'grill').state, 'now');
-  assert.equal(snap.projects[0].pipeline.find(item => item.id === 'check').state, 'done');
-  assert.ok(snap.projects[0].crew.some(person => person.role === 'Orchestrator' && person.name === 'Orchestrator'));
-  assert.ok(snap.projects[0].crew.some(person => person.role === 'Worker' && person.name === 'None yet'));
-  const forcedMe = make(notebook({ folder: 'D:\\demo', open: [], tasks: [], fresh: true }));
-  await forcedMe.orchestra.setGrillPropose(true, 'me');
-  const meStart = await forcedMe.orchestra.startAutoTask('demo');
-  assert.equal(meStart.ok, true);
-  assert.equal(meStart.phase, 'grill');
-  assert.equal(meStart.kind, 'me');
-  const skipped = await fresh.orchestra.skipGrill('demo');
-  assert.equal(skipped.ok, true);
-  assert.equal(skipped.snapshot.projects[0].status, 'idle');
-  assert.equal(skipped.snapshot.projects[0].grillSkipped, true);
-
-  const flagged = make(notebook({ folder: 'D:\\demo', open: [], tasks: [], fresh: true }));
-  snap = await flagged.orchestra.setGrillPropose(false);
-  assert.equal(snap.grillPropose, false);
-  assert.equal(snap.projects[0].status, 'idle');
-  const skipGrillStart = await flagged.orchestra.startAutoTask('demo');
-  assert.equal(skipGrillStart.ok, true);
-  assert.equal(skipGrillStart.phase, 'plan');
-  assert.match(skipGrillStart.job.title, /Continue/);
+  assert.equal(proposed.phase, 'plan');
 
   const noFolder = make(notebook({ open: [] }));
   snap = await noFolder.orchestra.tick();
