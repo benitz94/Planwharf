@@ -68,11 +68,12 @@ async function offerImport(data, plan, { find = findPortable } = {}) {
   for (;;) {
     const shown = names.slice(0, 8).join(', ') + (names.length > 8 ? ` and ${names.length - 8} more` : '');
     const { response } = await dialog.showMessageBox({
-      type: 'question', title: 'Planwharf', buttons: ['Bring them', 'Start without them', 'Use another folder…'], defaultId: 0, cancelId: 1, noLink: true,
+      type: 'question', title: 'Planwharf', buttons: ['Bring them', 'Not now', 'Use another folder…'], defaultId: 0, cancelId: 1, noLink: true,
       message: `You already have ${names.length} Planwharf project${names.length === 1 ? '' : 's'} on this computer. Bring ${names.length === 1 ? 'it' : 'them'} into the app?`,
       detail: `${shown}\n\nFound in ${from}. They are copied with your team and history; the other Planwharf keeps its own copy, so from now on use one at a time.`
     });
-    if (response === 1) { fs.writeFileSync(marker, JSON.stringify({ decided: 'started without import', at: new Date().toISOString() })); return; }
+    // Not now, or the box closed: ask again next start, as long as the app has no projects of its own.
+    if (response === 1) return;
     if (response === 0) break;
     const pick = await dialog.showOpenDialog({ title: 'Folder with Planwharf.exe or planwharf.sh', properties: ['openDirectory'] });
     if (pick.canceled || !pick.filePaths[0]) continue;

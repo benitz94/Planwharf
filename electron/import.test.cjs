@@ -68,12 +68,18 @@ test('nothing found: the app starts without any question', async () => {
   assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'desktop-import.json'), 'utf8')).decided, 'nothing found');
 });
 
-test('Start without them keeps the desktop notebook', async () => {
+test('Not now (or closing the box) starts empty and asks again next time', async () => {
   const data = tmp(), zip = portable(tmp(), 'Grid');
+  const plan = path.join(data, 'plan.json');
+  const find = async () => [{ dir: zip, names: ['Grid'], time: 1 }];
   answers.push({ response: 1 });
-  await offerImport(data, path.join(data, 'plan.json'), { find: async () => [{ dir: zip, names: ['Grid'], time: 1 }] });
-  assert.equal(fs.existsSync(path.join(data, 'plan.json')), false, 'the caller then copies the starter notebook');
-  assert.equal(JSON.parse(fs.readFileSync(path.join(data, 'desktop-import.json'), 'utf8')).decided, 'started without import');
+  await offerImport(data, plan, { find });
+  assert.equal(fs.existsSync(plan), false, 'the caller then copies the starter notebook');
+  assert.equal(fs.existsSync(path.join(data, 'desktop-import.json')), false, 'no final decision is stored');
+  fs.copyFileSync(starter, plan);
+  answers.push({ response: 0 });
+  await offerImport(data, plan, { find });
+  assert.ok(JSON.parse(fs.readFileSync(plan, 'utf8')).projects.some(p => p.project.name === 'Grid'), 'the next start brings them');
 });
 
 test('a desktop app that already has its own projects is never asked', async () => {
