@@ -47,6 +47,8 @@ For normal installation, open the [latest GitHub Release](https://github.com/ben
 
 Node.js and any provider CLIs are installed separately.
 
+On Linux, one command installs it for your user: `curl -fsSL https://raw.githubusercontent.com/benitz94/Planwharf/main/install.sh | sh`. A desktop app with its own window is being prepared. See [Desktop app and Linux install](docs/DESKTOP.md).
+
 ## Start here
 
 Planwharf opens on a chat with your lead model. **You are the captain**: you set the goal and the team, the crew builds and verifies, and you can stop it at any time.

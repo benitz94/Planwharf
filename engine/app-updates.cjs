@@ -88,7 +88,9 @@ function createUpdateManager({ root, fetchImpl = fetch, checkpoint, activeCount 
     state.state = 'checking';
     pending = (async () => {
       try {
-        const installed = installation(root);
+        // The desktop app (Electron) updates with a new installer, never by replacing files.
+        const desktop = process.env.PLANWHARF_DESKTOP === '1' && versionParts(process.env.PLANWHARF_DESKTOP_VERSION || '') ? process.env.PLANWHARF_DESKTOP_VERSION : null;
+        const installed = desktop ? { version: desktop } : installation(root);
         state.currentVersion = installed?.version || null;
         const bytes = await bounded(await fetchImpl(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Planwharf', 'X-GitHub-Api-Version': '2022-11-28' }, signal: AbortSignal.timeout(10000) }), 2 * 1024 * 1024);
         latest = JSON.parse(bytes.toString('utf8'));
@@ -97,8 +99,8 @@ function createUpdateManager({ root, fetchImpl = fetch, checkpoint, activeCount 
         state.latestVersion = latest.tag_name; state.releaseUrl = latest.html_url;
         state.available = installed ? newer(latest.tag_name, installed.version) : true;
         const git = checkout(root);
-        state.canInstall = state.available && !git && Boolean(installed && restart && asset && /^sha256:[a-f0-9]{64}$/.test(asset.digest || ''));
-        state.reason = git ? 'Git checkout: update manually to preserve local changes.' : !installed ? 'Download the portable release ZIP once to enable in-app updates.' : !restart ? 'Use the desktop launcher to update and restart.' : !asset?.digest ? 'This release has no verified update package. Download it manually.' : null;
+        state.canInstall = state.available && !desktop && !git && Boolean(installed && restart && asset && /^sha256:[a-f0-9]{64}$/.test(asset.digest || ''));
+        state.reason = desktop ? 'Desktop app: download the new installer from the release page.' : git ? 'Git checkout: update manually to preserve local changes.' : !installed ? 'Download the portable release ZIP once to enable in-app updates.' : !restart ? 'Use the desktop launcher to update and restart.' : !asset?.digest ? 'This release has no verified update package. Download it manually.' : null;
         state.state = state.available ? 'available' : 'current'; state.checkedAt = new Date().toISOString();
       } catch (error) { latest = null; state.state = 'error'; state.canInstall = false; state.reason = error.message; }
       return snapshot();

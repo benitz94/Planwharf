@@ -9,6 +9,8 @@ I pulsanti dell'app sono in inglese: in questa guida li trovi **in grassetto**, 
 - [Node.js](https://nodejs.org/) installato.
 - Almeno uno strumento AI per programmare, installato sul computer e con l'accesso già fatto: Codex (ChatGPT), Claude Code, Grok CLI o Antigravity (Gemini). Planwharf usa quell'accesso e non ti chiede mai password.
 
+Su Linux puoi installarlo con un solo comando: `curl -fsSL https://raw.githubusercontent.com/benitz94/Planwharf/main/install.sh | sh`. Dettagli e app desktop in [Desktop app and Linux install](DESKTOP.md).
+
 ## 1. Aprire Planwharf
 
 Su Windows fai doppio clic su `Planwharf.exe`; su macOS o Linux esegui `sh ./planwharf.sh`.
