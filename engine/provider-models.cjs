@@ -122,7 +122,8 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
     ensureScopes();
     if (inflight) return inflight.then(() => refresh(force, providerId));
     inflight = (async () => {
-      for (const provider of providers.filter(p => (!providerId || p.id === providerId) && p.enabled !== false)) {
+      // Providers are independent: ask them all at once instead of one after another.
+      await Promise.all(providers.filter(p => (!providerId || p.id === providerId) && p.enabled !== false).map(async provider => {
         const key = cacheKey(provider);
         if (observedScopes.get(provider.id) !== key) { block(provider); await saveCache(); }
         const generation = generations.get(provider.id) || 0;
@@ -139,7 +140,7 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
           }
         }
         const previous = stateScopes.get(provider.id) === key ? states.get(provider.id) : null;
-        if (!force && previous && now() - Date.parse(previous.checkedAt) < ttl) continue;
+        if (!force && previous && now() - Date.parse(previous.checkedAt) < ttl) return;
         let result;
         try {
           const adapter = require('./provider-adapters.cjs').adapterFor(provider);
@@ -148,7 +149,7 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
         if (cacheKey(provider) !== key || (generations.get(provider.id) || 0) !== generation) {
           // A completed old-account request is never evidence for the active login.
           if (cacheKey(provider) !== observedScopes.get(provider.id)) { block(provider); await saveCache(); }
-          continue;
+          return;
         }
         result ||= { ok: false, reason: 'Model enumeration unavailable for this adapter.' };
         const entries = catalogEntries(result);
@@ -165,10 +166,10 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
           cache[key] = { checkedAt, models: entries };
           await saveCache();
         }
-        if (cacheKey(provider) !== key || (generations.get(provider.id) || 0) !== generation) { ensureScopes(); continue; }
+        if (cacheKey(provider) !== key || (generations.get(provider.id) || 0) !== generation) { ensureScopes(); return; }
         states.set(provider.id, { providerId: provider.id, label: provider.label || provider.id, status: result.ok ? 'current' : 'unread', checkedAt, reason: result.ok ? null : result.reason, preservingPreviousAvailability: !result.ok && !blockedScopes.has(key), ids: result.ok ? entries.map(m => m.cli) : previous?.ids || [] });
         stateScopes.set(provider.id, key);
-      }
+      }));
       return snapshot();
     })().finally(() => { inflight = null; });
     return inflight;

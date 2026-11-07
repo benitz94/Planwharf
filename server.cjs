@@ -312,7 +312,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     const snapshot = await orchestra.tick();
     return { ok: true, plan: next, version: version(next), snapshot, phase: prepared.phase || (prepared.job ? 'plan' : 'grill') };
   }
-  const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {});
+  let modelsChecking = true;
+  const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {}).finally(() => { modelsChecking = false; });
   const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'] };
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => {
@@ -337,13 +338,17 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const result = await enqueue(() => updates.install(input.confirmRunning === true));
         return json(result.requiresConfirmation ? 409 : 200, result);
       }
-      if (pathname === '/api/orchestrator' || request.method === 'POST' && !/\/(?:stop|abort)(?:\/|$)/.test(pathname) && /^\/api\/(?:orchestrator|supervisor|models|catalog)\//.test(pathname)) {
+      // A read-only snapshot answers at once from the last verified catalog while startup
+      // discovery runs, flagged with modelsChecking. It never launches work; every request
+      // that can launch or report model work as current still waits below.
+      const quickRead = request.method === 'GET' && pathname === '/api/orchestrator' && loc.searchParams.get('readOnly') === '1' && modelsChecking;
+      if (!quickRead && (pathname === '/api/orchestrator' || request.method === 'POST' && !/\/(?:stop|abort)(?:\/|$)/.test(pathname) && /^\/api\/(?:orchestrator|supervisor|models|catalog)\//.test(pathname))) {
         await initialModelsSync;
         await syncAccounts();
       }
       // Wait for the fresh startup catalog before reporting or executing model work.
       // Local shutdown and status polling remain available while discovery runs.
-      if (pathname === '/api/orchestrator' || request.method === 'POST' && ['/api/orchestrator/propose', '/api/orchestrator/approve', '/api/orchestrator/resume', '/api/orchestrator/start', '/api/orchestrator/ask', '/api/orchestrator/lead', '/api/orchestrator/research/approve', '/api/orchestrator/research/resume'].includes(pathname)) await initialModelsSync;
+      if (!quickRead && pathname === '/api/orchestrator' || request.method === 'POST' && ['/api/orchestrator/propose', '/api/orchestrator/approve', '/api/orchestrator/resume', '/api/orchestrator/start', '/api/orchestrator/ask', '/api/orchestrator/lead', '/api/orchestrator/research/approve', '/api/orchestrator/research/resume'].includes(pathname)) await initialModelsSync;
       // Model discovery is explicit or startup-only; status polling never spawns provider CLIs.
       if (refreshModels && request.method === 'POST' && pathname === '/api/orchestrator/propose') await providerModels.refresh();
       // The chat view is the only page. Addresses of the earlier screens open it.
@@ -516,6 +521,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'GET' && pathname === '/api/orchestrator') {
         const snapshot = loc.searchParams.get('readOnly') === '1' ? await orchestra.snapshot() : await enqueue(() => orchestra.tick());
         snapshot.providerModels = providerModels.snapshot();
+        snapshot.modelsChecking = modelsChecking;
         return json(200, snapshot);
       }
       if (request.method === 'GET' && pathname === '/api/orchestrator/activity-sessions') {

@@ -97,12 +97,18 @@ const { createProviderModels } = require('./provider-models.cjs');
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     const origin = 'http://127.0.0.1:' + server.address().port;
     for (let n = 0; n < 3; n++) assert.equal((await (await fetch(origin + '/api/models/status')).json()).checking, true);
+    // A read-only snapshot answers at once, flagged as still checking; it launches nothing.
+    const early = await (await fetch(origin + '/api/orchestrator?readOnly=1')).json();
+    assert.equal(early.modelsChecking, true, 'The early snapshot says models are still being checked');
+    assert.notEqual(early.models.find(item => item.id === 'gpt-5').availabilityVerified, true, 'The early snapshot does not claim verified access');
+    // The full snapshot (a scheduler tick) still waits for the fresh startup check.
     let snapshotReturned = false;
-    const response = fetch(origin + '/api/orchestrator?readOnly=1').then(value => { snapshotReturned = true; return value.json(); });
+    const response = fetch(origin + '/api/orchestrator').then(value => { snapshotReturned = true; return value.json(); });
     await new Promise(resolve => setTimeout(resolve, 30));
-    assert.equal(snapshotReturned, false, 'Initial snapshot must wait for the fresh startup check');
+    assert.equal(snapshotReturned, false, 'The scheduler snapshot must wait for the fresh startup check');
     releaseDiscovery({ ok: true, ids: ['gpt-5'] });
     const checked = await response;
+    assert.equal(checked.modelsChecking, false);
     const model = checked.models.find(item => item.id === 'gpt-5');
     assert.equal(model.available, true); assert.equal(model.unavailableReason, null);
     assert.equal(model.availabilityVerified, true);

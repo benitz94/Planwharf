@@ -38,7 +38,8 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
   - **Files:** files changed since the last Git commit in the project folder.
   - **Settings:**
     - the project folder and the default folder for new projects;
-    - approvals and the theme;
+    - approvals;
+    - the look: dark (the default) or light, and with the dark theme a text colour (White, Cream, Mint, Sky, Amber or Lavender), remembered by this browser;
     - **Move a project** (save it to a file, or open a saved one);
     - updates, **Remove project** and **Quit**.
 

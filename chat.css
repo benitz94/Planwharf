@@ -11,7 +11,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #141715; --surface: #1d211e; --surface-2: #262b27; --text: #ecefeb; --muted: #a2a9a3;
+    --bg: #141715; --surface: #1d211e; --surface-2: #262b27; --text: var(--ink, #ecefeb); --muted: #a2a9a3;
     --line: #313732; --accent: #5fcf98; --accent-text: #0c1a12; --accent-soft: #1b3a2a;
     --warn: #e8b455; --warn-soft: #3a2f1a; --bad: #f08a8a; --bad-soft: #3d2222; --ok: #5fcf98;
     --lead: #a993ff; --lead-soft: #2a2445; --build: #7fa9f5; --build-soft: #1d2a42;
@@ -21,7 +21,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #141715; --surface: #1d211e; --surface-2: #262b27; --text: #ecefeb; --muted: #a2a9a3;
+  --bg: #141715; --surface: #1d211e; --surface-2: #262b27; --text: var(--ink, #ecefeb); --muted: #a2a9a3;
   --line: #313732; --accent: #5fcf98; --accent-text: #0c1a12; --accent-soft: #1b3a2a;
   --warn: #e8b455; --warn-soft: #3a2f1a; --bad: #f08a8a; --bad-soft: #3d2222; --ok: #5fcf98;
   --lead: #a993ff; --lead-soft: #2a2445; --build: #7fa9f5; --build-soft: #1d2a42;
@@ -271,3 +271,10 @@ dialog input, dialog textarea, .card select, .side-body select { font-weight: 40
   .tab { padding: 7px 9px; }
   .tab .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
+
+/* Text colour choice (dark theme). */
+.ink-title { margin: 12px 0 6px; }
+.inks { display: flex; flex-wrap: wrap; gap: 6px; }
+.ink { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 13px; }
+.ink .swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); }
+.ink[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }

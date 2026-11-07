@@ -298,8 +298,10 @@
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
     else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
     else {
-      parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
-      parts.push(`<span class="status-text">${escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
+      // Right after start Planwharf shows saved data while it checks the AI tools again.
+      const checking = state.orchestra?.modelsChecking === true;
+      parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length || checking ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
+      parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
   }
@@ -432,7 +434,8 @@
         <p class="error" id="root-error" role="alert"></p><button type="submit" class="btn btn-small">Save</button></form></div>
       <div class="section">${head('verify', 'r-verify', 'Approvals')}<p class="explain">${mode === 'auto' ? 'The lead may start approved work without asking each time.' : 'The lead asks you before each piece of work starts.'}</p>
         <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
-      <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div></div>
+      <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div>
+        ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}</div>` : ''}</div>
       <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
         <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
         <label class="btn btn-small">${ic('folder')}Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
@@ -466,7 +469,11 @@
     const u = state.updates;
     $('update-notice').innerHTML = u?.available ? `<button type="button" class="link-quiet" data-panel="settings">Update available: ${escape(u.latestVersion || '')}</button>` : '';
   }
-  const currentTheme = () => document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const currentTheme = () => document.documentElement.dataset.theme || 'dark';
+  // Text colours for the dark theme, all readable on the dark background.
+  const INKS = { white: ['White', '#ecefeb'], cream: ['Cream', '#f3e6c8'], mint: ['Mint', '#b4f0d2'], sky: ['Sky', '#bcdcff'], amber: ['Amber', '#ffd38a'], lavender: ['Lavender', '#dccfff'] };
+  const currentInk = () => { const ink = store.get('ink', 'white'); return Object.prototype.hasOwnProperty.call(INKS, ink) ? ink : 'white'; };
+  function setInk(ink) { if (!Object.prototype.hasOwnProperty.call(INKS, ink)) return; store.set('ink', ink); document.documentElement.style.setProperty('--ink', INKS[ink][1]); }
   async function saveFolder(form) {
     const row = project(); if (!row) return;
     const error = $('folder-error'); error.textContent = '';
@@ -621,6 +628,7 @@
     if (action === 'autonomy-on') autonomyOn();
     else if (action === 'autonomy-off') autonomyOff();
     else if (action === 'stop') act(() => post('/api/orchestrator/stop', { projectId: state.projectId }), 'Work stopped and saved.');
+    else if (target.dataset.ink) { setInk(target.dataset.ink); state.sideSig = ''; renderSide(); }
     else if (action === 'theme') { document.documentElement.dataset.theme = currentTheme() === 'dark' ? 'light' : 'dark'; store.set('theme', document.documentElement.dataset.theme); state.sideSig = ''; renderSide(); }
     else if (action === 'toggle-mode') act(() => post('/api/orchestrator/mode', { mode: state.orchestra?.mode === 'auto' ? 'manual' : 'auto' }), 'Saved.');
     else if (action === 'repo-refresh') loadRepo(state.projectId, true);
@@ -677,9 +685,11 @@
   // Tabs keep their name for screen readers and as a tooltip when only the icon fits.
   document.querySelectorAll('.tab').forEach(tab => { tab.title = tab.textContent.trim(); tab.innerHTML = `<span class="tab-label">${escape(tab.textContent.trim())}</span>`; });
   document.querySelectorAll('[data-icon]').forEach(el => el.insertAdjacentHTML('afterbegin', ic(el.dataset.icon)));
-  const theme = store.get('theme', null);
-  if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+  // Dark is the default; light only when the user chose it. The text colour applies to the dark theme.
+  document.documentElement.dataset.theme = store.get('theme', null) === 'light' ? 'light' : 'dark';
+  setInk(currentInk());
   getJson('/api/settings').then(value => { state.settings = value; }).catch(() => {});
-  refresh();
+  // The first read answers at once from saved data; the full check follows.
+  refresh({ tick: false }).then(() => refresh());
   setInterval(() => { if (!document.hidden && !state.sending) refresh(); }, 4000);
 })();

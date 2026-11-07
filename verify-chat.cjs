@@ -212,12 +212,19 @@ const errors = [];
   await command('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape' });
   await until(`document.getElementById('side-panel').hidden`, 'Escape closes the panel');
 
-  // Dark theme keeps text readable.
-  await viewport(1280); await click('.tab[data-panel="settings"]'); await until(`document.querySelector('[data-action="theme"]')`, 'theme button');
+  // Dark is the default; the text colour can be changed; light stays readable.
+  await viewport(1280); await click('.tab[data-panel="settings"]'); await until(`document.querySelector('[data-ink="amber"]')`, 'text colour choices');
+  assert.equal(await evaluate(`document.documentElement.dataset.theme`), 'dark');
+  await click('[data-ink="amber"]');
+  await until(`getComputedStyle(document.body).color === 'rgb(255, 211, 138)'`, 'amber text');
+  await until(`document.querySelector('[data-ink="amber"]')?.getAttribute('aria-pressed') === 'true'`, 'amber marked');
+  await pause(4500); await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-dark.png'), Buffer.from(shot.data, 'base64')));
+  await click('[data-ink="white"]');
   await click('[data-action="theme"]');
+  await until(`document.documentElement.dataset.theme === 'light'`, 'light theme');
   const contrast = await evaluate(`(() => { const s = getComputedStyle(document.body); return [s.backgroundColor, s.color]; })()`);
   assert.notEqual(contrast[0], contrast[1]);
-  await pause(4500); await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-dark.png'), Buffer.from(shot.data, 'base64')));
+  assert.ok(!(await evaluate(`Boolean(document.querySelector('[data-ink]'))`)), 'text colours only in the dark theme');
   assert.deepEqual(errors, [], 'No script errors on the page');
   console.log('verify-chat: ok');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
