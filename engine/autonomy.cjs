@@ -4,6 +4,7 @@
 
 const LIMITS = Object.freeze({ maxMegaTasks: 5, maxNudgesPerHour: 3, maxObjectiveChars: 4000 });
 const HOUR_MS = 3600000;
+const WORK_ENDED = new Set(['worker failure', 'blocked worker']);
 
 function createSettings(sessionId, at) {
   return { enabled: true, sessionId, enabledAt: at, started: false, approved: [], evaluated: [], nudgedKeys: [], nudgeTimes: [], assumptions: [], stopReason: null };
@@ -27,7 +28,9 @@ function nextStep({ mode, sessionId, settings, row, alerts = [], now = Date.now(
   if (settings.sessionId !== sessionId) return none('other-session');
   if (settings.stopReason) return none('stopped');
   if (!row) return none('no-project');
-  if (row.status === 'checkpointed' || row.status === 'paused' || row.megaTask?.pauseRequested) return none('user-paused');
+  // A checkpoint saved because a worker failed or stopped blocked is not the user's pause: the lead hears about it.
+  const workEnded = row.status === 'checkpointed' && WORK_ENDED.has(row.checkpoint?.reason);
+  if ((row.status === 'checkpointed' && !workEnded) || row.status === 'paused' || row.megaTask?.pauseRequested) return none('user-paused');
   if (row.status === 'needs_approval' && row.megaTaskId) {
     if (settings.approved.includes(row.megaTaskId)) return none('already-approved');
     if (settings.approved.length >= LIMITS.maxMegaTasks) return { type: 'limit', reason: 'MEGATASK_LIMIT' };

@@ -21,7 +21,14 @@ test('authority needs the setting, Automatic mode and the session that enabled i
 
 test('a user pause or stop is never overridden, even with an active alert', () => {
   const alerts = [{ key: 'a', title: 't', message: 'm' }];
-  for (const row of [{ status: 'checkpointed', megaTaskId: 'm1' }, { status: 'watching', megaTaskId: 'm1', megaTask: { pauseRequested: true } }]) assert.equal(step(on(), row, { alerts }).type, 'none');
+  for (const row of [{ status: 'checkpointed', megaTaskId: 'm1' }, { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason: 'stop' } }, { status: 'watching', megaTaskId: 'm1', megaTask: { pauseRequested: true } }]) assert.equal(step(on(), row, { alerts }).type, 'none');
+});
+
+test('a slice that ends blocked or failed reaches the lead instead of waiting forever', () => {
+  const alerts = [{ key: 'result-25', title: 'An assignment did not finish successfully', message: 'm' }];
+  for (const reason of ['blocked worker', 'worker failure']) {
+    assert.equal(step(on(), { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason } }, { alerts }).type, 'nudge');
+  }
 });
 
 test('the MegaTask cap stops approval and reports the limit', () => {
