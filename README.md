@@ -2,7 +2,7 @@
 
 **Your team of AI models, in one chat.**
 
-Planwharf is a free app for your computer. You tell a lead model what you want built, in plain words. A crew of AI models builds it, a second model checks the work and fixes what fails, and you follow everything in the chat. You can stop it at any time.
+Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what you want built, in plain words. A crew of AI models builds it, a second model checks the work and fixes what fails, and you follow everything in the chat. You can stop it at any time.
 
 - **You are the captain.** You set the goal and choose the team.
 - **One model builds, another checks.** The checker can come from another company, so mistakes are less likely to slip through.
@@ -17,22 +17,6 @@ Planwharf is a free app for your computer. You tell a lead model what you want b
 2. at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
 
 Then pick your system:
-
-### Windows
-
-1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`** (under **Assets**).
-2. Extract the whole folder.
-3. Double-click **`Planwharf.exe`**.
-
-### macOS
-
-1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`**.
-2. Extract it, open Terminal and run:
-
-   ```sh
-   cd ~/Downloads/Planwharf
-   sh planwharf.sh
-   ```
 
 ### Linux
 
@@ -50,7 +34,23 @@ less install.sh
 sh install.sh
 ```
 
-Windows is the most tested system. macOS and Linux work but have been tested less: please [tell us](https://github.com/benitz94/Planwharf/issues) if something goes wrong.
+### macOS
+
+1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`**.
+2. Extract it, open Terminal and run:
+
+   ```sh
+   cd ~/Downloads/Planwharf
+   sh planwharf.sh
+   ```
+
+### Windows
+
+1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`** (under **Assets**).
+2. Extract the whole folder.
+3. Double-click **`Planwharf.exe`**.
+
+Something not working on your system? Please [tell us](https://github.com/benitz94/Planwharf/issues): so far Windows has been tested the most.
 
 ## First steps
 
