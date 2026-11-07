@@ -106,7 +106,8 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
     if (finalSchema) args.push('--json-schema', finalSchema);
     stdin = prompt;
   } else if (adapter === 'grok') {
-    args = ['--cwd', folder, '-m', cli, '--no-subagents', '--max-turns', lead ? '8' : '50',
+    // A worker gets room for a whole build (50 turns ended real jobs halfway); Claude and Codex workers have no turn cap.
+    args = ['--cwd', folder, '-m', cli, '--no-subagents', '--max-turns', lead ? '8' : '500',
       '--permission-mode', alwaysApprove ? 'auto' : 'dontAsk', '--output-format', lead ? 'streaming-messages-json' : 'plain'];
     if (alwaysApprove) args.push('--always-approve');
     if (lead) args.push('--include-partial-messages');

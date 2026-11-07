@@ -23,7 +23,7 @@ test('Home priority is relink, approval, resume, execution, question, review', a
   assert.equal(homeNext(project, { status: 'needs_approval', canResume: true }, {}), 'Approve the prepared job.');
   assert.equal(homeNext(project, { canResume: true }, {}), 'Resume from checkpoint.');
   assert.equal(homeNext(project, {}, durable), 'Work in progress: Run tests (s).');
-  assert.equal(homeNext(project, {}, {}), 'Answer the current Grill question.');
+  assert.equal(homeNext(project, {}, {}), 'Tell the lead what to build.');
   project.revisions[0].open = [];
   assert.equal(homeNext(project, { next: 'Untrusted invented next action' }, {}), 'Review the Living Plan.');
   const file = path.join(folder, 'file'); await fs.writeFile(file, 'not a directory');
