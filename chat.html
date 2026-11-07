@@ -17,6 +17,7 @@
       </div>
       <button type="button" class="btn btn-primary full" id="new-project" data-icon="plus">New project</button>
       <nav id="project-list" class="project-list" aria-label="Your projects"></nav>
+      <p class="now" id="now" aria-live="off"></p>
       <div class="side-foot">
         <span id="update-notice"></span>
         <button type="button" class="link-quiet" data-panel="settings" data-icon="settings">Settings</button>
@@ -66,7 +67,6 @@
     <form id="project-form" method="dialog">
       <h2 id="project-dialog-title">New project</h2>
       <label>Name<input name="name" required maxlength="120" placeholder="My website"></label>
-      <label>What should the crew build?<textarea name="direction" rows="4" required maxlength="10000" placeholder="Describe the result you want, in plain words."></textarea></label>
       <label>Folder on your computer<input name="folder" maxlength="1000" placeholder="C:\Projects\my-website"></label>
       <p class="muted small" id="folder-help">Use an existing folder, or leave it empty to create one in your projects folder.</p>
       <p class="error" id="project-error" role="alert"></p>

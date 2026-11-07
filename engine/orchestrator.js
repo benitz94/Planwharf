@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const autonomy = require('./autonomy.cjs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { AsyncLocalStorage } = require('node:async_hooks');
 const Plan = require('../plan.js');
 const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
@@ -1106,6 +1107,10 @@ function createOrchestrator(options) {
           providerPolicies: parsed.providerPolicies || {},
           modelRoles: parsed.modelRoles || {},
           accountModelRoles: parsed.accountModelRoles || {},
+          projectTeams: parsed.projectTeams && typeof parsed.projectTeams === 'object' && !Array.isArray(parsed.projectTeams)
+            ? Object.fromEntries(Object.entries(parsed.projectTeams).filter(([, team]) => team && typeof team === 'object' && team.roles && typeof team.roles === 'object')
+              .map(([id, team]) => [id, { orchestratorId: typeof team.orchestratorId === 'string' ? team.orchestratorId : null, roles: team.roles }]))
+            : {},
           accountBindings: parsed.accountBindings || {},
           lastAccountKeys: parsed.lastAccountKeys || {},
           projects: parsed.projects && typeof parsed.projects === 'object'
@@ -1131,6 +1136,21 @@ function createOrchestrator(options) {
   store.providerPolicies ||= {};
   store.modelPolicies ||= {};
   store.modelRoles ||= {};
+  // Each project may have its own team (lead and roles). Without one it uses the shared team.
+  store.projectTeams ||= {};
+  const teamScope = new AsyncLocalStorage();
+  const teamFor = (projectId = teamScope.getStore()) => projectId && Object.hasOwn(store.projectTeams, projectId) ? store.projectTeams[projectId] : null;
+  const inTeam = (projectId, fn) => typeof projectId === 'string' && projectId ? teamScope.run(projectId, fn) : fn();
+  const teamKey = (scope, id) => (scope || '-') + '|' + id;
+  const leadId = () => { const team = teamFor(); return team ? team.orchestratorId || null : store.orchestratorId || null; };
+  function ensureTeam(projectId) {
+    if (!teamFor(projectId)) {
+      // A new project team starts as a copy of the shared team.
+      const list = teamScope.exit(() => roster());
+      store.projectTeams[projectId] = { orchestratorId: store.orchestratorId || null, roles: Object.fromEntries(list.map(item => [teamKey(item.accountScope, item.id), { ...item.roles }])) };
+    }
+    return store.projectTeams[projectId];
+  }
   store.accountModelRoles ||= {};
   store.accountBindings ||= {};
   store.lastAccountKeys ||= {};
@@ -1549,8 +1569,8 @@ function createOrchestrator(options) {
 
   function leadModel() {
     const list = roster();
-    if (store.orchestratorId) {
-      const picked = list.find(item => item.id === store.orchestratorId);
+    if (leadId()) {
+      const picked = list.find(item => item.id === leadId());
       if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
@@ -1565,6 +1585,7 @@ function createOrchestrator(options) {
   }
 
   function roster() {
+    const team = teamFor();
     return normalizeModels(models).map(item => {
       const legacyEnabled = store.enabled[item.id] ?? item.enabled;
       const provider = providerDefinitions.find(p => p.id === (item.providerId || item.provider));
@@ -1579,7 +1600,8 @@ function createOrchestrator(options) {
           first ? withModelRoles(model, store.modelRoles[model.id] || model.roles || ((store.enabled[model.id] ?? model.enabled) ? {} : emptyRoles())).roles : emptyRoles()]));
         persist();
       }
-      const permissions = scope ? store.accountModelRoles[scope][item.id] || emptyRoles()
+      const permissions = team ? team.roles[teamKey(scope, item.id)] || emptyRoles()
+        : scope ? store.accountModelRoles[scope][item.id] || emptyRoles()
         : provider && store.accountBindings[provider.id] ? emptyRoles() : legacy;
       item.accountKey = account?.key || null;
       item.accountType = account?.type || 'unread';
@@ -1833,9 +1855,11 @@ function createOrchestrator(options) {
       thinking: thinkingLive ? clone(thinkingLive) : null,
       asking: Boolean(thinkingLive),
       orchestratorId: lead ? lead.id : null,
-      selectedOrchestratorId: store.orchestratorId || null,
+      selectedOrchestratorId: leadId(),
+      teamProjectId: teamScope.getStore() || null,
+      ownTeam: Boolean(teamFor()),
       goldModelId: store.goldModelId || null,
-      orchestratorUnavailableReason: store.orchestratorId && !lead ? 'Selected orchestrator is unavailable or blocked by its usage policy. Choose an eligible model or configure an explicit fallback.' : null,
+      orchestratorUnavailableReason: leadId() && !lead ? 'Selected orchestrator is unavailable or blocked by its usage policy. Choose an eligible model or configure an explicit fallback.' : null,
       orchestratorLabel: lead ? lead.label : ORCH_NAME,
       orchestrators: roster().filter(canOrchestrate).map(item => ({ id: item.id, label: item.label, providerId: item.providerId || item.provider, plan: item.plan })),
       projects: projects.map(item => {
@@ -2355,7 +2379,7 @@ function createOrchestrator(options) {
     let plan = await opts.readPlan();
     rememberStartup(plan);
     refreshRepositoryMetadata(plan, projectId);
-    if (!shuttingDown) for (const item of notebookProjects(plan).filter(item => !projectId || item.project.id === projectId)) decide(item);
+    if (!shuttingDown) for (const item of notebookProjects(plan).filter(item => !projectId || item.project.id === projectId)) inTeam(item.project.id, () => decide(item));
     refreshPhase2Research(plan, !shuttingDown, projectId);
     refreshResearch();
     if (typeof opts.completeTasks === 'function') {
@@ -2500,7 +2524,7 @@ function createOrchestrator(options) {
       const view = snapshot(await opts.readPlan());
       for (const row of view.projects) {
         if (!store.autonomy[row.id]?.enabled) continue;
-        try { await runAutonomyStep(row, view); }
+        try { await inTeam(row.id, () => runAutonomyStep(row, view)); }
         catch (error) { stopAutonomy(row.id, store.autonomy[row.id], 'AUTONOMY_ERROR: ' + error.message); }
       }
     } finally { autonomyRunning = false; }
@@ -2605,6 +2629,7 @@ function createOrchestrator(options) {
   }
 
   async function ask(question, projectId, chatSessionId, requestMode = 'default', requestedGrillKind = null) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => ask(question, projectId, chatSessionId, requestMode, requestedGrillKind));
     if (requestedGrillKind !== null && !['me', 'docs'].includes(requestedGrillKind)) return { ok: false, reason: 'Invalid Grill kind.' };
     if (!['default', 'gold'].includes(requestMode)) return { ok: false, reason: 'Invalid request mode.' };
     const selectedGold = requestMode === 'gold' ? roster().find(model => model.id === store.goldModelId) : null;
@@ -2862,7 +2887,22 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     };
   }
 
-  async function setOrchestrator(id) {
+  async function setOrchestrator(id, projectId) {
+    if (projectId) {
+      ensureTeam(projectId);
+      return inTeam(projectId, async () => {
+        const team = teamFor();
+        if (typeof id !== 'string' || !id.trim()) team.orchestratorId = null;
+        else {
+          const found = roster().find(item => item.id === id);
+          if (!found) return { ok: false, reason: 'model not present' };
+          if (!canOrchestrate(found)) return { ok: false, reason: 'model not eligible' };
+          team.orchestratorId = found.id;
+        }
+        persist();
+        return { ok: true, snapshot: await tick() };
+      });
+    }
     if (typeof id !== 'string' || !id.trim()) {
       store.orchestratorId = null;
       persist();
@@ -2906,7 +2946,23 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, snapshot: snapshot(await opts.readPlan()) };
   }
 
-  async function setModelRoles(id, roles) {
+  async function setModelRoles(id, roles, projectId) {
+    if (projectId) {
+      ensureTeam(projectId);
+      return inTeam(projectId, async () => {
+        const team = teamFor();
+        const model = roster().find(model => model.id === id);
+        if (!model) return { ok: false, reason: 'Model not present.' };
+        if (!roles || typeof roles !== 'object' || Array.isArray(roles) || !Object.keys(roles).length || Object.entries(roles).some(([role, enabled]) => !ROLE_IDS.includes(role) || typeof enabled !== 'boolean')) return { ok: false, reason: 'Invalid model role settings.' };
+        const eligibility = roleEligibility(model);
+        for (const [role, enabled] of Object.entries(roles)) if (enabled && !eligibility[role]) return { ok: false, reason: `This model is not compatible with the ${role} role.` };
+        const key = teamKey(model.accountScope, id);
+        team.roles[key] = { ...model.roles, ...roles };
+        if (team.orchestratorId === id && !withModelRoles(model, team.roles[key]).roles.orchestrator) team.orchestratorId = null;
+        persist();
+        return { ok: true, snapshot: snapshot(await opts.readPlan()) };
+      });
+    }
     const model = roster().find(model => model.id === id);
     if (!model) return { ok: false, reason: 'Model not present.' };
     if (!roles || typeof roles !== 'object' || Array.isArray(roles) || !Object.keys(roles).length || Object.entries(roles).some(([role, enabled]) => !ROLE_IDS.includes(role) || typeof enabled !== 'boolean')) return { ok: false, reason: 'Roles must contain Orchestrator, Worker, Reviewer or Supervisor boolean flags.' };
@@ -2959,6 +3015,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   }
 
   async function approve(projectId, megaTaskId, policy = null) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => approve(projectId, megaTaskId, policy));
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
     const plan = await opts.readPlan();
     const item = notebookProjects(plan).find(row => row.project.id === projectId);
@@ -3063,6 +3120,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   }
 
   async function startAutoTask(projectId, options) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => startAutoTask(projectId, options));
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'project not found' };
     const plan = await opts.readPlan();
     const item = notebookProjects(plan).find(row => row.project.id === projectId);
@@ -3133,6 +3191,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   }
 
   async function resume(projectId, request = {}) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => resume(projectId, request));
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
     const plan = await opts.readPlan();
     const item = notebookProjects(plan).find(row => row.project.id === projectId);
@@ -3214,6 +3273,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   }
 
   async function stop(projectId, megaTaskId) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => stop(projectId, megaTaskId));
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
     const plan = await opts.readPlan();
     const item = notebookProjects(plan).find(row => row.project.id === projectId);
@@ -3359,7 +3419,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { tick, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

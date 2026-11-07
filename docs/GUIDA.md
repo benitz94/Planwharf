@@ -17,7 +17,7 @@ Si apre una finestra con la chat al centro. Per qualche secondo in basso compare
 
 ## 2. Lo schermo in breve
 
-- **A sinistra:** i tuoi progetti, ognuno con il suo stato sotto il nome (pronto, in lavorazione, finito…), e il pulsante **New project**.
+- **A sinistra:** i tuoi progetti, ognuno con il suo stato sotto il nome (pronto, in lavorazione, finito…), il pulsante **New project** e, in fondo, il giorno e l'ora.
 - **Al centro:** la conversazione con il *lead*, il modello che coordina. Qui compaiono anche le schede del lavoro: la proposta, la squadra al lavoro, il risultato e gli avvisi.
 - **In basso:** un solo pulsante principale, che cambia a seconda del momento, e la casella per scrivere.
 - **In alto a destra:** cinque pannelli che si aprono accanto alla chat. Quando lo spazio è poco mostrano solo l'icona.
@@ -29,14 +29,14 @@ Si apre una finestra con la chat al centro. Per qualche secondo in basso compare
 
 ## 3. Scegliere la squadra
 
-Apri **Team**.
+Apri **Team**. **Ogni progetto ha la sua squadra**: quello che cambi qui vale solo per il progetto aperto, il cui nome è scritto in cima al pannello. Un progetto nuovo parte con la squadra di base.
 
 1. **Lead:** scegli il modello che parla con te e organizza il lavoro.
 2. **Build** (costruttore, blu): premilo su almeno un modello. Scrive il codice e i test.
 3. **Verify** (controllore, arancione): premilo su un altro modello, meglio se di un'altra azienda. Ricontrolla il lavoro e corregge quello che non va. Senza controllore il lavoro parte lo stesso, ma lo controllano solo i test.
 4. **Review** (verde acqua) e **Watch** (rosa) sono facoltativi: il primo legge il lavoro e segnala problemi senza toccare i file, il secondo sorveglia il lavoro in corso.
 
-I modelli senza ruolo stanno in **panchina** (*Bench*). Per toglierne uno dalla squadra premi **Bench**, oppure scrivi in chat `metti <nome> in panchina`.
+Il pannello è diviso in due: **On the team** (in squadra, con il bordo colorato) e **Bench** (in panchina, più chiari e tratteggiati). Per mandare un modello in panchina premi **Bench**, oppure scrivi in chat `metti <nome> in panchina`. Per riportarlo in squadra premi uno dei suoi ruoli.
 
 In **AI tools** accendi o spegni ogni strumento. Se uno strumento su cui hai fatto l'accesso non compare, premi **Look for models again**.
 
@@ -51,11 +51,14 @@ La chiave resta nel tuo computer: Planwharf ne salva solo il nome della variabil
 
 ## 4. Creare un progetto
 
-Premi **New project** e compila:
+Premi **New project** e compila solo:
 
 - **Name**: il nome, per esempio `Sito ricette`;
-- **What should the crew build?**: cosa vuoi, a parole tue, e come si controlla che funzioni. Esempio: *"Una pagina HTML con un contatore, un pulsante per aumentare e uno per azzerare. Nessuna dipendenza. Prova entrambi i pulsanti."*;
 - **Folder on your computer**: la cartella del progetto. Se la lasci vuota, Planwharf ne crea una nella cartella predefinita, che si imposta in **Settings**.
+
+Poi scrivi in chat cosa vuoi, a parole tue, e come si controlla che funzioni. Esempio: *"Una pagina HTML con un contatore, un pulsante per aumentare e uno per azzerare. Nessuna dipendenza. Prova entrambi i pulsanti."*
+
+Il lead ti risponde, ma **una conversazione non fa partire niente**. Sotto il tuo ultimo messaggio compare **Use as the goal** (usa come obiettivo): premilo quando il lead ha capito, e il tuo messaggio diventa l'obiettivo del progetto.
 
 Per la prima prova usa una cartella nuova, non un progetto importante.
 
@@ -75,7 +78,9 @@ La scheda **Crew at work** (squadra al lavoro) mostra:
 - ogni passo, con il colore del ruolo, il modello e lo stato (*waiting* in attesa, *working* al lavoro, *done* fatto);
 - sotto **What … is doing**, cosa sta facendo il modello in quel momento, a parole semplici.
 
-Intanto puoi continuare a scrivere al lead. Per fermare tutto premi **Stop work** o **Stop the crew**: il lavoro fatto fin lì resta salvato, e **Resume** riprende dal punto in cui si era fermato.
+Intanto puoi continuare a scrivere al lead. Per fermare tutto premi **Stop work** o **Stop the crew**, oppure scrivi in chat `fermati` (o `stop`). Il lavoro fatto fin lì resta salvato, e **Resume** riprende dal punto in cui si era fermato.
+
+Se devi andare via, scrivi per esempio `fermati tra 10 minuti`. In basso compare l'ora in cui la squadra si fermerà, con **Cancel** per annullare. Il conto alla rovescia funziona finché la finestra di Planwharf resta aperta.
 
 Se Planwharf nota qualcosa di strano, per esempio nessun progresso da dieci minuti o un passo fallito, compare la scheda **Something needs a look**. È un invito a dare un'occhiata, non la prova che qualcosa si è rotto. Con **Ignore** la nascondi.
 
@@ -85,7 +90,8 @@ Alla fine compare la scheda **Work finished** con:
 
 - i passi completati;
 - il tempo impiegato;
-- quanti file sono cambiati e non ancora salvati in Git.
+- quanti file sono cambiati e non ancora salvati in Git;
+- **What this work used** (cosa ha consumato): per ogni modello il tempo, i token e la quota prima → dopo. Se uno strumento non comunica un dato, c'è scritto "not reported".
 
 Premi **See changed files** per vedere quali sono, poi apri la cartella del progetto e prova il risultato.
 
@@ -104,10 +110,10 @@ Se uno strumento non comunica un dato, vedi "not reported": Planwharf non stima 
 
 In **Settings** trovi:
 
-- **This project:** la cartella del progetto;
+- **This project:** la cartella del progetto e, se vuoi, il link al repository GitHub;
 - **New projects:** la cartella in cui creare i progetti nuovi;
 - **Approvals:** se l'interruttore è acceso, il lead può far partire da solo il lavoro già approvato;
-- **Look:** lo sfondo, scuro (predefinito) o chiaro. Con lo sfondo scuro scegli anche il colore del testo: bianco, crema, menta, cielo, ambra o lavanda;
+- **Look:** lo sfondo, scuro (predefinito) o chiaro. Con lo sfondo scuro scegli anche il colore del testo: tredici colori pronti, oppure **Any colour…** per sceglierne uno qualsiasi;
 - **Move a project:** salva un progetto in un file, o aprine uno salvato su un altro computer. Il codice resta nella cartella del progetto;
 - **Updates:** gli aggiornamenti dell'app;
 - **Remove project** e **Quit:** chiedono una seconda conferma. Rimuovere un progetto non cancella la sua cartella. Chiudendo, il lavoro non finito viene salvato e si riprende la volta dopo.
@@ -124,6 +130,8 @@ Questi comandi li esegue Planwharf da solo, senza chiamare nessun modello:
 | `file cambiati`, `files` | apre Files |
 | `impostazioni`, `settings` | apre Settings |
 | `metti <modello> in panchina` | toglie tutti i ruoli a quel modello, dopo una conferma |
+| `fermati`, `stop`, `fermati adesso` | ferma subito il lavoro, che resta salvato |
+| `fermati tra 10 minuti` | ferma il lavoro tra 10 minuti; **Cancel** per annullare |
 
 Tutto il resto va al lead.
 
@@ -131,7 +139,8 @@ Tutto il resto va al lead.
 
 | Cosa vedi | Cosa fare |
 | --- | --- |
-| **Let the crew do it** è grigio | Leggi la riga accanto: dice cosa manca. |
+| **Let the crew do it** è grigio | Leggi la riga accanto: dice cosa manca. Spesso manca l'obiettivo: premi **Use as the goal** sotto il tuo messaggio. |
+| Ho scritto in chat ma non parte niente | È normale: la chat è una conversazione. Premi **Use as the goal**, poi **Let the crew do it**. |
 | Resta **Checking your AI tools…** | Aspetta qualche secondo: Planwharf sta interrogando gli strumenti AI. |
 | Manca un modello in Team | Fai l'accesso nello strumento, controlla che sia **On** e premi **Look for models again**. |
 | Un passo è fallito | Leggi il passo e l'avviso, poi di' al lead cosa cambiare oppure premi **Resume**. |

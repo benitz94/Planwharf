@@ -115,11 +115,17 @@ const errors = [];
   clean(await layout(), 'desktop with team');
   await evaluate(`(() => { const select = document.querySelector('#side-body [data-lead-select]'); select.value = 'lead-a'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
   await until(`document.querySelector('#side-body .badge.lead-badge')?.closest('.member')?.innerText.includes('Lead A')`, 'lead badge');
-  const roles = async id => (await (await fetch(appUrl + '/api/orchestrator?readOnly=1')).json()).models.find(model => model.id === id).roles;
+  await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-team.png'), Buffer.from(shot.data, 'base64')));
+  const wrapped = await evaluate(`[...document.querySelectorAll('#side-body .member .label, #side-body .member .meta')].filter(el => el.getClientRects().length > 1 || el.offsetHeight > 2 * parseFloat(getComputedStyle(el).lineHeight || '20') - 2).map(el => el.innerText)`);
+  assert.deepEqual(wrapped, [], 'Team names and details fit on one line');
+  const roles = async (id, team = projectId) => (await (await fetch(appUrl + '/api/orchestrator?readOnly=1' + (team ? '&team=' + encodeURIComponent(team) : ''))).json()).models.find(model => model.id === id).roles;
+  const sharedWorker = (await roles('check-b', null)).worker;
+  assert.match(await evaluate(`document.querySelector('#side-body .team-scope')?.innerText || ''`), /Team for Recipe site/);
   if ((await roles('check-b')).worker) await click(`[data-role-toggle="check-b"][data-role="worker"]`);
   await until(`document.querySelector('[data-role-toggle="check-b"][data-role="worker"]')?.getAttribute('aria-pressed') === 'false'`, 'checker no longer builds');
   assert.equal((await roles('check-b')).worker, false);
   assert.equal((await roles('check-b')).verifier, true);
+  assert.equal((await roles('check-b', null)).worker, sharedWorker, 'A change for one project leaves the shared team as it was');
 
   // Settings: set the folder without leaving the page.
   await click('.tab[data-panel="settings"]');
@@ -132,6 +138,12 @@ const errors = [];
   await until(`document.querySelector('#thread .dots') !== null`, 'pending turn');
   await until(`document.getElementById('thread').innerText.includes('Fine: a recipe site')`, 'lead answer', 15000);
   assert.equal(calls.length, 1);
+  // A chat message starts nothing; the page says so and offers to make it the goal.
+  await until(`document.querySelector('[data-action="use-goal"]') && document.getElementById('thread').innerText.includes('nothing has started yet')`, 'goal hint');
+  await click('[data-action="use-goal"]');
+  await until(`!document.querySelector('[data-action="use-goal"]')`, 'goal saved');
+  assert.equal((await (await fetch(appUrl + '/api/orchestrator?readOnly=1')).json()).projects.find(row => row.id === projectId).goal, 'A recipe site with a list and a detail page.');
+  assert.match(await evaluate(`document.getElementById('now').textContent`), /\d{1,2}[:.]\d{2}/, 'Day and time are shown');
 
   // Crew: proposal, approval, live work with progress, then the result.
   const proposed = await fetch(appUrl + '/api/orchestrator/propose', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId, title: 'Recipe site, first version', goal: 'List and detail pages',
@@ -142,6 +154,12 @@ const errors = [];
   await click('[data-action="approve"]');
   await until(`document.querySelector('.card.crew.live')?.innerText.includes('0 of 2 steps done')`, 'live crew card', 15000);
   await until(`document.querySelector('.card.crew.live .preview pre')?.innerText.includes('recipe list')`, 'builder preview', 15000);
+  // A timed stop shows a countdown and can be cancelled, without a model call.
+  await say('fermati tra 5 minuti');
+  await until(`document.querySelector('#action-bar .timed-stop')?.innerText.includes('in 5 min')`, 'timed stop countdown');
+  await click('[data-action="cancel-timed-stop"]');
+  await until(`!document.querySelector('#action-bar .timed-stop')`, 'timed stop cancelled');
+  assert.equal(calls.length, 1, 'Stop commands never call a model');
   clean(await layout(), 'crew at work');
   await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-crew.png'), Buffer.from(shot.data, 'base64')));
   finish(launches[0]);
@@ -200,7 +218,7 @@ const errors = [];
   await say('bench checker');
   await until(`document.getElementById('thread').innerText.includes('Put Checker B on the bench?')`, 'bench confirmation');
   await click('[data-action="confirm-yes"]');
-  await until(`fetch('/api/orchestrator?readOnly=1').then(r => r.json()).then(s => s.models.find(m => m.id === 'check-b').roles.verifier === false)`, 'checker benched');
+  await until(`fetch('/api/orchestrator?readOnly=1&team=${projectId}').then(r => r.json()).then(s => s.models.find(m => m.id === 'check-b').roles.verifier === false)`, 'checker benched');
   assert.equal(calls.length, 1, 'Commands never call a model');
 
   // Narrow screens: no overlap, the side panel covers the chat on purpose and closes with Escape.
@@ -219,6 +237,7 @@ const errors = [];
   await until(`getComputedStyle(document.body).color === 'rgb(255, 211, 138)'`, 'amber text');
   await until(`document.querySelector('[data-ink="amber"]')?.getAttribute('aria-pressed') === 'true'`, 'amber marked');
   await pause(4500); await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-dark.png'), Buffer.from(shot.data, 'base64')));
+  assert.ok(await evaluate(`Boolean(document.querySelector('[data-ink-custom]'))`), 'Any colour can be picked');
   await click('[data-ink="white"]');
   await click('[data-action="theme"]');
   await until(`document.documentElement.dataset.theme === 'light'`, 'light theme');

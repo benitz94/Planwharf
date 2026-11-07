@@ -218,11 +218,12 @@ a { color: var(--accent); }
 .seg.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ok); font-weight: 600; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .switch .knob, .switch .knob::after { transition: none; } }
 .section .explain { font-size: 13px; color: var(--muted); margin: -4px 0 10px; }
-.member { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
+.member { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--surface); box-shadow: var(--shadow); }
 .member .info { flex: 1; min-width: 0; }
-.member .label { font-weight: 600; overflow-wrap: anywhere; }
+.member .label { font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; overflow-wrap: normal; word-break: normal; }
+.member .label .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .member .meta { font-size: 12px; color: var(--muted); }
-.member .chips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.member .chips { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-start; align-items: center; }
 .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 9px; font-size: 12px; cursor: pointer; }
 .chip { display: inline-flex; align-items: center; }
 .chip[aria-pressed="true"] { background: var(--role-soft, var(--accent-soft)); border-color: var(--role, var(--accent)); color: var(--role, var(--ok)); font-weight: 600; }
@@ -278,3 +279,26 @@ dialog input, dialog textarea, .card select, .side-body select { font-weight: 40
 .ink { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 13px; }
 .ink .swatch { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); }
 .ink[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+/* On the team vs bench: the team is bright with an accent edge, the bench is quiet. */
+.team-scope { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); margin: 0 0 12px; }
+.team-box .member.on-team { border-left: 4px solid var(--accent); }
+.bench-box .member.benched { opacity: .72; box-shadow: none; background: transparent; border-style: dashed; padding: 8px 10px; }
+.bench-box .member.benched:hover, .bench-box .member.benched:focus-within { opacity: 1; }
+.bench-box .member.benched .bring { margin-right: 2px; }
+.bench-list > summary { cursor: pointer; margin-bottom: 8px; color: var(--muted); }
+/* Day and time at the bottom of the project list. */
+.now { margin: auto 0 6px; font-size: 12px; color: var(--muted); }
+.now + .side-foot { margin-top: 0; }
+/* Timed stop and "nothing started yet" hint. */
+.timed-stop { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 8px; border-radius: 999px; background: var(--surface-2); }
+.card.hint { padding: 10px 14px; border-style: dashed; }
+.card.hint p { display: flex; gap: 6px; align-items: center; margin: 0 0 8px; }
+/* What a piece of work used. */
+.usage-summary { margin: 10px 0; }
+.usage-summary summary { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.usage-summary ul.plain { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+.usage-summary li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Any text colour. */
+.ink.custom { position: relative; }
+.ink.custom input[type="color"] { width: 18px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }

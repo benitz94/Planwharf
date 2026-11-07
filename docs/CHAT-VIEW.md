@@ -17,12 +17,13 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
 
 ## The screen
 
-- **Left:** your projects, **+ New project**, and an update link when a new version is out.
+- **Left:** your projects, **+ New project**, the day and time, and an update link when a new version is out (not shown in a Git checkout).
 - **Centre:** the conversation with the lead. The work appears here as it happens:
   - one short line for each milestone;
   - a **proposal card** with the steps and who does each, and **Approve and start**;
   - a **Crew at work** card with a progress bar, each step's model and state, and what the running model is doing, in plain words;
-  - a **Work finished** card with steps done, time taken and files not yet committed;
+  - a **Work finished** card with steps done, time taken, files not yet committed, and **What this work used**: per model the time, tokens and quota before → after ("not reported" when the provider does not say);
+  - under your last message, while nothing runs, **Use as the goal**. A chat message never starts work by itself; this button makes it the project goal.
   - a **Something needs a look** card when Planwharf's own checks see stalled, failed or conflicting work. These checks use no model. **Ignore** hides one warning.
 - **Bottom:** one main button, depending on the state:
   - **Let the crew do it** starts [project autonomy](PROJECT-AUTONOMY.md);
@@ -32,14 +33,14 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
 
   The line next to the button says why when something is missing.
 - **Top right:** buttons that open one panel beside the chat:
-  - **Team:** the lead, each model's roles, the bench, the AI tools with an On/Off switch, **Look for models again**, and **Connect a model by API**.
+  - **Team:** the team of the selected project. Each project has its own lead and roles; a new project starts from the shared team. **On the team** and **Bench** are shown apart. The panel also has the AI tools with an On/Off switch, **Look for models again**, and **Connect a model by API**.
   - **Progress:** the current state, the steps and recent activity.
   - **Usage:** quota left per provider, plus calls, time and output tokens. A value the provider does not report shows "not reported", never an estimate.
   - **Files:** files changed since the last Git commit in the project folder.
   - **Settings:**
-    - the project folder and the default folder for new projects;
+    - the project folder, an optional GitHub repository link, and the default folder for new projects;
     - approvals;
-    - the look: dark (the default) or light, and with the dark theme a text colour (White, Cream, Mint, Sky, Amber or Lavender), remembered by this browser;
+    - the look: dark (the default) or light, and with the dark theme a text colour: thirteen presets or any colour you pick, remembered by this browser;
     - **Move a project** (save it to a file, or open a saved one);
     - updates, **Remove project** and **Quit**.
 
@@ -57,6 +58,8 @@ Short commands are handled by Planwharf itself, without calling a model:
 | `files`, `changed files`, `file cambiati` | Opens Files. |
 | `settings`, `impostazioni` | Opens Settings. |
 | `bench <model>`, `metti <model> in panchina` | Asks you to confirm, then removes all of the model's roles. |
+| `stop`, `fermati`, `fermati adesso` | Stops the work now; it stays saved. |
+| `stop in 10 minutes`, `fermati tra 10 minuti` | Stops the work at that time. A countdown with **Cancel** shows by the main button. It runs while the Planwharf window is open. |
 
 Anything else goes to the lead.
 
@@ -65,8 +68,9 @@ Anything else goes to the lead.
 The first screen lists what is missing, each with a button that opens the right panel:
 
 1. choose the lead (Team);
-2. create a project with a name, what to build and a folder;
-3. give at least one model the Build role (Team).
+2. create a project with a name and a folder;
+3. tell the lead what to build, then press **Use as the goal**;
+4. give at least one model the Build role (Team).
 
 Then press **Let the crew do it**. To let the lead interview you about the goal first, press **Ask me questions first**.
 

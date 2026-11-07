@@ -26,11 +26,14 @@ Models you do not use stay on the **bench**. If a tool you signed in to is missi
 
 ## 4. Create a project
 
-Press **+ New project** and fill in:
+Press **+ New project** and fill in only:
 
 - **Name**, for example `Counter`;
-- **What should the crew build?**, in plain words, with how to check it. For example: *"A local HTML page with a counter, an increment button and a reset button. No dependencies. Test both buttons."*
 - **Folder on your computer**: a new, empty folder. Leave it empty to create one in the default projects folder (Settings).
+
+Then tell the lead in the chat what to build, in plain words, with how to check it. For example: *"A local HTML page with a counter, an increment button and a reset button. No dependencies. Test both buttons."*
+
+A chat message never starts work by itself. Under your last message, press **Use as the goal**: the message becomes the project goal.
 
 For your first try, use a new folder rather than an important repository.
 

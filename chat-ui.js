@@ -29,7 +29,7 @@
   }
   async function refresh({ tick = true } = {}) {
     try {
-      const [orchestra, plan] = await Promise.all([getJson(tick ? '/api/orchestrator' : '/api/orchestrator?readOnly=1'), getJson('/api/plan')]);
+      const [orchestra, plan] = await Promise.all([getJson((tick ? '/api/orchestrator' : '/api/orchestrator?readOnly=1') + (state.projectId ? (tick ? '?' : '&') + 'team=' + encodeURIComponent(state.projectId) : '')), getJson('/api/plan')]);
       state.orchestra = orchestra; state.plan = plan; state.loaded = true;
       const projects = orchestra.projects || [];
       if (!projects.some(row => row.id === state.projectId)) state.projectId = projects[0]?.id || null;
@@ -170,17 +170,17 @@
       <p>Planwharf runs a team of AI models for you. You give the goal; a <b class="c-lead">lead</b> plans it, a <b class="c-build">builder</b> writes the code and a <b class="c-verify">verifier</b> checks and fixes it.</p>
       <ol class="steps numbered">
         ${step(1, Boolean(current), 'Choose your lead.')}
-        ${step(2, hasProject, 'Create a project: a name, what to build, and a folder.')}
-        ${step(3, false, 'Press <b>Let the crew do it</b> and watch the work here.')}
+        ${step(2, hasProject, 'Create a project: a name and a folder.')}
+        ${step(3, false, 'Tell the lead what to build, press <b>Use as the goal</b>, then <b>Let the crew do it</b>.')}
       </ol>
       <div class="row"><label class="sr-only" for="welcome-lead">Lead</label><select id="welcome-lead" data-lead-select><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>
       ${hasProject ? '' : `<button type="button" class="btn btn-primary" data-action="new-project">${ic('plus')}New project</button>`}</div></div>`;
   }
   function startCard(row) {
     const missing = readiness(row);
-    return `<div class="card"><h3 class="head">${tile('folder', 't-accent')}<span>${escape(row.name)}</span></h3><p>${escape(row.goal || 'No goal written yet.')}</p>
+    return `<div class="card"><h3 class="head">${tile('folder', 't-accent')}<span>${escape(row.name)}</span></h3><p>${hasGoal(row) ? escape(row.goal) : 'Write below what you want built. When the lead has understood, press <b>Use as the goal</b> under your message.'}</p>
       <p class="muted small path">Folder: ${escape(row.folder || 'not set')}</p>
-      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" data-panel="${item.panel}">${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}
+      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" ${item.panel ? `data-panel="${item.panel}"` : `data-action="${item.action}"`}>${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}
       <div class="row"><button type="button" class="btn" data-action="grill" ${lead() ? '' : 'disabled'}>Ask me questions first</button></div></div>`;
   }
   function readiness(row) {
@@ -188,15 +188,66 @@
     if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
+    if (row && !hasGoal(row)) missing.push({ text: 'Tell the lead what to build, then press “Use as the goal” under your message.', fix: 'Write what to build', action: 'focus-input' });
     return missing;
+  }
+  // A project created with only a name and a folder has no goal until the user gives one in the chat.
+  const NO_GOAL = 'Not set yet: tell the lead in the chat what to build.';
+  const hasGoal = row => Boolean(row?.goal && row.goal.trim() && row.goal !== NO_GOAL);
+  async function useAsGoal(text) {
+    const row = project(); if (!row || !text) return;
+    await act(async () => {
+      const { version } = await getJson('/api/plan');
+      return post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal from the chat', direction: text, state: 'Not started.', closed: [], open: [] } });
+    }, 'Goal saved. Press “Let the crew do it” to start.');
   }
 
   // The current piece of work: proposal, live crew, or the result.
+  // "Running tests (x3)" instead of three identical lines.
+  function foldRepeats(lines) {
+    const out = [];
+    for (const line of lines) { const last = out.at(-1); if (last && last.text === line) last.count++; else out.push({ text: line, count: 1 }); }
+    return out.map(item => item.count > 1 ? `${item.text} (x${item.count})` : item.text);
+  }
+  // What this piece of work used, per model: time, tokens and quota before -> after.
+  // A value the provider does not report stays "not reported"; nothing is estimated.
+  function rememberQuota(mega, subs) {
+    const key = 'quotaStart:' + mega.id;
+    const saved = store.get(key, null) || {};
+    let changed = false;
+    for (const id of new Set(subs.map(sub => sub.assignedModelId).filter(Boolean))) {
+      if (Object.hasOwn(saved, id)) continue;
+      const model = models().find(item => item.id === id);
+      saved[id] = model ? quotaLeft(model) : null; changed = true;
+    }
+    if (changed) store.set(key, saved);
+  }
+  function usageSummary(mega, subs) {
+    const records = (state.orchestra?.aiUsage?.recent || []).filter(item => item.megaTaskId === mega.id);
+    const ids = [...new Set([...subs.map(sub => sub.assignedModelId), ...records.map(item => item.modelId)].filter(Boolean))];
+    if (!ids.length) return '';
+    const start = store.get('quotaStart:' + mega.id, null) || {};
+    const num = value => value.toLocaleString();
+    const rows = ids.map(id => {
+      const mine = records.filter(item => item.modelId === id);
+      const ms = mine.reduce((sum, item) => sum + (Number.isFinite(item.durationMs) ? item.durationMs : 0), 0);
+      const tokens = mine.map(item => item.tokens).filter(Boolean);
+      const add = field => tokens.length && tokens.every(item => Number.isFinite(item[field])) ? tokens.reduce((sum, item) => sum + item[field], 0) : null;
+      const input = add('input'), output = add('output'), cached = add('cachedInput');
+      const model = models().find(item => item.id === id);
+      const now = model ? quotaLeft(model) : null, before = Object.hasOwn(start, id) ? start[id] : null;
+      const quota = before != null && now != null ? before + '% → ' + now + '%' : now != null ? 'now ' + now + '% left' : 'not reported';
+      const tokenText = input == null && output == null ? 'tokens not reported' : [input != null ? num(input) + ' in' : null, output != null ? num(output) + ' out' : null, cached != null ? num(cached) + ' from cache' : null].filter(Boolean).join(' · ');
+      return `<li>${providerDot(providerOf(id))}<b>${escape(modelLabel(id) || id)}</b><span class="small muted"> · ${ms ? duration(ms) : 'time not reported'} · ${escape(tokenText)} · quota ${escape(quota)}</span></li>`;
+    });
+    return `<details class="usage-summary" open><summary class="small">${ic('usage')}What this work used</summary><ul class="plain">${rows.join('')}</ul></details>`;
+  }
   function crewCard(row) {
     const mega = row.megaTask;
     const subs = row.subTasks || [];
     if (!mega || !subs.length) return '';
     const status = String(mega.status || '').toUpperCase();
+    if (subs.some(sub => String(sub.status).toUpperCase() === 'RUNNING')) rememberQuota(mega, subs);
     const done = subs.filter(sub => sub.status === 'COMPLETE').length;
     const pct = Math.round(done / subs.length * 100);
     const step = sub => {
@@ -222,17 +273,17 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${steps}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
+        ${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
         ${row.canResume ? `<div class="row"><button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button></div>` : ''}</div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
     // Plain-language activity of the model working now; the raw log only when nothing else is readable.
     const running = (row.dispatch || []).find(part => part && part.alive) || null;
-    const friendly = (running?.activitySession?.events || []).map(event => event.friendly).filter(Boolean).slice(-6);
+    const friendly = foldRepeats((running?.activitySession?.events || []).map(event => event.friendly).filter(text => text && !/^Unclassified worker activity/.test(text))).slice(-6);
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
     return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${steps}
@@ -255,7 +306,7 @@
     const events = row ? (state.orchestra?.execution?.timeline || []).filter(event => event.projectId === row.id && SHOWN_EVENTS.test(event.type || '')).slice(-60) : [];
     const live = state.orchestra?.thinking;
     const pendingHere = state.sending && state.pendingProject === state.projectId;
-    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, (state.orchestra?.projects || []).length, projectStatus(row).text]);
+    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, row?.goal, (state.orchestra?.aiUsage?.recent || []).length, timedStop()?.at, row && autonomyOf(row.id)?.enabled, row?.canStop, (state.orchestra?.projects || []).length, projectStatus(row).text]);
     if (sig === state.threadSig) return;
     state.threadSig = sig;
     const nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
@@ -267,6 +318,13 @@
     if (!row) html = welcomeCard();
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
     html += items.map(item => item.html).join('');
+    // A chat message never starts work by itself; say so under the last one and offer the next step.
+    const lastAsk = asks.at(-1);
+    const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
+    if (row && lastAsk && !busy && !pendingHere && lastAsk.question !== 'Grill me' && lastAsk.question?.trim() !== row.goal?.trim()) {
+      state.goalCandidate = lastAsk.question;
+      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
+    }
     if (row) html += crewCard(row) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(state.pendingText)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
@@ -292,6 +350,8 @@
     const working = auto?.enabled && !auto.stopReason;
     const missing = readiness(row);
     const parts = [];
+    const timed = timedStop();
+    if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
     if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>`);
     // One clear next action at a time.
     else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
@@ -333,10 +393,12 @@
       return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
     const optional = ['reviewer', 'supervisor'].filter(role => model.roleEligibility?.[role] !== false);
-    return `<div class="member"><div class="info"><div class="label">${providerDot(model.provider)}${escape(model.label)}${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
+    const benched = onBench(model);
+    // Name and details on their own full-width line, role buttons on the line below.
+    return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
-      ${left != null ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
-      <div class="chips">${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
+      ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
+      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}${optional.includes('supervisor') ? chip('supervisor', 'Watch', 'Optional: an AI that watches running work and warns you') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   function teamPanel() {
@@ -345,12 +407,14 @@
     const leads = all.filter(model => model.roleEligibility?.orchestrator && model.available !== false);
     const active = all.filter(model => !onBench(model));
     const bench = all.filter(onBench);
-    return `<div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
+    const row = project();
+    return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
+      <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section">${head('team', 't-accent', 'On the team')}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> and <b class="c-watch">Watch</b> are optional.</p>
+      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> and <b class="c-watch">Watch</b> are optional.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
-      <div class="section">${head('pause', 't-muted', 'Bench')}<p class="explain">Available but not used. Press a role to bring a model in.</p>
-        ${bench.length ? bench.map(memberHtml).join('') : '<p class="muted small">The bench is empty.</p>'}</div>
+      <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
+        ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
           <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
@@ -427,7 +491,10 @@
     const mode = state.orchestra?.mode;
     return `${row ? `<div class="section">${head('folder', 't-accent', 'This project')}<form id="folder-form" class="stack"><label class="small" for="folder-input">Folder on your computer</label>
         <input id="folder-input" name="folder" value="${escape(row.folder || '')}" placeholder="C:\\Projects\\my-website" maxlength="1000">
-        <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">${ic('folder')}Save folder</button></form></div>` : ''}
+        <label class="small" for="github-input">GitHub repository (optional)</label>
+        <input id="github-input" name="github" value="${escape(row.github || '')}" placeholder="https://github.com/you/my-website" maxlength="500">
+        <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">${ic('folder')}Save</button></form>
+        ${row.github ? `<p class="small"><a href="${escape(row.github)}" target="_blank" rel="noopener noreferrer">Open on GitHub</a></p>` : ''}</div>` : ''}
       <div class="section">${head('plus', 't-blue', 'New projects')}<form id="root-form" class="stack"><label class="small" for="root-input">Default folder for new projects</label>
         <input id="root-input" name="root" value="${escape(state.settings?.projectsRoot || '')}" placeholder="C:\\Projects" maxlength="1000">
         <p class="explain">When you leave the folder empty on a new project, Planwharf creates it here.</p>
@@ -435,7 +502,7 @@
       <div class="section">${head('verify', 'r-verify', 'Approvals')}<p class="explain">${mode === 'auto' ? 'The lead may start approved work without asking each time.' : 'The lead asks you before each piece of work starts.'}</p>
         <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
       <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div>
-        ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}</div>` : ''}</div>
+        ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}<label class="ink custom" title="Any colour"><input type="color" data-ink-custom value="${escape(inkColour(currentInk()))}" aria-label="Any colour">${HEX.test(currentInk()) ? 'Your colour' : 'Any colour…'}</label></div>` : ''}</div>
       <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
         <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
         <label class="btn btn-small">${ic('folder')}Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
@@ -467,23 +534,28 @@
   }
   function renderUpdateNotice() {
     const u = state.updates;
-    $('update-notice').innerHTML = u?.available ? `<button type="button" class="link-quiet" data-panel="settings">Update available: ${escape(u.latestVersion || '')}</button>` : '';
+    const devCopy = u && u.canInstall === false && /git checkout/i.test(u.reason || '');
+    $('update-notice').innerHTML = u?.available && !devCopy ? `<button type="button" class="link-quiet" data-panel="settings">Update available: ${escape(u.latestVersion || '')}</button>` : '';
   }
   const currentTheme = () => document.documentElement.dataset.theme || 'dark';
   // Text colours for the dark theme, all readable on the dark background.
-  const INKS = { white: ['White', '#ecefeb'], cream: ['Cream', '#f3e6c8'], mint: ['Mint', '#b4f0d2'], sky: ['Sky', '#bcdcff'], amber: ['Amber', '#ffd38a'], lavender: ['Lavender', '#dccfff'] };
-  const currentInk = () => { const ink = store.get('ink', 'white'); return Object.prototype.hasOwnProperty.call(INKS, ink) ? ink : 'white'; };
-  function setInk(ink) { if (!Object.prototype.hasOwnProperty.call(INKS, ink)) return; store.set('ink', ink); document.documentElement.style.setProperty('--ink', INKS[ink][1]); }
+  const INKS = { white: ['White', '#ecefeb'], silver: ['Silver', '#c9ced6'], cream: ['Cream', '#f3e6c8'], yellow: ['Yellow', '#fff3a3'], amber: ['Amber', '#ffd38a'], peach: ['Peach', '#ffcfb0'], coral: ['Coral', '#ff9e8a'], pink: ['Pink', '#ffc4dd'], lavender: ['Lavender', '#dccfff'], sky: ['Sky', '#bcdcff'], turquoise: ['Turquoise', '#99f6e4'], mint: ['Mint', '#b4f0d2'], lime: ['Lime', '#d9f99d'] };
+  const HEX = /^#[0-9a-f]{6}$/i;
+  // A preset name or any colour the user picked (#rrggbb); every choice is accepted.
+  const currentInk = () => { const ink = store.get('ink', 'white'); return Object.prototype.hasOwnProperty.call(INKS, ink) || HEX.test(ink) ? ink : 'white'; };
+  const inkColour = ink => HEX.test(ink) ? ink : INKS[ink][1];
+  function setInk(ink) { if (!Object.prototype.hasOwnProperty.call(INKS, ink) && !HEX.test(ink)) return; store.set('ink', ink); document.documentElement.style.setProperty('--ink', inkColour(ink)); }
   async function saveFolder(form) {
     const row = project(); if (!row) return;
     const error = $('folder-error'); error.textContent = '';
     const folder = String(new FormData(form).get('folder') || '').trim();
+    const github = String(new FormData(form).get('github') || '').trim().replace(/\.git$/, '').replace(/\/+$/, '');
     if (!folder) { error.textContent = 'Enter a folder.'; return; }
     try {
       const { version } = await getJson('/api/plan');
-      await post('/api/place', { version, project: { id: row.id, folder } });
+      await post('/api/place', { version, project: { id: row.id, folder, ...(github ? { github } : {}) } });
       delete state.repo[row.id]; state.sideSig = '';
-      toast('Folder saved.'); await refresh({ tick: false });
+      toast('Saved.'); await refresh({ tick: false });
     } catch (failure) { error.textContent = failure.message; }
   }
   async function saveRoot(form) {
@@ -505,6 +577,16 @@
   // Short commands that only open a panel or change the team run here, without a model call.
   function localCommand(text) {
     const clean = text.trim().toLowerCase().replace(/[.!?]+$/, '');
+    // Stopping is Planwharf's job, not the lead's: "stop", "fermati adesso", "fermati tra 10 minuti".
+    const later = /^(?:stop|fermati|fermatevi|ferma(?:ti)?(?: tutto)?|stop the crew)\s+(?:in|tra|fra)\s+(\d{1,3})\s*(?:m|min|mins|minute|minutes|minuto|minuti)?\b/.exec(clean);
+    if (later && project()) {
+      const minutes = Number(later[1]);
+      if (minutes < 1) { stopProject(project().id); return true; }
+      setTimedStop({ projectId: project().id, at: Date.now() + minutes * 60000 });
+      toast(`The crew stops in ${minutes} minute${minutes === 1 ? '' : 's'}. You can cancel it below.`);
+      return true;
+    }
+    if (/^(?:stop|stop now|stop the crew|stop work|fermati|fermatevi|fermati (?:adesso|ora|subito)|fermatevi (?:adesso|ora|subito)|ferma tutto|basta)$/.test(clean) && project()) { stopProject(project().id); return true; }
     if (clean.split(/\s+/).length > 7) return false;
     if (/^(open |show |apri |mostra |vedi )?(the |la |il |i )?(team|crew|squadra|bench|panchina)$/.test(clean)) { state.panel = 'team'; store.set('panel', 'team'); render(); return true; }
     if (/^(open |show |apri |mostra |vedi )?(the |i |l')?(usage|quota|tokens?|consumi|utilizzo)$/.test(clean)) { state.panel = 'usage'; store.set('panel', 'usage'); render(); return true; }
@@ -521,11 +603,13 @@
     }
     return false;
   }
-  async function setRoles(id, roles) { await act(() => post('/api/models/roles', { id, roles }), 'Team updated.'); }
+  // Team changes apply to the selected project only; every project keeps its own team.
+  const teamProject = () => state.projectId ? { projectId: state.projectId } : {};
+  async function setRoles(id, roles) { await act(() => post('/api/models/roles', { id, roles, ...teamProject() }), 'Team updated.'); }
   async function chooseLead(id) {
     if (!id) return;
     const model = models().find(item => item.id === id);
-    await act(async () => { if (model && !model.roles?.orchestrator) await post('/api/models/roles', { id, roles: { orchestrator: true } }); return post('/api/orchestrator/lead', { id }); }, `${model?.label || 'Lead'} is now the lead.`);
+    await act(async () => { if (model && !model.roles?.orchestrator) await post('/api/models/roles', { id, roles: { orchestrator: true }, ...teamProject() }); return post('/api/orchestrator/lead', { id, ...teamProject() }); }, `${model?.label || 'Lead'} is now the lead.`);
   }
   async function send(text, extra = {}) {
     const row = project();
@@ -550,6 +634,21 @@
       return post('/api/orchestrator/autonomy', { projectId: row.id, enabled: true });
     }, 'The crew is on it. Updates appear here.');
   }
+  // Stops a project's work now: the crew mode first, then any running step. Work so far stays saved.
+  async function stopProject(projectId) {
+    const row = (state.orchestra?.projects || []).find(item => item.id === projectId);
+    if (timedStop()?.projectId === projectId) setTimedStop(null);
+    const auto = autonomyOf(projectId);
+    if (!row || !(auto?.enabled && !auto.stopReason) && !row.canStop) { toast('Nothing is running on this project.'); return; }
+    await act(async () => {
+      const snap = auto?.enabled ? await post('/api/orchestrator/autonomy', { projectId, enabled: false }) : null;
+      const current = snap ? (snap.projects || []).find(item => item.id === projectId) : row;
+      return current?.canStop ? post('/api/orchestrator/stop', { projectId }) : snap;
+    }, 'Stopped. Work so far is saved; Resume continues from there.');
+  }
+  const timedStop = () => { const value = store.get('timedStop', null); return value && typeof value.at === 'number' && typeof value.projectId === 'string' ? value : null; };
+  function setTimedStop(value) { store.set('timedStop', value); state.threadSig = ''; render(); }
+  setInterval(() => { const due = timedStop(); if (due && Date.now() >= due.at) { setTimedStop(null); stopProject(due.projectId); } }, 5000);
   async function autonomyOff() {
     const row = project(); if (!row) return;
     await act(async () => {
@@ -600,7 +699,8 @@
     try {
       const [{ version }, settings] = await Promise.all([getJson('/api/plan'), getJson('/api/settings').catch(() => ({}))]);
       if (!folder && !settings.projectsRoot) throw new Error('Enter the folder for this project, for example C:\\Projects\\my-website.');
-      const created = await post('/api/projects', { version, project: { name: String(data.name).trim(), direction: String(data.direction).trim(), ...(folder ? { folder } : {}) }, createFolder: !folder });
+      // Only name and folder: what to build is said later, in the chat.
+      const created = await post('/api/projects', { version, project: { name: String(data.name).trim(), direction: NO_GOAL, ...(folder ? { folder } : {}) }, createFolder: !folder });
       const added = created.plan?.projects?.at(-1)?.project?.id;
       $('project-dialog').close(); form.reset();
       if (added) { state.projectId = added; store.set('project', added); }
@@ -613,7 +713,7 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('button, a');
     if (!target) return;
-    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); render(); return; }
+    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); return; }
     if (target.dataset.panel) { if (target.classList.contains('tab')) openPanel(target.dataset.panel); else { state.panel = target.dataset.panel; store.set('panel', state.panel); render(); } return; }
     if (target.id === 'side-close') { state.panel = null; store.set('panel', null); render(); return; }
     if (target.dataset.openSide) { $(target.dataset.openSide).classList.add('open'); return; }
@@ -642,11 +742,15 @@
     else if (action === 'quit') { state.armed = null; post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message)); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'grill') send('Grill me', { grillKind: 'me' });
+    else if (action === 'use-goal') useAsGoal(state.goalCandidate);
+    else if (action === 'focus-input') $('composer-input').focus();
+    else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });
   document.addEventListener('change', event => {
     if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value);
+    else if (event.target.matches('[data-ink-custom]')) { setInk(event.target.value.toLowerCase()); state.sideSig = ''; renderSide(); }
     else if (event.target.id === 'import-file' && event.target.files?.[0]) importProject(event.target.files[0]);
   });
   $('composer').addEventListener('submit', event => {
@@ -680,6 +784,9 @@
   window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/app/heartbeat', new Blob([JSON.stringify({ id: windowId, view: 'planwharf', closed: true })], { type: 'application/json' })); } catch {} });
   window.addEventListener('pageshow', pulse);
   pulse(); setInterval(pulse, 3000);
+  // Day and time, always visible at the bottom of the project list.
+  function showNow() { const d = new Date(); const day = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); $('now').textContent = day + ' · ' + time; $('now').title = d.toLocaleString(); }
+  showNow(); setInterval(showNow, 15000);
   loadUpdates(); setInterval(loadUpdates, 60000);
 
   // Tabs keep their name for screen readers and as a tooltip when only the icon fits.

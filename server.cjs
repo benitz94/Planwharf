@@ -492,7 +492,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           const item = (current.schema === 2 ? current.projects : [current]).find(item => item.project.id === input.projectId);
           if (!item) throw new RequestError(404, 'Project not found.');
           if (item.tasks.some(task => task.status === 'running')) throw new RequestError(409, 'Finish or cancel the current task before proposing another MegaTask.');
-          const roster = (await orchestra.snapshot()).models;
+          // Checked against this project's own team.
+          const roster = (await (typeof orchestra.withTeam === 'function' ? orchestra.withTeam(input.projectId, () => orchestra.snapshot()) : orchestra.snapshot())).models;
           for (const [index, sub] of input.subTasks.entries()) {
             if (!sub || Object.keys(sub).some(key => !['title', 'detail', 'assignedModelId', 'dependsOn', 'type'].includes(key)) || typeof sub.title !== 'string' || !sub.title.trim()
               || typeof sub.detail !== 'string' || !roster.some(model => model.id === sub.assignedModelId && model.enabled && model.available !== false)
@@ -519,7 +520,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         return json(200, result);
       }
       if (request.method === 'GET' && pathname === '/api/orchestrator') {
-        const snapshot = loc.searchParams.get('readOnly') === '1' ? await orchestra.snapshot() : await enqueue(() => orchestra.tick());
+        // ?team=<projectId> shows that project's own team (lead and roles) in the snapshot.
+        const team = loc.searchParams.get('team') || undefined;
+        const scoped = fn => team && typeof orchestra.withTeam === 'function' ? orchestra.withTeam(team, fn) : fn();
+        const snapshot = loc.searchParams.get('readOnly') === '1' ? await scoped(() => orchestra.snapshot()) : await enqueue(() => scoped(() => orchestra.tick()));
         snapshot.providerModels = providerModels.snapshot();
         snapshot.modelsChecking = modelsChecking;
         return json(200, snapshot);
@@ -549,8 +553,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'POST' && pathname === '/api/orchestrator/lead') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);
-        if (!input || Object.keys(input).some(key => key !== 'id') || (input.id != null && typeof input.id !== 'string')) throw new RequestError(400, 'Invalid data.');
-        const result = await orchestra.setOrchestrator(input.id || '');
+        if (!input || Object.keys(input).some(key => !['id', 'projectId'].includes(key)) || (input.id != null && typeof input.id !== 'string') || (input.projectId != null && typeof input.projectId !== 'string')) throw new RequestError(400, 'Invalid data.');
+        const result = await orchestra.setOrchestrator(input.id || '', input.projectId || undefined);
         if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
         return json(200, result.snapshot);
       }
@@ -671,8 +675,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       }
       if (request.method === 'POST' && pathname === '/api/models/roles') {
         const input = await body(request);
-        if (!input || typeof input.id !== 'string' || Object.keys(input).some(key => !['id', 'roles'].includes(key))) throw new RequestError(400, 'Invalid model role settings.');
-        const result = await enqueue(() => orchestra.setModelRoles(input.id, input.roles));
+        if (!input || typeof input.id !== 'string' || Object.keys(input).some(key => !['id', 'roles', 'projectId'].includes(key)) || (input.projectId != null && typeof input.projectId !== 'string')) throw new RequestError(400, 'Invalid model role settings.');
+        const result = await enqueue(() => orchestra.setModelRoles(input.id, input.roles, input.projectId || undefined));
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(200, result.snapshot);
       }

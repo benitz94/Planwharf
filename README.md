@@ -54,7 +54,7 @@ Planwharf opens on a chat with your lead model. **You are the captain**: you set
 1. Download `Planwharf-vX.Y.Z.zip` from the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest), extract the complete application folder, install Node.js, and on Windows open `Planwharf.exe`.
 2. Sign in to at least one supported coding CLI, or connect an API with authorized exact model IDs. Chat subscriptions do not automatically grant API or CLI access.
 3. In **Team**, choose the lead, give one model **Build** and another, preferably from a different provider, **Verify**.
-4. Press **+ New project**, describe what to build in plain words, and pick a new folder.
+4. Press **+ New project**, give it a name and a new folder. Then tell the lead what to build in plain words and press **Use as the goal**.
 5. Press **Let the crew do it** to turn on [project autonomy](docs/PROJECT-AUTONOMY.md), or describe the work in the chat and press **Approve and start** on the lead's proposal. Follow the **Crew at work** card, then test the output in the project folder. Completion does not commit, push or publish it.
 
 The [first project guide](docs/HOW-TO.md) walks through each step; [the chat view](docs/CHAT-VIEW.md) explains the screen. The remaining README sections provide reference details.
@@ -127,7 +127,7 @@ The server binds to `127.0.0.1`, normally on port 4173, and chooses another port
 
 ## Start a project
 
-Press **+ New project**, enter a name, what to build, and a folder. Leave the folder empty to create a new subfolder named after the project inside the default projects folder (**Settings → New projects**); existing names receive a numbered suffix. Enter an existing folder to work on existing code.
+Press **+ New project** and enter a name and a folder. Then say what to build in the chat and press **Use as the goal** under your message. Leave the folder empty to create a new subfolder named after the project inside the default projects folder (**Settings → New projects**); existing names receive a numbered suffix. Enter an existing folder to work on existing code.
 
 **Settings → This project** changes a project's folder. The default projects folder persists in `<notebook>.settings.json`; changing it affects future projects and does not move existing folders. **Settings → Remove project** removes the notebook entry while keeping its folder.
 
