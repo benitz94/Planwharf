@@ -38,7 +38,7 @@ test('Grill starts a real lead turn with Grill me instructions and keeps follow-
     await f.request('/api/orchestrator/ask', { projectId: 'isolated', chatSessionId: 'different-session', question: 'What is this project about?' });
     assert.equal(f.calls[2].grillKind, undefined, 'Grill does not leak into another chat session');
     const stopped = await f.request('/api/orchestrator/ask', { projectId: 'isolated', chatSessionId: 'grill-session', question: 'Stop grill' });
-    assert.equal(stopped.snapshot.grillPropose, true, 'Ending the chat leaves global Grill preferences unchanged');
+    assert.equal(stopped.snapshot.grillPropose, false, 'The clarification interview stays off: it was removed from Planwharf');
     await f.request('/api/orchestrator/ask', { projectId: 'isolated', chatSessionId: 'grill-session', question: 'What is the current goal?' });
     assert.equal(f.calls[3].grillKind, undefined, 'An explicit stop ends grilling');
     await f.request('/api/orchestrator/ask', { projectId: 'isolated', question: 'Grill me', grillKind: 'invalid' }, 400);

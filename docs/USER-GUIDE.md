@@ -68,7 +68,6 @@ Confirmed team, Business or Enterprise accounts add **Business** to model names.
 
 Write in the chat what you want. Ordinary conversation never starts work by itself.
 
-- **Ask me questions first** starts a short interview (Grill): one question at a time, each with the lead's suggested answer.
 - When the lead proposes work, a card shows the steps and who does each. **Approve and start** launches it; to change it, tell the lead.
 - **Let the crew do it** turns on [project autonomy](PROJECT-AUTONOMY.md). The crew then plans, approves its own steps within limits, builds, verifies and stops when the goal is reached or a limit is hit. **Stop the crew** turns it off.
 
@@ -120,7 +119,7 @@ Planwharf checks for the latest release when it starts, without downloading anyt
 These earlier controls are not available in the current screen:
 
 - personal notes;
-- **Grill with the docs**;
+- the clarification interview (Grill);
 - **Pause after current tasks** and **Finish by** deadlines;
 - Gold model;
 - per-model and per-provider usage policies (Always approve / YOLO);

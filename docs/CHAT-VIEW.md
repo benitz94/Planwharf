@@ -72,6 +72,6 @@ The first screen lists what is missing, each with a button that opens the right 
 3. tell the lead what to build, then press **Use as the goal**;
 4. give at least one model the Build role (Team).
 
-Then press **Let the crew do it**. To let the lead interview you about the goal first, press **Ask me questions first**.
+Then press **Let the crew do it**.
 
 The [user guide](USER-GUIDE.md) explains each part in detail.

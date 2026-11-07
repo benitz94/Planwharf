@@ -64,10 +64,9 @@ Per la prima prova usa una cartella nuova, non un progetto importante.
 
 ## 5. Far partire il lavoro
 
-Hai tre strade:
+Hai due strade:
 
 - **Let the crew do it** (lascia fare alla squadra): la squadra pianifica, costruisce, controlla e si ferma quando l'obiettivo è raggiunto o quando arriva a un limite. Se il pulsante è grigio, la riga accanto ti dice cosa manca, e la scheda in chat ha un pulsante che apre il pannello giusto.
-- **Ask me questions first** (fammi prima delle domande): il lead ti fa una domanda alla volta, ognuna con una risposta suggerita, per chiarire l'obiettivo. Rispondi in chat.
 - **Approvare tu ogni passo:** descrivi il lavoro in chat. Il lead risponde con una proposta, cioè i passi e chi fa cosa, e tu premi **Approve and start** (approva e parti), oppure gli dici cosa cambiare.
 
 ## 6. Seguire il lavoro

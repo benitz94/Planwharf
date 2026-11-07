@@ -180,8 +180,7 @@
     const missing = readiness(row);
     return `<div class="card"><h3 class="head">${tile('folder', 't-accent')}<span>${escape(row.name)}</span></h3><p>${hasGoal(row) ? escape(row.goal) : 'Write below what you want built. When the lead has understood, press <b>Use as the goal</b> under your message.'}</p>
       <p class="muted small path">Folder: ${escape(row.folder || 'not set')}</p>
-      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" ${item.panel ? `data-panel="${item.panel}"` : `data-action="${item.action}"`}>${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}
-      <div class="row"><button type="button" class="btn" data-action="grill" ${lead() ? '' : 'disabled'}>Ask me questions first</button></div></div>`;
+      ${missing.length ? `<p class="small"><b>Before the crew can start:</b></p><div class="row">${missing.map(item => `<button type="button" class="btn btn-small" ${item.panel ? `data-panel="${item.panel}"` : `data-action="${item.action}"`}>${escape(item.fix)}</button>`).join('')}</div>` : '<p class="small">Everything is ready. Press <b>Let the crew do it</b> below, or tell the lead more first.</p>'}</div>`;
   }
   function readiness(row) {
     const missing = [];
@@ -321,7 +320,7 @@
     // A chat message never starts work by itself; say so under the last one and offer the next step.
     const lastAsk = asks.at(-1);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
-    if (row && lastAsk && !busy && !pendingHere && lastAsk.question !== 'Grill me' && lastAsk.question?.trim() !== row.goal?.trim()) {
+    if (row && lastAsk && !busy && !pendingHere && lastAsk.question?.trim() !== row.goal?.trim()) {
       state.goalCandidate = lastAsk.question;
       html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
     }
@@ -741,7 +740,6 @@
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
     else if (action === 'quit') { state.armed = null; post('/api/app/quit', {}).then(() => { document.body.innerHTML = '<p style="padding:24px">Planwharf has closed. You can close this window.</p>'; try { window.close(); } catch {} }).catch(error => toast(error.message)); }
     else if (action === 'install-update') installUpdate();
-    else if (action === 'grill') send('Grill me', { grillKind: 'me' });
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }

@@ -8,7 +8,7 @@
    - press **Verify** on another, ideally from a different company.
 4. **+ New project**: a name and a new folder.
 5. Tell the lead what to build, in plain words, then press **Use as the goal** under your message.
-6. **Let the crew do it**, or **Ask me questions first** to sharpen the goal.
+6. **Let the crew do it**.
 
 Follow the work in the chat. Press **Stop work** at any time; **Resume** continues later. When it finishes, check **Files** and try the result in the project folder. Nothing is committed or published automatically.
 
