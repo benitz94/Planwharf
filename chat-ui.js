@@ -342,7 +342,7 @@
     const pendingHere = state.pending[state.projectId] || null;
     const live = pendingHere ? state.orchestra?.thinkingByProject?.[state.projectId] || null : null;
     $('send').disabled = Boolean(pendingHere);
-    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, row?.goal, (state.orchestra?.aiUsage?.recent || []).length, timedStop()?.at, row && autonomyOf(row.id)?.enabled, row?.canStop, (state.orchestra?.projects || []).length, projectStatus(row).text]);
+    const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, row?.goal, (state.orchestra?.aiUsage?.recent || []).length, timedStop()?.at, row && autonomyOf(row.id)?.enabled, row?.canStop, (state.orchestra?.projects || []).length, projectStatus(row).text, state.orchestra?.projectTools?.[state.projectId]]);
     if (sig === state.threadSig) return;
     state.threadSig = sig;
     const nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
@@ -371,7 +371,7 @@
     const failed = Boolean(item.diagnostic);
     const elapsed = Number.isFinite(item.ms) ? ` · ${Math.max(1, Math.round(item.ms / 1000))} s` : '';
     return `<div class="msg you"><div class="bubble">${escape(item.question)}</div></div>
-      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
+      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${toolAsk(item)}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
   }
   function eventHtml(event) {
     const view = eventView(event);
@@ -546,6 +546,31 @@
     if (!origin || (store.get('githubDeclined', {})[row.id])) return '';
     return 'https://github.com/' + origin;
   }
+  // Extra tools for this project's team, all off by default. Claude follows all four; Codex follows MCP; Grok uses its own settings.
+  const TOOLS = [
+    ['mcp', 'MCP servers', 'Your own MCP servers, as set up in Claude Code and Codex. They can act outside the project folder, and a server that controls the computer can move your mouse and type.'],
+    ['browser', 'Browser', 'Claude in Chrome: open and try web pages in a browser tab. It does not move your mouse.'],
+    ['hooks', 'Hooks', 'Your Claude Code hooks: commands that run by themselves before or after the model acts.'],
+    ['memory', 'Memory', 'Notes Claude keeps for itself from one session to the next.']
+  ];
+  // The lead asked to turn on a tool: one button, and only a click from you turns it on.
+  function toolAsk(item) {
+    const tool = TOOLS.find(([name]) => name === item.toolRequest);
+    if (!tool || !item.projectId || state.orchestra?.projectTools?.[item.projectId]?.[tool[0]]) return '';
+    return `<div class="tool-ask">${tool[0] === 'mcp' ? `<p class="explain warn">${escape(tool[2])}</p>` : ''}<button type="button" class="btn btn-small" data-action="tool-on" data-tool="${tool[0]}">Turn on ${escape(tool[1])} for this project</button></div>`;
+  }
+  function toolsSection(row) {
+    const on = state.orchestra?.projectTools?.[row.id] || {};
+    return `<div class="section">${head('box', 't-violet', 'Tools')}<p class="explain">Extra tools for the team of ${escape(row.name)}. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work.</p>
+      ${TOOLS.map(([name, label, explain]) => state.armed === 'tool-' + name
+        ? `<div class="stack"><p class="explain warn">${escape(explain)} Turn it on for this project?</p><div class="row"><button type="button" class="btn btn-danger btn-small" data-action="tool-on" data-tool="${name}">Yes, turn on ${escape(label)}</button><button type="button" class="btn btn-small" data-action="disarm">Cancel</button></div></div>`
+        : `<button type="button" class="switch" role="switch" ${on[name] ? 'data-action="tool-off"' : name === 'mcp' ? 'data-arm="tool-mcp"' : 'data-action="tool-on"'} data-tool="${name}" aria-checked="${Boolean(on[name])}" title="${escape(explain)}"><span class="knob" aria-hidden="true"></span><span>${escape(label)}</span></button>`).join('')}</div>`;
+  }
+  async function setTool(name, value) {
+    const row = project(); if (!row) return;
+    state.armed = null;
+    await act(async () => { const result = await post('/api/project-tools', { projectId: row.id, tools: { [name]: value } }); state.orchestra.projectTools = { ...(state.orchestra.projectTools || {}), [row.id]: result.tools }; state.sideSig = ''; return result.snapshot; }, value ? `${name === 'mcp' ? 'MCP servers' : name[0].toUpperCase() + name.slice(1)} on for ${row.name}.` : 'Turned off.');
+  }
   function settingsPanel() {
     const row = project();
     const offered = githubOffer(row);
@@ -558,6 +583,7 @@
         ${offered ? `<p class="explain">Filled in from this folder's git settings. Save to link it, or empty the field and save if you do not want a link.</p>` : ''}
         <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">${ic('folder')}Save</button></form>
         ${row.github ? `<p class="small"><a href="${escape(row.github)}" target="_blank" rel="noopener noreferrer">Open on GitHub</a></p>` : ''}</div>` : ''}
+      ${row ? toolsSection(row) : ''}
       <div class="section">${head('plus', 't-blue', 'New projects')}<form id="root-form" class="stack"><label class="small" for="root-input">Default folder for new projects</label>
         <input id="root-input" name="root" value="${escape(state.settings?.projectsRoot || '')}" placeholder="C:\\Projects" maxlength="1000">
         <p class="explain">When you leave the folder empty on a new project, Planwharf creates it here.</p>
@@ -833,6 +859,8 @@
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
     else if (action === 'start-over') { state.armed = null; startOver(); }
+    else if (action === 'tool-on') setTool(target.dataset.tool, true);
+    else if (action === 'tool-off') setTool(target.dataset.tool, false);
     else if (action === 'quit') { state.armed = null; quitApp(); }
     // Quit is always in the top bar; it asks once in the chat before closing.
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }

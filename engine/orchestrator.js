@@ -23,6 +23,8 @@ const { compactState, recentContext } = require('./briefing.cjs');
 const Quota = require('../quota.js');
 const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
+const { TOOL_NAMES } = require('./claude.cjs');
+const { TOOL_REQUEST } = require('./runner.cjs');
 const { ROLE_IDS, VERIFY_SLICE, isVerifySlice, withModelRoles, roleEligibility, permitsAssignment, assignmentRole } = require('./model-roles.cjs');
 const { assignmentSession, projectActivitySessions, pagedProjectActivitySessions, readRecordedTail, SESSION_LIMIT } = require('./activity-sessions.cjs');
 
@@ -1062,8 +1064,12 @@ function createOrchestrator(options) {
     } catch (error) { ledger.finish(id, 'FAILED'); throw error; }
     finally { if (activeLeadInvocations.get(key) === id) activeLeadInvocations.delete(key); }
   };
+  // The project's Tools checkboxes travel with every lead and worker call of that project.
+  const toolsFor = projectId => { const chosen = (projectId && store.projectTools?.[projectId]) || {}; return Object.fromEntries(TOOL_NAMES.map(name => [name, chosen[name] === true])); };
+  if (typeof opts.askModel === 'function') { const withLedger = opts.askModel; opts.askModel = info => withLedger(info?.model ? { ...info, model: { ...info.model, tools: toolsFor(info.projectId) } } : info); }
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
+    info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId) } };
     if (autonomyActive(info.projectId)) info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
     const id = ledger.start({ role: 'worker', projectId: info.projectId, megaTaskId: info.megaTaskId, subTaskId: info.subTaskId, attemptId: info.attemptId,
@@ -1123,6 +1129,7 @@ function createOrchestrator(options) {
           workerHistory: Array.isArray(parsed.workerHistory) ? parsed.workerHistory : [],
           archivedProjects: parsed.archivedProjects && typeof parsed.archivedProjects === 'object' ? parsed.archivedProjects : {},
           projectArchive: Array.isArray(parsed.projectArchive) ? parsed.projectArchive : [],
+          projectTools: parsed.projectTools && typeof parsed.projectTools === 'object' && !Array.isArray(parsed.projectTools) ? parsed.projectTools : {},
           execution: parsed.execution,
           briefingBaselines: parsed.briefingBaselines || {},
           selectedProjectId: parsed.selectedProjectId || null,
@@ -1190,6 +1197,17 @@ function createOrchestrator(options) {
     return store.projects[id];
   }
 
+  // Tools checkboxes for one project. Only the known names are kept; anything else is refused.
+  async function setProjectTools(projectId, tools) {
+    if (typeof projectId !== 'string' || !projectId) return { ok: false, reason: 'Project not found.' };
+    if (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean')) return { ok: false, reason: 'Invalid tools.' };
+    store.projectTools = store.projectTools || {};
+    store.projectTools[projectId] = { ...toolsFor(projectId), ...tools };
+    note(projectId, 'Tools: ' + (TOOL_NAMES.filter(name => store.projectTools[projectId][name]).join(', ') || 'none') + '.');
+    persist();
+    return { ok: true, tools: toolsFor(projectId), snapshot: await tick() };
+  }
+
   // Start over and Remove leave nothing of a project live, and lose nothing: its chat, lead state,
   // autonomy, research and run history move to store.projectArchive with the time and the reason.
   // A project made later with the same name therefore starts clean. Running work must be stopped first.
@@ -1203,13 +1221,14 @@ function createOrchestrator(options) {
     const megaIds = new Set(list('megaTasks').filter(mine).map(mega => mega.id));
     const ofMega = item => item && megaIds.has(item.megaTaskId);
     const record = { projectId, reason, at: now(), notebook,
-      state: { project: store.projects[projectId] || null, autonomy: store.autonomy[projectId] || null, team: store.projectTeams?.[projectId] || null,
+      state: { project: store.projects[projectId] || null, autonomy: store.autonomy[projectId] || null, team: store.projectTeams?.[projectId] || null, tools: store.projectTools?.[projectId] || null,
         briefingBaseline: store.briefingBaselines?.[projectId] || null, asks: store.asks.filter(mine), researches: store.researches.filter(mine),
         workerHistory: store.workerHistory.filter(item => item.id === projectId),
         execution: { megaTasks: list('megaTasks').filter(mine), subTasks: list('subTasks').filter(ofMega), results: list('results').filter(ofMega), checkpoints: list('checkpoints').filter(mine), timeline: list('timeline').filter(mine) } } };
     store.projectArchive = [...(store.projectArchive || []), record];
     delete store.projects[projectId]; delete store.autonomy[projectId]; if (store.briefingBaselines) delete store.briefingBaselines[projectId];
     if (!keepTeam && store.projectTeams) delete store.projectTeams[projectId];
+    if (!keepTeam && store.projectTools) delete store.projectTools[projectId];
     store.asks = store.asks.filter(item => !mine(item)); store.researches = store.researches.filter(item => !mine(item));
     store.workerHistory = store.workerHistory.filter(item => item.id !== projectId);
     for (const [key, keep] of [['megaTasks', item => !mine(item)], ['subTasks', item => !ofMega(item)], ['results', item => !ofMega(item)], ['checkpoints', item => !mine(item)], ['timeline', item => !mine(item)]]) if (Array.isArray(ex[key])) ex[key] = ex[key].filter(keep);
@@ -1882,6 +1901,7 @@ function createOrchestrator(options) {
       asks: clone(store.asks || []),
       thinking: clone(liveThinking(projectId)),
       thinkingByProject: clone(thinkingByKey),
+      projectTools: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolsFor(id)])),
       asking: Object.keys(thinkingByKey).length > 0,
       orchestratorId: lead ? lead.id : null,
       selectedOrchestratorId: leadId(),
@@ -2894,6 +2914,12 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       order: order ? order.action : null
     };
     if (actionResults.length) item.actionResults = clone(actionResults);
+    // "TOOL REQUEST: browser" at the end of a reply becomes a button for the user; the line itself is not shown.
+    const toolAsked = typeof item.answer === 'string' && item.projectId ? item.answer.match(TOOL_REQUEST) : null;
+    if (toolAsked) {
+      item.answer = item.answer.replace(TOOL_REQUEST, '').trim();
+      if (!toolsFor(item.projectId)[toolAsked[1].toLowerCase()]) item.toolRequest = toolAsked[1].toLowerCase();
+    }
     store.asks = [item, ...(Array.isArray(store.asks) ? store.asks : [])];
     persist();
     refreshResearch();
@@ -3446,7 +3472,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

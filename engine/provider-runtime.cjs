@@ -102,7 +102,7 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   const finalSchema = !lead && model.apiResultOutputPath && model.apiResultIdentity && final.supportsFinalResult({ adapter }) ? JSON.stringify(final.resultSchema(model.apiResultIdentity)) : null;
   if (adapter === 'claude') {
     args = ['-p', '--model', cli, '--output-format', 'stream-json', '--verbose', '--include-partial-messages',
-      ...require('./claude.cjs').isolatedArgs, '--disallowedTools', 'Agent,Task', '--permission-mode', alwaysApprove ? 'bypassPermissions' : 'dontAsk'];
+      ...require('./claude.cjs').claudeToolArgs(model.tools), '--disallowedTools', 'Agent,Task', '--permission-mode', alwaysApprove ? 'bypassPermissions' : 'dontAsk'];
     if (finalSchema) args.push('--json-schema', finalSchema);
     stdin = prompt;
   } else if (adapter === 'grok') {
@@ -123,6 +123,8 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
     stdin = JSON.stringify({ event: 'user', message: { content: prompt } }) + '\n';
   } else {
     args = ['exec', '--skip-git-repo-check', '-C', folder, '-m', cli];
+    // MCP follows the project's Tools checkbox, like Claude: off means no MCP servers for this run.
+    if (model.tools?.mcp !== true) args.push('-c', 'mcp_servers={}');
     if (research) args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=true', '-c', 'sandbox_workspace_write.writable_roots=[]');
     else if (alwaysApprove) args.push('--dangerously-bypass-approvals-and-sandbox');
     else args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=false', '-c', 'sandbox_workspace_write.writable_roots=[]');

@@ -201,6 +201,7 @@ function askPrompt(info) {
     info && info.allowActions === false ? 'This request is an internal planning query: actions are disabled. Follow the requested answer format exactly; do not wrap it in a dispatch envelope.' : '',
     info && info.extraPrompt ? info.extraPrompt : '',
     'Do not invent workers that are not in the briefing.',
+    info && info.allowActions !== false && info.model?.tools ? toolRequestRule(info.model.tools) : '',
     'When CURRENT REQUEST includes goldModel, every implementation or research worker must use that exact model ID, provider and CLI model. Never substitute another worker. Reviewers keep their configured roles. Gold is a request exception, not a change to the orchestrator.',
     'Respect each model allowed roles in the briefing. Orchestrator-only models coordinate; Worker permission is required for implementation or research; Reviewer permission is required for audits. Technical suitability never overrides the user role permissions.',
     'Explicit project commands are executed before you speak. Ordinary work requests and mentions of start/resume inside discussion do not automatically dispatch implementation workers.',
@@ -481,6 +482,16 @@ function whenFinished(child, finish) {
   });
 }
 
+// The lead may ask the user to turn on a project tool. Planwharf shows a button; only the user turns it on.
+const TOOL_REQUEST = /^\s*TOOL REQUEST:\s*(mcp|browser|hooks|memory)\s*$/im;
+function toolRequestRule(tools) {
+  const off = ['mcp', 'browser', 'hooks', 'memory'].filter(name => tools[name] !== true);
+  if (!off.length) return 'Project tools on for the team: MCP servers, browser, hooks and memory.';
+  return `Project tools that are off for the team: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
+    + 'Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly "TOOL REQUEST: <name>" for one of these names. '
+    + 'Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents.';
+}
+
 function spawnWorker(info) {
   if (!info || typeof info !== 'object') throw new Error('worker launch requires job info');
   if (!info.folder || !info.resultPath) throw new Error('worker launch requires folder and resultPath');
@@ -609,4 +620,4 @@ function run(argv = process.argv) {
 
 if (require.main === module) run();
 
-module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus, whenFinished };
+module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus, whenFinished, toolRequestRule, TOOL_REQUEST };

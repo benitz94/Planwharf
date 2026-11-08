@@ -571,6 +571,13 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         try { return json(200, await orchestra.supervisorRequest(action, input)); }
         catch (error) { throw new RequestError(400, error.message); }
       }
+      if (request.method === 'POST' && pathname === '/api/project-tools') {
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['projectId', 'tools'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const result = await orchestra.setProjectTools(input.projectId, input.tools);
+        if (!result.ok) throw new RequestError(400, result.reason);
+        return json(200, result);
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/ask/cancel') {
         const input = await body(request);
         return json(200, await orchestra.abortAsk(typeof input?.projectId === 'string' ? input.projectId : undefined));

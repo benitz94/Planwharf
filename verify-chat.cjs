@@ -271,6 +271,15 @@ const errors = [];
   await until(`!document.getElementById('thread').innerText.includes('Hello from the other project.')`, 'chat empty after Start over', 15000);
   const { attemptsDir } = await (await fetch(appUrl + '/api/app')).json();
   assert.ok(JSON.parse(fs.readFileSync(path.join(attemptsDir, 'orchestrator.json'), 'utf8')).projectArchive.some(record => record.reason === 'start over' && record.state.asks.some(turn => turn.question === 'Hello from the other project.')), 'old chat kept in the archive');
+  // Tools: all off; Browser turns on with one click, MCP asks first.
+  await until(`!document.getElementById('side-panel').hidden && document.querySelector('.switch[data-tool="browser"]')`, 'Tools switches');
+  assert.equal(await evaluate(`[...document.querySelectorAll('.switch[data-tool]')].filter(el => el.getAttribute('aria-checked') === 'true').length`), 0, 'all tools off by default');
+  await click('.switch[data-tool="browser"]');
+  await until(`document.querySelector('.switch[data-tool="browser"]')?.getAttribute('aria-checked') === 'true'`, 'browser on', 15000);
+  await click('.switch[data-tool="mcp"]');
+  await until(`document.querySelector('[data-action="tool-on"][data-tool="mcp"]')`, 'MCP asks to confirm');
+  await click('[data-action="disarm"]');
+  await until(`document.querySelector('.switch[data-tool="mcp"]')?.getAttribute('aria-checked') === 'false'`, 'MCP stays off after Cancel');
   assert.deepEqual(errors, [], 'No script errors on the page');
   console.log('verify-chat: ok');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
