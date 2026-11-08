@@ -322,7 +322,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   }
   let modelsChecking = true;
   const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {}).finally(() => { modelsChecking = false; });
-  const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'] };
+  const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/ship.svg': ['ship.svg', 'image/svg+xml'] };
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => {
       response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

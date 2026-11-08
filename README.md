@@ -1,3 +1,5 @@
+<p align="center"><img src="ship.svg" width="220" alt=""></p>
+
 # Planwharf
 
 **Your team of AI models, in one chat.**

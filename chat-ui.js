@@ -70,7 +70,7 @@
     verify: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
     review: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     watch: '<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
-    lead: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+    lead: '<circle cx="12" cy="12" r="8.5"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2"/><path d="M15.2 8.8 13 13l-4.2 2.2L11 11z"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     alert: '<path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/>',
     play: '<path d="M7 5v14l12-7z"/>',
@@ -196,12 +196,14 @@
   const SHOWN_EVENTS = /PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED)|CHECKPOINT|GOAL|AUTONOMY/;
   const clock = at => { const date = new Date(at); return Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; };
 
+  // The ship from ship.svg, drawn with the page colours so it fits the light and the dark theme.
+  const SHIP = '<svg class="ship" viewBox="0 0 240 170" aria-hidden="true"><rect class="mast" x="117" y="8" width="7" height="112" rx="3"/><path class="flag" d="M124 10c8-3 14 4 22 1 3-1 6-3 8-5-2 6-5 10-10 12-7 3-13-3-20 0Z"/><path class="sail-back" d="M113 30c-16 18-29 38-38 60 12-3 25-4 38-4-4-18-5-37 0-56Z"/><path class="sail" d="M128 26c26 17 43 42 50 70-15-4-31-5-48-4 5-22 4-44-2-66Z"/><path class="hull" d="M66 104h22l9-12h20l9 12h70c-6 10-13 22-21 30H76c-5-8-9-18-10-30Z"/><path class="keel" d="M76 134h109c-3 5-7 9-11 12H86c-4-3-7-7-10-12Z"/><circle class="port" cx="112" cy="118" r="5"/><circle class="port" cx="132" cy="118" r="5"/><circle class="port" cx="152" cy="118" r="5"/><path class="wave-far" d="M14 136c16-9 34-11 52-4-17-3-35-1-52 4Z M180 132c16-8 32-8 48 0-16-3-32-3-48 0Z"/><path class="wave-near" d="M42 152c30-10 58-10 86-2s58 8 86-2c-26 16-58 18-86 10s-58-9-86-6Z"/></svg>';
   function welcomeCard() {
     const leads = models().filter(model => model.roleEligibility?.orchestrator && model.available !== false);
     const current = lead();
     const hasProject = (state.orchestra?.projects || []).length > 0;
     const step = (n, done, text) => `<li class="${done ? 'done' : ''}"><span class="num" aria-hidden="true">${done ? ic('check') : n}</span><span>${text}</span></li>`;
-    return `<div class="card welcome"><h2 class="head">${tile('rocket', 't-accent')}<span>Welcome aboard, captain</span></h2>
+    return `<div class="card welcome">${SHIP}<h2 class="head">${tile('rocket', 't-accent')}<span>Welcome aboard, captain</span></h2>
       <p>Planwharf runs a team of AI models for you. You give the goal; a <b class="c-lead">lead</b> plans it, a <b class="c-build">builder</b> writes the code and a <b class="c-verify">verifier</b> checks and fixes it.</p>
       <ol class="steps numbered">
         ${step(1, Boolean(current), 'Choose your lead.')}
