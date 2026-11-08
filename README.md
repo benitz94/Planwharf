@@ -65,6 +65,7 @@ Updates arrive inside the app: **Settings > Updates**. Your projects and setting
 
 - [Guida in italiano](docs/GUIDA.md)
 - [User guide](docs/USER-GUIDE.md) · [The chat screen](docs/CHAT-VIEW.md) · [FAQ](docs/FAQ.md)
+- [Benchmark: a small SQL database, four AI tools and Planwharf](docs/benchmarks/2026-11-minidb/README.md)
 - [Benchmark: Planwharf and four AI tools on the same task](docs/benchmarks/2026-11-logbook/README.md)
 - [Technical reference](docs/REFERENCE.md), for advanced users and contributors
 
