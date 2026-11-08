@@ -108,7 +108,7 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   } else if (adapter === 'grok') {
     // A worker gets room for a whole build (50 turns ended real jobs halfway); Claude and Codex workers have no turn cap.
     args = ['--cwd', folder, '-m', cli, '--no-subagents', '--max-turns', lead ? '8' : '500',
-      '--permission-mode', alwaysApprove ? 'auto' : 'dontAsk', '--output-format', lead ? 'streaming-messages-json' : 'plain'];
+      '--permission-mode', alwaysApprove ? 'bypassPermissions' : 'dontAsk', '--output-format', lead ? 'streaming-messages-json' : 'plain'];
     if (alwaysApprove) args.push('--always-approve');
     if (lead) args.push('--include-partial-messages');
     // Native --prompt-file preserves the complete prompt without OS argv limits.

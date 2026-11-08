@@ -63,7 +63,7 @@ assert.doesNotMatch(spoken, /Stay inside it\. Read only/);
 assert.doesNotMatch(spoken, /unless they explicitly order a change/);
 const cliArgs = askCliArgs({ question: 'How far?', folder: 'D:\\x', model: { id: 'grok', provider: 'grok', cli: 'grok-4.6' } }).args;
 assert.equal(cliArgs.includes('--always-approve'), true);
-assert.ok(cliArgs.includes('auto'));
+assert.ok(cliArgs.includes('bypassPermissions'));
 assert.ok(cliArgs.includes('--no-subagents'));
 assert.equal(cliArgs[cliArgs.indexOf('--max-turns') + 1], '8');
 console.log('OK: runner args, prompt, result patch, pid check.');

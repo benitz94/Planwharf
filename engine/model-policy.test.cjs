@@ -43,7 +43,7 @@ test('ChatGPT siblings inherit one provider policy while Grok stays independent 
       const spec = launchSpec(model, dir, 'No inference: inspect argv only');
       if (spec.promptFile) promptDirs.push(path.dirname(spec.promptFile));
       if (model.provider === 'codex') assert.equal(spec.args.includes('--dangerously-bypass-approvals-and-sandbox'), false);
-      else { assert.equal(spec.args.includes('--always-approve'), true); assert.equal(spec.args[spec.args.indexOf('--permission-mode') + 1], 'auto'); }
+      else { assert.equal(spec.args.includes('--always-approve'), true); assert.equal(spec.args[spec.args.indexOf('--permission-mode') + 1], 'bypassPermissions'); }
     }
     const changed = { ...chatPolicy, minRemainingPercent: 20, alwaysApprove: true };
     await orchestra.setProviderPolicy('codex', changed);
