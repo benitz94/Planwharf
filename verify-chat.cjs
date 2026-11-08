@@ -271,6 +271,7 @@ const errors = [];
   await until(`!document.getElementById('thread').innerText.includes('Hello from the other project.')`, 'chat empty after Start over', 15000);
   const { attemptsDir } = await (await fetch(appUrl + '/api/app')).json();
   assert.ok(JSON.parse(fs.readFileSync(path.join(attemptsDir, 'orchestrator.json'), 'utf8')).projectArchive.some(record => record.reason === 'start over' && record.state.asks.some(turn => turn.question === 'Hello from the other project.')), 'old chat kept in the archive');
+  await until(`document.getElementById('side-body').innerText.includes('Skills and instructions')`, 'Skills and instructions section', 15000);
   // Tools: all off; Browser turns on with one click, MCP asks first.
   await until(`!document.getElementById('side-panel').hidden && document.querySelector('.switch[data-tool="browser"]')`, 'Tools switches');
   assert.equal(await evaluate(`[...document.querySelectorAll('.switch[data-tool]')].filter(el => el.getAttribute('aria-checked') === 'true').length`), 0, 'all tools off by default');

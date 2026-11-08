@@ -9,6 +9,7 @@ const Plan = require('./plan.js');
 const { createAttemptEngine } = require('./engine/attempts.js');
 const { createSentinel } = require('./engine/sentinel.js');
 const { createOrchestrator, jobFingerprint } = require('./engine/orchestrator.js');
+const skills = require('./engine/skills.cjs');
 const { detectBrowsers, validateBrowser, readBrowserPreference } = require('./engine/browser-settings.cjs');
 const { createProviderModels } = require('./engine/provider-models.cjs');
 const { loadCatalog } = require('./engine/provider-catalog.cjs');
@@ -66,6 +67,13 @@ function defaultOpenFolder(folder) {
   else if (process.platform === 'darwin') spawn('open', [folder], opts).unref();
   else spawn('xdg-open', [folder], opts).unref();
 }
+// Text files (instructions, settings) open in a plain text editor.
+function defaultOpenText(file) {
+  const opts = { detached: true, stdio: 'ignore' };
+  if (process.platform === 'win32') spawn('notepad.exe', [file], opts).unref();
+  else if (process.platform === 'darwin') spawn('open', ['-t', file], opts).unref();
+  else spawn('xdg-open', [file], opts).unref();
+}
 function defaultOpenUrl(url) {
   if (process.platform === 'win32') spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   else if (process.platform === 'darwin') spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
@@ -77,7 +85,7 @@ async function assertFolder(folder) {
   try { st = await fs.stat(folder); } catch { throw new RequestError(400, 'Folder not found.'); }
   if (!st.isDirectory()) throw new RequestError(400, 'Folder not found.');
 }
-function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.json'), save = writePlan, attemptsDir, openFolder = defaultOpenFolder, openUrl = defaultOpenUrl, models = defaultModels, providers, inspectFolder, readRepository, discoverModels, readAccount, refreshModels = models === defaultModels, spawnWorker, isProcessAlive, killWorker, askModel, abortAsk, abortSupervisor, openWatchWindow, openPlanWindow, appWindows, quitApp, monitorIntervalMs = 4000, fetchPlans, updateManager, restartAfterUpdate } = {}) {
+function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.json'), save = writePlan, attemptsDir, openFolder = defaultOpenFolder, openText = defaultOpenText, openUrl = defaultOpenUrl, models = defaultModels, providers, inspectFolder, readRepository, discoverModels, readAccount, refreshModels = models === defaultModels, spawnWorker, isProcessAlive, killWorker, askModel, abortAsk, abortSupervisor, openWatchWindow, openPlanWindow, appWindows, quitApp, monitorIntervalMs = 4000, fetchPlans, updateManager, restartAfterUpdate } = {}) {
   const storeDir = attemptsDir || path.join(path.dirname(planFile), `.attempts-${path.basename(planFile, path.extname(planFile))}`);
   const connectionFile = path.join(storeDir, 'provider-connections.json');
   let connections = [];
@@ -570,6 +578,15 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           || action === 'ignore' && typeof input.alertId !== 'string') throw new RequestError(400, 'Invalid Supervisor request.');
         try { return json(200, await orchestra.supervisorRequest(action, input)); }
         catch (error) { throw new RequestError(400, error.message); }
+      }
+      if (request.method === 'GET' && pathname === '/api/skills') return json(200, { programs: skills.skillsOverview() });
+      if (request.method === 'POST' && pathname === '/api/skills/open') {
+        const input = await body(request);
+        if (!input || typeof input.cli !== 'string' || typeof input.what !== 'string' || Object.keys(input).some(key => !['cli', 'what'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const target = skills.pathToOpen(input.cli, input.what);
+        if (!target) throw new RequestError(404, 'Nothing to open there.');
+        if (target.folder) openFolder(target.file); else openText(target.file);
+        return json(200, { ok: true, path: target.file });
       }
       if (request.method === 'POST' && pathname === '/api/project-tools') {
         const input = await body(request);

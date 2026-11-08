@@ -571,6 +571,16 @@
     state.armed = null;
     await act(async () => { const result = await post('/api/project-tools', { projectId: row.id, tools: { [name]: value } }); state.orchestra.projectTools = { ...(state.orchestra.projectTools || {}), [row.id]: result.tools }; state.sideSig = ''; return result.snapshot; }, value ? `${name === 'mcp' ? 'MCP servers' : name[0].toUpperCase() + name.slice(1)} on for ${row.name}.` : 'Turned off.');
   }
+  // Skills and instructions each program reads from your own folders. Planwharf lists and opens them; you edit them.
+  function skillsSection() {
+    if (!state.skills) { if (!state.skillsLoading) { state.skillsLoading = true; getJson('/api/skills').then(value => { state.skills = value.programs || []; }).catch(() => { state.skills = []; }).finally(() => { state.skillsLoading = false; state.sideSig = ''; renderSide(); }); } return ''; }
+    if (!state.skills.length) return '';
+    return `<div class="section">${head('file', 't-accent', 'Skills and instructions')}<p class="explain">Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them.</p>
+      ${state.skills.map(program => `<details class="skills"><summary><strong>${escape(program.label)}</strong> · ${program.skills.length} skill${program.skills.length === 1 ? '' : 's'}</summary>
+        ${program.skills.length ? `<ul class="skill-list">${program.skills.map(skill => `<li><strong>${escape(skill.name)}</strong>${skill.source !== 'yours' ? ` <span class="muted small">(${escape(skill.source)})</span>` : ''}${skill.description ? `<br><span class="muted small">${escape(skill.description)}</span>` : ''}</li>`).join('')}</ul>` : `<p class="explain">No skills${program.skillsFolder ? ' yet' : ' folder for this program'}.</p>`}
+        <div class="row">${program.skillsFolder ? `<button type="button" class="btn btn-small" data-action="skills-open" data-cli="${program.cli}" data-what="skills">${ic('folder')}Open skills folder</button>` : ''}${program.instructions ? `<button type="button" class="btn btn-small" data-action="skills-open" data-cli="${program.cli}" data-what="instructions">${ic('file')}Edit instructions</button>` : ''}${program.settingsExist ? `<button type="button" class="btn btn-small" data-action="skills-open" data-cli="${program.cli}" data-what="settings">${ic('file')}Open settings file</button>` : ''}</div></details>`).join('')}
+      <button type="button" class="btn btn-small" data-action="skills-refresh">${ic('refresh')}Read again</button></div>`;
+  }
   function settingsPanel() {
     const row = project();
     const offered = githubOffer(row);
@@ -592,6 +602,7 @@
         <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
       <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div>
         ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}<label class="ink custom" title="Any colour"><input type="color" data-ink-custom value="${escape(inkColour(currentInk()))}" aria-label="Any colour">${HEX.test(currentInk()) ? 'Your colour' : 'Any colour…'}</label></div>` : ''}</div>
+      ${skillsSection()}
       <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
         <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
         <label class="btn btn-small">${ic('folder')}Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
@@ -860,6 +871,8 @@
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
     else if (action === 'start-over') { state.armed = null; startOver(); }
     else if (action === 'tool-on') setTool(target.dataset.tool, true);
+    else if (action === 'skills-open') post('/api/skills/open', { cli: target.dataset.cli, what: target.dataset.what }).then(result => toast('Opened ' + result.path)).catch(error => toast(error.message));
+    else if (action === 'skills-refresh') { state.skills = null; state.sideSig = ''; renderSide(); }
     else if (action === 'tool-off') setTool(target.dataset.tool, false);
     else if (action === 'quit') { state.armed = null; quitApp(); }
     // Quit is always in the top bar; it asks once in the chat before closing.

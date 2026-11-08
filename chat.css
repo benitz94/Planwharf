@@ -317,3 +317,7 @@ dialog input, dialog textarea, .card select, .side-body select { font-weight: 40
 .ink.custom input[type="color"] { width: 18px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
 
 .tab.tab-quit { color: var(--bad); }
+details.skills { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.skills summary { cursor: pointer; }
+.skill-list { margin: 8px 0; padding-left: 18px; max-height: 240px; overflow: auto; }
+.skill-list li { margin-bottom: 6px; overflow-wrap: anywhere; }
