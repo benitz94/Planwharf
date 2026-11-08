@@ -3,6 +3,24 @@
 One hard task, given to four AI coding tools working alone and to Planwharf with a crew of two
 models. The numbers are reported as they came out; read them and draw your own conclusions.
 
+## What Planwharf added
+
+- **The fastest finish.** About 15 minutes from goal to finished work, against 20 to 59 minutes
+  for the tools working alone.
+- **A full SQL score.** 992 of 992 statements, like the best solo runs.
+- **A strong lead for a small share of its tokens.** Claude Opus 5.5 planned the job and checked
+  the result for 0.11 M tokens, about 3% of the 3.72 M it used when it built the whole program
+  alone. The heavy work went to the builder.
+- **No extra cost for the crew.** The whole run took 1.24 M tokens, the same as the builder's own
+  solo run (1.25 M) and a third of the most expensive full-score solo run.
+- **Checks Planwharf runs itself.** Before accepting the goal, Planwharf ran the project's tests
+  again on its own (19 of 19 passing) instead of trusting the builder's report.
+- **One chat, any mix of providers.** You give the goal in plain words and choose the crew; the
+  lead and the builder came from different companies and worked as one team.
+
+It did not win everything: Planwharf missed one of the 19 checks, the same one its builder missed
+when working alone (see [Results](#results)).
+
 ## The task
 
 [`TASK.md`](TASK.md): write `minidb.js`, a small SQL database in one file, for Node.js 18 or later,
