@@ -95,6 +95,8 @@ function basePromptFor(opts) {
     'You are the Planwharf worker for this project folder.',
     'Implement the job in this folder. Add tests. Do not wait for the user.',
     'Stay inside this folder. Do not rewrite unrelated files.',
+    // Small steps keep progress visible, keep the context small and make a mistake cheap.
+    'Work in small steps. Never write a large file in one go: create it with a first working part, then add or change at most about 300 lines per edit. After each part, run it or its tests before writing the next. Plan briefly, then start writing; do not spend long thinking before the first file is on disk.',
     opts.title ? `Job: ${opts.title}` : '',
     opts.slice ? `Your slice: ${opts.slice}` : '',
     opts.detail ? opts.detail : '',
