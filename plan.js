@@ -309,6 +309,22 @@
     });
     return notebook;
   }
+  // Start over: same project (id, name, folder, GitHub link), new empty history. The caller archives the old one.
+  function resetProject(data, input, timestamp = new Date().toISOString()) {
+    if (!validate(data)) throw new Error('The saved notebook is invalid.');
+    if (!input || typeof input.id !== 'string' || !input.id.trim() || typeof input.direction !== 'string' || !input.direction.trim()) throw new Error('Project not found.');
+    const notebook = clone(data);
+    const items = notebook.schema === 2 ? notebook.projects : [notebook];
+    const index = items.findIndex(item => item.project.id === input.id);
+    if (index < 0) throw new Error('Project not found.');
+    const others = items.filter((_, i) => i !== index).map(item => clone(item));
+    items[index] = { ...items[index], revisions: [{ id: 1, mode: 'manual', title: '', createdAt: timestamp, direction: input.direction.trim(), state: '', closed: [], open: [] }], tasks: [] };
+    if (!validate(notebook)) throw new Error('The updated notebook is invalid.');
+    items.filter((_, i) => i !== index).forEach((item, i) => {
+      if (JSON.stringify(item) !== JSON.stringify(others[i])) throw new Error('The updated notebook is invalid.');
+    });
+    return notebook;
+  }
   function removeProject(data, input) {
     if (!validate(data)) throw new Error('The saved notebook is invalid.');
     if (!input || typeof input.id !== 'string' || !input.id.trim()) throw new Error('Project not found.');
@@ -359,5 +375,5 @@
     if (reopened.length) changes.push({ key: 'reopened', before: [], after: reopened });
     return changes;
   }
-  return { example, validate, validateProject, appendRevision, startGrill, startGrillDocs, grill, importRevision, createProject, restoreProject, removeProject, setPlace, createTask, removeTask, taskTiming, diff, isFolderPath, isGithubUrl, starterFrontier, docsFrontier, grillFrontier, isGenericFrontier, GENERIC_FRONTIER };
+  return { example, validate, validateProject, appendRevision, startGrill, startGrillDocs, grill, importRevision, createProject, restoreProject, resetProject, removeProject, setPlace, createTask, removeTask, taskTiming, diff, isFolderPath, isGithubUrl, starterFrontier, docsFrontier, grillFrontier, isGenericFrontier, GENERIC_FRONTIER };
 });

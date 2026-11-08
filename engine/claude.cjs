@@ -6,6 +6,14 @@ const { spawn, execFile } = require('node:child_process');
 
 // Execution and discovery delegate authentication to Claude Code; credentials never enter prompts.
 const isolatedArgs = ['--no-session-persistence', '--setting-sources', 'user', '--settings', '{"disableAllHooks":true,"autoMemoryEnabled":false}', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--no-chrome'];
+// The project's Tools checkboxes (all off by default) turn on the user's own MCP servers, Claude in Chrome,
+// hooks and memory for that project's team. Subagents stay off in every case.
+const TOOL_NAMES = ['mcp', 'browser', 'hooks', 'memory'];
+function claudeToolArgs(tools) {
+  const on = name => Boolean(tools && tools[name] === true);
+  return ['--no-session-persistence', '--setting-sources', 'user', '--settings', JSON.stringify({ disableAllHooks: !on('hooks'), autoMemoryEnabled: on('memory') }),
+    ...(on('mcp') ? [] : ['--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}']), on('browser') ? '--chrome' : '--no-chrome'];
+}
 function parseModels(rows) {
   if (!Array.isArray(rows)) return { ok: false, reason: 'Claude Code returned no model catalog.' };
   const models = [];
@@ -51,4 +59,4 @@ async function listClaude({ command = require('./providers.cjs').executable('cla
     });
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
-module.exports = { isolatedArgs, parseModels, listClaude };
+module.exports = { isolatedArgs, claudeToolArgs, TOOL_NAMES, parseModels, listClaude };

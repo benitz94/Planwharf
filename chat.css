@@ -50,7 +50,14 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .side-body { padding: 16px; overflow-x: hidden; overflow-y: auto; min-height: 0; flex: 1; }
 .side-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .brand { font-size: 18px; letter-spacing: .2px; display: flex; align-items: center; gap: 9px; }
-.brand-mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--build)); color: #fff; }
+.brand-mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: #101312; }
+.brand-mark svg { width: 30px; height: 30px; }
+.brand-mark .bezel { fill: none; stroke: #5fcf98; stroke-width: 4.2; stroke-linecap: round; }
+.brand-mark .north { fill: #5fcf98; } .brand-mark .south { fill: #eef3ef; }
+/* While anything is being worked on, only the needle turns. */
+.brand-mark .needle { transform-box: view-box; transform-origin: 32px 32px; }
+.brand-mark.spinning .needle { animation: pw-spin 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .brand-mark.spinning .needle { animation: pw-pulse 1.8s ease-in-out infinite; } }
 .brand-mark .i { width: 18px; height: 18px; }
 /* Work in progress: the compass turns (a gentle pulse when the system asks for less motion). */
 .spinning .i { animation: pw-spin 2.4s linear infinite; transform-origin: 50% 50%; }
@@ -69,6 +76,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .project-item.attention .sub { color: var(--warn); }
 .project-item[aria-current="true"] .name { color: var(--ok); }
 .project-item .tile { width: 30px; height: 30px; border-radius: 9px; }
+.project-item .news-dot { flex: none; margin-left: auto; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .tile.p-idle { background: var(--surface-2); color: var(--muted); }
 .tile.p-running, .tile.p-done { background: var(--accent-soft); color: var(--ok); }
 .tile.p-attention { background: var(--warn-soft); color: var(--warn); }
@@ -220,6 +228,9 @@ a { color: var(--accent); }
 .switch .knob { flex: none; width: 40px; height: 22px; border-radius: 99px; background: var(--line); position: relative; transition: background .15s; }
 .switch .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s; }
 .switch[aria-checked="true"] .knob { background: var(--accent); }
+.section > .switch[data-tool] { display: flex; margin-top: 10px; }
+.explain.warn { color: var(--warn); }
+.tool-ask { margin-top: 8px; }
 .switch[aria-checked="true"] .knob::after { left: 21px; }
 .segmented { display: inline-flex; gap: 6px; }
 .seg { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 14px; }
@@ -313,3 +324,14 @@ dialog input, dialog textarea, .card select, .side-body select { font-weight: 40
 .ink.custom input[type="color"] { width: 18px; height: 18px; padding: 0; border: 0; background: none; cursor: pointer; }
 
 .tab.tab-quit { color: var(--bad); }
+details.skills { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+details.skills summary { cursor: pointer; }
+.skill-list { margin: 8px 0; padding-left: 18px; max-height: 240px; overflow: auto; }
+.skill-list li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.card.welcome .ship { display: block; width: min(220px, 60%); height: auto; margin: 0 auto 8px; }
+.ship .mast, .ship .hull { fill: #ffffff; stroke: #1f7a52; stroke-width: 2; }
+.ship .sail-back { fill: #d6e9de; } .ship .sail { fill: #1f7a52; }
+.ship .flag, .ship .wave-near { fill: #5fcf98; }
+.ship .wave-far, .ship .keel, .ship .port { fill: #1f7a52; }
+[data-theme="dark"] .ship .mast, [data-theme="dark"] .ship .hull { fill: #eef3ef; stroke: none; }
+[data-theme="dark"] .ship .sail-back { fill: #eef3ef; } [data-theme="dark"] .ship .sail { fill: #5fcf98; }

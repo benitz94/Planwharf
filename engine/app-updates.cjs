@@ -16,7 +16,7 @@ function newer(next, current) {
 }
 function appFile(name) {
   return typeof name === 'string' && !name.includes('..') && !name.includes('\\') && !/[:\x00-\x1f]/.test(name)
-    && (/^[a-zA-Z0-9_-]+\.(?:js|cjs|html|css|cmd|sh)$/.test(name) || ['Planwharf.exe', 'models.json', 'LICENSE', 'COPYRIGHT', 'README.md', 'fixtures/starter-notebook.json'].includes(name)
+    && (/^[a-zA-Z0-9_-]+\.(?:js|cjs|html|css|cmd|sh|svg)$/.test(name) || ['Planwharf.exe', 'models.json', 'LICENSE', 'COPYRIGHT', 'README.md', 'fixtures/starter-notebook.json'].includes(name)
       || /^engine\/[a-zA-Z0-9_-]+\.(?:js|cjs)$/.test(name) || /^docs\/[a-zA-Z0-9_-]+\.md$/.test(name));
 }
 function checkout(root) {

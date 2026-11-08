@@ -201,6 +201,7 @@ function askPrompt(info) {
     info && info.allowActions === false ? 'This request is an internal planning query: actions are disabled. Follow the requested answer format exactly; do not wrap it in a dispatch envelope.' : '',
     info && info.extraPrompt ? info.extraPrompt : '',
     'Do not invent workers that are not in the briefing.',
+    info && info.allowActions !== false && info.model?.tools ? toolRequestRule(info.model.tools) : '',
     'When CURRENT REQUEST includes goldModel, every implementation or research worker must use that exact model ID, provider and CLI model. Never substitute another worker. Reviewers keep their configured roles. Gold is a request exception, not a change to the orchestrator.',
     'Respect each model allowed roles in the briefing. Orchestrator-only models coordinate; Worker permission is required for implementation or research; Reviewer permission is required for audits. Technical suitability never overrides the user role permissions.',
     'Explicit project commands are executed before you speak. Ordinary work requests and mentions of start/resume inside discussion do not automatically dispatch implementation workers.',
@@ -347,8 +348,11 @@ function createAskStream(expectedModel) {
   return { push, finish, acc };
 }
 
-let askChild = null;
+// One lead call in flight per key (a project's chat, or a project's autonomy decision).
+// A new call replaces only the call with the same key, so projects never cut each other off.
+const askChildren = new Map();
 let supervisorChild = null;
+const askKeyOf = info => typeof info?.askKey === 'string' && info.askKey ? info.askKey : 'chat:' + (info?.projectId || '');
 
 function askSpec(info, work, prompt) {
   if (info?.purpose !== 'supervisor') return launchSpec(info.model, work, prompt, true);
@@ -381,16 +385,22 @@ function writePrompt(child, spec, onError, onWritten) {
   try { child.stdin.end(spec.stdin, 'utf8', error => { if (error) fail(error); else if (!failed) onWritten?.(); }); } catch (error) { fail(error); }
 }
 
-function abortAsk() {
-  const child = askChild;
-  askChild = null;
-  if (!child) return false;
-  const pid = child.pid;
-  if (Number.isInteger(pid) && pid > 0) {
-    try { killWorker(pid); } catch (_) {}
+// With a key, stops that one call; without one (shutdown, update), stops every lead call.
+function abortAsk(key) {
+  const keys = typeof key === 'string' && key ? [key] : [...askChildren.keys()];
+  let stopped = false;
+  for (const name of keys) {
+    const child = askChildren.get(name);
+    askChildren.delete(name);
+    if (!child) continue;
+    stopped = true;
+    const pid = child.pid;
+    if (Number.isInteger(pid) && pid > 0) {
+      try { killWorker(pid); } catch (_) {}
+    }
+    try { child.kill(); } catch (_) {}
   }
-  try { child.kill(); } catch (_) {}
-  return true;
+  return stopped;
 }
 
 function askOrchestrator(info) {
@@ -407,10 +417,10 @@ function askOrchestrator(info) {
   return new Promise(resolve => {
     if (info.purpose === 'supervisor') {
       if (supervisorChild) { resolve({ failure: 'busy', answer: 'A Supervisor response is already in progress.' }); return; }
-    } else abortAsk();
+    } else abortAsk(askKeyOf(info));
     const child = spawn(spec.command, spec.args, { cwd: work, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     child.stdout.setEncoding('utf8');
-    if (info.purpose === 'supervisor') supervisorChild = child; else askChild = child;
+    if (info.purpose === 'supervisor') supervisorChild = child; else askChildren.set(askKeyOf(info), child);
     const stream = createAskStream(spec.adapter === 'claude' ? spec.model : undefined);
     let settled = false;
     let stderr = '';
@@ -435,7 +445,7 @@ function askOrchestrator(info) {
     const done = errorOrCode => {
       if (settled) return;
       settled = true;
-      if (askChild === child) askChild = null;
+      if (askChildren.get(askKeyOf(info)) === child) askChildren.delete(askKeyOf(info));
       if (supervisorChild === child) supervisorChild = null;
       clearTimeout(timer);
       const out = stream.finish();
@@ -452,9 +462,34 @@ function askOrchestrator(info) {
       resolve(out);
     };
     child.on('error', done);
-    child.on('close', (code, signal) => done(code === null ? new Error(signal || 'Provider process terminated') : code));
+    whenFinished(child, (code, signal) => done(code === null ? new Error(signal || 'Provider process terminated') : code));
     writePrompt(child, spec, done);
   });
+}
+
+// A command the model started (a test run that hangs) can outlive the model's CLI and keep its output
+// pipes open, so 'close' never comes: run 4 on 2026-11-08 waited 30+ minutes after Grok had finished.
+// Once the CLI itself has exited, wait briefly for its last output, then stop listening and finish.
+const EXIT_GRACE_MS = 5000;
+function whenFinished(child, finish) {
+  let timer = null;
+  child.on('close', (code, signal) => { clearTimeout(timer); finish(code, signal); });
+  child.on('exit', (code, signal) => {
+    timer = setTimeout(() => {
+      child.stdout?.destroy(); child.stderr?.destroy();
+      finish(code, signal);
+    }, EXIT_GRACE_MS);
+  });
+}
+
+// The lead may ask the user to turn on a project tool. Planwharf shows a button; only the user turns it on.
+const TOOL_REQUEST = /^\s*TOOL REQUEST:\s*(mcp|browser|hooks|memory)\s*$/im;
+function toolRequestRule(tools) {
+  const off = ['mcp', 'browser', 'hooks', 'memory'].filter(name => tools[name] !== true);
+  if (!off.length) return 'Project tools on for the team: MCP servers, browser, hooks and memory.';
+  return `Project tools that are off for the team: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
+    + 'Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly "TOOL REQUEST: <name>" for one of these names. '
+    + 'Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents.';
 }
 
 function spawnWorker(info) {
@@ -546,7 +581,7 @@ function run(argv = process.argv) {
     process.exitCode = 1;
   };
   child.on('error', fail);
-  child.on('close', (code, signal) => {
+  whenFinished(child, (code, signal) => {
     if (settled) return;
     settled = true;
     if (pending.trim()) { try { const row = JSON.parse(pending); if (row.event === 'result' && row.result) finalStatus = row.result.status; } catch (_) {} }
@@ -585,4 +620,4 @@ function run(argv = process.argv) {
 
 if (require.main === module) run();
 
-module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus };
+module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus, whenFinished, toolRequestRule, TOOL_REQUEST };
