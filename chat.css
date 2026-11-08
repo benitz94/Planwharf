@@ -69,6 +69,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .project-item.attention .sub { color: var(--warn); }
 .project-item[aria-current="true"] .name { color: var(--ok); }
 .project-item .tile { width: 30px; height: 30px; border-radius: 9px; }
+.project-item .news-dot { flex: none; margin-left: auto; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .tile.p-idle { background: var(--surface-2); color: var(--muted); }
 .tile.p-running, .tile.p-done { background: var(--accent-soft); color: var(--ok); }
 .tile.p-attention { background: var(--warn-soft); color: var(--warn); }

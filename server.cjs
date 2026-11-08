@@ -572,7 +572,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         catch (error) { throw new RequestError(400, error.message); }
       }
       if (request.method === 'POST' && pathname === '/api/orchestrator/ask/cancel') {
-        return json(200, await orchestra.abortAsk());
+        const input = await body(request);
+        return json(200, await orchestra.abortAsk(typeof input?.projectId === 'string' ? input.projectId : undefined));
       }
       if (request.method === 'GET' && pathname === '/api/orchestrator/research/report') {
         const result = orchestra.researchReport(loc.searchParams.get('id'));
@@ -807,11 +808,38 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             next = Plan.removeProject(current, { id: input.projectId });
             if (!Plan.validate(next)) throw new Error('The updated notebook is invalid.');
           } catch (error) { throw new RequestError(400, error.message); }
+          // Its chat and history are archived, so a new project with the same name starts clean.
+          const archived = await orchestra.archiveProject(input.projectId, 'removed', { notebook: (current.projects || [current]).find(item => item.project.id === input.projectId) || null });
+          if (!archived.ok) throw new RequestError(409, archived.reason);
           for (const item of attempts.getAttempts()) {
             if (item.status === 'active' && item.projectId === input.projectId) attempts.closeAttempt({ attemptId: item.id, reason: 'removed' });
           }
           await save(planFile, next);
           return { plan: next, version: version(next) };
+        });
+        queue = pending.catch(() => {});
+        return json(201, await pending);
+      }
+      // Start over: same project, folder, link and team; its chat, plan and run history go to the archive.
+      if (request.method === 'POST' && pathname === '/api/start-over') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.version !== 'string' || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['version', 'projectId'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const pending = enqueue(async () => {
+          const current = await readPlan(planFile);
+          if (input.version !== version(current)) throw new RequestError(409, 'The plan has changed. Reload the page before saving.');
+          let next;
+          try {
+            next = Plan.resetProject(current, { id: input.projectId, direction: 'Not set yet: tell the lead in the chat what to build.' });
+            if (!Plan.validate(next)) throw new Error('The updated notebook is invalid.');
+          } catch (error) { throw new RequestError(400, error.message); }
+          const archived = await orchestra.archiveProject(input.projectId, 'start over', { keepTeam: true, notebook: (current.projects || [current]).find(item => item.project.id === input.projectId) || null });
+          if (!archived.ok) throw new RequestError(409, archived.reason);
+          for (const item of attempts.getAttempts()) {
+            if (item.status === 'active' && item.projectId === input.projectId) attempts.closeAttempt({ attemptId: item.id, reason: 'start over' });
+          }
+          await save(planFile, next);
+          return { plan: next, version: version(next), archived: archived.archived };
         });
         queue = pending.catch(() => {});
         return json(201, await pending);

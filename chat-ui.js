@@ -10,7 +10,7 @@
   };
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
-    sending: false, repo: {}, pendingText: '', pendingSince: 0, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
+    pending: {}, repo: {}, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
     updates: null, windowTitle: null, armed: null
   };
 
@@ -119,7 +119,7 @@
     if (!row) return null;
     const part = (row.dispatch || []).find(item => item && item.alive);
     if (part) return { who: modelLabel(part.modelId) || part.label || row.workerLabel || 'The crew', since: Date.parse(part.startedAt || '') };
-    if (state.sending && state.pendingProject === row.id) return { who: lead()?.label || 'The lead', since: state.pendingSince };
+    if (state.pending[row.id]) return { who: lead()?.label || 'The lead', since: state.pending[row.id].since };
     return null;
   }
   const workingText = work => `${work.who} is working${Number.isFinite(work.since) ? ' · ' + (duration(Date.now() - work.since) || '1 s') : ''}`;
@@ -134,12 +134,32 @@
     renderActions();
     renderSide();
   }
+  // A dot on a project you are not looking at, when something happened there since you last opened it:
+  // a step finished, failed or blocked, the goal was reached, autonomy stopped, or the lead answered.
+  const NEWS_EVENTS = /SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY/;
+  function lastNews(row) {
+    let latest = 0;
+    for (const event of state.orchestra?.execution?.timeline || []) if (event.projectId === row.id && NEWS_EVENTS.test(event.type || '')) latest = Math.max(latest, Date.parse(event.createdAt || '') || 0);
+    for (const item of state.orchestra?.asks || []) if (item.projectId === row.id) latest = Math.max(latest, Date.parse(item.at || '') || 0);
+    return latest;
+  }
+  function hasNews(row) {
+    const seen = state.seen || (state.seen = store.get('seen', {}));
+    const latest = lastNews(row);
+    // The open project is always read; a project seen for the first time starts read.
+    if (row.id === state.projectId || !(row.id in seen)) {
+      if (seen[row.id] !== Math.max(seen[row.id] || 0, latest)) { seen[row.id] = Math.max(seen[row.id] || 0, latest); store.set('seen', seen); }
+      return false;
+    }
+    return latest > seen[row.id];
+  }
   function renderProjects() {
     const rows = state.orchestra?.projects || [];
     $('project-list').innerHTML = rows.length ? rows.map(row => {
       const status = projectStatus(row), work = workingNow(row);
       const icon = work ? `<span class="tile p-running spinning" aria-hidden="true">${ic('lead')}</span>` : tile('folder', 'p-' + (status.kind || 'idle'));
-      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${icon}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(work ? workingText(work) : status.text)}</span></span></button>`;
+      const news = hasNews(row) ? '<span class="news-dot" role="img" aria-label="New activity" title="Something happened here since you last looked"></span>' : '';
+      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${icon}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(work ? workingText(work) : status.text)}</span></span>${news}</button>`;
     }).join('') : '<p class="muted small">No projects yet.</p>';
     // The compass in the logo turns while anything is being worked on.
     const busy = rows.some(row => workingNow(row));
@@ -318,8 +338,10 @@
     const row = project();
     const asks = (state.orchestra?.asks || []).filter(item => row ? item.projectId === row.id : item.projectId == null);
     const events = row ? (state.orchestra?.execution?.timeline || []).filter(event => event.projectId === row.id && SHOWN_EVENTS.test(event.type || '')).slice(-60) : [];
-    const live = state.orchestra?.thinking;
-    const pendingHere = state.sending && state.pendingProject === state.projectId;
+    // Each project has its own message waiting for the lead; switching projects never cancels one.
+    const pendingHere = state.pending[state.projectId] || null;
+    const live = pendingHere ? state.orchestra?.thinkingByProject?.[state.projectId] || null : null;
+    $('send').disabled = Boolean(pendingHere);
     const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, row?.goal, (state.orchestra?.aiUsage?.recent || []).length, timedStop()?.at, row && autonomyOf(row.id)?.enabled, row?.canStop, (state.orchestra?.projects || []).length, projectStatus(row).text]);
     if (sig === state.threadSig) return;
     state.threadSig = sig;
@@ -340,7 +362,7 @@
       html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
     }
     if (row) html += crewCard(row) + alertsCard(row);
-    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(state.pendingText)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
+    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
     if (nearBottom || pendingHere) thread.scrollTop = thread.scrollHeight;
@@ -514,14 +536,26 @@
     } catch (error) { state.repo[id] = { error: error.message }; }
     state.sideSig = ''; renderSide(); renderThread();
   }
+  // The GitHub link is always optional. With none saved, the folder's git origin is offered once;
+  // saving the field empty removes the link and stops the offer for that project.
+  function githubOffer(row) {
+    if (!row || row.github || !row.folder) return '';
+    const repo = state.repo[row.id];
+    if (!repo) { loadRepo(row.id); return ''; }
+    const origin = repo.local?.originRepository;
+    if (!origin || (store.get('githubDeclined', {})[row.id])) return '';
+    return 'https://github.com/' + origin;
+  }
   function settingsPanel() {
     const row = project();
+    const offered = githubOffer(row);
     const dark = currentTheme() === 'dark';
     const mode = state.orchestra?.mode;
     return `${row ? `<div class="section">${head('folder', 't-accent', 'This project')}<form id="folder-form" class="stack"><label class="small" for="folder-input">Folder on your computer</label>
         <input id="folder-input" name="folder" value="${escape(row.folder || '')}" placeholder="C:\\Projects\\my-website" maxlength="1000">
         <label class="small" for="github-input">GitHub repository (optional)</label>
-        <input id="github-input" name="github" value="${escape(row.github || '')}" placeholder="https://github.com/you/my-website" maxlength="500">
+        <input id="github-input" name="github" value="${escape(row.github || offered)}" placeholder="https://github.com/you/my-website" maxlength="500">
+        ${offered ? `<p class="explain">Filled in from this folder's git settings. Save to link it, or empty the field and save if you do not want a link.</p>` : ''}
         <p class="error" id="folder-error" role="alert"></p><button type="submit" class="btn btn-small">${ic('folder')}Save</button></form>
         ${row.github ? `<p class="small"><a href="${escape(row.github)}" target="_blank" rel="noopener noreferrer">Open on GitHub</a></p>` : ''}</div>` : ''}
       <div class="section">${head('plus', 't-blue', 'New projects')}<form id="root-form" class="stack"><label class="small" for="root-input">Default folder for new projects</label>
@@ -537,6 +571,7 @@
         <label class="btn btn-small">${ic('folder')}Open a project file<input type="file" id="import-file" accept="application/json,.json" hidden></label></div>
         <p class="error" id="import-error" role="alert"></p></div>
       ${updatesSection()}
+      ${row ? `<div class="section">${head('refresh', 't-blue', 'Start over')}<p class="explain">Clears the chat, plan and run history of ${escape(row.name)} so you can begin again. The folder, its files, the GitHub link and the team stay. Nothing is deleted: the old history is kept in Planwharf's archive.</p>${armedButton('start-over', 'Start over', 'Yes, start over')}</div>` : ''}
       ${row ? `<div class="section">${head('trash', 't-bad', 'Remove project')}<p class="explain">Removes ${escape(row.name)} from Planwharf. The folder and its files stay on your computer.</p>${armedButton('remove-project', 'Remove project', 'Yes, remove it')}</div>` : ''}
       <div class="section">${head('power', 't-muted', 'Quit')}<p class="explain">Unfinished work is saved and can be resumed next time.</p>${armedButton('quit', 'Quit Planwharf', 'Yes, quit now')}</div>`;
   }
@@ -580,6 +615,7 @@
     const folder = String(new FormData(form).get('folder') || '').trim();
     const github = String(new FormData(form).get('github') || '').trim().replace(/\.git$/, '').replace(/\/+$/, '');
     if (!folder) { error.textContent = 'Enter a folder.'; return; }
+    if (!github) { const declined = store.get('githubDeclined', {}); declined[row.id] = true; store.set('githubDeclined', declined); }
     try {
       const { version } = await getJson('/api/plan');
       await post('/api/place', { version, project: { id: row.id, folder, ...(github ? { github } : {}) } });
@@ -644,15 +680,15 @@
     const row = project();
     if (!row) { toast('Create or select a project first.'); return; }
     if (!lead()) { toast('Choose a lead first (Team panel).'); openPanel('team'); return; }
-    state.sending = true; state.pendingText = text; state.pendingProject = row.id; state.pendingSince = Date.now(); state.threadSig = '';
-    $('send').disabled = true; render();
-    const poll = setInterval(async () => { try { const snap = await getJson('/api/orchestrator?readOnly=1'); state.orchestra = { ...state.orchestra, thinking: snap.thinking }; renderThread(); } catch {} }, 900);
+    state.pending[row.id] = { text, since: Date.now() }; state.threadSig = '';
+    render();
+    const poll = setInterval(async () => { try { const snap = await getJson('/api/orchestrator?readOnly=1'); state.orchestra = { ...state.orchestra, thinkingByProject: snap.thinkingByProject || {} }; renderThread(); } catch {} }, 900);
     try {
       const body = await post('/api/orchestrator/ask', { question: text, projectId: row.id, chatSessionId: sessionFor(row.id), ...extra });
       if (body.snapshot) state.orchestra = { ...state.orchestra, ...body.snapshot };
       if (body.asks) state.orchestra.asks = body.asks;
     } catch (error) { toast(error.message); }
-    finally { clearInterval(poll); state.sending = false; state.orchestra && (state.orchestra.thinking = null); $('send').disabled = false; state.threadSig = ''; await refresh({ tick: false }); }
+    finally { clearInterval(poll); delete state.pending[row.id]; if (state.orchestra?.thinkingByProject) delete state.orchestra.thinkingByProject[row.id]; state.threadSig = ''; await refresh({ tick: false }); }
   }
   async function autonomyOn() {
     const row = project(); if (!row) return;
@@ -712,6 +748,10 @@
     try { const snapshot = await post('/api/providers/connections', input); state.orchestra = { ...state.orchestra, ...snapshot }; form.reset(); toast(`${label} connected. Give its models a role to use them.`); state.sideSig = ''; await refresh({ tick: false }); }
     catch (failure) { error.textContent = failure.message.replace(/^API_CONFIGURATION_INVALID:\s*/, ''); }
   }
+  async function startOver() {
+    const row = project(); if (!row) return;
+    await act(async () => { const { version } = await getJson('/api/plan'); await post('/api/start-over', { version, projectId: row.id }); state.threadSig = ''; }, `${row.name} starts over. Tell the lead what to build.`);
+  }
   async function removeProject() {
     const row = project(); if (!row) return;
     await act(async () => { const { version } = await getJson('/api/plan'); await post('/api/remove-project', { version, projectId: row.id }); state.projectId = null; store.set('project', null); }, `${row.name} removed. Its folder is untouched.`);
@@ -728,11 +768,12 @@
     const error = $('project-error'); error.textContent = '';
     const data = Object.fromEntries(new FormData(form));
     const folder = String(data.folder || '').trim();
+    const github = String(data.github || '').trim().replace(/\.git$/, '').replace(/\/+$/, '');
     try {
       const [{ version }, settings] = await Promise.all([getJson('/api/plan'), getJson('/api/settings').catch(() => ({}))]);
       if (!folder && !settings.projectsRoot) throw new Error('Enter the folder for this project, for example C:\\Projects\\my-website.');
-      // Only name and folder: what to build is said later, in the chat.
-      const created = await post('/api/projects', { version, project: { name: String(data.name).trim(), direction: NO_GOAL, ...(folder ? { folder } : {}) }, createFolder: !folder });
+      // Only name, folder and an optional GitHub link: what to build is said later, in the chat.
+      const created = await post('/api/projects', { version, project: { name: String(data.name).trim(), direction: NO_GOAL, ...(folder ? { folder } : {}), ...(github ? { github } : {}) }, createFolder: !folder });
       const added = created.plan?.projects?.at(-1)?.project?.id;
       $('project-dialog').close(); form.reset();
       if (added) { state.projectId = added; store.set('project', added); }
@@ -791,6 +832,7 @@
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
     else if (action === 'remove-project') { state.armed = null; removeProject(); }
+    else if (action === 'start-over') { state.armed = null; startOver(); }
     else if (action === 'quit') { state.armed = null; quitApp(); }
     // Quit is always in the top bar; it asks once in the chat before closing.
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
@@ -809,7 +851,7 @@
   $('composer').addEventListener('submit', event => {
     event.preventDefault();
     const input = $('composer-input'); const text = input.value.trim();
-    if (!text || state.sending) return;
+    if (!text || state.pending[state.projectId]) return;
     input.value = ''; input.style.height = '';
     if (!localCommand(text)) send(text);
   });
@@ -851,5 +893,5 @@
   getJson('/api/settings').then(value => { state.settings = value; }).catch(() => {});
   // The first read answers at once from saved data; the full check follows.
   refresh({ tick: false }).then(() => refresh());
-  setInterval(() => { if (!document.hidden && !state.sending) refresh(); }, 4000);
+  setInterval(() => { if (!document.hidden && !Object.keys(state.pending).length) refresh(); }, 4000);
 })();

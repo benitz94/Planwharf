@@ -347,8 +347,11 @@ function createAskStream(expectedModel) {
   return { push, finish, acc };
 }
 
-let askChild = null;
+// One lead call in flight per key (a project's chat, or a project's autonomy decision).
+// A new call replaces only the call with the same key, so projects never cut each other off.
+const askChildren = new Map();
 let supervisorChild = null;
+const askKeyOf = info => typeof info?.askKey === 'string' && info.askKey ? info.askKey : 'chat:' + (info?.projectId || '');
 
 function askSpec(info, work, prompt) {
   if (info?.purpose !== 'supervisor') return launchSpec(info.model, work, prompt, true);
@@ -381,16 +384,22 @@ function writePrompt(child, spec, onError, onWritten) {
   try { child.stdin.end(spec.stdin, 'utf8', error => { if (error) fail(error); else if (!failed) onWritten?.(); }); } catch (error) { fail(error); }
 }
 
-function abortAsk() {
-  const child = askChild;
-  askChild = null;
-  if (!child) return false;
-  const pid = child.pid;
-  if (Number.isInteger(pid) && pid > 0) {
-    try { killWorker(pid); } catch (_) {}
+// With a key, stops that one call; without one (shutdown, update), stops every lead call.
+function abortAsk(key) {
+  const keys = typeof key === 'string' && key ? [key] : [...askChildren.keys()];
+  let stopped = false;
+  for (const name of keys) {
+    const child = askChildren.get(name);
+    askChildren.delete(name);
+    if (!child) continue;
+    stopped = true;
+    const pid = child.pid;
+    if (Number.isInteger(pid) && pid > 0) {
+      try { killWorker(pid); } catch (_) {}
+    }
+    try { child.kill(); } catch (_) {}
   }
-  try { child.kill(); } catch (_) {}
-  return true;
+  return stopped;
 }
 
 function askOrchestrator(info) {
@@ -407,10 +416,10 @@ function askOrchestrator(info) {
   return new Promise(resolve => {
     if (info.purpose === 'supervisor') {
       if (supervisorChild) { resolve({ failure: 'busy', answer: 'A Supervisor response is already in progress.' }); return; }
-    } else abortAsk();
+    } else abortAsk(askKeyOf(info));
     const child = spawn(spec.command, spec.args, { cwd: work, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     child.stdout.setEncoding('utf8');
-    if (info.purpose === 'supervisor') supervisorChild = child; else askChild = child;
+    if (info.purpose === 'supervisor') supervisorChild = child; else askChildren.set(askKeyOf(info), child);
     const stream = createAskStream(spec.adapter === 'claude' ? spec.model : undefined);
     let settled = false;
     let stderr = '';
@@ -435,7 +444,7 @@ function askOrchestrator(info) {
     const done = errorOrCode => {
       if (settled) return;
       settled = true;
-      if (askChild === child) askChild = null;
+      if (askChildren.get(askKeyOf(info)) === child) askChildren.delete(askKeyOf(info));
       if (supervisorChild === child) supervisorChild = null;
       clearTimeout(timer);
       const out = stream.finish();

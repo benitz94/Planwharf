@@ -251,6 +251,26 @@ const errors = [];
   await until(`document.getElementById('thread').innerText.includes('Quit Planwharf?')`, 'quit asks first');
   await click('[data-action="confirm-no"]');
   await until(`!document.getElementById('thread').innerText.includes('Quit Planwharf?')`, 'No keeps Planwharf open');
+  // A second project: when its lead answers while you look elsewhere, a dot appears on it until you open it.
+  const postJson = async (route, data) => (await fetch(appUrl + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })).json();
+  const { version: planVersion } = await (await fetch(appUrl + '/api/plan')).json();
+  const secondFolder = path.join(output, 'second'); fs.mkdirSync(secondFolder, { recursive: true });
+  const second = (await postJson('/api/projects', { version: planVersion, project: { name: 'Second site', direction: 'Not set yet: tell the lead in the chat what to build.', folder: secondFolder } })).plan.projects.at(-1).project.id;
+  await until(`document.querySelector('.project-item[data-project="${second}"]')`, 'second project listed', 15000);
+  await postJson('/api/orchestrator/ask', { question: 'Hello from the other project.', projectId: second });
+  await until(`document.querySelector('.project-item[data-project="${second}"] .news-dot')`, 'news dot on the other project', 15000);
+  assert.equal(await evaluate(`document.querySelectorAll('.project-item .news-dot').length`), 1, 'only the project with news has a dot');
+  await click(`.project-item[data-project="${second}"]`);
+  await until(`!document.querySelector('.project-item[data-project="${second}"] .news-dot')`, 'dot cleared once opened');
+  // Start over clears the chat of this project; the old history is archived, not deleted.
+  await evaluate(`(() => { const tab = document.querySelector('.tab[data-panel="settings"]'); if (tab.getAttribute('aria-pressed') !== 'true') tab.click(); return true; })()`);
+  await until(`!document.getElementById('side-panel').hidden && document.querySelector('[data-arm="start-over"]')`, 'Start over button');
+  await click('[data-arm="start-over"]');
+  await until(`document.querySelector('[data-action="start-over"]')`, 'Start over asks to confirm');
+  await click('[data-action="start-over"]');
+  await until(`!document.getElementById('thread').innerText.includes('Hello from the other project.')`, 'chat empty after Start over', 15000);
+  const { attemptsDir } = await (await fetch(appUrl + '/api/app')).json();
+  assert.ok(JSON.parse(fs.readFileSync(path.join(attemptsDir, 'orchestrator.json'), 'utf8')).projectArchive.some(record => record.reason === 'start over' && record.state.asks.some(turn => turn.question === 'Hello from the other project.')), 'old chat kept in the archive');
   assert.deepEqual(errors, [], 'No script errors on the page');
   console.log('verify-chat: ok');
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
