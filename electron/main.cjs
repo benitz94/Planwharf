@@ -9,7 +9,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 
 const APP_DIR = path.join(__dirname, 'app');
-let child = null, win = null, url = null, quitting = false;
+let child = null, win = null, splash = null, url = null, quitting = false;
+const ICON = path.join(__dirname, 'build', 'icon.png');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
@@ -132,12 +133,24 @@ async function startServer() {
   });
 }
 
+// While the local server starts (and projects are imported), a small window shows the ship.
+function showSplash() {
+  let ship = '';
+  try { ship = fs.readFileSync(path.join(APP_DIR, 'ship.svg'), 'utf8'); } catch {}
+  const page = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#101312;color:#eef3ef;font:15px system-ui,sans-serif}body{display:grid;place-items:center;text-align:center}svg{width:220px;height:auto;display:block;margin:0 auto 14px}</style><div>${ship}<p>Bringing your projects aboard…</p></div>`;
+  splash = new BrowserWindow({ width: 380, height: 320, frame: false, resizable: false, show: true, backgroundColor: '#101312', title: 'Planwharf', icon: ICON, skipTaskbar: false,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, javascript: false } });
+  splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(page));
+  splash.on('closed', () => { splash = null; });
+}
+function closeSplash() { if (splash) { splash.destroy(); splash = null; } }
+
 function createWindow() {
   win = new BrowserWindow({
-    width: 1280, height: 860, minWidth: 380, minHeight: 500, title: 'Planwharf', backgroundColor: '#101312', show: false,
+    width: 1280, height: 860, minWidth: 380, minHeight: 500, title: 'Planwharf', backgroundColor: '#101312', show: false, icon: ICON,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: true }
   });
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => { win.show(); closeSplash(); });
   // Only the local Planwharf page opens inside the app; every other link opens in the normal browser.
   const local = target => { try { return new URL(target).origin === new URL(url).origin; } catch { return false; } };
   win.webContents.setWindowOpenHandler(({ url: target }) => { if (/^https?:/.test(target) && !local(target)) shell.openExternal(target); return { action: 'deny' }; });
@@ -170,7 +183,8 @@ module.exports = { offerImport, findPortable };
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }, { role: 'windowMenu' }]) : null);
+  showSplash();
   try { url = await startServer(); }
-  catch (error) { dialog.showErrorBox('Planwharf could not start', error.message); quitting = true; app.quit(); return; }
+  catch (error) { closeSplash(); dialog.showErrorBox('Planwharf could not start', error.message); quitting = true; app.quit(); return; }
   createWindow();
 });

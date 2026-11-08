@@ -1,7 +1,7 @@
 {
   "name": "planwharf-desktop",
   "productName": "Planwharf",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "Planwharf desktop app: your AI crew in one chat window.",
   "author": "benitz94",
   "license": "GPL-3.0-only",
@@ -28,7 +28,8 @@
     "files": [
       "main.cjs",
       "app/**/*",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "win": {
       "target": "nsis"
