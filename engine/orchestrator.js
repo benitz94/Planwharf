@@ -257,7 +257,9 @@ function pickWorkers(models, options) {
   const building = assignmentRole(opts.job) === 'worker' && opts.job?.kind !== 'research';
   // The verifier also fixes code, so it needs the same coding capability as the builder.
   const verifyJob = building ? { ...opts.job, kind: 'verify', title: VERIFY_SLICE, detail: 'Run the tests and fix what fails.' } : null;
-  const want = Math.max(1, Number(opts.count) || sliceCount(opts.job, opts.facts, building ? Math.max(eligible, 2) : eligible));
+  // Approved building work always gets the independent verify slice when the team has a second model,
+  // whatever language the goal is written in ("leggi task.md e fallo" ran with no verifier on 2026-11-08).
+  const want = Math.max(1, Number(opts.count) || (building ? 2 : sliceCount(opts.job, opts.facts, eligible)));
   const workers = [];
   const usage = { ...baseUsage };
   let pool = Array.isArray(models) ? models.slice() : [];

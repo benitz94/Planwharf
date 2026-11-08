@@ -71,6 +71,9 @@ test('the Verifier role takes the verify slice', () => {
   const alone = pickWorkers([builder], { job, usage: {} });
   assert.deepEqual(alone.map(item => item.id), ['astra'], 'with no Verifier the job is one slice');
   assert.equal(dispatchPlan(alone, job, {})[0].slice, 'Whole job');
+  // A goal with none of the English build words still gets the verifier (run 3, 2026-11-08).
+  const italian = { title: 'leggi task.md e fallo', detail: 'leggi task.md e fallo' };
+  assert.deepEqual(pickWorkers([builder, checker], { job: italian, usage: {} }).map(item => item.id), ['astra', 'opus'], 'approved work in any language is verified');
 });
 
 test('project checks run node --test when test files exist and report a failure', async () => {
