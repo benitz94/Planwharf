@@ -452,8 +452,23 @@ function askOrchestrator(info) {
       resolve(out);
     };
     child.on('error', done);
-    child.on('close', (code, signal) => done(code === null ? new Error(signal || 'Provider process terminated') : code));
+    whenFinished(child, (code, signal) => done(code === null ? new Error(signal || 'Provider process terminated') : code));
     writePrompt(child, spec, done);
+  });
+}
+
+// A command the model started (a test run that hangs) can outlive the model's CLI and keep its output
+// pipes open, so 'close' never comes: run 4 on 2026-11-08 waited 30+ minutes after Grok had finished.
+// Once the CLI itself has exited, wait briefly for its last output, then stop listening and finish.
+const EXIT_GRACE_MS = 5000;
+function whenFinished(child, finish) {
+  let timer = null;
+  child.on('close', (code, signal) => { clearTimeout(timer); finish(code, signal); });
+  child.on('exit', (code, signal) => {
+    timer = setTimeout(() => {
+      child.stdout?.destroy(); child.stderr?.destroy();
+      finish(code, signal);
+    }, EXIT_GRACE_MS);
   });
 }
 
@@ -546,7 +561,7 @@ function run(argv = process.argv) {
     process.exitCode = 1;
   };
   child.on('error', fail);
-  child.on('close', (code, signal) => {
+  whenFinished(child, (code, signal) => {
     if (settled) return;
     settled = true;
     if (pending.trim()) { try { const row = JSON.parse(pending); if (row.event === 'result' && row.result) finalStatus = row.result.status; } catch (_) {} }
@@ -585,4 +600,4 @@ function run(argv = process.argv) {
 
 if (require.main === module) run();
 
-module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus };
+module.exports = { parseArgs, promptFor, whichGrok, isProcessAlive, killWorker, spawnWorker, askOrchestrator, abortAsk, abortSupervisor, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix, run, patchStatus, whenFinished };
