@@ -1,7 +1,7 @@
 {
   "name": "planwharf-desktop",
   "productName": "Planwharf",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Planwharf desktop app: your AI crew in one chat window.",
   "author": "benitz94",
   "license": "GPL-3.0-only",
