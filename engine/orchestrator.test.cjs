@@ -175,7 +175,9 @@ function make(plan, inspectFolder, extra) {
   assert.ok(leadSnap.projects[0].crew.some(person => person.role === 'Orchestrator' && person.name === 'Grok'));
   const talkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-ask-'));
   const talkAttempts = createAttemptEngine({ dir: talkDir });
-  const talkPlan = notebook({ folder: 'D:\\demo', open: ['What is in scope?'] });
+  // A real folder: Planwharf hands the lead only folders that exist.
+  const demoFolder = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'pw-demo-')));
+  const talkPlan = notebook({ folder: demoFolder, open: ['What is in scope?'] });
   let lastAskState = null;
   let lastAskInfo = null;
   const talkOrch = createOrchestrator({
@@ -199,12 +201,12 @@ function make(plan, inspectFolder, extra) {
   assert.notEqual(spokenA.answer, spokenB.answer);
   assert.ok(Array.isArray(lastAskState.history));
   assert.equal(lastAskState.history[0].user, 'What is Luna doing?');
-  assert.equal(lastAskInfo.folder, 'D:\\demo');
-  assert.equal(lastAskState.focus.folder, 'D:\\demo');
+  assert.equal(lastAskInfo.folder, demoFolder);
+  assert.equal(lastAskState.focus.folder, demoFolder);
 
   const muteDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-mute-'));
   const muteAttempts = createAttemptEngine({ dir: muteDir });
-  const mutePlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const mutePlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   const muteOrch = createOrchestrator({
     readPlan: async () => mutePlan,
     attempts: muteAttempts,
@@ -234,7 +236,7 @@ function make(plan, inspectFolder, extra) {
 
   const thinkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-think-'));
   const thinkAttempts = createAttemptEngine({ dir: thinkDir });
-  const thinkPlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const thinkPlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   let sawProgress = false;
   const thinkOrch = createOrchestrator({
     readPlan: async () => thinkPlan,
@@ -269,7 +271,7 @@ function make(plan, inspectFolder, extra) {
   let resolveHang;
   const hangDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-abort-'));
   const hangAttempts = createAttemptEngine({ dir: hangDir });
-  const hangPlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const hangPlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   const hangOrch = createOrchestrator({
     readPlan: async () => hangPlan,
     attempts: hangAttempts,
@@ -307,7 +309,7 @@ function make(plan, inspectFolder, extra) {
   let dispatchedModel = false;
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-dispatch-'));
   const workAttempts = createAttemptEngine({ dir: workDir });
-  const workPlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const workPlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   const workOrch = createOrchestrator({
     readPlan: async () => workPlan,
     attempts: workAttempts,
@@ -328,7 +330,7 @@ function make(plan, inspectFolder, extra) {
   assert.match(dispatched.answer, /dispatch|assign workers/i);
   assert.doesNotMatch(dispatched.answer, /SHOULD-NOT-IMPLEMENT/);
 
-  const idle = make(notebook({ folder: 'D:\\demo', open: [], tasks: [] }));
+  const idle = make(notebook({ folder: demoFolder, open: [], tasks: [] }));
   snap = await idle.orchestra.tick();
   assert.ok(Array.isArray(snap.fleet));
   assert.ok(Array.isArray(snap.plans));
@@ -349,7 +351,7 @@ function make(plan, inspectFolder, extra) {
   assert.match(snap.projects[0].next, /Auto start/);
   assert.equal(snap.projects[0].canStart, true);
 
-  const fresh = make(notebook({ folder: 'D:\\demo', open: [], tasks: [], fresh: true }));
+  const fresh = make(notebook({ folder: demoFolder, open: [], tasks: [], fresh: true }));
   snap = await fresh.orchestra.tick();
   // Without the interview a fresh project goes straight to planning.
   assert.equal(snap.grillPropose, false);
@@ -363,7 +365,7 @@ function make(plan, inspectFolder, extra) {
   snap = await noFolder.orchestra.tick();
   assert.equal(snap.projects[0].status, 'blocked_no_folder');
 
-  const ready = make(notebook({ folder: 'D:\\demo', open: [] }));
+  const ready = make(notebook({ folder: demoFolder, open: [] }));
   snap = await ready.orchestra.tick();
   assert.equal(snap.projects[0].status, 'needs_approval');
   assert.equal(snap.projects[0].canStart, true);
@@ -388,9 +390,9 @@ function make(plan, inspectFolder, extra) {
   assert.equal(again.projects[0].status, 'watching');
   assert.equal(ready.attempts.getAttempts().length, 1);
 
-  const grokOnly = make(notebook({ folder: 'D:\\demo', open: [] }));
+  const grokOnly = make(notebook({ folder: demoFolder, open: [] }));
   const grokOrchestra = createOrchestrator({
-    readPlan: async () => notebook({ folder: 'D:\\demo', open: [] }),
+    readPlan: async () => notebook({ folder: demoFolder, open: [] }),
     attempts: grokOnly.attempts,
     sentinel: createSentinel(grokOnly.attempts, { isAlive: () => true }),
     models: [{ id: 'grok', label: 'Grok', enabled: true }],
@@ -401,14 +403,14 @@ function make(plan, inspectFolder, extra) {
   assert.equal(snap.projects[0].status, 'needs_approval');
   assert.equal(snap.projects[0].doing.includes('Grok') || snap.mode === 'manual', true);
 
-  const autoRun = make(notebook({ folder: 'D:\\demo', open: [] }));
+  const autoRun = make(notebook({ folder: demoFolder, open: [] }));
   snap = await autoRun.orchestra.setMode('auto');
   assert.equal(snap.mode, 'auto');
   assert.equal(snap.projects[0].status, 'watching');
   assert.equal(autoRun.attempts.getAttempts().length, 1);
   assert.ok(snap.models.some(item => item.id === 'gemini' && item.used > 0));
 
-  const startPlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const startPlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   const startBox = make(startPlan);
   await startBox.orchestra.setMode('auto');
   await startBox.orchestra.setGrillPropose(false);
@@ -416,7 +418,7 @@ function make(plan, inspectFolder, extra) {
   assert.equal(questionsStart.ok, true);
   assert.equal(questionsStart.phase, 'grill');
   assert.equal(questionsStart.clearJob, true);
-  const openIdle = make(notebook({ folder: 'D:\\demo', open: ['What is in scope?'], tasks: [] }));
+  const openIdle = make(notebook({ folder: demoFolder, open: ['What is in scope?'], tasks: [] }));
   const grilledOpen = await openIdle.orchestra.startAutoTask('demo');
   assert.equal(grilledOpen.ok, true);
   assert.equal(grilledOpen.phase, 'grill');
@@ -456,7 +458,7 @@ function make(plan, inspectFolder, extra) {
   const spawnDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-spawn-'));
   const spawnAttempts = createAttemptEngine({ dir: spawnDir });
   const spawned = [];
-  const spawnPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const spawnPlan = notebook({ folder: demoFolder, open: [] });
   const spawnOrch = createOrchestrator({
     readPlan: async () => spawnPlan,
     attempts: spawnAttempts,
@@ -481,7 +483,7 @@ function make(plan, inspectFolder, extra) {
 
   const splitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-split-'));
   const splitAttempts = createAttemptEngine({ dir: splitDir });
-  const splitPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const splitPlan = notebook({ folder: demoFolder, open: [] });
   splitPlan.projects[0].tasks[0].title = 'Implement the parser';
   splitPlan.projects[0].tasks[0].detail = 'Write code.';
   const splitCalls = [];
@@ -511,7 +513,7 @@ function make(plan, inspectFolder, extra) {
   const failDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-fail-'));
   fs.mkdirSync(path.join(failDir, 'logs'), { recursive: true });
   const failAttempts = createAttemptEngine({ dir: failDir });
-  const failPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const failPlan = notebook({ folder: demoFolder, open: [] });
   const killed = [];
   let nextPid = 500;
   const failOrch = createOrchestrator({
@@ -546,7 +548,7 @@ function make(plan, inspectFolder, extra) {
 
   const deadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-dead-'));
   const deadAttempts = createAttemptEngine({ dir: deadDir });
-  const deadPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const deadPlan = notebook({ folder: demoFolder, open: [] });
   let deadPid = 700;
   const deadOrch = createOrchestrator({
     readPlan: async () => deadPlan,
@@ -566,7 +568,7 @@ function make(plan, inspectFolder, extra) {
 
   const noneDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-none-'));
   const noneAttempts = createAttemptEngine({ dir: noneDir });
-  const nonePlan = notebook({ folder: 'D:\\demo', open: [] });
+  const nonePlan = notebook({ folder: demoFolder, open: [] });
   const noneOrch = createOrchestrator({
     readPlan: async () => nonePlan,
     attempts: noneAttempts,
@@ -589,7 +591,7 @@ function make(plan, inspectFolder, extra) {
 
   const badDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-bad-'));
   const badAttempts = createAttemptEngine({ dir: badDir });
-  const badPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const badPlan = notebook({ folder: demoFolder, open: [] });
   const badOrch = createOrchestrator({
     readPlan: async () => badPlan,
     attempts: badAttempts,
@@ -613,7 +615,7 @@ function make(plan, inspectFolder, extra) {
   assert.equal(fs.existsSync(snap.projects[0].checkpoint.path), true);
   assert.match(snap.projects[0].doing, /Checkpoint saved/);
 
-  const stalePlan = notebook({ folder: 'D:\\demo', open: [], tasks: [] });
+  const stalePlan = notebook({ folder: demoFolder, open: [], tasks: [] });
   const staleDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-stale-'));
   const staleAttempts = createAttemptEngine({ dir: staleDir });
   staleAttempts.claim({ taskId: 'task-1', projectId: 'demo', modelId: 'gemini', candidates: models });
@@ -632,7 +634,7 @@ function make(plan, inspectFolder, extra) {
   const completeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-'));
   const completeAttempts = createAttemptEngine({ dir: completeDir });
   const completeSentinel = createSentinel(completeAttempts, { isAlive: attempt => Boolean(attempt && attempt.status === 'active') });
-  const completePlan = notebook({ folder: 'D:\\demo', open: [] });
+  const completePlan = notebook({ folder: demoFolder, open: [] });
   const completeOrch = createOrchestrator({
     readPlan: async () => completePlan,
     attempts: completeAttempts,
@@ -935,7 +937,7 @@ function make(plan, inspectFolder, extra) {
   }
 
   let clock = '2026-10-09T16:00:00.000Z';
-  const duePlan = notebook({ folder: 'D:\\demo', open: [] });
+  const duePlan = notebook({ folder: demoFolder, open: [] });
   duePlan.projects[0].tasks[0].timing = 'deadline';
   duePlan.projects[0].tasks[0].deadlineAt = '2026-10-09T17:00:00.000Z';
   const dueDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-due-'));
@@ -967,7 +969,7 @@ function make(plan, inspectFolder, extra) {
 
   const stopDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-stop-'));
   const stopAttempts = createAttemptEngine({ dir: stopDir });
-  const stopPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const stopPlan = notebook({ folder: demoFolder, open: [] });
   const stopKilled = [];
   let stopPid = 777;
   const stopOrch = createOrchestrator({
@@ -997,7 +999,7 @@ function make(plan, inspectFolder, extra) {
   assert.equal(stopAttempts.getAttempts().every(item => item.status !== 'active'), true);
   const stopAgain = await stopOrch.stop('demo');
   assert.equal(stopAgain.ok, false);
-  const waitPlan = notebook({ folder: 'D:\\demo', open: ['What is the smallest slice?'] });
+  const waitPlan = notebook({ folder: demoFolder, open: ['What is the smallest slice?'] });
   const waitOrch = createOrchestrator({
     readPlan: async () => waitPlan,
     attempts: createAttemptEngine({ dir: fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-wait-')) }),
@@ -1058,7 +1060,7 @@ function make(plan, inspectFolder, extra) {
 
   const keepDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-orch-keep-'));
   const keepAttempts = createAttemptEngine({ dir: keepDir });
-  const keepPlan = notebook({ folder: 'D:\\demo', open: [] });
+  const keepPlan = notebook({ folder: demoFolder, open: [] });
   let keepPid = 4400;
   const keepOrch = createOrchestrator({
     readPlan: async () => keepPlan,
