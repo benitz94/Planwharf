@@ -80,8 +80,8 @@ short calls (the plan and the final check).
   test it, then add the next. The solo tools did not get this instruction.
 - **No verifier in this run.** The team had a verifier, but the lead planned the job as one
   piece and, because of a bug, a one-piece job skipped the independent check. Planwharf's own
-  fresh test run (19 of 19 passing) was the only check. The bug is fixed: approved work now
-  always goes through the verifier when the team has one.
+  fresh test run (19 of 19 passing) was the only check. The bug has been fixed for the next
+  release: there, approved work always goes through the verifier when the team has one.
 - **Earlier runs.** Planwharf was run more than once during this benchmark. The earlier runs
   showed bugs in Planwharf (a stall after a blocked step, a turn cap and a permission mode for
   one provider, a worker left waiting on a leftover process). They were fixed, and they are not
