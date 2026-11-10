@@ -16,16 +16,30 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 
 ## Download
 
-**Before you start**, you need:
+Every [release](https://github.com/benitz94/Planwharf/releases/latest) contains both kinds of Planwharf. Pick one:
 
-1. [Node.js](https://nodejs.org/) 18 or newer;
-2. at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
+| Kind | Windows | Linux | macOS | Needs Node.js |
+|---|---|---|---|---|
+| **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included |
+| **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer |
+| **Native app** | coming later | coming later | coming later | |
 
-Then pick your system:
+With either kind you also need at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
 
-### Linux
+### Desktop app (Electron)
 
-Run this one command. It installs Planwharf for your user, without `sudo`:
+Its own window, with Node.js included. Download it from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), under **Assets**:
+
+- **Windows 10 / 11 (64-bit):** run `Planwharf-Setup-X.Y.Z.exe`. The installer is not code-signed yet, so Windows SmartScreen may say it "protected your PC": choose **More info > Run anyway** only if you downloaded it from this page.
+- **Linux (64-bit):** make `Planwharf-X.Y.Z.AppImage` executable and open it, or on Debian/Ubuntu run `sudo apt install ./planwharf-desktop_X.Y.Z_amd64.deb`.
+
+To update, install the new version over the old one: your projects are kept. More in [docs/DESKTOP.md](docs/DESKTOP.md).
+
+### Web app (portable ZIP)
+
+Opens in your browser's app window and updates itself from **Settings > Updates**. Needs [Node.js](https://nodejs.org/) 18 or newer.
+
+**Linux:** one command installs it for your user, without `sudo`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/benitz94/Planwharf/main/install.sh | sh
@@ -39,21 +53,14 @@ less install.sh
 sh install.sh
 ```
 
-### macOS
+**macOS:** download **`Planwharf-vX.Y.Z.zip`** from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it, open Terminal and run:
 
-1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`**.
-2. Extract it, open Terminal and run:
+```sh
+cd ~/Downloads/Planwharf
+sh planwharf.sh
+```
 
-   ```sh
-   cd ~/Downloads/Planwharf
-   sh planwharf.sh
-   ```
-
-### Windows
-
-1. Open the [latest release](https://github.com/benitz94/Planwharf/releases/latest) and download **`Planwharf-vX.Y.Z.zip`** (under **Assets**).
-2. Extract the whole folder.
-3. Double-click **`Planwharf.exe`**.
+**Windows:** download **`Planwharf-vX.Y.Z.zip`** from the [latest release](https://github.com/benitz94/Planwharf/releases/latest) (under **Assets**), extract the whole folder and double-click **`Planwharf.exe`**.
 
 Something not working on your system? Please [tell us](https://github.com/benitz94/Planwharf/issues): so far Windows has been tested the most.
 

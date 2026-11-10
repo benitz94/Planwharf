@@ -1,12 +1,9 @@
 name: Build desktop app
 
-# Builds the Electron installers. It never runs on a normal push: start it by hand
-# (Actions > Build desktop app > Run workflow) or push a tag like desktop-v0.3.0.
-# The installers are attached to a draft release, to be checked before publishing.
+# Test build of the Electron installers, started by hand (Actions > Build desktop app > Run workflow).
+# Released installers come from release.yml, attached to each vX.Y.Z release with the web app.
 on:
   workflow_dispatch:
-  push:
-    tags: ['desktop-v*']
 
 permissions:
   contents: write

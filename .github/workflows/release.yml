@@ -12,14 +12,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # One release per version, with every kind of Planwharf: the portable web app (ZIP)
+  # and the desktop app (Electron). It stays a draft until the desktop builds are attached.
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.publish.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Tag next patch and publish GitHub Release
+      - name: Tag next patch and draft the GitHub Release
+        id: publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -50,4 +55,84 @@ jobs:
             next="v${major}.${minor}.$((patch + 1))"
           done
           node engine/package-release.cjs "$next" "$RUNNER_TEMP/planwharf-release"
-          gh release create "$next" "$RUNNER_TEMP/planwharf-release/Planwharf-$next.zip" "$RUNNER_TEMP/planwharf-release/planwharf-update.json.gz" --target "$GITHUB_SHA" --title "Planwharf $next" --generate-notes
+          v="${next#v}"
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$next"
+          {
+            echo "## Download"
+            echo
+            echo "### Desktop app (Electron)"
+            echo "Its own window, Node.js included."
+            echo
+            echo "| System | File |"
+            echo "|---|---|"
+            echo "| Windows 10 / 11 (64-bit) | [Planwharf-Setup-$v.exe]($base/Planwharf-Setup-$v.exe) |"
+            echo "| Linux (64-bit), any distribution | [Planwharf-$v.AppImage]($base/Planwharf-$v.AppImage) |"
+            echo "| Debian / Ubuntu (64-bit) | [planwharf-desktop_${v}_amd64.deb]($base/planwharf-desktop_${v}_amd64.deb) |"
+            echo "| macOS | not available yet |"
+            echo
+            echo "The installers are not code-signed yet: Windows SmartScreen may warn before the first start."
+            echo
+            echo "### Web app (portable ZIP)"
+            echo "Opens in your browser's app window and updates itself from **Settings > Updates**. Needs Node.js 18 or newer."
+            echo
+            echo "| System | File |"
+            echo "|---|---|"
+            echo "| Windows, macOS, Linux | [Planwharf-$next.zip]($base/Planwharf-$next.zip) |"
+            echo
+            echo "### Native app"
+            echo "Coming later."
+            echo
+            gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$next" -f target_commitish="$GITHUB_SHA" --jq .body
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "$next" "$RUNNER_TEMP/planwharf-release/Planwharf-$next.zip" "$RUNNER_TEMP/planwharf-release/planwharf-update.json.gz" --target "$GITHUB_SHA" --title "Planwharf $next" --notes-file "$RUNNER_TEMP/notes.md" --draft
+          echo "tag=$next" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    needs: release
+    if: needs.release.outputs.tag != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            files: electron/dist/*.exe
+          - os: ubuntu-latest
+            script: dist:linux
+            files: electron/dist/*.AppImage electron/dist/*.deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install build tools
+        working-directory: electron
+        run: npm install --no-audit --no-fund
+      - name: Use the release version
+        working-directory: electron
+        shell: bash
+        run: |
+          tag="${{ needs.release.outputs.tag }}"
+          npm version "${tag#v}" --no-git-tag-version --allow-same-version
+      - name: Build
+        working-directory: electron
+        run: npm run ${{ matrix.script }}
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ needs.release.outputs.tag }}" ${{ matrix.files }} --repo "$GITHUB_REPOSITORY" --clobber
+
+  # Publish even if a desktop build failed, so the web app update still reaches everyone.
+  publish:
+    needs: [release, desktop]
+    if: always() && needs.release.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.release.outputs.tag }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest
