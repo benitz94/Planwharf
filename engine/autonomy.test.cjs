@@ -42,6 +42,13 @@ test('a completed MegaTask is evaluated once', () => {
   assert.equal(step(on({ evaluated: ['m1'] }), row).type, 'none');
 });
 
+test('turning the crew on after finished work starts new work instead of re-judging the old one', () => {
+  const fresh = createSettings('s1', '2026-11-03T10:00:00Z');
+  assert.equal(step(fresh, { status: 'complete', megaTaskId: 'm1' }).type, 'start');
+  assert.equal(step(fresh, { status: 'idle' }).type, 'start');
+  assert.equal(step(fresh, { status: 'needs_approval', megaTaskId: 'm2' }).type, 'approve');
+});
+
 test('each alert nudges once, ignored alerts never, and the hourly cap holds', () => {
   const row = { status: 'watching', megaTaskId: 'm1' }, now = Date.parse('2026-11-03T12:00:00Z');
   const alert = { key: 'quiet', title: 't', message: 'm' };
