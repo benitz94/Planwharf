@@ -216,6 +216,17 @@
     }, 'Goal saved. Press “Let the crew do it” to start.');
   }
 
+  // The lead's suggestion becomes the goal and, at once, a work proposal with the crew: one approval starts it.
+  async function proposeSuggestion(text) {
+    const row = project(); if (!row || !text) return;
+    await act(async () => {
+      const { version } = await getJson('/api/plan');
+      await post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal suggested by the lead', direction: text, state: 'Not started.', closed: [], open: [] } });
+      const fresh = await getJson('/api/plan');
+      return post('/api/orchestrator/start', { version: fresh.version, projectId: row.id, timing: 'discretion' });
+    }, 'The lead is preparing the work and the crew. Approve it when it appears.');
+  }
+
   // The current piece of work: proposal, live crew, or the result.
   // "Running tests (x3)" instead of three identical lines.
   function foldRepeats(lines) {
@@ -348,7 +359,7 @@
       state.goalCandidate = lastAsk.question;
       const suggested = String(lastAsk.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim();
       state.suggestedGoal = suggested || null;
-      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row">${suggested ? `<button type="button" class="btn btn-small btn-primary" data-action="use-suggested-goal" title="${escape(suggested)}">${ic('check')}Use the lead's suggestion</button>` : ''}<button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
+      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row">${suggested ? `<button type="button" class="btn btn-small btn-primary" data-action="use-suggested-goal" title="${escape(suggested)}">${ic('rocket')}Prepare the lead's suggestion</button>` : ''}<button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
     }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(state.pendingText)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
@@ -807,7 +818,7 @@
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
-    else if (action === 'use-suggested-goal') useAsGoal(state.suggestedGoal);
+    else if (action === 'use-suggested-goal') proposeSuggestion(state.suggestedGoal);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
