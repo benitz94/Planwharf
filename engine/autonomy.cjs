@@ -36,7 +36,8 @@ function nextStep({ mode, sessionId, settings, row, alerts = [], now = Date.now(
     if (settings.approved.length >= LIMITS.maxMegaTasks) return { type: 'limit', reason: 'MEGATASK_LIMIT' };
     return { type: 'approve', megaTaskId: row.megaTaskId };
   }
-  if (!settings.started && !row.megaTaskId) return { type: 'start' };
+  // Work finished before this setting was turned on is history, not this session's work: start anew.
+  if (!settings.started && (!row.megaTaskId || row.status === 'complete')) return { type: 'start' };
   if (row.status === 'complete' && row.megaTaskId && !settings.evaluated.includes(row.megaTaskId)) return { type: 'evaluate', megaTaskId: row.megaTaskId };
   const alert = alerts.find(item => item.active !== false && !item.ignored && !settings.nudgedKeys.includes(item.key));
   if (!alert) return none('idle');
