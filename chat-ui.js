@@ -278,6 +278,11 @@
     });
     return `<details class="usage-summary" open><summary class="small">${ic('usage')}What this work used</summary><ul class="plain">${rows.join('')}</ul></details>`;
   }
+  // What each step reported, in its own words: the explanation of the finished work.
+  function doneList(row) {
+    const said = (row.results || []).filter(result => result.summary && result.summary.trim());
+    return said.length ? `<h4 class="small">What was done</h4><ul class="plain small">${said.map(result => `<li>${escape(result.summary)}</li>`).join('')}</ul>` : '';
+  }
   function crewCard(row) {
     const mega = row.megaTask;
     const subs = row.subTasks || [];
@@ -309,7 +314,7 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
+        ${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
@@ -351,7 +356,11 @@
     const items = [
       ...asks.map(item => ({ at: Date.parse(item.at) || 0, html: askHtml(item) })),
       ...events.map(event => ({ at: Date.parse(event.createdAt) || 0, html: eventHtml(event) }))
-    ].sort((a, b) => a.at - b.at);
+    ];
+    // Finished work is history: it takes its place in the conversation instead of staying at the bottom.
+    const finished = row && String(row.megaTask?.status || '').toUpperCase() === 'COMPLETE' ? crewCard(row) : '';
+    if (finished) items.push({ at: Date.parse(row.megaTask.completedAt) || 0, html: finished });
+    items.sort((a, b) => a.at - b.at);
     let html = '';
     if (!row) html = welcomeCard();
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
@@ -361,9 +370,11 @@
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
     if (row && lastAsk && !busy && !pendingHere && lastAsk.question?.trim() !== row.goal?.trim()) {
       state.goalCandidate = lastAsk.question;
-      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
+      const suggested = String(lastAsk.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim();
+      state.suggestedGoal = suggested || null;
+      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row">${suggested ? `<button type="button" class="btn btn-small btn-primary" data-action="use-suggested-goal" title="${escape(suggested)}">${ic('check')}Use the lead's suggestion</button>` : ''}<button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
     }
-    if (row) html += crewCard(row) + alertsCard(row);
+    if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
@@ -881,6 +892,7 @@
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
+    else if (action === 'use-suggested-goal') useAsGoal(state.suggestedGoal);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
