@@ -6,7 +6,10 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 
 - **You are the captain.** You set the goal and choose the team.
 - **One model builds, another checks.** The checker can come from another company, so mistakes are less likely to slip through.
-- **Everything stays on your computer.** Planwharf uses the AI tools you already have (Claude Code, Codex, Grok CLI, Antigravity) or an API key. It never asks for your passwords.
+- **No Planwharf account, no Planwharf server.** Your project files stay in your folder on your computer.
+- **Your AI providers do see your work.** The tools Planwharf runs (Claude Code, Codex, Grok CLI, Antigravity) or the API you connect send your instructions and the code they read to their provider (Anthropic, OpenAI, xAI, Google), under your own agreement with that provider.
+- **No passwords.** Planwharf uses the sign-ins you already have. For an API it stores only the name of the environment variable that holds the key, never the key.
+- **Your crew decides the cost.** Planwharf does not save tokens or time by itself: what a goal costs depends on the models you choose and on the task.
 - **Nothing is published without you.** The work stays in your project folder: Planwharf does not commit, push or publish it.
 
 ## Download

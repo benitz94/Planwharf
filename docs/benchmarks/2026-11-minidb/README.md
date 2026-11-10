@@ -5,14 +5,20 @@ models. The numbers are reported as they came out; read them and draw your own c
 
 ## What Planwharf added
 
-- **The fastest finish.** About 15 minutes from goal to finished work, against 20 to 59 minutes
-  for the tools working alone.
+> **Read these numbers as indicative.** Each arm ran once, so times and tokens can change from one
+> run to the next. Each tool counts tokens in its own way (for example, with or without context read
+> from cache), so the token columns are not strictly comparable. Planwharf does not automatically
+> save tokens or time: the result depends on the crew you choose and on the task.
+
+- **First to finish in this run.** About 15 minutes from goal to finished work, against 20 to 59
+  minutes for the tools working alone.
 - **A full SQL score.** 992 of 992 statements, like the best solo runs.
 - **A strong lead for a small share of its tokens.** Claude Opus 5.5 planned the job and checked
   the result for 0.11 M tokens, about 3% of the 3.72 M it used when it built the whole program
   alone. The heavy work went to the builder.
-- **No extra cost for the crew.** The whole run took 1.24 M tokens, the same as the builder's own
-  solo run (1.25 M) and a third of the most expensive full-score solo run.
+- **About the same tokens as the builder alone, in this run.** The whole run took 1.24 M tokens,
+  close to the builder's own solo run (1.25 M) and a third of the most expensive full-score solo
+  run.
 - **Checks Planwharf runs itself.** Before accepting the goal, Planwharf ran the project's tests
   again on its own (19 of 19 passing) instead of trusting the builder's report.
 - **One chat, any mix of providers.** You give the goal in plain words and choose the crew; the
