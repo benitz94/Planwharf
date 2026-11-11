@@ -338,3 +338,6 @@ details.skills summary { cursor: pointer; }
 
 /* Model picker on a work step */
 .crew-pick { font: inherit; font-size: .9em; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line, #444); background: var(--panel, transparent); color: inherit; max-width: 100%; }
+
+/* Plain-English summary of finished work */
+.work-summary { border-left: 3px solid var(--accent, #3ba776); padding: 4px 0 4px 10px; margin: 8px 0; }

@@ -332,7 +332,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     const next = current.schema === 2 ? { ...current, projects: current.projects.map(item => ({ ...item, tasks: (item.tasks || []).map(close) })) } : { ...current, tasks: (current.tasks || []).map(close) };
     await save(planFile, next);
   }).catch(error => console.error('Closing old work failed:', error.message));
-  const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/ship.svg': ['ship.svg', 'image/svg+xml'] };
+  const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'], '/work-summary.js': ['work-summary.js', 'text/javascript'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/ship.svg': ['ship.svg', 'image/svg+xml'] };
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => {
       response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });

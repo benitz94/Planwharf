@@ -2008,7 +2008,7 @@ function createOrchestrator(options) {
           megaTaskId: row.megaTaskId || null,
           megaTask: row.megaTask || null,
           subTasks: row.subTasks || [],
-          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: String(result.summary || '').slice(0, 600), ...(result.modelChange ? { modelChange: true } : {}) })) : [],
+          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: String(result.summary || '').slice(0, 600), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
           modelId: row.modelId,

@@ -308,6 +308,13 @@
     return `<details class="usage-summary" open><summary class="small">${ic('usage')}What this work used</summary><ul class="plain">${rows.join('')}</ul></details>`;
   }
   // What each step reported, in its own words: the explanation of the finished work.
+  // In plain English: how the work ended, who did what, what went wrong, what is left to do.
+  function summaryBox(row, changedFiles) {
+    const build = globalThis.PlanwharfWorkSummary?.workSummary;
+    if (!build) return '';
+    const lines = build(row, { stopReason: autonomyOf(row.id)?.stopReason || null, changedFiles, modelLabel });
+    return `<div class="work-summary"><h4 class="small">Summary</h4><ul class="plain small">${lines.map(line => `<li>${escape(line)}</li>`).join('')}</ul></div>`;
+  }
   function doneList(row) {
     const said = (row.results || []).filter(result => result.summary && result.summary.trim() && !result.modelChange);
     return said.length ? `<h4 class="small">What was done</h4><ul class="plain small">${said.map(result => `<li>${escape(result.summary)}</li>`).join('')}</ul>` : '';
@@ -356,14 +363,14 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Planwharf did not commit or publish anything.</p>
+        ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Planwharf did not commit or publish anything.</p>
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div>
         ${repo?.local?.git && changed ? `<form class="commit-form stack" data-commit-project="${escape(row.id)}"><label class="small" for="commit-message-${escape(row.id)}">Save it in git when you are happy with it</label>
           <input id="commit-message-${escape(row.id)}" name="message" maxlength="500" value="${escape(String(mega.title || 'Work by the crew').slice(0, 200))}">
           <div class="row"><button type="submit" class="btn btn-small" data-push="false">${ic('check')}Commit</button><button type="submit" class="btn btn-small btn-primary" data-push="true">${ic('rocket')}Commit and push</button></div></form>` : ''}</div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${summaryBox(row, null)}${bar}${steps}${usageSummary(mega, subs)}
         <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}</div></div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
