@@ -63,7 +63,8 @@ function make() {
   const notebookFile = path.join(dir, 'http-plan.json');
   fs.writeFileSync(notebookFile, JSON.stringify(notebook));
   const httpDir = path.join(dir, 'http-attempts');
-  const serverOptions = {planFile: notebookFile, attemptsDir: httpDir, fetchPlans: null,
+  // Its fixture holds a task saved before Phase 2, so this check runs the old execution path explicitly.
+  const serverOptions = { phase2: false, planFile: notebookFile, attemptsDir: httpDir, fetchPlans: null,
     models: [{ ...model, kind: 'default' }], inspectFolder: () => ({ names: [], fileCount: 0 }),
     spawnWorker: () => ({ pid: 2001 }), isProcessAlive: () => true, killWorker: pid => killed.push(pid) };
   let server = createServer(serverOptions);

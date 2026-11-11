@@ -31,7 +31,7 @@ try {
   // Every engine test runs on every pull request, so a regression is caught before merge.
   // A test listed here is excluded only with its reason, until it is brought up to date.
   const excluded = {
-    'engine/orchestrator.test.cjs': 'Written before the chat view: many checks expect the removed Grill interview and old texts; being updated.'
+    'engine/orchestrator.test.cjs': 'Covers only the old (pre-Phase 2) execution path, which the app no longer reaches; it goes with that path.'
   };
   const engineTests = fs.readdirSync(path.join(root, 'engine')).filter(name => name.endsWith('.test.cjs')).map(name => 'engine/' + name).sort();
   for (const [file, why] of Object.entries(excluded)) console.log(`SKIP ${file}: ${why}`);

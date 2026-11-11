@@ -3200,6 +3200,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const job = item.tasks.find(task => task.status === 'running');
     if (job.kind !== 'research' && !linkedWorkspace(item.project.folder)) return { ok: false, reason: 'Relink a real local project folder before approval.' };
     const row = entry(projectId);
+    if (opts.phase2 && job.executionVersion !== 2) return { ok: false, reason: 'This work was saved by an older version of Planwharf and cannot continue. Start it again with Let the crew do it.' };
     if (megaTaskId && job.executionVersion !== 2) return { ok: false, reason: 'The legacy job has no matching MegaTask approval target.' };
     if (job.executionVersion === 2) {
       decide(item);
