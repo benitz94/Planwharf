@@ -922,15 +922,13 @@ function defaultInspect(folder) {
 
 function jobFromFacts(revision, facts) {
   const goal = revision && typeof revision.direction === 'string' ? revision.direction.trim() : '';
-  const git = Boolean(facts && facts.git);
   const subject = (facts && facts.lastSubject) || 'latest repo changes';
-  const title = git
-    ? (clip(`Continue: ${subject}`, 120) || 'Continue from the repo')
-    : (clip(goal, 120) || clip(`Continue: ${subject}`, 120) || 'Continue from the repo');
+  // The work is named after the goal agreed with the user; only without a goal does it continue from the repo.
+  const title = clip(goal, 120) || clip(`Continue: ${subject}`, 120) || 'Continue from the repo';
   const dirty = facts && Array.isArray(facts.dirty) ? facts.dirty.slice(0, 12) : [];
   const recent = facts && Array.isArray(facts.recent) ? facts.recent.slice(0, 5) : [];
   const detail = [
-    goal ? `Goal: ${clip(goal, 400)}` : '',
+    goal ? `Goal: ${clip(goal, 4000)}` : '',
     facts && facts.lastCommit ? `Latest commit: ${facts.lastCommit}` : (facts && facts.git ? 'Git present.' : 'No git history.'),
     recent.length ? `Recent:\n${recent.join('\n')}` : '',
     dirty.length ? `Uncommitted:\n${dirty.join('\n')}` : 'Working tree clean.',
