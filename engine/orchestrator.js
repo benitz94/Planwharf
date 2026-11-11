@@ -2599,6 +2599,8 @@ function createOrchestrator(options) {
   function explainNoWorker(worker, sub) {
     const title = sub?.title ? `"${String(sub.title).slice(0, 80)}"` : 'this step';
     const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(sub)] || 'Build';
+    // A Gold step uses exactly the model the user chose: it never waits for, or switches to, another one.
+    if (sub?.goldModel && assignmentRole(sub) === 'worker') return { waiting: false, message: `The Gold model ${worker?.label || sub.goldModel.id || sub.assignedModelId} cannot take ${title}: it is disabled or under its quota threshold, and a Gold step never switches model. Wait for its quota, or turn Gold off.` };
     const crew = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, sub) && (sub?.type === 'AUDIT' || model.capabilities?.canCode !== false));
     if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
     const settings = autoSwitch();
