@@ -489,7 +489,7 @@ function createExecutionBridge(options) {
       if (!killWorker?.(part.pid) || isProcessAlive?.(part.pid)) throw new Error(`Could not stop the worker of "${sub.title}"; its model was not changed.`);
       part.alive = false; part.observedAlive = false;
       const partial = readJSON(part.structuredResultPath);
-      collect(mega, sub, part, technical(mega, sub, part, 'BLOCKED', `Model changed to ${model.label || model.id}; the step restarts with it.`, validateResult(partial, identity(mega, sub, part.attemptId)) ? partial : null));
+      collect(mega, sub, part, { ...technical(mega, sub, part, 'BLOCKED', `Model changed to ${model.label || model.id}; the step restarts with it.`, validateResult(partial, identity(mega, sub, part.attemptId)) ? partial : null), modelChange: true });
       mega.interruptedAttemptIds = [...(mega.interruptedAttemptIds || []), part.attemptId];
     }
     for (const [sub, model] of changes) {

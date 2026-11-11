@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { AsyncLocalStorage } = require('node:async_hooks');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const Plan = require('./plan.js');
 const { createAttemptEngine } = require('./engine/attempts.js');
 const { createSentinel } = require('./engine/sentinel.js');
@@ -532,6 +532,42 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const result = await enqueue(() => orchestra.dispatchResearch({ ...input, type: 'dispatch_research' }));
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(201, result);
+      }
+      // The user commits, and optionally pushes, the finished work. Planwharf never does this by itself.
+      if (request.method === 'POST' && pathname === '/api/repository/commit') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || typeof input.message !== 'string' || Object.keys(input).some(key => !['projectId', 'message', 'push'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const message = input.message.trim();
+        if (!message) throw new RequestError(400, 'Write a commit message.');
+        const result = await enqueue(async () => {
+          const current = await readPlan(planFile);
+          const item = (current.schema === 2 ? current.projects : [current]).find(entry => entry.project.id === input.projectId);
+          if (!item) throw new RequestError(404, 'Project not found.');
+          const state = await orchestra.snapshot(input.projectId);
+          if ((state.projects || []).some(row => row.id === input.projectId && row.status === 'watching')) throw new RequestError(409, 'The crew is still working on this project. Commit when it has finished.');
+          const folder = require('./engine/project-workspace.cjs').linkedWorkspace(item.project.folder);
+          if (!folder) throw new RequestError(400, 'The project folder is not available.');
+          // The user's own git: their identity and their credentials, without prompts that would hang.
+          const run = (...args) => spawnSync('git', args, { cwd: folder, encoding: 'utf8', timeout: 120000, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
+          const inside = run('rev-parse', '--is-inside-work-tree');
+          if (inside.status !== 0 || inside.stdout.trim() !== 'true') throw new RequestError(400, 'This project folder is not a git repository.');
+          const branch = run('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+          if (!run('status', '--porcelain').stdout.trim()) throw new RequestError(400, 'Nothing to commit: the project folder has no changes.');
+          const added = run('add', '-A');
+          if (added.status !== 0) throw new RequestError(400, 'git add failed: ' + (added.stderr || added.stdout).trim().slice(0, 500));
+          const committed = run('commit', '-m', message);
+          if (committed.status !== 0) throw new RequestError(400, 'git commit failed: ' + (committed.stderr || committed.stdout).trim().slice(0, 500));
+          const commit = run('rev-parse', '--short', 'HEAD').stdout.trim();
+          if (!input.push) return { ok: true, commit, branch, pushed: false };
+          if (!branch || branch === 'HEAD') throw new RequestError(400, `Committed ${commit}, but not pushed: the folder is not on a branch.`);
+          // Never a force push: the branch's own upstream, or origin with the same branch name.
+          const upstream = run('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}');
+          const pushed = upstream.status === 0 ? run('push') : run('push', '-u', 'origin', branch);
+          if (pushed.status !== 0) throw new RequestError(400, `Committed ${commit}, but the push failed: ` + (pushed.stderr || pushed.stdout).trim().slice(0, 500));
+          return { ok: true, commit, branch, pushed: true };
+        });
+        return json(200, result);
       }
       if (request.method === 'GET' && pathname === '/api/repository') {
         const result = await orchestra.inspectRepository(loc.searchParams.get('projectId'), { force: loc.searchParams.get('refresh') === '1' });
