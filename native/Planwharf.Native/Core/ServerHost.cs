@@ -10,6 +10,7 @@ public sealed class ServerHost : IAsyncDisposable
     static readonly Regex AddressLine = new(@"^(http://127\.0\.0\.1:\d+)\s*$", RegexOptions.Multiline);
 
     Process? process;
+    StreamWriter? log;
     public string? Address { get; private set; }
     public string DataFolder { get; }
     public string LogFile => Path.Combine(DataFolder, "native.log");
@@ -69,10 +70,11 @@ public sealed class ServerHost : IAsyncDisposable
 
         var found = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var output = new System.Text.StringBuilder();
-        var log = new StreamWriter(LogFile, append: true) { AutoFlush = true };
+        log = new StreamWriter(new FileStream(LogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete)) { AutoFlush = true };
+        var writer = log;
         process = new Process { StartInfo = info, EnableRaisingEvents = true };
-        process.OutputDataReceived += (_, e) => { if (e.Data == null) return; lock (output) { log.WriteLine(e.Data); output.AppendLine(e.Data); if (ReadAddress(output.ToString()) is { } address) found.TrySetResult(address); } };
-        process.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) log.WriteLine(e.Data); };
+        process.OutputDataReceived += (_, e) => { if (e.Data == null) return; lock (output) { writer.WriteLine(e.Data); output.AppendLine(e.Data); if (ReadAddress(output.ToString()) is { } address) found.TrySetResult(address); } };
+        process.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) writer.WriteLine(e.Data); };
         process.Exited += (_, _) => found.TrySetException(new InvalidOperationException($"Planwharf stopped while starting. See {LogFile}."));
         try { process.Start(); }
         catch (Exception error) { throw new InvalidOperationException($"Node.js could not start ({error.Message}). Install Node.js 18 or newer.", error); }
@@ -83,10 +85,15 @@ public sealed class ServerHost : IAsyncDisposable
     }
 
     // Quit as the other versions do: the server saves unfinished work, then stops.
+    // The log is closed last: Windows keeps an open file locked.
     public async ValueTask DisposeAsync()
     {
-        if (process is not { HasExited: false }) return;
-        try { using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) }; await http.PostAsync(Address + "/api/app/quit", new StringContent("{}", System.Text.Encoding.UTF8, "application/json")); } catch { }
-        if (!process.WaitForExit(10000)) try { process.Kill(entireProcessTree: true); } catch { }
+        if (process is { HasExited: false })
+        {
+            try { using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) }; await http.PostAsync(Address + "/api/app/quit", new StringContent("{}", System.Text.Encoding.UTF8, "application/json")); } catch { }
+            if (!process.WaitForExit(10000)) try { process.Kill(entireProcessTree: true); process.WaitForExit(5000); } catch { }
+        }
+        process?.Dispose(); process = null;
+        lock (this) { log?.Dispose(); log = null; }
     }
 }

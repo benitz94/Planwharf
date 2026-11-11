@@ -21,7 +21,10 @@ public class ServerHostTests
             Assert.Equal("v0.0.1", (await api.GetAsync("/api/app"))["version"]?.GetValue<string>());
             await host.DisposeAsync();
             await Assert.ThrowsAnyAsync<Exception>(() => new HttpClient { Timeout = TimeSpan.FromSeconds(3) }.GetStringAsync(address + "/api/app"));
+            // Nothing stays open: on Windows an open log or a running server would lock the folder.
+            data.Delete(true);
+            Assert.False(Directory.Exists(data.FullName));
         }
-        finally { data.Delete(true); }
+        finally { if (Directory.Exists(data.FullName)) try { data.Delete(true); } catch { } }
     }
 }
