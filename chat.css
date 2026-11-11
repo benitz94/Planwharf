@@ -335,3 +335,6 @@ details.skills summary { cursor: pointer; }
 .ship .wave-far, .ship .keel, .ship .port { fill: #1f7a52; }
 [data-theme="dark"] .ship .mast, [data-theme="dark"] .ship .hull { fill: #eef3ef; stroke: none; }
 [data-theme="dark"] .ship .sail-back { fill: #eef3ef; } [data-theme="dark"] .ship .sail { fill: #5fcf98; }
+
+/* Model picker on a work step */
+.crew-pick { font: inherit; font-size: .9em; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line, #444); background: var(--panel, transparent); color: inherit; max-width: 100%; }

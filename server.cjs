@@ -753,6 +753,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
         return json(200, result.snapshot);
       }
+      if (request.method === 'POST' && pathname === '/api/orchestrator/crew') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || !input.assignments || typeof input.assignments !== 'object' || Object.keys(input).some(key => !['projectId', 'assignments'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const result = await enqueue(() => orchestra.changeCrew(input.projectId, input.assignments));
+        if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
+        return json(200, { ...(await orchestra.tick()), message: result.text });
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/reset') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);
