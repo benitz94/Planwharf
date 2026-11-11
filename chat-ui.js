@@ -307,6 +307,8 @@
     const subs = row.subTasks || [];
     if (!mega || !subs.length) return '';
     const status = String(mega.status || '').toUpperCase();
+    // Cancelled work is not current work: show nothing rather than a crew that looks busy.
+    if (status === 'CANCELLED') return '';
     if (subs.some(sub => String(sub.status).toUpperCase() === 'RUNNING')) rememberQuota(mega, subs);
     const done = subs.filter(sub => sub.status === 'COMPLETE').length;
     const pct = Math.round(done / subs.length * 100);
