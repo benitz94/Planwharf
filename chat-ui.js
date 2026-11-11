@@ -402,7 +402,7 @@
       html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
-    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
+    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking" data-live-thinking${state.thinkingOpen ? ' open' : ''}><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
     if (nearBottom || pendingHere) thread.scrollTop = thread.scrollHeight;
@@ -956,6 +956,8 @@
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });
+  // The chat redraws while the lead works: remember whether its activity box is open.
+  document.addEventListener('toggle', event => { if (event.target.matches?.('details[data-live-thinking]')) state.thinkingOpen = event.target.open; }, true);
   document.addEventListener('change', event => {
     if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value);
     else if (event.target.matches('[data-crew-step]')) {
