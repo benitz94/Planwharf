@@ -237,6 +237,11 @@ function createExecutionBridge(options) {
   }
   function paint(mega) {
     const row = rowFor(mega.projectId, mega.id), subs = subtasks(mega);
+    // Cancelled work is history: it never becomes, or stays, the project's current work.
+    if (mega.status === 'CANCELLED') {
+      if (!row.megaTaskId || row.megaTaskId === mega.id) Object.assign(row, { jobId: null, megaTaskId: null, megaTask: null, subTasks: [], dispatch: [], status: 'idle' });
+      return;
+    }
     row.jobId = mega.taskId; row.jobTitle = mega.title; row.jobFingerprint = mega.jobFingerprint; row.jobRevisionId = mega.planRevisionId;
     row.megaTaskId = mega.id; row.megaTask = clone(mega); row.subTasks = clone(subs);
     row.status = { READY_FOR_APPROVAL: 'needs_approval', RUNNING: 'watching', PAUSED: 'checkpointed', COMPLETE: 'complete', FAILED: 'failed', CANCELLED: 'idle' }[mega.status] || 'idle';

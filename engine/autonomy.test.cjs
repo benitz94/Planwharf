@@ -47,6 +47,7 @@ test('turning the crew on after finished work starts new work instead of re-judg
   assert.equal(step(fresh, { status: 'complete', megaTaskId: 'm1' }).type, 'start');
   assert.equal(step(fresh, { status: 'idle' }).type, 'start');
   assert.equal(step(fresh, { status: 'needs_approval', megaTaskId: 'm2' }).type, 'approve');
+  assert.equal(step(fresh, { status: 'idle', megaTaskId: 'm3', megaTask: { status: 'CANCELLED' } }).type, 'start');
 });
 
 test('each alert nudges once, ignored alerts never, and the hourly cap holds', () => {
