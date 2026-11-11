@@ -43,3 +43,15 @@ test('a model without the role, or an unknown step, is refused and nothing chang
   assert.throws(() => bridge.reassignRemaining(item.project.id, mega.id, { 'missing-step': 'sonnet' }), /not a remaining step/);
   assert.equal(bridge.view(item.project.id).subTasks.find(sub => sub.id === build.id).assignedModelId, 'terra');
 });
+
+test('work that still reads RUNNING with a blocked step can change its models', t => {
+  const { bridge, mega, item } = fixture(t);
+  const build = bridge.view(item.project.id).subTasks.find(sub => sub.megaTaskId === mega.id && sub.title === 'Build');
+  const live = bridge.target(item.project.id, mega.id);
+  live.status = 'RUNNING';
+  bridge.view(item.project.id).subTasks.find(sub => sub.id === build.id).status = 'BLOCKED';
+  const changed = bridge.reassignRemaining(item.project.id, mega.id, { [build.id]: 'sonnet' });
+  const after = bridge.view(item.project.id).subTasks.find(sub => sub.id === build.id);
+  assert.equal(after.assignedModelId, 'sonnet');
+  assert.equal(changed.status, 'RUNNING');
+});
