@@ -12,7 +12,7 @@ static class SampleState
       "models": [ { "id": "opus", "label": "Opus 5.5" }, { "id": "astra", "label": "GPT-6 Astra" }, { "id": "grok", "label": "Grok 4.7" } ],
       "asks": [ { "at": "2026-11-11T15:40:00Z", "projectId": "weather", "orchestratorId": "grok",
         "question": "I want a 7-day forecast page with charts.",
-        "answer": "Good plan.\n\nSuggested next goal: Add a 7-day forecast page with charts and tests." } ],
+        "answer": "Good plan: the app already has **24 files** and `src/api.js` fetches the data.\n\nSuggested next goal: Add a 7-day forecast page with charts and tests." } ],
       "projects": [
         { "id": "weather", "name": "Weather dashboard", "label": "Done", "status": "complete", "goal": "Add a 7-day forecast page with charts and tests.",
           "megaTaskId": "MT-1", "megaTask": { "id": "MT-1", "title": "Add a 7-day forecast page with charts and tests.", "status": "COMPLETE" },
