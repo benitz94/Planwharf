@@ -12,6 +12,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.23" />
     <PackageReference Include="Avalonia.Skia" Version="11.3.23" />
+    <!-- On GitHub, failing tests show their message as annotations on the check. -->
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Planwharf.Native/Planwharf.Native.csproj" />

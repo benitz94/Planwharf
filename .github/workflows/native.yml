@@ -23,7 +23,8 @@ jobs:
             rid: linux-x64
           - os: macos-latest
             rid: osx-arm64
-          - os: macos-13
+          # Intel Macs are built on the Apple silicon runner: .NET publishes for either.
+          - os: macos-latest
             rid: osx-x64
     runs-on: ${{ matrix.os }}
     steps:
@@ -35,7 +36,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Test
-        run: dotnet test native/Planwharf.Native.Tests --nologo
+        run: dotnet test native/Planwharf.Native.Tests --nologo --logger GitHubActions --logger "console;verbosity=normal"
       - name: Publish
         shell: bash
         run: |

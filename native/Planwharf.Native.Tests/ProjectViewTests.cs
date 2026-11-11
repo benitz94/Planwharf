@@ -84,7 +84,7 @@ public class DataFolderTests
     [Fact]
     public void The_data_folder_is_absolute_even_before_the_config_folder_exists()
     {
-        if (OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsLinux()) return;
         var saved = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
         var missing = Path.Combine(Path.GetTempPath(), "pw-native-config-" + Guid.NewGuid().ToString("N"));
         try
@@ -95,5 +95,16 @@ public class DataFolderTests
             Assert.Equal(Path.Combine(missing, "Planwharf", "data"), folder);
         }
         finally { Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", saved); if (Directory.Exists(missing)) Directory.Delete(missing, true); }
+    }
+}
+
+public class MacDataFolderTests
+{
+    // On a Mac the native app uses the desktop app's folder, so both see the same projects.
+    [Fact]
+    public void On_a_Mac_the_data_folder_is_the_desktop_apps()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        Assert.EndsWith(Path.Combine("Library", "Application Support", "Planwharf", "data"), ServerHost.DefaultDataFolder());
     }
 }

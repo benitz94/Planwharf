@@ -24,6 +24,8 @@ public sealed class ServerHost : IAsyncDisposable
     // GetFolderPath answers "" when the folder does not exist yet (a new user on Linux has no ~/.config): create it.
     public static string DefaultDataFolder()
     {
+        // On a Mac, where the desktop app keeps its data, so both see the same projects.
+        if (OperatingSystem.IsMacOS()) return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Planwharf", "data");
         var root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create);
         if (string.IsNullOrEmpty(root)) root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
         return Path.Combine(root, "Planwharf", "data");
