@@ -60,4 +60,41 @@ function resolveUsageFallback(model, models, plans, eligible) {
   }
   return null;
 }
-module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback };
+// Automatic model switch when a model's quota runs low: on by default, at 20% left.
+const AUTO_SWITCH_DEFAULT = Object.freeze({ enabled: true, thresholdPercent: 20 });
+
+function quotaLeft(model, plans = []) {
+  const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
+  if (!plan || plan.readable !== true) return null;
+  if (Number.isFinite(plan.leftPct)) return plan.leftPct;
+  return Number.isFinite(plan.pct) ? 100 - plan.pct : null;
+}
+
+// Low means exhausted, at the provider's own stop threshold, or at or under the switch threshold.
+// Unread quota is not low: nothing is switched on a guess.
+function lowQuota(model, plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT.thresholdPercent) {
+  const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
+  if (plan?.readable === true && plan.exhausted) return true;
+  if (usagePolicy(model, plans).state === 'limit') return true;
+  const left = quotaLeft(model, plans);
+  return left !== null && left <= thresholdPercent;
+}
+
+// Which working steps should move, and to which model: the eligible one with the most quota left above the threshold.
+function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT.thresholdPercent, enabled = true, eligible = () => true } = {}) {
+  if (!enabled) return [];
+  const out = [];
+  for (const step of running) {
+    const current = models.find(model => model.id === step.modelId);
+    if (!current || !lowQuota(current, plans, thresholdPercent)) continue;
+    const best = models
+      .filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false && eligible(model, step))
+      .map(model => ({ model, left: quotaLeft(model, plans) }))
+      .filter(item => item.left !== null && !lowQuota(item.model, plans, thresholdPercent))
+      .sort((a, b) => b.left - a.left)[0];
+    if (best) out.push({ subTaskId: step.subTaskId, fromModelId: current.id, toModelId: best.model.id, leftPercent: quotaLeft(current, plans) });
+  }
+  return out;
+}
+
+module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, quotaLeft, lowQuota, quotaSwitches };

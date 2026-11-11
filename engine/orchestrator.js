@@ -21,7 +21,7 @@ const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { createInvocationLedger } = require('./invocations.cjs');
 const { compactState, recentContext } = require('./briefing.cjs');
 const Quota = require('../quota.js');
-const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback } = require('./model-policy.cjs');
+const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaSwitches } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
 const { TOOL_NAMES } = require('./claude.cjs');
 const { TOOL_REQUEST } = require('./runner.cjs');
@@ -1100,6 +1100,7 @@ function createOrchestrator(options) {
       if (parsed && typeof parsed === 'object') {
         store = {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
+          autoSwitch: parsed.autoSwitch && typeof parsed.autoSwitch === 'object' ? parsed.autoSwitch : undefined,
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -1186,10 +1187,18 @@ function createOrchestrator(options) {
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
+    explainNoWorker: (worker, sub) => explainNoWorker(worker, sub),
     resolveWorker: (worker, sub) => {
       if (sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker') return worker;
       const resolved = worker ? resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
-      if (resolved) return resolved;
+      if (resolved) {
+        // Starting a step on a model already under the switch threshold: take one with more quota when there is one.
+        const settings = autoSwitch();
+        if (!settings.enabled || !lowQuota(resolved, plansLive, settings.thresholdPercent)) return resolved;
+        const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: settings.thresholdPercent,
+          eligible: candidate => permitsAssignment(candidate, sub) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked })[0];
+        return better ? roster().find(model => model.id === better.toModelId) || resolved : resolved;
+      }
       // Quota not read yet: wait for it rather than switch model on a guess.
       if (worker && usagePolicy(worker, plansLive).state === 'unread') return null;
       // The assigned model is disabled, no longer has this role, or ran out of quota with no fallback set:
@@ -2586,6 +2595,73 @@ function createOrchestrator(options) {
   // Each project takes its own steps: a lead decision for one project (which can outlast several
   // monitoring intervals) never holds up another. A project still busy with its last step is skipped.
   const autonomyBusy = new Set();
+  // Why a step has no model to start on: waiting for quota (it starts by itself later) or a problem the user must fix.
+  function explainNoWorker(worker, sub) {
+    const title = sub?.title ? `"${String(sub.title).slice(0, 80)}"` : 'this step';
+    const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(sub)] || 'Build';
+    // A Gold step uses exactly the model the user chose: it never waits for, or switches to, another one.
+    if (sub?.goldModel && assignmentRole(sub) === 'worker') return { waiting: false, message: `The Gold model ${worker?.label || sub.goldModel.id || sub.assignedModelId} cannot take ${title}: it is disabled or under its quota threshold, and a Gold step never switches model. Wait for its quota, or turn Gold off.` };
+    const crew = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, sub) && (sub?.type === 'AUDIT' || model.capabilities?.canCode !== false));
+    if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
+    const settings = autoSwitch();
+    const unread = crew.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
+    const low = crew.filter(model => lowQuota(model, plansLive, settings.thresholdPercent) || usagePolicy(model, plansLive).blocked);
+    if (low.length + unread.length < crew.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
+    const resetOf = model => {
+      const plan = plansLive.find(item => item && item.id === (model.quotaPoolId || model.plan));
+      const times = [plan?.resetAt, ...(plan?.windows || []).map(window => window?.resetAt)].map(value => Date.parse(value)).filter(value => Number.isFinite(value) && value > Date.now());
+      if (!times.length) return '';
+      const at = new Date(Math.min(...times));
+      return at - Date.now() < 86400000 ? `, back at ${at.toISOString().slice(11, 16)} UTC` : `, back on ${at.toISOString().slice(0, 10)}`;
+    };
+    const parts = crew.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
+    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota (over ${settings.thresholdPercent}%), or when you add one in Team.` };
+  }
+
+  function autoSwitch() {
+    const saved = store.autoSwitch && typeof store.autoSwitch === 'object' ? store.autoSwitch : {};
+    return { enabled: saved.enabled !== false, thresholdPercent: Number.isFinite(saved.thresholdPercent) ? saved.thresholdPercent : AUTO_SWITCH_DEFAULT.thresholdPercent };
+  }
+  function setAutoSwitch(input = {}) {
+    const next = { ...autoSwitch() };
+    if (typeof input.enabled === 'boolean') next.enabled = input.enabled;
+    if (input.thresholdPercent !== undefined) {
+      const value = Number(input.thresholdPercent);
+      if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
+      next.thresholdPercent = Math.round(value);
+    }
+    store.autoSwitch = next; persist();
+    return { ok: true, autoSwitch: next };
+  }
+  // While steps work, a model whose quota runs low hands its step to another model with the same role.
+  let quotaWatchRunning = false;
+  const quotaSwitchedAt = new Map();
+  async function quotaWatchTick() {
+    const settings = autoSwitch();
+    if (!settings.enabled || quotaWatchRunning || shuttingDown) return;
+    quotaWatchRunning = true;
+    try {
+      const view = snapshot(await opts.readPlan());
+      const busy = view.projects.filter(row => String(row.megaTask?.status || '').toUpperCase() === 'RUNNING' && (row.subTasks || []).some(sub => sub.status === 'RUNNING'));
+      if (!busy.length) return;
+      await refreshPlans(false);
+      for (const row of busy) {
+        const running = (row.subTasks || []).filter(sub => sub.status === 'RUNNING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
+          .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub }));
+        const switches = quotaSwitches({ running, models: roster(), plans: plansLive, thresholdPercent: settings.thresholdPercent,
+          eligible: (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked });
+        for (const change of switches) {
+          quotaSwitchedAt.set(change.subTaskId, Date.now());
+          const from = roster().find(model => model.id === change.fromModelId), to = roster().find(model => model.id === change.toModelId);
+          const why = `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${settings.thresholdPercent}%).`;
+          try { await inTeam(row.id, async () => { bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why); note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`); }); }
+          catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
+        }
+      }
+      persist();
+    } finally { quotaWatchRunning = false; }
+  }
+
   async function autonomyTick() {
     if (shuttingDown || !Object.values(store.autonomy).some(settings => settings?.enabled)) return;
     const view = snapshot(await opts.readPlan());
@@ -3124,6 +3200,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const job = item.tasks.find(task => task.status === 'running');
     if (job.kind !== 'research' && !linkedWorkspace(item.project.folder)) return { ok: false, reason: 'Relink a real local project folder before approval.' };
     const row = entry(projectId);
+    if (opts.phase2 && job.executionVersion !== 2) return { ok: false, reason: 'This work was saved by an older version of Planwharf and cannot continue. Start it again with Let the crew do it.' };
     if (megaTaskId && job.executionVersion !== 2) return { ok: false, reason: 'The legacy job has no matching MegaTask approval target.' };
     if (job.executionVersion === 2) {
       decide(item);
@@ -3538,7 +3615,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

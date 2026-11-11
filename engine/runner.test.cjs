@@ -4,6 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+// Command-line building must not depend on provider CLIs installed on this machine: point each one at Node.
+for (const provider of ['GROK', 'CODEX', 'CLAUDE', 'ANTIGRAVITY']) if (!process.env['PLANWHARF_' + provider]) process.env['PLANWHARF_' + provider] = process.execPath;
 const { parseArgs, promptFor, patchStatus, isProcessAlive, killWorker, abortAsk, askPrompt, askCliArgs, cliModelOf, parseAskLine, createAskStream, dropThinkingPrefix } = require('./runner.cjs');
 
 const opts = parseArgs(['node', 'runner.cjs', '--folder', 'D:\\demo', '--result', 'D:\\out.txt', '--title', 'Build it', '--detail', 'Add tests.', '--worker', 'Grok', '--attempt', 'attempt-1']);

@@ -208,7 +208,7 @@
       <ol class="steps numbered">
         ${step(1, Boolean(current), 'Choose your lead.')}
         ${step(2, hasProject, 'Create a project: a name and a folder.')}
-        ${step(3, false, 'Tell the lead what to build, press <b>Use as the goal</b>, then <b>Let the crew do it</b>.')}
+        ${step(3, false, 'Talk with the lead about what to build. When the plan is right, press <b>Let the crew do it</b>.')}
       </ol>
       <div class="row"><label class="sr-only" for="welcome-lead">Lead</label><select id="welcome-lead" data-lead-select><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>
       ${hasProject ? '' : `<button type="button" class="btn btn-primary" data-action="new-project">${ic('plus')}New project</button>`}</div></div>`;
@@ -224,7 +224,7 @@
     if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
-    if (row && !hasGoal(row)) missing.push({ text: 'Tell the lead what to build, then press “Use as the goal” under your message.', fix: 'Write what to build', action: 'focus-input' });
+    if (row && !hasGoal(row) && !state.goalCandidate) missing.push({ text: 'Talk with the lead about what to build first.', fix: 'Write what to build', action: 'focus-input' });
     return missing;
   }
   // A project created with only a name and a folder has no goal until the user gives one in the chat.
@@ -319,9 +319,10 @@
       const role = sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : verify ? 'Verify' : 'Build';
       const s = String(sub.status || 'PENDING').toUpperCase();
       const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
+      const waitingQuota = s === 'PENDING' && sub.waitingFor;
       const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
       const [roleIcon, roleTone] = ROLE_LOOK[role] || ROLE_LOOK.Build;
-      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
+      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(waitingQuota ? 'waiting for quota' : label)}</span></li>`;
     };
     const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
     const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
@@ -341,8 +342,8 @@
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
-        <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}<button type="button" class="btn" data-action="reset-ask">${ic('stop')}Reset this work</button><span class="small muted">Stuck? Reset cancels this work so you can start again. Files stay as they are.</span></div></div>`;
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
+        <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}</div></div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
     // Plain-language activity of the model working now; the raw log only when nothing else is readable.
@@ -350,7 +351,8 @@
     const friendly = foldRepeats((running?.activitySession?.events || []).map(event => event.friendly).filter(text => text && !/^Unclassified worker activity/.test(text))).slice(-6);
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
-    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${steps}
+    const waiting = subs.find(sub => String(sub.status).toUpperCase() === 'PENDING' && sub.waitingFor)?.waitingFor || '';
+    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${waiting ? `<p class="small">${ic('clock')}${escape(waiting)}</p>` : ''}${steps}
       ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
   }
 
@@ -391,11 +393,13 @@
     // A chat message never starts work by itself; say so under the last one and offer the next step.
     const lastAsk = asks.at(-1);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
-    if (row && lastAsk && !busy && !pendingHere && lastAsk.question?.trim() !== row.goal?.trim()) {
-      state.goalCandidate = lastAsk.question;
-      const suggested = String(lastAsk.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim();
-      state.suggestedGoal = suggested || null;
-      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row">${suggested ? `<button type="button" class="btn btn-small btn-primary" data-action="use-suggested-goal" title="${escape(suggested)}">${ic('rocket')}Prepare the lead's suggestion</button>` : ''}<button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
+    // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
+    state.goalCandidate = null; state.suggestedGoal = null;
+    const suggested = String(lastAsk?.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim() || null;
+    const nextGoal = suggested || lastAsk?.question?.trim() || '';
+    if (row && lastAsk && !busy && !pendingHere && nextGoal && nextGoal !== row.goal?.trim() && lastAsk.question?.trim() !== row.goal?.trim()) {
+      state.goalCandidate = lastAsk.question; state.suggestedGoal = suggested;
+      html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
@@ -424,11 +428,11 @@
     const parts = [];
     const timed = timedStop();
     if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
-    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>`);
+    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">${escape((row.subTasks || []).some(sub => sub.status === 'PENDING' && sub.waitingFor) ? 'Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\'s menu at any time.' : 'The crew is working. You can keep chatting with the lead and change models at any time.')}</span>`);
     // One clear next action at a time.
     else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
-    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><button type="button" class="btn" data-action="reset-ask">${ic('stop')}Reset</button><span class="status-text">Work was stopped. Resume continues from the saved point, Reset cancels it.</span>`);
+    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
     else {
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
@@ -641,6 +645,7 @@
         <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
       <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div>
         ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}<label class="ink custom" title="Any colour"><input type="color" data-ink-custom value="${escape(inkColour(currentInk()))}" aria-label="Any colour">${HEX.test(currentInk()) ? 'Your colour' : 'Any colour…'}</label></div>` : ''}</div>
+      ${autoSwitchSection()}
       ${skillsSection()}
       <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
         <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
@@ -655,6 +660,19 @@
   const armedButton = (action, label, confirmLabel) => state.armed === action
     ? `<div class="row"><button type="button" class="btn btn-danger btn-small" data-action="${action}">${confirmLabel}</button><button type="button" class="btn btn-small" data-action="disarm">Cancel</button></div>`
     : `<button type="button" class="btn btn-small" data-arm="${action}">${label}</button>`;
+  // Automatic model switch: on by default at 20% quota left.
+  function autoSwitchSection() {
+    if (!state.autoSwitch) { if (!state.autoSwitchLoading) { state.autoSwitchLoading = true; getJson('/api/orchestrator/auto-switch').then(value => { state.autoSwitch = value; state.sideSig = ''; renderSide(); }).catch(() => {}).finally(() => { state.autoSwitchLoading = false; }); } return ''; }
+    const on = state.autoSwitch.enabled !== false;
+    return `<div class="section">${head('usage', 't-accent', 'Model switch')}<p class="explain">${on ? `When a model working on a step drops to ${state.autoSwitch.thresholdPercent}% quota left or less, Planwharf hands the step to another model with the same role and more quota, with a handoff of what was done.` : 'Off: a model that runs out of quota stops its step, and you choose the next model.'}</p>
+      <button type="button" class="switch" role="switch" data-action="toggle-auto-switch" aria-checked="${on}"><span class="knob" aria-hidden="true"></span><span>Switch model automatically</span></button>
+      ${on ? `<form id="auto-switch-form" class="row"><label class="small" for="auto-switch-threshold">Switch at</label><input id="auto-switch-threshold" name="threshold" type="number" min="0" max="90" step="5" value="${escape(String(state.autoSwitch.thresholdPercent))}" style="width:5em"><span class="small">% left</span><button type="submit" class="btn btn-small">Save</button></form>` : ''}</div>`;
+  }
+  async function saveAutoSwitch(change) {
+    try { state.autoSwitch = await post('/api/orchestrator/auto-switch', change); toast('Model switch saved.'); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
   function updatesSection() {
     const u = state.updates;
     if (!u) return `<div class="section">${head('refresh', 't-accent', 'Updates')}<button type="button" class="btn btn-small" data-action="check-updates">${ic('refresh')}Check for updates</button></div>`;
@@ -770,6 +788,19 @@
     const row = project(); if (!row) return;
     const missing = readiness(row);
     if (missing.length) { toast(missing[0].text); return; }
+    const nextGoal = state.suggestedGoal || state.goalCandidate;
+    if (nextGoal) {
+      state.confirm = { text: `The crew will work on: ${nextGoal}`, run: async () => {
+        try { const { version } = await getJson('/api/plan'); await post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal from the chat', direction: nextGoal, state: 'Not started.', closed: [], open: [] } }); }
+        catch (error) { toast(error.message); return; }
+        state.goalCandidate = null; state.suggestedGoal = null;
+        await startCrew(row);
+      } };
+      state.threadSig = ''; render(); return;
+    }
+    await startCrew(row);
+  }
+  async function startCrew(row) {
     await act(async () => {
       if (state.orchestra.mode !== 'auto') await post('/api/orchestrator/mode', { mode: 'auto' });
       return post('/api/orchestrator/autonomy', { projectId: row.id, enabled: true });
@@ -921,7 +952,7 @@
     else if (action === 'use-suggested-goal') proposeSuggestion(state.suggestedGoal);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
-    else if (action === 'reset-ask') { const row = project(); if (row) { state.confirm = { text: `Reset the work on ${row.name}? The crew stops and this work is cancelled, so you can give a new goal or start again. Files in the project folder stay as they are.`, run: () => act(() => post('/api/orchestrator/reset', { projectId: row.id }), 'Work reset. Tell the lead what to do next.') }; state.threadSig = ''; render(); } }
+    else if (action === 'toggle-auto-switch') saveAutoSwitch({ enabled: !(state.autoSwitch?.enabled !== false) });
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });
@@ -951,6 +982,7 @@
   document.addEventListener('submit', event => {
     if (event.target.id === 'folder-form') { event.preventDefault(); saveFolder(event.target); }
     else if (event.target.id === 'root-form') { event.preventDefault(); saveRoot(event.target); }
+    else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ thresholdPercent: Number(event.target.threshold.value) }); }
     else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }
   });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.panel && !$('project-dialog').open) { state.panel = null; store.set('panel', null); render(); } });

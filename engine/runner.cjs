@@ -140,10 +140,11 @@ function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
-    return true;
   } catch (_) {
     return false;
   }
+  // On Linux a zombie still answers the signal check, but it has exited and only waits to be collected.
+  try { return !/^\d+ \(.*\) Z/s.test(fs.readFileSync(`/proc/${pid}/stat`, 'utf8')); } catch (_) { return true; }
 }
 
 function killWorker(pid) {
@@ -158,10 +159,25 @@ function killWorker(pid) {
     }
     return !isProcessAlive(pid);
   }
-  try { process.kill(-pid, 'SIGTERM'); } catch (_) {
-    try { process.kill(pid, 'SIGTERM'); } catch (_) {}
-  }
-  return !isProcessAlive(pid);
+  // POSIX: signal the worker's process group, then wait until the worker and its children have exited.
+  // A signal is only a request, so answering at once would report a failure for a worker that is still closing.
+  const signal = name => { try { process.kill(-pid, name); } catch (_) { try { process.kill(pid, name); } catch (_) {} } };
+  const waitGone = ms => { const until = Date.now() + ms; while (livingTree(pid).length && Date.now() < until) sleepSync(50); return !livingTree(pid).length; };
+  signal('SIGTERM');
+  if (waitGone(2000)) return true;
+  signal('SIGKILL');
+  return waitGone(1000);
+}
+
+function sleepSync(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
+
+// The root process and the members of its process group that are still running. A zombie has exited
+// and only waits to be collected, so it does not count. Without ps, only the root process is checked.
+function livingTree(pid) {
+  const { spawnSync } = require('node:child_process');
+  const listed = spawnSync('ps', ['-A', '-o', 'pid=,pgid=,stat='], { encoding: 'utf8', timeout: 3000 });
+  if (listed.status !== 0 || typeof listed.stdout !== 'string') return isProcessAlive(pid) ? [pid] : [];
+  return listed.stdout.split('\n').map(line => line.trim().split(/\s+/)).filter(([id, group, stat]) => stat && !stat.startsWith('Z') && (Number(id) === pid || Number(group) === pid)).map(([id]) => Number(id));
 }
 
 function cliModelOf(model) {
@@ -200,7 +216,7 @@ function askPrompt(info) {
     'For discussion or questions that do not authorize research work, return your normal answer or {"answer":"your answer","actions":[]}. Do not infer dispatch authorization from old history alone. Do not emit actions for implementation, approvals, or shell commands. If asked about prior research, read the research briefing and existing reports rather than launching another job.',
     info && info.allowActions === false ? 'This request is an internal planning query: actions are disabled. Follow the requested answer format exactly; do not wrap it in a dispatch envelope.' : '',
     info && info.extraPrompt ? info.extraPrompt : '',
-    'When the latest MegaTask in the briefing is COMPLETE and the user is talking about what to do next, say briefly what that work did when it helps, then end with one line that starts exactly with "Suggested next goal:" followed by one concrete goal the crew could take on. The user starts it; never claim it has started.',
+    'When the user talks about work to build, change or do next, help shape the plan, then end with one line that starts exactly with "Suggested next goal:" followed by the agreed goal in one or two sentences. After finished work, say briefly what it did when it helps. The user starts the goal with the Let the crew do it button; never claim it has started, and never say you created a task.',
     'To change the models of proposed or stopped work (for example a step blocked because its model is out of quota or lost its role), return a JSON object {"answer":"...","actions":[{"type":"reassign_crew","projectId":"exact project id","assignments":{"exact remaining SubTask id":"exact roster model id"},"why":"short reason"}]}. Use only enabled models that have that role in the briefing and quota left. Planwharf checks the change, applies it and resumes stopped work; a step that is working is stopped and restarts with the new model. It reports the outcome under your answer, so never claim the crew changed before that.',
     'Do not invent workers that are not in the briefing.',
     info && info.allowActions !== false && info.model?.tools ? toolRequestRule(info.model.tools) : '',
