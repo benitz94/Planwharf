@@ -1,0 +1,56 @@
+name: Native app
+
+# Builds and tests the native app (Avalonia, .NET 8) on Windows, macOS and Linux.
+# Each run keeps a ready-to-run folder per system as a downloadable artifact: the program,
+# Planwharf's app files in "app" and Node.js in "node". No release is published from here.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['native/**', '.github/workflows/native.yml']
+  push:
+    branches: [main]
+    paths: ['native/**', '.github/workflows/native.yml']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+          # Intel Macs are built on the Apple silicon runner: .NET publishes for either.
+          - os: macos-latest
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test
+        run: dotnet test native/Planwharf.Native.Tests --nologo --logger GitHubActions --logger "console;verbosity=normal"
+      - name: Publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/Planwharf-native-${{ matrix.rid }}"
+          dotnet publish native/Planwharf.Native -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o "$out" --nologo
+          node native/prepare-app.cjs "$out/app"
+          mkdir -p "$out/node"
+          node_bin="$(node -p 'process.execPath')"
+          cp "$node_bin" "$out/node/"
+          node_root="$(dirname "$(dirname "$node_bin")")"
+          for f in LICENSE "$node_root/LICENSE"; do [ -f "$f" ] && cp "$f" "$out/node/LICENSE" && break; done || true
+          echo "folder=$out" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Planwharf-native-${{ matrix.rid }}
+          path: ${{ env.folder }}
