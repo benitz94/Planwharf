@@ -79,8 +79,17 @@ jobs:
             echo "|---|---|"
             echo "| Windows, macOS, Linux | [Planwharf-$next.zip]($base/Planwharf-$next.zip) |"
             echo
-            echo "### Native app"
-            echo "Coming later."
+            echo "### Native app (preview)"
+            echo "A native window instead of a web page. Includes Node.js. First version: projects, chat with the lead, the crew's work and its buttons; Team, Usage, Settings and commit are still in the desktop or web app."
+            echo
+            echo "| System | File |"
+            echo "|---|---|"
+            echo "| Windows 10 / 11 (64-bit) | [Planwharf-native-win-x64-$next.zip]($base/Planwharf-native-win-x64-$next.zip) |"
+            echo "| macOS, Apple silicon | [Planwharf-native-osx-arm64-$next.zip]($base/Planwharf-native-osx-arm64-$next.zip) |"
+            echo "| macOS, Intel | [Planwharf-native-osx-x64-$next.zip]($base/Planwharf-native-osx-x64-$next.zip) |"
+            echo "| Linux (64-bit) | [Planwharf-native-linux-x64-$next.zip]($base/Planwharf-native-linux-x64-$next.zip) |"
+            echo
+            echo "Not code-signed yet: on Windows choose More info > Run anyway; on macOS, if it is blocked, open System Settings > Privacy & Security and choose Open Anyway. Close the desktop app before you open this one: they share the same projects."
             echo
             gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$next" -f target_commitish="$GITHUB_SHA" --jq .body
           } > "$RUNNER_TEMP/notes.md"
@@ -127,8 +136,57 @@ jobs:
         run: gh release upload "${{ needs.release.outputs.tag }}" ${{ matrix.files }} --repo "$GITHUB_REPOSITORY" --clobber
 
   # Publish even if a desktop build failed, so the web app update still reaches everyone.
+  native:
+    needs: release
+    if: needs.release.outputs.tag != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+          # Intel Macs are built on the Apple silicon runner: .NET publishes for either.
+          - os: macos-latest
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test
+        run: dotnet test native/Planwharf.Native.Tests --nologo
+      - name: Build and attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ needs.release.outputs.tag }}"
+          name="Planwharf-native-${{ matrix.rid }}-$tag"
+          out="$RUNNER_TEMP/$name"
+          dotnet publish native/Planwharf.Native -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:Version="${tag#v}" -o "$out" --nologo
+          node native/prepare-app.cjs "$out/app"
+          mkdir -p "$out/node"
+          node_bin="$(node -p 'process.execPath')"
+          cp "$node_bin" "$out/node/"
+          node_root="$(dirname "$(dirname "$node_bin")")"
+          [ -f "$node_root/LICENSE" ] && cp "$node_root/LICENSE" "$out/node/LICENSE" || true
+          cd "$RUNNER_TEMP"
+          if [ "${{ runner.os }}" = "Windows" ]; then 7z a -tzip "$name.zip" "$name" > /dev/null; else zip -qry "$name.zip" "$name"; fi
+          gh release upload "$tag" "$name.zip" --repo "$GITHUB_REPOSITORY" --clobber
+
   publish:
-    needs: [release, desktop]
+    needs: [release, desktop, native]
     if: always() && needs.release.outputs.tag != ''
     runs-on: ubuntu-latest
     steps:
