@@ -104,7 +104,10 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
   fs.writeFileSync(stateFile, JSON.stringify(stored));
   const beforeRestart = launches.length;
   await start();
-  assert.equal((await fetch(base() + '/api/skills')).status, 404, 'The skills API is gone');
+  // Settings shows a read-only overview of each AI tool's skills.
+  const skillsReply = await fetch(base() + '/api/skills');
+  assert.equal(skillsReply.status, 200, 'The skills overview answers');
+  assert.ok(Array.isArray((await skillsReply.json()).programs), 'The skills overview lists the AI tools');
   const startup = await (await fetch(base() + '/api/orchestrator')).json();
   assert.equal(launches.length, beforeRestart, 'Startup cannot dispatch old tasks, even with saved Automatic mode');
   assert.equal(startup.projects.find(row => row.id === 'beta').status, 'needs_approval');
