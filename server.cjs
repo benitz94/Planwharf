@@ -753,6 +753,17 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
         return json(200, result.snapshot);
       }
+      if (pathname === '/api/orchestrator/auto-switch') {
+        if (request.method === 'GET') return json(200, orchestra.autoSwitch());
+        if (request.method === 'POST') {
+          if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
+          const input = await body(request);
+          if (!input || typeof input !== 'object' || Object.keys(input).some(key => !['enabled', 'thresholdPercent'].includes(key))) throw new RequestError(400, 'Invalid data.');
+          const result = orchestra.setAutoSwitch(input);
+          if (!result.ok) throw new RequestError(400, result.reason);
+          return json(200, result.autoSwitch);
+        }
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/crew') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);
@@ -1073,6 +1084,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       } catch (error) { console.error('Execution monitoring failed:', error.message); }
       finally { monitoring = false; }
       if (!closing && !updates.busy) void orchestra.autonomyTick().catch(error => console.error('Project autonomy failed:', error.message));
+      if (!closing && !updates.busy && typeof orchestra.quotaWatchTick === 'function') void orchestra.quotaWatchTick().catch(error => console.error('Automatic model switch failed:', error.message));
     }, monitorIntervalMs);
     monitorTimer.unref();
   });
