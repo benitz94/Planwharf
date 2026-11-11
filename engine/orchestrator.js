@@ -3382,6 +3382,27 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, snapshot: await tick(projectId) };
   }
 
+  // The user's way out of stuck work: stop its workers, cancel it and free the project for a new start.
+  // Files changed in the project folder stay as they are.
+  async function resetWork(projectId) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => resetWork(projectId));
+    if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
+    const plan = await opts.readPlan();
+    const item = notebookProjects(plan).find(row => row.project.id === projectId);
+    if (!item) return { ok: false, reason: 'project not found' };
+    if (!(item.tasks || []).some(task => task.status === 'running')) return { ok: false, reason: 'Nothing to reset on this project.' };
+    if (store.autonomy[projectId]?.enabled) store.autonomy[projectId] = { enabled: false };
+    const row = entry(projectId);
+    killDispatch(row);
+    const facts = item.project.folder ? inspect(item.project.folder) : null;
+    try { releaseRunningJob(projectId, item, facts && !facts.error ? facts : row.facts); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    Object.assign(row, { checkpoint: null, pendingAutoStart: null, resumeRequested: false, holdApproval: false });
+    note(projectId, 'Work reset by the user. Files in the project folder were left as they are.');
+    persist();
+    return { ok: true };
+  }
+
   async function checkpointForUpdate() {
     const previous = shuttingDown;
     shuttingDown = true; askEpoch += 1; thinkingByKey = {};
@@ -3508,7 +3529,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
