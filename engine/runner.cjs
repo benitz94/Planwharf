@@ -140,10 +140,11 @@ function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
-    return true;
   } catch (_) {
     return false;
   }
+  // On Linux a zombie still answers the signal check, but it has exited and only waits to be collected.
+  try { return !/^\d+ \(.*\) Z/s.test(fs.readFileSync(`/proc/${pid}/stat`, 'utf8')); } catch (_) { return true; }
 }
 
 function killWorker(pid) {
@@ -158,10 +159,25 @@ function killWorker(pid) {
     }
     return !isProcessAlive(pid);
   }
-  try { process.kill(-pid, 'SIGTERM'); } catch (_) {
-    try { process.kill(pid, 'SIGTERM'); } catch (_) {}
-  }
-  return !isProcessAlive(pid);
+  // POSIX: signal the worker's process group, then wait until the worker and its children have exited.
+  // A signal is only a request, so answering at once would report a failure for a worker that is still closing.
+  const signal = name => { try { process.kill(-pid, name); } catch (_) { try { process.kill(pid, name); } catch (_) {} } };
+  const waitGone = ms => { const until = Date.now() + ms; while (livingTree(pid).length && Date.now() < until) sleepSync(50); return !livingTree(pid).length; };
+  signal('SIGTERM');
+  if (waitGone(2000)) return true;
+  signal('SIGKILL');
+  return waitGone(1000);
+}
+
+function sleepSync(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
+
+// The root process and the members of its process group that are still running. A zombie has exited
+// and only waits to be collected, so it does not count. Without ps, only the root process is checked.
+function livingTree(pid) {
+  const { spawnSync } = require('node:child_process');
+  const listed = spawnSync('ps', ['-A', '-o', 'pid=,pgid=,stat='], { encoding: 'utf8', timeout: 3000 });
+  if (listed.status !== 0 || typeof listed.stdout !== 'string') return isProcessAlive(pid) ? [pid] : [];
+  return listed.stdout.split('\n').map(line => line.trim().split(/\s+/)).filter(([id, group, stat]) => stat && !stat.startsWith('Z') && (Number(id) === pid || Number(group) === pid)).map(([id]) => Number(id));
 }
 
 function cliModelOf(model) {
