@@ -78,17 +78,35 @@ function nudgePrompt({ name, goal, alert }) {
   return [`Supervisor alert for project ${name}: ${alert.title}. ${alert.message}`, `Goal: ${goal || 'not recorded'}`, 'If active workers are still making progress, set next to null. If the work is stuck, name the objective that recovers it.', leadInstructions()].join('\n');
 }
 
+// Every balanced {...} block in the text, so prose, code fences or braces around the answer do not hide it.
+function jsonObjects(text) {
+  const found = [];
+  for (let start = text.indexOf('{'); start >= 0; start = text.indexOf('{', start + 1)) {
+    let depth = 0, quoted = false, escaped = false;
+    for (let index = start; index < text.length; index += 1) {
+      const char = text[index];
+      if (quoted) { if (escaped) escaped = false; else if (char === '\\') escaped = true; else if (char === '"') quoted = false; continue; }
+      if (char === '"') quoted = true;
+      else if (char === '{') depth += 1;
+      else if (char === '}' && --depth === 0) { try { found.push(JSON.parse(text.slice(start, index + 1))); } catch { /* not JSON */ } break; }
+    }
+  }
+  return found;
+}
+
 function parseDecision(text) {
   if (typeof text !== 'string') return null;
-  const start = text.indexOf('{'), end = text.lastIndexOf('}');
-  if (start < 0 || end < start) return null;
-  let parsed;
-  try { parsed = JSON.parse(text.slice(start, end + 1)); } catch { return null; }
-  if (!parsed || typeof parsed.done !== 'boolean') return null;
+  const parsed = jsonObjects(text).filter(item => item && typeof item.done === 'boolean').at(-1);
+  if (!parsed) return null;
   const next = typeof parsed.next === 'string' && parsed.next.trim() ? parsed.next.trim().slice(0, LIMITS.maxObjectiveChars) : null;
   if (!parsed.done && parsed.next != null && !next) return null;
   const assumptions = Array.isArray(parsed.assumptions) ? parsed.assumptions.filter(item => typeof item === 'string').map(item => item.slice(0, 500)).slice(0, 10) : [];
   return { done: parsed.done, next: parsed.done ? null : next, assumptions };
+}
+
+// Second try when the lead's reply could not be read: the same question, asking for the JSON object alone.
+function strictDecisionPrompt(question) {
+  return `${question}\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it.`;
 }
 
 // Before approval the lead picks who does each slice, instead of the catalog order.
@@ -113,4 +131,4 @@ function parseAssignment(text, count, allowed) {
   return { assign: ids, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 
-module.exports = { LIMITS, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+module.exports = { LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };

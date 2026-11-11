@@ -98,10 +98,28 @@
   const ROLE_LOOK = { Build: ['build', 'r-build'], Verify: ['verify', 'r-verify'], Review: ['review', 'r-review'], Research: ['research', 'r-review'], Watch: ['watch', 'r-watch'], Lead: ['lead', 'r-lead'] };
   const VERIFY_PREFIX = 'Verify the work independently';
   const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' s' : ms < 3600000 ? Math.round(ms / 60000) + ' min' : (ms / 3600000).toFixed(1) + ' h';
+  // Short labels for the project badge, and full sentences for the action bar: never a raw code.
   const STOP_REASONS = {
-    GOAL_REACHED: 'Goal reached', MEGATASK_LIMIT: 'Stopped: step limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available',
-    START_UNAVAILABLE: 'Stopped: could not start', TIME_LIMIT: 'Stopped: time limit reached', NOTHING_STARTED: 'Stopped: no work started', START_FAILED: 'Stopped: could not start'
+    GOAL_REACHED: 'Goal reached', LEAD_UNCONFIRMED: 'Finished: check the result', UNREADABLE_LEAD_DECISION: 'Finished: check the result',
+    MEGATASK_LIMIT: 'Stopped: work limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available', LEAD_FAILED: 'Stopped: the lead could not answer',
+    START_UNAVAILABLE: 'Stopped: could not start', START_FAILED: 'Stopped: could not start', NOTHING_STARTED: 'Stopped: no work started',
+    APPROVAL_REFUSED: 'Stopped: work not approved', AUTONOMY_ERROR: 'Stopped: error', TIME_LIMIT: 'Stopped: time limit reached'
   };
+  const STOP_SENTENCES = {
+    LEAD_UNCONFIRMED: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
+    UNREADABLE_LEAD_DECISION: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
+    MEGATASK_LIMIT: 'The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on.',
+    NO_LEAD_AVAILABLE: 'The crew stopped: no lead is available. Choose a lead with quota in Team.',
+    LEAD_FAILED: 'The crew stopped: the lead could not answer',
+    START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',
+    NOTHING_STARTED: 'The crew started no work', APPROVAL_REFUSED: 'The work could not be approved',
+    AUTONOMY_ERROR: 'The crew stopped on an error', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
+  };
+  function stopSentence(reason) {
+    const code = String(reason || '').split(':')[0], detail = String(reason || '').slice(code.length + 1).trim();
+    const sentence = STOP_SENTENCES[code] || 'The crew stopped';
+    return detail ? `${sentence.replace(/\.$/, '')}: ${detail}` : /[.!]$/.test(sentence) ? sentence : sentence + '.';
+  }
   function projectStatus(row) {
     if (!row) return { text: '', kind: '' };
     const auto = autonomyOf(row.id);
@@ -290,8 +308,15 @@
     return `<details class="usage-summary" open><summary class="small">${ic('usage')}What this work used</summary><ul class="plain">${rows.join('')}</ul></details>`;
   }
   // What each step reported, in its own words: the explanation of the finished work.
+  // In plain English: how the work ended, who did what, what went wrong, what is left to do.
+  function summaryBox(row, changedFiles) {
+    const build = globalThis.PlanwharfWorkSummary?.workSummary;
+    if (!build) return '';
+    const lines = build(row, { stopReason: autonomyOf(row.id)?.stopReason || null, changedFiles, modelLabel });
+    return `<div class="work-summary"><h4 class="small">Summary</h4><ul class="plain small">${lines.map(line => `<li>${escape(line)}</li>`).join('')}</ul></div>`;
+  }
   function doneList(row) {
-    const said = (row.results || []).filter(result => result.summary && result.summary.trim());
+    const said = (row.results || []).filter(result => result.summary && result.summary.trim() && !result.modelChange);
     return said.length ? `<h4 class="small">What was done</h4><ul class="plain small">${said.map(result => `<li>${escape(result.summary)}</li>`).join('')}</ul>` : '';
   }
   const ROLE_FOR_STEP = { Build: ['worker'], Verify: ['verifier', 'worker'], Review: ['reviewer'], Research: ['worker'] };
@@ -338,11 +363,14 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
-        <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
+        ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Planwharf did not commit or publish anything.</p>
+        <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div>
+        ${repo?.local?.git && changed ? `<form class="commit-form stack" data-commit-project="${escape(row.id)}"><label class="small" for="commit-message-${escape(row.id)}">Save it in git when you are happy with it</label>
+          <input id="commit-message-${escape(row.id)}" name="message" maxlength="500" value="${escape(String(mega.title || 'Work by the crew').slice(0, 200))}">
+          <div class="row"><button type="submit" class="btn btn-small" data-push="false">${ic('check')}Commit</button><button type="submit" class="btn btn-small btn-primary" data-push="true">${ic('rocket')}Commit and push</button></div></form>` : ''}</div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${summaryBox(row, null)}${bar}${steps}${usageSummary(mega, subs)}
         <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}</div></div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
@@ -438,8 +466,7 @@
       const checking = state.orchestra?.modelsChecking === true;
       parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length || checking ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
       // Why the last crew start stopped, in full, so it is never silent.
-      const why = auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? auto.stopReason.replace(/^[A-Z_]+:\s*/, '') : '';
-      const whyText = why && why !== auto.stopReason ? `The crew stopped: ${why}` : auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? (STOP_REASONS[auto.stopReason] || auto.stopReason) : '';
+      const whyText = auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? stopSentence(auto.stopReason) : '';
       parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : whyText || 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
@@ -475,7 +502,7 @@
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
-      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
+      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ` · <span title="${escape(model.unavailableReason || '')}">not available now${model.unavailableReason ? ': ' + escape(String(model.unavailableReason).slice(0, 140)) : ''}${model.unavailableAt ? ' (tried again in a few minutes)' : ''}</span>` : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
       ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
       <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
@@ -984,6 +1011,19 @@
   document.addEventListener('submit', event => {
     if (event.target.id === 'folder-form') { event.preventDefault(); saveFolder(event.target); }
     else if (event.target.id === 'root-form') { event.preventDefault(); saveRoot(event.target); }
+    else if (event.target.matches('form[data-commit-project]')) {
+      event.preventDefault();
+      const form = event.target, push = event.submitter?.dataset.push === 'true', message = form.message.value.trim(), projectId = form.dataset.commitProject;
+      if (!message) { toast('Write a commit message.'); return; }
+      const where = push ? ' and push it to GitHub' : '';
+      // The user's own action: say exactly what will happen before doing it. Never a force push.
+      state.confirm = { text: `Commit all changes in the project folder${where}, with the message "${message}"?`, run: () => act(async () => {
+        const result = await post('/api/repository/commit', { projectId, message, push });
+        toast(result.pushed ? `Committed ${result.commit} and pushed ${result.branch}.` : `Committed ${result.commit} on ${result.branch}.`);
+        delete state.repo[projectId]; return null;
+      }) };
+      state.threadSig = ''; render();
+    }
     else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ thresholdPercent: Number(event.target.threshold.value) }); }
     else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }
   });

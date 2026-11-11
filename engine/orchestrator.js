@@ -21,7 +21,7 @@ const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { createInvocationLedger } = require('./invocations.cjs');
 const { compactState, recentContext } = require('./briefing.cjs');
 const Quota = require('../quota.js');
-const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaSwitches } = require('./model-policy.cjs');
+const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaSwitches, availableAgain } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
 const { TOOL_NAMES } = require('./claude.cjs');
 const { TOOL_REQUEST } = require('./runner.cjs');
@@ -2006,7 +2006,7 @@ function createOrchestrator(options) {
           megaTaskId: row.megaTaskId || null,
           megaTask: row.megaTask || null,
           subTasks: row.subTasks || [],
-          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: String(result.summary || '').slice(0, 600) })) : [],
+          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: String(result.summary || '').slice(0, 600), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
           modelId: row.modelId,
@@ -2450,6 +2450,8 @@ function createOrchestrator(options) {
   }
 
   async function tick(projectId) {
+    // A model left out after a failed call is tried again after a few minutes.
+    for (const model of models) if (availableAgain(model, Date.parse(now()))) Object.assign(model, { available: true, unavailableReason: null, unavailableAt: null });
     await refreshPlans(false);
     let plan = await opts.readPlan();
     rememberStartup(plan);
@@ -2499,11 +2501,14 @@ function createOrchestrator(options) {
     if (typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
     // One retry with a lead from another provider: a refusal, a timeout or an unreadable reply
     // from one model must not end autonomy while another eligible lead exists.
-    let decision = null, failure = null;
+    let decision = null, failure = null, strictAgain = null;
     const tried = new Set();
-    for (let round = 0; round < 2 && !decision; round += 1) {
-      let lead = leadModel();
-      if (lead && tried.has(lead.id)) {
+    for (let round = 0; round < 3 && !decision; round += 1) {
+      // An unreadable reply is asked again once, of the same lead, asking for the JSON object alone.
+      let lead = strictAgain || leadModel();
+      const ask = strictAgain ? autonomy.strictDecisionPrompt(question) : question;
+      strictAgain = null;
+      if (lead && tried.has(lead.id) && ask === question) {
         const used = new Set([...tried].map(id => roster().find(model => model.id === id)).filter(Boolean).map(model => model.providerId || model.provider));
         lead = roster().find(model => !tried.has(model.id) && !used.has(model.providerId || model.provider) && canOrchestrate(model) && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)) || null;
       }
@@ -2511,13 +2516,17 @@ function createOrchestrator(options) {
       tried.add(lead.id);
       let spoken;
       try {
-        spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
+        spoken = await opts.askModel({ question: ask, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
       } catch (error) { failure = 'LEAD_FAILED: ' + error.message; continue; }
       const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
       const refused = spoken?.failure ? refusals.refusalReason(text) : null;
       if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, `Lead ${lead.label || lead.id} refused work: ${refused}`); }
       decision = spoken?.failure ? null : autonomy.parseDecision(text);
-      if (!decision) { failure = 'UNREADABLE_LEAD_DECISION'; note(projectId, `Lead ${lead.label || lead.id} gave no readable decision${spoken?.failure ? ' (' + spoken.failure + ')' : ''}.`); }
+      if (!decision) {
+        failure = 'LEAD_UNCONFIRMED';
+        note(projectId, `Lead ${lead.label || lead.id} gave no readable decision${spoken?.failure ? ' (' + spoken.failure + ')' : ''}.`);
+        if (!spoken?.failure && ask === question) strictAgain = lead;
+      }
     }
     if (!decision) { stopAutonomy(projectId, settings, failure || 'NO_LEAD_AVAILABLE'); return; }
     if (decision.assumptions.length) { settings.assumptions = [...settings.assumptions, ...decision.assumptions].slice(-50); note(projectId, 'Lead assumptions: ' + decision.assumptions.join('; ')); }
@@ -2963,7 +2972,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           diagnostic = spoken?.diagnostic || null;
           if (diagnostic?.code === 'PROVIDER_MODEL_UNAVAILABLE') {
             const rejected = models.find(model => model.id === lead.id);
-            if (rejected) { rejected.available = false; rejected.unavailableReason = diagnostic.message; }
+            if (rejected) { rejected.available = false; rejected.unavailableReason = diagnostic.message; rejected.unavailableAt = now(); }
           }
           const envelope = spoken?.failure ? { answer: unpacked.answer, actions: [] } : leadEnvelope(unpacked.answer, spoken && typeof spoken === 'object' ? spoken.actions : undefined);
           if (envelope.answer) answer = envelope.answer;

@@ -97,4 +97,12 @@ function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent
   return out;
 }
 
-module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, quotaLeft, lowQuota, quotaSwitches };
+// A model set unavailable by a failed call is tried again after a while, not left out for the whole session.
+const RETRY_UNAVAILABLE_MS = 5 * 60000;
+function availableAgain(model, now = Date.now(), retryMs = RETRY_UNAVAILABLE_MS) {
+  if (!model || model.available !== false || !model.unavailableAt) return false;
+  const since = Date.parse(model.unavailableAt);
+  return Number.isFinite(since) && now - since >= retryMs;
+}
+
+module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, quotaLeft, lowQuota, quotaSwitches, availableAgain, RETRY_UNAVAILABLE_MS };
