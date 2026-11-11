@@ -319,9 +319,10 @@
       const role = sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : verify ? 'Verify' : 'Build';
       const s = String(sub.status || 'PENDING').toUpperCase();
       const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
+      const waitingQuota = s === 'PENDING' && sub.waitingFor;
       const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
       const [roleIcon, roleTone] = ROLE_LOOK[role] || ROLE_LOOK.Build;
-      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
+      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(waitingQuota ? 'waiting for quota' : label)}</span></li>`;
     };
     const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
     const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
@@ -341,8 +342,8 @@
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
-        <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}<button type="button" class="btn" data-action="reset-ask">${ic('stop')}Reset this work</button><span class="small muted">Stuck? Reset cancels this work so you can start again. Files stay as they are.</span></div></div>`;
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
+        <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}</div></div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
     // Plain-language activity of the model working now; the raw log only when nothing else is readable.
@@ -350,7 +351,8 @@
     const friendly = foldRepeats((running?.activitySession?.events || []).map(event => event.friendly).filter(text => text && !/^Unclassified worker activity/.test(text))).slice(-6);
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
-    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${steps}
+    const waiting = subs.find(sub => String(sub.status).toUpperCase() === 'PENDING' && sub.waitingFor)?.waitingFor || '';
+    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${waiting ? `<p class="small">${ic('clock')}${escape(waiting)}</p>` : ''}${steps}
       ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
   }
 
@@ -426,11 +428,11 @@
     const parts = [];
     const timed = timedStop();
     if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
-    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>`);
+    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">${escape((row.subTasks || []).some(sub => sub.status === 'PENDING' && sub.waitingFor) ? 'Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\'s menu at any time.' : 'The crew is working. You can keep chatting with the lead and change models at any time.')}</span>`);
     // One clear next action at a time.
     else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
-    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><button type="button" class="btn" data-action="reset-ask">${ic('stop')}Reset</button><span class="status-text">Work was stopped. Resume continues from the saved point, Reset cancels it.</span>`);
+    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
     else {
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
@@ -951,7 +953,6 @@
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
     else if (action === 'toggle-auto-switch') saveAutoSwitch({ enabled: !(state.autoSwitch?.enabled !== false) });
-    else if (action === 'reset-ask') { const row = project(); if (row) { state.confirm = { text: `Reset the work on ${row.name}? The crew stops and this work is cancelled, so you can give a new goal or start again. Files in the project folder stay as they are.`, run: () => act(() => post('/api/orchestrator/reset', { projectId: row.id }), 'Work reset. Tell the lead what to do next.') }; state.threadSig = ''; render(); } }
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });

@@ -1187,6 +1187,7 @@ function createOrchestrator(options) {
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
+    explainNoWorker: (worker, sub) => explainNoWorker(worker, sub),
     resolveWorker: (worker, sub) => {
       if (sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker') return worker;
       const resolved = worker ? resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
@@ -2594,6 +2595,27 @@ function createOrchestrator(options) {
   // Each project takes its own steps: a lead decision for one project (which can outlast several
   // monitoring intervals) never holds up another. A project still busy with its last step is skipped.
   const autonomyBusy = new Set();
+  // Why a step has no model to start on: waiting for quota (it starts by itself later) or a problem the user must fix.
+  function explainNoWorker(worker, sub) {
+    const title = sub?.title ? `"${String(sub.title).slice(0, 80)}"` : 'this step';
+    const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(sub)] || 'Build';
+    const crew = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, sub) && (sub?.type === 'AUDIT' || model.capabilities?.canCode !== false));
+    if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
+    const settings = autoSwitch();
+    const unread = crew.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
+    const low = crew.filter(model => lowQuota(model, plansLive, settings.thresholdPercent) || usagePolicy(model, plansLive).blocked);
+    if (low.length + unread.length < crew.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
+    const resetOf = model => {
+      const plan = plansLive.find(item => item && item.id === (model.quotaPoolId || model.plan));
+      const times = [plan?.resetAt, ...(plan?.windows || []).map(window => window?.resetAt)].map(value => Date.parse(value)).filter(value => Number.isFinite(value) && value > Date.now());
+      if (!times.length) return '';
+      const at = new Date(Math.min(...times));
+      return at - Date.now() < 86400000 ? `, back at ${at.toISOString().slice(11, 16)} UTC` : `, back on ${at.toISOString().slice(0, 10)}`;
+    };
+    const parts = crew.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
+    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota (over ${settings.thresholdPercent}%), or when you add one in Team.` };
+  }
+
   function autoSwitch() {
     const saved = store.autoSwitch && typeof store.autoSwitch === 'object' ? store.autoSwitch : {};
     return { enabled: saved.enabled !== false, thresholdPercent: Number.isFinite(saved.thresholdPercent) ? saved.thresholdPercent : AUTO_SWITCH_DEFAULT.thresholdPercent };

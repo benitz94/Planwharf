@@ -112,8 +112,15 @@ function createExecutionBridge(options) {
     return subtasks(mega).flatMap(sub => {
       const worker = models().find(model => model.id === sub.assignedModelId);
       const candidate = options.resolveWorker ? options.resolveWorker(worker, sub) : worker;
-      if (!candidate?.enabled || candidate.available === false || options.workerEligible && !options.workerEligible(candidate, sub)) return [`Worker ${sub.assignedModelId} is unavailable or has insufficient remaining quota.`];
-      if (!worker || worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
+      if (!candidate?.enabled || candidate.available === false || options.workerEligible && !options.workerEligible(candidate, sub)) {
+        // Waiting for quota does not hold the approval: the step starts by itself when a model of the crew has quota.
+        const why = options.explainNoWorker ? options.explainNoWorker(worker, sub) : null;
+        if (why?.waiting) return [];
+        return [why?.message || `Worker ${sub.assignedModelId} is unavailable or has insufficient remaining quota.`];
+      }
+      // A step switched to another model of the crew is fine; only a changed configuration of the same model needs a new proposal.
+      if (candidate.id === worker?.id && (worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli)) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
+      if (!worker && candidate.id === sub.assignedModelId) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
       if (sub.type === 'RESEARCH' && !adapterFor(candidate)?.sourceProtectedResearch) return [`Source-protected research is not supported by ${worker.provider}.`];
       return [];
     });
@@ -191,7 +198,15 @@ function createExecutionBridge(options) {
       event(mega.projectId, 'MODEL_USAGE_FALLBACK', 'Switched from ' + from + ' to ' + worker.id + ': the assigned model is out of quota, disabled or no longer has this role.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: worker.id });
       persist();
     }
-    if (!worker || typeof spawnWorker !== 'function' || options.workerEligible && !options.workerEligible(worker, sub)) { sub.status = 'BLOCKED'; mega.nextAction = `Enable the exact worker ${sub.assignedModelId}, verify its remaining quota, and resume.`; return; }
+    if (!worker || typeof spawnWorker !== 'function' || options.workerEligible && !options.workerEligible(worker, sub)) {
+      // No model of the crew has quota: the step waits and starts by itself when one has. Anything else blocks it with the reason.
+      const why = typeof spawnWorker === 'function' && options.explainNoWorker ? options.explainNoWorker(requested, sub) : null;
+      if (why?.waiting) { sub.status = 'PENDING'; sub.waitingFor = why.message; mega.nextAction = why.message; return; }
+      sub.status = 'BLOCKED'; sub.waitingFor = null;
+      mega.nextAction = why?.message || `Enable the exact worker ${sub.assignedModelId}, verify its remaining quota, and resume.`;
+      return;
+    }
+    sub.waitingFor = null;
     if (worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli) { sub.status = 'BLOCKED'; mega.nextAction = 'Review changed provider/model configuration and explicitly reassign this slice on Resume.'; return; }
     if (sub.type === 'RESEARCH' && !adapterFor(worker)?.sourceProtectedResearch) { sub.status = 'BLOCKED'; mega.nextAction = 'Source-protected research is not supported by this adapter.'; return; }
     const claim = attempts.claim({ taskId: sub.id, projectId: mega.detached ? 'research:' + mega.id : mega.projectId, modelId: worker.id, candidates: models(), megaTaskId: mega.id, subTaskId: sub.id, research: Boolean(mega.detached) });
