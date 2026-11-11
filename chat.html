@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Planwharf</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="chat.css">
   <script src="chat-ui.js" defer></script>
 </head>
@@ -12,7 +13,7 @@
   <div class="shell" id="shell">
     <aside class="side side-left" id="projects-panel" aria-label="Projects">
       <div class="side-head">
-        <strong class="brand"><span class="brand-mark" data-icon="lead" aria-hidden="true"></span>Planwharf</strong>
+        <strong class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><g class="bezel"><circle cx="32" cy="32" r="20.5"/><path d="M32 12v5.5M32 46.5V52M12 32h5.5M46.5 32H52"/></g><g class="needle"><g transform="rotate(40 32 32)"><path class="north" d="M32 16 36 32H28Z"/><path class="south" d="M32 48 36 32H28Z"/></g></g></svg></span>Planwharf</strong>
         <button type="button" class="icon-btn only-narrow" data-close-side="projects-panel" aria-label="Close projects">✕</button>
       </div>
       <button type="button" class="btn btn-primary full" id="new-project" data-icon="plus">New project</button>
@@ -70,6 +71,7 @@
       <label>Name<input name="name" required maxlength="120" placeholder="My website"></label>
       <label>Folder on your computer<input name="folder" maxlength="1000" placeholder="C:\Projects\my-website"></label>
       <p class="muted small" id="folder-help">Use an existing folder, or leave it empty to create one in your projects folder.</p>
+      <label>GitHub repository (optional)<input name="github" maxlength="500" placeholder="https://github.com/you/my-website"></label>
       <p class="error" id="project-error" role="alert"></p>
       <div class="dialog-actions">
         <button type="button" class="btn" value="cancel" id="project-cancel">Cancel</button>

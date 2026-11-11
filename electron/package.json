@@ -1,0 +1,57 @@
+{
+  "name": "planwharf-desktop",
+  "productName": "Planwharf",
+  "version": "0.4.2",
+  "description": "Planwharf desktop app: your AI crew in one chat window.",
+  "author": "benitz94",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/benitz94/Planwharf",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "prepare-app": "node prepare.cjs",
+    "start": "node prepare.cjs && electron .",
+    "dist:win": "node prepare.cjs && electron-builder --win nsis --publish never",
+    "dist:linux": "node prepare.cjs && electron-builder --linux AppImage deb --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.9.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.benitz94.planwharf",
+    "productName": "Planwharf",
+    "asar": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "app/**/*",
+      "package.json",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Planwharf-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "maintainer": "benitz94 <311145566+benitz94@users.noreply.github.com>",
+      "synopsis": "Your AI crew in one chat window"
+    },
+    "deb": {
+      "depends": []
+    }
+  }
+}
