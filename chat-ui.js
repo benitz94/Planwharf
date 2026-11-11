@@ -27,6 +27,10 @@
     if (!response.ok) throw new Error(body.error || body.reason || `Request failed (${response.status}).`);
     return body;
   }
+  // The installed version, next to the name. A source checkout shows nothing.
+  async function showVersion() {
+    try { const app = await getJson('/api/app'); const el = $('app-version'); if (el) el.textContent = app.version ? app.version : ''; } catch { /* keep it empty */ }
+  }
   async function refresh({ tick = true } = {}) {
     try {
       const [orchestra, plan] = await Promise.all([getJson((tick ? '/api/orchestrator' : '/api/orchestrator?readOnly=1') + (state.projectId ? (tick ? '?' : '&') + 'team=' + encodeURIComponent(state.projectId) : '')), getJson('/api/plan')]);
@@ -1042,6 +1046,7 @@
   window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/app/heartbeat', new Blob([JSON.stringify({ id: windowId, view: 'planwharf', closed: true })], { type: 'application/json' })); } catch {} });
   window.addEventListener('pageshow', pulse);
   pulse(); setInterval(pulse, 3000);
+  showVersion();
   // Day and time, always visible at the bottom of the project list.
   function showNow() { const d = new Date(); const day = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); $('now').textContent = day + ' · ' + time; $('now').title = d.toLocaleString(); }
   showNow(); setInterval(showNow, 15000);

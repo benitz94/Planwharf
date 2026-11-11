@@ -380,7 +380,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const plan = await readPlan(planFile);
         return json(200, { plan, version: version(plan) });
       }
-      if (request.method === 'GET' && pathname === '/api/app') return json(200, { planFile: path.resolve(planFile), attemptsDir: path.resolve(storeDir), pid: process.pid, views: appWindows ? appWindows.status() : {} });
+      if (request.method === 'GET' && pathname === '/api/app') return json(200, { version: typeof updates.version === 'function' ? updates.version() : null, planFile: path.resolve(planFile), attemptsDir: path.resolve(storeDir), pid: process.pid, views: appWindows ? appWindows.status() : {} });
       if (request.method === 'POST' && pathname === '/api/app/heartbeat') {
         const input = await body(request);
         if (!['planwharf', 'orchestrator'].includes(input.view) || typeof input.id !== 'string' || input.id.length > 100) throw new RequestError(400, 'Invalid view.');

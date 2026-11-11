@@ -138,6 +138,12 @@ function createUpdateManager({ root, fetchImpl = fetch, checkpoint, activeCount 
     } catch (error) { state.state = 'error'; state.reason = 'Update stopped: ' + error.message; throw error; }
     finally { installing = false; }
   }
-  return { snapshot, check, install, get busy() { return installing || state.state === 'restarting'; } };
+  // The running version, known at start: the desktop shell's, or the portable install record's. A source checkout has none.
+  function version() {
+    const desktop = process.env.PLANWHARF_DESKTOP === '1' && versionParts(process.env.PLANWHARF_DESKTOP_VERSION || '') ? process.env.PLANWHARF_DESKTOP_VERSION : null;
+    if (desktop) return desktop;
+    try { return installation(root)?.version || null; } catch { return null; }
+  }
+  return { snapshot, check, install, version, get busy() { return installing || state.state === 'restarting'; } };
 }
 module.exports = { createUpdateManager, digest, newer, appFile, installation, inside, checkout, verifyLocal, unpack };
