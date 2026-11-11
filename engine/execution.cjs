@@ -439,8 +439,6 @@ function createExecutionBridge(options) {
     const mega = target(projectId, megaTaskId);
     reconcile(mega);
     if (['COMPLETE', 'CANCELLED'].includes(mega.status)) throw new Error(`This work is ${mega.status.toLowerCase()}: start new work instead.`);
-    // Blocked work may still read RUNNING; only a step whose worker is actually working cannot change.
-    if (subtasks(mega).some(sub => sub.status === 'RUNNING')) throw new Error('A step is still working; stop the crew first, then change its models.');
     if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments) || !Object.keys(assignments).length) throw new Error('Name at least one step and its model.');
     const changes = Object.entries(assignments).map(([id, modelId]) => {
       const sub = subtasks(mega).find(item => item.id === id && item.status !== 'COMPLETE');
@@ -449,7 +447,17 @@ function createExecutionBridge(options) {
       if (!model || options.workerEligible && !options.workerEligible(model, sub)) throw new Error(`Model ${modelId} cannot take "${sub.title}": it must be enabled, have this role in Team and have quota.`);
       return [sub, model];
     });
-    for (const [sub, model] of changes) Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(sub.status === 'BLOCKED' ? { status: 'PENDING' } : {}) });
+    // A step that is working stops its worker first; it then restarts with the new model. Files it wrote stay.
+    for (const [sub, model] of changes.filter(([sub]) => sub.status === 'RUNNING')) {
+      const part = rowFor(mega.projectId, mega.id).dispatch.find(item => item.subTaskId === sub.id && item.alive);
+      if (!part) continue;
+      if (!killWorker?.(part.pid) || isProcessAlive?.(part.pid)) throw new Error(`Could not stop the worker of "${sub.title}"; its model was not changed.`);
+      part.alive = false; part.observedAlive = false;
+      const partial = readJSON(part.structuredResultPath);
+      collect(mega, sub, part, technical(mega, sub, part, 'BLOCKED', `Model changed to ${model.label || model.id}; the step restarts with it.`, validateResult(partial, identity(mega, sub, part.attemptId)) ? partial : null));
+      mega.interruptedAttemptIds = [...(mega.interruptedAttemptIds || []), part.attemptId];
+    }
+    for (const [sub, model] of changes) Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(['BLOCKED', 'RUNNING'].includes(sub.status) ? { status: 'PENDING', resultId: null } : {}) });
     if (mega.status === 'READY_FOR_APPROVAL') mega.blockers = proposalBlockers(mega);
     event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${changes.map(([sub, model]) => `${sub.title} to ${model.label || model.id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
     paint(mega); persist();
