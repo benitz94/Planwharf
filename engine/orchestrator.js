@@ -1772,6 +1772,22 @@ function createOrchestrator(options) {
     } catch (error) { finishResearch(record, 'failed', error.message); throw error; }
   }
 
+  // Lead action from the chat: change the models of remaining steps; Planwharf checks every choice.
+  async function reassignCrew(action, row) {
+    try {
+      if (!action || typeof action !== 'object' || Object.keys(action).some(key => !['type', 'projectId', 'assignments', 'why'].includes(key))) throw new Error('Invalid crew change.');
+      if (!row || action.projectId !== row.id) throw new Error('The crew change targets a different project from the selected one.');
+      const megaTaskId = row.megaTaskId || row.megaTask?.id;
+      if (!megaTaskId) throw new Error('This project has no proposed or stopped work.');
+      await refreshPlans(false);
+      const mega = bridge.reassignRemaining(row.id, megaTaskId, action.assignments, typeof action.why === 'string' ? action.why.slice(0, 300) : '');
+      if (mega.status === 'READY_FOR_APPROVAL') return { ok: true, text: 'Crew changed. Approve the work to start it.' };
+      const resumed = await resume(row.id, { megaTaskId });
+      if (resumed?.ok) return { ok: true, text: 'Crew changed and the work resumed.' };
+      return { ok: true, text: 'Crew changed. Press Resume to continue' + (resumed?.requiresConfirmation ? ' and confirm the changes made since the checkpoint.' : resumed?.reason ? ': ' + resumed.reason : '.') };
+    } catch (error) { return { ok: false, reason: error.message }; }
+  }
+
   async function dispatchResearch(action, stillAuthorized = () => true, goldModel = null) {
     try {
       if (!action || typeof action !== 'object' || Object.keys(action).some(key => !['type', 'projectId', 'modelId', 'title', 'detail'].includes(key)) || action.type !== 'dispatch_research') throw new Error('Invalid research dispatch action.');
@@ -2870,6 +2886,15 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           if (envelope.answer) answer = envelope.answer;
           else answer = `${lead.label} returned no answer. The provider CLI in the project folder produced nothing.`;
           if (envelope.error) answer += '\n\n' + envelope.error;
+          // Crew changes are allowed in any message; research still needs the user's explicit request.
+          if (Array.isArray(envelope.actions) && envelope.actions.length <= 3) {
+            for (const action of envelope.actions.filter(item => item?.type === 'reassign_crew')) {
+              const receipt = await reassignCrew(action, row);
+              actionResults.push(receipt);
+              answer += receipt.ok ? '\n\n' + receipt.text : '\n\nCrew not changed: ' + receipt.reason;
+            }
+            envelope.actions = envelope.actions.filter(item => item?.type !== 'reassign_crew');
+          }
           if (!Array.isArray(envelope.actions) || envelope.actions.length > 3) {
             answer += '\n\nInvalid lead actions; no workers were dispatched.';
           } else if (envelope.actions.length && !researchRequested) {
