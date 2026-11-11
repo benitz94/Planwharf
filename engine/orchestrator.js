@@ -1782,6 +1782,8 @@ function createOrchestrator(options) {
       await refreshPlans(false);
       const mega = bridge.reassignRemaining(row.id, megaTaskId, action.assignments, typeof action.why === 'string' ? action.why.slice(0, 300) : '');
       if (mega.status === 'READY_FOR_APPROVAL') return { ok: true, text: 'Crew changed. Approve the work to start it.' };
+      // Work that still reads RUNNING launches its pending steps on the next pass.
+      if (mega.status === 'RUNNING') { await tick(row.id); return { ok: true, text: 'Crew changed; the remaining steps start with the new models.' }; }
       const resumed = await resume(row.id, { megaTaskId });
       if (resumed?.ok) return { ok: true, text: 'Crew changed and the work resumed.' };
       return { ok: true, text: 'Crew changed. Press Resume to continue' + (resumed?.requiresConfirmation ? ' and confirm the changes made since the checkpoint.' : resumed?.reason ? ': ' + resumed.reason : '.') };

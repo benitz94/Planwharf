@@ -437,7 +437,10 @@ function createExecutionBridge(options) {
   // The lead may change the models of slices not yet done, in proposed or stopped work, within the user's roles.
   function reassignRemaining(projectId, megaTaskId, assignments, why = '') {
     const mega = target(projectId, megaTaskId);
-    if (!['READY_FOR_APPROVAL', 'PAUSED', 'FAILED'].includes(mega.status)) throw new Error('Only proposed or stopped work can change its models.');
+    reconcile(mega);
+    if (['COMPLETE', 'CANCELLED'].includes(mega.status)) throw new Error(`This work is ${mega.status.toLowerCase()}: start new work instead.`);
+    // Blocked work may still read RUNNING; only a step whose worker is actually working cannot change.
+    if (subtasks(mega).some(sub => sub.status === 'RUNNING')) throw new Error('A step is still working; stop the crew first, then change its models.');
     if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments) || !Object.keys(assignments).length) throw new Error('Name at least one step and its model.');
     const changes = Object.entries(assignments).map(([id, modelId]) => {
       const sub = subtasks(mega).find(item => item.id === id && item.status !== 'COMPLETE');
