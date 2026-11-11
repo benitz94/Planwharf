@@ -68,11 +68,14 @@ test('a working step can change model: its worker stops and the step restarts wi
   const attemptId = claim.ok ? claim.attempt.id : 'attempt-1';
   build.attemptIds = [...(build.attemptIds || []), attemptId];
   dispatch.push({ subTaskId: build.id, megaTaskId: mega.id, pid: 4242, alive: true, attemptId,
-    structuredResultPath: path.join(dir, 'none.json'), exitPath: path.join(dir, 'none.exit.json'), startedAt: '2026-11-11T01:00:00Z' });
+    structuredResultPath: path.join(dir, 'none.json'), exitPath: path.join(dir, 'none.exit.json'), logPath: path.join(dir, 'worker.log'), startedAt: '2026-11-11T01:00:00Z' });
+  fs.writeFileSync(path.join(dir, 'worker.log'), 'start\nwrote tools/check.py\nrunning tests/test_check.py\n');
   bridge.reassignRemaining(item.project.id, mega.id, { [build.id]: 'sonnet' });
   assert.deepEqual(killed, [4242]);
   assert.equal(dispatch[0].alive, false);
   assert.equal(build.status, 'PENDING');
   assert.equal(build.assignedModelId, 'sonnet');
   assert.ok(store.execution.results.some(result => result.subTaskId === build.id && /Model changed to/.test(result.summary)));
+  assert.equal(build.takeover.fromModelId, 'terra');
+  assert.match(build.takeover.logTail, /running tests\/test_check.py/);
 });
