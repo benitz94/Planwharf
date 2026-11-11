@@ -29,6 +29,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -42,7 +45,9 @@ jobs:
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/Planwharf-native-${{ matrix.rid }}"
-          dotnet publish native/Planwharf.Native -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o "$out" --nologo
+          # The version of the latest release, shown next to the name.
+          version="$(git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null || echo v0.0.0)"
+          dotnet publish native/Planwharf.Native -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:Version="${version#v}" -o "$out" --nologo
           node native/prepare-app.cjs "$out/app"
           mkdir -p "$out/node"
           node_bin="$(node -p 'process.execPath')"

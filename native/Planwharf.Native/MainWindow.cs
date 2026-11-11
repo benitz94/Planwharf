@@ -126,7 +126,9 @@ public sealed class MainWindow : Window
 
     static Control Bubble(bool fromUser, string who, string text)
     {
-        var body = new SelectableTextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = fromUser ? Palette.AccentText : Palette.Text };
+        var body = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = fromUser ? Palette.AccentText : Palette.Text, Inlines = new Avalonia.Controls.Documents.InlineCollection() };
+        foreach (var run in TextRuns.Parse(text))
+            body.Inlines.Add(new Avalonia.Controls.Documents.Run(run.Text) { FontWeight = run.Bold ? FontWeight.Bold : FontWeight.Normal, FontFamily = run.Code ? new FontFamily("Consolas, Menlo, monospace") : FontFamily.Default });
         var bubble = new Border { Background = fromUser ? Palette.UserBubble : Palette.Card, CornerRadius = new CornerRadius(12), Padding = new Thickness(14, 10), Child = body, MaxWidth = 680,
             HorizontalAlignment = fromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left };
         return fromUser ? bubble : new StackPanel { Spacing = 4, Children = { new TextBlock { Text = who, Foreground = Palette.Muted, FontSize = 12 }, bubble } };

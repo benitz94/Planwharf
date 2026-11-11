@@ -246,7 +246,7 @@
     if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
-    if (row && !hasGoal(row) && !state.goalCandidate) missing.push({ text: 'Talk with the lead about what to build first.', fix: 'Write what to build', action: 'focus-input' });
+    if (row && !hasGoal(row) && !state.goalCandidate) missing.push({ text: 'Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.', fix: 'Write what to build', action: 'focus-input' });
     return missing;
   }
   // A project created with only a name and a folder has no goal until the user gives one in the chat.
@@ -438,9 +438,10 @@
     // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
     state.goalCandidate = null; state.suggestedGoal = null;
     const suggested = String(lastAsk?.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim() || null;
-    const nextGoal = suggested || lastAsk?.question?.trim() || '';
+    // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
+    const nextGoal = suggested || '';
     if (row && lastAsk && !busy && !pendingHere && nextGoal && nextGoal !== row.goal?.trim() && lastAsk.question?.trim() !== row.goal?.trim()) {
-      state.goalCandidate = lastAsk.question; state.suggestedGoal = suggested;
+      state.goalCandidate = suggested; state.suggestedGoal = suggested;
       html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);

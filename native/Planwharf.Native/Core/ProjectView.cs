@@ -97,7 +97,8 @@ public static class ProjectViews
         var working = B(auto?["enabled"]) && stopReason.Length == 0;
         var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().LastOrDefault(ask => S(ask["projectId"]) == id);
         var goal = S(row["goal"]).Trim();
-        var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"])) ?? S(lastAsk["question"]).Trim();
+        // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
+        var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
 
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead.")
@@ -106,7 +107,7 @@ public static class ProjectViews
             : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point.")
             : (CrewAction.LetTheCrewDoIt, "Let the crew do it",
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
-                : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build first."
+                : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it."
                 : "Ready. The crew will plan, build, check and stop when the goal is reached.");
         return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null);
     }

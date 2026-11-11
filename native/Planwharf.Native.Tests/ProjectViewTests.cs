@@ -36,7 +36,7 @@ public class ProjectViewTests
         Assert.Equal(CrewAction.LetTheCrewDoIt, ProjectViews.Project(SampleState.Finished(), "weather")!.Action);
         Assert.Equal(CrewAction.StopTheCrew, ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Action);
         var idle = ProjectViews.Project(SampleState.Finished(), "notes")!;
-        Assert.Equal("Talk with the lead about what to build first.", idle.Hint);
+        Assert.StartsWith("Talk with the lead about what to build", idle.Hint);
     }
 
     [Fact]
@@ -106,5 +106,31 @@ public class MacDataFolderTests
     {
         if (!OperatingSystem.IsMacOS()) return;
         Assert.EndsWith(Path.Combine("Library", "Application Support", "Planwharf", "data"), ServerHost.DefaultDataFolder());
+    }
+}
+
+public class GoalFromChatTests
+{
+    // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
+    [Fact]
+    public void A_question_without_a_suggested_goal_is_not_offered_as_the_goal()
+    {
+        var state = SampleState.Finished();
+        state["projects"]![0]!["goal"] = "Something older";
+        state["asks"]![0]!["question"] = "Why two workers on this project?";
+        state["asks"]![0]!["answer"] = "Because the work has a build step and a check step.";
+        var view = ProjectViews.Project(state, "weather")!;
+        Assert.Null(view.NextGoal);
+    }
+}
+
+public class TextRunsTests
+{
+    [Fact]
+    public void Bold_and_code_are_shown_as_such_not_as_asterisks()
+    {
+        var runs = Planwharf.Native.Core.TextRuns.Parse("Found **24 files** in `tools/check.py`, done.");
+        Assert.Equal(["Found ", "24 files", " in ", "tools/check.py", ", done."], runs.Select(run => run.Text));
+        Assert.True(runs[1].Bold); Assert.True(runs[3].Code); Assert.False(runs[0].Bold || runs[0].Code);
     }
 }
