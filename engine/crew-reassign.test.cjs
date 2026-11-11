@@ -19,11 +19,12 @@ function fixture(t) {
     { id: 'sonnet', provider: 'claude', cli: 'claude-sonnet-5-5', enabled: true, available: true, cost: 1 },
     { id: 'no-role', provider: 'grok', cli: 'grok-4.7', enabled: true, available: true, cost: 1 }
   ];
-  const bridge = createExecutionBridge({ store: { usage: {} }, dir, rowFor: () => ({ dispatch: [] }), models: () => models, leadId: () => 'sonnet', sessionId: 's1',
+  const killed = [], dispatch = [], store = { usage: {} }, live = new Set();
+  const bridge = createExecutionBridge({ store, dir, rowFor: () => ({ dispatch }), models: () => models, leadId: () => 'sonnet', sessionId: 's1',
     attempts: createAttemptEngine({ dir }), now: () => '2026-11-11T01:00:00Z', persist: () => {}, inspect: () => ({ git: false, dirty: [], names: [], fileCount: 0 }),
-    workerEligible: model => model.id !== 'no-role', spawnWorker: () => ({ pid: 1 }), isProcessAlive: () => false, killWorker: () => true });
+    workerEligible: model => model.id !== 'no-role', spawnWorker: () => ({ pid: 1 }), isProcessAlive: pid => live.has(pid), killWorker: pid => { killed.push(pid); live.delete(pid); return true; } });
   const mega = bridge.propose(item, job, [{ modelId: 'terra', slice: 'Build', dependsOn: [] }, { modelId: 'sonnet', slice: 'Verify', dependsOn: [0] }]);
-  return { bridge, mega, item };
+  return { bridge, mega, item, killed, dispatch, dir, store, live };
 }
 
 test('the lead can move a remaining step to a model the user allowed', t => {
@@ -54,4 +55,27 @@ test('work that still reads RUNNING with a blocked step can change its models', 
   const after = bridge.view(item.project.id).subTasks.find(sub => sub.id === build.id);
   assert.equal(after.assignedModelId, 'sonnet');
   assert.equal(changed.status, 'RUNNING');
+});
+
+test('a working step can change model: its worker stops and the step restarts with the new one', t => {
+  const { bridge, mega, item, killed, dispatch, dir, store, live: alive } = fixture(t);
+  alive.add(4242);
+  const live = store.execution.megaTasks.find(entry => entry.id === mega.id);
+  const build = store.execution.subTasks.find(sub => sub.megaTaskId === mega.id && sub.title === 'Build');
+  live.status = 'RUNNING';
+  build.status = 'RUNNING';
+  const claim = createAttemptEngine({ dir }).claim({ taskId: build.id, projectId: item.project.id, modelId: 'terra', candidates: [], megaTaskId: mega.id, subTaskId: build.id });
+  const attemptId = claim.ok ? claim.attempt.id : 'attempt-1';
+  build.attemptIds = [...(build.attemptIds || []), attemptId];
+  dispatch.push({ subTaskId: build.id, megaTaskId: mega.id, pid: 4242, alive: true, attemptId,
+    structuredResultPath: path.join(dir, 'none.json'), exitPath: path.join(dir, 'none.exit.json'), logPath: path.join(dir, 'worker.log'), startedAt: '2026-11-11T01:00:00Z' });
+  fs.writeFileSync(path.join(dir, 'worker.log'), 'start\nwrote tools/check.py\nrunning tests/test_check.py\n');
+  bridge.reassignRemaining(item.project.id, mega.id, { [build.id]: 'sonnet' });
+  assert.deepEqual(killed, [4242]);
+  assert.equal(dispatch[0].alive, false);
+  assert.equal(build.status, 'PENDING');
+  assert.equal(build.assignedModelId, 'sonnet');
+  assert.ok(store.execution.results.some(result => result.subTaskId === build.id && /Model changed to/.test(result.summary)));
+  assert.equal(build.takeover.fromModelId, 'terra');
+  assert.match(build.takeover.logTail, /running tests\/test_check.py/);
 });

@@ -300,7 +300,7 @@
     const list = models().filter(model => model.enabled && model.available !== false && keys.some(key => model.roles?.[key]));
     if (!list.some(model => model.id === sub.assignedModelId)) list.unshift(models().find(model => model.id === sub.assignedModelId) || { id: sub.assignedModelId, label: sub.assignedModelId || 'not assigned' });
     const option = model => { const left = quotaLeft(model); return `<option value="${escape(model.id)}" ${model.id === sub.assignedModelId ? 'selected' : ''}>${escape(model.label || model.id)}${left != null ? ` · ${left}% left` : ''}</option>`; };
-    return `<select class="crew-pick" data-crew-step="${escape(sub.id)}" aria-label="Model for ${escape(role)}">${list.map(option).join('')}</select>`;
+    return `<select class="crew-pick" data-crew-step="${escape(sub.id)}" data-running="${String(sub.status).toUpperCase() === 'RUNNING'}" aria-label="Model for ${escape(role)}">${list.map(option).join('')}</select>`;
   }
   function crewCard(row) {
     const mega = row.megaTask;
@@ -319,7 +319,7 @@
       const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
       const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
       const [roleIcon, roleTone] = ROLE_LOOK[role] || ROLE_LOOK.Build;
-      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && !['COMPLETE', 'RUNNING'].includes(s) ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
+      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
     };
     const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
     const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
@@ -925,7 +925,13 @@
   });
   document.addEventListener('change', event => {
     if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value);
-    else if (event.target.matches('[data-crew-step]')) { const row = project(); if (row) act(async () => { const result = await post('/api/orchestrator/crew', { projectId: row.id, assignments: { [event.target.dataset.crewStep]: event.target.value } }); if (result?.message) toast(result.message); return result; }); }
+    else if (event.target.matches('[data-crew-step]')) {
+      const row = project(), select = event.target, change = () => act(async () => { const result = await post('/api/orchestrator/crew', { projectId: row.id, assignments: { [select.dataset.crewStep]: select.value } }); if (result?.message) toast(result.message); return result; });
+      if (!row) return;
+      // A working step restarts with the new model: say so before doing it.
+      if (select.dataset.running === 'true') { state.confirm = { text: `Switch this step to ${select.options[select.selectedIndex]?.text || select.value}? Its current worker stops and the step starts again with the new model. Files already written stay.`, run: change }; state.threadSig = ''; render(); }
+      else change();
+    }
     else if (event.target.matches('[data-ink-custom]')) { setInk(event.target.value.toLowerCase()); state.sideSig = ''; renderSide(); }
     else if (event.target.id === 'import-file' && event.target.files?.[0]) importProject(event.target.files[0]);
   });

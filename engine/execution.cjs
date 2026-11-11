@@ -169,6 +169,17 @@ function createExecutionBridge(options) {
     row.monitoring = { ...row.monitoring, workers: (row.dispatch || []).filter(part => part.pid).length, alive: (row.dispatch || []).filter(part => part.alive).length };
     return subtasks(mega);
   }
+  function takeoverText(sub) {
+    const note = sub.takeover;
+    if (!note) return '';
+    const lines = [`HANDOFF: you take over this step from ${note.fromModelId}, which was stopped before finishing.`,
+      'Continue from the current state of the project folder. Do not start over: first look at what is already there (git status and the files below), keep what works, then finish the step.'];
+    if (note.filesChanged.length) lines.push('Files it changed: ' + note.filesChanged.join(', '));
+    if (note.tests.length) lines.push('Tests it reported: ' + note.tests.map(test => typeof test === 'string' ? test : [test.command, test.status].filter(Boolean).join(' ')).join('; '));
+    if (note.summary) lines.push('Its last report: ' + note.summary);
+    if (note.logTail) lines.push('Its last activity (log tail):\n' + note.logTail);
+    return lines.join('\n') + '\n\n';
+  }
   function launch(item, job, mega, sub) {
     const row = rowFor(mega.projectId, mega.id);
     const requested = models().find(model => model.id === sub.assignedModelId && model.enabled && model.available !== false);
@@ -202,7 +213,7 @@ function createExecutionBridge(options) {
     try {
       const handoff = { megaTask: mega, subTasks: subtasks(mega), results: data.results.filter(result => result.megaTaskId === mega.id), checkpoint: data.checkpoints.find(cp => cp.id === mega.currentCheckpointId), notes: (item.home?.notes || []).filter(note => note.aiRelevant === true) };
       const launched = spawnWorker({ ...part, linkedFolder: item.project.folder, projectId: mega.projectId, worker, ...identity(mega, sub, attemptId), job: { title: sub.title, kind: sub.type === 'RESEARCH' ? 'research' : sub.type === 'AUDIT' ? 'audit' : job.kind,
-        detail: `${job.detail}\n\nSubTask: ${sub.detail}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
+        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
       if (!Number.isInteger(launched?.pid) || launched.pid <= 0) throw new Error('Worker did not start.');
       Object.assign(part, { pid: launched.pid, alive: true, observedAlive: true, logPath: launched.logPath || part.logPath });
       row.workerPid = part.pid; row.workerLog = part.logPath;
@@ -435,12 +446,14 @@ function createExecutionBridge(options) {
     return mega;
   }
   // The lead may change the models of slices not yet done, in proposed or stopped work, within the user's roles.
+  // The last lines of a worker log, small enough to hand to the next model.
+  function logTail(file, max = 3000) {
+    try { const text = fs.readFileSync(file, 'utf8'); return text.slice(-max).split('\n').slice(1).join('\n').trim(); } catch { return ''; }
+  }
   function reassignRemaining(projectId, megaTaskId, assignments, why = '') {
     const mega = target(projectId, megaTaskId);
     reconcile(mega);
     if (['COMPLETE', 'CANCELLED'].includes(mega.status)) throw new Error(`This work is ${mega.status.toLowerCase()}: start new work instead.`);
-    // Blocked work may still read RUNNING; only a step whose worker is actually working cannot change.
-    if (subtasks(mega).some(sub => sub.status === 'RUNNING')) throw new Error('A step is still working; stop the crew first, then change its models.');
     if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments) || !Object.keys(assignments).length) throw new Error('Name at least one step and its model.');
     const changes = Object.entries(assignments).map(([id, modelId]) => {
       const sub = subtasks(mega).find(item => item.id === id && item.status !== 'COMPLETE');
@@ -449,7 +462,25 @@ function createExecutionBridge(options) {
       if (!model || options.workerEligible && !options.workerEligible(model, sub)) throw new Error(`Model ${modelId} cannot take "${sub.title}": it must be enabled, have this role in Team and have quota.`);
       return [sub, model];
     });
-    for (const [sub, model] of changes) Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(sub.status === 'BLOCKED' ? { status: 'PENDING' } : {}) });
+    // A step that is working stops its worker first; it then restarts with the new model. Files it wrote stay.
+    for (const [sub, model] of changes.filter(([sub]) => sub.status === 'RUNNING')) {
+      const part = rowFor(mega.projectId, mega.id).dispatch.find(item => item.subTaskId === sub.id && item.alive);
+      if (!part) continue;
+      if (!killWorker?.(part.pid) || isProcessAlive?.(part.pid)) throw new Error(`Could not stop the worker of "${sub.title}"; its model was not changed.`);
+      part.alive = false; part.observedAlive = false;
+      const partial = readJSON(part.structuredResultPath);
+      collect(mega, sub, part, technical(mega, sub, part, 'BLOCKED', `Model changed to ${model.label || model.id}; the step restarts with it.`, validateResult(partial, identity(mega, sub, part.attemptId)) ? partial : null));
+      mega.interruptedAttemptIds = [...(mega.interruptedAttemptIds || []), part.attemptId];
+    }
+    for (const [sub, model] of changes) {
+      // A step that already worked hands over to the new model: who worked on it, what it changed, its last activity.
+      const last = (rowFor(mega.projectId, mega.id).dispatch || []).find(item => item.subTaskId === sub.id);
+      if (sub.attemptIds?.length && sub.assignedModelId !== model.id) {
+        const result = data.results.filter(item => item.subTaskId === sub.id).at(-1);
+        sub.takeover = { fromModelId: sub.assignedModelId, at: now(), filesChanged: result?.filesChanged || [], tests: result?.tests || [], summary: result?.summary || '', logTail: last?.logPath ? logTail(last.logPath) : '' };
+      }
+      Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(['BLOCKED', 'RUNNING'].includes(sub.status) ? { status: 'PENDING', resultId: null } : {}) });
+    }
     if (mega.status === 'READY_FOR_APPROVAL') mega.blockers = proposalBlockers(mega);
     event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${changes.map(([sub, model]) => `${sub.title} to ${model.label || model.id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
     paint(mega); persist();
