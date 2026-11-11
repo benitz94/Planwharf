@@ -100,7 +100,7 @@
   const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' s' : ms < 3600000 ? Math.round(ms / 60000) + ' min' : (ms / 3600000).toFixed(1) + ' h';
   const STOP_REASONS = {
     GOAL_REACHED: 'Goal reached', MEGATASK_LIMIT: 'Stopped: step limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available',
-    START_UNAVAILABLE: 'Stopped: could not start', TIME_LIMIT: 'Stopped: time limit reached'
+    START_UNAVAILABLE: 'Stopped: could not start', TIME_LIMIT: 'Stopped: time limit reached', NOTHING_STARTED: 'Stopped: no work started', START_FAILED: 'Stopped: could not start'
   };
   function projectStatus(row) {
     if (!row) return { text: '', kind: '' };
@@ -431,7 +431,10 @@
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
       parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length || checking ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
-      parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
+      // Why the last crew start stopped, in full, so it is never silent.
+      const why = auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? auto.stopReason.replace(/^[A-Z_]+:\s*/, '') : '';
+      const whyText = why && why !== auto.stopReason ? `The crew stopped: ${why}` : auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? (STOP_REASONS[auto.stopReason] || auto.stopReason) : '';
+      parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : whyText || 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
   }
