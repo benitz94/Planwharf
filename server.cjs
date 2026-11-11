@@ -753,6 +753,24 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
         return json(200, result.snapshot);
       }
+      if (request.method === 'POST' && pathname === '/api/orchestrator/reset') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => key !== 'projectId')) throw new RequestError(400, 'Invalid data.');
+        const result = await enqueue(async () => {
+          const reset = await orchestra.resetWork(input.projectId);
+          if (!reset.ok) return reset;
+          // The notebook's running job is closed too, so the project is free for a new start.
+          const current = await readPlan(planFile);
+          const next = current.schema === 2
+            ? { ...current, projects: current.projects.map(item => item.project.id !== input.projectId ? item : { ...item, tasks: (item.tasks || []).map(task => task.status === 'running' ? { ...task, status: 'superseded' } : task) }) }
+            : { ...current, tasks: (current.tasks || []).map(task => task.status === 'running' ? { ...task, status: 'superseded' } : task) };
+          await save(planFile, next);
+          return { ok: true, snapshot: await orchestra.tick() };
+        });
+        if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
+        return json(200, result.snapshot);
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/window') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);
