@@ -201,6 +201,7 @@ function askPrompt(info) {
     info && info.allowActions === false ? 'This request is an internal planning query: actions are disabled. Follow the requested answer format exactly; do not wrap it in a dispatch envelope.' : '',
     info && info.extraPrompt ? info.extraPrompt : '',
     'When the latest MegaTask in the briefing is COMPLETE and the user is talking about what to do next, say briefly what that work did when it helps, then end with one line that starts exactly with "Suggested next goal:" followed by one concrete goal the crew could take on. The user starts it; never claim it has started.',
+    'From the chat you cannot change the models of work already proposed, running or stopped; never say the crew is fixed or changed. For stopped work, tell the user to press Resume: Planwharf then replaces a model that is out of quota, disabled or no longer has the role.',
     'Do not invent workers that are not in the briefing.',
     info && info.allowActions !== false && info.model?.tools ? toolRequestRule(info.model.tools) : '',
     'When CURRENT REQUEST includes goldModel, every implementation or research worker must use that exact model ID, provider and CLI model. Never substitute another worker. Reviewers keep their configured roles. Gold is a request exception, not a change to the orchestrator.',

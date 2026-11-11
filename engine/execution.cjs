@@ -177,7 +177,7 @@ function createExecutionBridge(options) {
     if (worker && worker.id !== sub.assignedModelId) {
       const from = sub.assignedModelId;
       sub.fallbackFrom = from; sub.assignedModelId = worker.id; sub.proposedProvider = worker.provider; sub.proposedCli = worker.cli;
-      event(mega.projectId, 'MODEL_USAGE_FALLBACK', 'Usage limit: switched from ' + from + ' to ' + worker.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: worker.id });
+      event(mega.projectId, 'MODEL_USAGE_FALLBACK', 'Switched from ' + from + ' to ' + worker.id + ': the assigned model is out of quota, disabled or no longer has this role.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: worker.id });
       persist();
     }
     if (!worker || typeof spawnWorker !== 'function' || options.workerEligible && !options.workerEligible(worker, sub)) { sub.status = 'BLOCKED'; mega.nextAction = `Enable the exact worker ${sub.assignedModelId}, verify its remaining quota, and resume.`; return; }
