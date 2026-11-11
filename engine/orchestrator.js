@@ -1188,12 +1188,13 @@ function createOrchestrator(options) {
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
     resolveWorker: (worker, sub) => {
       if (sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker') return worker;
-      const resolved = resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost));
-      if (resolved || !worker) return resolved;
-      // The assigned model ran out of quota and has no fallback set: take another eligible model that still has quota.
-      const outOfQuota = usagePolicy(worker, plansLive).blocked || planExhausted(plansLive, worker.quotaPoolId || worker.plan);
-      if (!outOfQuota) return null;
-      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: [worker.id], plans: plansLive });
+      const resolved = worker ? resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
+      if (resolved) return resolved;
+      // Quota not read yet: wait for it rather than switch model on a guess.
+      if (worker && usagePolicy(worker, plansLive).state === 'unread') return null;
+      // The assigned model is disabled, no longer has this role, or ran out of quota with no fallback set:
+      // take another eligible model that still has quota, as a normal assignment would.
+      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive });
       return picked ? roster().find(model => model.id === picked.id) || null : null;
     },
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
