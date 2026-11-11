@@ -341,3 +341,6 @@ details.skills summary { cursor: pointer; }
 
 /* Plain-English summary of finished work */
 .work-summary { border-left: 3px solid var(--accent, #3ba776); padding: 4px 0 4px 10px; margin: 8px 0; }
+
+/* Installed version next to the name */
+.brand-version { margin-left: .45em; font-size: .62em; font-weight: 500; opacity: .65; letter-spacing: .02em; }

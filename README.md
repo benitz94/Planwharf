@@ -14,6 +14,22 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 - **Your crew decides the cost.** Planwharf does not save tokens or time by itself: what a goal costs depends on the models you choose and on the task.
 - **Nothing is published without you.** The work stays in your project folder: Planwharf never commits or pushes by itself. When you are happy with the result, you can commit it, and push it to GitHub, from the Work finished card.
 
+## See it
+
+You talk with the lead in a chat; when the plan is right you press **Let the crew do it**, and the crew builds and checks the work while you watch.
+
+![The crew at work: Opus 5.5 built the page, GPT-6 Astra checks it; each step has a menu to change its model at any time](docs/images/crew-at-work.png)
+
+When the work is done, a summary says what happened, who did what and what is left; you can commit and push from there.
+
+![Work finished: a summary in plain English, what each model did, and the buttons to commit or commit and push](docs/images/work-finished.png)
+
+| Your team | Quota left | Settings |
+|---|---|---|
+| ![Team: the lead, and who can build, verify or review](docs/images/team.png) | ![Usage: quota left for each provider and what each model used](docs/images/usage.png) | ![Settings: project folder, tools, approvals and the automatic model switch](docs/images/settings.png) |
+
+<sub>Screenshots of a sample project with sample data.</sub>
+
 ## Download
 
 Every [release](https://github.com/benitz94/Planwharf/releases/latest) contains both kinds of Planwharf. Pick one:
