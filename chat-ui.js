@@ -331,6 +331,18 @@
     const option = model => { const left = quotaLeft(model); return `<option value="${escape(model.id)}" ${model.id === sub.assignedModelId ? 'selected' : ''}>${escape(model.label || model.id)}${left != null ? ` · ${left}% left` : ''}</option>`; };
     return `<select class="crew-pick" data-crew-step="${escape(sub.id)}" data-running="${String(sub.status).toUpperCase() === 'RUNNING'}" aria-label="Model for ${escape(role)}">${list.map(option).join('')}</select>`;
   }
+  // Commit and push the finished work, or push commits already made. What git does, and what it said, stays in view.
+  function gitBox(row, repo, changed, mega) {
+    const ahead = Number(repo?.comparison?.ahead) || 0, busy = state.gitBusy?.[row.id], said = state.gitSaid?.[row.id];
+    if (!repo?.local?.git || (!changed && !ahead && !busy && !said)) return '';
+    const status = busy ? `<p class="small">${ic('clock')}${escape(busy)}</p>` : said ? `<p class="small ${said.ok ? '' : 'error'}">${escape(said.text)}</p>` : '';
+    const buttons = changed
+      ? `<button type="submit" class="btn btn-small" data-push="false" ${busy ? 'disabled' : ''}>${ic('check')}Commit</button><button type="submit" class="btn btn-small btn-primary" data-push="true" ${busy ? 'disabled' : ''}>${ic('rocket')}Commit and push</button>`
+      : ahead ? `<button type="submit" class="btn btn-small btn-primary" data-push="true" ${busy ? 'disabled' : ''}>${ic('rocket')}Push ${ahead} commit${ahead === 1 ? '' : 's'} to GitHub</button>` : '';
+    return `<form class="commit-form stack" data-commit-project="${escape(row.id)}" data-changed="${changed ? 'true' : 'false'}" data-ahead="${ahead}">
+      ${changed ? `<label class="small" for="commit-message-${escape(row.id)}">Save it in git when you are happy with it</label><input id="commit-message-${escape(row.id)}" name="message" maxlength="500" value="${escape(String(mega.title || 'Work by the crew').slice(0, 200))}">` : ahead ? `<p class="small">${ahead} commit${ahead === 1 ? ' is' : 's are'} not on GitHub yet.</p><input type="hidden" name="message" value="push">` : ''}
+      <div class="row">${buttons}</div>${status}</form>`;
+  }
   function crewCard(row) {
     const mega = row.megaTask;
     const subs = row.subTasks || [];
@@ -369,9 +381,7 @@
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
         ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Planwharf did not commit or publish anything.</p>
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div>
-        ${repo?.local?.git && changed ? `<form class="commit-form stack" data-commit-project="${escape(row.id)}"><label class="small" for="commit-message-${escape(row.id)}">Save it in git when you are happy with it</label>
-          <input id="commit-message-${escape(row.id)}" name="message" maxlength="500" value="${escape(String(mega.title || 'Work by the crew').slice(0, 200))}">
-          <div class="row"><button type="submit" class="btn btn-small" data-push="false">${ic('check')}Commit</button><button type="submit" class="btn btn-small btn-primary" data-push="true">${ic('rocket')}Commit and push</button></div></form>` : ''}</div>`;
+        ${gitBox(row, repo, changed, mega)}</div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
       return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${summaryBox(row, null)}${bar}${steps}${usageSummary(mega, subs)}
@@ -1018,15 +1028,24 @@
     else if (event.target.matches('form[data-commit-project]')) {
       event.preventDefault();
       const form = event.target, push = event.submitter?.dataset.push === 'true', message = form.message.value.trim(), projectId = form.dataset.commitProject;
-      if (!message) { toast('Write a commit message.'); return; }
-      const where = push ? ' and push it to GitHub' : '';
+      const changes = form.dataset.changed === 'true', ahead = Number(form.dataset.ahead) || 0;
+      if (changes && !message) { toast('Write a commit message.'); return; }
       // The user's own action: say exactly what will happen before doing it. Never a force push.
-      state.confirm = { text: `Commit all changes in the project folder${where}, with the message "${message}"?`, run: () => act(async () => {
-        const result = await post('/api/repository/commit', { projectId, message, push });
-        toast(result.pushed ? `Committed ${result.commit} and pushed ${result.branch}.` : `Committed ${result.commit} on ${result.branch}.`);
-        delete state.repo[projectId]; return null;
-      }) };
+      const what = changes ? `Commit all changes in the project folder${push ? ' and push them to GitHub' : ''}, with the message "${message}"?` : `Push ${ahead} commit${ahead === 1 ? '' : 's'} to GitHub?`;
+      state.confirm = { text: what, run: async () => {
+        state.gitBusy = { ...(state.gitBusy || {}), [projectId]: push ? (changes ? 'Committing, then pushing to GitHub. If GitHub asks you to sign in, a window opens.' : 'Pushing to GitHub. If GitHub asks you to sign in, a window opens.') : 'Committing…' };
+        state.gitSaid = { ...(state.gitSaid || {}), [projectId]: null }; state.threadSig = ''; render();
+        let said;
+        try {
+          const result = await post('/api/repository/commit', { projectId, message: message || 'push', push });
+          said = { ok: true, text: result.pushed ? `${result.commit ? `Committed ${result.commit} and pushed` : 'Pushed'} to ${result.branch} on GitHub.` : `Committed ${result.commit} on ${result.branch}. Not pushed yet.` };
+        } catch (error) { said = { ok: false, text: error.message }; }
+        state.gitBusy[projectId] = null; state.gitSaid[projectId] = said; toast(said.text);
+        delete state.repo[projectId]; state.threadSig = ''; render();
+      } };
       state.threadSig = ''; render();
+      // The question shows next to where the user clicked.
+      document.querySelector('[data-action="confirm-yes"]')?.scrollIntoView({ block: 'center' });
     }
     else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ thresholdPercent: Number(event.target.threshold.value) }); }
     else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }

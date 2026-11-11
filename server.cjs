@@ -540,7 +540,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!input || typeof input.projectId !== 'string' || typeof input.message !== 'string' || Object.keys(input).some(key => !['projectId', 'message', 'push'].includes(key))) throw new RequestError(400, 'Invalid data.');
         const message = input.message.trim();
         if (!message) throw new RequestError(400, 'Write a commit message.');
-        const result = await enqueue(async () => {
+        // Git runs outside the notebook queue: a long push must not hold other actions.
+        const result = await (async () => {
           const current = await readPlan(planFile);
           const item = (current.schema === 2 ? current.projects : [current]).find(entry => entry.project.id === input.projectId);
           if (!item) throw new RequestError(404, 'Project not found.');
@@ -548,25 +549,39 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           if ((state.projects || []).some(row => row.id === input.projectId && row.status === 'watching')) throw new RequestError(409, 'The crew is still working on this project. Commit when it has finished.');
           const folder = require('./engine/project-workspace.cjs').linkedWorkspace(item.project.folder);
           if (!folder) throw new RequestError(400, 'The project folder is not available.');
-          // The user's own git: their identity and their credentials, without prompts that would hang.
-          const run = (...args) => spawnSync('git', args, { cwd: folder, encoding: 'utf8', timeout: 120000, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
-          const inside = run('rev-parse', '--is-inside-work-tree');
+          // The user's own git, run in the background so the app keeps working. A push may open the
+          // GitHub sign-in window of the user's credential manager, as it does from a terminal.
+          const run = (args, { push = false } = {}) => new Promise(resolve => {
+            const child = spawn('git', args, { cwd: folder, windowsHide: !push, stdio: ['ignore', 'pipe', 'pipe'], env: push ? process.env : { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', chunk => { stdout += chunk; }); child.stderr.on('data', chunk => { stderr += chunk; });
+            const timer = setTimeout(() => { stderr += '\nTimed out after 3 minutes.'; child.kill(); }, 180000);
+            child.on('error', error => { clearTimeout(timer); resolve({ status: 1, stdout, stderr: error.message }); });
+            child.on('close', code => { clearTimeout(timer); resolve({ status: code, stdout, stderr }); });
+          });
+          const said = result => (result.stderr || result.stdout).trim().slice(0, 500);
+          const inside = await run(['rev-parse', '--is-inside-work-tree']);
           if (inside.status !== 0 || inside.stdout.trim() !== 'true') throw new RequestError(400, 'This project folder is not a git repository.');
-          const branch = run('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
-          if (!run('status', '--porcelain').stdout.trim()) throw new RequestError(400, 'Nothing to commit: the project folder has no changes.');
-          const added = run('add', '-A');
-          if (added.status !== 0) throw new RequestError(400, 'git add failed: ' + (added.stderr || added.stdout).trim().slice(0, 500));
-          const committed = run('commit', '-m', message);
-          if (committed.status !== 0) throw new RequestError(400, 'git commit failed: ' + (committed.stderr || committed.stdout).trim().slice(0, 500));
-          const commit = run('rev-parse', '--short', 'HEAD').stdout.trim();
+          const branch = (await run(['rev-parse', '--abbrev-ref', 'HEAD'])).stdout.trim();
+          const changes = Boolean((await run(['status', '--porcelain'])).stdout.trim());
+          if (!changes && !input.push) throw new RequestError(400, 'Nothing to commit: the project folder has no changes.');
+          let commit = null;
+          if (changes) {
+            const added = await run(['add', '-A']);
+            if (added.status !== 0) throw new RequestError(400, 'git add failed: ' + said(added));
+            const committed = await run(['commit', '-m', message]);
+            if (committed.status !== 0) throw new RequestError(400, 'git commit failed: ' + said(committed));
+            commit = (await run(['rev-parse', '--short', 'HEAD'])).stdout.trim();
+          }
           if (!input.push) return { ok: true, commit, branch, pushed: false };
-          if (!branch || branch === 'HEAD') throw new RequestError(400, `Committed ${commit}, but not pushed: the folder is not on a branch.`);
+          const done = commit ? `Committed ${commit}, but` : 'Nothing new to commit, and';
+          if (!branch || branch === 'HEAD') throw new RequestError(400, `${done} not pushed: the folder is not on a branch.`);
           // Never a force push: the branch's own upstream, or origin with the same branch name.
-          const upstream = run('rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}');
-          const pushed = upstream.status === 0 ? run('push') : run('push', '-u', 'origin', branch);
-          if (pushed.status !== 0) throw new RequestError(400, `Committed ${commit}, but the push failed: ` + (pushed.stderr || pushed.stdout).trim().slice(0, 500));
+          const upstream = await run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']);
+          const pushed = upstream.status === 0 ? await run(['push'], { push: true }) : await run(['push', '-u', 'origin', branch], { push: true });
+          if (pushed.status !== 0) throw new RequestError(400, `${done} the push failed: ` + said(pushed));
           return { ok: true, commit, branch, pushed: true };
-        });
+        })();
         return json(200, result);
       }
       if (request.method === 'GET' && pathname === '/api/repository') {

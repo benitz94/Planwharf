@@ -33,7 +33,7 @@ async function fixture(t, { withGit = true } = {}) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
   const post = body => fetch(`http://127.0.0.1:${server.address().port}/api/repository/commit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  return { folder, remote, post };
+  return { folder, remote, post, base: `http://127.0.0.1:${server.address().port}` };
 }
 
 test('commit and push the finished work to the remote', async t => {
@@ -63,4 +63,29 @@ test('a folder without git or an empty message is refused', async t => {
   const { post } = await fixture(t, { withGit: false });
   assert.equal((await post({ projectId: 'p', message: 'x', push: false })).status, 400);
   assert.equal((await post({ projectId: 'p', message: '  ', push: false })).status, 400);
+});
+
+test('a commit already made can be pushed on its own', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'add', '-A'); git(folder, 'commit', '-q', '-m', 'Made earlier');
+  const response = await post({ projectId: 'p', message: 'unused', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 200, JSON.stringify(body));
+  assert.equal(body.commit, null);
+  assert.equal(body.pushed, true);
+  assert.equal(git(remote, 'log', '-1', '--format=%s', 'main').stdout.trim(), 'Made earlier');
+});
+
+test('the app keeps answering while a slow push runs', async t => {
+  const { folder, post, base } = await fixture(t);
+  // A pre-push hook that takes 2 seconds stands for a push waiting on the network or a sign-in.
+  const hook = path.join(folder, '.git', 'hooks', 'pre-push');
+  fs.writeFileSync(hook, '#!/bin/sh\nsleep 2\n'); fs.chmodSync(hook, 0o755);
+  let pushDone = false;
+  const pending = post({ projectId: 'p', message: 'In the background', push: true }).then(response => { pushDone = true; return response; });
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const answered = await fetch(base + '/api/app');
+  assert.equal(answered.status, 200);
+  assert.equal(pushDone, false, 'the app answered while the push was still running');
+  assert.equal((await pending).status, 200);
 });
