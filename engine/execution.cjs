@@ -434,6 +434,24 @@ function createExecutionBridge(options) {
     paint(mega); persist();
     return mega;
   }
-  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign };
+  // The lead may change the models of slices not yet done, in proposed or stopped work, within the user's roles.
+  function reassignRemaining(projectId, megaTaskId, assignments, why = '') {
+    const mega = target(projectId, megaTaskId);
+    if (!['READY_FOR_APPROVAL', 'PAUSED', 'FAILED'].includes(mega.status)) throw new Error('Only proposed or stopped work can change its models.');
+    if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments) || !Object.keys(assignments).length) throw new Error('Name at least one step and its model.');
+    const changes = Object.entries(assignments).map(([id, modelId]) => {
+      const sub = subtasks(mega).find(item => item.id === id && item.status !== 'COMPLETE');
+      if (!sub) throw new Error(`Step ${id} is not a remaining step of this work.`);
+      const model = models().find(item => item.id === modelId && item.enabled && item.available !== false);
+      if (!model || options.workerEligible && !options.workerEligible(model, sub)) throw new Error(`Model ${modelId} cannot take "${sub.title}": it must be enabled, have this role in Team and have quota.`);
+      return [sub, model];
+    });
+    for (const [sub, model] of changes) Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(sub.status === 'BLOCKED' ? { status: 'PENDING' } : {}) });
+    if (mega.status === 'READY_FOR_APPROVAL') mega.blockers = proposalBlockers(mega);
+    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${changes.map(([sub, model]) => `${sub.title} to ${model.label || model.id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
+    paint(mega); persist();
+    return mega;
+  }
+  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining };
 }
 module.exports = { createExecutionBridge, repoState };
