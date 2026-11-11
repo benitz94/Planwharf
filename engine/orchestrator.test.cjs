@@ -482,7 +482,11 @@ function make(plan, inspectFolder, extra) {
   assert.equal(spawnApproved.snapshot.projects[0].status, 'watching');
   assert.equal(spawnApproved.snapshot.projects[0].workerPid, 4242);
   assert.equal(spawnApproved.snapshot.projects[0].workerAlive, true);
-  assert.equal(spawned.length, 1);
+  // Legacy (non Phase 2) dispatch, kept for old notebooks: with two models it starts the Build and the
+  // Verify slice at once. New work runs through Phase 2, where Verify waits for Build.
+  assert.equal(spawned.length, 2);
+  assert.match(spawned[0].slice, /^Implement the whole job/);
+  assert.match(spawned[1].slice, /^Verify the work independently/);
   assert.equal(spawned[0].folder, DEMO);
   assert.equal(spawnOrch.pidFor(spawnAttempts.getAttempts()[0]), 4242);
 
