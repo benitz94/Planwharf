@@ -5,6 +5,7 @@ using Xunit;
 namespace Planwharf.Native.Tests;
 
 // Commit from the app, against the real server and a real git folder. Nothing is pushed.
+[Collection("Real server")]
 public class CommitServerTests
 {
     static void Git(string folder, params string[] args)

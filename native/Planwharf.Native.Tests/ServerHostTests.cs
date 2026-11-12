@@ -4,6 +4,7 @@ using Xunit;
 namespace Planwharf.Native.Tests;
 
 // The real server, started the way the app starts it, answering and then quitting.
+[Collection("Real server")]
 public class ServerHostTests
 {
     [Fact]

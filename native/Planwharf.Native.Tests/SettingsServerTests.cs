@@ -5,6 +5,7 @@ using Xunit;
 namespace Planwharf.Native.Tests;
 
 // Settings against the real server: GitHub link, tools, model switch, skills, updates, move, start over, remove.
+[Collection("Real server")]
 public class SettingsServerTests
 {
     [Fact]
