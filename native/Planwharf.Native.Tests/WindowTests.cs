@@ -36,7 +36,7 @@ public class WindowTests
     [AvaloniaFact]
     public void Draws_the_team_panel_and_the_step_menus()
     {
-        var window = new MainWindow("v0.2.24");
+        var window = new MainWindow("v0.2.24") { Height = 1500 };
         window.Show();
         window.Show(SampleState.Working());
         window.OpenSide("team");
@@ -51,10 +51,14 @@ public class WindowTests
     [AvaloniaFact]
     public void Draws_the_settings_panel_and_the_new_project_dialog()
     {
-        var window = new MainWindow("v0.2.24");
+        // Tall enough to show every section of Settings in one picture.
+        var window = new MainWindow("v0.2.24") { Height = 2300 };
         window.Show();
         window.Show(SampleState.Working());
         window.OpenSide("settings");
+        window.ShowSettings(System.Text.Json.Nodes.JsonNode.Parse("""{ "enabled": true, "thresholdPercent": 20 }""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""[ { "cli": "claude", "label": "Claude Code", "skillsFolder": "/home/sample/.claude/skills", "instructions": "/home/sample/.claude/CLAUDE.md", "settingsExist": true, "skills": [ { "name": "release-notes", "description": "Writes release notes from the git log.", "source": "yours" } ] } ]""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!);
         var dialog = new ProjectDialog();
         dialog.Show();
         var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");

@@ -44,4 +44,22 @@ public class TeamViewTests
             TeamViews.Missing(State(null, false, false), "p1"));
         Assert.Empty(TeamViews.Missing(State("a", true, true), "p1"));
     }
+
+    [Fact]
+    public void Splits_the_team_from_the_bench_and_reads_the_ai_tools()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "models": [
+            { "id": "a", "label": "A", "enabled": true, "roles": { "worker": true }, "roleEligibility": { "reviewer": false } },
+            { "id": "b", "label": "B", "enabled": true, "roles": {}, "available": false, "unavailableAt": "2026-11-12T09:00:00Z" },
+            { "id": "c", "label": "C", "enabled": false, "roles": { "worker": true } } ],
+          "providers": [ { "id": "claude", "label": "Claude Code", "models": [ {}, {} ] }, { "id": "grok", "label": "Grok", "enabled": false, "models": [] } ] }
+        """)!);
+        Assert.False(team.Models[0].Bench); Assert.False(team.Models[0].CanReview); Assert.True(team.Models[0].CanBuild);
+        Assert.True(team.Models[1].Bench); Assert.True(team.Models[1].RetrySoon);
+        Assert.False(team.Models[2].Enabled);
+        // A model that is off is never offered for a step.
+        Assert.Equal(["a"], TeamViews.ModelsFor(team, "Build").Select(model => model.Id));
+        Assert.Equal([new ProviderView("claude", "Claude Code", true, 2), new ProviderView("grok", "Grok", false, 0)], team.Providers);
+    }
 }

@@ -51,8 +51,61 @@ public sealed class PlanwharfApi(string address)
     public async Task<string> ProjectsRootAsync() => (await GetAsync("/api/settings"))["projectsRoot"]?.GetValue<string>() ?? "";
     public Task<JsonNode?> SetProjectsRootAsync(string folder) => PostAsync("/api/settings", new { projectsRoot = folder });
 
-    public async Task SetFolderAsync(string projectId, string folder) =>
-        await PostAsync("/api/place", new { version = await PlanVersionAsync(), project = new { id = projectId, folder } });
+    public Task SetFolderAsync(string projectId, string folder) => SetPlaceAsync(projectId, folder, null);
+
+    // The folder, and the GitHub link when there is one (none removes it).
+    public async Task SetPlaceAsync(string projectId, string folder, string? github)
+    {
+        object project = string.IsNullOrWhiteSpace(github) ? new { id = projectId, folder } : new { id = projectId, folder, github };
+        await PostAsync("/api/place", new { version = await PlanVersionAsync(), project });
+    }
+
+    // Takes a model out of this project's team: no role at all.
+    public Task<JsonNode?> BenchAsync(string projectId, string modelId) => SetRolesAsync(projectId, modelId,
+        new[] { "orchestrator", "worker", "verifier", "reviewer", "supervisor" }.ToDictionary(role => role, _ => false));
+
+    // An AI tool signed in on this computer, on or off; off is never used.
+    public Task<JsonNode?> SetProviderEnabledAsync(string providerId, bool enabled) => PostAsync("/api/catalog/settings", new { providerId, enabled });
+    public Task<JsonNode?> RefreshModelsAsync() => PostAsync("/api/models/refresh", new { });
+
+    // A model reached through an API. The key stays in an environment variable; only its name is stored.
+    public Task<JsonNode?> AddConnectionAsync(string label, string baseUrl, string apiProtocol, string? authEnv, IReadOnlyList<string> modelIds, bool toolsEnabled)
+    {
+        var id = System.Text.RegularExpressions.Regex.Replace(label.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+        if (id.Length == 0 || !char.IsAsciiLetterLower(id[0])) id = "api-" + id;
+        id = id.TrimEnd('-');
+        id = id[..Math.Min(60, id.Length)];
+        var input = new Dictionary<string, object> { ["id"] = id, ["label"] = label, ["adapter"] = "api", ["baseUrl"] = baseUrl, ["apiProtocol"] = apiProtocol, ["modelIds"] = modelIds, ["toolsEnabled"] = toolsEnabled };
+        if (!string.IsNullOrWhiteSpace(authEnv)) input["authEnv"] = authEnv;
+        return PostAsync("/api/providers/connections", input);
+    }
+
+    // Extra tools for one project's team (mcp, browser, hooks, memory), all off by default.
+    public Task<JsonNode?> SetToolsAsync(string projectId, IDictionary<string, bool> tools) => PostAsync("/api/project-tools", new { projectId, tools });
+
+    public Task<JsonNode> AutoSwitchAsync() => GetAsync("/api/orchestrator/auto-switch");
+    public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? thresholdPercent = null) =>
+        thresholdPercent is { } threshold ? PostAsync("/api/orchestrator/auto-switch", new { enabled, thresholdPercent = threshold }) : PostAsync("/api/orchestrator/auto-switch", new { enabled });
+
+    public Task<JsonNode> SkillsAsync() => GetAsync("/api/skills");
+    public Task<JsonNode?> OpenSkillsAsync(string cli, string what) => PostAsync("/api/skills/open", new { cli, what });
+
+    // A project to a file and back: the plan, history and saved points; the code stays in its folder.
+    public Task<string> ExportProjectAsync(string projectId) => http.GetStringAsync("/api/project-export?projectId=" + Uri.EscapeDataString(projectId));
+    public async Task<(string? ProjectId, bool Continue)> ImportProjectAsync(string file)
+    {
+        JsonNode bundle;
+        try { bundle = JsonNode.Parse(file) ?? throw new FormatException(); }
+        catch (Exception error) when (error is FormatException or JsonException) { throw new InvalidOperationException("This is not a Planwharf project file."); }
+        var result = await PostAsync("/api/project-import", new { version = await PlanVersionAsync(), bundle });
+        // "continue" is the saved point to resume from, or null.
+        return (result?["projectId"]?.GetValue<string>(), result?["continue"] is JsonObject || result?["continue"] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag);
+    }
+
+    public async Task StartOverAsync(string projectId) => await PostAsync("/api/start-over", new { version = await PlanVersionAsync(), projectId });
+    public async Task RemoveProjectAsync(string projectId) => await PostAsync("/api/remove-project", new { version = await PlanVersionAsync(), projectId });
+
+    public async Task<JsonNode> UpdatesAsync(bool check) => check ? await PostAsync("/api/app/updates/check", new { }) ?? new JsonObject() : await GetAsync("/api/app/updates");
 
     // The lead needs the orchestrator role in this project's team.
     public async Task SetLeadAsync(string projectId, string modelId, bool hasRole)

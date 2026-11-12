@@ -39,8 +39,10 @@ static class SampleState
         [ { "id": "opus", "label": "Opus 5.5", "plan": "max", "enabled": true, "roles": { "worker": true } },
           { "id": "astra", "label": "GPT-6 Astra", "plan": "plus", "enabled": true, "roles": { "verifier": true } },
           { "id": "grok", "label": "Grok 4.7", "plan": "supergrok", "enabled": true, "roles": { "orchestrator": true, "worker": true } },
-          { "id": "gemini", "label": "Gemini 3.5 Pro", "plan": "google", "enabled": true, "available": false, "unavailableReason": "CLI not installed", "roles": {} } ]
+          { "id": "gemini", "label": "Gemini 3.5 Pro", "plan": "google", "enabled": true, "available": false, "unavailableReason": "CLI not installed", "roles": {} },
+          { "id": "sonnet", "label": "Sonnet 5.5", "plan": "max", "enabled": true, "roles": {} } ]
         """);
+        state["providers"] = JsonNode.Parse("""[ { "id": "claude", "label": "Claude Code", "models": [ {}, {} ] }, { "id": "codex", "label": "Codex", "models": [ {} ] }, { "id": "grok", "label": "Grok", "models": [ {} ] }, { "id": "gemini", "label": "Gemini CLI", "enabled": false, "models": [ {} ] } ]""");
         var project = state["projects"]![0]!.AsObject();
         project["folder"] = "/home/sample/weather";
         project["label"] = "Working"; project["status"] = "running";
