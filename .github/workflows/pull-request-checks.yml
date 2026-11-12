@@ -29,3 +29,21 @@ jobs:
           path: engineering-logs/
           retention-days: 7
           if-no-files-found: error
+  # The Windows launcher of the portable app, built from launch/Planwharf.cs and started for real.
+  windows-launcher:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Planwharf.exe
+        run: node launch/build-exe.cjs
+      - name: Start it, check the app answers, quit
+        run: node scripts/engineering/launcher-check.cjs

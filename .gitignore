@@ -46,3 +46,6 @@ validation/harbor-*/
 
 # CI output: the workflow keeps it as an artifact.
 engineering-logs/
+
+# Built from launch/Planwharf.cs (node launch/build-exe.cjs); the release adds it to the ZIP.
+/Planwharf.exe
