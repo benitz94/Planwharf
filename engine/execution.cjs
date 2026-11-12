@@ -1,6 +1,12 @@
 'use strict';
 // The role a step plays, as the chat shows it.
 const stepRole = sub => sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || '')) ? 'Verify' : 'Build';
+// Up to this many steps of one work run at the same time; the lead decides how many it needs.
+const MAX_PARALLEL = 10;
+// A step limited to some files is told so, and why: other workers change the rest at the same time.
+const scopeText = sub => Array.isArray(sub.scope) && sub.scope.length
+  ? `\n\nYour scope: change only these files or folders, relative to the project folder: ${sub.scope.join(', ')}. Other workers are changing other files in this folder at the same time. A change outside your scope stops your part.`
+  : '';
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -89,7 +95,8 @@ function createExecutionBridge(options) {
       ...(job.goldModel ? { goldModel: { ...job.goldModel } } : {}),
       attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: part.type || (job.kind === 'research' ? 'RESEARCH' : job.kind === 'audit' ? 'AUDIT' : 'IMPLEMENTATION'),
       dependencies: part.dependsOn ? part.dependsOn.map(index => ids[index]) : part.dependencies || (index ? [ids[index - 1]] : []),
-      proposedProvider: models().find(model => model.id === part.modelId)?.provider || null, proposedCli: models().find(model => model.id === part.modelId)?.cli || null, provider: null, cli: null }));
+      proposedProvider: models().find(model => model.id === part.modelId)?.provider || null, proposedCli: models().find(model => model.id === part.modelId)?.cli || null, provider: null, cli: null,
+      ...(Array.isArray(part.scope) && part.scope.length ? { scope: [...part.scope] } : {}), ...(part.size ? { size: part.size } : {}) }));
     for (const sub of subs) for (const dependency of sub.dependencies) if (!ids.includes(dependency) || ids.indexOf(dependency) >= ids.indexOf(sub.id)) throw new Error('Dependencies must reference an earlier SubTask in the same MegaTask.');
     data.megaTasks.push(mega); data.subTasks.push(...subs);
     mega.blockers = proposalBlockers(mega);
@@ -231,7 +238,7 @@ function createExecutionBridge(options) {
     try {
       const handoff = { megaTask: mega, subTasks: subtasks(mega), results: data.results.filter(result => result.megaTaskId === mega.id), checkpoint: data.checkpoints.find(cp => cp.id === mega.currentCheckpointId), notes: (item.home?.notes || []).filter(note => note.aiRelevant === true) };
       const launched = spawnWorker({ ...part, linkedFolder: item.project.folder, projectId: mega.projectId, worker, ...identity(mega, sub, attemptId), job: { title: sub.title, kind: sub.type === 'RESEARCH' ? 'research' : sub.type === 'AUDIT' ? 'audit' : job.kind,
-        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
+        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}${scopeText(sub)}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
       if (!Number.isInteger(launched?.pid) || launched.pid <= 0) throw new Error('Worker did not start.');
       Object.assign(part, { pid: launched.pid, alive: true, observedAlive: true, logPath: launched.logPath || part.logPath });
       row.workerPid = part.pid; row.workerLog = part.logPath;
@@ -321,7 +328,7 @@ function createExecutionBridge(options) {
       } else {
         for (const sub of schedule ? subs.filter(sub => sub.status === 'PENDING') : []) {
           if (deadlineDue(mega)) { enforceDeadline(item, job, mega); break; }
-          if (subs.filter(sub => sub.status === 'RUNNING').length >= 3) break;
+          if (subs.filter(sub => sub.status === 'RUNNING').length >= MAX_PARALLEL) break;
           if (sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE')) launch(item, job, mega, sub);
         }
         reconcile(mega);
@@ -451,6 +458,32 @@ function createExecutionBridge(options) {
     paint(mega); persist(); return mega;
   }
   // The lead may reassign the slices of a proposed MegaTask before approval.
+  // The lead's own split replaces the proposed steps, before anything has started: the parts it named,
+  // each with the files it may change, then one check of the whole work.
+  function replan(projectId, megaTaskId, parts, why = '') {
+    const mega = target(projectId, megaTaskId);
+    if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposal that has not started can be split again.');
+    const old = data.subTasks.filter(sub => sub.megaTaskId === mega.id);
+    if (old.some(sub => sub.status !== 'PENDING' || sub.attemptIds?.length)) throw new Error('A step of this proposal already ran.');
+    const ids = parts.map((_, index) => `${mega.id}-ST-${String(index + 1).padStart(2, '0')}`);
+    const type = old[0]?.type || 'IMPLEMENTATION';
+    const subs = parts.map((part, index) => {
+      const model = models().find(item => item.id === part.modelId);
+      if (!model) throw new Error('Model not present: ' + part.modelId);
+      return { id: ids[index], megaTaskId: mega.id, title: part.slice, detail: part.detail || part.slice, status: 'PENDING', assignedModelId: model.id,
+        attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: part.type || type,
+        dependencies: (part.dependsOn || []).map(parent => { if (!Number.isInteger(parent) || parent < 0 || parent >= index) throw new Error('Dependencies must reference an earlier SubTask in the same MegaTask.'); return ids[parent]; }),
+        proposedProvider: model.provider || null, proposedCli: model.cli || null, provider: null, cli: null,
+        ...(Array.isArray(part.scope) && part.scope.length ? { scope: [...part.scope] } : {}), ...(part.size ? { size: part.size } : {}) };
+    });
+    data.subTasks = data.subTasks.filter(sub => sub.megaTaskId !== mega.id).concat(subs);
+    mega.blockers = proposalBlockers(mega);
+    const built = subs.filter(sub => sub.scope);
+    event(projectId, 'MEGATASK_PROPOSED', `Lead split the work into ${built.length} part${built.length === 1 ? '' : 's'}${subs.length > built.length ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${models().find(item => item.id === sub.assignedModelId)?.label || sub.assignedModelId})`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId: mega.id });
+    persist();
+    return paint(mega);
+  }
+
   function reassign(projectId, megaTaskId, modelIds, why = '') {
     const mega = target(projectId, megaTaskId);
     if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposed MegaTask can be reassigned.');
@@ -512,6 +545,6 @@ function createExecutionBridge(options) {
     paint(mega); persist();
     return mega;
   }
-  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining };
+  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining };
 }
 module.exports = { createExecutionBridge, repoState };
