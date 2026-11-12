@@ -6,7 +6,9 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 
 ## What it does today
 - Lists your projects with their status, and shows the installed version next to the name.
-- Shows the chat with the lead and lets you write to it.
+- The chat with the lead, as in the desktop app: time and duration of each reply, Copy, "How the lead got there", the reply forming while the lead thinks, work events in the conversation, a welcome card and a start card with what is missing. A message waiting for the lead keeps going when you switch project.
+- Short orders handled by Planwharf itself: "stop", "stop in 10 minutes" (with Cancel), "open team", "usage", "files", "settings", "bench <model>".
+- The project list says who is working and for how long, and marks projects with news since you last looked.
 - Shows the crew's work as the chat page does: progress and time, each step with its role, model and status, what the model at work is doing, a plain-English summary (the same lines as `work-summary.js`, checked by a test), what was done, and what the work used per model (time, tokens, quota before and after; "not reported" when the provider does not say).
 - Warnings from Planwharf's own checks ("Something needs a look"), with Ignore.
 - Finished work in a git folder: changed files not yet committed, **Commit**, **Commit and push**, or **Push N commits** when commits are not on GitHub yet; asks first, never force-pushes.

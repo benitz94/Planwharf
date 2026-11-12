@@ -40,8 +40,8 @@ public class TeamViewTests
     [Fact]
     public void Says_what_is_missing_before_the_crew_can_start()
     {
-        Assert.Equal(["Set the project folder in Settings.", "Choose a lead in Team.", "Give at least one model the Build role in Team."],
-            TeamViews.Missing(State(null, false, false), "p1"));
+        Assert.Equal(["Choose a lead in Team.", "Give at least one model the Build role in Team.", "Set the project folder in Settings.", TeamViews.NoGoalText],
+            TeamViews.Missing(State(null, false, false), "p1", goalReady: false));
         Assert.Empty(TeamViews.Missing(State("a", true, true), "p1"));
     }
 

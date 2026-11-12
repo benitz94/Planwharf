@@ -13,7 +13,11 @@ static class SampleState
       "mode": "auto",
       "autonomy": { "weather": { "enabled": {{(enabled ? "true" : "false")}}, "stopReason": {{(stopReason == null ? "null" : "\"" + stopReason + "\"")}} } },
       "models": [ { "id": "opus", "label": "Opus 5.5" }, { "id": "astra", "label": "GPT-6 Astra" }, { "id": "grok", "label": "Grok 4.7" } ],
-      "asks": [ { "at": "2026-11-11T15:40:00Z", "projectId": "weather", "orchestratorId": "grok",
+      "execution": { "timeline": [
+        { "projectId": "weather", "type": "PLAN_REVISION", "createdAt": "2026-11-11T15:40:30Z", "summary": "Living Plan R2: Goal from the chat" },
+        { "projectId": "weather", "type": "MEGATASK_APPROVED", "createdAt": "2026-11-11T15:41:00Z", "summary": "Approved Add a 7-day forecast page with charts and tests." },
+        { "projectId": "weather", "type": "SUBTASK_COMPLETED", "createdAt": "2026-11-11T15:50:00Z", "summary": "Implement the whole job.: Finished Implement the whole job.." } ] },
+      "asks": [ { "at": "2026-11-11T15:40:00Z", "ms": 6100, "thinking": "Read src/api.js and the tests.", "projectId": "weather", "orchestratorId": "grok",
         "question": "I want a 7-day forecast page with charts.",
         "answer": "Good plan: the app already has **24 files** and `src/api.js` fetches the data.\n\nSuggested next goal: Add a 7-day forecast page with charts and tests." } ],
       "projects": [

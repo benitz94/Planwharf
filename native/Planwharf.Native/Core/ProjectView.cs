@@ -62,15 +62,7 @@ public static class ProjectViews
     public static IReadOnlyList<ProjectItem> Projects(JsonNode snapshot) =>
         (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().Select(row => new ProjectItem(S(row["id"]), S(row["name"]), StatusOf(snapshot, row))).ToList();
 
-    static string StatusOf(JsonNode snapshot, JsonObject row)
-    {
-        var auto = snapshot["autonomy"]?[S(row["id"])];
-        var stop = S(auto?["stopReason"]);
-        if (B(auto?["enabled"]) && stop.Length > 0) return StopLabels.GetValueOrDefault(stop.Split(':')[0], "Stopped");
-        if (B(auto?["enabled"])) return "Crew working";
-        var label = S(row["label"]);
-        return label.Length > 0 ? label : S(row["status"]);
-    }
+    static string StatusOf(JsonNode snapshot, JsonObject row) => ChatViews.Status(snapshot, row).Text;
 
     public static ProjectView? Project(JsonNode snapshot, string? projectId)
     {
@@ -119,7 +111,7 @@ public static class ProjectViews
         var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
 
-        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead.")
+        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
             : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
             : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point.")

@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
 {
     readonly ListBox projectList = new() { Background = Brushes.Transparent };
     readonly TextBlock title = new() { FontSize = 20, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
+    Border? badge;
     readonly TextBlock badgeText = new() { FontSize = 12, Foreground = Palette.Accent };
     readonly StackPanel thread = new() { Spacing = 12, Margin = new Thickness(24, 16), MaxWidth = 860 };
     readonly ScrollViewer threadScroll;
@@ -33,7 +34,7 @@ public sealed partial class MainWindow : Window
 
     PlanwharfApi? api;
     JsonNode? snapshot;
-    string? projectId, pending, threadSig, listSig, sideSig, sideMode, projectsRoot;
+    string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
     bool busy;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
@@ -60,7 +61,7 @@ public sealed partial class MainWindow : Window
         var left = new Border { Background = Palette.Panel, BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 0, 1, 0), Child = new DockPanel { Children = { top, projectList } } };
         DockPanel.SetDock(top, Dock.Top);
 
-        var badge = new Border { Background = Brush.Parse("#1d3328"), CornerRadius = new CornerRadius(8), Padding = new Thickness(8, 2), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Child = badgeText };
+        badge = new Border { Background = Brush.Parse("#1d3328"), CornerRadius = new CornerRadius(8), Padding = new Thickness(8, 2), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Child = badgeText };
         var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         foreach (var (mode, button) in sideButtons)
         {
@@ -75,7 +76,7 @@ public sealed partial class MainWindow : Window
         DockPanel.SetDock(actionButton, Dock.Left);
         var composer = new DockPanel { Children = { send, input } };
         DockPanel.SetDock(send, Dock.Right);
-        var footer = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(24, 12), Child = new StackPanel { MaxWidth = 860, Children = { actions, composer,
+        var footer = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(24, 12), Child = new StackPanel { MaxWidth = 860, Children = { timedRow, actions, composer,
             new TextBlock { Text = "Talk with the lead to shape the plan, then press Let the crew do it. The crew builds, checks and stops when the goal is reached.", Foreground = Palette.Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) } } } };
         var middle = new DockPanel { Children = { header, footer, threadScroll } };
         DockPanel.SetDock(header, Dock.Top); DockPanel.SetDock(footer, Dock.Bottom);
@@ -138,27 +139,24 @@ public sealed partial class MainWindow : Window
         if (snapshot == null) return;
         var projects = ProjectViews.Projects(snapshot);
         if (projectId == null || projects.All(p => p.Id != projectId)) projectId = projects.FirstOrDefault()?.Id;
-        var sig = string.Join("|", projects.Select(p => p.Id + p.Name + p.Status)) + projectId;
-        if (sig != listSig)
-        {
-            listSig = sig;
-            projectList.ItemsSource = projects.Select(p => new ListBoxItem { Tag = p.Id, Padding = new Thickness(12, 8), Content = new StackPanel { Children = {
-                new TextBlock { Text = p.Name, Foreground = Palette.Text, FontWeight = FontWeight.SemiBold },
-                new TextBlock { Text = p.Status, Foreground = Palette.Muted, FontSize = 12 } } } }).ToList();
-            projectList.SelectedIndex = projects.ToList().FindIndex(p => p.Id == projectId);
-        }
+        RenderProjects(projects);
+        CheckTimedStop();
         var view = ProjectViews.Project(snapshot, projectId);
-        if (view == null) { title.Text = "Welcome"; RenderSide(null); hint.Text = "Create a project to begin: + New project."; actionButton.IsEnabled = false; return; }
-        title.Text = view.Name; badgeText.Text = view.Status;
-        // Before the crew can start: a folder, a lead and a builder, as in the chat page.
-        var missing = view.Action == CrewAction.LetTheCrewDoIt ? TeamViews.Missing(snapshot, projectId) : [];
-        actionButton.Content = view.ActionText;
-        actionButton.Background = view.Action is CrewAction.StopTheCrew or CrewAction.StopWork ? Palette.Danger : Palette.Accent;
-        actionButton.IsEnabled = !busy && missing.Count == 0;
-        send.IsEnabled = !busy && pending == null;
-        if (pending == null) { hint.Text = missing.FirstOrDefault() ?? view.Hint; hint.Foreground = missing.Count > 0 ? Palette.Warn : Palette.Muted; }
+        RenderFooter(view);
+        if (view == null)
+        {
+            title.Text = "Welcome"; badgeText.Text = "";
+            hint.Text = "Create a project to begin: + New project."; hint.Foreground = Palette.Muted; actionButton.IsEnabled = false;
+            RenderWelcome();
+            RenderSide(null);
+            if (badge != null) badge.IsVisible = false;
+            return;
+        }
+        title.Text = view.Name;
+        badgeText.Text = WorkingNow(view.Id) is { } work ? ChatViews.WorkingText(work.Who, work.Since, DateTimeOffset.UtcNow) : view.Status;
         RenderThread(view);
         RenderSide(view);
+        if (badge != null) badge.IsVisible = badgeText.Text?.Length > 0;
     }
 
     // What the work card shows besides the steps, read once per refresh; it also decides when to redraw.
@@ -194,40 +192,6 @@ public sealed partial class MainWindow : Window
     }
 
     static bool IsStopped(WorkView work) => work.Status is "FAILED" or "BLOCKED" or "PAUSED" or "STOPPED" or "CHECKPOINTED" || work.CanResume && work.Status != "COMPLETE";
-
-    void RenderThread(ProjectView view)
-    {
-        var team = TeamViews.Team(snapshot!);
-        var card = Card(view)!;
-        var sig = string.Join("|", view.Messages.Select(m => m.At.ToUnixTimeMilliseconds() + m.Text.Length)) + pending + view.NextGoal
-            + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
-            + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
-            + string.Join("", card.Summary) + string.Join("", card.Usage) + card.Activity + string.Join(",", card.Alerts.Select(a => a.Id)) + card.Repo + card.Since + card.AutoApprove
-            + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id);
-        if (sig == threadSig) return;
-        var atBottom = threadScroll.Offset.Y + threadScroll.Viewport.Height >= threadScroll.Extent.Height - 120;
-        threadSig = sig;
-        thread.Children.Clear();
-        if (view.Messages.Count == 0 && view.Work == null && pending == null)
-            thread.Children.Add(Note("Tell the lead in the chat what you want built. The lead helps you shape the plan and suggests a goal; then press Let the crew do it."));
-        foreach (var message in view.Messages) thread.Children.Add(Bubble(message.FromUser, message.Who, message.Text));
-        if (pending != null) { thread.Children.Add(Bubble(true, "You", pending)); thread.Children.Add(Bubble(false, "Lead", "Thinking…")); }
-        else if (view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt)
-            thread.Children.Add(Note($"Nothing has started yet. When the plan is right, press Let the crew do it: the crew will work on\n{view.NextGoal}"));
-        if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
-        if (view.Work != null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
-        if (atBottom || pending != null) Dispatcher.UIThread.Post(() => threadScroll.ScrollToEnd(), DispatcherPriority.Background);
-    }
-
-    static Control Bubble(bool fromUser, string who, string text)
-    {
-        var body = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = fromUser ? Palette.AccentText : Palette.Text, Inlines = new Avalonia.Controls.Documents.InlineCollection() };
-        foreach (var run in TextRuns.Parse(text))
-            body.Inlines.Add(new Avalonia.Controls.Documents.Run(run.Text) { FontWeight = run.Bold ? FontWeight.Bold : FontWeight.Normal, FontFamily = run.Code ? new FontFamily("Consolas, Menlo, monospace") : FontFamily.Default });
-        var bubble = new Border { Background = fromUser ? Palette.UserBubble : Palette.Card, CornerRadius = new CornerRadius(12), Padding = new Thickness(14, 10), Child = body, MaxWidth = 680,
-            HorizontalAlignment = fromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left };
-        return fromUser ? bubble : new StackPanel { Spacing = 4, Children = { new TextBlock { Text = who, Foreground = Palette.Muted, FontSize = 12 }, bubble } };
-    }
 
     static Control Note(string text) => new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 10),
         Child = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Muted } };
@@ -516,7 +480,7 @@ public sealed partial class MainWindow : Window
     // Runs a change, shows its outcome in the hint, and refreshes.
     async Task DoAsync(Func<Task> work, string done)
     {
-        if (api == null || projectId == null) return;
+        if (api == null) return;
         try { await work(); hint.Text = done; hint.Foreground = Palette.Accent; }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
         threadSig = sideSig = null;
@@ -544,17 +508,6 @@ public sealed partial class MainWindow : Window
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
         await RefreshAsync(readOnly: false);
         if (TeamViews.Team(snapshot!).LeadId == null) OpenSide("team");
-    }
-
-    async Task SendAsync()
-    {
-        var text = input.Text?.Trim();
-        if (api == null || string.IsNullOrEmpty(text) || pending != null || projectId == null) return;
-        if (snapshot != null && TeamViews.Team(snapshot).LeadId == null) { hint.Text = "Choose a lead first (Team)."; hint.Foreground = Palette.Warn; OpenSide("team"); return; }
-        pending = text; input.Text = ""; Render();
-        try { await api.AskAsync(projectId, text); }
-        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
-        finally { pending = null; threadSig = null; await RefreshAsync(readOnly: false); }
     }
 
     async Task ActAsync()
