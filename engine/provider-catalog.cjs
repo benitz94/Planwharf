@@ -35,6 +35,16 @@ function loadCatalog(config) {
   }
   return { providers, models };
 }
+// How to get an AI tool that is not installed. Only commands the tools document; otherwise a plain sentence.
+const INSTALL_HINTS = {
+  claude: 'Install it with npm install -g @anthropic-ai/claude-code, then run claude once to sign in.',
+  codex: 'Install it with npm install -g @openai/codex, then run codex once to sign in.',
+  grok: 'Install the Grok CLI and sign in, then look for models again.',
+  antigravity: 'Install Antigravity and sign in, then look for models again.'
+};
+// The program's own name: the subscription label (ChatGPT, Gemini) is not what gets installed.
+const TOOL_NAMES = { claude: 'Claude Code', codex: 'Codex', grok: 'The Grok CLI', antigravity: 'Antigravity' };
+const notInstalledReason = provider => `${TOOL_NAMES[provider.adapter] || provider.label || provider.id} is not installed on this computer. ${INSTALL_HINTS[provider.adapter] || 'Install it and sign in, then look for models again.'}`;
 function providerViews(providers, models, plans = [], settings = {}) {
   return providers.map(provider => {
     const rows = models.filter(m => m.providerId === provider.id || !m.providerId && m.provider === provider.id);
@@ -42,9 +52,12 @@ function providerViews(providers, models, plans = [], settings = {}) {
     const remaining = pool?.readable === true && Number.isFinite(pool.leftPct) ? Math.max(0, Math.min(100, pool.leftPct)) : null;
     const available = provider.available !== false && Boolean(adapterFor(provider)) && adapterFor(provider)?.executionSupported !== false && rows.some(m => m.available !== false);
     const enabled = settings.providerEnabled?.[provider.id] ?? provider.enabled;
-    return { ...provider, label: require('./provider-accounts.cjs').accountLabel(provider.label, provider.account), enabled, available, availability: !available ? 'UNAVAILABLE' : pool?.readable && (pool.exhausted || remaining === 0) ? 'EXHAUSTED' : remaining === null ? 'UNREAD' : 'AVAILABLE',
+    // Installed unless the last check found no program for it on this computer.
+    const installed = !rows.some(m => m.notInstalled === true);
+    return { ...provider, label: require('./provider-accounts.cjs').accountLabel(provider.label, provider.account), enabled, available, installed, installHint: installed ? null : notInstalledReason(provider),
+      availability: !installed ? 'NOT_INSTALLED' : !available ? 'UNAVAILABLE' : pool?.readable && (pool.exhausted || remaining === 0) ? 'EXHAUSTED' : remaining === null ? 'UNREAD' : 'AVAILABLE',
       quotaReadable: remaining !== null, remainingPercent: remaining, resetAt: pool?.resetAt || pool?.windows?.find(w => w.leftPct === remaining)?.resetAt || null,
       quota: pool || { id: provider.quotaPoolId, label: provider.label, readable: false, leftPct: null, exhausted: false }, showAll: settings.catalogVisibility?.[provider.id] === true, models: rows };
   });
 }
-module.exports = { loadCatalog, providerViews, providerConfiguration };
+module.exports = { loadCatalog, providerViews, providerConfiguration, notInstalledReason, INSTALL_HINTS };

@@ -15,8 +15,10 @@ function listGrok() {
     });
   });
 }
-function createProviderModels(models, { discover = listGrok, providers, now = Date.now, ttl = 60000, cacheFile } = {}) {
-  if (providers) return createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFile });
+function createProviderModels(models, { discover = listGrok, providers, now = Date.now, ttl = 60000, cacheFile, findExecutable } = {}) {
+  // Real discovery looks for each tool's program; injected discovery (tests) does only when asked to.
+  const lookup = findExecutable !== undefined ? findExecutable : discover === listGrok ? adapter => require('./provider-runtime.cjs').executable(adapter) : null;
+  if (providers) return createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFile, lookup });
   let state = { status: 'unknown', checkedAt: null, reason: null, ids: [] }, inflight;
   async function refresh(force = false) {
     if (inflight) return inflight;
@@ -47,7 +49,8 @@ function catalogEntries(result) {
     ...Object.fromEntries(['orchestratorEligible', 'workerEligible'].filter(key => typeof m[key] === 'boolean').map(key => [key, m[key]])),
     capabilities: Object.fromEntries(Object.entries(m.capabilities || {}).filter(([, value]) => typeof value === 'boolean')) }));
 }
-function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFile }) {
+const CLI_TOOLS = ['claude', 'codex', 'grok', 'antigravity'];
+function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFile, lookup }) {
   const states = new Map(), restored = new Set(), stateScopes = new Map(), generations = new Map(), observedScopes = new Map(), blockedScopes = new Set(); let inflight, saving = Promise.resolve();
   let cache = {};
   if (cacheFile) try {
@@ -94,6 +97,7 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
   function applyCatalog(provider, entries, checkedAt, verified) {
     for (const model of models.filter(m => m.providerId === provider.id)) {
       model.available = entries.some(m => m.cli === model.cli);
+      model.notInstalled = false;
       model.catalogExcluded = !model.available;
       model.unavailableReason = model.available ? null : `The ${provider.label || provider.id} catalog does not list exact model ${model.cli}. Configuration retained; no substitute selected.`;
     }
@@ -139,8 +143,19 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
             stateScopes.set(provider.id, key);
           }
         }
+        // A tool with no program on this computer is never offered: its models are unavailable, with how to install it.
+        if (lookup && CLI_TOOLS.includes(provider.adapter) && !lookup(provider.adapter)) {
+          const reason = require('./provider-catalog.cjs').notInstalledReason(provider);
+          for (const model of models.filter(m => m.providerId === provider.id)) {
+            model.available = false; model.notInstalled = true; model.availabilityVerified = false;
+            model.unavailableReason = reason; model.availabilityWarning = reason;
+          }
+          states.set(provider.id, { providerId: provider.id, label: provider.label || provider.id, status: 'not-installed', checkedAt: new Date(now()).toISOString(), reason, ids: [], preservingPreviousAvailability: false });
+          stateScopes.set(provider.id, key);
+          return;
+        }
         const previous = stateScopes.get(provider.id) === key ? states.get(provider.id) : null;
-        if (!force && previous && now() - Date.parse(previous.checkedAt) < ttl) return;
+        if (!force && previous && previous.status !== 'not-installed' && now() - Date.parse(previous.checkedAt) < ttl) return;
         let result;
         try {
           const adapter = require('./provider-adapters.cjs').adapterFor(provider);
@@ -174,7 +189,7 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
     })().finally(() => { inflight = null; });
     return inflight;
   }
-  function snapshot() { ensureScopes(); const list = providers.map(p => states.get(p.id) || { providerId: p.id, label: p.label || p.id, status: p.enabled === false ? 'disabled' : 'unknown', checkedAt: null, ids: [] }); return { providers: list, checking: Boolean(inflight), status: list.every(s => ['current', 'disabled'].includes(s.status)) ? 'current' : 'unread' }; }
+  function snapshot() { ensureScopes(); const list = providers.map(p => states.get(p.id) || { providerId: p.id, label: p.label || p.id, status: p.enabled === false ? 'disabled' : 'unknown', checkedAt: null, ids: [] }); return { providers: list, checking: Boolean(inflight), status: list.every(s => ['current', 'disabled', 'not-installed'].includes(s.status)) ? 'current' : 'unread' }; }
   return { refresh, snapshot, invalidate, observeScope };
 }
 module.exports = { createProviderModels, listGrok };
