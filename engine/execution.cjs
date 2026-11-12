@@ -6,7 +6,25 @@ const MAX_PARALLEL = 10;
 // A step limited to some files is told so, and why: other workers change the rest at the same time.
 const scopeText = sub => Array.isArray(sub.scope) && sub.scope.length
   ? `\n\nYour scope: change only these files or folders, relative to the project folder: ${sub.scope.join(', ')}. Other workers are changing other files in this folder at the same time. A change outside your scope stops your part.`
+    + (Array.isArray(sub.scopeViolation) && sub.scopeViolation.length ? `\nLast time this part was stopped for changing files outside its scope: ${sub.scopeViolation.join(', ')}. Do not touch them: if the work needs them, say so in your result and stop.` : '')
   : '';
+const slash = file => String(file).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+const inScope = (file, scope) => scope.some(entry => file === entry || file.startsWith(entry + '/'));
+// Files that differ from the last commit, as git lists them (renames count by their new name).
+function changedFiles(folder) {
+  const root = linkedWorkspace(folder);
+  if (!root) return null;
+  const listed = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=all'], { cwd: root, encoding: 'utf8', windowsHide: true, timeout: 15000, maxBuffer: 16 * 1024 * 1024 });
+  if (listed.status !== 0) return null;
+  const out = [], rows = listed.stdout.split('\0');
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (row.length < 4) continue;
+    out.push(slash(row.slice(3)));
+    if (/^[RC]/.test(row)) index += 1; // the old name of a rename follows
+  }
+  return out;
+}
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -140,8 +158,30 @@ function createExecutionBridge(options) {
     return { ...identity(mega, sub, part.attemptId), status, summary, filesChanged: partial?.filesChanged || [], tests: partial?.tests || [], blockers: [summary, ...(partial?.blockers || [])],
       nextAction: 'Review the evidence and resume the remaining work from an explicit checkpoint.', createdAt: now(), exitCode, evidenceKind: 'TECHNICAL', evidencePath: part.logPath || null };
   }
+  // A part limited to some files that changed others is stopped, and told why when it runs again.
+  // Its own report is always checked; git's list of changed files only when no other part worked at the
+  // same time, so the change can only be this part's. Files changed before the work are not counted.
+  function scopeCheck(mega, sub, part, result) {
+    if (result.status !== 'COMPLETE' || !Array.isArray(sub.scope) || !sub.scope.length) return result;
+    const scope = sub.scope.map(slash);
+    const outside = new Set((result.filesChanged || []).map(slash).filter(file => file && !inScope(file, scope)));
+    const others = subtasks(mega).filter(other => other.id !== sub.id);
+    // Only when no other part worked while this one did can a changed file be put down to this part.
+    const alone = !others.some(other => other.status === 'RUNNING' || (other.finishedAt && part.startedAt && other.finishedAt > part.startedAt));
+    if (alone) {
+      const before = new Set((mega.repoBefore?.dirtyFiles || []).map(record => slash(record.slice(/^[MADRCU?!] \S/.test(record) ? 2 : 3).split(' -> ').at(-1).replace(/^"|"$/g, ''))));
+      const owned = others.filter(other => other.status === 'COMPLETE').flatMap(other => (other.scope || []).map(slash));
+      for (const file of changedFiles(part.projectFolder) || []) if (!before.has(file) && !inScope(file, scope) && !inScope(file, owned)) outside.add(file);
+    }
+    if (!outside.size) { delete sub.scopeViolation; return result; }
+    sub.scopeViolation = [...outside].slice(0, 20);
+    return { ...result, status: 'BLOCKED', blockers: [...(result.blockers || []), `Changed files outside its scope: ${sub.scopeViolation.join(', ')}.`],
+      summary: `Stopped: changed files outside its scope (${sub.scopeViolation.join(', ')}). ${result.summary}` };
+  }
   function collect(mega, sub, part, result) {
     if (data.results.some(item => item.resultId === result.resultId)) return;
+    result = scopeCheck(mega, sub, part, result);
+    sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
     part.validatedResultStatus = result.status; part.recordedSubTaskStatus = sub.status;
@@ -224,7 +264,7 @@ function createExecutionBridge(options) {
     const attemptId = claim.attempt.id;
     const folder = sub.type === 'RESEARCH' ? path.join(dir, 'research', mega.id, attemptId) : item.project.folder;
     if (sub.type === 'RESEARCH') fs.mkdirSync(folder, { recursive: true });
-    const part = { modelId: worker.id, label: worker.label, provider: worker.provider, cli: worker.cli, subTaskId: sub.id, megaTaskId: mega.id, attemptId, slice: sub.title,
+    const part = { projectFolder: item.project.folder, modelId: worker.id, label: worker.label, provider: worker.provider, cli: worker.cli, subTaskId: sub.id, megaTaskId: mega.id, attemptId, slice: sub.title,
       resultPath: path.join(dir, 'results', attemptId + '.txt'), structuredResultPath: path.join(dir, 'results', attemptId + '.json'), exitPath: path.join(dir, 'results', attemptId + '.exit.json'),
       logPath: path.join(dir, 'logs', attemptId + '.log'), folder, pid: null, alive: false, startedAt: now(), sessionId: options.sessionId };
     if (sub.type === 'RESEARCH') Object.assign(part, { resultPath: path.join(folder, 'result.txt'), structuredResultPath: path.join(folder, 'result.json'), exitPath: path.join(folder, 'exit.json') });
