@@ -212,6 +212,24 @@ function usageOf(item) {
   return { used, limit, remaining, pct, leftPct };
 }
 
+// The order in which models take over as lead: a stronger tier first, then more quota left; a model
+// whose quota is not reported comes after those with known quota in its tier. The catalog gives the tier
+// (premium, default, local); Claude Code lists no tier, so a Claude model's tier comes from its family.
+const LEAD_TIERS = { premium: 0, default: 1, local: 2 };
+function leadTier(model) {
+  if (model && LEAD_TIERS[model.kind] !== undefined) return LEAD_TIERS[model.kind];
+  const family = String(model?.label || model?.cli || model?.id || '');
+  if (/fable|opus/i.test(family)) return 0;
+  if (/sonnet/i.test(family)) return 1;
+  if (/haiku/i.test(family)) return 2;
+  return 1;
+}
+function leadRanking(list, plans = []) {
+  return [...(list || [])].map(model => ({ model, tier: leadTier(model), left: quotaLeft(model, plans) }))
+    .sort((a, b) => (a.tier - b.tier) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))
+    .map(item => item.model);
+}
+
 function canOrchestrate(item) {
   return Boolean(item && item.roles?.orchestrator !== false && item.enabled && item.available !== false && item.providerEnabled !== false && item.capabilities?.canUseTools !== false && item.capabilities?.canInspectFilesystem !== false && (item.orchestratorEligible ?? (item.kind === 'premium' || item.kind === 'default')));
 }
@@ -1631,10 +1649,49 @@ function createOrchestrator(options) {
     return ok;
   }
 
+  // A lead whose quota reaches the switch threshold, or runs out, hands over for real to the next lead in
+  // the ranking, and the chat says so: a crew is never left without a lead. With no better candidate the
+  // lead keeps working rather than stop.
+  // Any model able to lead counts, not only one with the lead role (in a team only the chosen lead has it);
+  // a model on the bench (no role at all) is left out, as the user chose.
+  function leadUsable(model) {
+    return Boolean(model) && roleEligibility(model).orchestrator !== false && canOrchestrate({ ...model, roles: { ...model.roles, orchestrator: true } })
+      && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)
+      && !refusals.activeRefusal(store, model.id, Date.parse(now()));
+  }
+  function switchLead(from, to, why) {
+    // The new lead gets the lead role in this team, as choosing it in Team would do.
+    const team = teamFor(), roles = { ...to.roles, orchestrator: true };
+    if (team) { team.roles[teamKey(to.accountScope, to.id)] = roles; team.orchestratorId = to.id; }
+    else { store.modelRoles[to.id] = roles; if (to.accountScope && store.accountModelRoles[to.accountScope]) store.accountModelRoles[to.accountScope][to.id] = { ...roles }; store.orchestratorId = to.id; }
+    // The chat of every project led by this lead says so: this project, or all those on the shared team.
+    const scoped = teamScope.getStore();
+    const projects = team || scoped ? [scoped].filter(Boolean) : Object.keys(store.projects || {}).filter(id => !Object.hasOwn(store.projectTeams, id));
+    const text = `Planwharf switched the lead: ${from.label || from.id} → ${to.label || to.id}. Why: ${why}`;
+    for (const projectId of projects) { note(projectId, text); try { bridge.event(projectId, 'LEAD_SWITCHED', text); } catch { /* the note keeps it */ } }
+    persist();
+  }
   function leadModel() {
     const list = roster();
     if (leadId()) {
       const picked = list.find(item => item.id === leadId());
+      const settings = autoSwitch();
+      const low = model => settings.enabled && lowQuota(model, plansLive, settings.thresholdPercent);
+      // Only quota decides: a lead at the threshold or out of quota (read for sure), or refused for credits
+      // or quota. A lead that is unavailable or misnamed is never replaced silently, and an unreadable
+      // quota decides nothing (both have their own tests).
+      const outOfQuota = picked && picked.available !== false && (low(picked) || planExhausted(plansLive, picked.quotaPoolId || picked.plan)
+        || usagePolicy(picked, plansLive).state === 'limit' || refusals.activeRefusal(store, picked.id, Date.parse(now())));
+      if (outOfQuota) {
+        const next = leadRanking(list.filter(item => item.id !== picked.id && leadUsable(item) && !low(item)), plansLive)[0];
+        if (next) {
+          const left = quotaLeft(picked, plansLive);
+          const why = refusals.activeRefusal(store, picked.id, Date.parse(now())) ? `${picked.label || picked.id} refused the work (credits or quota).`
+            : left !== null ? `quota of ${picked.label || picked.id} is at ${left}% (switch at ${settings.thresholdPercent}%).` : `${picked.label || picked.id} cannot lead now.`;
+          switchLead(picked, next, why);
+          return next;
+        }
+      }
       if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
@@ -2070,6 +2127,8 @@ function createOrchestrator(options) {
       const effective = { minRemainingPercent: configured.policy.minRemainingPercent, warningRemainingPercent: configured.policy.warningRemainingPercent, fallbackModelId: null, alwaysApprove: configured.policy.alwaysApprove };
       return { ...provider, policy: configured.policy, policySource: configured.source, usagePolicy: usagePolicy({ policy: effective, quotaPoolId: provider.quotaPoolId }, plansLive) };
     });
+    // Who takes over as lead if the current one runs low, in order (Team shows it).
+    view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !lowQuota(item, plansLive, autoSwitch().thresholdPercent)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
       dispatch: [{ modelId: record.modelId, pid: record.pid, alive: record.alive, slice: 'Research: ' + record.title, activity: record.activity }] }));
@@ -3629,4 +3688,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

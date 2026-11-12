@@ -158,7 +158,7 @@
   }
   // A dot on a project you are not looking at, when something happened there since you last opened it:
   // a step finished, failed or blocked, the goal was reached, autonomy stopped, or the lead answered.
-  const NEWS_EVENTS = /SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY/;
+  const NEWS_EVENTS = /LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY/;
   function lastNews(row) {
     let latest = 0;
     for (const event of state.orchestra?.execution?.timeline || []) if (event.projectId === row.id && NEWS_EVENTS.test(event.type || '')) latest = Math.max(latest, Date.parse(event.createdAt || '') || 0);
@@ -212,10 +212,10 @@
     if (/FAILED|BLOCKED|STOPPED|REFUS/.test(type)) return { icon: 'alert', kind: 'bad', text: short };
     if (/STARTED/.test(type)) return { icon: 'play', kind: 'start', text: short };
     if (/PLAN_REVISION/.test(type)) return { icon: 'pencil', kind: 'plan', text: 'Plan updated: ' + short.replace(/^Living Plan R\d+:\s*/, '') };
-    if (/PROPOSED|ASSIGNED|PLAN/.test(type)) return { icon: 'pencil', kind: 'plan', text: short };
+    if (/PROPOSED|ASSIGNED|PLAN|SWITCHED/.test(type)) return { icon: 'pencil', kind: 'plan', text: short };
     return { icon: 'clock', kind: '', text: short };
   }
-  const SHOWN_EVENTS = /PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY/;
+  const SHOWN_EVENTS = /LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY/;
   const clock = at => { const date = new Date(at); return Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; };
 
   // The ship from ship.svg, drawn with the page colours so it fits the light and the dark theme.
@@ -524,6 +524,11 @@
       <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
+  // Who takes over as lead when the lead's quota reaches the switch threshold or runs out, in order.
+  function leadBackupsLine() {
+    const names = (state.orchestra?.leadBackups || []).map(id => modelLabel(id) || id);
+    return names.length ? `<p class="explain">If the lead runs low on quota, Planwharf hands over to: ${escape(names.join(', '))}, in this order.</p>` : '<p class="explain">No other model can take over as lead now.</p>';
+  }
   function teamPanel() {
     const all = models();
     const current = lead();
@@ -533,7 +538,7 @@
     const row = project();
     return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
-        <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
+        <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>${leadBackupsLine()}</div>
       <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
