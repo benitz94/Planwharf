@@ -20,6 +20,7 @@ public sealed partial class MainWindow
         var leadMenu = new ComboBox { ItemsSource = leads.Select(m => m.Label).ToList(), SelectedIndex = leads.FindIndex(m => m.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 240 };
         leadMenu.SelectionChanged += async (_, _) => { if (leadMenu.SelectedIndex >= 0 && leads[leadMenu.SelectedIndex].Id != team.LeadId) await DoAsync(() => api!.SetLeadAsync(projectId!, leads[leadMenu.SelectedIndex].Id, leads[leadMenu.SelectedIndex].Lead), "Lead chosen."); };
         side.Children.Add(leadMenu);
+        side.Children.Add(Explain(team.LeadBackups.Count > 0 ? $"If the lead runs low on quota, Planwharf hands over to: {string.Join(", ", team.LeadBackups)}, in this order." : "No other model can take over as lead now."));
 
         var active = team.Models.Where(m => !m.Bench).ToList();
         var bench = team.Models.Where(m => m.Bench).ToList();

@@ -52,8 +52,8 @@ public static class ChatViews
     public static string WorkingText(string who, DateTimeOffset? since, DateTimeOffset now) =>
         $"{who} is working{(since is { } start ? " · " + (WorkDetails.Duration((now - start).TotalMilliseconds) is { Length: > 0 } d ? d : "1 s") : "")}";
 
-    static readonly Regex Shown = new("PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
-    static readonly Regex News = new("SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
+    static readonly Regex Shown = new("LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
+    static readonly Regex News = new("LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
 
     // Plain words: no internal states, no repeated titles, no long verify prefix.
     public static (string Kind, string Text) Event(string type, string summary)
@@ -70,7 +70,7 @@ public static class ChatViews
         if (Regex.IsMatch(type, "FAILED|BLOCKED|STOPPED|REFUS")) return ("bad", text);
         if (type.Contains("STARTED")) return ("start", text);
         if (type.Contains("PLAN_REVISION")) return ("plan", Regex.Replace(text, @"^Living Plan R\d+:?\s*", "") is { Length: > 0 } plan ? "Plan updated: " + plan : "Plan updated.");
-        if (Regex.IsMatch(type, "PROPOSED|ASSIGNED|PLAN")) return ("plan", text);
+        if (Regex.IsMatch(type, "PROPOSED|ASSIGNED|PLAN|SWITCHED")) return ("plan", text);
         return ("", text);
     }
 

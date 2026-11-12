@@ -101,4 +101,11 @@ public class TeamViewTests
         Assert.Empty(TeamViews.ToolsNeedingOk(team));
         Assert.Contains("Give at least one model the Build role in Team.", TeamViews.Missing(JsonNode.Parse("""{ "orchestratorId": "x", "models": [ { "id": "luna", "available": false, "roles": { "worker": true } } ] }""")!, null));
     }
+
+    [Fact]
+    public void Reads_who_takes_over_as_lead()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""{ "orchestratorId": "a", "leadBackups": ["c", "b"], "models": [ { "id": "a", "label": "A" }, { "id": "b", "label": "B" }, { "id": "c", "label": "C" } ] }""")!);
+        Assert.Equal(["C", "B"], team.LeadBackups);
+    }
 }

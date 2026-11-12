@@ -29,6 +29,8 @@ public sealed record ProviderView(string Id, string Label, bool Enabled, int Mod
 public sealed record TeamView(string? LeadId, IReadOnlyList<TeamModel> Models)
 {
     public IReadOnlyList<ProviderView> Providers { get; init; } = [];
+    // Who takes over as lead when its quota runs low, in order.
+    public IReadOnlyList<string> LeadBackups { get; init; } = [];
 }
 
 // The project's team as the chat page shows it: the lead, and who can build, verify or review, with quota left.
@@ -76,7 +78,9 @@ public static class TeamViews
                 Installed = provider["installed"] is not JsonValue installed || !installed.TryGetValue<bool>(out var found) || found,
                 InstallHint = S(provider["installHint"]) is { Length: > 0 } hint ? hint : null
             }).ToList();
-        return new TeamView(lead, models) { Providers = providers };
+        var backups = (snapshot["leadBackups"] as JsonArray ?? []).Select(id => S(id)).Where(id => id.Length > 0)
+            .Select(id => models.FirstOrDefault(model => model.Id == id)?.Label ?? id).ToList();
+        return new TeamView(lead, models) { Providers = providers, LeadBackups = backups };
     }
 
     // The role a step needs, and the models of the team that have it (as the web step menu).
