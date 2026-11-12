@@ -67,15 +67,21 @@ public static class TeamViews
         _ => model.Build
     }).ToList();
 
-    // What is missing before the crew can start, in the order the user should fix it.
-    public static IReadOnlyList<string> Missing(JsonNode snapshot, string? projectId)
+    public const string NoGoalText = "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.";
+
+    // What is missing before the crew can start, in the chat page's order. A goal is ready when the
+    // project has one or the lead just suggested one.
+    public static IReadOnlyList<string> Missing(JsonNode snapshot, string? projectId, bool goalReady = true)
     {
         var missing = new List<string>();
         var team = Team(snapshot);
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => S(item["id"]) == projectId);
-        if (row != null && S(row["folder"]).Length == 0) missing.Add("Set the project folder in Settings.");
         if (team.LeadId == null) missing.Add("Choose a lead in Team.");
         if (!team.Models.Any(model => model.Build && model.Available && model.Enabled)) missing.Add("Give at least one model the Build role in Team.");
+        if (row != null && S(row["folder"]).Length == 0) missing.Add("Set the project folder in Settings.");
+        if (row != null && !goalReady) missing.Add(NoGoalText);
         return missing;
     }
+
+    public static bool HasGoal(JsonObject? row) => S(row?["goal"]).Trim() is { Length: > 0 } goal && goal != PlanwharfApi.NoGoal;
 }

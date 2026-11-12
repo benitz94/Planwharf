@@ -26,7 +26,10 @@ public sealed class PlanwharfApi(string address)
     // With a project, the snapshot shows that project's own team (lead and roles).
     public Task<JsonNode> SnapshotAsync(bool readOnly, string? team = null) =>
         GetAsync((readOnly ? "/api/orchestrator?readOnly=1" : "/api/orchestrator?x=1") + (team != null ? "&team=" + Uri.EscapeDataString(team) : ""));
-    public Task<JsonNode?> AskAsync(string projectId, string question) => PostAsync("/api/orchestrator/ask", new { projectId, question });
+    // One chat session per project and window, as the chat page sends it.
+    public Task<JsonNode?> AskAsync(string projectId, string question, string? chatSessionId = null) => chatSessionId == null
+        ? PostAsync("/api/orchestrator/ask", new { projectId, question })
+        : PostAsync("/api/orchestrator/ask", new { projectId, question, chatSessionId });
     public Task<JsonNode?> SetModeAsync(string mode) => PostAsync("/api/orchestrator/mode", new { mode });
     public Task<JsonNode?> SetAutonomyAsync(string projectId, bool enabled) => PostAsync("/api/orchestrator/autonomy", new { projectId, enabled });
     public Task<JsonNode?> StopAsync(string projectId) => PostAsync("/api/orchestrator/stop", new { projectId });
@@ -108,13 +111,15 @@ public sealed class PlanwharfApi(string address)
     public async Task<JsonNode> UpdatesAsync(bool check) => check ? await PostAsync("/api/app/updates/check", new { }) ?? new JsonObject() : await GetAsync("/api/app/updates");
 
     // The lead needs the orchestrator role in this project's team.
-    public async Task SetLeadAsync(string projectId, string modelId, bool hasRole)
+    // Without a project (no project yet), the lead and roles are the default team's.
+    public async Task SetLeadAsync(string? projectId, string modelId, bool hasRole)
     {
-        if (!hasRole) await PostAsync("/api/models/roles", new { id = modelId, roles = new Dictionary<string, bool> { ["orchestrator"] = true }, projectId });
-        await PostAsync("/api/orchestrator/lead", new { id = modelId, projectId });
+        if (!hasRole) await SetRolesAsync(projectId, modelId, new Dictionary<string, bool> { ["orchestrator"] = true });
+        await PostAsync("/api/orchestrator/lead", projectId == null ? new { id = modelId } : new { id = modelId, projectId });
     }
 
-    public Task<JsonNode?> SetRolesAsync(string projectId, string modelId, IDictionary<string, bool> roles) => PostAsync("/api/models/roles", new { id = modelId, roles, projectId });
+    public Task<JsonNode?> SetRolesAsync(string? projectId, string modelId, IDictionary<string, bool> roles) =>
+        PostAsync("/api/models/roles", projectId == null ? new { id = modelId, roles } : new { id = modelId, roles, projectId });
 
     // Changes the model of one step; a working step restarts on it with a handoff.
     public Task<JsonNode?> ChangeStepModelAsync(string projectId, string stepId, string modelId) =>

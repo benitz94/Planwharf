@@ -21,7 +21,7 @@ public class WindowTests
     [AvaloniaFact]
     public void Draws_the_chat_and_the_finished_work()
     {
-        var window = new MainWindow("v0.2.24");
+        var window = new MainWindow("v0.2.24") { Height = 1700 };
         window.Show();
         window.Show(SampleState.Finished());
         window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "checkedAt": "2026-11-11T15:56:00Z", "local": { "exists": true, "git": true, "branch": "main", "uncommitted": 6, "changes": [" M src/forecast.js", " M src/chart.js", "?? src/forecast.test.js", " M index.html", "?? docs/forecast.md", "D  src/old-chart.js"] } }""")!);
@@ -94,5 +94,21 @@ public class WindowTests
             frame!.Save(output);
             Assert.True(new FileInfo(output).Length > 10_000);
         }
+    }
+
+    // First start: no lead and no project, then a new project with nothing said yet.
+    [AvaloniaFact]
+    public void Draws_the_welcome_and_the_start_card()
+    {
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        string Output(string name) => shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        var models = """[ { "id": "opus", "label": "Opus 5.5", "enabled": true, "roles": {} }, { "id": "grok", "label": "Grok 4.7", "enabled": true, "roles": {} } ]""";
+        window.Show(System.Text.Json.Nodes.JsonNode.Parse($$"""{ "projects": [], "models": {{models}} }""")!);
+        window.CaptureRenderedFrame()!.Save(Output("welcome"));
+        window.Show(System.Text.Json.Nodes.JsonNode.Parse($$"""{ "projects": [ { "id": "site", "name": "My website", "status": "idle", "goal": "Not set yet: tell the lead in the chat what to build." } ], "models": {{models}} }""")!);
+        window.CaptureRenderedFrame()!.Save(Output("start"));
+        Assert.True(new FileInfo(Output("start")).Length > 10_000);
     }
 }
