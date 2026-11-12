@@ -79,8 +79,8 @@ jobs:
             echo "|---|---|"
             echo "| Windows, macOS, Linux | [Planwharf-$next.zip]($base/Planwharf-$next.zip) |"
             echo
-            echo "### Native app (preview)"
-            echo "A native window instead of a web page. Includes Node.js. First version: projects, chat with the lead, the crew's work and its buttons; Team, Usage, Settings and commit are still in the desktop or web app."
+            echo "### Native app (recommended)"
+            echo "A native window instead of a web page, much lighter than the desktop app, with everything it does. Includes Node.js."
             echo
             echo "| System | File |"
             echo "|---|---|"

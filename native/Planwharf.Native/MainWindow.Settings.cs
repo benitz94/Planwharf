@@ -249,7 +249,7 @@ public sealed partial class MainWindow
         var quit = Small("Quit Planwharf");
         quit.Click += async (_, _) => { if (await Confirm("Quit Planwharf now? Unfinished work is saved.", "Yes, quit now")) Close(); };
         side.Children.Add(quit);
-        side.Children.Add(Explain($"Planwharf {version}, native app (preview)."));
+        side.Children.Add(Explain($"Planwharf {version}, native app."));
     }
 
     void UpdatesSection()
