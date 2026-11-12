@@ -46,7 +46,7 @@ static class SampleState
           { "id": "gemini", "label": "Gemini 3.5 Pro", "plan": "google", "enabled": true, "available": false, "unavailableReason": "CLI not installed", "roles": {} },
           { "id": "sonnet", "label": "Sonnet 5.5", "plan": "max", "enabled": true, "roles": {} } ]
         """);
-        state["providers"] = JsonNode.Parse("""[ { "id": "claude", "label": "Claude Code", "models": [ {}, {} ] }, { "id": "codex", "label": "Codex", "models": [ {} ] }, { "id": "grok", "label": "Grok", "models": [ {} ] }, { "id": "gemini", "label": "Gemini CLI", "enabled": false, "models": [ {} ] } ]""");
+        state["providers"] = JsonNode.Parse("""[ { "id": "claude", "label": "Claude Code", "models": [ {}, {} ] }, { "id": "codex", "label": "Codex", "models": [ {} ] }, { "id": "grok", "label": "Grok", "models": [ {} ] }, { "id": "gemini", "label": "Gemini", "installed": false, "installHint": "Antigravity is not installed on this computer. Install Antigravity and sign in, then look for models again.", "models": [ {} ] } ]""");
         var project = state["projects"]![0]!.AsObject();
         project["folder"] = "/home/sample/weather";
         project["label"] = "Working"; project["status"] = "running";

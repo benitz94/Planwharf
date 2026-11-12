@@ -44,6 +44,15 @@ public sealed partial class MainWindow
         side.Children.Add(Explain("Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used."));
         foreach (var provider in team.Providers)
         {
+            // Not installed: never shown as On; say how to install it (the command can be copied).
+            if (!provider.Installed)
+            {
+                side.Children.Add(new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8),
+                    Child = new StackPanel { Spacing = 4, Children = {
+                        new TextBlock { Text = $"{provider.Label} · Not installed", Foreground = Palette.Warn, FontWeight = FontWeight.SemiBold },
+                        new SelectableTextBlock { Text = provider.InstallHint ?? "Install it and sign in, then look for models again.", Foreground = Palette.Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap } } } });
+                continue;
+            }
             var text = $"{provider.Label} · {provider.Models} model{(provider.Models == 1 ? "" : "s")}";
             var toggle = new ToggleSwitch { OnContent = text, OffContent = text, IsChecked = provider.Enabled };
             toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != provider.Enabled) await DoAsync(() => api!.SetProviderEnabledAsync(provider.Id, toggle.IsChecked == true), $"{provider.Label} turned {(toggle.IsChecked == true ? "on" : "off")}."); };

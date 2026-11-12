@@ -84,4 +84,21 @@ public class TeamViewTests
         Assert.StartsWith("Claude Code will work in the project folder without asking each time: it edits files", TeamViews.OkQuestion(TeamViews.ToolsNeedingOk(team)));
         Assert.Contains("they edit", TeamViews.OkQuestion([new ProviderView("claude", "Claude Code", true, 1), new ProviderView("grok", "Grok", true, 1)]));
     }
+
+    [Fact]
+    public void A_tool_that_is_not_installed_is_never_offered()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "models": [ { "id": "luna", "provider": "codex", "adapter": "codex", "enabled": true, "available": false, "notInstalled": true,
+                        "unavailableReason": "Codex is not installed on this computer.", "roles": { "worker": true } } ],
+          "providers": [ { "id": "codex", "label": "ChatGPT", "installed": false, "installHint": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in.", "models": [ {} ] },
+                         { "id": "claude", "label": "Claude Code", "models": [] } ] }
+        """)!);
+        Assert.False(team.Providers[0].Installed);
+        Assert.Contains("npm install -g @openai/codex", team.Providers[0].InstallHint);
+        Assert.True(team.Providers[1].Installed);
+        Assert.Empty(TeamViews.ModelsFor(team, "Build"));
+        Assert.Empty(TeamViews.ToolsNeedingOk(team));
+        Assert.Contains("Give at least one model the Build role in Team.", TeamViews.Missing(JsonNode.Parse("""{ "orchestratorId": "x", "models": [ { "id": "luna", "available": false, "roles": { "worker": true } } ] }""")!, null));
+    }
 }
