@@ -67,6 +67,13 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> ChangeStepModelAsync(string projectId, string stepId, string modelId) =>
         PostAsync("/api/orchestrator/crew", new { projectId, assignments = new Dictionary<string, string> { [stepId] = modelId } });
 
+    // The project folder in git: changes not committed, commits not pushed.
+    public async Task<JsonNode?> RepositoryAsync(string projectId, bool refresh = false) =>
+        (await GetAsync("/api/repository?projectId=" + Uri.EscapeDataString(projectId) + (refresh ? "&refresh=1" : "")))["repository"];
+    // The user's own commit, and push when asked: never a force push (the server decides how).
+    public Task<JsonNode?> CommitAsync(string projectId, string message, bool push) => PostAsync("/api/repository/commit", new { projectId, message, push });
+    public Task<JsonNode?> IgnoreAlertAsync(string projectId, string alertId) => PostAsync("/api/supervisor/ignore", new { projectId, alertId });
+
     // The goal agreed in the chat becomes the project's goal before the crew starts.
     public async Task SaveGoalAsync(string projectId, string goal)
     {

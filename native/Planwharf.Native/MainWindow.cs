@@ -33,6 +33,12 @@ public sealed class MainWindow : Window
     JsonNode? snapshot;
     string? projectId, pending, threadSig, listSig, sideSig, sideMode, projectsRoot;
     bool busy;
+    readonly Dictionary<string, RepoView> repos = new();
+    readonly HashSet<string> repoLoading = new();
+    readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
+    readonly Dictionary<string, string> gitBusy = new();
+    readonly Dictionary<string, (bool Ok, string Text)> gitSaid = new();
+    readonly Dictionary<string, string> commitMessages = new();
     int ticks;
 
     public MainWindow(string version)
@@ -97,6 +103,9 @@ public sealed class MainWindow : Window
     // Shows a snapshot of the server's state; the window redraws only what changed.
     public void Show(JsonNode state) { snapshot = state; Render(); }
 
+    // For the window tests: the repository as the server would report it.
+    public void ShowRepo(string projectId, string workId, RepoView repo) { repos[projectId + "|" + workId] = repo; threadSig = null; Render(); }
+
     public void OpenSide(string? mode)
     {
         if (mode == "settings" && api != null) _ = LoadRootAsync();
@@ -146,12 +155,49 @@ public sealed class MainWindow : Window
         RenderSide(view);
     }
 
+    // What the work card shows besides the steps, read once per refresh; it also decides when to redraw.
+    sealed record CardData(IReadOnlyList<string> Summary, IReadOnlyList<(string Model, string Text)> Usage, (string Who, string Text) Activity,
+        IReadOnlyList<AlertView> Alerts, RepoView? Repo, string Since, string Took, bool AutoApprove);
+
+    CardData? Card(ProjectView view)
+    {
+        if (view.Work is not { Row: { } row } work) return new CardData([], [], ("", ""), WorkDetails.Alerts(snapshot!, view.Id), null, "", "", false);
+        var team = TeamViews.Team(snapshot!);
+        string Label(string id) => team.Models.FirstOrDefault(model => model.Id == id)?.Label ?? "";
+        int? Quota(string id) => team.Models.FirstOrDefault(model => model.Id == id)?.QuotaLeft;
+        // Quota when the work started, to show before -> after (kept while the app is open).
+        if (!quotaStart.TryGetValue(work.Id, out var start)) quotaStart[work.Id] = start = new Dictionary<string, int?>();
+        if (work.Steps.Any(step => step.Status == "working"))
+            foreach (var id in work.Steps.Select(step => step.ModelId).Where(id => id.Length > 0).Distinct()) start.TryAdd(id, Quota(id));
+        var auto = snapshot!["autonomy"]?[view.Id];
+        var stop = auto?["stopReason"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+        RepoView? repo = null;
+        if (work.Status == "COMPLETE")
+        {
+            // Read again for each finished piece of work: the folder changed.
+            if (!repos.TryGetValue(view.Id + "|" + work.Id, out repo)) _ = LoadRepoAsync(view.Id, work.Id, false);
+        }
+        var changed = repo is { Git: true } ? repo.Uncommitted : null;
+        return new CardData(
+            work.Status == "COMPLETE" || IsStopped(work) ? WorkDetails.Summary(row, stop, work.Status == "COMPLETE" ? changed : null, Label) : [],
+            WorkDetails.Usage(snapshot!, row, start, Label, Quota),
+            WorkDetails.Activity(row, Label), WorkDetails.Alerts(snapshot!, view.Id), repo,
+            WorkDetails.Duration(WorkDetails.Between(work.StartedAt, DateTimeOffset.UtcNow.ToString("o"))),
+            WorkDetails.Duration(WorkDetails.Between(work.StartedAt, work.CompletedAt)),
+            auto?["enabled"] is JsonValue enabled && enabled.TryGetValue<bool>(out var on) && on);
+    }
+
+    static bool IsStopped(WorkView work) => work.Status is "FAILED" or "BLOCKED" or "PAUSED" or "STOPPED" or "CHECKPOINTED" || work.CanResume && work.Status != "COMPLETE";
+
     void RenderThread(ProjectView view)
     {
         var team = TeamViews.Team(snapshot!);
+        var card = Card(view)!;
         var sig = string.Join("|", view.Messages.Select(m => m.At.ToUnixTimeMilliseconds() + m.Text.Length)) + pending + view.NextGoal
-            + (view.Work is { } w ? w.Title + w.Status + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
-            + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft));
+            + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
+            + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
+            + string.Join("", card.Summary) + string.Join("", card.Usage) + card.Activity + string.Join(",", card.Alerts.Select(a => a.Id)) + card.Repo + card.Since + card.AutoApprove
+            + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id);
         if (sig == threadSig) return;
         var atBottom = threadScroll.Offset.Y + threadScroll.Viewport.Height >= threadScroll.Extent.Height - 120;
         threadSig = sig;
@@ -162,7 +208,8 @@ public sealed class MainWindow : Window
         if (pending != null) { thread.Children.Add(Bubble(true, "You", pending)); thread.Children.Add(Bubble(false, "Lead", "Thinking…")); }
         else if (view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt)
             thread.Children.Add(Note($"Nothing has started yet. When the plan is right, press Let the crew do it: the crew will work on\n{view.NextGoal}"));
-        if (view.Work != null) thread.Children.Add(WorkCard(view.Work, team));
+        if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
+        if (view.Work != null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
         if (atBottom || pending != null) Dispatcher.UIThread.Post(() => threadScroll.ScrollToEnd(), DispatcherPriority.Background);
     }
 
@@ -179,37 +226,172 @@ public sealed class MainWindow : Window
     static Control Note(string text) => new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 10),
         Child = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Muted } };
 
-    Control WorkCard(WorkView work, TeamView team)
+    static TextBlock Line(string text, IBrush? color = null, double size = 14, FontWeight? weight = null) =>
+        new() { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = color ?? Palette.Text, FontSize = size, FontWeight = weight ?? FontWeight.Normal };
+
+    static Control List(string heading, IEnumerable<string> lines)
+    {
+        var panel = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0), Children = { Line(heading, Palette.Text, 13, FontWeight.SemiBold) } };
+        foreach (var line in lines) panel.Children.Add(Line("• " + line, Palette.Muted, 13));
+        return panel;
+    }
+
+    // A section that opens and closes, in the card's colours.
+    static Expander Fold(string header, Control content)
+    {
+        var fold = new Expander { Header = header, IsExpanded = true, HorizontalAlignment = HorizontalAlignment.Stretch, Content = content, Background = Palette.Card };
+        foreach (var key in new[] { "ExpanderHeaderBackground", "ExpanderHeaderBackgroundPointerOver", "ExpanderHeaderBackgroundPressed", "ExpanderContentBackground" })
+            fold.Resources[key] = Palette.Card;
+        foreach (var key in new[] { "ExpanderHeaderBorderBrush", "ExpanderContentBorderBrush", "ExpanderHeaderBorderBrushPointerOver", "ExpanderHeaderBorderBrushPressed" })
+            fold.Resources[key] = Palette.Line;
+        return fold;
+    }
+
+    Control AlertsCard(string projectId, IReadOnlyList<AlertView> alerts)
+    {
+        var panel = new StackPanel { Spacing = 8, Children = { Line("Something needs a look", Palette.Warn, 17, FontWeight.Bold) } };
+        foreach (var alert in alerts)
+        {
+            var ignore = new Button { Content = "Ignore", FontSize = 12, VerticalAlignment = VerticalAlignment.Top };
+            ignore.Click += async (_, _) => await DoAsync(() => api!.IgnoreAlertAsync(projectId, alert.Id), "Ignored.");
+            var row = new DockPanel { Children = { ignore, new StackPanel { Children = { Line(alert.Title, Palette.Text, 14, FontWeight.SemiBold), Line(alert.Message, Palette.Muted, 13) } } } };
+            DockPanel.SetDock(ignore, Dock.Right);
+            panel.Children.Add(row);
+        }
+        panel.Children.Add(Line("Planwharf checks the work itself; this is a reason to look, not proof that something broke.", Palette.Muted, 12));
+        return new Border { BorderBrush = Palette.Warn, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
+    }
+
+    Control WorkCard(string projectId, WorkView work, TeamView team, CardData card)
     {
         var done = work.Status == "COMPLETE";
-        var panel = new StackPanel { Spacing = 8, Children = {
-            new TextBlock { Text = done ? "Work finished" : work.Status is "PAUSED" or "FAILED" ? "Work stopped" : work.Status == "READY_FOR_APPROVAL" ? "The lead proposes this work" : "Crew at work", FontSize = 17, FontWeight = FontWeight.Bold, Foreground = Palette.Text },
-            new TextBlock { Text = work.Title, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Text },
-            new ProgressBar { Minimum = 0, Maximum = Math.Max(1, work.Total), Value = work.Done, Height = 6, Foreground = Palette.Accent },
-            new TextBlock { Text = $"{work.Done} of {work.Total} steps done", Foreground = Palette.Muted, FontSize = 12 } } };
-        foreach (var step in work.Steps)
+        var stopped = !done && IsStopped(work);
+        var proposal = work.Status == "READY_FOR_APPROVAL";
+        var heading = done ? "Work finished" : stopped ? "Work stopped" : proposal ? "The lead proposes this work" : "Crew at work" + (card.Since.Length > 0 ? " · " + card.Since : "");
+        var panel = new StackPanel { Spacing = 8, Children = { Line(heading, done ? Palette.Accent : stopped ? Palette.Warn : Palette.Text, 17, FontWeight.Bold) } };
+        panel.Children.Add(Line(stopped && work.NextAction.Length > 0 ? work.NextAction : work.Title));
+        if (done)
         {
-            Control model = new TextBlock { Text = step.Model, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
-            // Open work: the model of a step that is not done can be changed, among the team models with that role.
-            if (!done && step.Status != "done")
-            {
-                var choices = TeamViews.ModelsFor(team, step.Role).ToList();
-                if (choices.All(m => m.Id != step.ModelId)) choices.Insert(0, new TeamModel(step.ModelId, step.Model, "", null, true, null, false, false, false, false, false));
-                var menu = new ComboBox { ItemsSource = choices.Select(m => m.Label + (m.QuotaLeft is { } left ? $" · {left}% left" : "")).ToList(), SelectedIndex = choices.FindIndex(m => m.Id == step.ModelId), MinWidth = 220 };
-                menu.SelectionChanged += async (_, _) => { if (menu.SelectedIndex >= 0 && choices[menu.SelectedIndex].Id != step.ModelId) await ChangeStepAsync(step, choices[menu.SelectedIndex]); };
-                model = menu;
-            }
-            var row = new DockPanel { Children = {
-                new TextBlock { Text = step.Status, Foreground = step.Status == "done" ? Palette.Accent : step.Status is "blocked" or "failed" ? Palette.Danger : Palette.Warn, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, [DockPanel.DockProperty] = Dock.Right },
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new TextBlock { Text = step.Role + " ·", Foreground = Palette.Text, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }, model } } } };
-            panel.Children.Add(new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8), Child = row });
+            var changed = card.Repo is { Git: true } repo ? $"{repo.Uncommitted} files not yet committed" : card.Repo == null ? "Counting changed files…" : "Changed files: unknown";
+            panel.Children.Add(Line(string.Join("   ·   ", new[] { $"{work.Done}/{work.Total} steps done", card.Took, changed }.Where(part => part.Length > 0)), Palette.Muted, 13));
         }
-        if (done && work.Results.Count > 0)
+        if (card.Summary.Count > 0) panel.Children.Add(List("Summary", card.Summary));
+        if (done && work.Results.Count > 0) panel.Children.Add(List("What was done", work.Results));
+        if (!done && !proposal)
         {
-            panel.Children.Add(new TextBlock { Text = "What was done", FontWeight = FontWeight.SemiBold, Foreground = Palette.Text, Margin = new Thickness(0, 4, 0, 0) });
-            foreach (var result in work.Results) panel.Children.Add(new TextBlock { Text = "• " + result, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Muted });
+            panel.Children.Add(new ProgressBar { Minimum = 0, Maximum = Math.Max(1, work.Total), Value = work.Done, Height = 6, Foreground = Palette.Accent });
+            panel.Children.Add(Line($"{work.Done} of {work.Total} steps done", Palette.Muted, 12));
+            if (work.Waiting.Length > 0 && !stopped) panel.Children.Add(Line(work.Waiting, Palette.Warn, 13));
         }
-        return new Border { BorderBrush = done ? Palette.Accent : Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
+        foreach (var step in work.Steps) panel.Children.Add(StepRow(step, team, editable: !done && step.Status != "done"));
+        if (proposal) panel.Children.Add(Line(card.AutoApprove ? "The crew approves this by itself." : "Press Approve and start below, or tell the lead what to change.", Palette.Muted, 13));
+        if (!done && !stopped && !proposal && card.Activity.Text.Length > 0)
+            panel.Children.Add(Fold($"What {card.Activity.Who} is doing", new SelectableTextBlock { Text = card.Activity.Text, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 12, Foreground = Palette.Muted }));
+        if ((done || stopped) && card.Usage.Count > 0)
+        {
+            var usage = new StackPanel { Spacing = 3 };
+            foreach (var (model, text) in card.Usage)
+                usage.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, Inlines = new Avalonia.Controls.Documents.InlineCollection {
+                    new Avalonia.Controls.Documents.Run(model) { FontWeight = FontWeight.SemiBold, Foreground = Palette.Text }, new Avalonia.Controls.Documents.Run(" · " + text) { Foreground = Palette.Muted } } });
+            panel.Children.Add(Fold("What this work used", usage));
+        }
+        if (done)
+        {
+            panel.Children.Add(Line("Try the result in the project folder. Planwharf did not commit or publish anything.", Palette.Muted, 13));
+            if (GitBox(projectId, work, card.Repo) is { } git) panel.Children.Add(git);
+        }
+        return new Border { BorderBrush = done ? Palette.Accent : stopped ? Palette.Warn : Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
+    }
+
+    Control StepRow(WorkStep step, TeamView team, bool editable)
+    {
+        Control model = new TextBlock { Text = step.Model.Length > 0 ? step.Model : "not assigned", Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
+        // Open work: the model of a step that is not done can be changed, among the team models with that role.
+        if (editable)
+        {
+            var choices = TeamViews.ModelsFor(team, step.Role).ToList();
+            if (choices.All(m => m.Id != step.ModelId)) choices.Insert(0, new TeamModel(step.ModelId, step.Model.Length > 0 ? step.Model : "not assigned", "", null, true, null, false, false, false, false, false));
+            var menu = new ComboBox { ItemsSource = choices.Select(m => m.Label + (m.QuotaLeft is { } left ? $" · {left}% left" : "")).ToList(), SelectedIndex = choices.FindIndex(m => m.Id == step.ModelId), MinWidth = 220 };
+            menu.SelectionChanged += async (_, _) => { if (menu.SelectedIndex >= 0 && choices[menu.SelectedIndex].Id != step.ModelId) await ChangeStepAsync(step, choices[menu.SelectedIndex]); };
+            model = menu;
+        }
+        var main = new StackPanel { Spacing = 2, Children = {
+            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new TextBlock { Text = step.Role + " ·", Foreground = Palette.Text, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center }, model } } } };
+        if (step.Title.Length > 0) main.Children.Add(Line(step.Title, Palette.Muted, 12));
+        var status = new TextBlock { Text = step.Status, Foreground = step.Status == "done" ? Palette.Accent : step.Status is "blocked" or "failed" ? Palette.Danger : Palette.Warn, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        var row = new DockPanel { Children = { status, main } };
+        DockPanel.SetDock(status, Dock.Right);
+        return new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8), Child = row };
+    }
+
+    // Commit and push the finished work, or push commits already made. What git said stays in view.
+    Control? GitBox(string projectId, WorkView work, RepoView? repo)
+    {
+        var busy = gitBusy.GetValueOrDefault(projectId);
+        var said = gitSaid.GetValueOrDefault(projectId);
+        var changed = repo is { Git: true } ? repo.Uncommitted ?? 0 : 0;
+        var ahead = repo?.Ahead ?? 0;
+        if (repo is not { Git: true } || (changed == 0 && ahead == 0 && busy == null && said == default)) return null;
+        var panel = new StackPanel { Spacing = 8, Margin = new Thickness(0, 6, 0, 0) };
+        var message = new TextBox { MaxLength = 500, Text = commitMessages.TryGetValue(projectId, out var kept) ? kept : DefaultMessage(work.Title) };
+        message.TextChanged += (_, _) => commitMessages[projectId] = message.Text ?? "";
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        Button Git(string label, bool push, bool primary)
+        {
+            var button = new Button { Content = label, IsEnabled = busy == null };
+            if (primary) { button.Background = Palette.Accent; button.Foreground = Palette.AccentText; }
+            button.Click += async (_, _) => await CommitAsync(projectId, work.Id, changed > 0, ahead, changed > 0 ? message.Text?.Trim() ?? "" : "push", push);
+            return button;
+        }
+        if (changed > 0)
+        {
+            panel.Children.Add(Line("Save it in git when you are happy with it", Palette.Text, 13));
+            panel.Children.Add(message);
+            buttons.Children.Add(Git("Commit", false, false)); buttons.Children.Add(Git("Commit and push", true, true));
+        }
+        else if (ahead > 0)
+        {
+            panel.Children.Add(Line($"{ahead} commit{(ahead == 1 ? " is" : "s are")} not on GitHub yet.", Palette.Text, 13));
+            buttons.Children.Add(Git($"Push {ahead} commit{(ahead == 1 ? "" : "s")} to GitHub", true, true));
+        }
+        panel.Children.Add(buttons);
+        if (busy != null) panel.Children.Add(Line(busy, Palette.Muted, 13));
+        else if (said != default) panel.Children.Add(Line(said.Text, said.Ok ? Palette.Accent : Palette.Danger, 13));
+        return panel;
+    }
+
+    static string DefaultMessage(string title) => title.Length == 0 ? "Work by the crew" : title[..Math.Min(200, title.Length)];
+
+    async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)
+    {
+        if (api == null) return;
+        if (changes && message.Length == 0) { hint.Text = "Write a commit message."; hint.Foreground = Palette.Warn; return; }
+        // The user's own action: say exactly what will happen before doing it. Never a force push.
+        var what = changes ? $"Commit all changes in the project folder{(push ? " and push them to GitHub" : "")}, with the message \"{message}\"?" : $"Push {ahead} commit{(ahead == 1 ? "" : "s")} to GitHub?";
+        if (!await new ConfirmDialog(what, push ? "Push" : "Commit").ShowDialog<bool>(this)) return;
+        gitBusy[projectId] = push ? (changes ? "Committing, then pushing to GitHub. If GitHub asks you to sign in, a window opens." : "Pushing to GitHub. If GitHub asks you to sign in, a window opens.") : "Committing…";
+        gitSaid.Remove(projectId); threadSig = null; Render();
+        (bool, string) said;
+        try
+        {
+            var result = await api.CommitAsync(projectId, message, push);
+            string Get(string key) => result?[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
+            var pushed = result?["pushed"]?.GetValue<bool>() == true;
+            said = (true, pushed ? $"{(Get("commit").Length > 0 ? $"Committed {Get("commit")} and pushed" : "Pushed")} to {Get("branch")} on GitHub." : $"Committed {Get("commit")} on {Get("branch")}. Not pushed yet.");
+        }
+        catch (Exception error) { said = (false, error.Message); }
+        gitBusy.Remove(projectId); gitSaid[projectId] = said; commitMessages.Remove(projectId);
+        hint.Text = said.Item2; hint.Foreground = said.Item1 ? Palette.Accent : Palette.Danger;
+        await LoadRepoAsync(projectId, workId, true);
+    }
+
+    async Task LoadRepoAsync(string projectId, string workId, bool refresh)
+    {
+        var key = projectId + "|" + workId;
+        if (api == null || !repoLoading.Add(key)) return;
+        try { repos[key] = WorkDetails.Repo(await api.RepositoryAsync(projectId, refresh)); }
+        catch (Exception error) { repos[key] = new RepoView(false, null, 0, error.Message); }
+        finally { repoLoading.Remove(key); threadSig = null; Render(); }
     }
 
     // Team and Settings, on the right.
