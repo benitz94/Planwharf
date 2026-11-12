@@ -1,8 +1,8 @@
 # Planwharf native app
 
-A native window for Planwharf, built with [Avalonia](https://avaloniaui.net/) on .NET 8, for Windows, macOS and Linux. It is not a web page in a browser shell: the interface is drawn with Avalonia's own controls.
+A native window for Planwharf, built with [Avalonia](https://avaloniaui.net/) on .NET 10, for Windows, macOS and Linux. It is not a web page in a browser shell: the interface is drawn with Avalonia's own controls.
 
-It starts the same local Planwharf server as the other versions (`planwharf.cjs`, unchanged) and talks to it over `http://127.0.0.1:<port>/`. Projects are kept in the same data folder as the desktop app (`%APPDATA%\Planwharf\data`, `~/.config/Planwharf/data`, `~/Library/Application Support/Planwharf/data`): use one Planwharf at a time.
+Its engine is still the JavaScript one: it starts the same local Planwharf server as the other versions (`planwharf.cjs`, unchanged, with the Node.js shipped in the zip) and talks to it over `http://127.0.0.1:<port>/`. Projects are kept in the same data folder as the desktop app (`%APPDATA%\Planwharf\data`, `~/.config/Planwharf/data`, `~/Library/Application Support/Planwharf/data`): use one Planwharf at a time.
 
 ## What it does today
 - Lists your projects with their status, and shows the installed version next to the name.
@@ -26,6 +26,11 @@ Not yet in the native app (use the web or desktop version meanwhile): the light 
 ## Build and run
 ```sh
 dotnet test native/Planwharf.Native.Tests
+dotnet test native/Planwharf.Engine.Tests
 dotnet run --project native/Planwharf.Native
 ```
 A development build finds Planwharf's files up the folder tree and uses the Node.js installed on the computer. A published build carries them next to the program, in `app` (see `prepare-app.cjs`) and `node`; the **Native app** workflow builds such a folder for Windows, macOS (Apple silicon and Intel) and Linux on every change.
+
+## The C# engine
+
+`Planwharf.Engine` is the engine being ported from JavaScript to C#, module by module, so that the app no longer needs Node.js. How it is done, and the jobs, are in [porting/README.md](porting/README.md).

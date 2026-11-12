@@ -36,7 +36,7 @@ Every [release](https://github.com/benitz94/Planwharf/releases/latest) contains 
 
 | Kind | Windows | Linux | macOS | Needs Node.js |
 |---|---|---|---|---|
-| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No, included |
+| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No, its engine is included |
 | **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included |
 | **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer |
 
@@ -44,8 +44,9 @@ With any kind you also need at least one AI coding tool, installed and signed in
 
 ### Native app
 
-A native window instead of a web page, much lighter than the desktop app (about 75 MB with Node.js included), with everything the desktop app does: chat with the lead, the crew at work, Team, Progress, Usage, Files, Settings, commit and push. Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
+A native window instead of a web page, much lighter than the desktop app, with everything the desktop app does: chat with the lead, the crew at work, Team, Progress, Usage, Files, Settings, commit and push. Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
 
+- **What is native and what is not, yet:** the window is native (no browser inside). Planwharf's engine still runs on Node.js, included in the zip (about 75 MB in all), and the window starts it for you. The engine is being ported to C# ([native/porting](native/porting/README.md)); when that is done the app will no longer contain Node.js.
 - Dark theme only for now. To update, download the new zip: the app tells you when one is out.
 - It is not code-signed yet: on Windows choose **More info > Run anyway**; on macOS, if it is blocked, open **System Settings > Privacy & Security** and choose **Open Anyway**.
 - It uses the same projects as the desktop app: close one before you open the other.
