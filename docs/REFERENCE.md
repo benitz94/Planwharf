@@ -47,7 +47,7 @@ On Windows, double-click `Planwharf.exe` or `planwharf.cmd`, or run:
 node .\planwharf.cjs
 ```
 
-To rebuild the Windows launcher, run `launch\build-exe.cmd`; it requires the .NET Framework compiler.
+`Planwharf.exe`, the Windows launcher, is not kept in git: the release builds it from `launch/Planwharf.cs` and puts it in the ZIP. In a checkout, build it with `node launch/build-exe.cjs` (needs the .NET SDK, on any system) or `launch\build-exe.cmd` (uses the .NET Framework compiler of Windows).
 
 ### Windows, macOS and Linux
 

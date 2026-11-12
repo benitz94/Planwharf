@@ -23,6 +23,9 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
       - name: Tag next patch and draft the GitHub Release
         id: publish
         env:
@@ -54,7 +57,10 @@ jobs:
             patch="${rest#*.}"
             next="v${major}.${minor}.$((patch + 1))"
           done
+          # The Windows launcher is built from its source here, not kept in git.
+          node launch/build-exe.cjs
           node engine/package-release.cjs "$next" "$RUNNER_TEMP/planwharf-release"
+          unzip -l "$RUNNER_TEMP/planwharf-release/Planwharf-$next.zip" | grep -q ' Planwharf/Planwharf.exe$' || { echo 'Planwharf.exe is missing from the ZIP'; exit 1; }
           v="${next#v}"
           base="https://github.com/$GITHUB_REPOSITORY/releases/download/$next"
           {

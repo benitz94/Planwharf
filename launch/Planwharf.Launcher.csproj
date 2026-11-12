@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Windows launcher of the portable app (Planwharf.exe): a .NET Framework 4.8 program that
+       every Windows 10/11 already has. Built by the release workflow, also from Linux, with
+       launch/build-exe.cjs; build-exe.cmd builds the same source with the csc.exe of Windows. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Planwharf</AssemblyName>
+    <RootNamespace>Planwharf</RootNamespace>
+    <LangVersion>7.3</LangVersion>
+    <Optimize>true</Optimize>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Planwharf.cs" />
+    <Reference Include="System.Windows.Forms" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
