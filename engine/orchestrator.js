@@ -1780,14 +1780,14 @@ function createOrchestrator(options) {
   }
 
   // Lead action from the chat: change the models of remaining steps; Planwharf checks every choice.
-  async function reassignCrew(action, row) {
+  async function reassignCrew(action, row, by = 'lead') {
     try {
       if (!action || typeof action !== 'object' || Object.keys(action).some(key => !['type', 'projectId', 'assignments', 'why'].includes(key))) throw new Error('Invalid crew change.');
       if (!row || action.projectId !== row.id) throw new Error('The crew change targets a different project from the selected one.');
       const megaTaskId = row.megaTaskId || row.megaTask?.id;
       if (!megaTaskId) throw new Error('This project has no proposed or stopped work.');
       await refreshPlans(false);
-      const mega = bridge.reassignRemaining(row.id, megaTaskId, action.assignments, typeof action.why === 'string' ? action.why.slice(0, 300) : '');
+      const mega = bridge.reassignRemaining(row.id, megaTaskId, action.assignments, typeof action.why === 'string' ? action.why.slice(0, 300) : '', by);
       if (mega.status === 'READY_FOR_APPROVAL') return { ok: true, text: 'Crew changed. Approve the work to start it.' };
       // Work that still reads RUNNING launches its pending steps on the next pass.
       if (mega.status === 'RUNNING') { await tick(row.id); return { ok: true, text: 'Crew changed; the remaining steps start with the new models.' }; }
@@ -1801,7 +1801,7 @@ function createOrchestrator(options) {
   async function changeCrew(projectId, assignments) {
     if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => changeCrew(projectId, assignments));
     const row = entry(projectId);
-    return reassignCrew({ type: 'reassign_crew', projectId, assignments }, { id: projectId, megaTaskId: row.megaTaskId });
+    return reassignCrew({ type: 'reassign_crew', projectId, assignments }, { id: projectId, megaTaskId: row.megaTaskId }, 'user');
   }
 
   async function dispatchResearch(action, stillAuthorized = () => true, goldModel = null) {
@@ -2547,7 +2547,9 @@ function createOrchestrator(options) {
     const candidates = subs.map(sub => roster().filter(model => usable(model) && permitsAssignment(model, sub)));
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
-    const question = autonomy.assignmentPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
+    // The lead's last answer in this project's chat, where it may have proposed the crew.
+    const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
+    const question = autonomy.assignmentPrompt({ name: item.project.name, said, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
     let spoken;
     try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return; }
     if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
@@ -2654,14 +2656,16 @@ function createOrchestrator(options) {
       await refreshPlans(false);
       for (const row of busy) {
         const running = (row.subTasks || []).filter(sub => sub.status === 'RUNNING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
-          .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub }));
+          .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
+            // The companies of the work's other steps: the switch avoids them when it can.
+            avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = roster().find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
         const switches = quotaSwitches({ running, models: roster(), plans: plansLive, thresholdPercent: settings.thresholdPercent,
           eligible: (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked });
         for (const change of switches) {
           quotaSwitchedAt.set(change.subTaskId, Date.now());
           const from = roster().find(model => model.id === change.fromModelId), to = roster().find(model => model.id === change.toModelId);
           const why = `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${settings.thresholdPercent}%).`;
-          try { await inTeam(row.id, async () => { bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why); note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`); }); }
+          try { await inTeam(row.id, async () => { bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why, 'auto'); note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`); }); }
           catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
         }
       }

@@ -220,7 +220,7 @@ public sealed partial class MainWindow
             + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
             + string.Join("", card.Summary) + string.Join("", card.Usage) + card.Activity + string.Join(",", card.Alerts.Select(a => a.Id)) + card.Repo + card.Since + card.AutoApprove
             + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id) + snapshot?["projectTools"]?[view.Id]?.ToJsonString();
-        if (sig == threadSig) return;
+        if (sig == threadSig || menuOpen) return;
         var atBottom = threadScroll.Offset.Y + threadScroll.Viewport.Height >= threadScroll.Extent.Height - 120;
         threadSig = sig;
         thread.Children.Clear();

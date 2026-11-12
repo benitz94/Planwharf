@@ -79,3 +79,15 @@ test('a working step can change model: its worker stops and the step restarts wi
   assert.equal(build.takeover.fromModelId, 'terra');
   assert.match(build.takeover.logTail, /running tests\/test_check.py/);
 });
+
+test('the chat says who changed the crew: the lead, the user or the automatic switch', t => {
+  const { bridge, mega, item, store } = fixture(t);
+  const build = () => bridge.view(item.project.id).subTasks.find(sub => sub.megaTaskId === mega.id && sub.title === 'Build');
+  const last = () => store.execution.timeline.filter(event => event.type === 'MEGATASK_ASSIGNED').at(-1).summary;
+  bridge.reassignRemaining(item.project.id, mega.id, { [build().id]: 'sonnet' }, 'Sonnet builds this best.');
+  assert.equal(last(), 'Lead assigned Build: sonnet. Why: Sonnet builds this best.');
+  bridge.reassignRemaining(item.project.id, mega.id, { [build().id]: 'terra' }, '', 'user');
+  assert.equal(last(), 'You assigned Build: terra.');
+  bridge.reassignRemaining(item.project.id, mega.id, { [build().id]: 'sonnet' }, 'Quota of terra is at 15% (switch at 20%).', 'auto');
+  assert.equal(last(), 'Planwharf switched Build: sonnet. Why: Quota of terra is at 15% (switch at 20%).');
+});

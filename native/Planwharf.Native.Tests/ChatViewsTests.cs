@@ -39,6 +39,8 @@ public class ChatViewsTests
         Assert.Equal(("good", "You approved: Add charts"), ChatViews.Event("MEGATASK_APPROVED", "Approved Add charts"));
         Assert.Equal(("start", "Check: the chart"), ChatViews.Event("SUBTASK_STARTED", "Verify the work independently against the job: the chart"));
         Assert.Equal(("bad", "Build stopped."), ChatViews.Event("SUBTASK_BLOCKED", "Build stopped. COMPLETE"));
+        // A model change is a change, not an error, and it shows in the chat.
+        Assert.Equal(("plan", "Build: Model changed to Opus 5.5; the step restarts with it."), ChatViews.Event("SUBTASK_REASSIGNED", "Build: Model changed to Opus 5.5; the step restarts with it."));
     }
 
     [Fact]
