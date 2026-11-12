@@ -177,24 +177,15 @@ public sealed class SkillsTests : IDisposable
         Write("real/SKILL.md", "---\nname: via-link\n---");
         var skills = Path.Combine(home, ".claude", "skills");
         Directory.CreateDirectory(skills);
-        if (!TryJunction(Path.Combine(skills, "link"), Path.Combine(home, "real"))) return;
+        Links.Folder(Path.Combine(skills, "link"), Path.Combine(home, "real"));
         Assert.Empty(Skills.ListSkills(skills));
     }
 
-    static bool TryJunction(string link, string target)
+    [Fact]
+    public void Skills_are_listed_in_the_order_JavaScript_gives()
     {
-        var start = new ProcessStartInfo("cmd")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            Arguments = "/c mklink /J \"" + link + "\" \"" + target + "\""
-        };
-        using var process = Process.Start(start)!;
-        process.StandardOutput.ReadToEnd();
-        process.StandardError.ReadToEnd();
-        process.WaitForExit();
-        return process.ExitCode == 0;
+        // Node: ["Build","agent","Agent","zeta","Alpha","alpha-2","beta"].sort((a, b) => a.localeCompare(b))
+        string[] names = ["Build", "agent", "Agent", "zeta", "Alpha", "alpha-2", "beta"];
+        Assert.Equal(["agent", "Agent", "Alpha", "alpha-2", "beta", "Build", "zeta"], names.Order(Skills.LikeLocaleCompare));
     }
 }

@@ -272,24 +272,11 @@ public sealed class WorkerResultTests : IDisposable
         var real = Write("real-report.md", "findings");
         var reportLink = Path.Combine(folder, "report.md");
         if (Directory.Exists(reportLink)) Directory.Delete(reportLink);
-        var start = new ProcessStartInfo("cmd")
+        // A report that is a link to another file is refused. Windows without Developer Mode cannot create one.
+        if (Links.TryFile(reportLink, real))
         {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            Arguments = "/c mklink \"" + reportLink + "\" \"" + real + "\""
-        };
-        using (var process = Process.Start(start)!)
-        {
-            process.StandardOutput.ReadToEnd();
-            process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (process.ExitCode == 0)
-            {
-                claim["reportPath"] = reportLink;
-                Assert.False(WorkerResult.ReportExists(claim, folder));
-            }
+            claim["reportPath"] = reportLink;
+            Assert.False(WorkerResult.ReportExists(claim, folder));
         }
     }
 }

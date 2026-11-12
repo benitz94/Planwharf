@@ -43,6 +43,16 @@ public static class Skills
         return new Skill(name.Length > 0 ? name : Path.GetFileName(Path.GetDirectoryName(Path.GetFullPath(file)))!, description[..Math.Min(description.Length, 300)]);
     }
 
+    // JavaScript sorts with localeCompare: letters ignore case first ("agent" before "Build"), then a
+    // lower-case name comes before the same name in upper case. The engine runs with invariant
+    // globalization, where culture comparison is plain code order ("Build" before "agent"): this
+    // comparer gives the localeCompare order for the names skills use.
+    public static readonly Comparer<string> LikeLocaleCompare = Comparer<string>.Create((a, b) =>
+    {
+        var folded = string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        return folded != 0 ? folded : -string.CompareOrdinal(a, b);
+    });
+
     public static Skill[] ListSkills(string? dir)
     {
         if (string.IsNullOrEmpty(dir)) return [];
@@ -67,7 +77,7 @@ public static class Skills
             }
         }
         Walk(dir, 3, "yours");
-        return found.Values.OrderBy(s => s.Name, StringComparer.CurrentCulture).ToArray();
+        return found.Values.OrderBy(s => s.Name, LikeLocaleCompare).ToArray();
     }
 
     public static Overview[] SkillsOverview(string? home = null) => Places(home).Where(p => Path.Exists(p.Home))
