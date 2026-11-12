@@ -1,8 +1,0 @@
-{
-  "file": "engine/activity.test.cjs",
-  "command": "node engine/activity.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: readable multi-provider activity, exact targets, latest-action ordering, errors and truncated protocol without invented test success.\n",
-  "stderr": ""
-}

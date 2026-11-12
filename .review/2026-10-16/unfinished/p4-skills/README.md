@@ -1,3 +1,0 @@
-# UNACCEPTED P4/P5 checkpoint
-
-These eleven files and full patch preserve unfinished worker implementation for home review. They are NOT active runtime or approved changes. Do not copy the complete files over the current branch: they include older dependency seeds, while the narrow pager is already integrated separately. Inspect owned-manifest.json, seeded-dependencies.json and p4-skills-review.md; port only reviewed changes with baseline-vs-regression checks. Current known gaps: frontend controls, Grill-with-docs compatibility, trusted assisted-procedure evidence ingestion, native/live provider delivery. Final secret-input correction has worker test proof but awaits independent acceptance.
