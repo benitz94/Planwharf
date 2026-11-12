@@ -12,7 +12,7 @@ namespace Planwharf.Native;
 
 // The main window: projects on the left, the chat with the lead and the crew's work in the middle,
 // and Team or Settings on the right when opened.
-public sealed class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
     readonly ListBox projectList = new() { Background = Brushes.Transparent };
     readonly TextBlock title = new() { FontSize = 20, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
@@ -117,7 +117,7 @@ public sealed class MainWindow : Window
 
     public void OpenSide(string? mode)
     {
-        if (mode == "settings" && api != null) _ = LoadRootAsync();
+        if (mode == "settings" && api != null) _ = LoadSettingsAsync();
         sideMode = mode; sideSig = null;
         foreach (var (name, button) in sideButtons) button.IsChecked = name == mode;
         if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
@@ -125,10 +125,6 @@ public sealed class MainWindow : Window
         Render();
     }
 
-    async Task LoadRootAsync()
-    {
-        try { projectsRoot = await api!.ProjectsRootAsync(); sideSig = null; Render(); } catch { /* shown as empty */ }
-    }
 
     async Task RefreshAsync(bool readOnly)
     {
@@ -418,7 +414,7 @@ public sealed class MainWindow : Window
         var team = TeamViews.Team(snapshot);
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => item["id"]?.GetValue<string>() == projectId);
         var folder = row?["folder"]?.GetValue<string>() ?? "";
-        var sig = sideMode + projectId + folder + projectsRoot + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available));
+        var sig = sideMode + projectId + folder + projectsRoot + (sideMode == "settings" ? SettingsSignature() : "") + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available + m.Bench + m.Enabled + m.UnavailableReason)) + string.Join(",", team.Providers);
         var progress = sideMode == "progress" && projectId != null ? PanelViews.Progress(snapshot, projectId, view?.Status ?? "") : null;
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
         var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);
@@ -516,63 +512,6 @@ public sealed class MainWindow : Window
 
     static TextBlock Heading(string text) => new() { Text = text, FontSize = 16, FontWeight = FontWeight.Bold, Foreground = Palette.Text, Margin = new Thickness(0, 6, 0, 0) };
     static TextBlock Explain(string text) => new() { Text = text, Foreground = Palette.Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap };
-
-    void TeamPanel(TeamView team, string name)
-    {
-        side.Children.Add(Heading("Team"));
-        side.Children.Add(Explain($"Team for {name}. Each project has its own team."));
-        side.Children.Add(Heading("Lead"));
-        side.Children.Add(Explain("Talks with you, plans the work and picks who does what."));
-        var leads = team.Models.Where(m => m.CanLead && m.Available).ToList();
-        var leadMenu = new ComboBox { ItemsSource = leads.Select(m => m.Label).ToList(), SelectedIndex = leads.FindIndex(m => m.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 240 };
-        leadMenu.SelectionChanged += async (_, _) => { if (leadMenu.SelectedIndex >= 0 && leads[leadMenu.SelectedIndex].Id != team.LeadId) await DoAsync(() => api!.SetLeadAsync(projectId!, leads[leadMenu.SelectedIndex].Id, leads[leadMenu.SelectedIndex].Lead), "Lead chosen."); };
-        side.Children.Add(leadMenu);
-        side.Children.Add(Heading($"On the team · {team.Models.Count(m => m.Build || m.Verify || m.Review)}"));
-        side.Children.Add(Explain("Build writes code and tests. Verify checks the work and fixes it, ideally a model from another company. Review is optional."));
-        foreach (var model in team.Models)
-        {
-            var status = !model.Available ? "not available" + (model.UnavailableReason != null ? ": " + model.UnavailableReason : "") : model.QuotaLeft is { } left ? $"{left}% quota left" : "quota not reported";
-            var chips = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = {
-                RoleChip(model, "Build", "worker", model.Build), RoleChip(model, "Verify", "verifier", model.Verify), RoleChip(model, "Review", "reviewer", model.Review) } };
-            side.Children.Add(new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8),
-                Child = new StackPanel { Spacing = 6, Children = {
-                    new TextBlock { Text = model.Label + (model.Lead ? "  · Lead" : ""), Foreground = Palette.Text, FontWeight = FontWeight.SemiBold },
-                    new TextBlock { Text = $"{model.Provider} · {status}", Foreground = model.Available ? Palette.Muted : Palette.Warn, FontSize = 12, TextWrapping = TextWrapping.Wrap },
-                    chips } } });
-        }
-    }
-
-    Control RoleChip(TeamModel model, string label, string role, bool on)
-    {
-        var chip = new ToggleButton { Content = label, IsChecked = on, IsEnabled = model.Available, FontSize = 12, Padding = new Thickness(10, 3) };
-        chip.Click += async (_, _) => await DoAsync(() => api!.SetRolesAsync(projectId!, model.Id, new Dictionary<string, bool> { [role] = !on }), "Team updated.");
-        return chip;
-    }
-
-    void SettingsPanel(string folder, string name)
-    {
-        side.Children.Add(Heading("Settings"));
-        side.Children.Add(Heading("This project"));
-        side.Children.Add(Explain($"Folder on your computer for {name}."));
-        var box = new TextBox { Text = folder, Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" };
-        var browse = new Button { Content = "Browse…", Margin = new Thickness(0, 0, 8, 0) };
-        browse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) box.Text = path; };
-        var save = new Button { Content = "Save", Background = Palette.Accent, Foreground = Palette.AccentText };
-        save.Click += async (_, _) => { if (!string.IsNullOrWhiteSpace(box.Text)) await DoAsync(() => api!.SetFolderAsync(projectId!, box.Text.Trim()), "Folder saved."); };
-        side.Children.Add(box);
-        side.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { browse, save } });
-        side.Children.Add(Heading("Projects folder"));
-        side.Children.Add(Explain("New projects without a folder get one here."));
-        var root = new TextBox { Text = projectsRoot ?? "", Watermark = OperatingSystem.IsWindows() ? @"C:\Projects" : "~/Projects" };
-        var rootBrowse = new Button { Content = "Browse…", Margin = new Thickness(0, 0, 8, 0) };
-        rootBrowse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) root.Text = path; };
-        var rootSave = new Button { Content = "Save", Background = Palette.Accent, Foreground = Palette.AccentText };
-        rootSave.Click += async (_, _) => await DoAsync(async () => { await api!.SetProjectsRootAsync(root.Text?.Trim() ?? ""); projectsRoot = await api.ProjectsRootAsync(); }, "Saved.");
-        side.Children.Add(root);
-        side.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { rootBrowse, rootSave } });
-        side.Children.Add(Heading("About"));
-        side.Children.Add(Explain($"Planwharf {version}, native app (preview). Usage, updates and the other settings are in the desktop or web app for now."));
-    }
 
     // Runs a change, shows its outcome in the hint, and refreshes.
     async Task DoAsync(Func<Task> work, string done)
