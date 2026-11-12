@@ -1,6 +1,6 @@
 'use strict';
 
-const DEFAULT_POLICY = Object.freeze({ minRemainingPercent: null, warningRemainingPercent: null, fallbackModelId: null, alwaysApprove: true });
+const DEFAULT_POLICY = Object.freeze({ minRemainingPercent: null, warningRemainingPercent: null, fallbackModelId: null, alwaysApprove: false });
 function migratePolicy(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid quota policy.');
   const migrated = { ...value };

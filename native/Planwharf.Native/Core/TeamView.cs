@@ -13,8 +13,16 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     public bool CanReview { get; init; } = true;
     // Not available now, and Planwharf tries it again in a few minutes.
     public bool RetrySoon { get; init; }
+    public string ProviderId { get; init; } = "";
+    public string Adapter { get; init; } = "";
+    public bool ProviderEnabled { get; init; } = true;
+    // The user's OK to edit files and run commands without asking each time (off until given).
+    public bool WorksUnasked { get; init; }
 }
-public sealed record ProviderView(string Id, string Label, bool Enabled, int Models);
+public sealed record ProviderView(string Id, string Label, bool Enabled, int Models)
+{
+    public bool WorksUnasked { get; init; }
+}
 public sealed record TeamView(string? LeadId, IReadOnlyList<TeamModel> Models)
 {
     public IReadOnlyList<ProviderView> Providers { get; init; } = [];
@@ -50,12 +58,16 @@ public static class TeamViews
                 Enabled = model["enabled"] is not JsonValue enabled || !enabled.TryGetValue<bool>(out var on) || on,
                 Bench = !new[] { "orchestrator", "worker", "verifier", "reviewer", "supervisor" }.Any(role => B(roles?[role])),
                 CanBuild = Eligible(model, "worker"), CanVerify = Eligible(model, "verifier"), CanReview = Eligible(model, "reviewer"),
-                RetrySoon = model["unavailableAt"] != null
+                RetrySoon = model["unavailableAt"] != null,
+                ProviderId = S(model["providerId"]) is { Length: > 0 } providerId ? providerId : S(model["provider"]),
+                Adapter = S(model["adapter"]) is { Length: > 0 } adapter ? adapter : S(model["provider"]),
+                ProviderEnabled = model["providerEnabled"] is not JsonValue pe || !pe.TryGetValue<bool>(out var providerOn) || providerOn,
+                WorksUnasked = B(model["alwaysApprove"])
             };
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),
             S(provider["label"]) is { Length: > 0 } label ? label : S(provider["id"]), provider["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var on) || on,
-            (provider["models"] as JsonArray)?.Count ?? 0)).ToList();
+            (provider["models"] as JsonArray)?.Count ?? 0) { WorksUnasked = B(provider["policy"]?["alwaysApprove"]) }).ToList();
         return new TeamView(lead, models) { Providers = providers };
     }
 
@@ -66,6 +78,27 @@ public static class TeamViews
         "Review" => model.Review,
         _ => model.Build
     }).ToList();
+
+    // Claude Code, Grok and Antigravity cannot build without working unasked; Codex works inside its sandbox.
+    static readonly string[] NeedsOk = ["claude", "grok", "antigravity"];
+
+    // The AI tools that need the user's OK before the crew (or, for Antigravity, the lead) can work.
+    public static IReadOnlyList<ProviderView> ToolsNeedingOk(TeamView team, bool forLead = false)
+    {
+        var models = forLead ? team.Models.Where(model => model.Id == team.LeadId)
+            : team.Models.Where(model => model.Enabled && model.Available && model.ProviderEnabled && (model.Build || model.Verify || model.Review));
+        return models.Where(model => !model.WorksUnasked && (forLead ? model.Adapter == "antigravity" : NeedsOk.Contains(model.Adapter)))
+            .Select(model => model.ProviderId).Distinct()
+            .Select(id => team.Providers.FirstOrDefault(provider => provider.Id == id) ?? new ProviderView(id, id, true, 0)).ToList();
+    }
+
+    public static string OkQuestion(IReadOnlyList<ProviderView> tools)
+    {
+        var names = tools.Select(tool => tool.Label).ToList();
+        var list = names.Count < 2 ? string.Join("", names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+        var one = names.Count == 1;
+        return $"{list} will work in the project folder without asking each time: {(one ? "it edits" : "they edit")} files and {(one ? "runs" : "run")} commands, such as tests and installs, with network access. Without this {(one ? "it" : "they")} cannot build.\n\nYou can change this at any time in Team, under AI tools.";
+    }
 
     public const string NoGoalText = "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.";
 

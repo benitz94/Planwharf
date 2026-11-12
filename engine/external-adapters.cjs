@@ -35,7 +35,7 @@ function cliSpec(model, folder, prompt, lead, research) {
   const command = configuredCommand(model);
   if (!command) throw new Error('Configured CLI executable not found.');
   const base = config.cliArgs;
-  const yolo = model.policy?.alwaysApprove ?? model.alwaysApprove ?? true;
+  const yolo = model.policy?.alwaysApprove ?? model.alwaysApprove ?? false;
   const permissions = yolo ? config.yoloArgs : config.restrictedArgs;
   if (!Array.isArray(base) || !base.some(arg => typeof arg === 'string' && arg.includes('{model}'))) throw new Error('CLI_CONFIGURATION_INVALID: cliArgs must explicitly contain {model}.');
   if (!Array.isArray(permissions)) throw new Error('PERMISSION_MODE_UNSUPPORTED: configure the CLI arguments for the selected YOLO mode explicitly.');
@@ -60,7 +60,7 @@ function registerExternalAdapters(register) {
       if (!lead && !model.apiResultOutputPath) throw new Error('API workers require the structured MegaTask result contract.');
       const config = apiConfig(model); apiHeaders(config);
       return { command: process.execPath, args: [path.join(__dirname, 'api-agent.cjs')], cwd: folder, provider: model.providerId || model.provider, adapter: 'api', model: model.cli,
-        stdin: JSON.stringify({ config, model: model.cli, prompt, lead, advisory: model.advisory === true, alwaysApprove: model.policy?.alwaysApprove ?? model.alwaysApprove ?? true, resultOutputPath: model.apiResultOutputPath, resultIdentity: model.apiResultIdentity }) };
+        stdin: JSON.stringify({ config, model: model.cli, prompt, lead, advisory: model.advisory === true, alwaysApprove: model.policy?.alwaysApprove ?? model.alwaysApprove ?? false, resultOutputPath: model.apiResultOutputPath, resultIdentity: model.apiResultIdentity }) };
     },
     discover: async provider => {
       const config = apiConfig(provider);

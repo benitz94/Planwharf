@@ -151,12 +151,33 @@ public sealed partial class MainWindow
         }
     }
 
+    // "Always approve" is off until the user says yes: the question comes before the work, never halfway.
+    // The OK is saved per AI tool; false means the user said no and nothing starts.
+    async Task<bool> EnsureOkAsync(bool forLead = false)
+    {
+        if (api == null || snapshot == null) return false;
+        var tools = TeamViews.ToolsNeedingOk(TeamViews.Team(snapshot), forLead);
+        if (tools.Count == 0) return true;
+        var names = string.Join(" and ", tools.Select(tool => tool.Label));
+        if (!await new ConfirmDialog(TeamViews.OkQuestion(tools), "Allow " + names, "Planwharf needs your OK", "Cancel").ShowDialog<bool>(this))
+        {
+            hint.Text = "Nothing started."; hint.Foreground = Palette.Warn;
+            return false;
+        }
+        foreach (var tool in tools) await api.SetWorksUnaskedAsync(tool.Id, true);
+        await RefreshAsync(readOnly: false);
+        return true;
+    }
+
     async Task SendAsync()
     {
         var text = input.Text?.Trim();
         if (api == null || string.IsNullOrEmpty(text) || projectId == null || Pending != null) return;
         if (await HandleCommandAsync(text)) { input.Text = ""; return; }
         if (snapshot != null && TeamViews.Team(snapshot).LeadId == null) { hint.Text = "Choose a lead first (Team panel)."; hint.Foreground = Palette.Warn; OpenSide("team"); return; }
+        // Antigravity cannot even answer without the OK.
+        try { if (!await EnsureOkAsync(forLead: true)) return; }
+        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; return; }
         var id = projectId;
         if (!chatSessions.TryGetValue(id, out var session)) chatSessions[id] = session = "chat-" + Guid.NewGuid().ToString("N")[..8];
         pendingByProject[id] = (text, DateTimeOffset.UtcNow);

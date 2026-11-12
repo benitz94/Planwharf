@@ -53,13 +53,13 @@ if (process.platform === 'win32') {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 for (const provider of ['grok', 'codex', 'antigravity']) process.env['PLANWHARF_' + provider.toUpperCase()] = process.execPath;
-const grok = launchSpec({ provider: 'grok', cli: 'grok-4.6' }, 'D:/demo folder', 'job');
+const grok = launchSpec({ provider: 'grok', cli: 'grok-4.6', alwaysApprove: true }, 'D:/demo folder', 'job');
 assert.equal(grok.args[grok.args.indexOf('-m') + 1], 'grok-4.6');
 assert.ok(!grok.args.includes('-p'));
 assert.equal(fs.readFileSync(grok.promptFile, 'utf8'), 'job');
 assert.ok(grok.args.includes('--always-approve'));
 assert.ok(grok.args.includes('--no-subagents'));
-const agy = launchSpec({ provider: 'antigravity', cli: 'gemini-3.1-pro-high' }, 'D:/demo', 'job');
+const agy = launchSpec({ provider: 'antigravity', cli: 'gemini-3.1-pro-high', alwaysApprove: true }, 'D:/demo', 'job');
 assert.ok(agy.args.includes('--dangerously-skip-permissions'));
 assert.equal(agy.cwd, 'D:/demo');
 assert.ok(!agy.args.includes('--cwd'));
@@ -67,7 +67,7 @@ assert.ok(!agy.args.includes('-p'));
 assert.equal(agy.args[agy.args.indexOf('--input-format') + 1], 'stream-json');
 assert.equal(JSON.parse(agy.stdin).message.content, 'job');
 assert.equal(JSON.parse(agy.stdin).event, 'user');
-const codex = launchSpec({ provider: 'codex', cli: 'gpt-6-astra' }, 'D:/demo', 'job');
+const codex = launchSpec({ provider: 'codex', cli: 'gpt-6-astra', alwaysApprove: true }, 'D:/demo', 'job');
 assert.equal(codex.args[0], 'exec');
 assert.ok(codex.args.includes('--dangerously-bypass-approvals-and-sandbox'));
 assert.equal(codex.args.at(-1), '-');
@@ -78,7 +78,10 @@ assert.ok(agy.stdin.endsWith('\n'));
 for (const model of [{ provider: 'codex', cli: 'grok-4.7' }, { provider: 'grok', cli: 'gemini-pro' }, { provider: 'antigravity', cli: 'grok-4.6' }, { provider: 'bogus', cli: 'gpt-5' }]) assert.throws(() => launchSpec(model, '.', 'job'), /mismatch/);
 assert.throws(() => launchSpec({ available: false, unavailableReason: 'Account unavailable' }, '.', 'job'), /Account unavailable/);
 for (const [provider, cli] of [['grok', 'grok-4.6'], ['codex', 'gpt-6-astra'], ['antigravity', 'gemini-3.1-pro-high']]) {
-  const lead = launchSpec({ provider, cli }, '.', 'Coordinate only', true);
+  // An approved lead runs as approved; without the OK it is restricted (Antigravity cannot run at all).
+  const lead = launchSpec({ provider, cli, alwaysApprove: true }, '.', 'Coordinate only', true);
+  if (provider === 'antigravity') assert.throws(() => launchSpec({ provider, cli }, '.', 'Coordinate only', true), /PERMISSION_MODE_UNSUPPORTED/);
+  else assert.ok(!launchSpec({ provider, cli }, '.', 'Coordinate only', true).args.includes(provider === 'grok' ? '--always-approve' : '--dangerously-bypass-approvals-and-sandbox'));
   assert.ok(lead.args.includes(provider === 'grok' ? '--always-approve' : provider === 'codex' ? '--dangerously-bypass-approvals-and-sandbox' : '--dangerously-skip-permissions'));
   assert.ok(!lead.args.includes('read-only'));
   assert.ok(!lead.args.includes('plan'));

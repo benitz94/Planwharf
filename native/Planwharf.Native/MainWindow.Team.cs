@@ -48,6 +48,11 @@ public sealed partial class MainWindow
             var toggle = new ToggleSwitch { OnContent = text, OffContent = text, IsChecked = provider.Enabled };
             toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != provider.Enabled) await DoAsync(() => api!.SetProviderEnabledAsync(provider.Id, toggle.IsChecked == true), $"{provider.Label} turned {(toggle.IsChecked == true ? "on" : "off")}."); };
             side.Children.Add(toggle);
+            // The user's OK to edit files and run commands without asking each time; off until given.
+            var unasked = new CheckBox { Content = "Works without asking", IsChecked = provider.WorksUnasked, Margin = new Thickness(44, -6, 0, 4), FontSize = 12 };
+            ToolTip.SetTip(unasked, "Edits files and runs commands in the project folder without asking each time");
+            unasked.IsCheckedChanged += async (_, _) => { if ((unasked.IsChecked == true) != provider.WorksUnasked) await DoAsync(() => api!.SetWorksUnaskedAsync(provider.Id, unasked.IsChecked == true), unasked.IsChecked == true ? $"{provider.Label} works without asking now." : $"{provider.Label} asks again before it builds."); };
+            side.Children.Add(unasked);
         }
         var look = new Button { Content = "Look for models again" };
         look.Click += async (_, _) => await DoAsync(() => api!.RefreshModelsAsync(), "Model list updated.");

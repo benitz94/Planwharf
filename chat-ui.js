@@ -538,7 +538,7 @@
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
-          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
+          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button></div></div>`).join('')}
         <button type="button" class="btn btn-small" data-action="refresh-models">${ic('refresh')}Look for models again</button></div>
       <div class="section">${head('plug', 't-violet', 'Connect a model by API')}<p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
         <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
@@ -816,6 +816,8 @@
     const row = project();
     if (!row) { toast('Create or select a project first.'); return; }
     if (!lead()) { toast('Choose a lead first (Team panel).'); openPanel('team'); return; }
+    // Antigravity cannot even answer without the OK.
+    if (toolsNeedingOk(true).length) { await withOk(() => send(text, extra), true); return; }
     state.pending[row.id] = { text, since: Date.now() }; state.threadSig = '';
     render();
     const poll = setInterval(async () => { try { const snap = await getJson('/api/orchestrator?readOnly=1'); state.orchestra = { ...state.orchestra, thinkingByProject: snap.thinkingByProject || {} }; renderThread(); } catch {} }, 900);
@@ -842,7 +844,43 @@
     }
     await startCrew(row);
   }
+  // Claude Code, Grok and Antigravity cannot build without working unasked; Codex works inside its sandbox.
+  // "Always approve" is off until the user says yes, so the question comes before the work, never halfway.
+  const NEEDS_OK = ['claude', 'grok', 'antigravity'];
+  function toolsNeedingOk(forLead = false) {
+    const list = forLead ? [lead()].filter(Boolean)
+      : models().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && (model.roles?.worker || model.roles?.verifier || model.roles?.reviewer));
+    const ids = [...new Set(list.filter(model => model.alwaysApprove !== true && (forLead ? model.adapter === 'antigravity' : NEEDS_OK.includes(model.adapter))).map(model => model.providerId || model.provider))];
+    return ids.map(id => (state.orchestra?.providers || []).find(provider => provider.id === id) || { id, label: id });
+  }
+  const listOf = names => names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1);
+  function askForOk(tools) {
+    const dialog = $('ok-dialog');
+    const names = listOf(tools.map(tool => tool.label || tool.id));
+    $('ok-text').textContent = `${names} will work in the project folder without asking each time: ${tools.length === 1 ? 'it edits' : 'they edit'} files and ${tools.length === 1 ? 'runs' : 'run'} commands, such as tests and installs, with network access. Without this ${tools.length === 1 ? 'it' : 'they'} cannot build.`;
+    $('ok-allow').textContent = 'Allow ' + names;
+    return new Promise(resolve => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'allow'), { once: true });
+      dialog.returnValue = ''; dialog.showModal();
+    });
+  }
+  // Runs work only after the user's OK for every AI tool that needs it; the OK is saved per tool.
+  async function withOk(run, forLead = false) {
+    const tools = toolsNeedingOk(forLead);
+    if (tools.length) {
+      if (!await askForOk(tools)) { toast('Nothing started.'); return false; }
+      try { for (const tool of tools) await post('/api/providers/policy', { id: tool.id, policy: { alwaysApprove: true } }); }
+      catch (error) { toast(error.message); return false; }
+      await refresh({ tick: false });
+    }
+    await run();
+    return true;
+  }
+  async function setWorksUnasked(providerId, on) {
+    await act(() => post('/api/providers/policy', { id: providerId, policy: { alwaysApprove: on } }), on ? 'It works without asking now.' : 'It asks again before it builds.');
+  }
   async function startCrew(row) {
+    if (toolsNeedingOk().length) { await withOk(() => startCrew(row)); return; }
     await act(async () => {
       if (state.orchestra.mode !== 'auto') await post('/api/orchestrator/mode', { mode: 'auto' });
       return post('/api/orchestrator/autonomy', { projectId: row.id, enabled: true });
@@ -964,6 +1002,7 @@
     if (target.dataset.ignoreAlert) { act(() => post('/api/supervisor/ignore', { projectId: state.projectId, alertId: target.dataset.ignoreAlert }), 'Warning ignored.'); return; }
     if (target.dataset.arm) { state.armed = target.dataset.arm; state.sideSig = ''; renderSide(); return; }
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
+    if (target.dataset.unasked) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.unasked); if (provider) setWorksUnasked(provider.id, provider.policy?.alwaysApprove !== true); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
     if (action === 'copy-msg') { copyReply(target); return; }
@@ -974,8 +1013,8 @@
     else if (action === 'theme') { document.documentElement.dataset.theme = currentTheme() === 'dark' ? 'light' : 'dark'; store.set('theme', document.documentElement.dataset.theme); state.sideSig = ''; renderSide(); }
     else if (action === 'toggle-mode') act(() => post('/api/orchestrator/mode', { mode: state.orchestra?.mode === 'auto' ? 'manual' : 'auto' }), 'Saved.');
     else if (action === 'repo-refresh') loadRepo(state.projectId, true);
-    else if (action === 'approve') act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.');
-    else if (action === 'resume') act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.');
+    else if (action === 'approve') withOk(() => act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.'));
+    else if (action === 'resume') withOk(() => act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.'));
     else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
     else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');
     else if (action === 'check-updates') loadUpdates(true);

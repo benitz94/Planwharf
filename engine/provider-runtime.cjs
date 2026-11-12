@@ -90,9 +90,12 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   }
   if (research && !require('./provider-adapters.cjs').adapterFor(model)?.sourceProtectedResearch) throw new Error('Research source protection is not supported by the requested adapter: ' + adapter);
   const cli = model.cli;
-  const alwaysApprove = model.policy?.alwaysApprove ?? model.alwaysApprove ?? true;
+  // Off unless the user said yes for this AI tool (Team, or the question before the crew starts).
+  const alwaysApprove = model.policy?.alwaysApprove ?? model.alwaysApprove ?? false;
   if (typeof alwaysApprove !== 'boolean') throw new Error('Invalid alwaysApprove model policy.');
   if (!alwaysApprove && adapter === 'antigravity') throw new Error('PERMISSION_MODE_UNSUPPORTED: Antigravity has no verified unattended approval bridge. Enable Always approve / YOLO explicitly or select another adapter.');
+  // Claude Code and Grok workers cannot edit files or run commands without it: say so instead of failing halfway.
+  if (!alwaysApprove && !lead && !research && ['claude', 'grok'].includes(adapter)) throw new Error(`PERMISSION_NEEDED: ${provider} needs your OK to work in the project folder without asking each time. Allow it in Team > AI tools, or choose another model for this step.`);
   const command = executable(adapter);
   if (!command) throw new Error(provider + ' executable not found (native executable required)');
   let args;

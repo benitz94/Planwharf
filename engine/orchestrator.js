@@ -1672,7 +1672,7 @@ function createOrchestrator(options) {
       item.accountScope = scope;
       item.label = require('./provider-accounts.cjs').accountLabel(item.label, account);
       item.providerEnabled = provider ? (store.providerEnabled[provider.id] ?? provider.enabled) : true;
-      item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? true, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
+      item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? false, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
       if (provider) {
         const shared = providerPolicyFor(provider, models, store).policy;
         item.policy = { minRemainingPercent: shared.minRemainingPercent, warningRemainingPercent: shared.warningRemainingPercent, fallbackModelId: null, alwaysApprove: shared.alwaysApprove };

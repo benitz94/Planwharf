@@ -72,7 +72,7 @@ let server;
   let questionInfo;
   const notebook = { schema: 1, project, revisions: [{ id: 1, mode: 'manual', title: 'Spec', createdAt: new Date().toISOString(), direction: 'Inspect repository', state: 'Ready', closed: [], open: [] }], tasks: [] };
   const orchestra = createOrchestrator({ readPlan: async () => notebook, attempts: createAttemptEngine({ dir: path.join(dir, 'attempts') }),
-    models: [{ id: 'lead', label: 'Lead', kind: 'default', enabled: true }], readRepository: inspect,
+    models: [{ id: 'lead', label: 'Lead', kind: 'default', enabled: true, alwaysApprove: true }], readRepository: inspect,
     inspectFolder: defaultInspect, askModel: async info => { questionInfo = info; return 'Checked'; } });
   await orchestra.setOrchestrator('lead'); await orchestra.ask('How does local compare with GitHub?', 'demo');
   assert.equal(questionInfo.github, project.github); assert.equal(questionInfo.state.focus.repository.remote.private, true);
