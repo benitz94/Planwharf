@@ -137,4 +137,57 @@ function parseAssignment(text, count, allowed) {
   return { assign: ids, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 
-module.exports = { LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+// The lead splits the work into parts that can run at the same time, each limited to the files it may
+// change, and picks a model for each by its weight. Planwharf checks every rule; a reply that breaks one
+// is refused and the work keeps its usual plan (build, then verify).
+const MAX_PARTS = 10;
+const SIZES = ['light', 'normal', 'heavy'];
+function splitPrompt({ name, goal, builders, verifiers, files, said }) {
+  const earlier = typeof said === 'string' && said.trim() ? said.trim() : '';
+  const quoted = earlier.length > 2500 ? '…' + earlier.slice(-2499) : earlier;
+  const describe = model => `${model.id} (${model.label}, provider ${model.provider}, ${model.tier}${Number.isFinite(model.left) ? `, ${model.left}% quota left` : ', quota not reported'})`;
+  const listed = (files || []).slice(0, 400);
+  return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
+    ...(quoted ? [`You told the user in the chat, before this work started:\n<<<\n${quoted}\n>>>`] : []),
+    `Your crew can work in parallel: up to ${MAX_PARTS} workers at the same time, all in the same project folder.`,
+    'Split the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.',
+    'For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).',
+    'Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.',
+    'Give light parts to light models and heavy parts to the strongest, as quota allows.',
+    'Also name "verify": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.',
+    'Models allowed to build: ' + builders.map(describe).join('; '),
+    'Models allowed to verify: ' + verifiers.map(describe).join('; '),
+    ...(listed.length ? [`Project files (${listed.length}${(files || []).length > listed.length ? ' of ' + files.length : ''}):\n${listed.join('\n')}`] : []),
+    'Do not run commands or read files: decide from this message only.',
+    'Reply with one JSON object and nothing else: {"parts":[{"title":"","detail":"","files":["relative/path"],"dependsOn":[],"size":"normal","model":"id"}],"verify":"id","why":"one sentence"}'].join('\n');
+}
+
+const normalPath = file => file.replace(/\\/g, '/').replace(/\/+$/, '');
+// Two scopes overlap when they share a file, or one is a folder holding the other.
+const overlaps = (a, b) => a.some(x => b.some(y => x === y || y.startsWith(x + '/') || x.startsWith(y + '/')));
+
+function parseSplit(text, { builders, verifiers }) {
+  if (typeof text !== 'string') return null;
+  const parsed = jsonObjects(text).filter(item => item && Array.isArray(item.parts)).at(-1);
+  if (!parsed || !parsed.parts.length || parsed.parts.length > MAX_PARTS || !verifiers.includes(parsed.verify)) return null;
+  const parts = [];
+  for (const [index, part] of parsed.parts.entries()) {
+    if (!part || typeof part.title !== 'string' || !part.title.trim() || typeof part.detail !== 'string' || !part.detail.trim()) return null;
+    if (!builders.includes(part.model) || !SIZES.includes(part.size)) return null;
+    if (!Array.isArray(part.files) || !part.files.length || !part.files.every(file => typeof file === 'string' && file.trim())) return null;
+    const files = part.files.map(file => normalPath(file.trim()));
+    // A scope stays inside the project folder: no absolute path, no way out.
+    if (files.some(file => !file || /^([a-zA-Z]:|\/)/.test(file) || file.split('/').includes('..'))) return null;
+    const dependsOn = part.dependsOn === undefined ? [] : part.dependsOn;
+    if (!Array.isArray(dependsOn) || !dependsOn.every(parent => Number.isInteger(parent) && parent >= 0 && parent < index)) return null;
+    parts.push({ title: part.title.trim().slice(0, 200), detail: part.detail.trim().slice(0, 12000), files, dependsOn: [...new Set(dependsOn)], size: part.size, model: part.model });
+  }
+  // Parts that would change the same files are put in order, earlier first: they never run together.
+  const before = index => { const seen = new Set(), queue = [...parts[index].dependsOn]; while (queue.length) { const next = queue.pop(); if (!seen.has(next)) { seen.add(next); queue.push(...parts[next].dependsOn); } } return seen; };
+  for (let later = 1; later < parts.length; later += 1)
+    for (let earlier = 0; earlier < later; earlier += 1)
+      if (overlaps(parts[earlier].files, parts[later].files) && !before(later).has(earlier)) parts[later].dependsOn = [...parts[later].dependsOn, earlier].sort((a, b) => a - b);
+  return { parts, verify: parsed.verify, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
+}
+
+module.exports = { MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };

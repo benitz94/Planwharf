@@ -2597,6 +2597,47 @@ function createOrchestrator(options) {
     persist();
   }
   // The lead chooses the crew for a multi-slice MegaTask. Any failure keeps the proposal as it is.
+  // The files of a project, for the lead to split the work by: git's list, or the top-level names.
+  function projectFiles(folder) {
+    const where = linkedWorkspace(folder);
+    if (!where) return [];
+    try {
+      const listed = require('node:child_process').spawnSync('git', ['ls-files', '-z'], { cwd: where, encoding: 'utf8', windowsHide: true, timeout: 10000, maxBuffer: 16 * 1024 * 1024 });
+      if (listed.status === 0) return listed.stdout.split('\0').filter(Boolean);
+    } catch { /* not a git folder */ }
+    try { return fs.readdirSync(where).filter(name => !name.startsWith('.')); } catch { return []; }
+  }
+  // Before the work starts, the lead may split it into parts that run at the same time, each limited to
+  // its files and given a model by its weight, then one check of the whole. A reply that breaks a rule
+  // keeps the usual plan, and the lead then only picks the crew.
+  async function planByLead(projectId, item, megaTaskId) {
+    let mega;
+    try { mega = bridge.paint(bridge.target(projectId, megaTaskId)); } catch { return false; }
+    const lead = leadModel();
+    const subs = mega.subTasks || [];
+    if (!lead || typeof opts.askModel !== 'function' || !subs.length || subs.some(sub => sub.type !== 'IMPLEMENTATION' || sub.goldModel)) return false;
+    const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
+    const tierName = model => ['premium', 'default', 'light'][leadTier(model)] || 'default';
+    const describe = model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider, tier: tierName(model), left: quotaLeft(model, plansLive) ?? undefined });
+    const builders = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' }));
+    const verifiers = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }));
+    // With a single model that can build there is no crew to split the work among: no lead call.
+    if (builders.length < 2 || !verifiers.length) return false;
+    const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
+    const question = autonomy.splitPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction || mega.goal, builders: builders.map(describe), verifiers: verifiers.map(describe), files: projectFiles(item.project.folder), said });
+    let spoken;
+    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return false; }
+    const split = autonomy.parseSplit(spoken && typeof spoken === 'object' ? spoken.answer : spoken, { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) });
+    if (!split) { note(projectId, 'The lead did not split the work in a usable way; it keeps the usual plan.'); return false; }
+    // The check of the whole uses the same instructions as the usual verify step.
+    const check = dispatchPlan([{ id: 'build' }, { id: 'check' }], { title: mega.title }, {})[1].slice;
+    const several = split.parts.length > 1;
+    const parts = [...split.parts.map(part => ({ modelId: part.model, slice: part.title, detail: part.detail, dependsOn: part.dependsOn, size: part.size, ...(several ? { scope: part.files } : {}) })),
+      { modelId: split.verify, slice: check, detail: check, dependsOn: split.parts.map((_, index) => index) }];
+    try { bridge.replan(projectId, megaTaskId, parts, split.why); return true; }
+    catch (error) { note(projectId, 'The lead split was refused: ' + error.message); return false; }
+  }
+
   async function assignByLead(projectId, item, megaTaskId) {
     let subs;
     try { subs = bridge.paint(bridge.target(projectId, megaTaskId)).subTasks || []; } catch { return; }
@@ -2635,7 +2676,8 @@ function createOrchestrator(options) {
     }
     if (step.type === 'approve') {
       settings.approved.push(step.megaTaskId); persist();
-      await assignByLead(projectId, item, step.megaTaskId);
+      // The lead splits the work if that helps; otherwise it only picks the crew of the usual plan.
+      if (!(await planByLead(projectId, item, step.megaTaskId))) await assignByLead(projectId, item, step.megaTaskId);
       const approved = await exclusive(() => approve(projectId, step.megaTaskId, { actor: 'autonomy-setting' }));
       if (!approved?.ok) stopAutonomy(projectId, settings, 'APPROVAL_REFUSED: ' + (approved?.reason || 'unknown reason'));
       return;
