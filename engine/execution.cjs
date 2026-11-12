@@ -1,4 +1,6 @@
 'use strict';
+// The role a step plays, as the chat shows it.
+const stepRole = sub => sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || '')) ? 'Verify' : 'Build';
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -139,7 +141,8 @@ function createExecutionBridge(options) {
     sub.completedAt = result.status === 'COMPLETE' ? now() : null;
     attempts.attachResult({ attemptId: part.attemptId, resultPath: part.structuredResultPath, status: result.status, exitCode: result.exitCode });
     attempts.closeAttempt({ attemptId: part.attemptId, reason: result.status.toLowerCase() });
-    event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
+    // A step stopped to change its model did not fail: it is shown as a change, not as an error.
+    event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : result.modelChange ? 'SUBTASK_REASSIGNED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
   }
   // A provider that refused the slice for credits or quota did no work: close that attempt,
   // put the model on cooldown, and give the slice to another eligible model.
@@ -461,7 +464,8 @@ function createExecutionBridge(options) {
     if (subs.every((sub, index) => sub.assignedModelId === chosen[index].id)) return mega;
     subs.forEach((sub, index) => Object.assign(sub, { assignedModelId: chosen[index].id, proposedProvider: chosen[index].provider, proposedCli: chosen[index].cli }));
     mega.blockers = proposalBlockers(mega);
-    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${subs.map((sub, index) => `${sub.title} to ${chosen[index].label || chosen[index].id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
+    // Short and readable: the role of each step and its model, then the lead's reason in full.
+    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${subs.map((sub, index) => `${stepRole(sub)}: ${chosen[index].label || chosen[index].id}`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId });
     paint(mega); persist();
     return mega;
   }
@@ -470,7 +474,8 @@ function createExecutionBridge(options) {
   function logTail(file, max = 3000) {
     try { const text = fs.readFileSync(file, 'utf8'); return text.slice(-max).split('\n').slice(1).join('\n').trim(); } catch { return ''; }
   }
-  function reassignRemaining(projectId, megaTaskId, assignments, why = '') {
+  // by: who changed the crew, as the chat says it: the lead, the user, or Planwharf's automatic switch.
+  function reassignRemaining(projectId, megaTaskId, assignments, why = '', by = 'lead') {
     const mega = target(projectId, megaTaskId);
     reconcile(mega);
     if (['COMPLETE', 'CANCELLED'].includes(mega.status)) throw new Error(`This work is ${mega.status.toLowerCase()}: start new work instead.`);
@@ -502,7 +507,8 @@ function createExecutionBridge(options) {
       Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(['BLOCKED', 'RUNNING'].includes(sub.status) ? { status: 'PENDING', resultId: null } : {}) });
     }
     if (mega.status === 'READY_FOR_APPROVAL') mega.blockers = proposalBlockers(mega);
-    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${changes.map(([sub, model]) => `${sub.title} to ${model.label || model.id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
+    const who = by === 'user' ? 'You assigned' : by === 'auto' ? 'Planwharf switched' : 'Lead assigned';
+    event(projectId, 'MEGATASK_ASSIGNED', `${who} ${changes.map(([sub, model]) => `${stepRole(sub)}: ${model.label || model.id}`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId });
     paint(mega); persist();
     return mega;
   }

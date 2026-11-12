@@ -37,3 +37,13 @@ test('no switch without an eligible model above the threshold, and none when swi
   assert.deepEqual(quotaSwitches({ running, models, plans, thresholdPercent: 20, enabled: false, eligible: () => true }), []);
   assert.deepEqual(quotaSwitches({ running, models: [models[0], models[3]], plans, thresholdPercent: 20, eligible: () => true }), []);
 });
+
+test('the switch keeps the check independent: it prefers a company the other steps do not use', () => {
+  // Build runs on terra (ChatGPT, low); Verify uses a Gemini model. With room in both, Claude is
+  // preferred to Gemini, though Gemini has more quota, so build and check stay with different companies.
+  const withProviders = [model('terra', 'chatgpt', { provider: 'codex' }), model('sonnet', 'claude', { provider: 'claude' }), model('gemini-pro', 'gemini', { provider: 'antigravity' })];
+  const running = [{ subTaskId: 's1', modelId: 'terra', avoidProviders: ['antigravity'] }];
+  assert.equal(quotaSwitches({ running, models: withProviders, plans, thresholdPercent: 20, eligible: () => true })[0].toModelId, 'sonnet');
+  // Only the other company's model has room: the step still moves rather than stop.
+  assert.equal(quotaSwitches({ running, models: [withProviders[0], withProviders[2]], plans, thresholdPercent: 20, eligible: () => true })[0].toModelId, 'gemini-pro');
+});

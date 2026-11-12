@@ -91,7 +91,10 @@ function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent
       .filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false && eligible(model, step))
       .map(model => ({ model, left: quotaLeft(model, plans) }))
       .filter(item => item.left !== null && !lowQuota(item.model, plans, thresholdPercent))
-      .sort((a, b) => b.left - a.left)[0];
+      // A company the other steps of the work do not use comes first, so build and check stay independent;
+      // then the most quota left.
+      .map(item => ({ ...item, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) }))
+      .sort((a, b) => (a.shared - b.shared) || (b.left - a.left))[0];
     if (best) out.push({ subTaskId: step.subTaskId, fromModelId: current.id, toModelId: best.model.id, leftPercent: quotaLeft(current, plans) });
   }
   return out;

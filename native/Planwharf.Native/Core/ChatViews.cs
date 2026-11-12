@@ -52,7 +52,7 @@ public static class ChatViews
     public static string WorkingText(string who, DateTimeOffset? since, DateTimeOffset now) =>
         $"{who} is working{(since is { } start ? " · " + (WorkDetails.Duration((now - start).TotalMilliseconds) is { Length: > 0 } d ? d : "1 s") : "")}";
 
-    static readonly Regex Shown = new("PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED)|CHECKPOINT|GOAL|AUTONOMY");
+    static readonly Regex Shown = new("PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
     static readonly Regex News = new("SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
 
     // Plain words: no internal states, no repeated titles, no long verify prefix.

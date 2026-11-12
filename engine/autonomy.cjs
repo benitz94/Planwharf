@@ -111,8 +111,14 @@ function strictDecisionPrompt(question) {
 
 // Before approval the lead picks who does each slice, instead of the catalog order.
 // Each slice lists only the models whose roles allow it (Worker builds, Verifier checks).
-function assignmentPrompt({ name, goal, slices, candidates }) {
+function assignmentPrompt({ name, goal, slices, candidates, said }) {
+  // The crew a lead proposed in the chat is its own plan: it comes with the choice, so the lead does not
+  // choose again from nothing. The end of the answer is kept, where the crew is usually proposed.
+  const earlier = typeof said === 'string' && said.trim() ? said.trim() : '';
+  const quoted = earlier.length > 2500 ? '…' + earlier.slice(-2499) : earlier;
   return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
+    ...(quoted ? [`You told the user in the chat, before this work started:\n<<<\n${quoted}\n>>>`,
+      'If you proposed a crew there, keep that crew unless one of its models is not allowed below; if you choose differently, say why in "why".'] : []),
     'The MegaTask has these slices, run in order. Each lists the models allowed to take it:',
     ...slices.map((slice, index) => `${index + 1}. ${slice}\n   Allowed: ${candidates[index].map(worker => `${worker.id} (${worker.label}, provider ${worker.provider})`).join('; ')}`),
     'Choose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.',

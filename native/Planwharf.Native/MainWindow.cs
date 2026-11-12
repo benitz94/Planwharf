@@ -35,7 +35,7 @@ public sealed partial class MainWindow : Window
     PlanwharfApi? api;
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
-    bool busy;
+    bool busy, menuOpen;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
@@ -287,6 +287,9 @@ public sealed partial class MainWindow : Window
             var choices = TeamViews.ModelsFor(team, step.Role).ToList();
             if (choices.All(m => m.Id != step.ModelId)) choices.Insert(0, new TeamModel(step.ModelId, step.Model.Length > 0 ? step.Model : "not assigned", "", null, true, null, false, false, false, false, false));
             var menu = new ComboBox { ItemsSource = choices.Select(m => m.Label + (m.QuotaLeft is { } left ? $" · {left}% left" : "")).ToList(), SelectedIndex = choices.FindIndex(m => m.Id == step.ModelId), MinWidth = 220 };
+            // While the menu is open the chat is not redrawn, or the menu and the choice would vanish under the pointer.
+            menu.DropDownOpened += (_, _) => menuOpen = true;
+            menu.DropDownClosed += (_, _) => { menuOpen = false; threadSig = null; };
             menu.SelectionChanged += async (_, _) => { if (menu.SelectedIndex >= 0 && choices[menu.SelectedIndex].Id != step.ModelId) await ChangeStepAsync(step, choices[menu.SelectedIndex]); };
             model = menu;
         }
