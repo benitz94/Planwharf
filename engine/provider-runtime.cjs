@@ -130,7 +130,12 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
     if (model.tools?.mcp !== true) args.push('-c', 'mcp_servers={}');
     if (research) args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=true', '-c', 'sandbox_workspace_write.writable_roots=[]');
     else if (alwaysApprove) args.push('--dangerously-bypass-approvals-and-sandbox');
-    else args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=false', '-c', 'sandbox_workspace_write.writable_roots=[]');
+    else {
+      // In its sandbox Codex writes only in the project folder. Its result file lives in Planwharf's data
+      // folder: that one folder is added, or the worker's whole work is lost for want of a result.
+      const resultFolder = typeof model.apiResultOutputPath === 'string' && model.apiResultOutputPath ? [path.dirname(model.apiResultOutputPath)] : [];
+      args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=false', '-c', 'sandbox_workspace_write.writable_roots=' + JSON.stringify(resultFolder));
+    }
     if (lead) args.push('--json');
     // Keep conversation text off the OS command line (Windows has a 32K limit).
     args.push('-');

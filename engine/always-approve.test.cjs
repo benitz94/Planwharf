@@ -50,3 +50,16 @@ test('a worker that needs the OK does not start without it; a lead reads without
   assert.ok(codex.args.includes('sandbox_workspace_write.network_access=false'));
   assert.ok(!codex.args.includes('--dangerously-bypass-approvals-and-sandbox'));
 }));
+
+test('a sandboxed Codex worker can write its result file, and nothing else outside the project', () => withExecutables(() => {
+  // The result file lives in Planwharf's data folder, outside the project: without it the worker's
+  // work is lost ("ended without a valid structured result"), as seen in the first real run.
+  const result = path.join(os.tmpdir(), 'pw data', 'attempts', 'a1', 'result.json');
+  const spec = launchSpec({ id: 'luna', provider: 'codex', cli: 'gpt-6-luna', apiResultOutputPath: result }, os.tmpdir(), 'Fixture');
+  const roots = spec.args.find(arg => arg.startsWith('sandbox_workspace_write.writable_roots='));
+  assert.equal(roots, 'sandbox_workspace_write.writable_roots=' + JSON.stringify([path.dirname(result)]));
+  assert.ok(spec.args.includes('sandbox_workspace_write.network_access=false'), 'still no network');
+  // Without a result file there is nothing extra to write.
+  const plain = launchSpec({ id: 'luna', provider: 'codex', cli: 'gpt-6-luna' }, os.tmpdir(), 'Fixture');
+  assert.ok(plain.args.includes('sandbox_workspace_write.writable_roots=[]'));
+}));
