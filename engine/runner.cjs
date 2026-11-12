@@ -322,8 +322,18 @@ function parseAskLine(acc, row) {
     if (block.type === 'thinking' && typeof block.thinking === 'string') acc.thinking += block.thinking;
     if (block.type === 'tool_use') {
       const name = block.name || 'tool';
-      acc.thinking += `${acc.thinking ? '\n' : ''}tool: ${name}`;
+      // Its input arrives in pieces: the step is written when the block ends, with what it did.
+      if (Number.isInteger(event.index)) (acc.tools ||= {})[event.index] = { id: block.id, name, json: '' };
+      else noteTool(acc, block.id, name, block.input);
     }
+  }
+  const pending = Number.isInteger(event.index) && acc.tools ? acc.tools[event.index] : null;
+  if (pending && delta && delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') pending.json += delta.partial_json;
+  if (pending && event.type === 'content_block_stop') {
+    let input = null;
+    try { input = JSON.parse(pending.json || '{}'); } catch { /* an unreadable input still names the tool */ }
+    noteTool(acc, pending.id, pending.name, input);
+    delete acc.tools[event.index];
   }
   if (row.type === 'assistant' && row.message && Array.isArray(row.message.content)) {
     const texts = [];
@@ -331,10 +341,38 @@ function parseAskLine(acc, row) {
       if (!part || typeof part !== 'object') return;
       if (part.type === 'thinking' && typeof part.thinking === 'string') acc.thinking += part.thinking;
       if (part.type === 'text' && typeof part.text === 'string') texts.push(part.text);
+      if (part.type === 'tool_use') noteTool(acc, part.id, part.name || 'tool', part.input);
     });
     if (texts.length) acc.answer = texts.join('');
   }
+  // A tool the lead may not use, or one that failed, says so under the step.
+  if (row.type === 'user' && row.message && Array.isArray(row.message.content)) {
+    for (const part of row.message.content) {
+      if (!part || part.type !== 'tool_result' || part.is_error !== true) continue;
+      const said = (typeof part.content === 'string' ? part.content : Array.isArray(part.content) ? part.content.map(item => item && typeof item.text === 'string' ? item.text : '').join(' ') : '').replace(/\s+/g, ' ').trim();
+      acc.thinking += `${acc.thinking ? '\n' : ''}  ↳ ${/denied|permission|not allowed/i.test(said) ? 'refused' : 'error'}: ${clipText(said || 'no details', 160)}`;
+    }
+  }
   return acc;
+}
+
+function clipText(text, max) { return text.length > max ? text.slice(0, max - 1) + '…' : text; }
+
+// One line per tool the lead used, with what it touched: a file, a search, a command.
+function toolDetail(input) {
+  if (!input || typeof input !== 'object') return '';
+  const place = [input.file_path, input.path, input.notebook_path, input.url].find(value => typeof value === 'string' && value);
+  const shortPlace = place && place.length > 100 ? '…' + place.slice(-99) : place;
+  const text = typeof input.command === 'string' ? input.command
+    : typeof input.pattern === 'string' ? JSON.stringify(input.pattern) + (shortPlace ? ' in ' + shortPlace : '')
+    : shortPlace || (typeof input.description === 'string' ? input.description : '');
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  return flat ? ' ' + clipText(flat, 160) : '';
+}
+
+function noteTool(acc, id, name, input) {
+  if (id) { acc.toolIds ||= new Set(); if (acc.toolIds.has(id)) return; acc.toolIds.add(id); }
+  acc.thinking += `${acc.thinking ? '\n' : ''}tool: ${name}${toolDetail(input)}`;
 }
 
 function createAskStream(expectedModel) {
@@ -356,6 +394,9 @@ function createAskStream(expectedModel) {
       }
       acc.rest = '';
     }
+    // A tool still being written when the stream ended is listed by name.
+    for (const pending of Object.values(acc.tools || {})) noteTool(acc, pending.id, pending.name, null);
+    acc.tools = {};
     const thinking = String(acc.thinking || '').trim();
     if (acc.expectedModel && (!acc.resultSeen || !acc.modelSeen) && !acc.failure) {
       acc.failure = 'PROVIDER_PROTOCOL_CHANGED'; acc.error = 'PROVIDER_PROTOCOL_CHANGED: Claude Code returned no final result or exact model identity.';
