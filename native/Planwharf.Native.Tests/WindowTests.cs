@@ -30,4 +30,39 @@ public class WindowTests
         frame!.Save(output);
         Assert.True(new FileInfo(output).Length > 10_000);
     }
+
+    // The crew at work, a step's model menu, and the Team panel on the right.
+    [AvaloniaFact]
+    public void Draws_the_team_panel_and_the_step_menus()
+    {
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        window.Show(SampleState.Working());
+        window.OpenSide("team");
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        var output = shot != null ? Path.ChangeExtension(shot, null) + "-team.png" : Path.Combine(AppContext.BaseDirectory, "native-team.png");
+        frame!.Save(output);
+        Assert.True(new FileInfo(output).Length > 10_000);
+    }
+
+    [AvaloniaFact]
+    public void Draws_the_settings_panel_and_the_new_project_dialog()
+    {
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        window.Show(SampleState.Working());
+        window.OpenSide("settings");
+        var dialog = new ProjectDialog();
+        dialog.Show();
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        foreach (var (name, frame) in new[] { ("settings", window.CaptureRenderedFrame()), ("new-project", dialog.CaptureRenderedFrame()) })
+        {
+            Assert.NotNull(frame);
+            var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
+            frame!.Save(output);
+            Assert.True(new FileInfo(output).Length > 3_000);
+        }
+    }
 }

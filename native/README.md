@@ -9,9 +9,14 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 - Shows the chat with the lead and lets you write to it.
 - Shows the crew's work: title, progress, each step with its role, model and status, and what was done.
 - One clear next action: **Let the crew do it** (with the goal agreed in the chat, after a confirmation), **Stop the crew**, **Approve and start**, **Resume**; and why the crew stopped, in plain English.
+- **+ New project**: a name and an existing folder, or no folder and Planwharf creates one in the projects folder.
+- **Team**, per project: choose the lead; give each model Build, Verify or Review; quota left for each model; models that are not available are shown greyed with the reason.
+- The model of each step that is not done can be changed from its menu, among the team models with that role; a step at work asks first, then restarts on the new model.
+- Before the crew starts, the app says what is missing: the project folder, a lead, a model that builds.
+- **Settings**: the project's folder, the projects folder for new projects, the version.
 - Closing the window, or the system ending the app, saves unfinished work and stops the server.
 
-Not yet in the native app (use the web or desktop version meanwhile): Team, Usage, Settings, the model menu on each step, Commit and push, new projects, installers and in-app updates.
+Not yet in the native app (use the web or desktop version meanwhile): Usage, Commit and push, importing or removing projects, provider connections, installers and in-app updates.
 
 ## Build and run
 ```sh
