@@ -13,11 +13,36 @@ public sealed class WorkerResultTests : IDisposable
     static JsonObject Result() => JsonNode.Parse("""{"resultId":"R","attemptId":"A","subTaskId":"S","megaTaskId":"M","status":"COMPLETE","summary":"done","nextAction":"","filesChanged":[],"tests":[],"blockers":[],"unknown":{"keep":true}}""")!.AsObject();
     public void Dispose()
     {
-        // Git marks objects read-only. Directory.Delete refuses those files on Windows.
-        if (!Directory.Exists(folder)) return;
-        foreach (var entry in new DirectoryInfo(folder).EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
-            entry.Attributes = FileAttributes.Normal;
-        Directory.Delete(folder, true);
+        // Git marks objects read-only. Junctions and symlinks must be removed
+        // without walking through them, or Windows refuses the delete.
+        DeleteTree(folder);
+    }
+
+    static void DeleteTree(string path)
+    {
+        if (!Directory.Exists(path)) return;
+        foreach (var child in new DirectoryInfo(path).GetFileSystemInfos())
+        {
+            if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                child.Attributes = FileAttributes.Normal;
+                if (child is DirectoryInfo) Directory.Delete(child.FullName);
+                else File.Delete(child.FullName);
+            }
+            else if (child is DirectoryInfo) DeleteTree(child.FullName);
+            else
+            {
+                child.Attributes = FileAttributes.Normal;
+                child.Delete();
+            }
+        }
+        try { Directory.Delete(path, true); }
+        catch (UnauthorizedAccessException)
+        {
+            foreach (var entry in new DirectoryInfo(path).EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                entry.Attributes = FileAttributes.Normal;
+            Directory.Delete(path, true);
+        }
     }
     string Write(string name, string contents)
     {
@@ -165,5 +190,106 @@ public sealed class WorkerResultTests : IDisposable
         contract = WorkerResult.ResultContract(opts);
         Assert.Contains("Do not write a result file; Planwharf saves it and records the time:", contract);
         Assert.DoesNotContain("Keep the text execution evidence separate.", contract);
+        opts["structuredResultPath"] = "";
+        Assert.Equal("", WorkerResult.ResultContract(opts));
+        opts["structuredResultPath"] = 0;
+        Assert.Equal("", WorkerResult.ResultContract(opts));
+        opts["structuredResultPath"] = "out.json";
+        opts.Remove("attempt");
+        Assert.DoesNotContain("\"attemptId\"", WorkerResult.ResultContract(opts));
+    }
+
+    [Fact]
+    public void ReadJSON_error_paths_and_concurrent_reads()
+    {
+        Assert.Null(WorkerResult.ReadJSON(null));
+        Assert.Null(WorkerResult.ReadJSON(folder));
+        Assert.Null(WorkerResult.ReadJSON(Write("empty.json", "")));
+        Assert.Null(WorkerResult.ReadJSON(Write("null.json", "null")));
+        var file = Write("ok.json", "{\"n\":1}");
+        using (var hold = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            Assert.Null(WorkerResult.ReadJSON(file));
+        Write("ok.json", "{\"n\":1}");
+        var hits = 0;
+        Parallel.For(0, 32, _ =>
+        {
+            var node = WorkerResult.ReadJSON(file);
+            if (node?["n"]?.GetValue<int>() == 1) Interlocked.Increment(ref hits);
+        });
+        Assert.Equal(32, hits);
+    }
+
+    [Fact]
+    public void Validated_result_keeps_createdAt_and_allows_nonzero_exit_unless_COMPLETE()
+    {
+        var result = Result();
+        result["createdAt"] = "2026-01-01T00:00:00Z";
+        var file = Write("result.json", result.ToJsonString());
+        var exit = JsonNode.Parse("""{"attemptId":"A","provider":"codex","model":"gpt-6-astra","exitCode":0,"createdAt":"2026-11-12T19:00:00Z"}""")!.AsObject();
+        var read = WorkerResult.ReadValidatedResult(file, Identity(), Write("exit.json", exit.ToJsonString()));
+        Assert.Equal("2026-01-01T00:00:00Z", read!["createdAt"]!.GetValue<string>());
+        result.Remove("createdAt");
+        Write("result.json", result.ToJsonString());
+        var identity = Identity();
+        identity.Remove("provider");
+        identity.Remove("cli");
+        exit["provider"] = "other";
+        exit["model"] = "other";
+        Assert.NotNull(WorkerResult.ReadValidatedResult(file, identity, Write("exit.json", exit.ToJsonString())));
+        identity["provider"] = "codex";
+        Assert.Null(WorkerResult.ReadValidatedResult(file, identity, Write("exit.json", exit.ToJsonString())));
+        result["status"] = "BLOCKED";
+        Write("result.json", result.ToJsonString());
+        exit["provider"] = "codex";
+        exit["model"] = "gpt-6-astra";
+        exit["exitCode"] = 7;
+        Assert.NotNull(WorkerResult.ReadValidatedResult(file, Identity(), Write("exit.json", exit.ToJsonString())));
+        Assert.False(WorkerResult.ValidateResult(new JsonArray(), Identity()));
+        Assert.False(WorkerResult.ValidateResult(null, Identity()));
+    }
+
+    [Fact]
+    public void Missing_claims_ignore_blank_names_and_FAILED_status()
+    {
+        var claim = Result();
+        claim["filesChanged"] = new JsonArray("", "  ", "ghost.txt");
+        Assert.Equal(new[] { "ghost.txt" }, WorkerResult.MissingClaims(claim, folder));
+        claim["status"] = "FAILED";
+        Assert.Empty(WorkerResult.MissingClaims(claim, folder));
+        claim["status"] = "COMPLETE";
+        claim["filesChanged"] = "ghost.txt";
+        Assert.Empty(WorkerResult.MissingClaims(claim, folder));
+        claim["filesChanged"] = new JsonArray("ghost.txt");
+        var copies = new JsonObject[8];
+        Parallel.For(0, copies.Length, i => copies[i] = WorkerResult.RejectMissingClaims(claim, folder));
+        Assert.All(copies, copy => Assert.Equal("FAILED", copy["status"]!.GetValue<string>()));
+        Assert.Equal("COMPLETE", claim["status"]!.GetValue<string>());
+        Directory.CreateDirectory(Path.Combine(folder, "report.md"));
+        claim["reportPath"] = Path.Combine(folder, "report.md");
+        Assert.False(WorkerResult.ReportExists(claim, folder));
+        claim["reportPath"] = "report.md";
+        Assert.False(WorkerResult.ReportExists(claim, folder));
+        var real = Write("real-report.md", "findings");
+        var reportLink = Path.Combine(folder, "report.md");
+        if (Directory.Exists(reportLink)) Directory.Delete(reportLink);
+        var start = new ProcessStartInfo("cmd")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            Arguments = "/c mklink \"" + reportLink + "\" \"" + real + "\""
+        };
+        using (var process = Process.Start(start)!)
+        {
+            process.StandardOutput.ReadToEnd();
+            process.StandardError.ReadToEnd();
+            process.WaitForExit();
+            if (process.ExitCode == 0)
+            {
+                claim["reportPath"] = reportLink;
+                Assert.False(WorkerResult.ReportExists(claim, folder));
+            }
+        }
     }
 }

@@ -46,5 +46,43 @@ public class StructuredFinalTests
     [InlineData("grok", "{\"structuredOutput\":{}}")]
     [InlineData("claude", "")]
     [InlineData("claude", null)]
+    [InlineData("claude", "   \r\n\t  ")]
+    [InlineData("Claude", "{\"type\":\"result\",\"is_error\":false,\"structured_output\":{}}")]
     public void Other_adapters_and_empty_output_yield_nothing(string adapter, string? text) => Assert.Null(StructuredFinal.ReadFinalResult(adapter, text));
+
+    [Fact]
+    public void Later_success_recovers_from_an_earlier_error_event()
+    {
+        const string error = """{"type":"result","is_error":true,"structured_output":{"summary":"bad"}}""";
+        const string success = """{"type":"result","is_error":false,"structured_output":{"summary":"ok"}}""";
+        Assert.Equal("ok", StructuredFinal.ReadFinalResult("claude", error + "\n" + success)!["summary"]!.GetValue<string>());
+        Assert.Null(StructuredFinal.ReadFinalResult("claude", success + "\n" + error));
+        Assert.Equal("kept", StructuredFinal.ReadFinalResult("claude", """{"type":"result","structured_output":{"summary":"kept"}}""")!["summary"]!.GetValue<string>());
+        Assert.Null(StructuredFinal.ReadFinalResult("claude", """{"type":"result","is_error":"false","structured_output":{"summary":"x"}}"""));
+        Assert.Equal(0, StructuredFinal.ReadFinalResult("claude", """{"type":"result","is_error":0,"structured_output":0}""")!.GetValue<int>());
+    }
+
+    [Fact]
+    public void Adapter_falls_back_to_provider_only_when_adapter_is_falsy()
+    {
+        Assert.True(StructuredFinal.SupportsFinalResult(new JsonObject { ["adapter"] = "claude", ["provider"] = "grok" }));
+        Assert.False(StructuredFinal.SupportsFinalResult(new JsonObject { ["adapter"] = "grok", ["provider"] = "claude" }));
+        Assert.True(StructuredFinal.SupportsFinalResult(new JsonObject { ["adapter"] = 0, ["provider"] = "claude" }));
+        Assert.False(StructuredFinal.SupportsFinalResult(new JsonObject { ["adapter"] = "claude-code" }));
+        Assert.Equal(8 * 1024 * 1024, StructuredFinal.MaxOutputChars);
+    }
+
+    [Fact]
+    public void Schema_keeps_unknown_identity_values_and_optional_research_fields()
+    {
+        var schema = StructuredFinal.ResultSchema(new JsonObject { ["resultId"] = "R", ["attemptId"] = JsonValue.Create((string?)null) });
+        Assert.Null(schema["required"]!.AsArray().FirstOrDefault(x => x!.GetValue<string>() == "createdAt"));
+        Assert.Null(schema["properties"]!["attemptId"]!["enum"]![0]);
+        Assert.Equal("string", schema["properties"]!["reportPath"]!["type"]!.GetValue<string>());
+        Assert.Equal("array", schema["properties"]!["sources"]!["type"]!.GetValue<string>());
+        Assert.Equal("string", schema["properties"]!["tests"]!["items"]!["properties"]!["evidence"]!["type"]!.GetValue<string>());
+        var clone = schema["required"]!.DeepClone();
+        schema["required"]!.AsArray().Add((JsonNode?)JsonValue.Create("extra"));
+        Assert.Equal(10, clone.AsArray().Count);
+    }
 }

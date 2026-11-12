@@ -1,4 +1,5 @@
 // Port of engine/structured-final.cjs.
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Planwharf.Engine;
@@ -14,8 +15,19 @@ public static class StructuredFinal
     internal static string Trim(string text) => text.Trim(WhiteSpace);
     internal static string? String(JsonNode? node) => node is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
     internal static JsonNode? Field(JsonNode? node, string key) => node is JsonObject o ? o[key] : null;
-    internal static bool Truthy(JsonNode? node) => node is not null && !(node is JsonValue v &&
-        (v.TryGetValue<bool>(out var b) && !b || v.TryGetValue<string>(out var s) && s.Length == 0 || v.TryGetValue<double>(out var n) && n == 0));
+    // JS: null, false, "" and numeric 0 are falsy. JsonValue may store 0 as int, long or double.
+    internal static bool Truthy(JsonNode? node)
+    {
+        if (node is null) return false;
+        if (node is not JsonValue v) return true;
+        return v.GetValueKind() switch
+        {
+            JsonValueKind.Undefined or JsonValueKind.Null or JsonValueKind.False => false,
+            JsonValueKind.String => v.GetValue<string>().Length > 0,
+            JsonValueKind.Number => Convert.ToDouble(v.ToString(), System.Globalization.CultureInfo.InvariantCulture) != 0,
+            _ => true
+        };
+    }
     public static bool SupportsFinalResult(JsonNode? model)
     {
         var adapter = Field(model, "adapter");
