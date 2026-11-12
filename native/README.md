@@ -15,10 +15,11 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 - **Team**, per project: choose the lead; give each model Build, Verify or Review; quota left for each model; models that are not available are shown greyed with the reason.
 - The model of each step that is not done can be changed from its menu, among the team models with that role; a step at work asks first, then restarts on the new model.
 - Before the crew starts, the app says what is missing: the project folder, a lead, a model that builds.
+- **Progress** (status, steps, recent activity), **Usage** (quota left for each limit with its reset time, lead calls and crew work, "not reported" when a provider does not say) and **Files** (changes not yet saved in Git), in the panel on the right.
 - **Settings**: the project's folder, the projects folder for new projects, the version.
 - Closing the window, or the system ending the app, saves unfinished work and stops the server.
 
-Not yet in the native app (use the web or desktop version meanwhile): the Usage, Progress and Files panels, importing or removing projects, provider connections, installers and in-app updates.
+Not yet in the native app (use the web or desktop version meanwhile): importing or removing projects, provider connections, installers and in-app updates.
 
 ## Build and run
 ```sh

@@ -23,8 +23,10 @@ public sealed class MainWindow : Window
     readonly TextBlock hint = new() { Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
     readonly TextBox input = new() { Watermark = "Tell the lead what you want built…", AcceptsReturn = false, MinHeight = 40 };
     readonly Button send = new() { Content = "Send", Background = Palette.Accent, Foreground = Palette.AccentText, Padding = new Thickness(16, 8), Margin = new Thickness(8, 0, 0, 0) };
-    readonly ToggleButton teamButton = new() { Content = "Team", Margin = new Thickness(0, 0, 8, 0) };
-    readonly ToggleButton settingsButton = new() { Content = "Settings" };
+    // The panels on the right, as in the chat page.
+    static readonly (string Mode, string Label)[] Panels = [("team", "Team"), ("progress", "Progress"), ("usage", "Usage"), ("files", "Files"), ("settings", "Settings")];
+    readonly Dictionary<string, ToggleButton> sideButtons = Panels.ToDictionary(panel => panel.Mode, panel => new ToggleButton { Content = panel.Label, Margin = new Thickness(6, 0, 0, 0) });
+    readonly Dictionary<string, (JsonNode? Json, string? Error)> repoRaw = new();
     readonly StackPanel side = new() { Spacing = 10, Margin = new Thickness(16) };
     readonly Border sidePanel;
     readonly string version;
@@ -59,12 +61,15 @@ public sealed class MainWindow : Window
         DockPanel.SetDock(top, Dock.Top);
 
         var badge = new Border { Background = Brush.Parse("#1d3328"), CornerRadius = new CornerRadius(8), Padding = new Thickness(8, 2), Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Child = badgeText };
-        var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Children = { teamButton, settingsButton } };
+        var tools = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        foreach (var (mode, button) in sideButtons)
+        {
+            tools.Children.Add(button);
+            button.Click += (_, _) => OpenSide(button.IsChecked == true ? mode : null);
+        }
         var headerRow = new DockPanel { Children = { tools, new StackPanel { Orientation = Orientation.Horizontal, Children = { title, badge } } } };
         DockPanel.SetDock(tools, Dock.Right);
         var header = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(24, 12), Child = headerRow };
-        teamButton.Click += (_, _) => OpenSide(teamButton.IsChecked == true ? "team" : null);
-        settingsButton.Click += (_, _) => OpenSide(settingsButton.IsChecked == true ? "settings" : null);
 
         var actions = new DockPanel { Margin = new Thickness(0, 0, 0, 10), Children = { actionButton, hint } };
         DockPanel.SetDock(actionButton, Dock.Left);
@@ -104,13 +109,18 @@ public sealed class MainWindow : Window
     public void Show(JsonNode state) { snapshot = state; Render(); }
 
     // For the window tests: the repository as the server would report it.
-    public void ShowRepo(string projectId, string workId, RepoView repo) { repos[projectId + "|" + workId] = repo; threadSig = null; Render(); }
+    public void ShowRepo(string projectId, string workId, JsonNode repository)
+    {
+        repos[projectId + "|" + workId] = WorkDetails.Repo(repository); repoRaw[projectId] = (repository, null);
+        threadSig = sideSig = null; Render();
+    }
 
     public void OpenSide(string? mode)
     {
         if (mode == "settings" && api != null) _ = LoadRootAsync();
         sideMode = mode; sideSig = null;
-        teamButton.IsChecked = mode == "team"; settingsButton.IsChecked = mode == "settings";
+        foreach (var (name, button) in sideButtons) button.IsChecked = name == mode;
+        if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
         sidePanel.IsVisible = mode != null;
         Render();
     }
@@ -298,6 +308,11 @@ public sealed class MainWindow : Window
         if (done)
         {
             panel.Children.Add(Line("Try the result in the project folder. Planwharf did not commit or publish anything.", Palette.Muted, 13));
+            var seeFiles = new Button { Content = "See changed files" };
+            seeFiles.Click += (_, _) => OpenSide("files");
+            var seeUsage = new Button { Content = "See usage" };
+            seeUsage.Click += (_, _) => OpenSide("usage");
+            panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { seeFiles, seeUsage } });
             if (GitBox(projectId, work, card.Repo) is { } git) panel.Children.Add(git);
         }
         return new Border { BorderBrush = done ? Palette.Accent : stopped ? Palette.Warn : Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
@@ -389,10 +404,12 @@ public sealed class MainWindow : Window
     {
         var key = projectId + "|" + workId;
         if (api == null || !repoLoading.Add(key)) return;
-        try { repos[key] = WorkDetails.Repo(await api.RepositoryAsync(projectId, refresh)); }
-        catch (Exception error) { repos[key] = new RepoView(false, null, 0, error.Message); }
-        finally { repoLoading.Remove(key); threadSig = null; Render(); }
+        try { var json = await api.RepositoryAsync(projectId, refresh); repos[key] = WorkDetails.Repo(json); repoRaw[projectId] = (json, null); }
+        catch (Exception error) { repos[key] = new RepoView(false, null, 0, error.Message); repoRaw[projectId] = (null, error.Message); }
+        finally { repoLoading.Remove(key); threadSig = sideSig = null; Render(); }
     }
+
+    string CurrentWorkId() => snapshot == null ? "" : ProjectViews.Project(snapshot, projectId)?.Work?.Id ?? "";
 
     // Team and Settings, on the right.
     void RenderSide(ProjectView? view)
@@ -402,11 +419,99 @@ public sealed class MainWindow : Window
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => item["id"]?.GetValue<string>() == projectId);
         var folder = row?["folder"]?.GetValue<string>() ?? "";
         var sig = sideMode + projectId + folder + projectsRoot + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available));
+        var progress = sideMode == "progress" && projectId != null ? PanelViews.Progress(snapshot, projectId, view?.Status ?? "") : null;
+        var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
+        var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);
+        var files = sideMode == "files" ? PanelViews.Files(raw.Json, folder, raw.Error) : null;
+        sig += progress is { } p ? p.Status + p.Next + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
+        sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) : "";
+        sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
         if (sig == sideSig) return;
         sideSig = sig;
         side.Children.Clear();
-        if (sideMode == "team") TeamPanel(team, view?.Name ?? "");
-        else SettingsPanel(folder, view?.Name ?? "");
+        switch (sideMode)
+        {
+            case "team": TeamPanel(team, view?.Name ?? ""); break;
+            case "progress" when progress != null: ProgressSide(progress); break;
+            case "usage" when usage != null: UsageSide(usage); break;
+            case "files" when files != null: FilesSide(files, folder); break;
+            default: SettingsPanel(folder, view?.Name ?? ""); break;
+        }
+    }
+
+    static Control Item(string badge, string text, string? sub = null, IBrush? color = null)
+    {
+        var body = new StackPanel { Children = { new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Text, FontSize = 13 } } };
+        if (!string.IsNullOrEmpty(sub)) body.Children.Add(Explain(sub));
+        var tag = new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), Padding = new Thickness(6, 1), Margin = new Thickness(0, 1, 8, 0),
+            VerticalAlignment = VerticalAlignment.Top, MinWidth = 64, Child = new TextBlock { Text = badge, FontSize = 11, Foreground = color ?? Palette.Muted, HorizontalAlignment = HorizontalAlignment.Center } };
+        var row = new DockPanel { Children = { tag, body } };
+        DockPanel.SetDock(tag, Dock.Left);
+        return row;
+    }
+
+    void ProgressSide(ProgressPanel panel)
+    {
+        side.Children.Add(Heading("Progress"));
+        side.Children.Add(Heading("Now"));
+        side.Children.Add(Line(panel.Status, Palette.Accent, 13, FontWeight.SemiBold));
+        if (panel.Next.Length > 0) side.Children.Add(Line(panel.Next, Palette.Text, 13));
+        if (panel.Steps.Count > 0)
+        {
+            side.Children.Add(Heading("Steps"));
+            foreach (var step in panel.Steps) side.Children.Add(Item(step.Status, step.Title, step.Model, step.Status == "complete" ? Palette.Accent : step.Status is "failed" or "blocked" ? Palette.Danger : null));
+        }
+        side.Children.Add(Heading("Recent activity"));
+        if (panel.Recent.Count == 0) side.Children.Add(Explain("Nothing yet."));
+        foreach (var (at, text) in panel.Recent) side.Children.Add(Item(at, text));
+        side.Children.Add(Explain("Folder: " + (panel.Folder.Length > 0 ? panel.Folder : "not set")));
+    }
+
+    void UsageSide(UsagePanel panel)
+    {
+        side.Children.Add(Heading("Usage"));
+        side.Children.Add(Heading("Quota left"));
+        if (panel.Plans.Count == 0) side.Children.Add(Explain("No provider reports quota."));
+        foreach (var plan in panel.Plans)
+        {
+            var card = new StackPanel { Spacing = 4, Children = { Line(plan.Label, Palette.Text, 14, FontWeight.SemiBold) } };
+            if (plan.Note != null) card.Children.Add(Explain(plan.Note));
+            foreach (var window in plan.Windows)
+            {
+                card.Children.Add(Explain(string.Join(" · ", new[] { (window.Name.Length > 0 ? window.Name + ": " : "") + $"{window.LeftPct}% left", window.Resets }.Where(part => part.Length > 0))));
+                card.Children.Add(new ProgressBar { Minimum = 0, Maximum = 100, Value = Math.Clamp(window.LeftPct, 0, 100), Height = 6, Foreground = window.LeftPct < 20 ? Palette.Danger : Palette.Accent });
+            }
+            side.Children.Add(new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(12, 8), Child = card });
+        }
+        foreach (var (heading, rows) in new[] { ("Lead calls", panel.Lead), ("Crew work", panel.Crew) })
+        {
+            side.Children.Add(Heading(heading));
+            if (rows.Count == 0) side.Children.Add(Explain("None yet."));
+            foreach (var (model, text) in rows)
+                side.Children.Add(new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13, Inlines = new Avalonia.Controls.Documents.InlineCollection {
+                    new Avalonia.Controls.Documents.Run(model) { FontWeight = FontWeight.SemiBold, Foreground = Palette.Text }, new Avalonia.Controls.Documents.Run(" · " + text) { Foreground = Palette.Muted } } });
+        }
+        side.Children.Add(Explain("Calls · time · output tokens. A provider that does not report tokens shows \"not reported\", never a guess."));
+    }
+
+    void FilesSide(FilesPanel panel, string folder)
+    {
+        side.Children.Add(Heading("Changed files"));
+        var again = new Button { Content = "Check again" };
+        again.Click += async (_, _) => { if (projectId != null) await LoadRepoAsync(projectId, CurrentWorkId(), true); };
+        if (panel.Message != null)
+        {
+            side.Children.Add(Line(panel.Message, Palette.Muted, 13));
+            if (folder.Length > 0) side.Children.Add(again);
+            return;
+        }
+        side.Children.Add(Heading("Not yet saved in Git"));
+        side.Children.Add(Explain($"Files the crew or you changed since the last commit on {(panel.Branch.Length > 0 ? panel.Branch : "the current branch")}."));
+        if (panel.Files.Count == 0) side.Children.Add(Line("Nothing changed. The folder matches the last commit.", Palette.Text, 13));
+        foreach (var file in panel.Files) side.Children.Add(Item(file.Kind, file.Path, null, file.Kind == "conflict" ? Palette.Danger : file.Kind is "new" or "added" ? Palette.Accent : null));
+        if (panel.Total > panel.Files.Count) side.Children.Add(Explain($"Showing {panel.Files.Count} of {panel.Total}."));
+        side.Children.Add(Explain(folder + (panel.CheckedAt.Length > 0 ? " · checked " + panel.CheckedAt : "")));
+        side.Children.Add(again);
     }
 
     static TextBlock Heading(string text) => new() { Text = text, FontSize = 16, FontWeight = FontWeight.Bold, Foreground = Palette.Text, Margin = new Thickness(0, 6, 0, 0) };
