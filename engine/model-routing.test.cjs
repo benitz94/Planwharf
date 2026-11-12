@@ -42,7 +42,7 @@ const savedExecutable = process.env.PLANWHARF_ANTIGRAVITY;
 try {
   process.env.PLANWHARF_ANTIGRAVITY = process.execPath;
   for (const cli of ['qwen/future-exact-id', 'kimi-future-exact-id', 'claude/custom-id']) {
-    const configured = normalizeModels([{ id: 'generic', label: 'Any display label', provider: 'antigravity', cli, modelRouting: 'configured', enabled: true }])[0];
+    const configured = normalizeModels([{ id: 'generic', label: 'Any display label', provider: 'antigravity', cli, modelRouting: 'configured', enabled: true, alwaysApprove: true }])[0];
     assert.equal(cliModelOf(configured), cli);
     const spec = launchSpec(configured, '.', 'Isolated fixture prompt');
     assert.equal(spec.provider, 'antigravity');

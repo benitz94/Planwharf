@@ -525,6 +525,7 @@ public sealed partial class MainWindow : Window
                         if (!await new ConfirmDialog($"The crew will work on: {view.NextGoal}", "Start").ShowDialog<bool>(this)) break;
                         await api.SaveGoalAsync(projectId, view.NextGoal);
                     }
+                    if (!await EnsureOkAsync()) break;
                     if (snapshot["mode"]?.GetValue<string>() != "auto") await api.SetModeAsync("auto");
                     await api.SetAutonomyAsync(projectId, true);
                     break;
@@ -532,8 +533,8 @@ public sealed partial class MainWindow : Window
                     await api.SetAutonomyAsync(projectId, false);
                     try { await api.StopAsync(projectId); } catch { /* nothing running */ }
                     break;
-                case CrewAction.Approve when view.MegaTaskId != null: await api.ApproveAsync(projectId, view.MegaTaskId); break;
-                case CrewAction.Resume: await api.ResumeAsync(projectId); break;
+                case CrewAction.Approve when view.MegaTaskId != null: if (await EnsureOkAsync()) await api.ApproveAsync(projectId, view.MegaTaskId); break;
+                case CrewAction.Resume: if (await EnsureOkAsync()) await api.ResumeAsync(projectId); break;
                 case CrewAction.StopWork: await api.StopAsync(projectId); break;
             }
         }

@@ -56,6 +56,12 @@ public class TeamServerTests
             Assert.False(TeamViews.Team(await api.SnapshotAsync(readOnly: false, id)).Providers.First(item => item.Id == provider.Id).Enabled);
             await api.SetProviderEnabledAsync(provider.Id, true);
 
+            // The OK to work without asking: off on a fresh install, saved per AI tool.
+            Assert.All(team.Providers, item => Assert.False(item.WorksUnasked));
+            await api.SetWorksUnaskedAsync(provider.Id, true);
+            Assert.True(TeamViews.Team(await api.SnapshotAsync(readOnly: false, id)).Providers.First(item => item.Id == provider.Id).WorksUnasked);
+            await api.SetWorksUnaskedAsync(provider.Id, false);
+
             // An API connection stores the variable's name, never a key; its models join the list.
             await api.AddConnectionAsync("Sample API", "https://api.example.com/v1", "openai", "SAMPLE_API_KEY", ["sample-chat"], toolsEnabled: false);
             team = TeamViews.Team(await api.SnapshotAsync(readOnly: false, id));

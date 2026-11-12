@@ -1,6 +1,6 @@
 'use strict';
 const { validatePolicy, migratePolicy } = require('./model-policy.cjs');
-const DEFAULT_PROVIDER_POLICY = Object.freeze({ minRemainingPercent: null, warningRemainingPercent: null, fallbackProviderId: null, alwaysApprove: true });
+const DEFAULT_PROVIDER_POLICY = Object.freeze({ minRemainingPercent: null, warningRemainingPercent: null, fallbackProviderId: null, alwaysApprove: false });
 function validateProviderPolicy(value) {
   value = migratePolicy(value);
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !Object.hasOwn(DEFAULT_PROVIDER_POLICY, key))) throw new Error('Invalid provider policy fields.');
@@ -15,7 +15,7 @@ function providerPolicyFor(provider, models, settings = {}) {
   if (provider.policy) return { policy: validateProviderPolicy(provider.policy), source: 'configured' };
   const siblings = models.filter(model => (model.providerId || model.provider) === provider.id);
   const legacy = siblings.filter(model => settings.modelPolicies?.[model.id] || model.policy || model.alwaysApprove !== undefined).map(model => ({ model,
-    policy: validatePolicy({ alwaysApprove: model.alwaysApprove ?? true, ...migratePolicy(model.policy || {}), ...migratePolicy(settings.modelPolicies?.[model.id] || {}) }) }));
+    policy: validatePolicy({ alwaysApprove: model.alwaysApprove ?? false, ...migratePolicy(model.policy || {}), ...migratePolicy(settings.modelPolicies?.[model.id] || {}) }) }));
   if (!legacy.length) return { policy: { ...DEFAULT_PROVIDER_POLICY }, source: 'default' };
   const minima = legacy.map(row => row.policy.minRemainingPercent).filter(value => value !== null);
   const minRemainingPercent = minima.length ? Math.max(...minima) : null;

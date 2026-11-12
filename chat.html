@@ -66,6 +66,17 @@
     </aside>
   </div>
 
+  <dialog id="ok-dialog" aria-labelledby="ok-dialog-title">
+    <form method="dialog">
+      <h2 id="ok-dialog-title">Planwharf needs your OK</h2>
+      <p id="ok-text"></p>
+      <p class="muted small">You can change this at any time in Team, under AI tools.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn" value="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" value="allow" id="ok-allow">Allow</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="project-dialog" aria-labelledby="project-dialog-title">
     <form id="project-form" method="dialog">
       <h2 id="project-dialog-title">New project</h2>

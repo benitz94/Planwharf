@@ -28,7 +28,7 @@ assert.equal(cliModelOf({ id: 'gpt-6-astra' }), null);
 const spoken = askPrompt({
   question: 'How far did we go with RaceEngineer?',
   folder: 'D:\\benit\\Desktop\\Projects\\RaceEngineer',
-  model: { id: 'gpt-6-astra', label: 'GPT-6 Astra' },
+  model: { id: 'gpt-6-astra', label: 'GPT-6 Astra', alwaysApprove: true },
   state: { focus: { name: 'RaceEngineer', folder: 'D:\\benit\\Desktop\\Projects\\RaceEngineer', goal: 'Local race telemetry', open: ['Which car?'], checkpoint: { reason: 'stop', path: 'x.json' } } }
 });
 assert.match(spoken, /GPT-6 Astra/);
@@ -60,10 +60,12 @@ assert.match(askPrompt({ question: 'How far?', folder: 'D:\\x', model: { label: 
 assert.match(spoken, /You coordinate/);
 assert.match(spoken, /never edit/);
 assert.match(spoken, /full local tool access, network access/);
+// Without the user's OK the lead is told its tools are restricted, matching how it is launched.
+assert.match(askPrompt({ question: 'How far?', folder: 'D:\\x', model: { label: 'Astra' }, state: {} }), /restricted by the configured model permission policy/);
 assert.match(spoken, /private GitHub repositories/);
 assert.doesNotMatch(spoken, /Stay inside it\. Read only/);
 assert.doesNotMatch(spoken, /unless they explicitly order a change/);
-const cliArgs = askCliArgs({ question: 'How far?', folder: 'D:\\x', model: { id: 'grok', provider: 'grok', cli: 'grok-4.6' } }).args;
+const cliArgs = askCliArgs({ question: 'How far?', folder: 'D:\\x', model: { id: 'grok', provider: 'grok', cli: 'grok-4.6', alwaysApprove: true } }).args;
 assert.equal(cliArgs.includes('--always-approve'), true);
 assert.ok(cliArgs.includes('bypassPermissions'));
 assert.ok(cliArgs.includes('--no-subagents'));

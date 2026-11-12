@@ -67,7 +67,7 @@ async function responseJson(response) {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new Error('PROVIDER_PROTOCOL_CHANGED: API returned invalid JSON.'); }
 }
 async function runAgent(job, { folder = process.cwd(), request = fetch, emit = () => {}, env = process.env } = {}) {
-  const { config, model, prompt, lead = false, alwaysApprove = true } = job;
+  const { config, model, prompt, lead = false, alwaysApprove = false } = job;
   if (typeof model !== 'string' || !model || typeof prompt !== 'string' || typeof alwaysApprove !== 'boolean') throw new Error('Invalid API job.');
   const headers = apiHeaders(config, env);
   const allowed = job.advisory ? [] : definitions.filter(tool => !lead || !['write_file', 'write_result', 'run_command'].includes(tool.name)).filter(tool => alwaysApprove || tool.name !== 'run_command').filter(tool => tool.name !== 'write_result' || job.resultOutputPath);

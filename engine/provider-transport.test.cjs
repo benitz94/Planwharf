@@ -118,7 +118,7 @@ async function main() {
   for (const [provider, cli] of [['codex', 'gpt-6-astra'], ['antigravity', 'gemini-3.1-pro-high'], ['grok', 'grok-4.6'], ['claude', 'claude-sonnet-fixture']]) {
     const env = 'PLANWHARF_' + provider.toUpperCase(); saved[env] = process.env[env]; process.env[env] = executable;
     const folder = path.join(dir, provider); fs.mkdirSync(folder);
-    const model = { provider, cli, label: 'Isolated ' + provider };
+    const model = { provider, cli, label: 'Isolated ' + provider, alwaysApprove: true };
     const detail = 'Full discussion \u00e8 \u65e5\u672c\u8a9e \u{1f3ce}\u{fe0f}, quotes " and newlines.\n'.repeat(4000);
     const info = { model, folder, question: 'Follow the full long conversation.', state: { history: [{ user: detail, orchestrator: 'Prior answer.' }] } };
     const expected = askPrompt(info); assert.ok(expected.length > 32767);

@@ -61,8 +61,10 @@ public class WindowTests
             System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!);
         var dialog = new ProjectDialog();
         dialog.Show();
+        var ok = new ConfirmDialog(Planwharf.Native.Core.TeamViews.OkQuestion([new Planwharf.Native.Core.ProviderView("claude", "Claude Code", true, 2)]), "Allow Claude Code", "Planwharf needs your OK", "Cancel");
+        ok.Show();
         var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
-        foreach (var (name, frame) in new[] { ("settings", window.CaptureRenderedFrame()), ("new-project", dialog.CaptureRenderedFrame()) })
+        foreach (var (name, frame) in new[] { ("settings", window.CaptureRenderedFrame()), ("new-project", dialog.CaptureRenderedFrame()), ("ok-question", ok.CaptureRenderedFrame()) })
         {
             Assert.NotNull(frame);
             var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");

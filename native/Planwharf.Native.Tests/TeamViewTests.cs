@@ -62,4 +62,26 @@ public class TeamViewTests
         Assert.Equal(["a"], TeamViews.ModelsFor(team, "Build").Select(model => model.Id));
         Assert.Equal([new ProviderView("claude", "Claude Code", true, 2), new ProviderView("grok", "Grok", false, 0)], team.Providers);
     }
+
+    [Fact]
+    public void Asks_for_the_OK_only_for_tools_that_cannot_build_without_it()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "orchestratorId": "agy",
+          "models": [
+            { "id": "opus", "label": "Opus", "provider": "claude", "adapter": "claude", "enabled": true, "roles": { "worker": true } },
+            { "id": "sonnet", "label": "Sonnet", "provider": "claude", "adapter": "claude", "enabled": true, "roles": { "verifier": true } },
+            { "id": "grok", "label": "Grok", "provider": "grok", "adapter": "grok", "enabled": true, "alwaysApprove": true, "roles": { "worker": true } },
+            { "id": "luna", "label": "Luna", "provider": "codex", "adapter": "codex", "enabled": true, "roles": { "worker": true } },
+            { "id": "agy", "label": "Gemini", "provider": "antigravity", "adapter": "antigravity", "enabled": true, "roles": { "orchestrator": true } },
+            { "id": "off", "label": "Off", "provider": "grok2", "adapter": "grok", "enabled": true, "available": false, "roles": { "worker": true } } ],
+          "providers": [ { "id": "claude", "label": "Claude Code" }, { "id": "grok", "label": "Grok", "policy": { "alwaysApprove": true } }, { "id": "codex", "label": "Codex" }, { "id": "antigravity", "label": "Antigravity" } ] }
+        """)!);
+        // Claude Code once, for both its models; Grok already said yes; Codex works in its sandbox; unavailable models do not count.
+        Assert.Equal(["claude"], TeamViews.ToolsNeedingOk(team).Select(tool => tool.Id));
+        Assert.Equal(["antigravity"], TeamViews.ToolsNeedingOk(team, forLead: true).Select(tool => tool.Id));
+        Assert.True(team.Providers.Single(provider => provider.Id == "grok").WorksUnasked);
+        Assert.StartsWith("Claude Code will work in the project folder without asking each time: it edits files", TeamViews.OkQuestion(TeamViews.ToolsNeedingOk(team)));
+        Assert.Contains("they edit", TeamViews.OkQuestion([new ProviderView("claude", "Claude Code", true, 1), new ProviderView("grok", "Grok", true, 1)]));
+    }
 }
