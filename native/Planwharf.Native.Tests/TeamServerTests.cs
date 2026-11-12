@@ -4,6 +4,7 @@ using Xunit;
 namespace Planwharf.Native.Tests;
 
 // New project, folder, lead and roles, against the real server as the app starts it.
+[Collection("Real server")]
 public class TeamServerTests
 {
     [Fact]
