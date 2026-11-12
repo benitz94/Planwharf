@@ -24,7 +24,7 @@ public class WindowTests
         var window = new MainWindow("v0.2.24");
         window.Show();
         window.Show(SampleState.Finished());
-        window.ShowRepo("weather", "MT-1", new Planwharf.Native.Core.RepoView(true, 6, 0, null));
+        window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "checkedAt": "2026-11-11T15:56:00Z", "local": { "exists": true, "git": true, "branch": "main", "uncommitted": 6, "changes": [" M src/forecast.js", " M src/chart.js", "?? src/forecast.test.js", " M index.html", "?? docs/forecast.md", "D  src/old-chart.js"] } }""")!);
         var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
         var output = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT") ?? Path.Combine(AppContext.BaseDirectory, "native-window.png");
@@ -64,6 +64,31 @@ public class WindowTests
             var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
             frame!.Save(output);
             Assert.True(new FileInfo(output).Length > 3_000);
+        }
+    }
+
+    // Progress, Usage and Changed files, each drawn on the finished sample.
+    [AvaloniaFact]
+    public void Draws_the_progress_usage_and_files_panels()
+    {
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        var state = SampleState.Finished();
+        state["plans"] = System.Text.Json.Nodes.JsonNode.Parse("""[ { "id": "max", "label": "Claude Max", "readable": true, "leftPct": 71, "windows": [ { "name": "5-hour", "leftPct": 71 }, { "name": "weekly", "leftPct": 18 } ] }, { "id": "grok", "label": "SuperGrok", "readable": false, "reason": "Grok does not report quota." } ]""");
+        state["aiUsage"]!["workers"] = System.Text.Json.Nodes.JsonNode.Parse("""[ { "model": "Opus 5.5", "calls": 2, "durationMs": 540000, "outputTokens": 21400 } ]""");
+        state["execution"] = System.Text.Json.Nodes.JsonNode.Parse("""{ "timeline": [ { "projectId": "weather", "createdAt": "2026-11-11T15:41:00Z", "summary": "Work approved: Add a 7-day forecast page." }, { "projectId": "weather", "createdAt": "2026-11-11T15:55:00Z", "summary": "The lead confirmed the goal." } ] }""");
+        state["projects"]![0]!["folder"] = "/home/sample/weather";
+        window.Show(state);
+        window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "local": { "exists": true, "git": true, "branch": "main", "changes": [" M src/forecast.js", "?? src/forecast.test.js"] } }""")!);
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        foreach (var mode in new[] { "progress", "usage", "files" })
+        {
+            window.OpenSide(mode);
+            var frame = window.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{mode}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{mode}.png");
+            frame!.Save(output);
+            Assert.True(new FileInfo(output).Length > 10_000);
         }
     }
 }
