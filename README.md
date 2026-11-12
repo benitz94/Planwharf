@@ -36,11 +36,21 @@ Every [release](https://github.com/benitz94/Planwharf/releases/latest) contains 
 
 | Kind | Windows | Linux | macOS | Needs Node.js |
 |---|---|---|---|---|
+| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No, included |
 | **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included |
 | **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer |
-| **Native app** (preview) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No, included |
 
 With any kind you also need at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
+
+### Native app
+
+A native window instead of a web page, much lighter than the desktop app (about 75 MB with Node.js included), with everything the desktop app does: chat with the lead, the crew at work, Team, Progress, Usage, Files, Settings, commit and push. Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
+
+- Dark theme only for now. To update, download the new zip: the app tells you when one is out.
+- It is not code-signed yet: on Windows choose **More info > Run anyway**; on macOS, if it is blocked, open **System Settings > Privacy & Security** and choose **Open Anyway**.
+- It uses the same projects as the desktop app: close one before you open the other.
+
+More in [native/README.md](native/README.md).
 
 ### Desktop app (Electron)
 
@@ -51,15 +61,6 @@ Its own window, with Node.js included. Download it from the [latest release](htt
 
 To update, install the new version over the old one: your projects are kept. More in [docs/DESKTOP.md](docs/DESKTOP.md).
 
-### Native app (preview)
-
-A native window instead of a web page, much lighter than the desktop app (about 75 MB with Node.js included). Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
-
-- It is a first version: projects, the chat with the lead, the crew's work and its buttons. Team, Usage, Settings and commit are still in the desktop or web app.
-- It is not code-signed yet: on Windows choose **More info > Run anyway**; on macOS, if it is blocked, open **System Settings > Privacy & Security** and choose **Open Anyway**.
-- It uses the same projects as the desktop app: close one before you open the other.
-
-More in [native/README.md](native/README.md).
 
 ### Web app (portable ZIP)
 
@@ -105,6 +106,7 @@ Updates arrive inside the app: **Settings > Updates**. Your projects and setting
 - [Benchmark: a small SQL database, four AI tools and Planwharf](docs/benchmarks/2026-11-minidb/README.md)
 - [Benchmark: Planwharf and four AI tools on the same task](docs/benchmarks/2026-11-logbook/README.md)
 - [Technical reference](docs/REFERENCE.md), for advanced users and contributors
+- Past verification reports, reviews and handoff notes: the [`archive/old-material-2026-11`](https://github.com/benitz94/Planwharf/tree/archive/old-material-2026-11) branch
 
 Planwharf is under active development and is provided **as is**, without warranty. Ideas and bug reports are welcome in [Issues](https://github.com/benitz94/Planwharf/issues).
 

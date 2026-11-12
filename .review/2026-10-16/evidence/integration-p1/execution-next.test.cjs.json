@@ -1,8 +1,0 @@
-{
-  "file": "engine/execution-next.test.cjs",
-  "command": "node engine/execution-next.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "✔ A proposal permits approval (2.2346ms)\n✔ B approval immediately replaces proposal text (0.2536ms)\n✔ C active first slice (0.1834ms)\n✔ D first complete and second pending (0.151ms)\n✔ E active second slice (0.1627ms)\n✔ F dependency waiting identifies prerequisite (0.1847ms)\n✔ H resumed work ignores saved checkpoint nextAction (0.163ms)\n✔ reconciliation never reuses proposal (0.1793ms)\n✔ G paused fallback uses remaining work (0.181ms)\n✔ I completion without a result action is neutral (0.1553ms)\n✔ J failed without structured recovery is neutral (0.2495ms)\n✔ J blocked MegaTask uses durable blockers (0.1372ms)\n✔ G checkpoint action stays authoritative; absent/empty actions use remaining state (0.1145ms)\n✔ I final structured result wins, with a neutral fallback rather than an older action (0.0661ms)\n✔ J failed/blocked slices use current structured recovery and retain checkpoint behavior (0.1ms)\n✔ active work has priority; runnable pending work retains graph order and never selects a blocked dependent (0.0799ms)\nℹ tests 16\nℹ suites 0\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 8.5872\n",
-  "stderr": ""
-}

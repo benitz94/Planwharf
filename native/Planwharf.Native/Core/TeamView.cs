@@ -22,6 +22,9 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
 public sealed record ProviderView(string Id, string Label, bool Enabled, int Models)
 {
     public bool WorksUnasked { get; init; }
+    // False when the last check found no program for this AI tool on this computer.
+    public bool Installed { get; init; } = true;
+    public string? InstallHint { get; init; }
 }
 public sealed record TeamView(string? LeadId, IReadOnlyList<TeamModel> Models)
 {
@@ -67,7 +70,12 @@ public static class TeamViews
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),
             S(provider["label"]) is { Length: > 0 } label ? label : S(provider["id"]), provider["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var on) || on,
-            (provider["models"] as JsonArray)?.Count ?? 0) { WorksUnasked = B(provider["policy"]?["alwaysApprove"]) }).ToList();
+            (provider["models"] as JsonArray)?.Count ?? 0)
+            {
+                WorksUnasked = B(provider["policy"]?["alwaysApprove"]),
+                Installed = provider["installed"] is not JsonValue installed || !installed.TryGetValue<bool>(out var found) || found,
+                InstallHint = S(provider["installHint"]) is { Length: > 0 } hint ? hint : null
+            }).ToList();
         return new TeamView(lead, models) { Providers = providers };
     }
 

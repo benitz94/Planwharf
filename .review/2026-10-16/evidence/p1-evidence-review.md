@@ -1,2 +1,0 @@
-# Independent technical evidence review
-Accepted after source review and independent focused tests. Original command/output evidence is source-whitelisted, redacted and bounded. Pager enumerates metadata before reading only the selected page. Reviewer found result-only extra logPath could cross assignment boundaries; worker removed it and added an adversarial no-read fixture before acceptance. Two focused fixture files independently pass. Live provider output and integrated browser paging remain separate gates.

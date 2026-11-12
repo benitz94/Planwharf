@@ -1,5 +1,0 @@
-{
-  "error": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /archive-/. Input:\n\n'No recorded activity session is available for this selection.'\n\n    at C:\\Users\\stefa\\.codex\\.chatgpt-projects\\g-p-6a7d949db320819184084609732f4805\\planwharf-coordination\\repository\\verify-workspace-browser.cjs:109:12",
-  "errors": [],
-  "networkErrors": []
-}

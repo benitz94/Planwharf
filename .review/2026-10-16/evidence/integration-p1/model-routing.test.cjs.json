@@ -1,8 +1,0 @@
-{
-  "file": "engine/model-routing.test.cjs",
-  "command": "node engine/model-routing.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: configured exact model IDs, explicit adapters, compatibility guards, unavailable routes and bounded IDs.\n",
-  "stderr": ""
-}

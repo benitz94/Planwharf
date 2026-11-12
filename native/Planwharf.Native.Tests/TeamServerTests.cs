@@ -11,6 +11,8 @@ public class TeamServerTests
     public async Task Creates_a_project_and_sets_its_folder_lead_and_roles()
     {
         var data = Directory.CreateTempSubdirectory("pw-native-team-");
+        // Codex counts as installed: any existing program will do, no model is ever run here.
+        Environment.SetEnvironmentVariable("PLANWHARF_CODEX", Environment.ProcessPath);
         var host = new ServerHost(data.FullName);
         try
         {
@@ -38,9 +40,9 @@ public class TeamServerTests
 
             var team = TeamViews.Team(state);
             Assert.NotEmpty(team.Models);
-            var lead = team.Models.First(model => model.CanLead);
+            var lead = team.Models.First(model => model.CanLead && model.Available);
             await api.SetLeadAsync(id!, lead.Id, lead.Lead);
-            var builder = team.Models.First();
+            var builder = team.Models.First(model => model.Available);
             await api.SetRolesAsync(id!, builder.Id, new Dictionary<string, bool> { ["worker"] = !builder.Build });
             team = TeamViews.Team(await api.SnapshotAsync(readOnly: false, id));
             Assert.Equal(lead.Id, team.LeadId);
