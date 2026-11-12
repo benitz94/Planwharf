@@ -24,6 +24,7 @@ public class WindowTests
         var window = new MainWindow("v0.2.24");
         window.Show();
         window.Show(SampleState.Finished());
+        window.ShowRepo("weather", "MT-1", new Planwharf.Native.Core.RepoView(true, 6, 0, null));
         var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
         var output = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT") ?? Path.Combine(AppContext.BaseDirectory, "native-window.png");

@@ -7,7 +7,9 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 ## What it does today
 - Lists your projects with their status, and shows the installed version next to the name.
 - Shows the chat with the lead and lets you write to it.
-- Shows the crew's work: title, progress, each step with its role, model and status, and what was done.
+- Shows the crew's work as the chat page does: progress and time, each step with its role, model and status, what the model at work is doing, a plain-English summary (the same lines as `work-summary.js`, checked by a test), what was done, and what the work used per model (time, tokens, quota before and after; "not reported" when the provider does not say).
+- Warnings from Planwharf's own checks ("Something needs a look"), with Ignore.
+- Finished work in a git folder: changed files not yet committed, **Commit**, **Commit and push**, or **Push N commits** when commits are not on GitHub yet; asks first, never force-pushes.
 - One clear next action: **Let the crew do it** (with the goal agreed in the chat, after a confirmation), **Stop the crew**, **Approve and start**, **Resume**; and why the crew stopped, in plain English.
 - **+ New project**: a name and an existing folder, or no folder and Planwharf creates one in the projects folder.
 - **Team**, per project: choose the lead; give each model Build, Verify or Review; quota left for each model; models that are not available are shown greyed with the reason.
@@ -16,7 +18,7 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 - **Settings**: the project's folder, the projects folder for new projects, the version.
 - Closing the window, or the system ending the app, saves unfinished work and stops the server.
 
-Not yet in the native app (use the web or desktop version meanwhile): Usage, Commit and push, importing or removing projects, provider connections, installers and in-app updates.
+Not yet in the native app (use the web or desktop version meanwhile): the Usage, Progress and Files panels, importing or removing projects, provider connections, installers and in-app updates.
 
 ## Build and run
 ```sh

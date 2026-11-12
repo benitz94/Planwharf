@@ -7,6 +7,9 @@ static class SampleState
 {
     public static JsonNode Finished(string? stopReason = "GOAL_REACHED", bool enabled = true) => JsonNode.Parse($$"""
     {
+      "aiUsage": { "recent": [
+        { "megaTaskId": "MT-1", "modelId": "opus", "durationMs": 540000, "tokens": { "input": 182000, "output": 21400, "cachedInput": 140000 } },
+        { "megaTaskId": "MT-1", "modelId": "astra", "durationMs": 260000 } ] },
       "mode": "auto",
       "autonomy": { "weather": { "enabled": {{(enabled ? "true" : "false")}}, "stopReason": {{(stopReason == null ? "null" : "\"" + stopReason + "\"")}} } },
       "models": [ { "id": "opus", "label": "Opus 5.5" }, { "id": "astra", "label": "GPT-6 Astra" }, { "id": "grok", "label": "Grok 4.7" } ],
@@ -15,11 +18,11 @@ static class SampleState
         "answer": "Good plan: the app already has **24 files** and `src/api.js` fetches the data.\n\nSuggested next goal: Add a 7-day forecast page with charts and tests." } ],
       "projects": [
         { "id": "weather", "name": "Weather dashboard", "label": "Done", "status": "complete", "goal": "Add a 7-day forecast page with charts and tests.",
-          "megaTaskId": "MT-1", "megaTask": { "id": "MT-1", "title": "Add a 7-day forecast page with charts and tests.", "status": "COMPLETE" },
+          "megaTaskId": "MT-1", "megaTask": { "id": "MT-1", "title": "Add a 7-day forecast page with charts and tests.", "status": "COMPLETE", "approvedAt": "2026-11-11T15:41:00Z", "completedAt": "2026-11-11T15:55:00Z" },
           "subTasks": [
             { "id": "s1", "title": "Implement the whole job.", "status": "COMPLETE", "assignedModelId": "opus" },
             { "id": "s2", "title": "Verify the work independently against the job.", "status": "COMPLETE", "assignedModelId": "astra" } ],
-          "results": [ { "subTaskId": "s1", "status": "COMPLETE", "summary": "Added the page and 9 tests." },
+          "results": [ { "subTaskId": "s1", "status": "COMPLETE", "summary": "Added the page and 9 tests.", "testsReported": 1 },
                        { "subTaskId": "s2", "status": "BLOCKED", "summary": "Model changed.", "modelChange": true },
                        { "subTaskId": "s2", "status": "COMPLETE", "summary": "Covered time zones; 47 tests pass." } ] },
         { "id": "notes", "name": "Recipe notes app", "label": "Ready", "status": "idle", "goal": "" } ]
@@ -43,6 +46,12 @@ static class SampleState
         project["label"] = "Working"; project["status"] = "running";
         project["megaTask"]!["status"] = "RUNNING";
         project["subTasks"]![1]!["status"] = "RUNNING";
+        project["dispatch"] = JsonNode.Parse("""
+            [ { "alive": true, "modelId": "astra", "activitySession": { "events": [
+            { "friendly": "Reading src/forecast.js" }, { "friendly": "Running npm test" }, { "friendly": "Running npm test" }, { "friendly": "Fixing the time zone in the chart labels" } ] } } ]
+            """);
+        project["megaTask"]!["approvedAt"] = DateTimeOffset.UtcNow.AddMinutes(-14).ToString("o");
+        state["supervisor"] = JsonNode.Parse("""{ "projects": [ { "projectId": "weather", "alerts": [ { "id": "a1", "title": "Two steps edit the same file", "message": "src/forecast.js is changed by Build and Verify." } ] } ] }""");
         project["results"] = new JsonArray(JsonNode.Parse("""{ "subTaskId": "s1", "status": "COMPLETE", "summary": "Added the page and 9 tests." }"""));
         return state;
     }
