@@ -1,8 +1,0 @@
-{
-  "file": "engine/project-recipient.test.cjs",
-  "command": "node engine/project-recipient.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: isolated recipient routing, checkpoint protection, research target guard, individual worker stop and restoration.\n",
-  "stderr": ""
-}

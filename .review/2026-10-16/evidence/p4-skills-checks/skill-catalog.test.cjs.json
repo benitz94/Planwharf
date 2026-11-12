@@ -1,6 +1,0 @@
-{
-  "command": "node engine/skill-catalog.test.cjs",
-  "exitCode": 0,
-  "stdout": "✔ approved scoped selection supports filters, exclusions, dedupe and truthful delivery stages (20.9838ms)\n✔ real isolated Codex transport receives selected instructions exactly once without claiming native loading (122.1966ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 146.1559\n",
-  "stderr": ""
-}

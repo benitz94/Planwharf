@@ -1,6 +1,0 @@
-{
-  "command": "node engine/runtime-integration.test.cjs",
-  "exitCode": 0,
-  "stdout": "OK: all-provider approved selective Skill delivery, persistent opt-out, atomic updates, exact Grok refresh, fresh current-request tasks, preserved history and startup dispatch barrier.\n",
-  "stderr": ""
-}

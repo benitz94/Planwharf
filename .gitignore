@@ -43,3 +43,6 @@ validation/update-browser-*/
 
 validation/grill-browser-*/
 validation/harbor-*/
+
+# CI output: the workflow keeps it as an artifact.
+engineering-logs/

@@ -1,8 +1,0 @@
-{
-  "file": "engine/worker-ui.test.cjs",
-  "command": "node engine/worker-ui.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "Workers UI isolated snapshot checks passed.\n",
-  "stderr": ""
-}

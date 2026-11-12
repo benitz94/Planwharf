@@ -1,6 +1,0 @@
-{
-  "command": "node engine/supervisor-role.test.cjs",
-  "exitCode": 0,
-  "stdout": "✔ fourth permission is opt-in, preserves old roles, and never authorizes implementation or review (0.921ms)\n✔ legacy advisory selection does not silently grant new role or automatic calls; name/history survive restart (9.6185ms)\n✔ advisory permission, exact selection, provider availability and quota are checked before every call (8.2006ms)\n✔ Supervisor usage is separate and unfinished calls become blocked after restart (3.2371ms)\n✔ Core keeps observing concurrent worker evidence while a bounded advisory is pending (2.2727ms)\n✔ HTTP migrates legacy and per-account permissions; generic enabling cannot silently grant Supervisor (108.6505ms)\n✔ HTTP blocks exhausted internal budgets without invocation, debits accepted calls durably, and honors catalog exemption (75.7949ms)\nℹ tests 7\nℹ suites 0\nℹ pass 7\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 211.6214\n",
-  "stderr": ""
-}

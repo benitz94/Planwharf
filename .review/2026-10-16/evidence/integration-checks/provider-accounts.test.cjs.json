@@ -1,8 +1,0 @@
-{
-  "file": "engine/provider-accounts.test.cjs",
-  "command": "node engine/provider-accounts.test.cjs",
-  "exitCode": 1,
-  "signal": null,
-  "stdout": "✔ provider metadata distinguishes business from paid personal accounts without exposing credentials (13.2979ms)\n✖ account switching isolates roles, invalidates quota and stale access, and survives restart (158.967ms)\nℹ tests 2\nℹ suites 0\nℹ pass 1\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 174.6571\n\n✖ failing tests:\n\ntest at engine\\provider-accounts.test.cjs:38:1\n✖ account switching isolates roles, invalidates quota and stale access, and survives restart (158.967ms)\n  AssertionError [ERR_ASSERTION]: A login change while the backend is stopped also invalidates old account access\n  \n  true !== false\n  \n      at TestContext.<anonymous> (C:\\Users\\stefa\\.codex\\.chatgpt-projects\\g-p-6a7d949db320819184084609732f4805\\planwharf-coordination\\repository\\engine\\provider-accounts.test.cjs:84:12)\n      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n      at async Test.run (node:internal/test_runner/test:1332:7)\n      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: true,\n    expected: false,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n",
-  "stderr": ""
-}

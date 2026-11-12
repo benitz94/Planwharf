@@ -106,6 +106,7 @@ Updates arrive inside the app: **Settings > Updates**. Your projects and setting
 - [Benchmark: a small SQL database, four AI tools and Planwharf](docs/benchmarks/2026-11-minidb/README.md)
 - [Benchmark: Planwharf and four AI tools on the same task](docs/benchmarks/2026-11-logbook/README.md)
 - [Technical reference](docs/REFERENCE.md), for advanced users and contributors
+- Past verification reports, reviews and handoff notes: the [`archive/old-material-2026-11`](https://github.com/benitz94/Planwharf/tree/archive/old-material-2026-11) branch
 
 Planwharf is under active development and is provided **as is**, without warranty. Ideas and bug reports are welcome in [Issues](https://github.com/benitz94/Planwharf/issues).
 

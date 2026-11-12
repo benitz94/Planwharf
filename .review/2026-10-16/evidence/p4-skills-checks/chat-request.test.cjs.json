@@ -1,6 +1,0 @@
-{
-  "command": "node engine/chat-request.test.cjs",
-  "exitCode": 0,
-  "stdout": "OK: isolated HTTP chat accepts >64 KiB Unicode, enforces 1 MiB, preserves other request limits and notebook data.\n",
-  "stderr": ""
-}

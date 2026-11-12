@@ -1,8 +1,0 @@
-{
-  "file": "engine/activity-events.test.cjs",
-  "command": "node engine/activity-events.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: structured activity provenance, provider identity, conservative capabilities, failure/completion separation, redaction, malformed protocols and bounded history. Fixture validation only; no live provider delivery.\n",
-  "stderr": ""
-}
