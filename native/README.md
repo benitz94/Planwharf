@@ -6,17 +6,22 @@ It starts the same local Planwharf server as the other versions (`planwharf.cjs`
 
 ## What it does today
 - Lists your projects with their status, and shows the installed version next to the name.
-- Shows the chat with the lead and lets you write to it.
-- Shows the crew's work: title, progress, each step with its role, model and status, and what was done.
+- The chat with the lead, as in the desktop app: time and duration of each reply, Copy, "How the lead got there", the reply forming while the lead thinks, work events in the conversation, a welcome card and a start card with what is missing. A message waiting for the lead keeps going when you switch project.
+- Short orders handled by Planwharf itself: "stop", "stop in 10 minutes" (with Cancel), "open team", "usage", "files", "settings", "bench <model>".
+- The project list says who is working and for how long, and marks projects with news since you last looked.
+- Shows the crew's work as the chat page does: progress and time, each step with its role, model and status, what the model at work is doing, a plain-English summary (the same lines as `work-summary.js`, checked by a test), what was done, and what the work used per model (time, tokens, quota before and after; "not reported" when the provider does not say).
+- Warnings from Planwharf's own checks ("Something needs a look"), with Ignore.
+- Finished work in a git folder: changed files not yet committed, **Commit**, **Commit and push**, or **Push N commits** when commits are not on GitHub yet; asks first, never force-pushes.
 - One clear next action: **Let the crew do it** (with the goal agreed in the chat, after a confirmation), **Stop the crew**, **Approve and start**, **Resume**; and why the crew stopped, in plain English.
 - **+ New project**: a name and an existing folder, or no folder and Planwharf creates one in the projects folder.
-- **Team**, per project: choose the lead; give each model Build, Verify or Review; quota left for each model; models that are not available are shown greyed with the reason.
+- **Team**, per project: choose the lead; give each model Build, Verify or Review, or put it on the bench; quota left for each model; models that are not available are shown greyed with the reason; AI tools on or off, look for models again, connect a model by API.
 - The model of each step that is not done can be changed from its menu, among the team models with that role; a step at work asks first, then restarts on the new model.
 - Before the crew starts, the app says what is missing: the project folder, a lead, a model that builds.
-- **Settings**: the project's folder, the projects folder for new projects, the version.
+- **Progress** (status, steps, recent activity), **Usage** (quota left for each limit with its reset time, lead calls and crew work, "not reported" when a provider does not say) and **Files** (changes not yet saved in Git), in the panel on the right.
+- **Settings**: the project's folder and GitHub link, the project's tools (MCP servers, browser, hooks, memory), the folder for new projects, approvals, the automatic model switch, skills and instructions, save a project to a file or open one, updates, start over, remove project, quit.
 - Closing the window, or the system ending the app, saves unfinished work and stops the server.
 
-Not yet in the native app (use the web or desktop version meanwhile): Usage, Commit and push, importing or removing projects, provider connections, installers and in-app updates.
+Not yet in the native app (use the web or desktop version meanwhile): the light theme and text colours, installers. Updates: the app tells you when a new version is out and opens the download page.
 
 ## Build and run
 ```sh

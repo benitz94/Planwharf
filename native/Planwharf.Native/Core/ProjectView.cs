@@ -5,8 +5,18 @@ namespace Planwharf.Native.Core;
 
 public sealed record ProjectItem(string Id, string Name, string Status);
 public sealed record ChatMessage(bool FromUser, string Who, string Text, DateTimeOffset At);
-public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId);
-public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results);
+public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "");
+public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results)
+{
+    // The project row as the server sent it, for the summary, usage and activity.
+    public JsonObject? Row { get; init; }
+    public string NextAction { get; init; } = "";
+    public bool CanResume { get; init; }
+    public string StartedAt { get; init; } = "";
+    public string CompletedAt { get; init; } = "";
+    public string Waiting { get; init; } = "";
+    public string Id { get; init; } = "";
+}
 public enum CrewAction { None, LetTheCrewDoIt, StopTheCrew, Approve, Resume, StopWork }
 public sealed record ProjectView(string Id, string Name, string Status, IReadOnlyList<ChatMessage> Messages, WorkView? Work,
     CrewAction Action, string ActionText, string Hint, string? NextGoal, string? MegaTaskId);
@@ -52,15 +62,7 @@ public static class ProjectViews
     public static IReadOnlyList<ProjectItem> Projects(JsonNode snapshot) =>
         (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().Select(row => new ProjectItem(S(row["id"]), S(row["name"]), StatusOf(snapshot, row))).ToList();
 
-    static string StatusOf(JsonNode snapshot, JsonObject row)
-    {
-        var auto = snapshot["autonomy"]?[S(row["id"])];
-        var stop = S(auto?["stopReason"]);
-        if (B(auto?["enabled"]) && stop.Length > 0) return StopLabels.GetValueOrDefault(stop.Split(':')[0], "Stopped");
-        if (B(auto?["enabled"])) return "Crew working";
-        var label = S(row["label"]);
-        return label.Length > 0 ? label : S(row["status"]);
-    }
+    static string StatusOf(JsonNode snapshot, JsonObject row) => ChatViews.Status(snapshot, row).Text;
 
     public static ProjectView? Project(JsonNode snapshot, string? projectId)
     {
@@ -87,9 +89,16 @@ public static class ProjectViews
                 S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith(VerifyPrefix) ? "Verify" : "Build",
                 Label(S(sub["assignedModelId"])),
                 S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() },
-                S(sub["assignedModelId"]))).ToList();
+                S(sub["assignedModelId"]),
+                S(sub["title"]).StartsWith(VerifyPrefix) ? "Check the work and fix what fails" : S(sub["title"]) is { Length: > 120 } long_ ? long_[..120] : S(sub["title"]))).ToList();
             var results = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"])).Select(result => S(result["summary"])).Where(text => text.Length > 0).ToList();
-            work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results);
+            work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results)
+            {
+                Row = row, Id = S(mega["id"]), CanResume = B(row["canResume"]),
+                NextAction = new[] { S(mega["nextAction"]), S(row["next"]), S(row["label"]) }.FirstOrDefault(text => text.Length > 0) ?? "",
+                StartedAt = S(mega["approvedAt"]) is { Length: > 0 } approved ? approved : S(mega["createdAt"]), CompletedAt = S(mega["completedAt"]),
+                Waiting = subs.Select(sub => S(sub["status"]).ToUpperInvariant() == "PENDING" ? S(sub["waitingFor"]) : "").FirstOrDefault(text => text.Length > 0) ?? ""
+            };
         }
 
         // One clear next action at a time, as in the chat page.
@@ -102,7 +111,7 @@ public static class ProjectViews
         var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
 
-        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead.")
+        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
             : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
             : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point.")

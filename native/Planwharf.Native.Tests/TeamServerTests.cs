@@ -44,6 +44,22 @@ public class TeamServerTests
             team = TeamViews.Team(await api.SnapshotAsync(readOnly: false, id));
             Assert.Equal(lead.Id, team.LeadId);
             Assert.Equal(!builder.Build, team.Models.First(model => model.Id == builder.Id).Build);
+
+            // Bench: no role at all in this project.
+            await api.BenchAsync(id!, builder.Id);
+            Assert.True(TeamViews.Team(await api.SnapshotAsync(readOnly: false, id)).Models.First(model => model.Id == builder.Id).Bench);
+
+            // An AI tool off, then on again.
+            var provider = team.Providers.First();
+            await api.SetProviderEnabledAsync(provider.Id, false);
+            Assert.False(TeamViews.Team(await api.SnapshotAsync(readOnly: false, id)).Providers.First(item => item.Id == provider.Id).Enabled);
+            await api.SetProviderEnabledAsync(provider.Id, true);
+
+            // An API connection stores the variable's name, never a key; its models join the list.
+            await api.AddConnectionAsync("Sample API", "https://api.example.com/v1", "openai", "SAMPLE_API_KEY", ["sample-chat"], toolsEnabled: false);
+            team = TeamViews.Team(await api.SnapshotAsync(readOnly: false, id));
+            Assert.Contains(team.Providers, item => item.Label == "Sample API" && item.Models == 1);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => api.AddConnectionAsync("Sample API", "https://api.example.com/v1", "openai", null, ["sample-chat"], false));
         }
         finally
         {
