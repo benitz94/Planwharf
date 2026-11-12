@@ -5,7 +5,7 @@ namespace Planwharf.Native.Core;
 
 public sealed record ProjectItem(string Id, string Name, string Status);
 public sealed record ChatMessage(bool FromUser, string Who, string Text, DateTimeOffset At);
-public sealed record WorkStep(string Role, string Model, string Status);
+public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId);
 public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results);
 public enum CrewAction { None, LetTheCrewDoIt, StopTheCrew, Approve, Resume, StopWork }
 public sealed record ProjectView(string Id, string Name, string Status, IReadOnlyList<ChatMessage> Messages, WorkView? Work,
@@ -83,10 +83,11 @@ public static class ProjectViews
         if (row["megaTask"] is JsonObject mega && S(mega["status"]).ToUpperInvariant() != "CANCELLED")
         {
             var subs = (row["subTasks"] as JsonArray ?? []).OfType<JsonObject>().ToList();
-            var steps = subs.Select(sub => new WorkStep(
+            var steps = subs.Select(sub => new WorkStep(S(sub["id"]),
                 S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith(VerifyPrefix) ? "Verify" : "Build",
                 Label(S(sub["assignedModelId"])),
-                S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() })).ToList();
+                S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() },
+                S(sub["assignedModelId"]))).ToList();
             var results = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"])).Select(result => S(result["summary"])).Where(text => text.Length > 0).ToList();
             work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results);
         }

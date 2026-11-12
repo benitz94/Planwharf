@@ -25,4 +25,25 @@ static class SampleState
         { "id": "notes", "name": "Recipe notes app", "label": "Ready", "status": "idle", "goal": "" } ]
     }
     """)!;
+
+    // The same project while the crew works, with its team: a lead, roles, quota left and a model that is not available.
+    public static JsonNode Working()
+    {
+        var state = Finished(stopReason: null).AsObject();
+        state["orchestratorId"] = "grok";
+        state["plans"] = JsonNode.Parse("""[ { "id": "max", "readable": true, "leftPct": 71 }, { "id": "plus", "readable": true, "leftPct": 38 } ]""");
+        state["models"] = JsonNode.Parse("""
+        [ { "id": "opus", "label": "Opus 5.5", "plan": "max", "enabled": true, "roles": { "worker": true } },
+          { "id": "astra", "label": "GPT-6 Astra", "plan": "plus", "enabled": true, "roles": { "verifier": true } },
+          { "id": "grok", "label": "Grok 4.7", "plan": "supergrok", "enabled": true, "roles": { "orchestrator": true, "worker": true } },
+          { "id": "gemini", "label": "Gemini 3.5 Pro", "plan": "google", "enabled": true, "available": false, "unavailableReason": "CLI not installed", "roles": {} } ]
+        """);
+        var project = state["projects"]![0]!.AsObject();
+        project["folder"] = "/home/sample/weather";
+        project["label"] = "Working"; project["status"] = "running";
+        project["megaTask"]!["status"] = "RUNNING";
+        project["subTasks"]![1]!["status"] = "RUNNING";
+        project["results"] = new JsonArray(JsonNode.Parse("""{ "subTaskId": "s1", "status": "COMPLETE", "summary": "Added the page and 9 tests." }"""));
+        return state;
+    }
 }
