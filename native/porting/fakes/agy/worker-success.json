@@ -1,0 +1,21 @@
+{
+  "resultId": "R-attempt-4",
+  "attemptId": "attempt-4",
+  "subTaskId": "MT-04-ST-01",
+  "megaTaskId": "MT-04",
+  "status": "COMPLETE",
+  "summary": "Agy worker implemented task and verified with tests.",
+  "filesChanged": [
+    "native/Planwharf.Engine/Agy.cs",
+    "native/Planwharf.Engine.Tests/AgyTests.cs"
+  ],
+  "tests": [
+    {
+      "command": "dotnet test",
+      "status": "PASSED",
+      "evidence": "Total tests: 15. Passed: 15. Failed: 0."
+    }
+  ],
+  "blockers": [],
+  "nextAction": "Ready for verification."
+}

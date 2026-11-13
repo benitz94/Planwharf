@@ -1,0 +1,1 @@
+{"type":"control_response","response":{"request_id":"planwharf-models","subtype":"success","response":{"models":[{"value":"default","resolvedModel":"claude-3-7-sonnet-20250219","displayName":"Claude 3.7 Sonnet"},{"value":"claude-3-5-haiku-20241022","resolvedModel":"claude-3-5-haiku-20241022","displayName":"Claude 3.5 Haiku"}]}}}

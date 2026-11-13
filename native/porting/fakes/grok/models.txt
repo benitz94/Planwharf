@@ -1,0 +1,4 @@
+Available Grok models for active session:
+  - grok-4.7 (default, code & reasoning)
+  - grok-beta (preview)
+  - grok-code-fast

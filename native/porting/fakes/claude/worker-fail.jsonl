@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","model":"claude-3-7-sonnet-20250219"}
+{"type":"result","subtype":"error_max_turns","is_error":true,"result":"Command execution failed with exit code 1: build errors in project file.","duration_ms":950}

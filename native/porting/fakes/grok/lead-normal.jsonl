@@ -1,0 +1,2 @@
+{"type":"stream_event","event":{"delta":{"type":"text_delta","text":"Assessed repository state. Task assignments are ready.\n"}}}
+{"type":"result","duration_ms":1450,"result":"Assessed repository state. Task assignments are ready.\n"}
