@@ -116,7 +116,7 @@ public static class ProjectViews
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
             : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
-            : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point.")
+            : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point, or drop it to start something new.")
             : (CrewAction.LetTheCrewDoIt, "Let the crew do it",
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
                 : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it."

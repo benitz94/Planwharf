@@ -34,6 +34,8 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetAutonomyAsync(string projectId, bool enabled) => PostAsync("/api/orchestrator/autonomy", new { projectId, enabled });
     public Task<JsonNode?> StopAsync(string projectId) => PostAsync("/api/orchestrator/stop", new { projectId });
     public Task<JsonNode?> ResumeAsync(string projectId) => PostAsync("/api/orchestrator/resume", new { projectId });
+    // Closes stopped work so a new goal can start; the files in the project folder stay as they are.
+    public Task<JsonNode?> DropWorkAsync(string projectId) => PostAsync("/api/orchestrator/reset", new { projectId });
     public Task<JsonNode?> ApproveAsync(string projectId, string megaTaskId) => PostAsync("/api/orchestrator/approve", new { projectId, megaTaskId });
 
     async Task<string?> PlanVersionAsync() => (await GetAsync("/api/plan"))["version"]?.GetValue<string>();

@@ -101,6 +101,8 @@ public sealed partial class MainWindow
         actionButton.Content = Look.Label(view.ActionText, stopping ? "stop" : view.Action switch { CrewAction.Approve => "check", CrewAction.Resume => "play", _ => "rocket" });
         Look.Paint(actionButton, stopping ? Look.Kind.Danger : Look.Kind.Primary);
         actionButton.IsEnabled = !busy && missing.Count == 0 && !checking;
+        dropButton.IsVisible = view.Action == CrewAction.Resume;
+        dropButton.IsEnabled = !busy;
         send.IsEnabled = !busy && Pending == null;
         if (Pending == null)
         {
