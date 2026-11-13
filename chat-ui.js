@@ -422,6 +422,12 @@
     if (document.activeElement?.matches?.('select.crew-pick')) return;
     state.threadSig = sig;
     const nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
+    // The live notes are redrawn about every second: keep where the user was reading them.
+    const notes = thread.querySelector('details[data-live-thinking] pre');
+    const notesAt = notes ? { top: notes.scrollTop, end: notes.scrollHeight - notes.scrollTop - notes.clientHeight < 24 } : null;
+    // The chat follows a new message once; after that it moves only if the user is at the bottom.
+    const justSent = Boolean(pendingHere) && state.followedPending !== pendingHere;
+    state.followedPending = pendingHere;
     const items = [
       ...asks.map(item => ({ at: Date.parse(item.at) || 0, html: askHtml(item) })),
       ...events.map(event => ({ at: Date.parse(event.createdAt) || 0, html: eventHtml(event) }))
@@ -450,7 +456,9 @@
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking" data-live-thinking${state.thinkingOpen ? ' open' : ''}><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
-    if (nearBottom || pendingHere) thread.scrollTop = thread.scrollHeight;
+    const notesNow = thread.querySelector('details[data-live-thinking] pre');
+    if (notesNow) notesNow.scrollTop = !notesAt || notesAt.end ? notesNow.scrollHeight : notesAt.top;
+    if (nearBottom || justSent) thread.scrollTop = thread.scrollHeight;
   }
   function askHtml(item) {
     const failed = Boolean(item.diagnostic);

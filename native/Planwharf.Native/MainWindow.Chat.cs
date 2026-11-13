@@ -22,6 +22,9 @@ public sealed partial class MainWindow
     (string ProjectId, DateTimeOffset At)? timedStop;
     DispatcherTimer? liveTimer;
 
+    // The lead's live notes stay open or closed as the user left them; the chat follows a new message once.
+    bool thinkingOpen = true;
+    (string Text, DateTimeOffset Since)? followedPending;
     (string Text, DateTimeOffset Since)? Pending => projectId != null && pendingByProject.TryGetValue(projectId, out var waiting) ? waiting : null;
 
     string ModelLabel(string id) => (snapshot?["models"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(model => Str(model["id"]) == id) is { } model
@@ -222,6 +225,9 @@ public sealed partial class MainWindow
             + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id) + snapshot?["projectTools"]?[view.Id]?.ToJsonString();
         if (sig == threadSig || menuOpen) return;
         var atBottom = threadScroll.Offset.Y + threadScroll.Viewport.Height >= threadScroll.Extent.Height - 120;
+        // The chat follows a new message once; after that it moves only if the user is at the bottom.
+        var justSent = Pending != null && Pending != followedPending;
+        followedPending = Pending;
         threadSig = sig;
         thread.Children.Clear();
 
@@ -252,10 +258,16 @@ public sealed partial class MainWindow
             var lead = team.LeadId is { } leadId ? ModelLabel(leadId) : "Lead";
             var answer = new StackPanel { Spacing = 4, Children = { Bubble(false, lead, Str(live?["draft"]) is { Length: > 0 } draft ? draft : "Thinking…") } };
             if (Str(live?["thinking"]) is { Length: > 0 } thinking)
-                answer.Children.Add(Fold("What the lead is doing", Mono(thinking.Length > 4000 ? thinking[^4000..] : thinking)));
+            {
+                // Redrawn about every second: it stays open or closed as the user left it.
+                var notes = Fold("What the lead is doing", Mono(thinking.Length > 4000 ? thinking[^4000..] : thinking));
+                notes.IsExpanded = thinkingOpen;
+                notes.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty) thinkingOpen = notes.IsExpanded; };
+                answer.Children.Add(notes);
+            }
             thread.Children.Add(answer);
         }
-        if (atBottom || Pending != null) Dispatcher.UIThread.Post(() => threadScroll.ScrollToEnd(), DispatcherPriority.Background);
+        if (atBottom || justSent) Dispatcher.UIThread.Post(() => threadScroll.ScrollToEnd(), DispatcherPriority.Background);
     }
 
     static SelectableTextBlock Mono(string text) => new() { Text = text, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 12, Foreground = Palette.Muted };
