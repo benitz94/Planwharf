@@ -275,7 +275,8 @@
     if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
-    if (row && !hasGoal(row) && !state.goalCandidate) missing.push({ text: 'Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.', fix: 'Write what to build', action: 'focus-input' });
+    // Only a plan ready and not yet worked on starts the crew: never the goal it already reached.
+    if (row && !(hasGoal(row) && !row.goalStarted) && !state.goalCandidate) missing.push({ text: row.goalStarted ? 'Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.' : 'Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.', fix: 'Write what to build', action: 'focus-input' });
     return missing;
   }
   // A project created with only a name and a folder has no goal until the user gives one in the chat.
@@ -482,6 +483,11 @@
       state.goalCandidate = suggested; state.suggestedGoal = suggested;
       html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
+    // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
+    else if (row && lastAsk && !busy && !pendingHere && !nextGoal && lastAsk.question?.trim() && lastAsk.question.trim() !== row.goal?.trim()) {
+      state.myGoal = lastAsk.question.trim();
+      html += `<div class="card hint"><p class="small">${ic('alert')}No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-my-goal">${ic('check')}Use my message as the goal</button></div></div>`;
+    }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking" data-live-thinking${state.thinkingOpen ? ' open' : ''}><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
@@ -509,6 +515,9 @@
     const working = auto?.enabled && !auto.stopReason;
     const missing = readiness(row);
     const parts = [];
+    // After finished work the box asks for what comes next.
+    const input = $('composer-input');
+    if (input) input.placeholder = row.goalStarted ? 'Tell the lead what you want built next…' : 'Tell the lead what you want built…';
     const timed = timedStop();
     if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
     if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">${escape((row.subTasks || []).some(sub => sub.status === 'PENDING' && sub.waitingFor) ? 'Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\'s menu at any time.' : 'The crew is working. You can keep chatting with the lead and change models at any time.')}</span>`);
@@ -1157,6 +1166,7 @@
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
+    else if (action === 'use-my-goal') useAsGoal(state.myGoal);
     else if (action === 'use-suggested-goal') proposeSuggestion(state.suggestedGoal);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }

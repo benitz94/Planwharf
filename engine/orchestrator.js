@@ -2070,6 +2070,8 @@ function createOrchestrator(options) {
           github: item.project.github || null,
           repository: row.repository && row.repository.folder === (item.project.folder || null) && row.repository.github === (item.project.github || null) ? clone(row.repository) : null,
           goal: latest && latest.direction ? latest.direction : '',
+          // The crew already worked on this goal (a job was made from it): it is not a plan ready to start.
+          goalStarted: Boolean(latest && (item.tasks || []).some(task => task && task.revision_id === latest.id)),
           notes: clone(item.home?.notes || []),
           stateArt: latest && latest.state ? latest.state : '',
           open: clone((latest && latest.open) || []),

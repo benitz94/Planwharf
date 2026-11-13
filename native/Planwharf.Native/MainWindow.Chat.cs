@@ -93,7 +93,7 @@ public sealed partial class MainWindow
         timedRow.IsVisible = false;
         if (view == null) return;
         var row = RowOf(view.Id);
-        var goalReady = TeamViews.HasGoal(row) || view.NextGoal != null;
+        var goalReady = TeamViews.GoalReady(row, view.NextGoal);
         var missing = view.Action == CrewAction.LetTheCrewDoIt ? TeamViews.Missing(snapshot!, view.Id, goalReady) : [];
         // Right after start Planwharf shows saved data while it checks the AI tools again.
         var checking = view.Action == CrewAction.LetTheCrewDoIt && Flag(snapshot?["modelsChecking"]);
@@ -101,6 +101,8 @@ public sealed partial class MainWindow
         actionButton.Content = Look.Label(view.ActionText, stopping ? "stop" : view.Action switch { CrewAction.Approve => "check", CrewAction.Resume => "play", _ => "rocket" });
         Look.Paint(actionButton, stopping ? Look.Kind.Danger : Look.Kind.Primary);
         actionButton.IsEnabled = !busy && missing.Count == 0 && !checking;
+        // After finished work the box asks for what comes next.
+        input.Watermark = TeamViews.GoalStarted(row) ? "Tell the lead what you want built next…" : "Tell the lead what you want built…";
         dropButton.IsVisible = view.Action == CrewAction.Resume;
         dropButton.IsEnabled = !busy;
         send.IsEnabled = !busy && Pending == null;
@@ -227,9 +229,9 @@ public sealed partial class MainWindow
         var items = ChatViews.Thread(snapshot!, view.Id, ModelLabel);
         var live = snapshot?["thinkingByProject"]?[view.Id];
         var row = RowOf(view.Id);
-        var goalReady = TeamViews.HasGoal(row) || view.NextGoal != null;
+        var goalReady = TeamViews.GoalReady(row, view.NextGoal);
         var sig = string.Join("|", items.Select(item => item is AskItem ask ? ask.At.ToUnixTimeMilliseconds() + ":" + ask.Answer.Length + ask.Elapsed : item.At.ToUnixTimeMilliseconds() + ((EventItem)item).Text))
-            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + Str(row?["folder"]) + Str(row?["goal"])
+            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
             + string.Join(",", TeamViews.Missing(snapshot!, view.Id, goalReady))
             + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
             + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
@@ -266,6 +268,16 @@ public sealed partial class MainWindow
                     new Run("Nothing has started yet. When the plan is right, press "), new Run("Let the crew do it") { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(": the crew will work on") } },
                 new TextBlock { Text = view.NextGoal, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = "Not right yet? Keep talking with the lead.", FontSize = 13, Foreground = Palette.Muted } } }));
+        // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
+        if (Pending == null && view.NextGoal == null && view.Action == CrewAction.LetTheCrewDoIt
+            && items.OfType<AskItem>().OrderBy(ask => ask.At).LastOrDefault() is { Question.Length: > 0 } mine && mine.Question.Trim() != Str(row?["goal"]).Trim())
+        {
+            var use = Look.Button("Use my message as the goal", "check", Look.Kind.Small);
+            use.HorizontalAlignment = HorizontalAlignment.Left;
+            use.Click += async (_, _) => await DoAsync(() => api!.SaveGoalAsync(view.Id, mine.Question.Trim()), "Goal saved. Press Let the crew do it to start.");
+            thread.Children.Add(Hint("alert", new StackPanel { Spacing = 8, Children = {
+                new TextBlock { Text = "No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.", FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
+        }
         if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
         if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
         if (Pending is { } waiting)
