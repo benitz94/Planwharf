@@ -36,6 +36,12 @@
 //  - Gold id/provider/cli use JsonNode.DeepEquals (JSON value equality).
 //    JavaScript uses === (reference equality for objects).
 //  - ROLE_IDS is RoleIds (PascalCase). VERIFY_SLICE is VerifySlice.
+//  - RoleEligibility always returns bool. JavaScript can return 0 or "" from
+//    `tools && (flag ?? kind !== 'local')`; withModelRoles still Boolean()s
+//    those values, so the resolved roles match.
+//  - WithModelRoles and AssignmentRole accept a C# null preferences/job
+//    argument as an empty object. JavaScript uses default {} and would throw
+//    if the caller passed null into preferences[role].
 using System.Text.Json.Nodes;
 using Planwharf.Engine;
 using Xunit;
@@ -247,5 +253,70 @@ public class ModelRolesTests
         var providerIdPreferred = Obj("""{"id":"gold","providerId":"grok","provider":"codex","cli":"gold"}""");
         var wrongGoldProvider = Obj("""{"goldModel":{"id":"gold","provider":"codex","cli":"gold"}}""");
         Assert.False(ModelRoles.PermitsAssignment(providerIdPreferred, wrongGoldProvider));
+    }
+
+    [Fact]
+    public void Json_null_preferences_fall_through_like_javascript_nullish_coalescing()
+    {
+        var kept = ModelRoles.WithModelRoles(Obj("""{"id":"a","roles":{"worker":true}}"""), Obj("""{"worker":null}"""));
+        Assert.True(Role(kept, "worker"));
+        Assert.True(Role(kept, "verifier"));
+        var local = ModelRoles.RoleEligibility(Obj("""{"kind":"local","orchestratorEligible":null,"capabilities":{"canOrchestrate":true}}"""));
+        Assert.True(local["orchestrator"]);
+        var unknown = ModelRoles.WithModelRoles(Capable(), Obj("""{"admin":true,"worker":false}"""));
+        Assert.False(Role(unknown, "worker"));
+        Assert.False(unknown["roles"]!.AsObject().ContainsKey("admin"));
+        Assert.True(unknown.ContainsKey("enabled"));
+    }
+
+    [Fact]
+    public void Only_json_false_disables_tools_and_eligibility_flags()
+    {
+        var numericTools = ModelRoles.RoleEligibility(Obj("""{"capabilities":{"canUseTools":0,"canInspectFilesystem":""}}"""));
+        Assert.True(numericTools["orchestrator"]);
+        Assert.True(numericTools["reviewer"]);
+        Assert.True(numericTools["worker"]);
+        var zeroEligible = ModelRoles.WithModelRoles(Obj("""{"orchestratorEligible":0}"""));
+        Assert.False(Role(zeroEligible, "orchestrator"));
+        Assert.False(Eligible(zeroEligible, "orchestrator"));
+        Assert.True(ModelRoles.SupportsSupervisor(Obj("""{"adapter":0,"provider":"api"}""")));
+        Assert.True(ModelRoles.RoleEligibility(Obj("""{"provider":"api","supervisorEligible":0}"""))["supervisor"]);
+        Assert.True(ModelRoles.RoleEligibility(Obj("""{"workerEligible":null}"""))["worker"]);
+        Assert.True(ModelRoles.RoleEligibility(Obj("""{"capabilities":"none"}"""))["orchestrator"]);
+        Assert.False(ModelRoles.RoleEligibility(Obj("""{"kind":"local","capabilities":{"canOrchestrate":false}}"""))["orchestrator"]);
+        Assert.True(ModelRoles.RoleEligibility(Obj("""{"orchestratorEligible":true,"capabilities":{"orchestratorEligible":false,"canUseTools":true}}"""))["orchestrator"]);
+    }
+
+    [Fact]
+    public void Gold_pin_applies_only_to_worker_jobs()
+    {
+        var model = Obj("""{"id":"x","roles":{"worker":false,"verifier":true,"reviewer":true}}""");
+        var mismatched = Obj("""{"title":"Verify the work independently against the job","goldModel":{"id":"other","provider":"codex","cli":"other"}}""");
+        Assert.True(ModelRoles.PermitsAssignment(model, mismatched));
+        var auditGold = Obj("""{"kind":"audit","goldModel":{"id":"other"}}""");
+        Assert.True(ModelRoles.PermitsAssignment(model, auditGold));
+        var nullGold = new JsonObject { ["goldModel"] = null };
+        Assert.True(ModelRoles.PermitsAssignment(Obj("""{"id":"a"}"""), nullGold));
+        Assert.False(ModelRoles.PermitsAssignment(Obj("""{"id":"a"}"""), Obj("""{"goldModel":{}}""")));
+        Assert.True(ModelRoles.PermitsAssignment(new JsonObject(), Obj("""{"goldModel":{}}""")));
+        var missingCli = Obj("""{"id":"gold","provider":"codex"}""");
+        var goldNoCli = Obj("""{"goldModel":{"id":"gold","provider":"codex"}}""");
+        Assert.True(ModelRoles.PermitsAssignment(missingCli, goldNoCli));
+        var goldNullId = Obj("""{"id":"gold","goldModel":{"id":null,"provider":"codex","cli":"gold"}}""");
+        Assert.False(ModelRoles.PermitsAssignment(Obj("""{"id":"gold","provider":"codex","cli":"gold"}"""), goldNullId));
+    }
+
+    [Fact]
+    public void Assignment_role_rejects_near_matches()
+    {
+        Assert.Equal("worker", ModelRoles.AssignmentRole(Obj("""{"kind":"Verify"}""")));
+        Assert.Equal("worker", ModelRoles.AssignmentRole(Obj("""{"type":"audit"}""")));
+        Assert.Equal("worker", ModelRoles.AssignmentRole(Obj("""{"type":1,"kind":"implementation"}""")));
+        Assert.False(ModelRoles.IsVerifySlice(JsonValue.Create("")));
+        Assert.False(ModelRoles.IsVerifySlice(Obj("""{"title":"Verify the work independently against the job"}""")));
+        Assert.True(ModelRoles.IsVerifySlice(JsonValue.Create(ModelRoles.VerifySlice + ": extra")));
+        var verifierOnly = Obj("""{"id":"a","roles":{"worker":false,"verifier":true}}""");
+        Assert.True(ModelRoles.PermitsAssignment(verifierOnly, Obj("""{"type":"IMPLEMENTATION","title":"Verify the work independently against the job"}""")));
+        Assert.False(ModelRoles.PermitsAssignment(verifierOnly, Obj("""{"type":"IMPLEMENTATION","title":"Implement"}""")));
     }
 }

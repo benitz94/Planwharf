@@ -48,6 +48,8 @@ public static class BrowserSettings
     static readonly HashSet<string> AllowedIds = ["auto", "default", "custom", "edge", "chrome", "brave", "opera", "firefox", "chromium"];
 
     // Optional executable and env are C# test hooks. Omitted, they follow process.env and fs.statSync.
+    // HTTP save (POST /api/settings/browser) and window launch (openWindow) live in server.cjs
+    // and planwharf.cjs; this module only detects, validates, reads, resolves, and builds arguments.
     public static DetectedBrowser[] DetectBrowsers(Func<string, bool>? executable = null, IReadOnlyDictionary<string, string?>? env = null)
     {
         var isFile = executable ?? IsFile;

@@ -1,4 +1,7 @@
 // Port of engine/activity-events.cjs (LIMITS and Sanitize only).
+// activityCapabilities, translateEvents, classification, normalizeEvent, and the
+// describe/describePlain callbacks stay in JavaScript: they need provider adapters,
+// log tails, and server/orchestrator wiring this job does not port.
 using System.Text.RegularExpressions;
 
 namespace Planwharf.Engine;

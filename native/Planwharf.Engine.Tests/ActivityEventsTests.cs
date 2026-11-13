@@ -9,6 +9,8 @@
 //    surrogate pair at the cut, Unicode whitespace, unterminated private key, case-insensitive keys,
 //    Kelvin sign not matching, control characters, assignment-key variants, token length thresholds,
 //    github_pat_/gh[pousr]_ prefixes, http(s) credentials, ANSI, U+0085 kept, BOM trimmed.
+//    CR vs LF/tab, PUBLIC KEY kept, assignment terminators, word-boundary token prefixes,
+//    sanitize-then-slice, Bearer non-matches, VT stripped, substring token/secret keys.
 //
 // Deferred (outside the scope of this job, only LIMITS and sanitize are ported):
 //  - Every case using activityEvents, activityMessages, activityCapabilities, interpretActivity
@@ -53,9 +55,11 @@ public class ActivityEventsTests
     public void Quoted_keys_and_tokens_are_redacted()
     {
         Assert.DoesNotMatch("private-value|other-private", ActivityEvents.Sanitize("\"api_key\": \"private-value\" token=other-private"));
+        Assert.Equal("\"api_key\": [REDACTED] token=[REDACTED]", ActivityEvents.Sanitize("\"api_key\": \"private-value\" token=other-private"));
         Assert.Equal("TOKEN: [REDACTED] x", ActivityEvents.Sanitize("TOKEN: \"a b\" x"));
         Assert.Equal("api_key=[REDACTED] b", ActivityEvents.Sanitize("api_key=a\nb"));
         Assert.Equal("Bearer [REDACTED],rest", ActivityEvents.Sanitize("Bearer xyz,rest"));
+        Assert.Equal("'api_key'=[REDACTED]", ActivityEvents.Sanitize("'api_key'='secret-value'"));
     }
 
     [Fact]
@@ -152,5 +156,65 @@ public class ActivityEventsTests
         Assert.Equal("\u0085keep\u0085", ActivityEvents.Sanitize("\u0085keep\u0085"));
         Assert.Equal("hi", ActivityEvents.Sanitize("\ufeffhi\ufeff"));
         Assert.Equal("", ActivityEvents.Sanitize("ab", -5));
+    }
+
+    [Fact]
+    public void Line_endings_and_control_whitespace_follow_javascript_order()
+    {
+        Assert.Equal("ab c", ActivityEvents.Sanitize("a\rb\nc"));
+        Assert.Equal("a b", ActivityEvents.Sanitize("a\tb"));
+        Assert.Equal("ab", ActivityEvents.Sanitize("a\vb"));
+    }
+
+    [Fact]
+    public void Public_keys_and_urls_without_passwords_are_kept()
+    {
+        Assert.Equal("-----BEGIN PUBLIC KEY----- abc -----END PUBLIC KEY-----", ActivityEvents.Sanitize("-----BEGIN PUBLIC KEY-----\nabc\n-----END PUBLIC KEY-----"));
+        Assert.Equal("[REDACTED PRIVATE KEY]", ActivityEvents.Sanitize("-----BEGIN EC PRIVATE KEY-----\nxyz\n-----END EC PRIVATE KEY-----"));
+        Assert.Equal("https://example.invalid/path", ActivityEvents.Sanitize("https://example.invalid/path"));
+        Assert.Equal("https://user@example.invalid", ActivityEvents.Sanitize("https://user@example.invalid"));
+    }
+
+    [Fact]
+    public void Assignment_stops_at_javascript_terminators_and_matches_key_suffixes()
+    {
+        Assert.Equal("token=[REDACTED],next", ActivityEvents.Sanitize("token=abc,next"));
+        Assert.Equal("token=[REDACTED];next", ActivityEvents.Sanitize("token=abc;next"));
+        Assert.Equal("token=[REDACTED]&next", ActivityEvents.Sanitize("token=abc&next"));
+        Assert.Equal("mytoken=[REDACTED]", ActivityEvents.Sanitize("mytoken=visible"));
+        Assert.Equal("notsecret=[REDACTED]", ActivityEvents.Sanitize("notsecret=visible"));
+    }
+
+    [Fact]
+    public void Known_token_word_boundaries_match_javascript()
+    {
+        Assert.Equal("ghp_1234567", ActivityEvents.Sanitize("ghp_1234567"));
+        Assert.Equal("[REDACTED]", ActivityEvents.Sanitize("ghp_12345678"));
+        Assert.Equal("github_pat_", ActivityEvents.Sanitize("github_pat_"));
+        Assert.Equal("[REDACTED]", ActivityEvents.Sanitize("github_pat_a"));
+        Assert.Equal("ask-12345678", ActivityEvents.Sanitize("ask-12345678"));
+        Assert.Equal("xsk-12345678", ActivityEvents.Sanitize("xsk-12345678"));
+        Assert.Equal("[REDACTED]é", ActivityEvents.Sanitize("sk-12345678é"));
+        Assert.Equal("sk-1234567é", ActivityEvents.Sanitize("sk-1234567é"));
+    }
+
+    [Fact]
+    public void Redaction_runs_before_the_length_bound()
+    {
+        Assert.Equal("api_key=[RED", ActivityEvents.Sanitize("api_key=supersecret", 12));
+        Assert.Equal("&lt", ActivityEvents.Sanitize("<>", 3));
+        var longThenToken = new string('y', 250) + " sk-12345678 extra";
+        var bounded = ActivityEvents.Sanitize(longThenToken);
+        Assert.Equal(ActivityEvents.Limits.Text, bounded.Length);
+        Assert.Equal(new string('y', 250) + " [REDACTED", bounded);
+        Assert.DoesNotMatch("12345678|extra", bounded);
+    }
+
+    [Fact]
+    public void Bearer_needs_a_token_and_keeps_quoted_values()
+    {
+        Assert.Equal("Bearer", ActivityEvents.Sanitize("Bearer "));
+        Assert.Equal("Bearer \"abc\"", ActivityEvents.Sanitize("Bearer \"abc\""));
+        Assert.Equal("Bearer [REDACTED]", ActivityEvents.Sanitize("Bearer   xyz"));
     }
 }

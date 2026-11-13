@@ -78,7 +78,7 @@ public static class ModelPolicy
     {
         var policyNode = model.TryGetPropertyValue("policy", out var configured) && configured is not null ? configured : new JsonObject();
         var policy = ValidatePolicy(policyNode);
-        var plan = FindPlan(plans, PoolOf(model), skipNull: false);
+        var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: false);
         double? left = plan is not null && IsTrue(plan, "readable") && TryPercent(plan["leftPct"], out var leftPct) ? leftPct
             : plan is not null && IsTrue(plan, "readable") && TryPercent(plan["pct"], out var usedPct) ? 100 - usedPct : null;
         double? usedPercent = left is null ? null : Math.Max(0, Math.Min(100, 100 - left.Value));
@@ -106,37 +106,58 @@ public static class ModelPolicy
         };
     }
 
-    static JsonObject? FindPlan(JsonArray? plans, JsonNode? poolId, bool skipNull)
+    // JavaScript `a || b` keeps the last falsy value, so a missing field (undefined) is not JSON null.
+    readonly struct JsOrValue
+    {
+        public bool IsUndefined { get; init; }
+        public JsonNode? Node { get; init; }
+        public bool IsTruthy => !IsUndefined && StructuredFinal.Truthy(Node);
+    }
+
+    static JsOrValue JsOr(JsonObject obj, string first, string second)
+    {
+        if (obj.TryGetPropertyValue(first, out var primary) && StructuredFinal.Truthy(primary))
+            return new JsOrValue { Node = primary };
+        if (!obj.TryGetPropertyValue(second, out var secondary))
+            return new JsOrValue { IsUndefined = true };
+        return new JsOrValue { Node = secondary };
+    }
+
+    static JsonObject? FindPlan(JsonArray? plans, JsOrValue pool, bool skipFalsy)
     {
         if (plans is null) return null;
         foreach (var item in plans)
         {
             if (item is null)
             {
-                if (skipNull) continue;
+                if (skipFalsy) continue;
                 throw new InvalidOperationException("Invalid quota plan.");
             }
-            if (!StructuredFinal.Truthy(item) || item is not JsonObject plan) continue;
-            if (IdEquals(plan, poolId)) return plan;
+            if (skipFalsy && !StructuredFinal.Truthy(item)) continue;
+            if (item is JsonObject plan)
+            {
+                if (IdEquals(plan, pool)) return plan;
+                continue;
+            }
+            // A boxed primitive or array has no id, which is undefined. It still wins a find().
+            if (pool.IsUndefined) return new JsonObject();
         }
         return null;
     }
 
-    static bool IdEquals(JsonObject obj, JsonNode? poolId)
+    static bool IdEquals(JsonObject obj, JsOrValue pool)
     {
         var has = obj.TryGetPropertyValue("id", out var id);
-        if (poolId is null) return !has;
-        if (!has || id is null) return false;
-        return JsonNode.DeepEquals(id, poolId);
+        if (pool.IsUndefined) return !has;
+        if (!has) return false;
+        if (pool.Node is null || id is null) return pool.Node is null && id is null;
+        return JsonNode.DeepEquals(id, pool.Node);
     }
 
-    static JsonNode? PoolOf(JsonObject model) => OrTruthy(model, "quotaPoolId", "plan");
-
-    static JsonNode? OrTruthy(JsonObject obj, params string[] keys)
+    static bool JsDifferent(JsOrValue left, JsOrValue right)
     {
-        foreach (var key in keys)
-            if (obj.TryGetPropertyValue(key, out var value) && StructuredFinal.Truthy(value)) return value;
-        return null;
+        if (left.IsUndefined || right.IsUndefined) return left.IsUndefined != right.IsUndefined;
+        return !SameJson(left.Node, right.Node);
     }
 
     static JsonNode? Field(JsonObject obj, string key) => obj.TryGetPropertyValue(key, out var value) ? value : null;
@@ -192,13 +213,13 @@ public static class ModelPolicy
 
     static JsonObject? FindAutomatic(JsonObject current, JsonArray models, JsonArray plans, Func<JsonObject, bool> eligible, HashSet<string> seen)
     {
-        var sourceProvider = OrTruthy(current, "providerId", "provider");
-        var sourcePool = PoolOf(current);
+        var sourceProvider = JsOr(current, "providerId", "provider");
+        var sourcePool = JsOr(current, "quotaPoolId", "plan");
         foreach (var item in models)
         {
             if (item is not JsonObject other || seen.Contains(SeenKey(other)) || !EligibleModel(other, eligible)) continue;
-            if (!Different(OrTruthy(other, "providerId", "provider"), sourceProvider)) continue;
-            if (sourcePool is not null && !Different(PoolOf(other), sourcePool)) continue;
+            if (!JsDifferent(JsOr(other, "providerId", "provider"), sourceProvider)) continue;
+            if (sourcePool.IsTruthy && !JsDifferent(JsOr(other, "quotaPoolId", "plan"), sourcePool)) continue;
             if (Blocked(UsagePolicy(other, plans)) || IsExhausted(other, plans)) continue;
             return other;
         }
@@ -211,7 +232,7 @@ public static class ModelPolicy
         foreach (var item in models)
         {
             if (item is not JsonObject other || seen.Contains(SeenKey(other)) || !EligibleModel(other, eligible)) continue;
-            if (!SameJson(OrTruthy(other, "providerId", "provider"), providerId)) continue;
+            if (!SameProvider(JsOr(other, "providerId", "provider"), providerId)) continue;
             first ??= other;
             if (!Blocked(UsagePolicy(other, plans)) && !IsExhausted(other, plans)) return other;
         }
@@ -233,7 +254,7 @@ public static class ModelPolicy
 
     static bool IsExhausted(JsonObject model, JsonArray plans)
     {
-        var pool = PoolOf(model);
+        var pool = JsOr(model, "quotaPoolId", "plan");
         foreach (var item in plans)
         {
             if (item is null) throw new InvalidOperationException("Invalid quota plan.");
@@ -247,8 +268,6 @@ public static class ModelPolicy
     static bool Blocked(JsonObject status) => status["blocked"] is JsonValue value && value.TryGetValue<bool>(out var blocked) && blocked;
 
     static bool IsFalse(JsonObject obj, string key) => obj.TryGetPropertyValue(key, out var node) && node is JsonValue value && value.TryGetValue<bool>(out var flag) && !flag;
-
-    static bool Different(JsonNode? left, JsonNode? right) => !SameJson(left, right);
 
     static bool PropEquals(JsonObject left, string leftKey, JsonObject right, string rightKey)
     {
@@ -278,7 +297,7 @@ public static class ModelPolicy
 
     public static double? QuotaLeft(JsonObject model, JsonArray? plans = null)
     {
-        var plan = FindPlan(plans, PoolOf(model), skipNull: true);
+        var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: true);
         if (plan is null || !IsTrue(plan, "readable")) return null;
         if (TryFinite(plan["leftPct"], out var left)) return left;
         return TryFinite(plan["pct"], out var used) ? 100 - used : null;
@@ -289,7 +308,7 @@ public static class ModelPolicy
     public static bool LowQuota(JsonObject model, JsonArray? plans = null, double thresholdPercent = AutoSwitchThresholdPercent)
     {
         plans ??= new JsonArray();
-        var plan = FindPlan(plans, PoolOf(model), skipNull: true);
+        var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: true);
         if (plan is not null && IsTrue(plan, "readable") && StructuredFinal.Truthy(Field(plan, "exhausted"))) return true;
         if (AsString(UsagePolicy(model, plans)["state"]) == "limit") return true;
         var left = QuotaLeft(model, plans);
@@ -310,11 +329,13 @@ public static class ModelPolicy
             if (item is not JsonObject step) throw new InvalidOperationException("Invalid running step.");
             var current = models.OfType<JsonObject>().FirstOrDefault(model => PropEquals(model, "id", step, "modelId"));
             if (current is null || !LowQuota(current, plans, thresholdPercent)) continue;
+            // A company the other steps of the work do not use comes first, so build and check stay independent;
+            // then the most quota left.
             var ranked = models.OfType<JsonObject>()
                 .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)))
                 .Select(model => (Model: model, Left: QuotaLeft(model, plans)))
                 .Where(row => row.Left is not null && !LowQuota(row.Model, plans, thresholdPercent))
-                .Select(row => (row.Model, Left: row.Left!.Value, Shared: Avoids(step, OrTruthy(row.Model, "providerId", "provider"))))
+                .Select(row => (row.Model, Left: row.Left!.Value, Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
                 .OrderBy(row => row.Shared)
                 .ThenByDescending(row => row.Left)
                 .ToList();
@@ -331,12 +352,17 @@ public static class ModelPolicy
         return switches;
     }
 
-    static bool Avoids(JsonObject step, JsonNode? provider)
+    static bool Avoids(JsonObject step, JsOrValue provider)
     {
-        if (provider is null || !step.TryGetPropertyValue("avoidProviders", out var list) || list is null) return false;
+        if (!step.TryGetPropertyValue("avoidProviders", out var list) || list is null) return false;
         if (list is not JsonArray providers) throw new InvalidOperationException("avoidProviders must be an array.");
-        return providers.Any(item => item is not null && JsonNode.DeepEquals(item, provider));
+        // JSON has no undefined, so a missing provider is never listed. JSON null is.
+        if (provider.IsUndefined) return false;
+        return providers.Any(item => SameJson(item, provider.Node));
     }
+
+    static bool SameProvider(JsOrValue provider, JsonNode providerId) =>
+        !provider.IsUndefined && SameJson(provider.Node, providerId);
 
     // A model set unavailable by a failed call is tried again after a while, not left out for the whole session.
     public static bool AvailableAgain(JsonObject? model, long? nowMs = null, long? retryMs = null)

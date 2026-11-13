@@ -85,8 +85,12 @@ public static class ModelRoles
         return resolved["roles"]![role]!.GetValue<bool>();
     }
 
-    // Property of an object, or null (JavaScript undefined and null both count as missing for ?. and ??).
-    static JsonNode? Prop(JsonNode? node, string name) => node is JsonObject o && o.TryGetPropertyValue(name, out var v) ? v : null;
+    // Property of an object, or null. JavaScript undefined and JSON null both count as missing for ?. and ??.
+    static JsonNode? Prop(JsonNode? node, string name)
+    {
+        if (node is not JsonObject o || !o.TryGetPropertyValue(name, out var v) || v is null) return null;
+        return v is JsonValue jv && jv.GetValueKind() is JsonValueKind.Null or JsonValueKind.Undefined ? null : v;
+    }
     static bool IsFalse(JsonNode? node) => node is JsonValue v && v.GetValueKind() == JsonValueKind.False;
     static bool IsString(JsonNode? node, string text) => node is JsonValue v && v.GetValueKind() == JsonValueKind.String && v.GetValue<string>() == text;
 

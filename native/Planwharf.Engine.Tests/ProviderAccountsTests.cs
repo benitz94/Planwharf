@@ -282,4 +282,67 @@ public class ProviderAccountsTests
         }
         finally { Directory.Delete(home, true); }
     }
+
+    [Fact]
+    public void Synthetic_credentials_and_emails_cannot_appear_in_returned_metadata_json()
+    {
+        var home = Directory.CreateTempSubdirectory("pw-account-synthetic-").FullName;
+        try
+        {
+            const string email = "synthetic.user@accounts.example";
+            const string password = "synthetic-password-value";
+            const string apiKey = "synthetic-api-key-value";
+            const string refresh = "synthetic-refresh-token-value";
+            var jwt = Jwt(new
+            {
+                sub = "synthetic-subject",
+                email,
+                password,
+                auth = new { chatgpt_account_id = "workspace", chatgpt_plan_type = "team", chatgpt_user_id = "synthetic-subject", email }
+            });
+
+            WriteRaw(home, "{\"tokens\":{\"account_id\":\"workspace\",\"id_token\":" + JsonSerializer.Serialize(jwt) + ",\"access_token\":\"synthetic-access-token-value\",\"refresh_token\":" + JsonSerializer.Serialize(refresh) + ",\"email\":" + JsonSerializer.Serialize(email) + "},\"password\":" + JsonSerializer.Serialize(password) + "}");
+            var codex = ProviderAccounts.CodexAccount("codex", home);
+            Assert.Equal("business", codex.Type);
+            AssertMetadataJson(codex, jwt, email, password, apiKey, refresh, "synthetic-access-token-value", "synthetic-subject", "id_token");
+
+            WriteRaw(home, "{\"https://auth.x.ai\":{\"key\":" + JsonSerializer.Serialize(apiKey) + ",\"user_id\":\"fixture-user\",\"principal_type\":\"Team\",\"team_id\":\"fixture-team\",\"email\":" + JsonSerializer.Serialize(email) + ",\"refresh_token\":" + JsonSerializer.Serialize(refresh) + "},\"spare\":{\"key\":\"spare-secret\",\"email\":\"spare@accounts.example\"}}");
+            var grok = ProviderAccounts.GrokAccount("grok", home);
+            Assert.Equal("business", grok.Type);
+            Assert.Equal(GrokTeamKey, grok.Key);
+            AssertMetadataJson(grok, apiKey, refresh, email, password, "spare-secret", "spare@accounts.example", "fixture-user", "fixture-team");
+        }
+        finally { Directory.Delete(home, true); }
+    }
+
+    static void AssertMetadataJson(ProviderAccounts.AccountMetadata account, params string[] forbidden)
+    {
+        AssertNoSecrets(account, forbidden);
+        AssertNoSecretsInText(account.ToString(), forbidden);
+
+        var camel = JsonSerializer.Serialize(account, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        var pascal = JsonSerializer.Serialize(account);
+        AssertNoSecretsInText(camel, forbidden);
+        AssertNoSecretsInText(pascal, forbidden);
+
+        using var camelDoc = JsonDocument.Parse(camel);
+        using var pascalDoc = JsonDocument.Parse(pascal);
+        AssertExactMetadataFields(camelDoc.RootElement, "key", "type", "source", "checkedAt");
+        AssertExactMetadataFields(pascalDoc.RootElement, "Key", "Type", "Source", "CheckedAt");
+    }
+
+    static void AssertExactMetadataFields(JsonElement obj, params string[] names)
+    {
+        Assert.Equal(JsonValueKind.Object, obj.ValueKind);
+        Assert.Equal(names.Length, obj.EnumerateObject().Count());
+        foreach (var name in names) Assert.True(obj.TryGetProperty(name, out _), name);
+        foreach (var property in obj.EnumerateObject())
+            Assert.DoesNotContain(property.Name, new[] { "email", "password", "id_token", "access_token", "refresh_token", "user_id" }, StringComparer.OrdinalIgnoreCase);
+    }
+
+    static void AssertNoSecretsInText(string? text, params string[] forbidden)
+    {
+        Assert.False(string.IsNullOrEmpty(text));
+        foreach (var item in forbidden) Assert.DoesNotContain(item, text, StringComparison.Ordinal);
+    }
 }

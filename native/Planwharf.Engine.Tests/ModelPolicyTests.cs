@@ -1,6 +1,13 @@
-// Port of the standalone cases in engine/model-policy.test.cjs.
-// Deferred (not this module alone): the restart/orchestrator case, providerPolicyFor,
-// launchSpec/diagnoseProvider, the stale quota refresh, and the policy HTTP API.
+// Port of the standalone cases in engine/model-policy.test.cjs, engine/quota-switch.test.cjs,
+// and the availableAgain case in engine/finish-clean.test.cjs.
+// Deferred (need the server, orchestrator, or another unported module):
+//  - "ChatGPT siblings inherit one provider policy while Grok stays independent after restart"
+//    (createOrchestrator, setProviderPolicy, restart, pickWorkers, launchSpec).
+//  - providerPolicyFor assertions in "remaining quota semantics..." (engine/provider-policy.cjs).
+//  - "permission restrictions and privacy-safe categorized reports" (launchSpec, diagnoseProvider).
+//  - "a failed quota refresh cannot keep authorizing calls using stale percentages" (orchestrator).
+//  - "policy API persists, lead and approved workers use automatic fallback without inference"
+//    (createServer, /api/models/policy, /api/providers/policy, export).
 using System.Text.Json.Nodes;
 using Planwharf.Engine;
 using Xunit;
@@ -58,6 +65,7 @@ public sealed class ModelPolicyTests
             var status = ModelPolicy.UsagePolicy(model, Arr($"[{{\"id\":\"ChatGPT\",\"readable\":true,\"leftPct\":{leftPct}}}]"));
             Assert.Equal(expected, status["state"]!.ToString().Trim('"'));
             Assert.Equal(leftPct, Number(status["remainingPercent"]));
+            Assert.Equal(100 - leftPct, Number(status["usedPercent"]));
             Assert.Equal(30, Number(status["warningRemainingPercent"]));
         }
         var high = Copy(Lead);
@@ -235,6 +243,192 @@ public sealed class ModelPolicyTests
         Assert.Equal("unread", State(model, Arr("""[{"id":"chatgpt","readable":true,"leftPct":150}]""")));
         Assert.False(ModelPolicy.AvailableAgain(null, 0));
         Assert.False(ModelPolicy.AvailableAgain(Parse("""{"available":false,"unavailableAt":"not-a-date"}"""), 0));
+    }
+
+    [Fact]
+    public void Invalid_switch_inputs_fail_without_partial_results()
+    {
+        var running = Arr("""[{"subTaskId":"s1","modelId":"terra"},null]""");
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            ModelPolicy.QuotaSwitches(running, SwitchModels(), SwitchPlans()));
+        Assert.Equal("Invalid running step.", error.Message);
+
+        var avoidProviders = Arr("""[{"subTaskId":"s1","modelId":"terra","avoidProviders":"antigravity"}]""");
+        var providerModels = SwitchModels();
+        foreach (var model in providerModels.OfType<JsonObject>())
+            model["provider"] = "fixture";
+        error = Assert.Throws<InvalidOperationException>(() =>
+            ModelPolicy.QuotaSwitches(avoidProviders, providerModels, SwitchPlans()));
+        Assert.Equal("avoidProviders must be an array.", error.Message);
+
+        var nullPlan = new JsonArray { null };
+        error = Assert.Throws<InvalidOperationException>(() =>
+            ModelPolicy.UsagePolicy(Lead, nullPlan));
+        Assert.Equal("Invalid quota plan.", error.Message);
+    }
+
+    [Fact]
+    public void Retry_boundary_and_concurrent_reads_are_deterministic()
+    {
+        var at = DateTimeOffset.Parse("2026-11-11T16:00:00Z", System.Globalization.CultureInfo.InvariantCulture).ToUnixTimeMilliseconds();
+        var model = Parse($$"""{"available":false,"unavailableAt":"{{DateTimeOffset.FromUnixTimeMilliseconds(at).UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ}}"}""");
+        Assert.False(ModelPolicy.AvailableAgain(model, at + ModelPolicy.RetryUnavailableMs - 1));
+        Assert.True(ModelPolicy.AvailableAgain(model, at + ModelPolicy.RetryUnavailableMs));
+
+        var failures = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        Parallel.For(0, 100, _ =>
+        {
+            try
+            {
+                var result = ModelPolicy.QuotaSwitches(
+                    Arr("""[{"subTaskId":"s1","modelId":"terra"}]"""),
+                    SwitchModels(), SwitchPlans());
+                Assert.Equal("gemini-pro", result[0]!["toModelId"]!.GetValue<string>());
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        });
+        Assert.Empty(failures);
+    }
+
+    [Fact]
+    public void Defaults_quota_pool_pct_and_exact_threshold_match_JavaScript()
+    {
+        var defaults = ModelPolicy.DefaultPolicy();
+        Assert.True(JsonNode.DeepEquals(Parse("""{"minRemainingPercent":null,"warningRemainingPercent":null,"fallbackModelId":null,"alwaysApprove":false}"""), defaults));
+        Assert.True(JsonNode.DeepEquals(defaults, ModelPolicy.ValidatePolicy(new JsonObject())));
+
+        var pooled = Copy(Lead);
+        pooled["quotaPoolId"] = "Grok";
+        pooled["policy"] = Parse("""{"minRemainingPercent":20}""");
+        var plans = Arr("""[{"id":"ChatGPT","readable":true,"leftPct":10},{"id":"Grok","readable":true,"leftPct":90}]""");
+        Assert.Equal(90, ModelPolicy.QuotaLeft(pooled, plans));
+        Assert.Equal("ok", State(pooled, plans));
+
+        var fromPct = Parse("""{"id":"x","plan":"p","enabled":true}""");
+        Assert.Equal(40, ModelPolicy.QuotaLeft(fromPct, Arr("""[{"id":"p","readable":true,"pct":60}]""")));
+
+        var atThreshold = Parse("""{"id":"x","plan":"p","enabled":true}""");
+        Assert.True(ModelPolicy.LowQuota(atThreshold, Arr("""[{"id":"p","readable":true,"leftPct":20}]"""), 20));
+        Assert.False(ModelPolicy.LowQuota(atThreshold, Arr("""[{"id":"p","readable":true,"leftPct":21}]"""), 20));
+        Assert.False(ModelPolicy.AvailableAgain(Parse("""{"id":"ok","available":true,"unavailableAt":"2026-11-11T16:00:00.000Z"}"""), 0));
+
+        var lead = Copy(Lead);
+        lead["policy"] = Parse("""{"minRemainingPercent":20,"fallbackModelId":"fallback"}""");
+        var exhausted = Arr("""[{"id":"ChatGPT","readable":true,"leftPct":10},{"id":"Grok","readable":true,"leftPct":0}]""");
+        Assert.Null(ModelPolicy.ResolveUsageFallback(lead, Models(lead, Copy(Fallback)), exhausted, _ => true));
+    }
+
+    [Fact]
+    public void Zero_balance_null_identity_and_retry_edges_match_JavaScript()
+    {
+        var stopped = Parse("""{"id":"x","plan":"p","enabled":true,"policy":{"minRemainingPercent":20,"warningRemainingPercent":30}}""");
+        var zeroLeft = ModelPolicy.UsagePolicy(stopped, Arr("""[{"id":"p","readable":true,"leftPct":0,"pct":40}]"""));
+        Assert.Equal(0, Number(zeroLeft["remainingPercent"]));
+        Assert.Equal(100, Number(zeroLeft["usedPercent"]));
+        Assert.Equal("limit", zeroLeft["state"]!.GetValue<string>());
+        Assert.Equal(0, ModelPolicy.QuotaLeft(Parse("""{"id":"x","plan":"p"}"""), Arr("""[{"id":"p","readable":true,"leftPct":0,"pct":40}]""")));
+
+        var fractional = ModelPolicy.UsagePolicy(stopped, Arr("""[{"id":"p","readable":true,"leftPct":20.25}]"""));
+        Assert.Equal("Low provider quota (20.3% remaining / warning at 30%).", fractional["reason"]!.GetValue<string>());
+
+        var noPool = Parse("""{"id":"x","enabled":true,"policy":{"minRemainingPercent":10}}""");
+        var shadowed = new JsonArray { JsonValue.Create(false), Parse("""{"readable":true,"leftPct":40}""") };
+        Assert.Null(ModelPolicy.UsagePolicy(noPool, shadowed)["remainingPercent"]);
+        Assert.Equal("unread", State(noPool, shadowed));
+        Assert.Equal(40, ModelPolicy.QuotaLeft(noPool, shadowed));
+        var arrayShadow = new JsonArray { new JsonArray(), Parse("""{"readable":true,"leftPct":40}""") };
+        Assert.Null(ModelPolicy.QuotaLeft(noPool, arrayShadow));
+        var exhaustedAfterFalse = new JsonArray { JsonValue.Create(false), Parse("""{"readable":true,"leftPct":5,"exhausted":true}""") };
+        Assert.True(ModelPolicy.LowQuota(noPool, exhaustedAfterFalse, 20));
+
+        var explicitNull = Parse("""{"id":"x","plan":null,"enabled":true,"policy":{"minRemainingPercent":10}}""");
+        var nullIds = Arr("""[{"id":null,"readable":true,"leftPct":33},{"readable":true,"leftPct":77}]""");
+        Assert.Equal(33, Number(ModelPolicy.UsagePolicy(explicitNull, nullIds)["remainingPercent"]));
+        Assert.Equal(77, Number(ModelPolicy.UsagePolicy(noPool, nullIds)["remainingPercent"]));
+
+        var emptyPool = Parse("""{"id":"x","quotaPoolId":"","plan":"real","enabled":true}""");
+        var zeroPool = Parse("""{"id":"x","quotaPoolId":0,"plan":"real","enabled":true}""");
+        var pooled = Arr("""[{"id":"real","readable":true,"leftPct":50},{"id":"","readable":true,"leftPct":1},{"id":0,"readable":true,"leftPct":1}]""");
+        Assert.Equal(50, ModelPolicy.QuotaLeft(emptyPool, pooled));
+        Assert.Equal(50, ModelPolicy.QuotaLeft(zeroPool, pooled));
+
+        var legacy = Parse("""{"maxUsedPercent":0,"warningUsedPercent":null}""");
+        var legacyBefore = legacy.ToJsonString();
+        Assert.True(JsonNode.DeepEquals(Parse("""{"minRemainingPercent":100,"warningRemainingPercent":null,"fallbackModelId":null,"alwaysApprove":false}"""), ModelPolicy.ValidatePolicy(legacy)));
+        Assert.Equal(legacyBefore, legacy.ToJsonString());
+        Assert.True(JsonNode.DeepEquals(
+            Parse("""{"minRemainingPercent":0,"warningRemainingPercent":100,"fallbackModelId":null,"alwaysApprove":false}"""),
+            ModelPolicy.ValidatePolicy(Parse("""{"maxUsedPercent":100,"warningUsedPercent":0}"""))));
+        Assert.Equal("Warning remaining quota must be higher than the stop threshold.", Assert.Throws<InvalidOperationException>(() => ModelPolicy.ValidatePolicy(Parse("""{"warningUsedPercent":70}"""))).Message);
+        Assert.Equal("  id  ", ModelPolicy.ValidatePolicy(Parse("""{"fallbackModelId":"  id  "}"""))["fallbackModelId"]!.GetValue<string>());
+
+        var tied = Arr("""[{"id":"a","plan":"pa","enabled":true,"provider":"A"},{"id":"b","plan":"pb","enabled":true,"provider":"B"},{"id":"c","plan":"pc","enabled":true,"provider":"C"}]""");
+        var tiedPlans = Arr("""[{"id":"pa","readable":true,"leftPct":10},{"id":"pb","readable":true,"leftPct":40},{"id":"pc","readable":true,"leftPct":40}]""");
+        Assert.Equal("b", ModelPolicy.QuotaSwitches(Arr("""[{"subTaskId":"s","modelId":"a"}]"""), tied, tiedPlans)[0]!["toModelId"]!.GetValue<string>());
+
+        var nullCompany = Arr("""[{"id":"a","plan":"pa","enabled":true,"provider":null},{"id":"b","plan":"pb","enabled":true,"provider":"B"},{"id":"c","plan":"pc","enabled":true,"provider":null}]""");
+        var nullCompanyPlans = Arr("""[{"id":"pa","readable":true,"leftPct":10},{"id":"pb","readable":true,"leftPct":40},{"id":"pc","readable":true,"leftPct":90}]""");
+        Assert.Equal("b", ModelPolicy.QuotaSwitches(Arr("""[{"subTaskId":"s","modelId":"a","avoidProviders":[null]}]"""), nullCompany, nullCompanyPlans)[0]!["toModelId"]!.GetValue<string>());
+
+        var exhaustedSwitch = ModelPolicy.QuotaSwitches(
+            Arr("""[{"subTaskId":"s","modelId":"a"}]"""),
+            Arr("""[{"id":"a","plan":"pa","enabled":true},{"id":"b","plan":"pb","enabled":true}]"""),
+            Arr("""[{"id":"pa","readable":true,"exhausted":true},{"id":"pb","readable":true,"leftPct":80}]"""));
+        Assert.True(JsonNode.DeepEquals(Arr("""[{"subTaskId":"s","fromModelId":"a","toModelId":"b","leftPercent":null}]"""), exhaustedSwitch));
+
+        var beforeExhausted = new JsonArray { null, Parse("""{"id":"p","readable":true,"leftPct":50,"exhausted":true}""") };
+        Assert.True(ModelPolicy.LowQuota(Parse("""{"id":"x","plan":"p","enabled":true}"""), beforeExhausted, 20));
+        var nullThenReadable = new JsonArray { null, Parse("""{"id":"p","readable":true,"leftPct":50}""") };
+        Assert.Equal("Invalid quota plan.", Assert.Throws<InvalidOperationException>(() => ModelPolicy.UsagePolicy(Parse("""{"id":"x","plan":"p","enabled":true,"policy":{"minRemainingPercent":1}}"""), nullThenReadable)).Message);
+
+        Assert.Empty(ModelPolicy.QuotaSwitches(
+            Arr("""[{"subTaskId":"s","modelId":"sonnet","avoidProviders":"not-an-array"}]"""),
+            SwitchModels(), SwitchPlans()));
+
+        var self = Copy(Lead);
+        self["policy"] = Parse("""{"minRemainingPercent":20,"fallbackModelId":"lead"}""");
+        Assert.Null(ModelPolicy.ResolveUsageFallback(self, Models(self), Arr("""[{"id":"ChatGPT","readable":true,"leftPct":0}]"""), _ => true));
+
+        var automatic = Copy(Lead);
+        automatic.Remove("provider");
+        automatic["plan"] = "P";
+        automatic["policy"] = Parse("""{"minRemainingPercent":20}""");
+        automatic["fallbackProviderId"] = "@automatic";
+        var nullProvider = Parse("""{"id":"other","provider":null,"plan":"Q","enabled":true}""");
+        Assert.Equal("other", Id(ModelPolicy.ResolveUsageFallback(automatic, Models(automatic, nullProvider), Arr("""[{"id":"P","readable":true,"leftPct":0},{"id":"Q","readable":true,"leftPct":90}]"""), _ => true)));
+        var disabled = Parse("""{"id":"z","provider":"other","plan":"Grok","enabled":0}""");
+        Assert.Null(ModelPolicy.ResolveUsageFallback(automatic, Models(automatic, disabled), Arr("""[{"id":"P","readable":true,"leftPct":0},{"id":"Grok","readable":true,"leftPct":90}]"""), _ => true));
+
+        var at = DateTimeOffset.Parse("2026-11-11T16:00:00.000Z", System.Globalization.CultureInfo.InvariantCulture).ToUnixTimeMilliseconds();
+        var stamp = DateTimeOffset.FromUnixTimeMilliseconds(at).UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+        var unavailable = Parse($$"""{"available":false,"unavailableAt":"{{stamp}}"}""");
+        var before = unavailable.ToJsonString();
+        Assert.False(ModelPolicy.AvailableAgain(unavailable, at - 1));
+        Assert.True(ModelPolicy.AvailableAgain(unavailable, at, 0));
+        Assert.Equal(before, unavailable.ToJsonString());
+        Assert.False(ModelPolicy.AvailableAgain(Parse("""{"available":false,"unavailableAt":""}"""), at + ModelPolicy.RetryUnavailableMs));
+
+        var failures = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        Parallel.For(0, 40, _ =>
+        {
+            try
+            {
+                var policy = ModelPolicy.ValidatePolicy(Parse("""{"maxUsedPercent":80,"warningUsedPercent":70}"""));
+                Assert.Equal(20, policy["minRemainingPercent"]!.GetValue<int>());
+                Assert.Equal(30, policy["warningRemainingPercent"]!.GetValue<int>());
+                var retry = Parse($$"""{"available":false,"unavailableAt":"{{stamp}}"}""");
+                Assert.False(ModelPolicy.AvailableAgain(retry, at + ModelPolicy.RetryUnavailableMs - 1));
+                Assert.True(ModelPolicy.AvailableAgain(retry, at + ModelPolicy.RetryUnavailableMs));
+            }
+            catch (Exception exception)
+            {
+                failures.Add(exception);
+            }
+        });
+        Assert.Empty(failures);
     }
 
     static JsonObject WithPolicy(JsonObject model, string policy)
