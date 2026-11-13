@@ -21,7 +21,7 @@ public class CompareShots
         var output = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_OUT") ?? AppContext.BaseDirectory;
         var width = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_WIDTH"), out var w) ? w : 1440;
         var height = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_HEIGHT"), out var h) ? h : 900;
-        var window = new MainWindow("v0.2.42") { Width = width, Height = height };
+        var window = new MainWindow(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_VERSION") ?? "v0.2.42") { Width = width, Height = height };
         window.Show();
         window.Connect(new PlanwharfApi(url));
         await Settle();
@@ -32,7 +32,9 @@ public class CompareShots
             await Settle();
         }
         Save(window, Path.Combine(output, "native-chat.png"));
-        foreach (var panel in new[] { "team", "usage", "progress", "files", "settings" })
+        // PLANWHARF_COMPARE_PANELS picks the side panels, for example "team,usage"; all of them by default.
+        var panels = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_PANELS") is { Length: > 0 } picked ? picked.Split(',') : ["team", "usage", "progress", "files", "settings"];
+        foreach (var panel in panels)
         {
             window.OpenSide(panel);
             await Settle();

@@ -66,6 +66,18 @@ jobs:
           {
             echo "## Download"
             echo
+            echo "### Native app (recommended)"
+            echo "A native window instead of a web page, much lighter than the desktop app, with everything it does. The window is native; Planwharf's engine still runs on Node.js, included in the zip. The engine is being ported to C#."
+            echo
+            echo "| System | File |"
+            echo "|---|---|"
+            echo "| Windows 10 / 11 (64-bit) | [Planwharf-native-win-x64-$next.zip]($base/Planwharf-native-win-x64-$next.zip) |"
+            echo "| macOS, Apple silicon | [Planwharf-native-osx-arm64-$next.zip]($base/Planwharf-native-osx-arm64-$next.zip) |"
+            echo "| macOS, Intel | [Planwharf-native-osx-x64-$next.zip]($base/Planwharf-native-osx-x64-$next.zip) |"
+            echo "| Linux (64-bit) | [Planwharf-native-linux-x64-$next.zip]($base/Planwharf-native-linux-x64-$next.zip) |"
+            echo
+            echo "Not code-signed yet: on Windows choose More info > Run anyway; on macOS, if it is blocked, open System Settings > Privacy & Security and choose Open Anyway. Close the desktop app before you open this one: they share the same projects."
+            echo
             echo "### Desktop app (Electron)"
             echo "Its own window, Node.js included."
             echo
@@ -84,18 +96,6 @@ jobs:
             echo "| System | File |"
             echo "|---|---|"
             echo "| Windows, macOS, Linux | [Planwharf-$next.zip]($base/Planwharf-$next.zip) |"
-            echo
-            echo "### Native app (recommended)"
-            echo "A native window instead of a web page, much lighter than the desktop app, with everything it does. The window is native; Planwharf's engine still runs on Node.js, included in the zip. The engine is being ported to C#."
-            echo
-            echo "| System | File |"
-            echo "|---|---|"
-            echo "| Windows 10 / 11 (64-bit) | [Planwharf-native-win-x64-$next.zip]($base/Planwharf-native-win-x64-$next.zip) |"
-            echo "| macOS, Apple silicon | [Planwharf-native-osx-arm64-$next.zip]($base/Planwharf-native-osx-arm64-$next.zip) |"
-            echo "| macOS, Intel | [Planwharf-native-osx-x64-$next.zip]($base/Planwharf-native-osx-x64-$next.zip) |"
-            echo "| Linux (64-bit) | [Planwharf-native-linux-x64-$next.zip]($base/Planwharf-native-linux-x64-$next.zip) |"
-            echo
-            echo "Not code-signed yet: on Windows choose More info > Run anyway; on macOS, if it is blocked, open System Settings > Privacy & Security and choose Open Anyway. Close the desktop app before you open this one: they share the same projects."
             echo
             gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$next" -f target_commitish="$GITHUB_SHA" --jq .body
           } > "$RUNNER_TEMP/notes.md"

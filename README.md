@@ -28,7 +28,7 @@ When the work is done, a summary says what happened, who did what and what is le
 |---|---|---|
 | ![Team: the lead, and who can build, verify or review](docs/images/team.png) | ![Usage: quota left for each provider and what each model used](docs/images/usage.png) | ![Settings: project folder, tools, approvals and the automatic model switch](docs/images/settings.png) |
 
-<sub>Screenshots of a sample project with sample data.</sub>
+<sub>Screenshots of the native app, on a sample project with sample data.</sub>
 
 ## Download
 
