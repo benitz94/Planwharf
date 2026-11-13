@@ -21,6 +21,11 @@ jobs:
             rid: win-x64
           - os: ubuntu-latest
             rid: linux-x64
+          # ARM PCs, on GitHub's ARM machines: the tests run there too, and the Node.js put in the zip is ARM.
+          - os: windows-11-arm
+            rid: win-arm64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
           - os: macos-latest
             rid: osx-arm64
           # Intel Macs are built on the Apple silicon runner: .NET publishes for either.
