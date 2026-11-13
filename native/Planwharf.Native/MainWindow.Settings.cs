@@ -176,19 +176,24 @@ public sealed partial class MainWindow
         if (autoSwitch != null)
         {
             var enabled = autoSwitch["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var flag) || flag;
-            var threshold = autoSwitch["thresholdPercent"] is JsonValue t && t.TryGetValue<double>(out var pct) ? (int)pct : 20;
+            int Percent(string key, int fallback) => autoSwitch[key] is JsonValue v && v.TryGetValue<double>(out var pct) ? (int)pct : fallback;
+            var both = Percent("thresholdPercent", 35);
+            var five = Percent("fiveHourPercent", both);
+            var week = Percent("weeklyPercent", both);
             side.Children.Add(SettingsHead("Model switch"));
-            side.Children.Add(Explain(enabled ? $"When a model working on a step drops to {threshold}% quota left or less, Planwharf hands the step to another model with the same role and more quota, with a handoff of what was done."
+            side.Children.Add(Explain(enabled ? $"A model is low when its 5-hour quota drops to {five}% left or its weekly quota to {week}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team."
                 : "Off: a model that runs out of quota stops its step, and you choose the next model."));
             var toggle = new ToggleSwitch { OnContent = "Switch model automatically", OffContent = "Switch model automatically", IsChecked = enabled };
             toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != enabled) await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(toggle.IsChecked == true), "Model switch saved."); };
             side.Children.Add(toggle);
             if (enabled)
             {
-                var at = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = threshold, FormatString = "0", Width = 130 };
+                var atFive = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = five, FormatString = "0", Width = 120 };
+                var atWeek = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = week, FormatString = "0", Width = 120 };
                 var saveAt = Small("Save");
-                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(at.Value ?? threshold)), "Model switch saved.");
-                side.Children.Add(Row(new TextBlock { Text = "Switch at", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, at,
+                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(atFive.Value ?? five), (int)(atWeek.Value ?? week)), "Model switch saved.");
+                side.Children.Add(Row(new TextBlock { Text = "5 hours", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, atFive));
+                side.Children.Add(Row(new TextBlock { Text = "Week", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
                     new TextBlock { Text = "% left", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
             }
         }

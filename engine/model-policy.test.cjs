@@ -156,6 +156,8 @@ test('policy API persists, lead and approved workers use automatic fallback with
   }
   try {
     await start();
+    // This test is about the provider's own stop threshold; the automatic switch keeps its former 20%.
+    await request('/api/orchestrator/auto-switch', { thresholdPercent: 20 });
     await request('/api/models/policy', { id: 'lead', policy: { ...policy, fallbackModelId: 'missing' } }, 400);
     await request('/api/models/policy', { id: 'lead', policy });
     await request('/api/orchestrator/lead', { id: 'lead' });

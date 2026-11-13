@@ -64,7 +64,7 @@ test('a lead at the threshold hands over to the next in the ranking, and the cha
     assert.equal(asked.at(-1), 'astra', 'the strongest lead with quota takes over');
     const view = await orchestra.snapshot();
     assert.equal(view.orchestratorId, 'astra', 'the switch is real, not hidden in one call');
-    assert.ok(view.execution.timeline.some(event => event.type === 'LEAD_SWITCHED' && event.summary === 'Planwharf switched the lead: Fable 5.2 → GPT-6 Astra. Why: quota of Fable 5.2 is at 15% (switch at 20%).'),
+    assert.ok(view.execution.timeline.some(event => event.type === 'LEAD_SWITCHED' && event.summary === 'Planwharf switched the lead: Fable 5.2 → GPT-6 Astra. Why: quota of Fable 5.2 is at 15% (switch at 35%).'),
       JSON.stringify(view.execution.timeline.map(event => event.summary)));
     // Every lead low and none better: the lead keeps working rather than stop.
     plans = [{ id: 'claude', readable: true, leftPct: 5 }, { id: 'chatgpt', readable: true, leftPct: 10 }];

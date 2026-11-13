@@ -546,6 +546,29 @@
     $('side-body').innerHTML = body;
     $('side-body').scrollTop = scroll;
   }
+  // Both windows when the provider reports them; the lower one is what counts.
+  function quotaText(model, left) {
+    const w = model.quotaWindows || {};
+    if (w.fiveHour != null || w.weekly != null) return ` · ${[w.fiveHour != null ? `5h ${w.fiveHour}%` : '', w.weekly != null ? `week ${w.weekly}%` : ''].filter(Boolean).join(' · ')} left${model.lowQuota ? ' · <b class="c-warn">under its limit</b>' : ''}`;
+    return left != null ? ` · ${left}% quota left${model.lowQuota ? ' · <b class="c-warn">under its limit</b>' : ''}` : ' · quota not reported';
+  }
+  // The model's quota limit: the general one, its own two thresholds, or no limit at all.
+  function limitEditor(model) {
+    const limit = model.quotaLimit;
+    if (!limit) return '';
+    const said = limit.none ? 'No limit' : `${limit.custom ? 'Own limit' : 'Limit'}: ${limit.fiveHourPercent === limit.weeklyPercent ? limit.fiveHourPercent + '%' : `5h ${limit.fiveHourPercent}% · week ${limit.weeklyPercent}%`}`;
+    return `<details class="limit"><summary class="small">${escape(said)}</summary><form class="row limit-form" data-limit-model="${escape(model.id)}">
+      <label class="small">5h <input name="five" type="number" min="0" max="90" step="5" value="${escape(String(limit.fiveHourPercent ?? state.autoSwitch?.fiveHourPercent ?? 35))}" style="width:4.5em"></label>
+      <label class="small">Week <input name="week" type="number" min="0" max="90" step="5" value="${escape(String(limit.weeklyPercent ?? state.autoSwitch?.weeklyPercent ?? 35))}" style="width:4.5em"></label>
+      <button type="submit" class="btn btn-small">Save</button>
+      <button type="button" class="btn btn-small" data-limit-none="${escape(model.id)}">No limit</button>
+      ${limit.custom ? `<button type="button" class="btn btn-small" data-limit-reset="${escape(model.id)}">Use the general limit</button>` : ''}</form></details>`;
+  }
+  async function saveLimit(change) {
+    try { await post('/api/models/quota-limit', change); toast('Quota limit saved.'); await refresh({ tick: false }); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
   function memberHtml(model) {
     const left = quotaLeft(model);
     const unavailable = model.available === false;
@@ -558,8 +581,8 @@
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
-      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ` · <span title="${escape(model.unavailableReason || '')}">not available now${model.unavailableReason ? ': ' + escape(String(model.unavailableReason).slice(0, 140)) : ''}${model.unavailableAt ? ' (tried again in a few minutes)' : ''}</span>` : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
-      ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
+      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ` · <span title="${escape(model.unavailableReason || '')}">not available now${model.unavailableReason ? ': ' + escape(String(model.unavailableReason).slice(0, 140)) : ''}${model.unavailableAt ? ' (tried again in a few minutes)' : ''}</span>` : ''}${quotaText(model, left)}</div>
+      ${left != null && !benched ? `<div class="bar${model.lowQuota ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}${benched ? '' : limitEditor(model)}</div>
       <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
@@ -761,9 +784,10 @@
   function autoSwitchSection() {
     if (!state.autoSwitch) { if (!state.autoSwitchLoading) { state.autoSwitchLoading = true; getJson('/api/orchestrator/auto-switch').then(value => { state.autoSwitch = value; state.sideSig = ''; renderSide(); }).catch(() => {}).finally(() => { state.autoSwitchLoading = false; }); } return ''; }
     const on = state.autoSwitch.enabled !== false;
-    return `<div class="section">${head('usage', 't-accent', 'Model switch')}<p class="explain">${on ? `When a model working on a step drops to ${state.autoSwitch.thresholdPercent}% quota left or less, Planwharf hands the step to another model with the same role and more quota, with a handoff of what was done.` : 'Off: a model that runs out of quota stops its step, and you choose the next model.'}</p>
+    const five = state.autoSwitch.fiveHourPercent ?? state.autoSwitch.thresholdPercent, week = state.autoSwitch.weeklyPercent ?? state.autoSwitch.thresholdPercent;
+    return `<div class="section">${head('usage', 't-accent', 'Model switch')}<p class="explain">${on ? `A model is low when its 5-hour quota drops to ${five}% left or its weekly quota to ${week}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team.` : 'Off: a model that runs out of quota stops its step, and you choose the next model.'}</p>
       <button type="button" class="switch" role="switch" data-action="toggle-auto-switch" aria-checked="${on}"><span class="knob" aria-hidden="true"></span><span>Switch model automatically</span></button>
-      ${on ? `<form id="auto-switch-form" class="row"><label class="small" for="auto-switch-threshold">Switch at</label><input id="auto-switch-threshold" name="threshold" type="number" min="0" max="90" step="5" value="${escape(String(state.autoSwitch.thresholdPercent))}" style="width:5em"><span class="small">% left</span><button type="submit" class="btn btn-small">Save</button></form>` : ''}</div>`;
+      ${on ? `<form id="auto-switch-form" class="row"><label class="small" for="auto-switch-five">5 hours</label><input id="auto-switch-five" name="five" type="number" min="0" max="90" step="5" value="${escape(String(five))}" style="width:5em"><label class="small" for="auto-switch-week">Week</label><input id="auto-switch-week" name="week" type="number" min="0" max="90" step="5" value="${escape(String(week))}" style="width:5em"><span class="small">% left</span><button type="submit" class="btn btn-small">Save</button></form>` : ''}</div>`;
   }
   async function saveAutoSwitch(change) {
     try { state.autoSwitch = await post('/api/orchestrator/auto-switch', change); toast('Model switch saved.'); }
@@ -1058,6 +1082,8 @@
     if (target.dataset.arm) { state.armed = target.dataset.arm; state.sideSig = ''; renderSide(); return; }
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
     if (target.dataset.unasked) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.unasked); if (provider) setWorksUnasked(provider.id, provider.policy?.alwaysApprove !== true); return; }
+    if (target.dataset.limitNone) { saveLimit({ id: target.dataset.limitNone, none: true }); return; }
+    if (target.dataset.limitReset) { saveLimit({ id: target.dataset.limitReset, reset: true }); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
     if (action === 'copy-msg') { copyReply(target); return; }
@@ -1148,7 +1174,8 @@
       // The question shows next to where the user clicked.
       document.querySelector('[data-action="confirm-yes"]')?.scrollIntoView({ block: 'center' });
     }
-    else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ thresholdPercent: Number(event.target.threshold.value) }); }
+    else if (event.target.matches?.('.limit-form')) { event.preventDefault(); saveLimit({ id: event.target.dataset.limitModel, fiveHourPercent: Number(event.target.five.value), weeklyPercent: Number(event.target.week.value) }); }
+    else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ fiveHourPercent: Number(event.target.five.value), weeklyPercent: Number(event.target.week.value) }); }
     else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }
   });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.panel && !$('project-dialog').open) { state.panel = null; store.set('panel', null); render(); } });

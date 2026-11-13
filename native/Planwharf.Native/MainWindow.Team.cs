@@ -132,7 +132,9 @@ public sealed partial class MainWindow
     Control Member(TeamModel model, string? leadId)
     {
         var status = !model.Available ? "not available now" + (model.UnavailableReason != null ? ": " + model.UnavailableReason[..Math.Min(140, model.UnavailableReason.Length)] : "") + (model.RetrySoon ? " (tried again in a few minutes)" : "")
-            : model.QuotaLeft is { } left ? $"{left}% quota left" : "";
+            : model.FiveHourLeft != null || model.WeeklyLeft != null
+                ? string.Join(" · ", new[] { model.FiveHourLeft is { } f ? $"5h {f}%" : "", model.WeeklyLeft is { } w ? $"week {w}%" : "" }.Where(part => part.Length > 0)) + " left" + (model.LowQuota ? " · under its limit" : "")
+            : model.QuotaLeft is { } left ? $"{left}% quota left" + (model.LowQuota ? " · under its limit" : "") : "quota not reported";
         var chips = new WrapPanel();
         if (model.Bench) chips.Children.Add(new TextBlock { Text = "Bring in as:", Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
         chips.Children.Add(RoleChip(model, "Build", "worker", model.Build, model.CanBuild, "Writes the code and the tests"));
@@ -151,8 +153,38 @@ public sealed partial class MainWindow
         if (model.Lead || model.Id == leadId) name.Children.Add(Look.Badge("Lead", Palette.Lead, Palette.LeadSoft).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
         var info = new StackPanel { Spacing = 2, Children = { name,
             new TextBlock { Text = string.Join(" · ", new[] { model.Provider, status }.Where(part => part.Length > 0)), Foreground = model.Available ? Palette.Muted : Palette.Warn, FontSize = 12, TextWrapping = TextWrapping.Wrap } } };
-        if (model.QuotaLeft is { } quota && !model.Bench) info.Children.Add(Look.Bar(quota));
-        return MemberCard(new StackPanel { Spacing = 8, Children = { info, chips } }, !model.Bench, model.Bench);
+        if (model.QuotaLeft is { } quota && !model.Bench) info.Children.Add(Look.Bar(quota, model.LowQuota));
+        var card = new StackPanel { Spacing = 8, Children = { info, chips } };
+        if (!model.Bench) card.Children.Add(LimitEditor(model));
+        return MemberCard(card, !model.Bench, model.Bench);
+    }
+
+    // The model's quota limit: the general one, its own two thresholds, or no limit at all.
+    Control LimitEditor(TeamModel model)
+    {
+        var said = model.LimitNone ? "No limit"
+            : $"{(model.LimitCustom ? "Own limit" : "Limit")}: " + (model.LimitFiveHour == model.LimitWeekly ? $"{model.LimitFiveHour}%" : $"5h {model.LimitFiveHour}% · week {model.LimitWeekly}%");
+        var five = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitFiveHour ?? 35, FormatString = "0", Width = 110 };
+        var week = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitWeekly ?? 35, FormatString = "0", Width = 110 };
+        var save = Small("Save");
+        save.Click += async (_, _) => await DoAsync(() => api!.SetQuotaLimitAsync(model.Id, (int)(five.Value ?? 35), (int)(week.Value ?? 35)), $"Quota limit of {model.Label} saved.");
+        var none = Small("No limit");
+        none.Click += async (_, _) => await DoAsync(() => api!.SetNoQuotaLimitAsync(model.Id), $"{model.Label} has no quota limit now.");
+        var buttons = new WrapPanel { Children = { save.With(b => b.Margin = new Thickness(0, 0, 6, 4)), none.With(b => b.Margin = new Thickness(0, 0, 6, 4)) } };
+        if (model.LimitCustom)
+        {
+            var reset = Small("Use the general limit");
+            reset.Click += async (_, _) => await DoAsync(() => api!.ResetQuotaLimitAsync(model.Id), $"{model.Label} follows the general limit.");
+            buttons.Children.Add(reset);
+        }
+        var form = new StackPanel { Spacing = 6, Children = {
+            Row(new TextBlock { Text = "5 hours", Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, five),
+            Row(new TextBlock { Text = "Week", Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, week,
+                new TextBlock { Text = "% left", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Muted, FontSize = 13 }),
+            buttons } };
+        var fold = Fold(said, form);
+        fold.IsExpanded = false;
+        return fold;
     }
 
     Control RoleChip(TeamModel model, string label, string role, bool on, bool eligible, string help)

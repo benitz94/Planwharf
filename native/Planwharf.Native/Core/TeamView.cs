@@ -18,6 +18,14 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     public bool ProviderEnabled { get; init; } = true;
     // The user's OK to edit files and run commands without asking each time (off until given).
     public bool WorksUnasked { get; init; }
+    // What is left on each quota window, the model's limit (its own, the general one, or none), and whether it is under it.
+    public int? FiveHourLeft { get; init; }
+    public int? WeeklyLeft { get; init; }
+    public bool LowQuota { get; init; }
+    public bool LimitNone { get; init; }
+    public bool LimitCustom { get; init; }
+    public int? LimitFiveHour { get; init; }
+    public int? LimitWeekly { get; init; }
 }
 public sealed record ProviderView(string Id, string Label, bool Enabled, int Models)
 {
@@ -69,7 +77,11 @@ public static class TeamViews
                 ProviderId = S(model["providerId"]) is { Length: > 0 } providerId ? providerId : S(model["provider"]),
                 Adapter = S(model["adapter"]) is { Length: > 0 } adapter ? adapter : S(model["provider"]),
                 ProviderEnabled = model["providerEnabled"] is not JsonValue pe || !pe.TryGetValue<bool>(out var providerOn) || providerOn,
-                WorksUnasked = B(model["alwaysApprove"])
+                WorksUnasked = B(model["alwaysApprove"]),
+                FiveHourLeft = Pct(model["quotaWindows"]?["fiveHour"]), WeeklyLeft = Pct(model["quotaWindows"]?["weekly"]),
+                LowQuota = B(model["lowQuota"]),
+                LimitNone = B(model["quotaLimit"]?["none"]), LimitCustom = B(model["quotaLimit"]?["custom"]),
+                LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"])
             };
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),
@@ -93,6 +105,8 @@ public static class TeamViews
         int Rank(TeamModel model) { var at = team.LeadOrder.ToList().IndexOf(model.Id); return at < 0 ? int.MaxValue : at; }
         return team.Models.Where(model => model.CanLead && model.Available).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
     }
+
+    static int? Pct(JsonNode? node) => node is JsonValue value && value.TryGetValue<double>(out var number) ? (int)Math.Round(number) : null;
 
     // The role a step needs, and the models of the team that have it (as the web step menu).
     public static IReadOnlyList<TeamModel> ModelsFor(TeamView team, string role) => team.Models.Where(model => model.Available && model.Enabled && role switch

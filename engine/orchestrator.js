@@ -21,7 +21,7 @@ const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { createInvocationLedger } = require('./invocations.cjs');
 const { compactState, recentContext } = require('./briefing.cjs');
 const Quota = require('../quota.js');
-const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaSwitches, availableAgain } = require('./model-policy.cjs');
+const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaLimit, quotaWindows, quotaSwitches, availableAgain } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
 const { TOOL_NAMES } = require('./claude.cjs');
 const { TOOL_REQUEST } = require('./runner.cjs');
@@ -264,7 +264,9 @@ function pickWorker(models, options) {
     .map((item, index) => ({ ...item, index }))
     .filter(item => item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, plans).blocked && (item.providerCatalog || usedOf(usage, item.id) + item.cost <= item.limit) && !planExhausted(plans, item.quotaPoolId || item.plan));
   if (!pool.length) return null;
-  const chosen = pool[0];
+  // A model under its quota limit is taken only when no other one can do the job.
+  const roomy = typeof opts.low === 'function' ? pool.filter(item => !opts.low(item)) : pool;
+  const chosen = (roomy.length ? roomy : pool)[0];
   chosen.why = `${kind} job · ${chosen.label} on ${chosen.plan}; user catalog order`;
   return chosen;
 }
@@ -1130,6 +1132,7 @@ function createOrchestrator(options) {
         store = {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
           autoSwitch: parsed.autoSwitch && typeof parsed.autoSwitch === 'object' ? parsed.autoSwitch : undefined,
+          quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -1223,8 +1226,8 @@ function createOrchestrator(options) {
       if (resolved) {
         // Starting a step on a model already under the switch threshold: take one with more quota when there is one.
         const settings = autoSwitch();
-        if (!settings.enabled || !lowQuota(resolved, plansLive, settings.thresholdPercent)) return resolved;
-        const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: settings.thresholdPercent,
+        if (!settings.enabled || !lowQuota(resolved, plansLive, limitFor)) return resolved;
+        const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: limitFor,
           eligible: candidate => permitsAssignment(candidate, sub) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked })[0];
         return better ? roster().find(model => model.id === better.toModelId) || resolved : resolved;
       }
@@ -1689,7 +1692,7 @@ function createOrchestrator(options) {
     if (leadId()) {
       const picked = list.find(item => item.id === leadId());
       const settings = autoSwitch();
-      const low = model => settings.enabled && lowQuota(model, plansLive, settings.thresholdPercent);
+      const low = isLow;
       // Only quota decides: a lead at the threshold or out of quota (read for sure), or refused for credits
       // or quota. A lead that is unavailable or misnamed is never replaced silently, and an unreadable
       // quota decides nothing (both have their own tests).
@@ -1700,7 +1703,7 @@ function createOrchestrator(options) {
         if (next) {
           const left = quotaLeft(picked, plansLive);
           const why = refusals.activeRefusal(store, picked.id, Date.parse(now())) ? `${picked.label || picked.id} refused the work (credits or quota).`
-            : left !== null ? `quota of ${picked.label || picked.id} is at ${left}% (switch at ${settings.thresholdPercent}%).` : `${picked.label || picked.id} cannot lead now.`;
+            : left !== null ? `quota of ${picked.label || picked.id} is at ${left}% (switch at ${limitText(picked)}).` : `${picked.label || picked.id} cannot lead now.`;
           switchLead(picked, next, why);
           return next;
         }
@@ -1751,6 +1754,10 @@ function createOrchestrator(options) {
       }
       item.alwaysApprove = item.policy.alwaysApprove;
       item.usagePolicy = usagePolicy(item, plansLive);
+      // What is left on each window, the model's limit (its own or the general one), and whether it is under it.
+      item.quotaWindows = quotaWindows(item, plansLive);
+      item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]) };
+      item.lowQuota = isLow(item);
       const used = usedOf(store.usage, item.id);
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
@@ -2143,7 +2150,7 @@ function createOrchestrator(options) {
     // Who takes over as lead if the current one runs low, in order (Team shows it).
     // Every model that can lead now, best first: the lead menu follows this order.
     view.leadOrder = leadRanking(roster().filter(item => leadUsable(item)), plansLive).map(item => item.id);
-    view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !lowQuota(item, plansLive, autoSwitch().thresholdPercent)), plansLive).slice(0, 5).map(item => item.id);
+    view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !isLow(item)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
       dispatch: [{ modelId: record.modelId, pid: record.pid, alive: record.alive, slice: 'Research: ' + record.title, activity: record.activity }] }));
@@ -2233,7 +2240,7 @@ function createOrchestrator(options) {
         // Unapproved or paused work has no reason to inspect its source on every poll.
         const facts = existing && existing.status !== 'RUNNING' && row.facts?.folder === linkedWorkspace(item.project.folder) ? row.facts : inspect(item.project.folder); row.facts = facts;
         const parts = job.proposedSubTasks?.length ? job.proposedSubTasks.map(sub => ({ ...sub, modelId: job.goldModel && assignmentRole(sub) === 'worker' ? job.goldModel.id : sub.assignedModelId, slice: sub.title }))
-          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive }), job, facts);
+          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive, low: isLow }), job, facts);
         return bridge.advance(item, job, parts);
       } catch (error) { row.status = 'blocked_no_worker'; row.doing = error.message; row.next = error.message; return row; }
     }
@@ -2637,7 +2644,7 @@ function createOrchestrator(options) {
     // A model at or under the switch threshold would be moved off its part right away: the lead is not
     // offered it, unless no other model has the role.
     const settings = autoSwitch();
-    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, settings.thresholdPercent)) : list; return ok.length ? ok : list; };
+    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list; return ok.length ? ok : list; };
     const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
     const verifiers = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE })));
     // With a single model that can build there is no crew to split the work among: no lead call.
@@ -2648,6 +2655,13 @@ function createOrchestrator(options) {
     try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return false; }
     const split = autonomy.parseSplit(spoken && typeof spoken === 'object' ? spoken.answer : spoken, { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) });
     if (!split) { note(projectId, 'The lead did not split the work in a usable way; it keeps the usual plan.'); return false; }
+    // Light parts on light models: the strong ones and their quota stay for the heavy work.
+    const fitted = autonomy.fitWeights(split.parts, builders.map(describe));
+    split.parts = fitted.parts;
+    const label = id => roster().find(model => model.id === id)?.label || id;
+    for (const move of fitted.moved) note(projectId, `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.`);
+    // The chat says it too, in the line that announces the split.
+    if (fitted.moved.length) split.why = `${split.why || ''} Planwharf gave lighter models the lighter parts: ${fitted.moved.map(move => `"${move.title}" to ${label(move.to)}`).join(', ')}.`.trim();
     // The check of the whole uses the same instructions as the usual verify step.
     const check = dispatchPlan([{ id: 'build' }, { id: 'check' }], { title: mega.title }, {})[1].slice;
     const several = split.parts.length > 1;
@@ -2734,7 +2748,7 @@ function createOrchestrator(options) {
     if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
     const settings = autoSwitch();
     const unread = crew.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
-    const low = crew.filter(model => lowQuota(model, plansLive, settings.thresholdPercent) || usagePolicy(model, plansLive).blocked);
+    const low = crew.filter(model => lowQuota(model, plansLive, limitFor) || usagePolicy(model, plansLive).blocked);
     if (low.length + unread.length < crew.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
     const resetOf = model => {
       const plan = plansLive.find(item => item && item.id === (model.quotaPoolId || model.plan));
@@ -2744,23 +2758,61 @@ function createOrchestrator(options) {
       return at - Date.now() < 86400000 ? `, back at ${at.toISOString().slice(11, 16)} UTC` : `, back on ${at.toISOString().slice(0, 10)}`;
     };
     const parts = crew.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
-    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota (over ${settings.thresholdPercent}%), or when you add one in Team.` };
+    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota above its limit, or when you add one in Team.` };
   }
 
+  // The general quota limit: 35% left on the 5-hour window and on the weekly one, unless the user set
+  // other values. An old saved single threshold (other than the former 20% default) applies to both.
   function autoSwitch() {
     const saved = store.autoSwitch && typeof store.autoSwitch === 'object' ? store.autoSwitch : {};
-    return { enabled: saved.enabled !== false, thresholdPercent: Number.isFinite(saved.thresholdPercent) ? saved.thresholdPercent : AUTO_SWITCH_DEFAULT.thresholdPercent };
+    const legacy = Number.isFinite(saved.thresholdPercent) && saved.thresholdPercent !== 20 && !Number.isFinite(saved.fiveHourPercent) ? saved.thresholdPercent : null;
+    const fiveHourPercent = Number.isFinite(saved.fiveHourPercent) ? saved.fiveHourPercent : legacy ?? AUTO_SWITCH_DEFAULT.fiveHourPercent;
+    const weeklyPercent = Number.isFinite(saved.weeklyPercent) ? saved.weeklyPercent : legacy ?? AUTO_SWITCH_DEFAULT.weeklyPercent;
+    return { enabled: saved.enabled !== false, fiveHourPercent, weeklyPercent, thresholdPercent: Math.max(fiveHourPercent, weeklyPercent) };
   }
   function setAutoSwitch(input = {}) {
-    const next = { ...autoSwitch() };
+    const current = autoSwitch();
+    const next = { enabled: current.enabled, fiveHourPercent: current.fiveHourPercent, weeklyPercent: current.weeklyPercent };
     if (typeof input.enabled === 'boolean') next.enabled = input.enabled;
-    if (input.thresholdPercent !== undefined) {
-      const value = Number(input.thresholdPercent);
+    for (const [key, targets] of [['thresholdPercent', ['fiveHourPercent', 'weeklyPercent']], ['fiveHourPercent', ['fiveHourPercent']], ['weeklyPercent', ['weeklyPercent']]]) {
+      if (input[key] === undefined) continue;
+      const value = Number(input[key]);
       if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
-      next.thresholdPercent = Math.round(value);
+      for (const target of targets) next[target] = Math.round(value);
     }
     store.autoSwitch = next; persist();
-    return { ok: true, autoSwitch: next };
+    return { ok: true, autoSwitch: autoSwitch() };
+  }
+  // Each model follows the general limit unless the user gave it its own, or no limit at all.
+  function limitFor(model) {
+    const own = store.quotaLimits && model ? store.quotaLimits[model.id] : null;
+    const general = autoSwitch();
+    if (own?.none === true) return quotaLimit({ none: true });
+    return quotaLimit({ fiveHourPercent: Number.isFinite(own?.fiveHourPercent) ? own.fiveHourPercent : general.fiveHourPercent, weeklyPercent: Number.isFinite(own?.weeklyPercent) ? own.weeklyPercent : general.weeklyPercent });
+  }
+  function limitText(model) {
+    const limit = limitFor(model);
+    return limit.none ? 'no limit' : limit.fiveHourPercent === limit.weeklyPercent ? `${limit.fiveHourPercent}%` : `${limit.fiveHourPercent}% on 5 hours, ${limit.weeklyPercent}% on the week`;
+  }
+  function isLow(model) { return autoSwitch().enabled && lowQuota(model, plansLive, limitFor); }
+  function setQuotaLimit(id, input = {}) {
+    if (!roster().some(model => model.id === id)) return { ok: false, reason: 'Unknown model.' };
+    store.quotaLimits = store.quotaLimits && typeof store.quotaLimits === 'object' ? store.quotaLimits : {};
+    if (input.reset === true) delete store.quotaLimits[id];
+    else if (input.none === true) store.quotaLimits[id] = { none: true };
+    else {
+      const own = {};
+      for (const key of ['fiveHourPercent', 'weeklyPercent']) {
+        if (input[key] === undefined) continue;
+        const value = Number(input[key]);
+        if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
+        own[key] = Math.round(value);
+      }
+      if (!Object.keys(own).length) return { ok: false, reason: 'Give a threshold, no limit, or reset.' };
+      store.quotaLimits[id] = own;
+    }
+    persist();
+    return { ok: true };
   }
   // While steps work, a model whose quota runs low hands its step to another model with the same role.
   let quotaWatchRunning = false;
@@ -2779,12 +2831,12 @@ function createOrchestrator(options) {
           .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
             // The companies of the work's other steps: the switch avoids them when it can.
             avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = roster().find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
-        const switches = quotaSwitches({ running, models: roster(), plans: plansLive, thresholdPercent: settings.thresholdPercent,
+        const switches = quotaSwitches({ running, models: roster(), plans: plansLive, thresholdPercent: limitFor,
           eligible: (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked });
         for (const change of switches) {
           quotaSwitchedAt.set(change.subTaskId, Date.now());
           const from = roster().find(model => model.id === change.fromModelId), to = roster().find(model => model.id === change.toModelId);
-          const why = `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${settings.thresholdPercent}%).`;
+          const why = `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}).`;
           try { await inTeam(row.id, async () => { bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why, 'auto'); note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`); }); }
           catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
         }
@@ -3746,7 +3798,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

@@ -50,6 +50,24 @@ test('a split that breaks the rules is refused, and the work keeps its usual pla
   assert.equal(autonomy.parseSplit('I would split it in three.', allowed), null, 'no JSON');
 });
 
+test('light parts go to light models: a part given to a heavier model moves to a lighter one', () => {
+  const crew = [{ id: 'opus', tier: 'premium', left: 60 }, { id: 'sonnet', tier: 'default', left: 60 }, { id: 'haiku', tier: 'light', left: 60 }, { id: 'luna', tier: 'light', left: 80 }];
+  const parts = [
+    { title: 'Small port', size: 'light', model: 'opus' },
+    { title: 'Another small port', size: 'light', model: 'sonnet' },
+    { title: 'Normal port', size: 'normal', model: 'opus' },
+    { title: 'Hard port', size: 'heavy', model: 'opus' },
+    { title: 'Light already', size: 'light', model: 'haiku' }];
+  const { parts: fitted, moved } = autonomy.fitWeights(parts, crew);
+  // The two light parts spread over the two light models, the one with more quota first.
+  assert.deepEqual(fitted.map(part => part.model), ['luna', 'haiku', 'sonnet', 'opus', 'haiku']);
+  assert.deepEqual(moved.map(move => `${move.title}: ${move.from} -> ${move.to}`), ['Small port: opus -> luna', 'Another small port: sonnet -> haiku', 'Normal port: opus -> sonnet']);
+  // With no light model, a light part takes the next lighter weight, and never a heavier one than the lead chose.
+  assert.deepEqual(autonomy.fitWeights([{ title: 'x', size: 'light', model: 'opus' }], crew.slice(0, 2)).parts.map(part => part.model), ['sonnet']);
+  assert.deepEqual(autonomy.fitWeights([{ title: 'x', size: 'light', model: 'sonnet' }], crew.slice(0, 2)).moved, []);
+  assert.match(autonomy.splitPrompt({ name: 'P', goal: 'G', builders: [], verifiers: [], files: [] }), /a light part goes to a light model/);
+});
+
 test('full loop: the lead splits the work, the parts run together, each within its files, then one check of the whole', async () => {
   const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
   const { createServer } = require('../server.cjs');
