@@ -1,0 +1,54 @@
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Planwharf.Native.Core;
+using Xunit;
+
+namespace Planwharf.Native.Tests;
+
+// Pictures of the window against a running Planwharf, to compare it with the web page drawn from the
+// same server. Runs only when PLANWHARF_COMPARE_URL is set (for example http://127.0.0.1:47811);
+// PLANWHARF_COMPARE_PROJECT picks the project and PLANWHARF_COMPARE_OUT the folder for the pictures.
+public class CompareShots
+{
+    [AvaloniaFact]
+    public async Task Draws_every_panel_from_a_running_server()
+    {
+        var url = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_URL");
+        if (string.IsNullOrEmpty(url)) return;
+        var output = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_OUT") ?? AppContext.BaseDirectory;
+        var width = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_WIDTH"), out var w) ? w : 1440;
+        var height = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_HEIGHT"), out var h) ? h : 900;
+        var window = new MainWindow("v0.2.42") { Width = width, Height = height };
+        window.Show();
+        window.Connect(new PlanwharfApi(url));
+        await Settle();
+        if (Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_PROJECT") is { Length: > 0 } project)
+        {
+            var list = window.GetVisualDescendants().OfType<ListBox>().First();
+            list.SelectedItem = list.Items.OfType<ListBoxItem>().FirstOrDefault(item => Equals(item.Tag, project));
+            await Settle();
+        }
+        Save(window, Path.Combine(output, "native-chat.png"));
+        foreach (var panel in new[] { "team", "usage", "progress", "files", "settings" })
+        {
+            window.OpenSide(panel);
+            await Settle();
+            Save(window, Path.Combine(output, $"native-{panel}.png"));
+        }
+    }
+
+    static async Task Settle()
+    {
+        for (var i = 0; i < 25; i++) { await Task.Delay(100); Dispatcher.UIThread.RunJobs(); }
+    }
+
+    static void Save(Window window, string file)
+    {
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        frame!.Save(file);
+    }
+}
