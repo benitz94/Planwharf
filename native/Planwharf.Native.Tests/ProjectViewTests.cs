@@ -55,6 +55,21 @@ public class ProjectViewTests
         state["projects"]![0]!["goal"] = "Something older";
         Assert.Equal("Add a 7-day forecast page with charts and tests.", ProjectViews.Project(state, "weather")!.NextGoal);
     }
+
+    // Planwharf keeps the chat newest first: the goal offered is the one from the lead's latest reply,
+    // never an old one from the start of the project (it once restarted a finished job).
+    [Fact]
+    public void The_goal_offered_comes_from_the_latest_reply_not_the_first()
+    {
+        var state = SampleState.Finished();
+        state["projects"]![0]!["goal"] = "Fix the build errors of the pilot.";
+        var older = state["asks"]![0]!.DeepClone();
+        var newer = state["asks"]![0]!.DeepClone();
+        newer["at"] = "2026-11-13T12:00:00Z";
+        newer["answer"] = "Job 02 is ready.\n\nSuggested next goal: Port the five modules of job 02.";
+        state["asks"] = new System.Text.Json.Nodes.JsonArray(newer, older);
+        Assert.Equal("Port the five modules of job 02.", ProjectViews.Project(state, "weather")!.NextGoal);
+    }
 }
 
 public class AppLayoutTests

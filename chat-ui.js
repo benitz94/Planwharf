@@ -470,7 +470,8 @@
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
     html += items.map(item => item.html).join('');
     // A chat message never starts work by itself; say so under the last one and offer the next step.
-    const lastAsk = asks.at(-1);
+    // Planwharf keeps the chat newest first: the lead's latest reply is the one with the latest time, not the last in the list.
+    const lastAsk = asks.reduce((latest, item) => !latest || (Date.parse(item.at) || 0) >= (Date.parse(latest.at) || 0) ? item : latest, null);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
     // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
     state.goalCandidate = null; state.suggestedGoal = null;
@@ -514,7 +515,8 @@
     // One clear next action at a time.
     else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
-    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
+    // Stopped work can be resumed, or dropped to start something new: the files in the folder stay.
+    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><button type="button" class="btn" data-action="drop-work" title="Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are.">${ic('trash')}Drop this work</button><span class="status-text">Work was stopped. Resume continues from the saved point, or drop it to start something new.</span>`);
     else {
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
@@ -1067,6 +1069,12 @@
     else if (action === 'toggle-mode') act(() => post('/api/orchestrator/mode', { mode: state.orchestra?.mode === 'auto' ? 'manual' : 'auto' }), 'Saved.');
     else if (action === 'repo-refresh') loadRepo(state.projectId, true);
     else if (action === 'approve') withOk(() => act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.'));
+    else if (action === 'drop-work') {
+      const row = project();
+      state.confirm = { text: `Drop the stopped work "${String(row?.megaTask?.title || row?.jobTitle || 'this work').slice(0, 160)}"? It will not be resumed. Files in the project folder stay as they are, and you can then start a new goal.`,
+        run: () => act(() => post('/api/orchestrator/reset', { projectId: state.projectId }), 'Stopped work dropped. You can start a new goal.') };
+      state.threadSig = ''; render();
+    }
     else if (action === 'resume') withOk(() => act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.'));
     else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
     else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');

@@ -21,6 +21,8 @@ public sealed partial class MainWindow : Window
     readonly StackPanel thread = new() { Spacing = 14, Margin = new Thickness(20, 20), MaxWidth = 780 };
     readonly ScrollViewer threadScroll;
     readonly Button actionButton = Look.Button("Let the crew do it", "rocket", Look.Kind.Primary);
+    // Next to Resume: close the stopped work to start something new.
+    readonly Button dropButton = Look.Button("Drop this work", "trash");
     readonly TextBlock hint = new() { Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
     readonly TextBox input = Look.Field(new TextBox { Watermark = "Tell the lead what you want built…", AcceptsReturn = false, MinHeight = 46, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
     readonly Button send = Look.Button("Send", "send", Look.Kind.Primary);
@@ -106,8 +108,11 @@ public sealed partial class MainWindow : Window
         title.FontSize = 18;
         var header = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(20, 12), Child = headerRow };
 
-        var actions = new DockPanel { Margin = new Thickness(0, 0, 0, 8), Children = { actionButton, hint } };
-        DockPanel.SetDock(actionButton, Dock.Left);
+        dropButton.Margin = new Thickness(8, 0, 0, 0); dropButton.IsVisible = false;
+        ToolTip.SetTip(dropButton, "Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are.");
+        dropButton.Click += async (_, _) => await DropWorkAsync();
+        var actions = new DockPanel { Margin = new Thickness(0, 0, 0, 8), Children = { actionButton, dropButton, hint } };
+        DockPanel.SetDock(actionButton, Dock.Left); DockPanel.SetDock(dropButton, Dock.Left);
         send.Margin = new Thickness(8, 0, 0, 0); send.VerticalAlignment = VerticalAlignment.Stretch; send.VerticalContentAlignment = VerticalAlignment.Center;
         input.CornerRadius = new CornerRadius(14);
         var composer = new DockPanel { Children = { send, input } };
@@ -653,6 +658,14 @@ public sealed partial class MainWindow : Window
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
         await RefreshAsync(readOnly: false);
         if (TeamViews.Team(snapshot!).LeadId == null) OpenSide("team");
+    }
+
+    async Task DropWorkAsync()
+    {
+        if (api == null || snapshot == null || projectId == null || ProjectViews.Project(snapshot, projectId) is not { } view) return;
+        var title = view.Work?.Title is { Length: > 0 } t ? t[..Math.Min(160, t.Length)] : "this work";
+        if (!await new ConfirmDialog($"Drop the stopped work \"{title}\"? It will not be resumed. Files in the project folder stay as they are, and you can then start a new goal.", "Drop it").ShowDialog<bool>(this)) return;
+        await DoAsync(() => api.DropWorkAsync(projectId), "Stopped work dropped. You can start a new goal.");
     }
 
     async Task ActAsync()

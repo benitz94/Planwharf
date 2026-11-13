@@ -105,7 +105,9 @@ public static class ProjectViews
         var auto = snapshot["autonomy"]?[id];
         var stopReason = S(auto?["stopReason"]);
         var working = B(auto?["enabled"]) && stopReason.Length == 0;
-        var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().LastOrDefault(ask => S(ask["projectId"]) == id);
+        // Planwharf keeps the chat newest first: the lead's latest reply is the one with the latest time, not the last in the list.
+        var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => S(ask["projectId"]) == id)
+            .OrderBy(ask => DateTimeOffset.TryParse(S(ask["at"]), out var at) ? at : DateTimeOffset.MinValue).LastOrDefault();
         var goal = S(row["goal"]).Trim();
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
@@ -114,7 +116,7 @@ public static class ProjectViews
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
             : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
-            : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point.")
+            : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point, or drop it to start something new.")
             : (CrewAction.LetTheCrewDoIt, "Let the crew do it",
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
                 : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it."
