@@ -147,13 +147,27 @@ public sealed partial class MainWindow : Window
 
     void ShowNow() => now.Text = DateTime.Now.ToString("ddd, MMM d · HH:mm", System.Globalization.CultureInfo.CurrentCulture);
 
+    // The logo's needle, turning while anything is being worked on.
+    Canvas? needle;
+    System.Threading.CancellationTokenSource? needleTurning;
+    void SpinBrand(bool on)
+    {
+        if (needle == null || on == (needleTurning != null)) return;
+        if (!on) { needleTurning!.Cancel(); needleTurning = null; ((RotateTransform)needle.RenderTransform!).Angle = 40; return; }
+        needleTurning = new System.Threading.CancellationTokenSource();
+        var turn = new Avalonia.Animation.Animation { Duration = TimeSpan.FromSeconds(2.4), IterationCount = Avalonia.Animation.IterationCount.Infinite, Children = {
+            new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(0), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 40d) } },
+            new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(1), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 400d) } } } };
+        _ = turn.RunAsync(needle, needleTurning.Token);
+    }
+
     // The compass of the chat page's logo: a green bezel and a needle.
-    static Control BrandMark()
+    Control BrandMark()
     {
         var canvas = new Canvas { Width = 64, Height = 64 };
-        var green = Brush.Parse("#5fcf98");
+        var green = Brush.Parse("#5fcf98"); // the logo keeps its colours in both themes
         canvas.Children.Add(new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse("M11.5,32 A20.5,20.5 0 1 0 52.5,32 A20.5,20.5 0 1 0 11.5,32 Z M32 12v5.5M32 46.5V52M12 32h5.5M46.5 32H52"), Stroke = green, StrokeThickness = 4.2, StrokeLineCap = PenLineCap.Round });
-        var needle = new Canvas { Width = 64, Height = 64, RenderTransform = new RotateTransform(40), RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative) };
+        needle = new Canvas { Width = 64, Height = 64, RenderTransform = new RotateTransform(40), RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative) };
         needle.Children.Add(new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse("M32 16 36 32H28Z"), Fill = green });
         needle.Children.Add(new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse("M32 48 36 32H28Z"), Fill = Brush.Parse("#eef3ef") });
         canvas.Children.Add(needle);
@@ -166,7 +180,21 @@ public sealed partial class MainWindow : Window
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         timer.Tick += async (_, _) => await RefreshAsync(readOnly: ticks++ % 5 != 0);
         timer.Start();
+        // A window replaced by a new look stops asking the server.
+        Closed += (_, _) => timer.Stop();
         _ = RefreshAsync(readOnly: false);
+    }
+
+    // The same window drawn again with the current look: same project, same panel, same server.
+    public MainWindow Rebuilt()
+    {
+        var fresh = new MainWindow(version) { Width = Width, Height = Height, Position = Position, WindowState = WindowState };
+        fresh.projectId = projectId;
+        fresh.projectsRoot = projectsRoot;
+        if (api != null) fresh.Connect(api);
+        if (snapshot != null) fresh.Show(snapshot);
+        fresh.OpenSide(sideMode);
+        return fresh;
     }
 
     public void ShowError(string message) { title.Text = "Planwharf could not start"; hint.Text = message; hint.Foreground = Palette.Danger; }
