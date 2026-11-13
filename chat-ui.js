@@ -250,7 +250,7 @@
   // The ship from ship.svg, drawn with the page colours so it fits the light and the dark theme.
   const SHIP = '<svg class="ship" viewBox="0 0 240 170" aria-hidden="true"><rect class="mast" x="117" y="8" width="7" height="112" rx="3"/><path class="flag" d="M124 10c8-3 14 4 22 1 3-1 6-3 8-5-2 6-5 10-10 12-7 3-13-3-20 0Z"/><path class="sail-back" d="M113 30c-16 18-29 38-38 60 12-3 25-4 38-4-4-18-5-37 0-56Z"/><path class="sail" d="M128 26c26 17 43 42 50 70-15-4-31-5-48-4 5-22 4-44-2-66Z"/><path class="hull" d="M66 104h22l9-12h20l9 12h70c-6 10-13 22-21 30H76c-5-8-9-18-10-30Z"/><path class="keel" d="M76 134h109c-3 5-7 9-11 12H86c-4-3-7-7-10-12Z"/><circle class="port" cx="112" cy="118" r="5"/><circle class="port" cx="132" cy="118" r="5"/><circle class="port" cx="152" cy="118" r="5"/><path class="wave-far" d="M14 136c16-9 34-11 52-4-17-3-35-1-52 4Z M180 132c16-8 32-8 48 0-16-3-32-3-48 0Z"/><path class="wave-near" d="M42 152c30-10 58-10 86-2s58 8 86-2c-26 16-58 18-86 10s-58-9-86-6Z"/></svg>';
   function welcomeCard() {
-    const leads = models().filter(model => model.roleEligibility?.orchestrator && model.available !== false);
+    const leads = byLeadOrder(models().filter(model => model.roleEligibility?.orchestrator && model.available !== false));
     const current = lead();
     const hasProject = (state.orchestra?.projects || []).length > 0;
     const step = (n, done, text) => `<li class="${done ? 'done' : ''}"><span class="num" aria-hidden="true">${done ? ic('check') : n}</span><span>${text}</span></li>`;
@@ -562,6 +562,12 @@
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   // Who takes over as lead when the lead's quota reaches the switch threshold or runs out, in order.
+  // The lead menu lists the best lead first, as the ranking Planwharf uses to hand over.
+  function byLeadOrder(list) {
+    const order = state.orchestra?.leadOrder || [];
+    const rank = model => { const at = order.indexOf(model.id); return at < 0 ? order.length : at; };
+    return [...list].sort((a, b) => rank(a) - rank(b));
+  }
   function leadBackupsLine() {
     const names = (state.orchestra?.leadBackups || []).map(id => modelLabel(id) || id);
     return names.length ? `<p class="explain">If the lead runs low on quota, Planwharf hands over to: ${escape(names.join(', '))}, in this order.</p>` : '<p class="explain">No other model can take over as lead now.</p>';
@@ -569,7 +575,7 @@
   function teamPanel() {
     const all = models();
     const current = lead();
-    const leads = all.filter(model => model.roleEligibility?.orchestrator && model.available !== false);
+    const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false));
     const active = all.filter(model => !onBench(model));
     const bench = all.filter(onBench);
     const row = project();

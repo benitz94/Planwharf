@@ -28,6 +28,8 @@ public sealed record ProviderView(string Id, string Label, bool Enabled, int Mod
 }
 public sealed record TeamView(string? LeadId, IReadOnlyList<TeamModel> Models)
 {
+    public IReadOnlyList<string> LeadOrder { get; init; } = [];
+
     public IReadOnlyList<ProviderView> Providers { get; init; } = [];
     // Who takes over as lead when its quota runs low, in order.
     public IReadOnlyList<string> LeadBackups { get; init; } = [];
@@ -80,7 +82,16 @@ public static class TeamViews
             }).ToList();
         var backups = (snapshot["leadBackups"] as JsonArray ?? []).Select(id => S(id)).Where(id => id.Length > 0)
             .Select(id => models.FirstOrDefault(model => model.Id == id)?.Label ?? id).ToList();
-        return new TeamView(lead, models) { Providers = providers, LeadBackups = backups };
+        // Every model that can lead now, best first (the lead menu follows it).
+        var order = (snapshot["leadOrder"] as JsonArray ?? []).Select(id => S(id)).Where(id => id.Length > 0).ToList();
+        return new TeamView(lead, models) { Providers = providers, LeadBackups = backups, LeadOrder = order };
+    }
+
+    // The models that can lead, best first as the ranking Planwharf uses to hand over.
+    public static List<TeamModel> Leads(TeamView team)
+    {
+        int Rank(TeamModel model) { var at = team.LeadOrder.ToList().IndexOf(model.Id); return at < 0 ? int.MaxValue : at; }
+        return team.Models.Where(model => model.CanLead && model.Available).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
     }
 
     // The role a step needs, and the models of the team that have it (as the web step menu).

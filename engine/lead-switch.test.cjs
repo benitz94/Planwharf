@@ -15,6 +15,20 @@ const model = (id, label, provider, plan, extra = {}) => ({ id, label, provider,
   roles: { orchestrator: id === 'fable', worker: true, verifier: true, reviewer: false, supervisor: false },
   capabilities: { canOrchestrate: true, canCode: true, canUseTools: true, canInspectFilesystem: true }, ...extra });
 
+test('the ranking knows Claude by name, puts the newer version of a family first, and Fable before Opus at equal quota', () => {
+  const plans = [{ id: 'claude', readable: true, leftPct: 70 }, { id: 'grok', readable: false }];
+  const list = [
+    model('haiku', 'Haiku 5.5', 'claude', 'claude', { kind: 'premium' }),
+    model('fable51', 'Fable 5.1', 'claude', 'claude', { kind: 'local' }),
+    model('grok46', 'Grok 4.6 Business', 'grok', 'grok', { kind: 'default' }),
+    model('opus', 'Opus 5.5', 'claude', 'claude'),
+    model('grok47', 'Grok 4.7 Business', 'grok', 'grok', { kind: 'default' }),
+    model('fable', 'Fable 5.2', 'claude', 'claude'),
+    model('sonnet', 'Sonnet 5.5', 'claude', 'claude')
+  ];
+  assert.deepEqual(leadRanking(list, plans).map(item => item.id), ['fable', 'fable51', 'opus', 'sonnet', 'grok47', 'grok46', 'haiku']);
+});
+
 test('the ranking puts stronger leads first, then more quota; unknown quota comes after known', () => {
   const plans = [{ id: 'claude', readable: true, leftPct: 60 }, { id: 'chatgpt', readable: true, leftPct: 90 }, { id: 'grok', readable: false }];
   const list = [

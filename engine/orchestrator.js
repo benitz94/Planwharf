@@ -216,17 +216,30 @@ function usageOf(item) {
 // whose quota is not reported comes after those with known quota in its tier. The catalog gives the tier
 // (premium, default, local); Claude Code lists no tier, so a Claude model's tier comes from its family.
 const LEAD_TIERS = { premium: 0, default: 1, local: 2 };
+// Claude's families are known by name, whatever category the catalog gives them; other models by their category.
+const CLAUDE_FAMILIES = [[/fable/i, 0, 0], [/opus/i, 0, 1], [/sonnet/i, 1, 2], [/haiku/i, 2, 3]];
+const modelName = model => String(model?.label || model?.cli || model?.id || '');
 function leadTier(model) {
+  const known = CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)));
+  if (known) return known[1];
   if (model && LEAD_TIERS[model.kind] !== undefined) return LEAD_TIERS[model.kind];
-  const family = String(model?.label || model?.cli || model?.id || '');
-  if (/fable|opus/i.test(family)) return 0;
-  if (/sonnet/i.test(family)) return 1;
-  if (/haiku/i.test(family)) return 2;
   return 1;
 }
+// "Grok 4.7 Business" and "Grok 4.6 Business" are one family; the newer version leads it.
+const familyOf = model => modelName(model).toLowerCase().replace(/\d+(\.\d+)*/g, ' ').replace(/[\s-]+/g, ' ').trim();
+const versionOf = model => (modelName(model).match(/\d+(?:\.\d+)*/) || ['0'])[0].split('.').map(Number);
+function newer(a, b) {
+  const x = versionOf(a), y = versionOf(b);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (y[i] || 0) - (x[i] || 0);
+  return 0;
+}
+const claudeOrder = model => CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)))?.[2] ?? 9;
+// Best lead first: stronger kind; within one family the newer version; then known quota before unknown,
+// more quota first; at equal quota Fable before Opus.
 function leadRanking(list, plans = []) {
-  return [...(list || [])].map(model => ({ model, tier: leadTier(model), left: quotaLeft(model, plans) }))
-    .sort((a, b) => (a.tier - b.tier) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))
+  return [...(list || [])].map(model => ({ model, tier: leadTier(model), left: quotaLeft(model, plans), family: familyOf(model) }))
+    .sort((a, b) => (a.tier - b.tier) || (a.family === b.family ? newer(a.model, b.model) : 0)
+      || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)) || (claudeOrder(a.model) - claudeOrder(b.model)))
     .map(item => item.model);
 }
 
@@ -2128,6 +2141,8 @@ function createOrchestrator(options) {
       return { ...provider, policy: configured.policy, policySource: configured.source, usagePolicy: usagePolicy({ policy: effective, quotaPoolId: provider.quotaPoolId }, plansLive) };
     });
     // Who takes over as lead if the current one runs low, in order (Team shows it).
+    // Every model that can lead now, best first: the lead menu follows this order.
+    view.leadOrder = leadRanking(roster().filter(item => leadUsable(item)), plansLive).map(item => item.id);
     view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !lowQuota(item, plansLive, autoSwitch().thresholdPercent)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
@@ -2619,8 +2634,12 @@ function createOrchestrator(options) {
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     const tierName = model => ['premium', 'default', 'light'][leadTier(model)] || 'default';
     const describe = model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider, tier: tierName(model), left: quotaLeft(model, plansLive) ?? undefined });
-    const builders = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' }));
-    const verifiers = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }));
+    // A model at or under the switch threshold would be moved off its part right away: the lead is not
+    // offered it, unless no other model has the role.
+    const settings = autoSwitch();
+    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, settings.thresholdPercent)) : list; return ok.length ? ok : list; };
+    const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
+    const verifiers = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE })));
     // With a single model that can build there is no crew to split the work among: no lead call.
     if (builders.length < 2 || !verifiers.length) return false;
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';

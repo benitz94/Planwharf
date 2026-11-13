@@ -20,7 +20,7 @@ public sealed partial class MainWindow
                     new Avalonia.Controls.Documents.Run(". Each project has its own team; changes here apply only to this project.") } } } } });
 
         var lead = Look.Section("lead", Palette.Lead, Palette.LeadSoft, "Lead", "Talks with you, plans the work and picks who does what.");
-        var leads = team.Models.Where(m => m.CanLead && m.Available).ToList();
+        var leads = TeamViews.Leads(team);
         var leadMenu = new ComboBox { ItemsSource = leads.Select(m => m.Label).ToList(), SelectedIndex = leads.FindIndex(m => m.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 180,
             Background = Palette.Background, BorderBrush = Palette.Line, CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 8), FontSize = 15 };
         leadMenu.SelectionChanged += async (_, _) => { if (leadMenu.SelectedIndex >= 0 && leads[leadMenu.SelectedIndex].Id != team.LeadId) await DoAsync(() => api!.SetLeadAsync(projectId!, leads[leadMenu.SelectedIndex].Id, leads[leadMenu.SelectedIndex].Lead), "Lead chosen."); };

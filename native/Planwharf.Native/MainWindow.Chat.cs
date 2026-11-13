@@ -403,7 +403,7 @@ public sealed partial class MainWindow
                 Child = done ? Look.Icon("check", 13, Palette.Accent).With(i => i.HorizontalAlignment = HorizontalAlignment.Center)
                     : new TextBlock { Text = n.ToString(), Foreground = Palette.Muted, FontSize = 12, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
             new TextBlock { Text = text, Foreground = done ? Palette.Muted : Palette.Text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center } } };
-        var leads = team.Models.Where(model => model.CanLead && model.Available).ToList();
+        var leads = TeamViews.Leads(team);
         var leadMenu = new ComboBox { ItemsSource = leads.Select(model => model.Label).ToList(), SelectedIndex = leads.FindIndex(model => model.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 220 };
         leadMenu.SelectionChanged += async (_, _) =>
         {
