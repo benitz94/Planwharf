@@ -105,7 +105,9 @@ public static class ProjectViews
         var auto = snapshot["autonomy"]?[id];
         var stopReason = S(auto?["stopReason"]);
         var working = B(auto?["enabled"]) && stopReason.Length == 0;
-        var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().LastOrDefault(ask => S(ask["projectId"]) == id);
+        // Planwharf keeps the chat newest first: the lead's latest reply is the one with the latest time, not the last in the list.
+        var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => S(ask["projectId"]) == id)
+            .OrderBy(ask => DateTimeOffset.TryParse(S(ask["at"]), out var at) ? at : DateTimeOffset.MinValue).LastOrDefault();
         var goal = S(row["goal"]).Trim();
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));

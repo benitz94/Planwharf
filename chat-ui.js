@@ -470,7 +470,8 @@
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
     html += items.map(item => item.html).join('');
     // A chat message never starts work by itself; say so under the last one and offer the next step.
-    const lastAsk = asks.at(-1);
+    // Planwharf keeps the chat newest first: the lead's latest reply is the one with the latest time, not the last in the list.
+    const lastAsk = asks.reduce((latest, item) => !latest || (Date.parse(item.at) || 0) >= (Date.parse(latest.at) || 0) ? item : latest, null);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
     // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
     state.goalCandidate = null; state.suggestedGoal = null;
