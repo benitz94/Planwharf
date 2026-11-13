@@ -35,9 +35,12 @@ A C# console program, `native/Planwharf.FakeCli`, and its tests, `native/Planwha
 
 ## Rules
 
-- Follow `native/porting/README.md`: Native AOT, no NuGet package in the program (tests use xUnit, as
-  the engine tests), arguments one by one, paths with spaces and non-ASCII names, English everywhere,
-  tests that do not depend on the machine (rule 11).
+- Follow `native/porting/README.md`: Native AOT, no NuGet package in the program, arguments one by
+  one, paths with spaces and non-ASCII names, English everywhere, tests that do not depend on the
+  machine (rule 11).
+- The tests use **exactly the packages and versions of `native/Planwharf.Engine.Tests`** (xunit 2.9.2,
+  Microsoft.NET.Test.Sdk 17.11.1, xunit.runner.visualstudio 2.8.2, GitHubActionsTestLogger 2.4.1) and
+  no other: they are already in the NuGet cache of this computer, and a worker may have no internet.
 - It must run on Windows, macOS and Linux, including Windows and Linux on ARM.
 - Do not change the engine (`engine/`, `server.cjs`, `native/Planwharf.Engine`) or the app. If the
   engine needs a change to use the fake, write it in the pull request instead.
