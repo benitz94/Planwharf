@@ -266,17 +266,20 @@ public sealed class BrowserSettingsTests : IDisposable
         env["ProgramFiles(x86)"] = Path.Combine(dir, "no-program86");
         env["LOCALAPPDATA"] = Path.Combine(dir, "no-local");
 
-        var found = BrowserSettings.DetectBrowsers(File.Exists, env);
+        // Only the files of this test count: a browser really installed on the machine (Chrome in
+        // /Applications on the macOS runners) must not win over the ones the test made.
+        bool Here(string file) => file.StartsWith(dir, StringComparison.Ordinal) && File.Exists(file);
+        var found = BrowserSettings.DetectBrowsers(Here, env);
         Assert.Equal(programFirefox, found.Single(b => b.Id == "firefox").Path);
         Assert.Equal(pathChrome, found.Single(b => b.Id == "chrome").Path);
         Assert.Null(found.Single(b => b.Id == "edge").Path);
 
-        var auto = BrowserSettings.ResolveBrowser(Obj(("id", "auto")), File.Exists, env)!;
+        var auto = BrowserSettings.ResolveBrowser(Obj(("id", "auto")), Here, env)!;
         Assert.Equal("chrome", auto["id"]!.GetValue<string>());
         Assert.Equal("chromium", auto["family"]!.GetValue<string>());
 
         var extra = Obj(("id", "default"), ("other", "1"));
-        Assert.Null(BrowserSettings.ResolveBrowser(extra, File.Exists, env));
+        Assert.Null(BrowserSettings.ResolveBrowser(extra, Here, env));
         Assert.Equal("Saved browser is unavailable. Use --browser default or choose another executable.",
             Assert.Throws<InvalidOperationException>(() => BrowserSettings.ResolveBrowser(null)).Message);
 
