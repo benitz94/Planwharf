@@ -3,7 +3,7 @@
 Planwharf's engine is moving from JavaScript (`engine/*.cjs`, `server.cjs`, `plan.js`) to C#
 (`native/Planwharf.Engine`), so that no kind of Planwharf needs Node.js. The JavaScript engine keeps
 working, unchanged, until the C# one replaces it. Each piece is ported by a job described in
-`jobs/`, then reviewed before it is merged.
+`jobs/`, then reviewed before it is merged. The phases are in [PLAN.md](PLAN.md).
 
 ## Rules for every job
 
