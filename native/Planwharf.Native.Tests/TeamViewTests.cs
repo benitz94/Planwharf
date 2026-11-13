@@ -18,6 +18,16 @@ public class TeamViewTests
     """)!;
 
     [Fact]
+    public void The_lead_menu_lists_the_best_lead_first()
+    {
+        var state = State("a", true, true);
+        state["leadOrder"] = new JsonArray("c", "a");
+        var leads = TeamViews.Leads(TeamViews.Team(state));
+        // B is not available, so it cannot lead; C is ranked above A.
+        Assert.Equal(["c", "a"], leads.Select(model => model.Id));
+    }
+
+    [Fact]
     public void Reads_lead_roles_quota_and_unavailable_models()
     {
         var team = TeamViews.Team(State("a", true, true));
