@@ -2634,8 +2634,12 @@ function createOrchestrator(options) {
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     const tierName = model => ['premium', 'default', 'light'][leadTier(model)] || 'default';
     const describe = model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider, tier: tierName(model), left: quotaLeft(model, plansLive) ?? undefined });
-    const builders = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' }));
-    const verifiers = roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }));
+    // A model at or under the switch threshold would be moved off its part right away: the lead is not
+    // offered it, unless no other model has the role.
+    const settings = autoSwitch();
+    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, settings.thresholdPercent)) : list; return ok.length ? ok : list; };
+    const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
+    const verifiers = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE })));
     // With a single model that can build there is no crew to split the work among: no lead call.
     if (builders.length < 2 || !verifiers.length) return false;
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
