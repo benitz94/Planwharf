@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { createOrchestrator, leadRanking } = require('./orchestrator.js');
+const { createOrchestrator, leadRanking, leadQuality } = require('./orchestrator.js');
 const { createAttemptEngine } = require('./attempts.js');
 
 // As in a real team: only the chosen lead has the lead role; the others build and verify.
@@ -27,6 +27,23 @@ test('the ranking knows Claude by name, puts the newer version of a family first
     model('sonnet', 'Sonnet 5.5', 'claude', 'claude')
   ];
   assert.deepEqual(leadRanking(list, plans).map(item => item.id), ['fable', 'fable51', 'opus', 'sonnet', 'grok47', 'grok46', 'haiku']);
+});
+
+test('the lead menu ranks by quality, not by quota, and reads names like claude-opus-4-6-thinking', () => {
+  // The models of the lead menu seen live: Claude's quota low, Opus 4.6 reached through Antigravity with plenty.
+  const plans = [{ id: 'claude', readable: true, leftPct: 34 }, { id: 'gemini', readable: true, leftPct: 100 }, { id: 'chatgpt', readable: true, leftPct: 13 }];
+  const list = [
+    model('agy-opus', 'claude-opus-4-6-thinking', 'antigravity', 'gemini', { kind: 'default' }),
+    model('fable', 'Fable 5.2', 'claude', 'claude'),
+    model('fable51', 'Fable 5.1', 'claude', 'claude'),
+    model('opus', 'Opus 5.5', 'claude', 'claude'),
+    model('astra', 'GPT-6 Astra', 'codex', 'chatgpt', { kind: 'premium' }),
+    model('agy-sonnet', 'claude-sonnet-4-6', 'antigravity', 'gemini', { kind: 'default' }),
+    model('sonnet', 'Sonnet 5.5', 'claude', 'claude')
+  ];
+  assert.deepEqual(leadQuality(list).map(item => item.id), ['fable', 'fable51', 'opus', 'agy-opus', 'astra', 'sonnet', 'agy-sonnet']);
+  // The hand-over still prefers a strong lead with quota: Opus 4.6 is an Opus, now read as version 4.6, below Opus 5.5.
+  assert.equal(leadRanking(list.filter(item => item.plan !== 'claude'), plans)[0].id, 'agy-opus');
 });
 
 test('the ranking puts stronger leads first, then more quota; unknown quota comes after known', () => {

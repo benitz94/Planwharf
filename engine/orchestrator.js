@@ -225,21 +225,36 @@ function leadTier(model) {
   if (model && LEAD_TIERS[model.kind] !== undefined) return LEAD_TIERS[model.kind];
   return 1;
 }
+// "claude-opus-4-6-thinking" is Opus 4.6: dashes between digits are a version, and a Claude family is
+// known by its name whatever else the catalog writes around it.
+const plainName = model => modelName(model).replace(/(\d)-(\d)/g, '$1.$2');
 // "Grok 4.7 Business" and "Grok 4.6 Business" are one family; the newer version leads it.
-const familyOf = model => modelName(model).toLowerCase().replace(/\d+(\.\d+)*/g, ' ').replace(/[\s-]+/g, ' ').trim();
-const versionOf = model => (modelName(model).match(/\d+(?:\.\d+)*/) || ['0'])[0].split('.').map(Number);
+function familyOf(model) {
+  const claude = CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)));
+  if (claude) return 'claude ' + claude[0].source;
+  return plainName(model).toLowerCase().replace(/\d+(\.\d+)*/g, ' ').replace(/[\s-]+/g, ' ').trim();
+}
+const versionOf = model => (plainName(model).match(/\d+(?:\.\d+)*/) || ['0'])[0].split('.').map(Number);
 function newer(a, b) {
   const x = versionOf(a), y = versionOf(b);
   for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (y[i] || 0) - (x[i] || 0);
   return 0;
 }
 const claudeOrder = model => CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)))?.[2] ?? 9;
-// Best lead first: stronger kind; within one family the newer version; then known quota before unknown,
-// more quota first; at equal quota Fable before Opus.
+// Best lead first, for the hand-over: stronger kind; within one family the newer version; then known
+// quota before unknown, more quota first; at equal quota Fable before Opus.
 function leadRanking(list, plans = []) {
   return [...(list || [])].map(model => ({ model, tier: leadTier(model), left: quotaLeft(model, plans), family: familyOf(model) }))
     .sort((a, b) => (a.tier - b.tier) || (a.family === b.family ? newer(a.model, b.model) : 0)
       || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)) || (claudeOrder(a.model) - claudeOrder(b.model)))
+    .map(item => item.model);
+}
+// The lead menu: by quality only, whatever the quota today. Stronger kind; Fable, Opus, Sonnet, Haiku in
+// that order; within a family the newer version; otherwise the catalog's order.
+function leadQuality(list) {
+  return [...(list || [])].map((model, index) => ({ model, index, tier: leadTier(model), family: familyOf(model) }))
+    .sort((a, b) => (a.tier - b.tier) || (claudeOrder(a.model) - claudeOrder(b.model))
+      || (a.family === b.family ? newer(a.model, b.model) : 0) || (a.index - b.index))
     .map(item => item.model);
 }
 
@@ -2153,7 +2168,7 @@ function createOrchestrator(options) {
     });
     // Who takes over as lead if the current one runs low, in order (Team shows it).
     // Every model that can lead now, best first: the lead menu follows this order.
-    view.leadOrder = leadRanking(roster().filter(item => leadUsable(item)), plansLive).map(item => item.id);
+    view.leadOrder = leadQuality(roster().filter(item => leadUsable(item))).map(item => item.id);
     view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !isLow(item)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
@@ -3823,4 +3838,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
