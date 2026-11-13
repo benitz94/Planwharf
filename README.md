@@ -32,13 +32,13 @@ When the work is done, a summary says what happened, who did what and what is le
 
 ## Download
 
-Every [release](https://github.com/benitz94/Planwharf/releases/latest) contains every kind of Planwharf. Pick one:
+**Use the native app.** It is the version that is developed from now on. The desktop app (Electron) and the web app are **being retired**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
 
-| Kind | Windows | Linux | macOS | Needs Node.js |
-|---|---|---|---|---|
-| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No, its engine is included |
-| **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included |
-| **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer |
+| Kind | Windows | Linux | macOS | Needs Node.js | Status |
+|---|---|---|---|---|---|
+| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No: it includes Node.js today (its engine still runs on it) | Developed |
+| **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included | Being retired |
+| **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer | Being retired |
 
 With any kind you also need at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
 
@@ -46,16 +46,16 @@ With any kind you also need at least one AI coding tool, installed and signed in
 
 A native window instead of a web page, much lighter than the desktop app, with everything the desktop app does: chat with the lead, the crew at work, Team, Progress, Usage, Files, Settings, commit and push. Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
 
-- **What is native and what is not, yet:** the window is native (no browser inside). Planwharf's engine still runs on Node.js, included in the zip (about 75 MB in all), and the window starts it for you. The engine is being ported to C# ([native/porting](native/porting/README.md)); when that is done the app will no longer contain Node.js.
-- Dark theme only for now. To update, download the new zip: the app tells you when one is out.
+- **What is native and what is not, yet:** the window is native (no browser inside). Today Planwharf's engine still runs on Node.js, included in the zip (about 75 MB in all), and the window starts it for you. The engine is being ported to C# ([the plan](native/porting/PLAN.md)); when that is done the app will no longer contain Node.js, and it will be the only kind of Planwharf.
+- To update, download the new zip: the app tells you when one is out.
 - It is not code-signed yet: on Windows choose **More info > Run anyway**; on macOS, if it is blocked, open **System Settings > Privacy & Security** and choose **Open Anyway**.
 - It uses the same projects as the desktop app: close one before you open the other.
 
 More in [native/README.md](native/README.md).
 
-### Desktop app (Electron)
+### Desktop app (Electron), being retired
 
-Its own window, with Node.js included. Download it from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), under **Assets**:
+Its own window, with Node.js included. No new features: only fixes for serious errors, until it is removed. Download it from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), under **Assets**:
 
 - **Windows 10 / 11 (64-bit):** run `Planwharf-Setup-X.Y.Z.exe`. The installer is not code-signed yet, so Windows SmartScreen may say it "protected your PC": choose **More info > Run anyway** only if you downloaded it from this page.
 - **Linux (64-bit):** make `Planwharf-X.Y.Z.AppImage` executable and open it, or on Debian/Ubuntu run `sudo apt install ./planwharf-desktop_X.Y.Z_amd64.deb`.
@@ -63,7 +63,9 @@ Its own window, with Node.js included. Download it from the [latest release](htt
 To update, install the new version over the old one: your projects are kept. More in [docs/DESKTOP.md](docs/DESKTOP.md).
 
 
-### Web app (portable ZIP)
+### Web app (portable ZIP), being retired
+
+No new features: only fixes for serious errors, until it is removed.
 
 Opens in your browser's app window and updates itself from **Settings > Updates**. Needs [Node.js](https://nodejs.org/) 18 or newer.
 
