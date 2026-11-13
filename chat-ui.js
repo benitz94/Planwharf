@@ -4,6 +4,35 @@
 (() => {
   const $ = id => document.getElementById(id);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  // The lead writes Markdown; the chat shows headings, lists, rules and code instead of the marks.
+  // The same rules as the native window (Markdown.cs): # headings, - and 1. lists, ---, ``` code, > quotes, **bold**, `code`.
+  const inline = text => escape(text).replace(/\*\*(.+?)\*\*/gs, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  function markdown(text) {
+    const out = [], para = [];
+    const flush = () => { if (para.length) { out.push(`<p>${para.map(inline).join('<br>')}</p>`); para.length = 0; } };
+    const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n');
+    let list = null;
+    const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let m;
+      if (/^\s*```/.test(line)) {
+        flush(); closeList();
+        const code = [];
+        for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
+        out.push(`<pre class="md-code">${escape(code.join('\n'))}</pre>`); continue;
+      }
+      if (!line.trim()) { flush(); closeList(); continue; }
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); closeList(); out.push('<hr>'); continue; }
+      if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) { flush(); closeList(); const level = Math.min(6, m[1].length + 2); out.push(`<h${level} class="md-h">${inline(m[2].replace(/[#\s]+$/, ''))}</h${level}>`); continue; }
+      if ((m = /^\s*[-*•]\s+(.*)$/.exec(line))) { flush(); if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); continue; }
+      if ((m = /^\s*(\d{1,3})[.)]\s+(.*)$/.exec(line))) { flush(); if (list !== 'ol') { closeList(); out.push(`<ol start="${m[1]}">`); list = 'ol'; } out.push(`<li>${inline(m[2])}</li>`); continue; }
+      if ((m = /^>\s?(.*)$/.exec(line))) { flush(); closeList(); out.push(`<blockquote>${inline(m[1])}</blockquote>`); continue; }
+      closeList(); para.push(line);
+    }
+    flush(); closeList();
+    return out.join('');
+  }
   const store = {
     get(key, fallback) { try { const value = localStorage.getItem('planwharf_chat_' + key); return value == null ? fallback : JSON.parse(value); } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem('planwharf_chat_' + key, JSON.stringify(value)); } catch {} }
@@ -464,7 +493,7 @@
     const failed = Boolean(item.diagnostic);
     const elapsed = Number.isFinite(item.ms) ? ` · ${Math.max(1, Math.round(item.ms / 1000))} s` : '';
     return `<div class="msg you"><div class="bubble">${escape(item.question)}</div></div>
-      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${toolAsk(item)}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
+      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble md">${markdown(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${toolAsk(item)}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
   }
   function eventHtml(event) {
     const view = eventView(event);

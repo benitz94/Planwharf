@@ -13,13 +13,13 @@ public sealed class ProjectDialog : Window
     {
         Title = "New project"; Width = 520; SizeToContent = SizeToContent.Height; CanResize = false; Background = Palette.Card;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var name = new TextBox { Watermark = "My website" };
-        var folder = new TextBox { Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" };
+        var name = Look.Field(new TextBox { Watermark = "My website" });
+        var folder = Look.Field(new TextBox { Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" });
         var error = new TextBlock { Foreground = Palette.Danger, TextWrapping = TextWrapping.Wrap };
-        var browse = new Button { Content = "Browse…", Margin = new Thickness(8, 0, 0, 0) };
+        var browse = Look.Button("Browse…", "folder"); browse.Margin = new Thickness(8, 0, 0, 0);
         browse.Click += async (_, _) => { if (await Pick(this) is { } path) folder.Text = path; };
-        var create = new Button { Content = "Create", Background = Palette.Accent, Foreground = Palette.AccentText, Margin = new Thickness(0, 0, 8, 0) };
-        var cancel = new Button { Content = "Cancel" };
+        var create = Look.Button("Create", "plus", Look.Kind.Primary); create.Margin = new Thickness(0, 0, 8, 0);
+        var cancel = Look.Button("Cancel");
         create.Click += (_, _) =>
         {
             if (string.IsNullOrWhiteSpace(name.Text)) { error.Text = "Enter a name."; return; }

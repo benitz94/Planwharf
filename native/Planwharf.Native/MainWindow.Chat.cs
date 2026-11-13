@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
@@ -62,10 +63,17 @@ public sealed partial class MainWindow
         listSig = sig;
         projectList.ItemsSource = rows.Select(row =>
         {
-            var text = new StackPanel { Children = {
-                new TextBlock { Text = row.project.Name, Foreground = Palette.Text, FontWeight = FontWeight.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis },
-                new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
-            var line = new DockPanel();
+            var open = row.project.Id == projectId;
+            var attention = !row.working && Regex.IsMatch(row.sub, "^(Stopped|Needs|Failed|Blocked|Waiting)", RegexOptions.IgnoreCase);
+            var done = !row.working && !attention && Regex.IsMatch(row.sub, "^(Done|Goal reached|Finished)", RegexOptions.IgnoreCase);
+            var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = {
+                new TextBlock { Text = row.project.Name, Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
+                new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
+            // The folder tile says the state at a glance, as in the chat page.
+            var tile = Look.Tile("folder", row.working || done ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, row.working || done ? Palette.AccentSoft : attention ? Palette.WarnSoft : Palette.Surface2, 30, 17, 9);
+            tile.Margin = new Thickness(0, 0, 8, 0);
+            DockPanel.SetDock(tile, Dock.Left);
+            var line = new DockPanel { Children = { tile } };
             if (row.news)
             {
                 var dot = new Ellipse { Width = 9, Height = 9, Fill = Palette.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
@@ -74,7 +82,7 @@ public sealed partial class MainWindow
                 line.Children.Add(dot);
             }
             line.Children.Add(text);
-            return new ListBoxItem { Tag = row.project.Id, Padding = new Thickness(12, 8), Content = line };
+            return new ListBoxItem { Tag = row.project.Id, Padding = new Thickness(10, 8), Margin = new Thickness(0, 1), CornerRadius = new CornerRadius(10), Content = line };
         }).ToList();
         projectList.SelectedIndex = rows.FindIndex(row => row.project.Id == projectId);
     }
@@ -89,8 +97,9 @@ public sealed partial class MainWindow
         var missing = view.Action == CrewAction.LetTheCrewDoIt ? TeamViews.Missing(snapshot!, view.Id, goalReady) : [];
         // Right after start Planwharf shows saved data while it checks the AI tools again.
         var checking = view.Action == CrewAction.LetTheCrewDoIt && Flag(snapshot?["modelsChecking"]);
-        actionButton.Content = view.ActionText;
-        actionButton.Background = view.Action is CrewAction.StopTheCrew or CrewAction.StopWork ? Palette.Danger : Palette.Accent;
+        var stopping = view.Action is CrewAction.StopTheCrew or CrewAction.StopWork;
+        actionButton.Content = Look.Label(view.ActionText, stopping ? "stop" : view.Action switch { CrewAction.Approve => "check", CrewAction.Resume => "play", _ => "rocket" });
+        Look.Paint(actionButton, stopping ? Look.Kind.Danger : Look.Kind.Primary);
         actionButton.IsEnabled = !busy && missing.Count == 0 && !checking;
         send.IsEnabled = !busy && Pending == null;
         if (Pending == null)
@@ -103,8 +112,9 @@ public sealed partial class MainWindow
         if (timedStop is { } timed && timed.ProjectId == view.Id)
         {
             var minutes = Math.Max(1, (int)Math.Ceiling((timed.At - DateTimeOffset.UtcNow).TotalMinutes));
-            var cancel = new Button { Content = "Cancel", FontSize = 12 };
+            var cancel = Small("Cancel");
             cancel.Click += (_, _) => { timedStop = null; Render(); };
+            timedRow.Children.Add(Look.Icon("clock", 16, Palette.Warn));
             timedRow.Children.Add(new TextBlock { Text = $"Stops at {timed.At.ToLocalTime():HH:mm} (in {minutes} min)", Foreground = Palette.Warn, VerticalAlignment = VerticalAlignment.Center });
             timedRow.Children.Add(cancel);
             timedRow.IsVisible = true;
@@ -249,7 +259,11 @@ public sealed partial class MainWindow
         if (finished != null && !placed) thread.Children.Add(WorkCard(view.Id, finished, team, card));
 
         if (Pending == null && view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt)
-            thread.Children.Add(Note($"Nothing has started yet. When the plan is right, press Let the crew do it: the crew will work on\n{view.NextGoal}\nNot right yet? Keep talking with the lead."));
+            thread.Children.Add(Hint("alert", new StackPanel { Spacing = 6, Children = {
+                new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection {
+                    new Run("Nothing has started yet. When the plan is right, press "), new Run("Let the crew do it") { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(": the crew will work on") } },
+                new TextBlock { Text = view.NextGoal, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = "Not right yet? Keep talking with the lead.", FontSize = 13, Foreground = Palette.Muted } } }));
         if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
         if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
         if (Pending is { } waiting)
@@ -262,7 +276,7 @@ public sealed partial class MainWindow
                 // Redrawn about every second: it stays open or closed as the user left it.
                 var notes = Fold("What the lead is doing", Mono(thinking.Length > 4000 ? thinking[^4000..] : thinking));
                 notes.IsExpanded = thinkingOpen;
-                notes.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty) thinkingOpen = notes.IsExpanded; };
+                notes.Toggled += opened => thinkingOpen = opened;
                 answer.Children.Add(notes);
             }
             thread.Children.Add(answer);
@@ -274,12 +288,53 @@ public sealed partial class MainWindow
 
     static Control Bubble(bool fromUser, string who, string text, bool failed = false)
     {
-        var body = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = fromUser ? Palette.AccentText : Palette.Text, Inlines = new InlineCollection() };
-        foreach (var run in TextRuns.Parse(text))
-            body.Inlines.Add(new Run(run.Text) { FontWeight = run.Bold ? FontWeight.Bold : FontWeight.Normal, FontFamily = run.Code ? new FontFamily("Consolas, Menlo, monospace") : FontFamily.Default });
-        var bubble = new Border { Background = fromUser ? Palette.UserBubble : Palette.Card, CornerRadius = new CornerRadius(12), Padding = new Thickness(14, 10), Child = body, MaxWidth = 680,
-            HorizontalAlignment = fromUser ? HorizontalAlignment.Right : HorizontalAlignment.Left, BorderBrush = failed ? Palette.Danger : null, BorderThickness = new Thickness(failed ? 1 : 0) };
+        var fg = fromUser ? Palette.AccentText : Palette.Text;
+        Control body = fromUser ? Rich(text, fg) : RichBlocks(text, fg);
+        // As .msg .bubble: the user's in green on the right, the lead's in a card on the left; the corner
+        // next to the speaker is sharper.
+        var bubble = new Border { Background = fromUser ? Palette.UserBubble : failed ? Palette.DangerSoft : Palette.Card, Padding = new Thickness(14, 10), Child = body, MaxWidth = fromUser ? 640 : 720,
+            CornerRadius = fromUser ? new CornerRadius(14, 14, 4, 14) : new CornerRadius(14, 14, 14, 4),
+            HorizontalAlignment = fromUser ? HorizontalAlignment.Right : HorizontalAlignment.Stretch, Margin = fromUser ? default : new Thickness(0, 0, 60, 0), BorderBrush = fromUser || failed ? null : Palette.Line, BorderThickness = new Thickness(fromUser || failed ? 0 : 1) };
         return fromUser ? bubble : new StackPanel { Spacing = 4, Children = { new TextBlock { Text = who, Foreground = Palette.Muted, FontSize = 12 }, bubble } };
+    }
+
+    // One line or paragraph with **bold** and `code` shown as such.
+    static SelectableTextBlock Rich(string text, IBrush fg, double size = 15, FontWeight? weight = null)
+    {
+        var body = new SelectableTextBlock { TextWrapping = TextWrapping.Wrap, Foreground = fg, FontSize = size, LineHeight = size * 1.5, Inlines = new InlineCollection() };
+        foreach (var run in TextRuns.Parse(text))
+            body.Inlines.Add(run.Code
+                ? new Run(run.Text) { FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = size - 1.5, Background = Palette.Surface2, FontWeight = weight ?? FontWeight.Normal }
+                : new Run(run.Text) { FontWeight = run.Bold ? FontWeight.Bold : weight ?? FontWeight.Normal });
+        return body;
+    }
+
+    // The lead's Markdown: headings, lists, rules and code blocks, not the marks.
+    static Control RichBlocks(string text, IBrush fg)
+    {
+        var panel = new StackPanel { Spacing = 8 };
+        foreach (var block in Markdown.Parse(text))
+            panel.Children.Add(block.Kind switch
+            {
+                BlockKind.Heading => Rich(block.Text, fg, block.Level <= 1 ? 19 : block.Level == 2 ? 17 : 16, FontWeight.Bold).With(t => t.Margin = new Thickness(0, 4, 0, 0)),
+                BlockKind.Rule => new Border { Height = 1, Background = Palette.Line, Margin = new Thickness(0, 4) },
+                BlockKind.Code => new Border { Background = Palette.Background, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8),
+                    Child = new SelectableTextBlock { Text = block.Text, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 13, Foreground = fg, TextWrapping = TextWrapping.Wrap } },
+                BlockKind.Quote => new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(3, 0, 0, 0), Padding = new Thickness(10, 0, 0, 0), Child = Rich(block.Text, Palette.Muted) },
+                BlockKind.Bullet or BlockKind.Numbered => ListItem(block, fg),
+                _ => Rich(block.Text, fg),
+            });
+        // List items sit closer together than paragraphs.
+        for (var i = 1; i < panel.Children.Count; i++)
+            if (panel.Children[i].Tag is "item" && panel.Children[i - 1].Tag is "item") panel.Children[i].Margin = new Thickness(panel.Children[i].Margin.Left, -5, 0, 0);
+        return panel;
+    }
+
+    static Control ListItem(TextBlockView block, IBrush fg)
+    {
+        var marker = new TextBlock { Text = block.Marker, Foreground = Palette.Muted, FontSize = 15, LineHeight = 22.5, MinWidth = block.Kind == BlockKind.Bullet ? 14 : 22 };
+        DockPanel.SetDock(marker, Dock.Left);
+        return new DockPanel { Tag = "item", Margin = new Thickness(6 + block.Level * 18, 0, 0, 0), Children = { marker, Rich(block.Text, fg) } };
     }
 
     Control AskControls(string id, AskItem ask)
@@ -291,15 +346,15 @@ public sealed partial class MainWindow
         var under = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         if (ask.Answer.Length > 0)
         {
-            var copy = new Button { Content = "Copy", FontSize = 12, Padding = new Thickness(8, 2) };
+            var copy = Look.Button("Copy", "copy", Look.Kind.Quiet);
             ToolTip.SetTip(copy, "Copy this reply");
-            copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Answer); copy.Content = "Copied"; } };
+            copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Answer); copy.Content = Look.Label("Copied", "check", 14, 5); copy.Foreground = Palette.Accent; } };
             under.Children.Add(copy);
         }
         // The lead asked to turn on a tool: one button, and only a click from the user turns it on.
         if (Tools.FirstOrDefault(tool => tool.Name == ask.ToolRequest) is { Name.Length: > 0 } wanted && !Flag(snapshot?["projectTools"]?[id]?[wanted.Name]))
         {
-            var turnOn = new Button { Content = $"Turn on {wanted.Label} for this project", FontSize = 12, Padding = new Thickness(8, 2) };
+            var turnOn = Small($"Turn on {wanted.Label} for this project");
             turnOn.Click += async (_, _) =>
             {
                 if (wanted.Name == "mcp" && !await Confirm(wanted.Explain + " Turn it on for this project?", "Yes, turn on MCP servers")) return;
@@ -318,17 +373,24 @@ public sealed partial class MainWindow
         return panel;
     }
 
+    // As .event: a round icon in the event's colour, the text, the time on the right.
     static Control EventLine(EventItem e)
     {
-        var color = e.Kind switch { "good" => Palette.Accent, "bad" => Palette.Danger, "start" or "plan" => Palette.Text, _ => Palette.Muted };
-        var mark = e.Kind switch { "good" => "✓", "bad" => "!", "start" => "▶", "plan" => "✎", _ => "•" };
-        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm"), Foreground = Palette.Muted, FontSize = 12, Margin = new Thickness(8, 0, 0, 0) };
-        var line = new DockPanel { Margin = new Thickness(4, 0), Children = {
-            time,
-            new TextBlock { Text = mark, Foreground = color, Width = 18, FontSize = 13 },
-            new TextBlock { Text = e.Text, Foreground = e.Kind == "" ? Palette.Muted : Palette.Text, FontSize = 13, TextWrapping = TextWrapping.Wrap } } };
+        var (icon, color, soft) = e.Kind switch
+        {
+            "good" => ("check", Palette.Accent, Palette.AccentSoft),
+            "bad" => ("alert", Palette.Danger, Palette.DangerSoft),
+            "start" => ("play", Palette.Build, Palette.BuildSoft),
+            "plan" => ("pencil", Palette.Lead, Palette.LeadSoft),
+            _ => ("clock", Palette.Muted, Palette.Surface2),
+        };
+        var mark = Look.Tile(icon, color, soft, 24, 13, 12);
+        mark.VerticalAlignment = VerticalAlignment.Top; mark.Margin = new Thickness(0, 0, 10, 0);
+        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm"), Foreground = Palette.Muted, FontSize = 13, Margin = new Thickness(10, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+        var line = new DockPanel { Children = { time, mark,
+            new TextBlock { Text = e.Text, Foreground = Palette.Muted, FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) } } };
         DockPanel.SetDock(time, Dock.Right);
-        DockPanel.SetDock(line.Children[1], Dock.Left);
+        DockPanel.SetDock(mark, Dock.Left);
         return line;
     }
 
@@ -336,9 +398,11 @@ public sealed partial class MainWindow
     {
         var team = TeamViews.Team(snapshot!);
         var hasProject = (snapshot?["projects"] as JsonArray)?.Count > 0;
-        Control Step(int n, bool done, string text) => new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = {
-            new TextBlock { Text = done ? "✓" : n.ToString(), Foreground = done ? Palette.Accent : Palette.Muted, Width = 16, FontWeight = FontWeight.Bold },
-            new TextBlock { Text = text, Foreground = done ? Palette.Muted : Palette.Text, TextWrapping = TextWrapping.Wrap } } };
+        Control Step(int n, bool done, string text) => new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = {
+            new Border { Width = 24, Height = 24, CornerRadius = new CornerRadius(12), Background = done ? Palette.AccentSoft : Palette.Surface2,
+                Child = done ? Look.Icon("check", 13, Palette.Accent).With(i => i.HorizontalAlignment = HorizontalAlignment.Center)
+                    : new TextBlock { Text = n.ToString(), Foreground = Palette.Muted, FontSize = 12, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
+            new TextBlock { Text = text, Foreground = done ? Palette.Muted : Palette.Text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center } } };
         var leads = team.Models.Where(model => model.CanLead && model.Available).ToList();
         var leadMenu = new ComboBox { ItemsSource = leads.Select(model => model.Label).ToList(), SelectedIndex = leads.FindIndex(model => model.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 220 };
         leadMenu.SelectionChanged += async (_, _) =>
@@ -350,12 +414,15 @@ public sealed partial class MainWindow
         var row = Row(leadMenu);
         if (!hasProject)
         {
-            var create = Small("+ New project", primary: true);
+            var create = Look.Button("New project", "plus", Look.Kind.Primary);
             create.Click += async (_, _) => await NewProjectAsync();
             row.Children.Add(create);
         }
-        return new Border { BorderBrush = Palette.Accent, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = new StackPanel { Spacing = 10, Children = {
-            Line("Welcome aboard, captain", Palette.Text, 20, FontWeight.Bold),
+        return new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18),
+            Background = new LinearGradientBrush { StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(Color.Parse("#1b3a2a"), 0), new GradientStop(Color.Parse("#1d211e"), 0.55), new GradientStop(Color.Parse("#1d2a42"), 1) } },
+            Child = new StackPanel { Spacing = 10, Children = {
+            Look.Head("rocket", Palette.Accent, Palette.AccentSoft, "Welcome aboard, captain", 19),
             Line("Planwharf runs a team of AI models for you. You give the goal; a lead plans it, a builder writes the code and a verifier checks and fixes it.", Palette.Text, 14),
             Step(1, team.LeadId != null, "Choose your lead."),
             Step(2, hasProject, "Create a project: a name and a folder."),
@@ -367,7 +434,7 @@ public sealed partial class MainWindow
     {
         var missing = TeamViews.Missing(snapshot!, view.Id, goalReady);
         var panel = new StackPanel { Spacing = 8, Children = {
-            Line(view.Name, Palette.Text, 17, FontWeight.Bold),
+            Look.Head("folder", Palette.Accent, Palette.AccentSoft, view.Name, 17),
             Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : "Write below what you want built. When the lead suggests a goal, press Let the crew do it.", Palette.Text, 14),
             Explain("Folder: " + (Str(row?["folder"]) is { Length: > 0 } folder ? folder : "not set")) } };
         if (missing.Count > 0)
@@ -386,6 +453,6 @@ public sealed partial class MainWindow
             panel.Children.Add(fixes);
         }
         else panel.Children.Add(Line("Everything is ready. Press Let the crew do it below, or tell the lead more first.", Palette.Muted, 13));
-        return new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
+        return Look.Card(panel);
     }
 }

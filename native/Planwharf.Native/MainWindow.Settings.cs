@@ -57,11 +57,32 @@ public sealed partial class MainWindow
     string SettingsSignature() => (CurrentRow()?["github"]?.ToJsonString() ?? "") + GithubOffer(CurrentRow()) + snapshot?["mode"]?.ToJsonString()
         + snapshot?["projectTools"]?[projectId ?? ""]?.ToJsonString() + autoSwitch?.ToJsonString() + skills?.ToJsonString() + updates?.ToJsonString();
 
+    // The heading of a Settings section, with the same icon and colour as in the chat page.
+    static Control SettingsHead(string text)
+    {
+        var (icon, color, soft) = text switch
+        {
+            "This project" => ("folder", Palette.Accent, Palette.AccentSoft),
+            "Tools" => ("box", Palette.Lead, Palette.LeadSoft),
+            "New projects" => ("plus", Palette.Build, Palette.BuildSoft),
+            "Approvals" => ("verify", Palette.Verify, Palette.VerifySoft),
+            "Model switch" => ("usage", Palette.Accent, Palette.AccentSoft),
+            "Skills and instructions" => ("file", Palette.Accent, Palette.AccentSoft),
+            "Move a project" => ("box", Palette.Build, Palette.BuildSoft),
+            "Start over" => ("refresh", Palette.Build, Palette.BuildSoft),
+            "Remove project" => ("trash", Palette.Danger, Palette.DangerSoft),
+            "Quit" => ("power", Palette.Muted, Palette.Surface2),
+            "Updates" => ("refresh", Palette.Accent, Palette.AccentSoft),
+            _ => ("settings", Palette.Muted, Palette.Surface2),
+        };
+        return Look.Head(icon, color, soft, text).With(head => head.Margin = new Thickness(0, 12, 0, 0));
+    }
+
     static Button Small(string label, bool primary = false, bool danger = false)
     {
-        var button = new Button { Content = label };
-        if (primary) { button.Background = Palette.Accent; button.Foreground = Palette.AccentText; }
-        if (danger) { button.Background = Palette.Danger; button.Foreground = Palette.AccentText; }
+        var button = Look.Button(label, null, primary ? Look.Kind.Primary : danger ? Look.Kind.Danger : Look.Kind.Small);
+        // .btn-small: the same size whatever its colour.
+        button.Padding = new Thickness(10, 4); button.FontSize = 13; button.CornerRadius = new CornerRadius(8);
         return button;
     }
 
@@ -82,19 +103,18 @@ public sealed partial class MainWindow
     void SettingsPanel(string folder, string name)
     {
         var row = CurrentRow();
-        side.Children.Add(Heading("Settings"));
         if (row != null)
         {
-            side.Children.Add(Heading("This project"));
+            side.Children.Add(SettingsHead("This project"));
             side.Children.Add(Explain($"Folder on your computer for {name}."));
-            var box = new TextBox { Text = folder, Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" };
+            var box = Look.Field(new TextBox { Text = folder, Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" });
             var browse = Small("Browse…");
             browse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) box.Text = path; };
             side.Children.Add(box);
             side.Children.Add(browse);
             side.Children.Add(Explain("GitHub repository (optional)"));
             var offered = GithubOffer(row);
-            var github = new TextBox { Text = Str(row["github"]) is { Length: > 0 } link ? link : offered, Watermark = "https://github.com/you/my-website" };
+            var github = Look.Field(new TextBox { Text = Str(row["github"]) is { Length: > 0 } link ? link : offered, Watermark = "https://github.com/you/my-website" });
             side.Children.Add(github);
             if (offered.Length > 0) side.Children.Add(Explain("Filled in from this folder's git settings. Save to link it, or empty the field and save if you do not want a link."));
             var save = Small("Save", primary: true);
@@ -117,7 +137,7 @@ public sealed partial class MainWindow
             }
             side.Children.Add(buttons);
 
-            side.Children.Add(Heading("Tools"));
+            side.Children.Add(SettingsHead("Tools"));
             side.Children.Add(Explain($"Extra tools for the team of {name}. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work."));
             var on = snapshot?["projectTools"]?[Str(row["id"])];
             foreach (var (tool, label, explain) in Tools)
@@ -136,9 +156,9 @@ public sealed partial class MainWindow
             }
         }
 
-        side.Children.Add(Heading("New projects"));
+        side.Children.Add(SettingsHead("New projects"));
         side.Children.Add(Explain("Default folder for new projects. When you leave the folder empty on a new project, Planwharf creates it here."));
-        var root = new TextBox { Text = projectsRoot ?? "", Watermark = OperatingSystem.IsWindows() ? @"C:\Projects" : "~/Projects" };
+        var root = Look.Field(new TextBox { Text = projectsRoot ?? "", Watermark = OperatingSystem.IsWindows() ? @"C:\Projects" : "~/Projects" });
         var rootBrowse = Small("Browse…");
         rootBrowse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) root.Text = path; };
         var rootSave = Small("Save", primary: true);
@@ -146,7 +166,7 @@ public sealed partial class MainWindow
         side.Children.Add(root);
         side.Children.Add(Row(rootBrowse, rootSave));
 
-        side.Children.Add(Heading("Approvals"));
+        side.Children.Add(SettingsHead("Approvals"));
         var auto = Str(snapshot?["mode"]) == "auto";
         side.Children.Add(Explain(auto ? "The lead may start approved work without asking each time." : "The lead asks you before each piece of work starts."));
         var mode = new ToggleSwitch { OnContent = "Let the lead start approved work by itself", OffContent = "Let the lead start approved work by itself", IsChecked = auto };
@@ -157,7 +177,7 @@ public sealed partial class MainWindow
         {
             var enabled = autoSwitch["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var flag) || flag;
             var threshold = autoSwitch["thresholdPercent"] is JsonValue t && t.TryGetValue<double>(out var pct) ? (int)pct : 20;
-            side.Children.Add(Heading("Model switch"));
+            side.Children.Add(SettingsHead("Model switch"));
             side.Children.Add(Explain(enabled ? $"When a model working on a step drops to {threshold}% quota left or less, Planwharf hands the step to another model with the same role and more quota, with a handoff of what was done."
                 : "Off: a model that runs out of quota stops its step, and you choose the next model."));
             var toggle = new ToggleSwitch { OnContent = "Switch model automatically", OffContent = "Switch model automatically", IsChecked = enabled };
@@ -175,7 +195,7 @@ public sealed partial class MainWindow
 
         if (skills is JsonArray programs && programs.Count > 0)
         {
-            side.Children.Add(Heading("Skills and instructions"));
+            side.Children.Add(SettingsHead("Skills and instructions"));
             side.Children.Add(Explain("Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them."));
             foreach (var program in programs.OfType<JsonObject>())
             {
@@ -208,7 +228,7 @@ public sealed partial class MainWindow
             side.Children.Add(again);
         }
 
-        side.Children.Add(Heading("Move a project"));
+        side.Children.Add(SettingsHead("Move a project"));
         side.Children.Add(Explain("Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points."));
         var move = new WrapPanel();
         if (row != null)
@@ -228,12 +248,12 @@ public sealed partial class MainWindow
 
         if (row != null)
         {
-            side.Children.Add(Heading("Start over"));
+            side.Children.Add(SettingsHead("Start over"));
             side.Children.Add(Explain($"Clears the chat, plan and run history of {name} so you can begin again. The folder, its files, the GitHub link and the team stay. Nothing is deleted: the old history is kept in Planwharf's archive."));
             var startOver = Small("Start over");
             startOver.Click += async (_, _) => { if (await Confirm($"Start {name} over?", "Yes, start over")) await DoAsync(() => api!.StartOverAsync(projectId!), $"{name} starts over. Tell the lead what to build."); };
             side.Children.Add(startOver);
-            side.Children.Add(Heading("Remove project"));
+            side.Children.Add(SettingsHead("Remove project"));
             side.Children.Add(Explain($"Removes {name} from Planwharf. The folder and its files stay on your computer."));
             var remove = Small("Remove project", danger: true);
             remove.Click += async (_, _) =>
@@ -244,7 +264,7 @@ public sealed partial class MainWindow
             side.Children.Add(remove);
         }
 
-        side.Children.Add(Heading("Quit"));
+        side.Children.Add(SettingsHead("Quit"));
         side.Children.Add(Explain("Unfinished work is saved and can be resumed next time."));
         var quit = Small("Quit Planwharf");
         quit.Click += async (_, _) => { if (await Confirm("Quit Planwharf now? Unfinished work is saved.", "Yes, quit now")) Close(); };
@@ -254,7 +274,7 @@ public sealed partial class MainWindow
 
     void UpdatesSection()
     {
-        side.Children.Add(Heading("Updates"));
+        side.Children.Add(SettingsHead("Updates"));
         var check = Small("Check again");
         check.Click += async (_, _) => { updates = new JsonObject { ["state"] = "checking" }; sideSig = null; Render(); await LoadSettingsAsync(checkUpdates: true); };
         var state = Str(updates?["state"]);
