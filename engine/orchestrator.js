@@ -1758,6 +1758,8 @@ function createOrchestrator(options) {
       item.quotaWindows = quotaWindows(item, plansLive);
       item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]) };
       item.lowQuota = isLow(item);
+      // Light, default or premium: what Team filters by and what the lead's parts are matched against.
+      item.weight = ['premium', 'default', 'light'][leadTier(item)] || 'default';
       const used = usedOf(store.usage, item.id);
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
@@ -3303,6 +3305,24 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, snapshot: snapshot(await opts.readPlan()) };
   }
 
+  // The same roles for several models at once (Team's "all" and "none" on the models shown). A role a
+  // model cannot take is skipped for that model, not refused for all.
+  async function setRolesForMany(ids, roles, projectId) {
+    if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string')) return { ok: false, reason: 'Choose at least one model.' };
+    if (!roles || typeof roles !== 'object' || Array.isArray(roles) || !Object.keys(roles).length || Object.entries(roles).some(([role, enabled]) => !ROLE_IDS.includes(role) || typeof enabled !== 'boolean')) return { ok: false, reason: 'Invalid role settings.' };
+    let changed = 0, last = null;
+    for (const id of ids) {
+      const model = roster().find(item => item.id === id);
+      if (!model) continue;
+      const eligibility = roleEligibility(model);
+      const fit = Object.fromEntries(Object.entries(roles).filter(([role, enabled]) => !enabled || eligibility[role]));
+      if (!Object.keys(fit).length) continue;
+      last = await setModelRoles(id, fit, projectId);
+      if (last?.ok) changed += 1;
+    }
+    return { ok: true, changed, snapshot: last?.snapshot || snapshot(await opts.readPlan()) };
+  }
+
   async function setModelRoles(id, roles, projectId) {
     if (projectId) {
       ensureTeam(projectId);
@@ -3798,7 +3818,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

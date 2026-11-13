@@ -26,6 +26,9 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     public bool LimitCustom { get; init; }
     public int? LimitFiveHour { get; init; }
     public int? LimitWeekly { get; init; }
+    // Light, default or premium; and whether the AI tools on this computer no longer offer the model.
+    public string Weight { get; init; } = "default";
+    public bool NotOffered { get; init; }
 }
 public sealed record ProviderView(string Id, string Label, bool Enabled, int Models)
 {
@@ -81,7 +84,9 @@ public static class TeamViews
                 FiveHourLeft = Pct(model["quotaWindows"]?["fiveHour"]), WeeklyLeft = Pct(model["quotaWindows"]?["weekly"]),
                 LowQuota = B(model["lowQuota"]),
                 LimitNone = B(model["quotaLimit"]?["none"]), LimitCustom = B(model["quotaLimit"]?["custom"]),
-                LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"])
+                LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"]),
+                Weight = S(model["weight"]) is { Length: > 0 } weight ? weight : "default",
+                NotOffered = B(model["catalogExcluded"])
             };
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),

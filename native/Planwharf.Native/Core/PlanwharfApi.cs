@@ -129,6 +129,10 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetRolesAsync(string? projectId, string modelId, IDictionary<string, bool> roles) =>
         PostAsync("/api/models/roles", projectId == null ? new { id = modelId, roles } : new { id = modelId, roles, projectId });
 
+    // Team's "All" and "None": one role on or off for the models shown.
+    public Task<JsonNode?> SetRolesForManyAsync(string? projectId, IReadOnlyList<string> ids, string role, bool enabled) =>
+        PostAsync("/api/models/roles/many", projectId == null ? new { ids, roles = new Dictionary<string, bool> { [role] = enabled } } : new { ids, roles = new Dictionary<string, bool> { [role] = enabled }, projectId });
+
     // Changes the model of one step; a working step restarts on it with a handoff.
     public Task<JsonNode?> ChangeStepModelAsync(string projectId, string stepId, string modelId) =>
         PostAsync("/api/orchestrator/crew", new { projectId, assignments = new Dictionary<string, string> { [stepId] = modelId } });
