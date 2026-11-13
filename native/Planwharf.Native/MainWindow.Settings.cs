@@ -73,6 +73,7 @@ public sealed partial class MainWindow
             "Remove project" => ("trash", Palette.Danger, Palette.DangerSoft),
             "Quit" => ("power", Palette.Muted, Palette.Surface2),
             "Updates" => ("refresh", Palette.Accent, Palette.AccentSoft),
+            "Look" => ("sun", Palette.Lead, Palette.LeadSoft),
             _ => ("settings", Palette.Muted, Palette.Surface2),
         };
         return Look.Head(icon, color, soft, text).With(head => head.Margin = new Thickness(0, 12, 0, 0));
@@ -196,6 +197,31 @@ public sealed partial class MainWindow
                 side.Children.Add(Row(new TextBlock { Text = "Week", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
                     new TextBlock { Text = "% left", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
             }
+        }
+
+        // Light or dark, and in the dark theme the text colour, as in the chat page.
+        side.Children.Add(SettingsHead("Look"));
+        var themes = new WrapPanel();
+        foreach (var (value, icon, label) in new[] { ("light", "sun", "Light"), ("dark", "moon", "Dark") })
+        {
+            var chip = Look.Chip(label, icon, Palette.Accent, Palette.AccentSoft, Prefs.Theme == value);
+            chip.Click += (_, _) => { if (Prefs.Theme == value) { chip.IsChecked = true; return; } Prefs.Save(value, Prefs.Ink); App.Restyle(this); };
+            themes.Children.Add(chip);
+        }
+        side.Children.Add(themes);
+        if (Palette.Dark)
+        {
+            side.Children.Add(Explain("Text colour"));
+            var inks = new WrapPanel();
+            foreach (var (key, label, colour) in Palette.Inks)
+            {
+                var swatch = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(6), Background = Brush.Parse(colour), Margin = new Thickness(0, 0, 5, 0), VerticalAlignment = VerticalAlignment.Center };
+                var chip = Look.Chip(label, null, Palette.Accent, Palette.AccentSoft, Prefs.Ink == key);
+                chip.Content = new StackPanel { Orientation = Orientation.Horizontal, Children = { swatch, new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center } } };
+                chip.Click += (_, _) => { if (Prefs.Ink == key) { chip.IsChecked = true; return; } Prefs.Save("dark", key); App.Restyle(this); };
+                inks.Children.Add(chip);
+            }
+            side.Children.Add(inks);
         }
 
         if (skills is JsonArray programs && programs.Count > 0)

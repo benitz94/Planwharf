@@ -61,6 +61,8 @@ public sealed partial class MainWindow
         var sig = string.Join("|", rows.Select(row => row.project.Id + row.project.Name + row.sub + row.news)) + projectId;
         if (sig == listSig) return;
         listSig = sig;
+        // The logo's needle turns while anything is being worked on.
+        SpinBrand(rows.Any(row => row.working));
         projectList.ItemsSource = rows.Select(row =>
         {
             var open = row.project.Id == projectId;
@@ -70,7 +72,9 @@ public sealed partial class MainWindow
                 new TextBlock { Text = row.project.Name, Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
                 new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
             // The folder tile says the state at a glance, as in the chat page.
-            var tile = Look.Tile("folder", row.working || done ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, row.working || done ? Palette.AccentSoft : attention ? Palette.WarnSoft : Palette.Surface2, 30, 17, 9);
+            // While the crew works, the tile shows the lead's compass turning, as in the chat page.
+            var tile = row.working ? Look.Tile("lead", Palette.Accent, Palette.AccentSoft, 30, 17, 9).With(t => Look.Spin(t.Child is Panel p ? p.Children[0] : t))
+                : Look.Tile("folder", done ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, done ? Palette.AccentSoft : attention ? Palette.WarnSoft : Palette.Surface2, 30, 17, 9);
             tile.Margin = new Thickness(0, 0, 8, 0);
             DockPanel.SetDock(tile, Dock.Left);
             var line = new DockPanel { Children = { tile } };
@@ -270,6 +274,7 @@ public sealed partial class MainWindow
                 new TextBlock { Text = "Not right yet? Keep talking with the lead.", FontSize = 13, Foreground = Palette.Muted } } }));
         // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
         if (Pending == null && view.NextGoal == null && view.Action == CrewAction.LetTheCrewDoIt
+            && !TeamViews.GoalReady(row, null)
             && items.OfType<AskItem>().OrderBy(ask => ask.At).LastOrDefault() is { Question.Length: > 0 } mine && mine.Question.Trim() != Str(row?["goal"]).Trim())
         {
             var use = Look.Button("Use my message as the goal", "check", Look.Kind.Small);
@@ -434,7 +439,7 @@ public sealed partial class MainWindow
         }
         return new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18),
             Background = new LinearGradientBrush { StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-                GradientStops = { new GradientStop(Color.Parse("#1b3a2a"), 0), new GradientStop(Color.Parse("#1d211e"), 0.55), new GradientStop(Color.Parse("#1d2a42"), 1) } },
+                GradientStops = { new GradientStop(Palette.ColorOf(Palette.AccentSoft), 0), new GradientStop(Palette.ColorOf(Palette.Card), 0.55), new GradientStop(Palette.ColorOf(Palette.BuildSoft), 1) } },
             Child = new StackPanel { Spacing = 10, Children = {
             Look.Head("rocket", Palette.Accent, Palette.AccentSoft, "Welcome aboard, captain", 19),
             Line("Planwharf runs a team of AI models for you. You give the goal; a lead plans it, a builder writes the code and a verifier checks and fixes it.", Palette.Text, 14),

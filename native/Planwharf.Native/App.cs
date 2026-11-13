@@ -13,9 +13,28 @@ public sealed class App : Application
     public override void Initialize()
     {
         Styles.Add(new FluentTheme());
-        RequestedThemeVariant = ThemeVariant.Dark;
+        Prefs.Load();
+        ApplyLook();
+    }
+
+    // The light or dark theme, and the text colour, chosen in Settings.
+    public void ApplyLook()
+    {
+        Palette.Apply(Prefs.Theme != "light", Prefs.Ink);
+        RequestedThemeVariant = Palette.Dark ? ThemeVariant.Dark : ThemeVariant.Light;
         // Planwharf's green instead of the system blue for selections and accents.
-        Resources["SystemAccentColor"] = Avalonia.Media.Color.Parse("#2f8f62");
+        Resources["SystemAccentColor"] = Avalonia.Media.Color.Parse(Palette.Dark ? "#2f8f62" : "#1f7a52");
+    }
+
+    // A new look: the window is drawn again with it, on the same project and panel, with the same server.
+    public static void Restyle(MainWindow old)
+    {
+        if (Current is App app) app.ApplyLook();
+        else Palette.Apply(Prefs.Theme != "light", Prefs.Ink);
+        var fresh = old.Rebuilt();
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) desktop.MainWindow = fresh;
+        fresh.Show();
+        old.Close();
     }
 
     public override void OnFrameworkInitializationCompleted()

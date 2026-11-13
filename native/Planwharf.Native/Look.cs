@@ -47,6 +47,8 @@ static class Look
         ["send"] = """<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>""",
         ["pause"] = """<path d="M9 5v14M15 5v14"/>""",
         ["research"] = """<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>""",
+        ["sun"] = """<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>""",
+        ["moon"] = """<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>""",
         ["copy"] = """<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>""",
         ["close"] = """<path d="M6 6l12 12M18 6L6 18"/>""",
         ["chevron"] = """<path d="M9 6l6 6-6 6"/>""",
@@ -97,6 +99,17 @@ static class Look
         return new Viewbox { Width = size, Height = size, Child = canvas, VerticalAlignment = VerticalAlignment.Center };
     }
 
+    // Turns a control round and round, as the chat page's spinning compass (2.4 s a turn).
+    public static void Spin(Control control)
+    {
+        control.RenderTransform = new RotateTransform();
+        control.RenderTransformOrigin = RelativePoint.Center;
+        var turn = new Avalonia.Animation.Animation { Duration = TimeSpan.FromSeconds(2.4), IterationCount = Avalonia.Animation.IterationCount.Infinite, Children = {
+            new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(0), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 0d) } },
+            new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(1), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 360d) } } } };
+        control.AttachedToVisualTree += (_, _) => _ = turn.RunAsync(control);
+    }
+
     // A rounded square with an icon: in headings, projects and steps.
     public static Border Tile(string icon, IBrush color, IBrush soft, double size = 32, double iconSize = 18, double radius = 10) =>
         new() { Width = size, Height = size, CornerRadius = new CornerRadius(radius), Background = soft, Child = new Panel { Children = { Centered(Icon(icon, iconSize, color)) } } };
@@ -130,8 +143,8 @@ static class Look
     {
         var (bg, fg, border, hover) = kind switch
         {
-            Kind.Primary => (Palette.Accent, Palette.AccentText, Palette.Accent, Brush.Parse("#72dba8")),
-            Kind.Danger => (Palette.DangerSoft, Palette.Danger, Palette.Danger, Brush.Parse("#4a2828")),
+            Kind.Primary => (Palette.Accent, Palette.AccentText, Palette.Accent, Palette.AccentHover),
+            Kind.Danger => (Palette.DangerSoft, Palette.Danger, Palette.Danger, Palette.DangerHover),
             Kind.Quiet or Kind.Link => ((IBrush)Brushes.Transparent, Palette.Muted, (IBrush)Brushes.Transparent, (IBrush)Palette.Card),
             _ => (Palette.Card, Palette.Text, Palette.Line, Palette.Surface2),
         };
@@ -203,7 +216,7 @@ static class Look
         var left = Math.Clamp(percent, 0, 100);
         var fill = new Border { CornerRadius = new CornerRadius(99), Background = low ?? left < 20 ? Palette.Warn : new LinearGradientBrush {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
-            GradientStops = { new GradientStop(Color.Parse("#5fcf98"), 0), new GradientStop(Color.Parse("#7fa9f5"), 1) } } };
+            GradientStops = { new GradientStop(Palette.ColorOf(Palette.Accent), 0), new GradientStop(Palette.ColorOf(Palette.Build), 1) } } };
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions($"{Math.Max(left, 0.001)}*,{Math.Max(100 - left, 0.001)}*") };
         grid.Children.Add(fill);
         return new Border { Height = 6, CornerRadius = new CornerRadius(99), Background = Palette.Surface2, ClipToBounds = true, Margin = new Thickness(0, 4, 0, 0), Child = grid };

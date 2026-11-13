@@ -21,6 +21,16 @@ public class CompareShots
         var output = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_OUT") ?? AppContext.BaseDirectory;
         var width = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_WIDTH"), out var w) ? w : 1440;
         var height = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_HEIGHT"), out var h) ? h : 900;
+        // PLANWHARF_COMPARE_THEME=light draws the light theme (and the dark one again afterwards for the other tests).
+        var light = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_THEME") == "light";
+        Palette.Apply(!light, null);
+        Avalonia.Application.Current!.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+        try { await Draw(url, output, width, height); }
+        finally { Palette.Apply(true, null); Avalonia.Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark; }
+    }
+
+    static async Task Draw(string url, string output, int width, int height)
+    {
         var window = new MainWindow(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_VERSION") ?? "v0.2.42") { Width = width, Height = height };
         window.Show();
         window.Connect(new PlanwharfApi(url));

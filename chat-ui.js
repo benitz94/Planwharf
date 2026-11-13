@@ -484,7 +484,7 @@
       html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
     // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
-    else if (row && lastAsk && !busy && !pendingHere && !nextGoal && lastAsk.question?.trim() && lastAsk.question.trim() !== row.goal?.trim()) {
+    else if (row && lastAsk && !busy && !pendingHere && !nextGoal && !(hasGoal(row) && !row.goalStarted) && lastAsk.question?.trim() && lastAsk.question.trim() !== row.goal?.trim()) {
       state.myGoal = lastAsk.question.trim();
       html += `<div class="card hint"><p class="small">${ic('alert')}No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-my-goal">${ic('check')}Use my message as the goal</button></div></div>`;
     }
