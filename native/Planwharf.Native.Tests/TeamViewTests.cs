@@ -17,6 +17,21 @@ public class TeamViewTests
       ] }
     """)!;
 
+    // Let the crew do it starts only a plan ready and not yet worked on: never the goal already reached.
+    [Fact]
+    public void A_goal_already_worked_on_is_not_a_plan_ready_to_start()
+    {
+        var row = new JsonObject { ["goal"] = "Port the five modules.", ["goalStarted"] = false };
+        Assert.True(TeamViews.GoalReady(row, null));
+        row["goalStarted"] = true;
+        Assert.False(TeamViews.GoalReady(row, null));
+        Assert.True(TeamViews.GoalReady(row, "Port the next module."), "a new goal suggested by the lead");
+        var state = State("a", true, true);
+        state["projects"]![0]!["goal"] = "Port the five modules.";
+        state["projects"]![0]!["goalStarted"] = true;
+        Assert.Equal(TeamViews.NextGoalText, TeamViews.Missing(state, "p1", goalReady: false).Single());
+    }
+
     [Fact]
     public void The_lead_menu_lists_the_best_lead_first()
     {

@@ -55,7 +55,10 @@ test('stopped work is dropped and the crew then starts the new goal, not the old
     let view = await api('/api/orchestrator');
     assert.equal(row(view).canResume, false, 'the dropped work cannot be resumed');
 
+    // The old goal was worked on: it is no plan ready to start. A new goal is.
+    assert.equal(row(view).goalStarted, true);
     await goal('New goal: port the five modules of job 02.');
+    assert.equal(row(await api('/api/orchestrator')).goalStarted, false, 'a new goal not started yet');
     await api('/api/orchestrator/autonomy', { projectId, enabled: true });
     view = await until(view => /New goal/.test(row(view)?.megaTask?.title || ''), 'the crew starts the new goal');
     assert.doesNotMatch(row(view).megaTask.title, /Old goal/);

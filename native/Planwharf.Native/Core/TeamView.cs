@@ -154,9 +154,14 @@ public static class TeamViews
         if (team.LeadId == null) missing.Add("Choose a lead in Team.");
         if (!team.Models.Any(model => model.Build && model.Available && model.Enabled)) missing.Add("Give at least one model the Build role in Team.");
         if (row != null && S(row["folder"]).Length == 0) missing.Add("Set the project folder in Settings.");
-        if (row != null && !goalReady) missing.Add(NoGoalText);
+        if (row != null && !goalReady) missing.Add(GoalStarted(row) ? NextGoalText : NoGoalText);
         return missing;
     }
 
     public static bool HasGoal(JsonObject? row) => S(row?["goal"]).Trim() is { Length: > 0 } goal && goal != PlanwharfApi.NoGoal;
+    // The crew already worked on this goal: it is not a plan ready to start.
+    public static bool GoalStarted(JsonObject? row) => B(row?["goalStarted"]);
+    // Only a plan ready and not yet worked on starts the crew: a goal the lead just suggested, or one saved and not started.
+    public static bool GoalReady(JsonObject? row, string? nextGoal) => nextGoal != null || HasGoal(row) && !GoalStarted(row);
+    public const string NextGoalText = "Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.";
 }
