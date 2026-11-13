@@ -36,7 +36,7 @@ When the work is done, a summary says what happened, who did what and what is le
 
 | Kind | Windows | Linux | macOS | Needs Node.js | Status |
 |---|---|---|---|---|---|
-| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip` | ✅ `…-linux-x64-…zip` | ✅ Apple silicon and Intel | No: it includes Node.js today (its engine still runs on it) | Developed |
+| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip`, or `…-win-arm64-…` on ARM | ✅ `…-linux-x64-…zip`, or `…-linux-arm64-…` on ARM | ✅ Apple silicon and Intel | No: it includes Node.js today (its engine still runs on it) | Developed |
 | **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included | Being retired |
 | **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer | Being retired |
 

@@ -74,7 +74,9 @@ jobs:
             echo "| Windows 10 / 11 (64-bit) | [Planwharf-native-win-x64-$next.zip]($base/Planwharf-native-win-x64-$next.zip) |"
             echo "| macOS, Apple silicon | [Planwharf-native-osx-arm64-$next.zip]($base/Planwharf-native-osx-arm64-$next.zip) |"
             echo "| macOS, Intel | [Planwharf-native-osx-x64-$next.zip]($base/Planwharf-native-osx-x64-$next.zip) |"
+            echo "| Windows on ARM | [Planwharf-native-win-arm64-$next.zip]($base/Planwharf-native-win-arm64-$next.zip) |"
             echo "| Linux (64-bit) | [Planwharf-native-linux-x64-$next.zip]($base/Planwharf-native-linux-x64-$next.zip) |"
+            echo "| Linux on ARM (64-bit) | [Planwharf-native-linux-arm64-$next.zip]($base/Planwharf-native-linux-arm64-$next.zip) |"
             echo
             echo "Not code-signed yet: on Windows choose More info > Run anyway; on macOS, if it is blocked, open System Settings > Privacy & Security and choose Open Anyway. Close the desktop app before you open this one: they share the same projects."
             echo
@@ -153,6 +155,11 @@ jobs:
             rid: win-x64
           - os: ubuntu-latest
             rid: linux-x64
+          # ARM PCs, on GitHub's ARM machines: the tests run there too, and the Node.js put in the zip is ARM.
+          - os: windows-11-arm
+            rid: win-arm64
+          - os: ubuntu-24.04-arm
+            rid: linux-arm64
           - os: macos-latest
             rid: osx-arm64
           # Intel Macs are built on the Apple silicon runner: .NET publishes for either.
