@@ -30,8 +30,9 @@ public class SettingsServerTests
             Assert.True((await api.SnapshotAsync(false, id))["projectTools"]?[id]?["browser"]?.GetValue<bool>());
             await Assert.ThrowsAsync<InvalidOperationException>(() => api.SetToolsAsync(id, new Dictionary<string, bool> { ["teleport"] = true }));
 
-            var auto = await api.SetAutoSwitchAsync(true, 30);
-            Assert.Equal(30, auto?["thresholdPercent"]?.GetValue<int>());
+            var auto = await api.SetAutoSwitchAsync(true, 30, 25);
+            Assert.Equal(30, auto?["fiveHourPercent"]?.GetValue<int>());
+            Assert.Equal(25, auto?["weeklyPercent"]?.GetValue<int>());
             await api.SetAutoSwitchAsync(false);
             Assert.False((await api.AutoSwitchAsync())["enabled"]?.GetValue<bool>());
 

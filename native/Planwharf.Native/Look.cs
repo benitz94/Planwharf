@@ -198,10 +198,10 @@ static class Look
     public static Ellipse Dot(IBrush color) => new() { Width = 9, Height = 9, Fill = color, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0) };
 
     // A quota bar, as .bar: green to blue, amber when low.
-    public static Control Bar(int percent)
+    public static Control Bar(int percent, bool? low = null)
     {
         var left = Math.Clamp(percent, 0, 100);
-        var fill = new Border { CornerRadius = new CornerRadius(99), Background = left < 20 ? Palette.Warn : new LinearGradientBrush {
+        var fill = new Border { CornerRadius = new CornerRadius(99), Background = low ?? left < 20 ? Palette.Warn : new LinearGradientBrush {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
             GradientStops = { new GradientStop(Color.Parse("#5fcf98"), 0), new GradientStop(Color.Parse("#7fa9f5"), 1) } } };
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions($"{Math.Max(left, 0.001)}*,{Math.Max(100 - left, 0.001)}*") };

@@ -91,8 +91,12 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetToolsAsync(string projectId, IDictionary<string, bool> tools) => PostAsync("/api/project-tools", new { projectId, tools });
 
     public Task<JsonNode> AutoSwitchAsync() => GetAsync("/api/orchestrator/auto-switch");
-    public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? thresholdPercent = null) =>
-        thresholdPercent is { } threshold ? PostAsync("/api/orchestrator/auto-switch", new { enabled, thresholdPercent = threshold }) : PostAsync("/api/orchestrator/auto-switch", new { enabled });
+    public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? fiveHourPercent = null, int? weeklyPercent = null) =>
+        fiveHourPercent is { } five && weeklyPercent is { } week ? PostAsync("/api/orchestrator/auto-switch", new { enabled, fiveHourPercent = five, weeklyPercent = week }) : PostAsync("/api/orchestrator/auto-switch", new { enabled });
+    // A model's own quota limit, no limit at all, or back to the general one.
+    public Task<JsonNode?> SetQuotaLimitAsync(string id, int fiveHourPercent, int weeklyPercent) => PostAsync("/api/models/quota-limit", new { id, fiveHourPercent, weeklyPercent });
+    public Task<JsonNode?> SetNoQuotaLimitAsync(string id) => PostAsync("/api/models/quota-limit", new { id, none = true });
+    public Task<JsonNode?> ResetQuotaLimitAsync(string id) => PostAsync("/api/models/quota-limit", new { id, reset = true });
 
     public Task<JsonNode> SkillsAsync() => GetAsync("/api/skills");
     public Task<JsonNode?> OpenSkillsAsync(string cli, string what) => PostAsync("/api/skills/open", new { cli, what });

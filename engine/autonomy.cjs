@@ -153,13 +153,44 @@ function splitPrompt({ name, goal, builders, verifiers, files, said }) {
     'Split the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.',
     'For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).',
     'Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.',
-    'Give light parts to light models and heavy parts to the strongest, as quota allows.',
+    'Each model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company\'s shared quota fast: keep premium models for heavy parts.',
     'Also name "verify": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.',
     'Models allowed to build: ' + builders.map(describe).join('; '),
     'Models allowed to verify: ' + verifiers.map(describe).join('; '),
     ...(listed.length ? [`Project files (${listed.length}${(files || []).length > listed.length ? ' of ' + files.length : ''}):\n${listed.join('\n')}`] : []),
     'Do not run commands or read files: decide from this message only.',
     'Reply with one JSON object and nothing else: {"parts":[{"title":"","detail":"","files":["relative/path"],"dependsOn":[],"size":"normal","model":"id"}],"verify":"id","why":"one sentence"}'].join('\n');
+}
+
+// The weight a part may use: a light part a light model, a normal part a default or light model, a heavy
+// part any model. A part given to a heavier model moves to a lighter one when there is one, so the strong
+// models (and their company's quota) are kept for the heavy work.
+const FITS = { light: ['light', 'default', 'premium'], normal: ['default', 'light', 'premium'], heavy: ['premium', 'default', 'light'] };
+const ALLOWED = { light: ['light'], normal: ['default', 'light'], heavy: ['premium', 'default', 'light'] };
+function fitWeights(parts, builders) {
+  const byId = new Map((builders || []).map(model => [model.id, model]));
+  const load = new Map();
+  const moved = [];
+  const out = (parts || []).map(part => {
+    const size = SIZES.includes(part.size) ? part.size : 'normal';
+    const current = byId.get(part.model);
+    let chosen = part.model;
+    if (!current || !ALLOWED[size].includes(current.tier)) {
+      // The lightest weight that fits and has a model; among those, the least busy, then the most quota.
+      for (const tier of FITS[size]) {
+        const options = (builders || []).filter(model => model.tier === tier);
+        if (!options.length) continue;
+        if (current && FITS[size].indexOf(tier) >= FITS[size].indexOf(current.tier)) break;
+        options.sort((a, b) => ((load.get(a.id) || 0) - (load.get(b.id) || 0)) || ((Number.isFinite(a.left) ? 0 : 1) - (Number.isFinite(b.left) ? 0 : 1)) || ((b.left ?? 0) - (a.left ?? 0)));
+        chosen = options[0].id;
+        break;
+      }
+    }
+    load.set(chosen, (load.get(chosen) || 0) + 1);
+    if (chosen !== part.model) moved.push({ title: part.title, size, from: part.model, to: chosen });
+    return chosen === part.model ? part : { ...part, model: chosen };
+  });
+  return { parts: out, moved };
 }
 
 const normalPath = file => file.replace(/\\/g, '/').replace(/\/+$/, '');
@@ -190,4 +221,4 @@ function parseSplit(text, { builders, verifiers }) {
   return { parts, verify: parsed.verify, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 
-module.exports = { MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+module.exports = { fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };

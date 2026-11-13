@@ -30,6 +30,10 @@ working, unchanged, until the C# one replaces it. Each piece is ported by a job 
 9. **Processes and paths**: never build a command line by joining strings; pass arguments one by one
    (`ProcessStartInfo.ArgumentList`). Paths with spaces and non-ASCII names must work on Windows.
 10. **English** for code, comments, tests and the pull request.
+11. **Tests do not depend on the machine.** A test must pass on Windows, macOS and Linux, whatever
+    is installed there: never let a real program, browser or file of the computer decide the result
+    (on the macOS runners Chrome is installed in `/Applications`). Give the code the files the test
+    made, through the hooks the module offers.
 
 ## Example
 

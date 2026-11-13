@@ -60,8 +60,9 @@ function resolveUsageFallback(model, models, plans, eligible) {
   }
   return null;
 }
-// Automatic model switch when a model's quota runs low: on by default, at 20% left.
-const AUTO_SWITCH_DEFAULT = Object.freeze({ enabled: true, thresholdPercent: 20 });
+// Automatic model switch when a model's quota runs low: on by default, at 35% left on the 5-hour
+// window and on the weekly window. thresholdPercent is the higher of the two, for old callers.
+const AUTO_SWITCH_DEFAULT = Object.freeze({ enabled: true, thresholdPercent: 35, fiveHourPercent: 35, weeklyPercent: 35 });
 
 function quotaLeft(model, plans = []) {
   const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
@@ -70,18 +71,56 @@ function quotaLeft(model, plans = []) {
   return Number.isFinite(plan.pct) ? 100 - plan.pct : null;
 }
 
-// Low means exhausted, at the provider's own stop threshold, or at or under the switch threshold.
-// Unread quota is not low: nothing is switched on a guess.
-function lowQuota(model, plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT.thresholdPercent) {
+// Providers name their windows differently ("5-hour", "five_hour", "weekly", "seven_day"…).
+function windowKind(name) {
+  const text = String(name || '').toLowerCase();
+  if (/week|seven|7.?d/.test(text)) return 'weekly';
+  if (/5|five|hour/.test(text)) return 'fiveHour';
+  return 'other';
+}
+const percentOr = (value, fallback) => Number.isFinite(value) && value >= 0 && value <= 100 ? value : fallback;
+// A model's quota limit: the two thresholds, or none at all (a model the user wants used whatever its quota).
+// Takes a number (both windows), an object, or a function of the model that returns one of these.
+function quotaLimit(value, model) {
+  if (typeof value === 'function') value = value(model);
+  if (value && typeof value === 'object') {
+    if (value.none === true) return { none: true, fiveHourPercent: null, weeklyPercent: null };
+    const both = percentOr(value.thresholdPercent, null);
+    return { none: false, fiveHourPercent: percentOr(value.fiveHourPercent, both ?? AUTO_SWITCH_DEFAULT.fiveHourPercent), weeklyPercent: percentOr(value.weeklyPercent, both ?? AUTO_SWITCH_DEFAULT.weeklyPercent) };
+  }
+  const both = percentOr(value, null);
+  return { none: false, fiveHourPercent: both ?? AUTO_SWITCH_DEFAULT.fiveHourPercent, weeklyPercent: both ?? AUTO_SWITCH_DEFAULT.weeklyPercent };
+}
+// What is left on each window, read from the provider (null when not reported).
+function quotaWindows(model, plans = []) {
+  const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
+  const out = { fiveHour: null, weekly: null };
+  if (!plan || plan.readable !== true) return out;
+  for (const window of Array.isArray(plan.windows) ? plan.windows : []) {
+    const kind = windowKind(window?.name);
+    if (kind !== 'other' && Number.isFinite(window.leftPct)) out[kind] = out[kind] === null ? window.leftPct : Math.min(out[kind], window.leftPct);
+  }
+  return out;
+}
+
+// Low means exhausted, at the provider's own stop threshold, or at or under the switch threshold of
+// either window (5-hour or weekly). Unread quota is not low: nothing is switched on a guess. A model
+// with no limit is low only when its quota is really exhausted.
+function lowQuota(model, plans = [], limit = AUTO_SWITCH_DEFAULT) {
   const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
   if (plan?.readable === true && plan.exhausted) return true;
   if (usagePolicy(model, plans).state === 'limit') return true;
+  const own = quotaLimit(limit, model);
+  if (own.none || plan?.readable !== true) return false;
+  const windows = (Array.isArray(plan.windows) ? plan.windows : []).filter(window => window && Number.isFinite(window.leftPct));
+  const highest = Math.max(own.fiveHourPercent, own.weeklyPercent);
+  if (windows.length) return windows.some(window => window.leftPct <= ({ fiveHour: own.fiveHourPercent, weekly: own.weeklyPercent }[windowKind(window.name)] ?? highest));
   const left = quotaLeft(model, plans);
-  return left !== null && left <= thresholdPercent;
+  return left !== null && left <= highest;
 }
 
 // Which working steps should move, and to which model: the eligible one with the most quota left above the threshold.
-function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT.thresholdPercent, enabled = true, eligible = () => true } = {}) {
+function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT, enabled = true, eligible = () => true } = {}) {
   if (!enabled) return [];
   const out = [];
   for (const step of running) {
@@ -90,11 +129,13 @@ function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent
     const best = models
       .filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false && eligible(model, step))
       .map(model => ({ model, left: quotaLeft(model, plans) }))
-      .filter(item => item.left !== null && !lowQuota(item.model, plans, thresholdPercent))
+      // A model whose quota is not reported (Grok Business bills in dollars) can take over too, after
+      // the ones with quota read above their threshold.
+      .filter(item => !lowQuota(item.model, plans, thresholdPercent))
       // A company the other steps of the work do not use comes first, so build and check stay independent;
-      // then the most quota left.
+      // then quota that is read before quota that is not, then the most quota left.
       .map(item => ({ ...item, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) }))
-      .sort((a, b) => (a.shared - b.shared) || (b.left - a.left))[0];
+      .sort((a, b) => (a.shared - b.shared) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))[0];
     if (best) out.push({ subTaskId: step.subTaskId, fromModelId: current.id, toModelId: best.model.id, leftPercent: quotaLeft(current, plans) });
   }
   return out;
@@ -108,4 +149,4 @@ function availableAgain(model, now = Date.now(), retryMs = RETRY_UNAVAILABLE_MS)
   return Number.isFinite(since) && now - since >= retryMs;
 }
 
-module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, quotaLeft, lowQuota, quotaSwitches, availableAgain, RETRY_UNAVAILABLE_MS };
+module.exports = { DEFAULT_POLICY, migratePolicy, validatePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, quotaLeft, quotaLimit, quotaWindows, windowKind, lowQuota, quotaSwitches, availableAgain, RETRY_UNAVAILABLE_MS };
