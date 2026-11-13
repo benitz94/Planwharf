@@ -569,6 +569,38 @@
     catch (error) { toast(error.message); }
     state.sideSig = ''; renderSide();
   }
+  // Team filters: by company, by weight and by state. "All" and "None" act on the models shown only.
+  const FILTER_KEYS = ['company', 'weight', 'state'];
+  const filterActive = () => FILTER_KEYS.some(key => state.teamFilter?.[key]);
+  function matchesFilter(model) {
+    const f = state.teamFilter || {};
+    if (f.company && (model.providerId || model.provider) !== f.company) return false;
+    if (f.weight && (model.weight || 'default') !== f.weight) return false;
+    if (f.state === 'team' && onBench(model)) return false;
+    if (f.state === 'bench' && !onBench(model)) return false;
+    if (f.state === 'low' && !model.lowQuota) return false;
+    return true;
+  }
+  function filterBar(offered, shown) {
+    const f = state.teamFilter || {};
+    const companies = [...new Set(offered.map(model => model.providerId || model.provider).filter(Boolean))];
+    const label = id => (state.orchestra?.providers || []).find(provider => provider.id === id)?.label || id;
+    const chip = (key, value, text) => `<button type="button" class="chip" data-filter-key="${key}" data-filter-value="${escape(value)}" aria-pressed="${(f[key] || '') === value}">${escape(text)}</button>`;
+    const ids = escape(shown.map(model => model.id).join(','));
+    const bulk = (role, text) => `<span class="bulk"><b class="small">${text}</b><button type="button" class="chip" data-bulk-role="${role}" data-bulk-on="true" data-bulk-ids="${ids}">All</button><button type="button" class="chip" data-bulk-role="${role}" data-bulk-on="false" data-bulk-ids="${ids}">None</button></span>`;
+    return `<div class="section filters">${head('research', 't-blue', 'Find models')}
+      <div class="chips">${chip('company', '', 'All companies')}${companies.map(id => chip('company', id, label(id))).join('')}</div>
+      <div class="chips">${chip('weight', '', 'Any weight')}${chip('weight', 'light', 'Light')}${chip('weight', 'default', 'Default')}${chip('weight', 'premium', 'Premium')}</div>
+      <div class="chips">${chip('state', '', 'Anywhere')}${chip('state', 'team', 'On the team')}${chip('state', 'bench', 'On the bench')}${chip('state', 'low', 'Under its limit')}</div>
+      <p class="explain">For the ${shown.length} model${shown.length === 1 ? '' : 's'} shown:</p>
+      <div class="chips">${bulk('worker', 'Build')}${bulk('verifier', 'Verify')}${bulk('reviewer', 'Review')}</div></div>`;
+  }
+  async function setRolesForShown(ids, role, enabled) {
+    if (!ids.length) return;
+    try { await post('/api/models/roles/many', { ids, roles: { [role]: enabled }, projectId: state.projectId }); await refresh({ tick: false }); toast(`${{ worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[role]} ${enabled ? 'on' : 'off'} for ${ids.length} model${ids.length === 1 ? '' : 's'}.`); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
   function memberHtml(model) {
     const left = quotaLeft(model);
     const unavailable = model.available === false;
@@ -601,16 +633,22 @@
     const all = models();
     const current = lead();
     const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false));
-    const active = all.filter(model => !onBench(model));
-    const bench = all.filter(onBench);
+    // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
+    const offered = all.filter(model => !model.catalogExcluded);
+    const hidden = all.length - offered.length;
+    const shown = offered.filter(matchesFilter);
+    const active = shown.filter(model => !onBench(model));
+    const bench = shown.filter(onBench);
     const row = project();
     return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>${leadBackupsLine()}</div>
+      ${filterBar(offered, shown)}
       <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
-        ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>
+        ${bench.length ? `<details class="bench-list" ${bench.length <= 4 || filterActive() ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}
+        ${hidden ? `<p class="explain">${hidden} model${hidden === 1 ? ' is' : 's are'} not shown: the AI tools on this computer do not offer ${hidden === 1 ? 'it' : 'them'} any more.</p>` : ''}</div>
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => provider.installed === false
           // Not installed: never shown as On; say how to install it.
@@ -1082,6 +1120,8 @@
     if (target.dataset.arm) { state.armed = target.dataset.arm; state.sideSig = ''; renderSide(); return; }
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
     if (target.dataset.unasked) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.unasked); if (provider) setWorksUnasked(provider.id, provider.policy?.alwaysApprove !== true); return; }
+    if (target.dataset.filterKey) { state.teamFilter = { ...(state.teamFilter || {}), [target.dataset.filterKey]: target.dataset.filterValue || '' }; state.sideSig = ''; renderSide(); return; }
+    if (target.dataset.bulkRole) { setRolesForShown((target.dataset.bulkIds || '').split(',').filter(Boolean), target.dataset.bulkRole, target.dataset.bulkOn === 'true'); return; }
     if (target.dataset.limitNone) { saveLimit({ id: target.dataset.limitNone, none: true }); return; }
     if (target.dataset.limitReset) { saveLimit({ id: target.dataset.limitReset, reset: true }); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }

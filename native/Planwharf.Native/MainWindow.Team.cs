@@ -28,8 +28,13 @@ public sealed partial class MainWindow
         lead.Children.Add(Explain(team.LeadBackups.Count > 0 ? $"If the lead runs low on quota, Planwharf hands over to: {string.Join(", ", team.LeadBackups)}, in this order." : "No other model can take over as lead now."));
         side.Children.Add(lead);
 
-        var active = team.Models.Where(m => !m.Bench).ToList();
-        var bench = team.Models.Where(m => m.Bench).ToList();
+        // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
+        var offered = team.Models.Where(m => !m.NotOffered).ToList();
+        var hidden = team.Models.Count - offered.Count;
+        var shown = offered.Where(Matches).ToList();
+        side.Children.Add(FilterBar(team, offered, shown));
+        var active = shown.Where(m => !m.Bench).ToList();
+        var bench = shown.Where(m => m.Bench).ToList();
         var onTeam = Look.Section("team", Palette.Accent, Palette.AccentSoft, $"On the team · {active.Count}");
         onTeam.Children.Add(new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
             new Avalonia.Controls.Documents.Run("Build") { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" writes code and tests. "),
@@ -46,9 +51,10 @@ public sealed partial class MainWindow
             var list = new StackPanel { Spacing = 8 };
             foreach (var model in bench) list.Children.Add(Member(model, team.LeadId));
             var fold = Fold(bench.Count <= 4 ? "Models on the bench" : $"Show the {bench.Count} models on the bench", list);
-            fold.IsExpanded = bench.Count <= 4;
+            fold.IsExpanded = bench.Count <= 4 || teamFilter.Values.Any(value => value.Length > 0);
             benchSection.Children.Add(fold);
         }
+        if (hidden > 0) benchSection.Children.Add(Explain($"{hidden} model{(hidden == 1 ? " is" : "s are")} not shown: the AI tools on this computer do not offer {(hidden == 1 ? "it" : "them")} any more."));
         side.Children.Add(benchSection);
 
         var tools = Look.Section("chip", Palette.Build, Palette.BuildSoft, "AI tools", "Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.");
@@ -83,6 +89,55 @@ public sealed partial class MainWindow
         fold2.IsExpanded = false;
         connect.Children.Add(fold2);
         side.Children.Add(connect);
+    }
+
+    // Team filters: by company, by weight and by state. "All" and "None" act on the models shown only.
+    readonly Dictionary<string, string> teamFilter = new() { ["company"] = "", ["weight"] = "", ["state"] = "" };
+
+    bool Matches(TeamModel model) =>
+        (teamFilter["company"].Length == 0 || model.ProviderId == teamFilter["company"])
+        && (teamFilter["weight"].Length == 0 || model.Weight == teamFilter["weight"])
+        && teamFilter["state"] switch { "team" => !model.Bench, "bench" => model.Bench, "low" => model.LowQuota, _ => true };
+
+    Control FilterBar(TeamView team, IReadOnlyList<TeamModel> offered, IReadOnlyList<TeamModel> shown)
+    {
+        var section = Look.Section("research", Palette.Build, Palette.BuildSoft, "Find models");
+        WrapPanel Choices(string key, params (string Value, string Text)[] options)
+        {
+            var row = new WrapPanel();
+            foreach (var (value, text) in options)
+            {
+                var chip = Look.Chip(text, null, Palette.Accent, Palette.AccentSoft, teamFilter[key] == value);
+                chip.Click += (_, _) => { teamFilter[key] = value; sideSig = null; Render(); };
+                row.Children.Add(chip);
+            }
+            return row;
+        }
+        var companies = offered.Select(m => m.ProviderId).Where(id => id.Length > 0).Distinct()
+            .Select(id => (id, team.Providers.FirstOrDefault(p => p.Id == id)?.Label ?? id)).ToArray();
+        section.Children.Add(Choices("company", [("", "All companies"), .. companies]));
+        section.Children.Add(Choices("weight", ("", "Any weight"), ("light", "Light"), ("default", "Default"), ("premium", "Premium")));
+        section.Children.Add(Choices("state", ("", "Anywhere"), ("team", "On the team"), ("bench", "On the bench"), ("low", "Under its limit")));
+        section.Children.Add(Explain($"For the {shown.Count} model{(shown.Count == 1 ? "" : "s")} shown:"));
+        var bulk = new WrapPanel();
+        foreach (var (role, label) in new[] { ("worker", "Build"), ("verifier", "Verify"), ("reviewer", "Review") })
+        {
+            bulk.Children.Add(new TextBlock { Text = label, FontSize = 12, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 4) });
+            foreach (var (on, text) in new[] { (true, "All"), (false, "None") })
+            {
+                var chip = Look.Chip(text, null, Palette.Accent, Palette.AccentSoft, false);
+                chip.Click += async (_, _) =>
+                {
+                    chip.IsChecked = false;
+                    var ids = shown.Select(m => m.Id).ToList();
+                    if (ids.Count > 0) await DoAsync(() => api!.SetRolesForManyAsync(projectId, ids, role, on), $"{label} {(on ? "on" : "off")} for {ids.Count} model{(ids.Count == 1 ? "" : "s")}.");
+                };
+                bulk.Children.Add(chip);
+            }
+            bulk.Children.Add(new Border { Width = 8 });
+        }
+        section.Children.Add(bulk);
+        return section;
     }
 
     // A model or tool card, as .member; one on the team has a green edge on the left.

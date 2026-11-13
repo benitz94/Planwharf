@@ -760,6 +760,13 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(200, result.snapshot);
       }
+      if (request.method === 'POST' && pathname === '/api/models/roles/many') {
+        const input = await body(request);
+        if (!input || !Array.isArray(input.ids) || Object.keys(input).some(key => !['ids', 'roles', 'projectId'].includes(key)) || (input.projectId != null && typeof input.projectId !== 'string')) throw new RequestError(400, 'Invalid role settings.');
+        const result = await enqueue(() => orchestra.setRolesForMany(input.ids, input.roles, input.projectId || undefined));
+        if (!result.ok) throw new RequestError(400, result.reason);
+        return json(200, result.snapshot);
+      }
       if (request.method === 'POST' && pathname === '/api/models/roles') {
         const input = await body(request);
         if (!input || typeof input.id !== 'string' || Object.keys(input).some(key => !['id', 'roles', 'projectId'].includes(key)) || (input.projectId != null && typeof input.projectId !== 'string')) throw new RequestError(400, 'Invalid model role settings.');

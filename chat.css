@@ -363,3 +363,6 @@ details.skills summary { cursor: pointer; }
 .member .limit .row { margin-top: 6px; gap: 6px; flex-wrap: wrap; align-items: center; }
 .member .limit input { padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
 .c-warn { color: var(--warn); }
+/* Team filters and "All / None" for the models shown. */
+.filters .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.filters .bulk { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
