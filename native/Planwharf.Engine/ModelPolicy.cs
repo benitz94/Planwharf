@@ -10,7 +10,10 @@ namespace Planwharf.Engine;
 public static class ModelPolicy
 {
     public const long RetryUnavailableMs = 5 * 60000;
-    public const int AutoSwitchThresholdPercent = 20;
+    // 35% left on the 5-hour window and on the weekly one. AutoSwitchThresholdPercent is the higher of the two.
+    public const int AutoSwitchThresholdPercent = 35;
+    public const int AutoSwitchFiveHourPercent = 35;
+    public const int AutoSwitchWeeklyPercent = 35;
 
     static readonly string[] PolicyKeys = ["minRemainingPercent", "warningRemainingPercent", "fallbackModelId", "alwaysApprove"];
     static readonly (string OldKey, string NewKey)[] LegacyKeys = [("maxUsedPercent", "minRemainingPercent"), ("warningUsedPercent", "warningRemainingPercent")];
@@ -23,12 +26,62 @@ public static class ModelPolicy
         ["alwaysApprove"] = false
     };
 
-    // Automatic model switch when a model's quota runs low: on by default, at 20% left.
+    // Automatic model switch when a model's quota runs low: on by default, at 35% left on the 5-hour
+    // window and on the weekly window. thresholdPercent is the higher of the two, for old callers.
     public static JsonObject AutoSwitchDefault() => new()
     {
         ["enabled"] = true,
-        ["thresholdPercent"] = AutoSwitchThresholdPercent
+        ["thresholdPercent"] = AutoSwitchThresholdPercent,
+        ["fiveHourPercent"] = AutoSwitchFiveHourPercent,
+        ["weeklyPercent"] = AutoSwitchWeeklyPercent
     };
+
+    // Providers name their windows differently ("5-hour", "five_hour", "weekly", "seven_day"…).
+    public static string WindowKind(JsonNode? name)
+    {
+        var text = (name is JsonValue value && value.TryGetValue<string>(out var s) ? s : name is null ? "" : JsString(name)).ToLowerInvariant();
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, "week|seven|7.?d", System.Text.RegularExpressions.RegexOptions.ECMAScript)) return "weekly";
+        if (System.Text.RegularExpressions.Regex.IsMatch(text, "5|five|hour", System.Text.RegularExpressions.RegexOptions.ECMAScript)) return "fiveHour";
+        return "other";
+    }
+
+    static double? PercentOr(JsonNode? node) => TryPercent(node, out var value) ? value : null;
+
+    // A model's quota limit: the two thresholds, or none at all. Takes a number (both windows) or an object.
+    public static JsonObject QuotaLimit(JsonNode? value)
+    {
+        if (value is JsonObject obj)
+        {
+            if (obj["none"] is JsonValue none && none.TryGetValue<bool>(out var isNone) && isNone)
+                return new JsonObject { ["none"] = true, ["fiveHourPercent"] = null, ["weeklyPercent"] = null };
+            var both = PercentOr(Field(obj, "thresholdPercent"));
+            return new JsonObject { ["none"] = false,
+                ["fiveHourPercent"] = JsonNumber(PercentOr(Field(obj, "fiveHourPercent")) ?? both ?? AutoSwitchFiveHourPercent),
+                ["weeklyPercent"] = JsonNumber(PercentOr(Field(obj, "weeklyPercent")) ?? both ?? AutoSwitchWeeklyPercent) };
+        }
+        var single = PercentOr(value);
+        return new JsonObject { ["none"] = false, ["fiveHourPercent"] = JsonNumber(single ?? AutoSwitchFiveHourPercent), ["weeklyPercent"] = JsonNumber(single ?? AutoSwitchWeeklyPercent) };
+    }
+
+    // What is left on each window, read from the provider (null when not reported).
+    public static JsonObject QuotaWindows(JsonObject model, JsonArray? plans = null)
+    {
+        var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: true);
+        double? five = null, week = null;
+        if (plan is not null && IsTrue(plan, "readable") && plan["windows"] is JsonArray windows)
+            foreach (var window in windows.OfType<JsonObject>())
+            {
+                if (!TryFinite(window["leftPct"], out var left)) continue;
+                switch (WindowKind(window["name"]))
+                {
+                    case "fiveHour": five = five is null ? left : Math.Min(five.Value, left); break;
+                    case "weekly": week = week is null ? left : Math.Min(week.Value, left); break;
+                }
+            }
+        return new JsonObject { ["fiveHour"] = five is null ? null : JsonNumber(five.Value), ["weekly"] = week is null ? null : JsonNumber(week.Value) };
+    }
+
+    static string JsString(JsonNode node) => node is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : node.ToJsonString();
 
     public static JsonObject MigratePolicy(JsonNode? value)
     {
@@ -303,20 +356,39 @@ public static class ModelPolicy
         return TryFinite(plan["pct"], out var used) ? 100 - used : null;
     }
 
-    // Low means exhausted, at the provider's own stop threshold, or at or under the switch threshold.
-    // Unread quota is not low: nothing is switched on a guess.
-    public static bool LowQuota(JsonObject model, JsonArray? plans = null, double thresholdPercent = AutoSwitchThresholdPercent)
+    // Low means exhausted, at the provider's own stop threshold, or at or under the switch threshold of
+    // either window (5-hour or weekly). Unread quota is not low: nothing is switched on a guess. A model
+    // with no limit is low only when its quota is really exhausted.
+    public static bool LowQuota(JsonObject model, JsonArray? plans, double thresholdPercent) => LowQuota(model, plans, JsonValue.Create(thresholdPercent));
+
+    public static bool LowQuota(JsonObject model, JsonArray? plans = null, JsonNode? limit = null) => LowQuota(model, plans, _ => limit ?? AutoSwitchDefault());
+
+    public static bool LowQuota(JsonObject model, JsonArray? plans, Func<JsonObject, JsonNode?> limitFor)
     {
         plans ??= new JsonArray();
         var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: true);
         if (plan is not null && IsTrue(plan, "readable") && StructuredFinal.Truthy(Field(plan, "exhausted"))) return true;
         if (AsString(UsagePolicy(model, plans)["state"]) == "limit") return true;
+        var own = QuotaLimit(limitFor(model));
+        if (own["none"]!.GetValue<bool>() || plan is null || !IsTrue(plan, "readable")) return false;
+        var five = Number(own["fiveHourPercent"]!); var week = Number(own["weeklyPercent"]!);
+        var highest = Math.Max(five, week);
+        var windows = (plan["windows"] as JsonArray ?? new JsonArray()).OfType<JsonObject>().Where(window => TryFinite(window["leftPct"], out _)).ToList();
+        if (windows.Count > 0)
+            return windows.Any(window => Number(window["leftPct"]!) <= WindowKind(window["name"]) switch { "fiveHour" => five, "weekly" => week, _ => highest });
         var left = QuotaLeft(model, plans);
-        return left is not null && left <= thresholdPercent;
+        return left is not null && left <= highest;
     }
 
-    // Which working steps should move, and to which model: the eligible one with the most quota left above the threshold.
-    public static JsonArray QuotaSwitches(JsonArray? running = null, JsonArray? models = null, JsonArray? plans = null, double thresholdPercent = AutoSwitchThresholdPercent, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null)
+    // Which working steps should move, and to which model: the eligible one above its limit, read quota
+    // before unread (Grok Business bills in dollars and can still take over), then the most quota left.
+    public static JsonArray QuotaSwitches(JsonArray? running, JsonArray? models, JsonArray? plans, double thresholdPercent, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null) =>
+        QuotaSwitches(running, models, plans, _ => JsonValue.Create(thresholdPercent), enabled, eligible);
+
+    public static JsonArray QuotaSwitches(JsonArray? running = null, JsonArray? models = null, JsonArray? plans = null, JsonNode? limit = null, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null) =>
+        QuotaSwitches(running, models, plans, _ => limit ?? AutoSwitchDefault(), enabled, eligible);
+
+    public static JsonArray QuotaSwitches(JsonArray? running, JsonArray? models, JsonArray? plans, Func<JsonObject, JsonNode?> limitFor, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null)
     {
         if (!enabled) return new JsonArray();
         eligible ??= static (_, _) => true;
@@ -328,16 +400,17 @@ public static class ModelPolicy
         {
             if (item is not JsonObject step) throw new InvalidOperationException("Invalid running step.");
             var current = models.OfType<JsonObject>().FirstOrDefault(model => PropEquals(model, "id", step, "modelId"));
-            if (current is null || !LowQuota(current, plans, thresholdPercent)) continue;
+            if (current is null || !LowQuota(current, plans, limitFor)) continue;
             // A company the other steps of the work do not use comes first, so build and check stay independent;
-            // then the most quota left.
+            // then quota that is read before quota that is not, then the most quota left.
             var ranked = models.OfType<JsonObject>()
                 .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)))
                 .Select(model => (Model: model, Left: QuotaLeft(model, plans)))
-                .Where(row => row.Left is not null && !LowQuota(row.Model, plans, thresholdPercent))
-                .Select(row => (row.Model, Left: row.Left!.Value, Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
+                .Where(row => !LowQuota(row.Model, plans, limitFor))
+                .Select(row => (row.Model, row.Left, Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
                 .OrderBy(row => row.Shared)
-                .ThenByDescending(row => row.Left)
+                .ThenBy(row => row.Left is null)
+                .ThenByDescending(row => row.Left ?? 0)
                 .ToList();
             if (ranked.Count == 0) continue;
             var best = ranked[0];

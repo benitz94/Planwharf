@@ -23,7 +23,7 @@ and Planwharf itself does the porting jobs, with every pull request reviewed bef
 | Phase | What | Status |
 |---|---|---|
 | **0. Foundations** | .NET 10, the `Planwharf.Engine` and `Planwharf.Engine.Tests` projects, the porting rules, the README saying the native app is recommended, that it still includes the Node.js engine, and that the web app and Electron are being retired. | Done (#61; README updated with this plan) |
-| **1. Test bench** | 1a: fake AI programs (claude, codex, grok, agy) that replay recorded answers, for the later phases. 1b: **module-by-module comparison** (below), run in CI on the three systems. | To do |
+| **1. Test bench** | 1a: fake AI programs (claude, codex, grok, agy) that replay recorded answers, for the later phases. 1b: **module-by-module comparison** (below), run in CI on the three systems. | 1b done (cases for the 5 pure modules ported so far); 1a to do |
 | **2. Modules with no dependencies** | `plan.js`, `notebook-file`, `atomic-rename`, `project-history`, `model-policy`, `model-roles`, `provider-refusal`, `provider-diagnostics`, `provider-accounts`, `structured-final`, `activity-events`, `activity-evidence`, `invocations`, `briefing`, `autonomy`, `sentinel`, `quota`, `models`, `project-checks`, `project-workspace`, `skills`, `browser-settings`. | Started: jobs 01 and 02 (#64, #74) |
 | **3. First level** | `attempts`, `claims`, `project-export`, `execution-next`, `worker-result` (done in job 01), `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`. | To do |
 | **4. Processes and providers** (the riskiest) | `runner` (start and stop the AI programs, read what they write, close process trees on Windows); `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`. Ends with a hand test on Windows with the real programs. | To do |
@@ -39,13 +39,16 @@ onto the C# engine (old phase 9).
 
 The HTTP server is no longer the place where Node and C# meet, so each module is compared on its own:
 
-- A Node script calls the JavaScript function with a set of inputs (taken from its tests, plus edge
-  cases) and writes each input and its result to a file in `native/porting/cases/<module>/`.
-- The C# tests read the same files, call the C# function with the same inputs, and must give the same
-  result: same JSON, same text, same error messages.
-- CI writes the files again from the JavaScript and fails if they changed without the C# following,
-  so a later change to a JavaScript module cannot leave its port behind. (Today this is a known gap:
-  `model-policy.cjs` changed after its port, in #75.)
+- `native/porting/parity/cases.cjs` lists the inputs given to each ported function (taken from its
+  tests, plus edge cases). `node native/porting/parity/record.cjs` runs them through the JavaScript and
+  writes each input and its result to `native/porting/parity/<module>.json`.
+- `ParityTests` (C#) reads the same files, calls the C# function with the same inputs, and must give the
+  same result: same JSON, same text, same error messages.
+- `engine/parity.test.cjs` records the results again from the JavaScript and fails if they changed
+  without the files being written again, so a later change to a JavaScript module cannot leave its port
+  behind. (`model-policy.cjs` changed after its port, in #75; its C# was brought up to date with this.)
+- Modules that read or write files (skills, worker results, accounts, browser settings, atomic rename)
+  keep their own C# tests on real files; the comparison covers the functions that work on data alone.
 
 ## How every phase ends
 

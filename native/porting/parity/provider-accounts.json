@@ -1,0 +1,79 @@
+[
+  {
+    "fn": "accountType",
+    "args": [
+      "business"
+    ],
+    "result": "business"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      "Plus"
+    ],
+    "result": "normal"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      "self_serve_business_usage_based"
+    ],
+    "result": "business"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      "enterprise_cbp_x"
+    ],
+    "result": "business"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      "team "
+    ],
+    "result": "unread"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      null
+    ],
+    "result": "unread"
+  },
+  {
+    "fn": "accountType",
+    "args": [
+      "mystery"
+    ],
+    "result": "unread"
+  },
+  {
+    "fn": "accountLabel",
+    "args": [
+      "ChatGPT",
+      {
+        "type": "business"
+      }
+    ],
+    "result": "ChatGPT Business"
+  },
+  {
+    "fn": "accountLabel",
+    "args": [
+      "ChatGPT",
+      {
+        "type": "normal"
+      }
+    ],
+    "result": "ChatGPT"
+  },
+  {
+    "fn": "accountLabel",
+    "args": [
+      "Grok",
+      null
+    ],
+    "result": "Grok"
+  }
+]

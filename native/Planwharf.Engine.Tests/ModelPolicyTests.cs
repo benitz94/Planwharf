@@ -158,10 +158,12 @@ public sealed class ModelPolicyTests
     }
 
     [Fact]
-    public void The_default_threshold_is_20_percent_left()
+    public void The_default_threshold_is_35_percent_left_on_the_5_hour_window_and_on_the_weekly_one()
     {
         var defaults = ModelPolicy.AutoSwitchDefault();
-        Assert.Equal(20, defaults["thresholdPercent"]!.GetValue<int>());
+        Assert.Equal(35, defaults["thresholdPercent"]!.GetValue<int>());
+        Assert.Equal(35, defaults["fiveHourPercent"]!.GetValue<int>());
+        Assert.Equal(35, defaults["weeklyPercent"]!.GetValue<int>());
         Assert.True(defaults["enabled"]!.GetValue<bool>());
         Assert.Equal(300000, ModelPolicy.RetryUnavailableMs);
     }
@@ -193,7 +195,10 @@ public sealed class ModelPolicyTests
         var plans = SwitchPlans();
         Assert.Empty(ModelPolicy.QuotaSwitches(running, SwitchModels(), plans, 20, eligible: (candidate, _) => Id(candidate) == "terra"));
         Assert.Empty(ModelPolicy.QuotaSwitches(running, SwitchModels(), plans, 20, enabled: false, eligible: (_, _) => true));
-        Assert.Empty(ModelPolicy.QuotaSwitches(running, Models(SwitchModels()[0]!.AsObject(), SwitchModels()[3]!.AsObject()), plans, 20, eligible: (_, _) => true));
+        // Grok's quota is not reported (Grok Business bills in dollars): it can still take over, so the work goes on.
+        Assert.Equal("grok", ModelPolicy.QuotaSwitches(running, Models(SwitchModels()[0]!.AsObject(), SwitchModels()[3]!.AsObject()), plans, 20, eligible: (_, _) => true).Single()!["toModelId"]!.GetValue<string>());
+        // A model whose quota is read and above its limit comes before one whose quota is not reported.
+        Assert.Equal("sonnet", ModelPolicy.QuotaSwitches(running, Models(SwitchModels()[0]!.AsObject(), SwitchModels()[3]!.AsObject(), SwitchModels()[1]!.AsObject()), plans, 20, eligible: (_, _) => true)[0]!["toModelId"]!.GetValue<string>());
     }
 
     [Fact]

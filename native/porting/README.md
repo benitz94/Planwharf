@@ -34,6 +34,11 @@ working, unchanged, until the C# one replaces it. Each piece is ported by a job 
     is installed there: never let a real program, browser or file of the computer decide the result
     (on the macOS runners Chrome is installed in `/Applications`). Give the code the files the test
     made, through the hooks the module offers.
+12. **Every port joins the comparison.** Add the inputs of the module's functions to
+    `parity/cases.cjs` (taken from its tests, plus edge cases), run `node native/porting/parity/record.cjs`,
+    and wire each function in `ParityTests.Ports` (`native/Planwharf.Engine.Tests/ParityTests.cs`). The
+    C# must give the recorded JavaScript result for every case. When a JavaScript module changes, its
+    cases are recorded again and the C# follows in the same pull request: CI fails otherwise.
 
 ## Example
 
