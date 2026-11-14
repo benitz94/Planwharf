@@ -2106,7 +2106,9 @@ function createOrchestrator(options) {
           approved: Boolean(row.approved),
           sessionId: row.authorizedSessionId || null,
           canStart: true,
-          canResume: Boolean(row.status !== 'complete' && row.checkpoint && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
+          // Work running again after Resume is not "stopped": its checkpoint stays on disk, but there is nothing to resume.
+          canResume: Boolean(row.status !== 'complete' && row.checkpoint && String(row.megaTask?.status || '').toUpperCase() !== 'RUNNING' && !(row.dispatch || []).some(part => part && part.alive)
+            && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
           canStop: Boolean(
             row.status === 'watching'
             && (item.tasks || []).some(task => task.status === 'running')
