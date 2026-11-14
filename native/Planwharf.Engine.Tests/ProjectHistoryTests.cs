@@ -86,7 +86,7 @@ public class ProjectHistoryTests
             new JsonObject { ["id"] = "e2", ["createdAt"] = "2026-11-04T10:00:01.000Z", ["reference"] = new JsonObject { ["megaTaskId"] = "unknown" }, ["summary"] = "orphan" }
         };
 
-        var summary = ProjectHistory.SummarizeTimeline(events, new JsonObject());
+        var summary = ProjectHistory.SummarizeTimeline(events, new JsonObject { ["megaTasks"] = new JsonArray(), ["results"] = new JsonArray() });
         Assert.Equal(2, summary.Count);
         Assert.Equal("e1", summary[0]!["id"]!.GetValue<string>());
         Assert.Equal("e2", summary[1]!["id"]!.GetValue<string>());

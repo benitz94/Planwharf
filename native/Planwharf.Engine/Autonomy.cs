@@ -73,124 +73,108 @@ public static class Autonomy
 
     public static JsonObject NextStep(JsonObject options)
     {
-        var mode = options["mode"]?.GetValue<string>();
-        var sessionId = options["sessionId"]?.GetValue<string>();
+        options.TryGetPropertyValue("mode", out var mode);
+        options.TryGetPropertyValue("sessionId", out var sessionId);
         var settings = options["settings"] as JsonObject;
-        var row = options["row"] as JsonObject;
-        var alerts = options["alerts"] as JsonArray;
-        double? now = options.TryGetPropertyValue("now", out var nowNode) && nowNode is JsonValue nv && nv.TryGetValue<double>(out var nd)
-            ? nd
-            : null;
+        JsonObject? row = null;
+        if (options.TryGetPropertyValue("row", out var rowNode) && rowNode is not null)
+            row = rowNode as JsonObject ?? new JsonObject();
 
-        return NextStep(mode, sessionId, settings, row, alerts, now);
+        var alertsOmitted = !options.ContainsKey("alerts");
+        JsonArray? alerts = null;
+        if (!alertsOmitted)
+        {
+            var alertsNode = options["alerts"];
+            if (alertsNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'find')");
+            if (alertsNode is not JsonArray found) throw new InvalidOperationException("alerts.find is not a function");
+            alerts = found;
+        }
+
+        double nowMs;
+        if (!options.ContainsKey("now")) nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        else if (options["now"] is null) nowMs = 0;
+        else if (options["now"] is JsonValue nowValue && nowValue.GetValueKind() == JsonValueKind.Number) nowMs = Number(nowValue);
+        else nowMs = double.NaN;
+
+        return Decide(TryString(mode), sessionId, settings, row, alertsOmitted, alerts, nowMs);
     }
 
-    public static JsonObject NextStep(string? mode, string? sessionId, JsonObject? settings, JsonObject? row, JsonArray? alerts = null, double? now = null)
+    public static JsonObject NextStep(string? mode, string? sessionId, JsonObject? settings, JsonObject? row, JsonArray? alerts = null, double? now = null) =>
+        Decide(mode, sessionId is null ? null : JsonValue.Create(sessionId), settings, row, alerts is null, alerts, now ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+    static JsonObject Decide(string? mode, JsonNode? sessionId, JsonObject? settings, JsonObject? row, bool alertsOmitted, JsonArray? alerts, double nowMs)
     {
         static JsonObject None(string reason) => new() { ["type"] = "none", ["reason"] = reason };
 
-        if (settings is null || settings["enabled"]?.GetValue<bool>() != true) return None("off");
+        if (settings is null || !Truthy(settings, "enabled")) return None("off");
         if (mode != "auto") return None("manual-mode");
-        if (settings["sessionId"]?.GetValue<string>() != sessionId) return None("other-session");
-        if (settings.TryGetPropertyValue("stopReason", out var srNode) && srNode is JsonValue srVal && srVal.TryGetValue<string>(out var srStr) && !string.IsNullOrEmpty(srStr))
-        {
-            return None("stopped");
-        }
+        if (!JsonSame(settings.TryGetPropertyValue("sessionId", out var storedSession) ? storedSession : null, sessionId)) return None("other-session");
+        if (Truthy(settings, "stopReason")) return None("stopped");
         if (row is null) return None("no-project");
 
-        var status = row["status"]?.GetValue<string>();
+        var status = TryString(row["status"]);
         var checkpoint = row["checkpoint"] as JsonObject;
-        var checkpointReason = checkpoint?["reason"]?.GetValue<string>();
+        var checkpointReason = TryString(checkpoint?["reason"]);
         var workEnded = status == "checkpointed" && checkpointReason is not null && WORK_ENDED.Contains(checkpointReason);
-
         var megaTask = row["megaTask"] as JsonObject;
-        var pauseRequested = megaTask?["pauseRequested"]?.GetValue<bool>() == true;
-
-        if ((status == "checkpointed" && !workEnded) || status == "paused" || pauseRequested)
-        {
+        if ((status == "checkpointed" && !workEnded) || status == "paused" || (megaTask is not null && Truthy(megaTask, "pauseRequested")))
             return None("user-paused");
+
+        var hasMegaId = row.TryGetPropertyValue("megaTaskId", out var megaId) && TruthyNode(megaId);
+        if (status == "needs_approval" && hasMegaId)
+        {
+            if (Includes(settings, "approved", megaId, "includes")) return None("already-approved");
+            if (CollectionLength(settings["approved"]!) >= LIMITS.MaxMegaTasks)
+                return new JsonObject { ["type"] = "limit", ["reason"] = "MEGATASK_LIMIT" };
+            return new JsonObject { ["type"] = "approve", ["megaTaskId"] = megaId!.DeepClone() };
         }
 
-        var megaTaskId = row["megaTaskId"]?.GetValue<string>();
-        if (status == "needs_approval" && !string.IsNullOrEmpty(megaTaskId))
-        {
-            var approved = settings["approved"] as JsonArray;
-            if (approved is not null)
-            {
-                foreach (var a in approved)
-                {
-                    if (a?.GetValue<string>() == megaTaskId) return None("already-approved");
-                }
-                if (approved.Count >= LIMITS.MaxMegaTasks)
-                {
-                    return new JsonObject { ["type"] = "limit", ["reason"] = "MEGATASK_LIMIT" };
-                }
-            }
-            return new JsonObject { ["type"] = "approve", ["megaTaskId"] = megaTaskId };
-        }
-
-        var started = settings["started"]?.GetValue<bool>() == true;
-        var megaTaskStatus = megaTask?["status"]?.GetValue<string>();
-        if (!started && (string.IsNullOrEmpty(megaTaskId) || status == "complete" || (megaTaskStatus ?? "").ToUpperInvariant() == "CANCELLED"))
-        {
+        var started = Truthy(settings, "started");
+        var megaStatus = megaTask is null || !megaTask.TryGetPropertyValue("status", out var megaStatusNode) || !TruthyNode(megaStatusNode)
+            ? ""
+            : JsText(megaStatusNode, true).ToUpperInvariant();
+        if (!started && (!hasMegaId || status == "complete" || megaStatus == "CANCELLED"))
             return new JsonObject { ["type"] = "start" };
+
+        if (status == "complete" && hasMegaId)
+        {
+            if (!Includes(settings, "evaluated", megaId, "includes"))
+                return new JsonObject { ["type"] = "evaluate", ["megaTaskId"] = megaId!.DeepClone() };
         }
 
-        if (status == "complete" && !string.IsNullOrEmpty(megaTaskId))
+        JsonNode? chosen = null;
+        if (!alertsOmitted)
         {
-            var evaluated = settings["evaluated"] as JsonArray;
-            var isEvaluated = false;
-            if (evaluated is not null)
+            foreach (var item in alerts!)
             {
-                foreach (var ev in evaluated)
-                {
-                    if (ev?.GetValue<string>() == megaTaskId) { isEvaluated = true; break; }
-                }
-            }
-            if (!isEvaluated) return new JsonObject { ["type"] = "evaluate", ["megaTaskId"] = megaTaskId };
-        }
-
-        JsonObject? chosenAlert = null;
-        if (alerts is not null)
-        {
-            var nudgedKeys = new HashSet<string>();
-            if (settings["nudgedKeys"] is JsonArray nk)
-            {
-                foreach (var k in nk) if (k?.GetValue<string>() is string ks) nudgedKeys.Add(ks);
-            }
-
-            foreach (var item in alerts)
-            {
-                if (item is not JsonObject alert) continue;
-                if (alert.TryGetPropertyValue("active", out var actNode) && actNode is JsonValue actVal && actVal.TryGetValue<bool>(out var act) && !act) continue;
-                if (alert["ignored"]?.GetValue<bool>() == true) continue;
-                var key = alert["key"]?.GetValue<string>();
-                if (key is not null && nudgedKeys.Contains(key)) continue;
-
-                chosenAlert = alert;
+                if (item is null) throw new InvalidOperationException("Cannot read properties of null (reading 'active')");
+                var alert = item as JsonObject;
+                if (alert is not null && alert.TryGetPropertyValue("active", out var active) && active is JsonValue activeValue && activeValue.GetValueKind() == JsonValueKind.False) continue;
+                if (alert is not null && Truthy(alert, "ignored")) continue;
+                var nudged = alert is not null && alert.ContainsKey("key")
+                    ? Includes(settings, "nudgedKeys", alert["key"], "includes")
+                    : IncludesMissing(settings, "nudgedKeys");
+                if (nudged) continue;
+                chosen = item;
                 break;
             }
         }
 
-        if (chosenAlert is null) return None("idle");
+        if (chosen is null) return None("idle");
+        if (!settings.TryGetPropertyValue("nudgeTimes", out var timesNode))
+            throw new InvalidOperationException("Cannot read properties of undefined (reading 'filter')");
+        if (timesNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'filter')");
+        if (timesNode is not JsonArray nudgeTimes) throw new InvalidOperationException("nudgeTimes.filter is not a function");
 
-        var currentTime = now ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var nudgeTimes = settings["nudgeTimes"] as JsonArray;
         var recentNudges = 0;
-        if (nudgeTimes is not null)
+        foreach (var at in nudgeTimes)
         {
-            foreach (var nt in nudgeTimes)
-            {
-                if (nt?.GetValue<string>() is string ntStr && DateTimeOffset.TryParse(ntStr, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto))
-                {
-                    if (currentTime - dto.ToUnixTimeMilliseconds() < HOUR_MS) recentNudges++;
-                }
-            }
+            if (TryString(at) is string text && DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
+                && nowMs - parsed.ToUnixTimeMilliseconds() < HOUR_MS)
+                recentNudges++;
         }
-
         if (recentNudges >= LIMITS.MaxNudgesPerHour) return None("nudge-limit");
-
-        return new JsonObject { ["type"] = "nudge", ["alert"] = (JsonObject)chosenAlert.DeepClone() };
+        return new JsonObject { ["type"] = "nudge", ["alert"] = chosen.DeepClone() };
     }
 
     public static string LeadInstructions() => string.Join("\n",
@@ -518,6 +502,7 @@ public static class Autonomy
         }
 
         if (parsed?["assign"] is not JsonArray ids || ids.Count != count) return null;
+        if (allowed is null) throw new InvalidOperationException("Cannot read properties of null (reading '0')");
 
         HashSet<string> AllowedAt(int index)
         {
@@ -599,6 +584,7 @@ public static class Autonomy
         {
             foreach (var pNode in parts)
             {
+                if (pNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'size')");
                 if (pNode is not JsonObject part) continue;
                 var rawSize = part["size"]?.GetValue<string>() ?? "";
                 var size = SIZES.Contains(rawSize) ? rawSize : "normal";
@@ -702,6 +688,9 @@ public static class Autonomy
 
         if (parsed is null) return null;
         if (parsed["parts"] is not JsonArray rawParts || rawParts.Count == 0 || rawParts.Count > MAX_PARTS) return null;
+        if (!options.TryGetPropertyValue("verifiers", out var verifiersNode))
+            throw new InvalidOperationException("Cannot read properties of undefined (reading 'includes')");
+        if (verifiersNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'includes')");
 
         var verify = parsed["verify"]?.GetValue<string>();
         if (verify is null || !verifierIds.Contains(verify)) return null;
@@ -848,6 +837,60 @@ public static class Autonomy
     }
 
     static bool IsJsWhitespace(char character) => character is '\t' or '\n' or '\v' or '\f' or '\r' or ' ' or '\u00a0' or '\u1680' or '\u2028' or '\u2029' or '\u202f' or '\u205f' or '\u3000' or '\ufeff' || character is >= '\u2000' and <= '\u200a';
+
+    static string? TryString(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+
+    static bool TruthyNode(JsonNode? node)
+    {
+        if (node is null) return false;
+        if (node is not JsonValue value) return true;
+        return value.GetValueKind() switch
+        {
+            JsonValueKind.False => false,
+            JsonValueKind.String => value.GetValue<string>().Length > 0,
+            JsonValueKind.Number => Number(value) is var number && number != 0 && !double.IsNaN(number),
+            _ => true
+        };
+    }
+
+    static bool JsonSame(JsonNode? left, JsonNode? right)
+    {
+        if (left is null || right is null) return left is null && right is null;
+        if (left is not JsonValue a || right is not JsonValue b || a.GetValueKind() != b.GetValueKind()) return false;
+        return a.GetValueKind() switch
+        {
+            JsonValueKind.String => a.GetValue<string>() == b.GetValue<string>(),
+            JsonValueKind.Number => Number(a) == Number(b),
+            _ => true
+        };
+    }
+
+    static bool Includes(JsonObject owner, string key, JsonNode? item, string method)
+    {
+        if (!owner.TryGetPropertyValue(key, out var node)) throw new InvalidOperationException($"Cannot read properties of undefined (reading '{method}')");
+        if (node is null) throw new InvalidOperationException($"Cannot read properties of null (reading '{method}')");
+        if (node is JsonArray array) return array.Any(entry => JsonSame(entry, item));
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            return value.GetValue<string>().Contains(item is null ? "null" : JsText(item, true), StringComparison.Ordinal);
+        throw new InvalidOperationException($"{JsText(node, true)}.{method} is not a function");
+    }
+
+    static bool IncludesMissing(JsonObject owner, string key)
+    {
+        if (!owner.TryGetPropertyValue(key, out var node)) throw new InvalidOperationException("Cannot read properties of undefined (reading 'includes')");
+        if (node is null) throw new InvalidOperationException("Cannot read properties of null (reading 'includes')");
+        if (node is JsonArray) return false;
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            return value.GetValue<string>().Contains("undefined", StringComparison.Ordinal);
+        throw new InvalidOperationException("includes is not a function");
+    }
+
+    static int CollectionLength(JsonNode node)
+    {
+        if (node is JsonArray array) return array.Count;
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String) return value.GetValue<string>().Length;
+        throw new InvalidOperationException("Cannot read properties of " + JsText(node, true) + " (reading 'length')");
+    }
 
     static string JsText(JsonObject owner, string key)
     {

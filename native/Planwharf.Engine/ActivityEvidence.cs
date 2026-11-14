@@ -1,6 +1,7 @@
 // Port of engine/activity-evidence.cjs.
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -86,6 +87,36 @@ public static class ActivityEvidence
         return builder.ToString();
     }
 
+    static string? TryString(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+
+    static bool TruthyNode(JsonNode? node)
+    {
+        if (node is null) return false;
+        if (node is not JsonValue value) return true;
+        return value.GetValueKind() switch
+        {
+            JsonValueKind.False => false,
+            JsonValueKind.String => value.GetValue<string>().Length > 0,
+            JsonValueKind.Number => double.Parse(value.ToJsonString(), CultureInfo.InvariantCulture) is var number && number != 0 && !double.IsNaN(number),
+            _ => true
+        };
+    }
+
+    static bool TryJsInteger(JsonNode? node, out double number)
+    {
+        number = 0;
+        if (node is not JsonValue value || value.GetValueKind() != JsonValueKind.Number) return false;
+        number = double.Parse(value.ToJsonString(), CultureInfo.InvariantCulture);
+        return double.IsFinite(number) && number == Math.Truncate(number);
+    }
+
+    static JsonNode JsonInteger(double number)
+    {
+        if (number >= int.MinValue && number <= int.MaxValue) return JsonValue.Create((int)number);
+        if (number >= long.MinValue && number <= long.MaxValue && (long)number == number) return JsonValue.Create((long)number);
+        return JsonValue.Create(number);
+    }
+
     static string AsciiLower(string text) => string.Create(text.Length, text, (span, source) =>
     {
         for (var i = 0; i < source.Length; i++) span[i] = source[i] is >= 'A' and <= 'Z' ? (char)(source[i] + 32) : source[i];
@@ -135,7 +166,10 @@ public static class ActivityEvidence
             }
         }
 
-        var adapter = context?["adapter"]?.GetValue<string>() ?? context?["provider"]?.GetValue<string>();
+        var adapterNode = context.TryGetPropertyValue("adapter", out var adapterValue) ? adapterValue : null;
+        var providerNode = context.TryGetPropertyValue("provider", out var providerValue) ? providerValue : null;
+        var chosen = TruthyNode(adapterNode) ? adapterNode : providerNode;
+        var adapter = TruthyNode(chosen) ? TryString(chosen) ?? "\0" : null;
         string[] knownAdapters = ["codex", "api", "antigravity", "grok", "claude"];
         var known = adapter is not null && knownAdapters.Contains(adapter);
         if (!known) Warn("Adapter identity is unknown; protocol excerpts are not verified provider evidence.");
@@ -229,8 +263,8 @@ public static class ActivityEvidence
             var step = row["step_update"] as JsonObject;
             JsonObject? entry = null;
 
-            var rowType = row["type"]?.GetValue<string>();
-            var itemType = item?["type"]?.GetValue<string>();
+            var rowType = TryString(row["type"]);
+            var itemType = TryString(item?["type"]);
             string[] itemEventTypes = ["item.started", "item.completed", "item.updated"];
 
             if (item is not null && itemType == "command_execution" && rowType is not null && itemEventTypes.Contains(rowType))
@@ -258,9 +292,9 @@ public static class ActivityEvidence
                     entry["output"] = Field(outStr);
                 }
 
-                if (item.TryGetPropertyValue("exit_code", out var codeNode) && codeNode is JsonValue codeVal && codeVal.TryGetValue<int>(out var codeInt))
+                if (item.TryGetPropertyValue("exit_code", out var codeNode) && TryJsInteger(codeNode, out var codeNumber))
                 {
-                    entry["exitCode"] = codeInt;
+                    entry["exitCode"] = JsonInteger(codeNumber);
                 }
 
                 if (adapter == "api")
@@ -285,10 +319,10 @@ public static class ActivityEvidence
                     ["eventType"] = "step_update"
                 };
 
-                var toolName = step["tool_name"]?.GetValue<string>() ?? (step["tool_info"] as JsonObject)?["name"]?.GetValue<string>();
+                var toolName = TryString(step["tool_name"]) ?? TryString((step["tool_info"] as JsonObject)?["name"]);
                 if (toolName is not null) entry["tool"] = Field(toolName, 120);
 
-                var stateStr = step["state"]?.GetValue<string>();
+                var stateStr = TryString(step["state"]);
                 if (stateStr is not null) entry["state"] = Field(stateStr, 80);
 
                 string[] cmdTools = ["run_command", "exec_command", "command_execution", "shell", "terminal", "bash"];
@@ -307,7 +341,7 @@ public static class ActivityEvidence
             {
                 var block = row["content_block"] as JsonObject ?? (row["event"] as JsonObject)?["content_block"] as JsonObject;
                 JsonObject? tool = null;
-                if (block is not null && block["type"]?.GetValue<string>() == "tool_use")
+                if (block is not null && TryString(block["type"]) == "tool_use")
                 {
                     tool = block;
                 }
@@ -315,7 +349,7 @@ public static class ActivityEvidence
                 {
                     foreach (var part in contentArr)
                     {
-                        if (part is JsonObject partObj && partObj["type"]?.GetValue<string>() == "tool_use")
+                        if (part is JsonObject partObj && TryString(partObj["type"]) == "tool_use")
                         {
                             tool = partObj;
                             break;
@@ -323,7 +357,7 @@ public static class ActivityEvidence
                     }
                 }
 
-                var toolName = tool?["name"]?.GetValue<string>();
+                var toolName = TryString(tool?["name"]);
                 if (tool is null || string.IsNullOrEmpty(toolName))
                 {
                     Warn("Unsupported structured payload omitted; raw source content is not displayed.");

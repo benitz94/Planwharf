@@ -67,22 +67,27 @@ public static class ProjectHistory
             list.Add((JsonObject)ev.DeepClone());
         }
 
-        var megaTasks = execution["megaTasks"] as JsonArray;
-        var resultsArray = execution["results"] as JsonArray;
+        JsonArray? megaTasks = null;
+        if (groupOrder.Count > 0)
+        {
+            if (!execution.TryGetPropertyValue("megaTasks", out var megaNode))
+                throw new InvalidOperationException("Cannot read properties of undefined (reading 'find')");
+            if (megaNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'find')");
+            if (megaNode is not JsonArray foundMegas) throw new InvalidOperationException("execution.megaTasks.find is not a function");
+            megaTasks = foundMegas;
+        }
 
         foreach (var id in groupOrder)
         {
             var evidence = groups[id];
             JsonObject? mega = null;
-            if (megaTasks is not null)
+            foreach (var m in megaTasks!)
             {
-                foreach (var m in megaTasks)
+                if (m is null) throw new InvalidOperationException("Cannot read properties of null (reading 'id')");
+                if (m is JsonObject mObj && IdKey.TryRead(mObj, "id", out var megaId) && megaId.Equals(id))
                 {
-                    if (m is JsonObject mObj && IdKey.TryRead(mObj, "id", out var megaId) && megaId.Equals(id))
-                    {
-                        mega = mObj;
-                        break;
-                    }
+                    mega = mObj;
+                    break;
                 }
             }
 
@@ -92,16 +97,19 @@ public static class ProjectHistory
                 continue;
             }
 
+            if (!execution.TryGetPropertyValue("results", out var resultsNode))
+                throw new InvalidOperationException("Cannot read properties of undefined (reading 'filter')");
+            if (resultsNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'filter')");
+            if (resultsNode is not JsonArray resultsArray) throw new InvalidOperationException("execution.results.filter is not a function");
+
             var joined = new List<string>();
-            if (resultsArray is not null)
+            foreach (var r in resultsArray)
             {
-                foreach (var r in resultsArray)
-                {
-                    if (r is not JsonObject rObj || !IdKey.TryRead(rObj, "megaTaskId", out var resultId) || !resultId.Equals(id)) continue;
-                    if (!rObj.TryGetPropertyValue("status", out var statusNode) || statusNode is not JsonValue statusValue || statusValue.GetValueKind() != JsonValueKind.String || statusValue.GetValue<string>() != "COMPLETE") continue;
-                    rObj.TryGetPropertyValue("summary", out var summaryNode);
-                    joined.Add(summaryNode is null ? "" : JsText(summaryNode, true));
-                }
+                if (r is null) throw new InvalidOperationException("Cannot read properties of null (reading 'megaTaskId')");
+                if (r is not JsonObject rObj || !IdKey.TryRead(rObj, "megaTaskId", out var resultId) || !resultId.Equals(id)) continue;
+                if (!rObj.TryGetPropertyValue("status", out var statusNode) || statusNode is not JsonValue statusValue || statusValue.GetValueKind() != JsonValueKind.String || statusValue.GetValue<string>() != "COMPLETE") continue;
+                rObj.TryGetPropertyValue("summary", out var summaryNode);
+                joined.Add(summaryNode is null ? "" : JsText(summaryNode, true));
             }
 
             var last = evidence[^1];
@@ -152,8 +160,7 @@ public static class ProjectHistory
         {
             if (!current.TryGetPropertyValue("dirtyFiles", out var dirty) || dirty is null)
                 throw new InvalidOperationException("Cannot read properties of undefined (reading 'length')");
-            if (dirty is not JsonArray files) throw new InvalidOperationException("Cannot read properties of " + JsText(dirty, true) + " (reading 'length')");
-            changes.Add((JsonNode)JsonValue.Create($"External repository changes detected; {files.Count} files currently changed locally"));
+            changes.Add((JsonNode)JsonValue.Create($"External repository changes detected; {JsLength(dirty)} files currently changed locally"));
         }
 
         var hasRevision = checkpoint.TryGetPropertyValue("planRevisionId", out var revisionNode);
@@ -164,24 +171,14 @@ public static class ProjectHistory
         if (!Truthy(before, "comparable") || !Truthy(current, "comparable"))
             changes.Add((JsonNode)JsonValue.Create("Repository comparison is incomplete; inspect technical evidence before Resume"));
 
-        var completedIds = new HashSet<string>();
-        if (checkpoint["completedSubTaskIds"] is JsonArray cpComp)
-        {
-            foreach (var node in cpComp)
-            {
-                if (node?.GetValue<string>() is string s) completedIds.Add(s);
-            }
-        }
-
+        var hasSavedIds = checkpoint.TryGetPropertyValue("completedSubTaskIds", out var savedIds);
+        var savedIsEmpty = !hasSavedIds || Falsy(savedIds, hasSavedIds);
         var newlyCompleteCount = 0;
         if (completed is not null)
         {
             foreach (var node in completed)
             {
-                if (node?.GetValue<string>() is string s && !completedIds.Contains(s))
-                {
-                    newlyCompleteCount++;
-                }
+                if (savedIsEmpty || !JsIncludes(savedIds, node)) newlyCompleteCount++;
             }
         }
 
@@ -278,6 +275,33 @@ public static class ProjectHistory
             JsonValueKind.String => value.GetValue<string>().Length == 0,
             JsonValueKind.Number => Number(value) is var number && (number == 0 || double.IsNaN(number)),
             _ => false
+        };
+    }
+
+    static int JsLength(JsonNode node)
+    {
+        if (node is JsonArray array) return array.Count;
+        if (node is JsonValue value && value.GetValueKind() == JsonValueKind.String) return value.GetValue<string>().Length;
+        throw new InvalidOperationException("Cannot read properties of " + JsText(node, true) + " (reading 'length')");
+    }
+
+    static bool JsIncludes(JsonNode? collection, JsonNode? item)
+    {
+        if (collection is JsonArray array) return array.Any(entry => SameNode(entry, item));
+        if (collection is JsonValue value && value.GetValueKind() == JsonValueKind.String)
+            return value.GetValue<string>().Contains(item is null ? "null" : JsText(item, true), StringComparison.Ordinal);
+        throw new InvalidOperationException(JsText(collection, true) + ".includes is not a function");
+    }
+
+    static bool SameNode(JsonNode? left, JsonNode? right)
+    {
+        if (left is null || right is null) return left is null && right is null;
+        if (left is not JsonValue a || right is not JsonValue b || a.GetValueKind() != b.GetValueKind()) return false;
+        return a.GetValueKind() switch
+        {
+            JsonValueKind.String => a.GetValue<string>() == b.GetValue<string>(),
+            JsonValueKind.Number => Number(a) == Number(b) || (double.IsNaN(Number(a)) && double.IsNaN(Number(b))),
+            _ => true
         };
     }
 
