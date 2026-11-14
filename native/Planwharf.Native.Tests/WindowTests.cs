@@ -114,3 +114,22 @@ public class WindowTests
         Assert.True(new FileInfo(Output("start")).Length > 10_000);
     }
 }
+
+public class ChatBoxTests
+{
+    // A message pasted on several lines keeps every line; Shift+Enter adds a line, Enter does not.
+    [AvaloniaFact]
+    public void The_chat_box_keeps_every_line_of_a_message()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 900 };
+        window.Show();
+        window.Show(SampleState.Working());
+        var box = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.TextBox>()
+            .First(item => (item.Watermark ?? "").StartsWith("Tell the lead"));
+        box.Focus();
+        window.KeyTextInput("Fix two bugs:\n1. the first\n2. the second");
+        Assert.Equal("Fix two bugs:\n1. the first\n2. the second", box.Text?.Replace("\r\n", "\n"));
+        window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter, Avalonia.Input.RawInputModifiers.Shift);
+        Assert.Equal(3, box.Text!.Split('\n').Length - 1);
+    }
+}

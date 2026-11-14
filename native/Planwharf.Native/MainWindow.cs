@@ -24,7 +24,7 @@ public sealed partial class MainWindow : Window
     // Next to Resume: close the stopped work to start something new.
     readonly Button dropButton = Look.Button("Drop this work", "trash");
     readonly TextBlock hint = new() { Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-    readonly TextBox input = Look.Field(new TextBox { Watermark = "Tell the lead what you want built…", AcceptsReturn = false, MinHeight = 46, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
+    readonly TextBox input = Look.Field(new TextBox { Watermark = "Tell the lead what you want built…", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 46, MaxHeight = 220, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
     readonly Button send = Look.Button("Send", "send", Look.Kind.Primary);
     readonly TextBlock now = new() { FontSize = 12, Foreground = Palette.Muted, Margin = new Thickness(0, 0, 0, 8) };
     readonly TextBlock sideTitle = new() { FontSize = 17, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
@@ -139,7 +139,14 @@ public sealed partial class MainWindow : Window
         Content = grid;
 
         send.Click += async (_, _) => await SendAsync();
-        input.KeyDown += async (_, e) => { if (e.Key == Key.Enter) await SendAsync(); };
+        // Enter sends; Shift+Enter starts a new line. The box keeps every line of a pasted message
+        // (a single-line box would keep only the first). Handled before the box adds the line break.
+        input.AddHandler(KeyDownEvent, async (_, e) =>
+        {
+            if (e.Key != Key.Enter || e.KeyModifiers.HasFlag(KeyModifiers.Shift)) return;
+            e.Handled = true;
+            await SendAsync();
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         actionButton.Click += async (_, _) => await ActAsync();
         title.Text = "Starting Planwharf…"; hint.Text = "Starting the local Planwharf server.";
         actionButton.IsEnabled = send.IsEnabled = false;
