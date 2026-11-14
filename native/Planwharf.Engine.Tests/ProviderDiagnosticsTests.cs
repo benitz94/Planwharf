@@ -98,4 +98,22 @@ public class ProviderDiagnosticsTests
         var url = ProviderDiagnostics.DiagnoseProvider(new JsonObject { ["adapter"] = "a(b)!*'" }, "x")["reportUrl"]!.GetValue<string>();
         Assert.StartsWith("https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20a(b)!*'&body=Planwharf%20provider", url);
     }
+
+    [Fact]
+    public void Identity_and_exit_codes_stringify_as_JavaScript_templates()
+    {
+        var diagnostic = ProviderDiagnostics.DiagnoseProvider(new JsonObject { ["providerId"] = new JsonObject(), ["adapter"] = "", ["provider"] = "fallback", ["id"] = 0, ["cli"] = "" }, "x", new JsonArray { 1, 2 });
+        Assert.Equal("PROVIDER_EXECUTION_FAILED: [object Object] / unknown. Review the retained local output and retry after checking the provider CLI.", diagnostic["message"]!.GetValue<string>());
+        Assert.Contains("\nExit code: 1,2\n", diagnostic["report"]!.GetValue<string>());
+        Assert.Equal("PROVIDER_EXECUTION_FAILED", ProviderDiagnostics.DiagnoseProvider(Codex, "unsupported\u2028format")["code"]!.GetValue<string>());
+
+        var gate = new System.Threading.Barrier(4);
+        var codes = new string[4];
+        System.Threading.Tasks.Parallel.For(0, 4, i =>
+        {
+            gate.SignalAndWait();
+            codes[i] = ProviderDiagnostics.DiagnoseProvider(Codex, i % 2 == 0 ? "HTTP 401" : "429 quota")["code"]!.GetValue<string>();
+        });
+        Assert.Equal(["PROVIDER_AUTHENTICATION_FAILED", "PROVIDER_USAGE_LIMIT", "PROVIDER_AUTHENTICATION_FAILED", "PROVIDER_USAGE_LIMIT"], codes);
+    }
 }

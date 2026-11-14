@@ -310,4 +310,144 @@ public class AutonomyTests
         var fitted = Autonomy.FitWeights(parts, builders);
         Assert.Equal(2, fitted["parts"]!.AsArray().Count);
     }
+
+    [Fact]
+    public void Nudge_window_invalid_times_and_a_zero_active_flag_follow_JavaScript()
+    {
+        var row = new JsonObject { ["status"] = "watching", ["megaTaskId"] = "m1" };
+        var now = Ms("2026-11-03T12:00:00.000Z");
+        var alerts = new JsonArray { new JsonObject { ["key"] = "k", ["title"] = "t", ["message"] = "m" } };
+        JsonObject Times(string at) => On(new JsonObject { ["nudgeTimes"] = new JsonArray { at, at, at } });
+
+        Assert.Equal("nudge", Step(Times("2026-11-03T11:00:00.000Z"), row, alerts, now)["type"]!.GetValue<string>());
+        Assert.Equal("nudge-limit", Step(Times("2026-11-03T11:00:00.001Z"), row, alerts, now)["reason"]!.GetValue<string>());
+        Assert.Equal("nudge", Step(Times("nope"), row, alerts, now)["type"]!.GetValue<string>());
+
+        var inactiveThenLive = new JsonArray
+        {
+            new JsonObject { ["key"] = "old", ["title"] = "t", ["message"] = "m", ["active"] = false },
+            new JsonObject { ["key"] = "live", ["title"] = "t2", ["message"] = "m2", ["active"] = 0 }
+        };
+        var chosen = Step(On(), row, inactiveThenLive, now);
+        Assert.Equal("nudge", chosen["type"]!.GetValue<string>());
+        Assert.Equal("live", chosen["alert"]!["key"]!.GetValue<string>());
+
+        Assert.Equal("stopped", Step(On(new JsonObject { ["stopReason"] = " " }), row, alerts, now)["reason"]!.GetValue<string>());
+        Assert.Equal("user-paused", Step(On(), new JsonObject { ["status"] = "paused", ["megaTaskId"] = "m" }, alerts, now)["reason"]!.GetValue<string>());
+        Assert.Equal("already-approved", Step(On(new JsonObject { ["approved"] = new JsonArray { "m1" } }), new JsonObject { ["status"] = "needs_approval", ["megaTaskId"] = "m1" }, null, now)["reason"]!.GetValue<string>());
+        Assert.Equal("no-project", Step(On(), null, alerts, now)["reason"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Decisions_clips_and_checks_text_match_JavaScript_when_fields_are_missing()
+    {
+        var last = Autonomy.ParseDecision("{\"done\":false,\"next\":\"old\"}\n{\"done\":true,\"assumptions\":[\"  a  \",1,\"b\"]}");
+        Assert.True(last!["done"]!.GetValue<bool>());
+        Assert.Equal("[\"  a  \",\"b\"]", last["assumptions"]!.ToJsonString());
+        Assert.Null(Autonomy.ParseDecision("{\"done\":false,\"next\":\"   \"}"));
+
+        var objective = "  " + new string('x', 4001);
+        var assumption = new string('y', 501);
+        var assumptions = new JsonArray();
+        for (var i = 0; i < 12; i++) assumptions.Add(assumption);
+        var clipped = Autonomy.ParseDecision(new JsonObject { ["done"] = false, ["next"] = objective, ["assumptions"] = assumptions }.ToJsonString());
+        Assert.Equal(4000, clipped!["next"]!.GetValue<string>().Length);
+        Assert.Equal('x', clipped["next"]!.GetValue<string>()[0]);
+        Assert.Equal(10, clipped["assumptions"]!.AsArray().Count);
+        Assert.Equal(500, clipped["assumptions"]![0]!.GetValue<string>().Length);
+
+        var missingExit = Autonomy.EvaluationPrompt(new JsonObject
+        {
+            ["name"] = "N",
+            ["goal"] = "",
+            ["results"] = new JsonArray(),
+            ["checks"] = new JsonObject { ["label"] = "npm test", ["seconds"] = 1.5, ["timedOut"] = false }
+        });
+        Assert.Contains("Goal: not recorded", missingExit);
+        Assert.Contains("FAILED (exit undefined) in 1.5 s.", missingExit);
+        Assert.Contains("(no output)", missingExit);
+
+        var noTests = Autonomy.EvaluationPrompt(new JsonObject { ["name"] = "N", ["results"] = null, ["checks"] = null });
+        Assert.Contains("Planwharf found no recognised test entry point", noTests);
+        Assert.DoesNotContain("FAILED", noTests);
+
+        var omitted = Autonomy.EvaluationPrompt(new JsonObject
+        {
+            ["name"] = "N",
+            ["goal"] = "G",
+            ["results"] = new JsonArray { new JsonObject { ["status"] = "FAILED" }, new JsonObject { ["status"] = "COMPLETE", ["summary"] = "" } }
+        });
+        Assert.Contains("- FAILED: no summary", omitted);
+        Assert.Contains("- COMPLETE: no summary", omitted);
+        Assert.DoesNotContain("Planwharf ran", omitted);
+
+        Assert.False(Autonomy.CleanFinish(new JsonArray { new JsonObject { ["status"] = "COMPLETE" }, new JsonObject { ["status"] = "COMPLETE" } }, new JsonObject { ["timedOut"] = false }));
+        Assert.True(Autonomy.CleanFinish(
+            new JsonArray { new JsonObject { ["status"] = "COMPLETE", ["blockers"] = "x" }, new JsonObject { ["status"] = "COMPLETE" } },
+            new JsonObject { ["exitCode"] = 0, ["timedOut"] = false }));
+    }
+
+    [Fact]
+    public void Weights_paths_and_git_config_counts_follow_JavaScript()
+    {
+        Assert.Equal("3", Autonomy.PushGuardEnvironment(new Dictionary<string, string?> { ["GIT_CONFIG_COUNT"] = "2abc" })["GIT_CONFIG_COUNT"]);
+        Assert.Equal("url.planwharf-push-blocked://.pushInsteadOf", Autonomy.PushGuardEnvironment(new Dictionary<string, string?> { ["GIT_CONFIG_COUNT"] = "1e2" })["GIT_CONFIG_KEY_1"]);
+        var blank = Autonomy.PushGuardEnvironment(new Dictionary<string, string?> { ["GIT_CONFIG_COUNT"] = "" });
+        Assert.Equal("1", blank["GIT_CONFIG_COUNT"]);
+        Assert.Equal("url.planwharf-push-blocked://.pushInsteadOf", blank["GIT_CONFIG_KEY_0"]);
+        var negative = Autonomy.PushGuardEnvironment(new Dictionary<string, string?> { ["GIT_CONFIG_COUNT"] = "-2" });
+        Assert.Equal("-1", negative["GIT_CONFIG_COUNT"]);
+        Assert.Equal("url.planwharf-push-blocked://.pushInsteadOf", negative["GIT_CONFIG_KEY_-2"]);
+
+        var tied = Autonomy.FitWeights(new JsonArray
+        {
+            new JsonObject { ["title"] = "p", ["size"] = "heavy", ["model"] = "missing" },
+            new JsonObject { ["title"] = "q", ["size"] = "heavy", ["model"] = "missing" }
+        }, new JsonArray
+        {
+            new JsonObject { ["id"] = "a", ["tier"] = "light", ["left"] = 10 },
+            new JsonObject { ["id"] = "b", ["tier"] = "light", ["left"] = 10 }
+        });
+        Assert.Equal("a", tied["parts"]![0]!["model"]!.GetValue<string>());
+        Assert.Equal("b", tied["parts"]![1]!["model"]!.GetValue<string>());
+        Assert.Equal("a", tied["moved"]![0]!["to"]!.GetValue<string>());
+
+        var moved = Autonomy.FitWeights(new JsonArray { new JsonObject { ["title"] = "p", ["size"] = "normal", ["model"] = "heavy1" } }, new JsonArray
+        {
+            new JsonObject { ["id"] = "heavy1", ["tier"] = "premium", ["left"] = 90 },
+            new JsonObject { ["id"] = "d1", ["tier"] = "default", ["left"] = 20 },
+            new JsonObject { ["id"] = "d2", ["tier"] = "default", ["left"] = 80 },
+            new JsonObject { ["id"] = "L", ["tier"] = "light", ["left"] = 99 }
+        });
+        Assert.Equal("d2", moved["parts"]![0]!["model"]!.GetValue<string>());
+
+        var prompt = Autonomy.SplitPrompt(new JsonObject
+        {
+            ["name"] = "N",
+            ["builders"] = new JsonArray { new JsonObject { ["id"] = "a", ["label"] = "A", ["provider"] = "p", ["tier"] = "light", ["left"] = 80.5 } },
+            ["verifiers"] = new JsonArray { new JsonObject { ["id"] = "v", ["label"] = "V", ["provider"] = "q", ["tier"] = "premium", ["left"] = double.NaN } },
+            ["files"] = new JsonArray()
+        });
+        Assert.Contains("light, 80.5% quota left", prompt);
+        Assert.Contains("premium, quota not reported", prompt);
+
+        var options = new JsonObject { ["builders"] = new JsonArray { "b" }, ["verifiers"] = new JsonArray { "v" } };
+        var overlap = Autonomy.ParseSplit("{\"parts\":[{\"title\":\"a\",\"detail\":\"d\",\"files\":[\"src\"],\"size\":\"normal\",\"model\":\"b\"},{\"title\":\"c\",\"detail\":\"d\",\"files\":[\"src/a.cs\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"b\"}],\"verify\":\"v\",\"why\":\"" + new string('z', 400) + "\"}", options);
+        Assert.Equal("[0]", overlap!["parts"]![1]!["dependsOn"]!.ToJsonString());
+        Assert.Equal(300, overlap["why"]!.GetValue<string>().Length);
+        Assert.Null(Autonomy.ParseSplit("{\"parts\":[{\"title\":\"t\",\"detail\":\"d\",\"files\":[\"C:abs\"],\"size\":\"light\",\"model\":\"b\"}],\"verify\":\"v\"}", options));
+        Assert.Null(Autonomy.ParseSplit("{\"parts\":[{\"title\":\"t\",\"detail\":\"d\",\"files\":[\"foo/../../x\"],\"size\":\"normal\",\"model\":\"b\"}],\"verify\":\"v\"}", options));
+        var escaped = Autonomy.ParseSplit("{\"parts\":[{\"title\":\"t\",\"detail\":\"d\",\"files\":[\"src\\\\\\\\a/\",\"ok\"],\"size\":\"light\",\"model\":\"b\"}],\"verify\":\"v\"}", options);
+        Assert.Equal("[\"src//a\",\"ok\"]", escaped!["parts"]![0]!["files"]!.ToJsonString());
+
+        var gate = new System.Threading.Barrier(4);
+        var kinds = new string[4];
+        System.Threading.Tasks.Parallel.For(0, 4, i =>
+        {
+            gate.SignalAndWait();
+            var settings = On();
+            kinds[i] = Autonomy.NextStep("auto", "s1", settings, new JsonObject { ["status"] = "needs_approval", ["megaTaskId"] = "m" + i }, null, now: 1)["type"]!.GetValue<string>();
+        });
+        Assert.All(kinds, kind => Assert.Equal("approve", kind));
+    }
 }

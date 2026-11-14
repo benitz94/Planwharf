@@ -27,23 +27,25 @@ public static class ActivityEvidence
     }
 
     const RegexOptions Js = RegexOptions.ECMAScript | RegexOptions.CultureInvariant;
-    const RegexOptions JsI = RegexOptions.ECMAScript | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
     const RegexOptions JsM = RegexOptions.ECMAScript | RegexOptions.CultureInvariant | RegexOptions.Multiline;
+    // JavaScript `\s` without the `u` flag. ECMAScript mode in .NET only knows the ASCII ones.
+    const string JsWs = "\\t\\n\\v\\f\\r \\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff";
 
     static readonly Regex CrLf = new(@"\r\n?", Js);
     static readonly Regex PrivateKey = new(@"-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)", Js);
     static readonly Regex Osc = new(@"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\|$)", Js);
     static readonly Regex Csi = new(@"\x1b\[[0-?]*[ -/]*[@-~]", Js);
     static readonly Regex Control = new(@"[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]", Js);
-    static readonly Regex Bearer = new(@"\b(Bearer\s+)[^\s,;""']+", JsI);
+    // Matched against ASCII-lowered text. .NET IgnoreCase would fold the Kelvin sign onto `k`; JavaScript's `i` does not.
+    static readonly Regex Bearer = new(@"\b(bearer[" + JsWs + @"]+)[^" + JsWs + @",;""']+", Js);
     static readonly Regex Assignment = new(
-        @"((?:\\?[""'])?(?:api[_-]?key|access[_-]?(?:key|token)|refresh[_-]?token|token|password|secret|authorization|cookie)(?:\\?[""'])?\s*[=:]\s*)(?:\\?""[^""\n]*\\?""|\\?'[^'\n]*\\?'|[^\s,;&]+)",
-        JsI);
+        "((?:\\\\?[\"'])?(?:api[_-]?key|access[_-]?(?:key|token)|refresh[_-]?token|token|password|secret|authorization|cookie)(?:\\\\?[\"'])?[" + JsWs + "]*[=:][" + JsWs + "]*)(?:\\\\?\"[^\"\\n]*\\\\?\"|\\\\?'[^'\\n]*\\\\?'|[^" + JsWs + ",;&]+)",
+        Js);
     static readonly Regex CliFlags = new(
-        @"(--(?:api[-_]?key|access[-_]?token|token|password|secret)(?:=|\s+))(?:""[^""\n]*""|'[^'\n]*'|[^\s]+)",
-        JsI);
+        "(--(?:api[-_]?key|access[-_]?token|token|password|secret)(?:=|[" + JsWs + "]+))(?:\"[^\"\\n]*\"|'[^'\\n]*'|[^" + JsWs + "]+)",
+        Js);
     static readonly Regex KnownTokens = new(@"\b(?:sk-[\w-]{8,}|gh[pousr]_[\w]{8,}|github_pat_[\w]+)\b", Js);
-    static readonly Regex UrlCredentials = new(@"(https?:\/\/)[^\s/@]+:[^\s/@]+@", JsI);
+    static readonly Regex UrlCredentials = new("(https?:\\/\\/)[^" + JsWs + "/@]+:[^" + JsWs + "/@]+@", Js);
     static readonly Regex EncodedValue = new(@"^[A-Za-z0-9+/=]{48,}$", JsM);
     static readonly Regex StructuredHint = new(@"^\s*[\[{]|""(?:event|step_update|tool_name|tool_info|item|type)""\s*:", Js);
 
@@ -54,16 +56,45 @@ public static class ActivityEvidence
         text = Osc.Replace(text, "");
         text = Csi.Replace(text, "");
         text = Control.Replace(text, "");
-        text = Bearer.Replace(text, "$1[REDACTED]");
-        text = Assignment.Replace(text, "$1[REDACTED]");
-        text = CliFlags.Replace(text, "$1[REDACTED]");
+        text = ReplaceInsensitive(text, Bearer, "[REDACTED]");
+        text = ReplaceInsensitive(text, Assignment, "[REDACTED]");
+        text = ReplaceInsensitive(text, CliFlags, "[REDACTED]");
         text = KnownTokens.Replace(text, "[REDACTED]");
-        text = UrlCredentials.Replace(text, "$1[REDACTED]@");
+        text = ReplaceInsensitive(text, UrlCredentials, "[REDACTED]@");
         text = EncodedValue.Replace(text, "[REDACTED ENCODED VALUE]");
         return text.Replace("<", "&lt;").Replace(">", "&gt;");
     }
 
-    public static JsonObject TechnicalEvidence(string? tail, JsonObject? context = null)
+    // The pattern is written in lower case and applied to ASCII-lowered text, then the kept prefix is copied
+    // from the original so "Bearer" and "PASSWORD" keep the case the source used.
+    static string ReplaceInsensitive(string text, Regex pattern, string replacement)
+    {
+        var lowered = AsciiLower(text);
+        var matches = pattern.Matches(lowered);
+        if (matches.Count == 0) return text;
+        var builder = new StringBuilder(text.Length);
+        var cursor = 0;
+        foreach (Match match in matches)
+        {
+            builder.Append(text, cursor, match.Index - cursor);
+            var group = match.Groups[1];
+            builder.Append(text, group.Index, group.Length);
+            builder.Append(replacement);
+            cursor = match.Index + match.Length;
+        }
+        builder.Append(text, cursor, text.Length - cursor);
+        return builder.ToString();
+    }
+
+    static string AsciiLower(string text) => string.Create(text.Length, text, (span, source) =>
+    {
+        for (var i = 0; i < source.Length; i++) span[i] = source[i] is >= 'A' and <= 'Z' ? (char)(source[i] + 32) : source[i];
+    });
+
+    // JavaScript's default argument applies only when the caller omits context. An explicit null throws.
+    public static JsonObject TechnicalEvidence(string? tail) => TechnicalEvidence(tail, new JsonObject());
+
+    public static JsonObject TechnicalEvidence(string? tail, JsonObject? context)
     {
         if (context is null) throw new InvalidOperationException("Cannot read properties of null (reading 'adapter')");
         var truncated = false;
@@ -162,30 +193,35 @@ public static class ActivityEvidence
                 continue;
             }
 
-            JsonObject? row = null;
+            JsonNode? parsed = null;
+            var parsedOk = false;
             try
             {
-                var parsed = JsonNode.Parse(line);
-                if (parsed is JsonObject obj) row = obj;
+                parsed = JsonNode.Parse(line);
+                parsedOk = true;
             }
             catch
             {
                 // parsing failed
             }
 
-            if (row is null)
+            if (!parsedOk || parsed is not JsonObject)
             {
-                if (StructuredHint.IsMatch(line))
+                if (parsedOk)
+                {
+                    FlushPlain();
+                    Warn("Unknown structured evidence was omitted.");
+                }
+                else if (StructuredHint.IsMatch(line))
                 {
                     FlushPlain();
                     Warn("Malformed structured evidence was omitted.");
                 }
-                else
-                {
-                    plain.Add(line);
-                }
+                else plain.Add(line);
                 continue;
             }
+
+            var row = (JsonObject)parsed;
 
             FlushPlain();
 

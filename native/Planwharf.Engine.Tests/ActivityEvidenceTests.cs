@@ -143,4 +143,81 @@ public class ActivityEvidenceTests
         Assert.True(huge["truncated"]!.GetValue<bool>());
         Assert.Contains("excerpt truncated", huge["entries"]!.AsArray()[0]!["output"]!.GetValue<string>());
     }
+
+    [Fact]
+    public void Structured_lines_that_are_not_objects_are_omitted_and_secrets_stay_redacted()
+    {
+        var codex = new JsonObject { ["adapter"] = "codex" };
+        var mixed = ActivityEvidence.TechnicalEvidence("401\nplain text\n[1,2]\nnull\n{\"item\":\nhello", codex);
+        Assert.Equal(["plain text", "hello"], mixed["entries"]!.AsArray().Select(node => node!["output"]!.GetValue<string>()));
+        var warnings = mixed["warnings"]!.AsArray().Select(node => node!.GetValue<string>()).ToArray();
+        Assert.Contains("Unknown structured evidence was omitted.", warnings);
+        Assert.Contains("Malformed structured evidence was omitted.", warnings);
+        Assert.DoesNotContain("401", mixed.ToJsonString());
+
+        var write = ActivityEvidence.TechnicalEvidence("""{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"command":"node --test","content":"PRIVATE-SOURCE"}}]}}""", new JsonObject { ["adapter"] = "claude" });
+        Assert.Equal("Write", write["entries"]![0]!["tool"]!.GetValue<string>());
+        Assert.False(write["entries"]![0]!.AsObject().ContainsKey("command"));
+        Assert.DoesNotContain("PRIVATE-SOURCE", write.ToJsonString());
+
+        var fileWrite = ActivityEvidence.TechnicalEvidence("""{"step_update":{"step_type":"tool","state":"DONE","tool_name":"write_to_file","tool_info":{"parameters":{"CommandLine":"DO-NOT","CodeContent":"SOURCE"}}}}""", new JsonObject { ["adapter"] = "antigravity" });
+        Assert.False(fileWrite["entries"]![0]!.AsObject().ContainsKey("command"));
+        Assert.DoesNotContain("DO-NOT", fileWrite.ToJsonString());
+        Assert.DoesNotContain("SOURCE", fileWrite.ToJsonString());
+
+        Assert.Equal("unknown", ActivityEvidence.TechnicalEvidence("""{"type":"item.completed","item":{"type":"command_execution","command":"echo"}}""", new JsonObject())["entries"]![0]!["provenance"]!.GetValue<string>());
+        var omitted = ActivityEvidence.TechnicalEvidence("hello");
+        Assert.Contains("Adapter identity is unknown", omitted["warnings"]!.ToJsonString());
+        Assert.Equal("hello", omitted["entries"]![0]!["output"]!.GetValue<string>());
+
+        Assert.Equal("""{"nested":"{\"api_key\":[REDACTED],\"password\":[REDACTED]}"}""", ActivityEvidence.Redact("""{"nested":"{\"api_key\":\"NESTED-SECRET\",\"password\":\"NESTED-PASSWORD\"}"}"""));
+        Assert.Equal("[REDACTED PRIVATE KEY]\n", ActivityEvidence.TechnicalEvidence("-----BEGIN OPENSSH PRIVATE KEY-----\nRAW-KEY-LINE\n-----END OPENSSH PRIVATE KEY-----\n", codex)["entries"]![0]!["output"]!.GetValue<string>());
+        Assert.Equal("passwor\u212A=SECRET-VALUE", ActivityEvidence.Redact("passwor\u212A=SECRET-VALUE"));
+        Assert.Equal("Bearer\u00a0[REDACTED]", ActivityEvidence.Redact("Bearer\u00a0SECRET-VALUE"));
+        Assert.Equal("[REDACTED]", ActivityEvidence.Redact("sk-" + new string('a', 8)));
+        Assert.DoesNotContain("VALUE", ActivityEvidence.Redact("token: VALUE-9"));
+
+        var fractional = ActivityEvidence.TechnicalEvidence("""{"type":"item.completed","item":{"type":"command_execution","command":"x","exit_code":1.5}}""", codex);
+        Assert.False(fractional["entries"]![0]!.AsObject().ContainsKey("exitCode"));
+    }
+
+    [Fact]
+    public void Tails_excerpts_and_parallel_redaction_stay_inside_the_limits()
+    {
+        var codex = new JsonObject { ["adapter"] = "codex" };
+        var dropped = ActivityEvidence.TechnicalEvidence("HEAD-LINE-SHOULD-DROP\n" + new string('x', ActivityEvidence.LIMITS.TailBytes), codex);
+        Assert.True(dropped["truncated"]!.GetValue<bool>());
+        Assert.Empty(dropped["entries"]!.AsArray());
+        Assert.Contains("bounded truncated excerpt", dropped["warnings"]!.ToJsonString());
+
+        var rows = string.Join("\n", Enumerable.Range(0, 100).Select(i =>
+            new JsonObject { ["type"] = "item.completed", ["item"] = new JsonObject { ["type"] = "command_execution", ["command"] = "echo " + i } }.ToJsonString()));
+        var many = ActivityEvidence.TechnicalEvidence(rows, codex);
+        var commands = many["entries"]!.AsArray().Select(node => node!["command"]!.GetValue<string>()).ToArray();
+        Assert.Equal(20, commands.Length);
+        Assert.Equal("echo 80", commands[0]);
+        Assert.Equal("echo 99", commands[^1]);
+        Assert.True(many["truncated"]!.GetValue<bool>());
+
+        var euros = ActivityEvidence.TechnicalEvidence(new string('\u20ac', 3000), codex)["entries"]![0]!["output"]!.GetValue<string>();
+        Assert.EndsWith("\n[excerpt truncated]", euros);
+        Assert.DoesNotContain("\uFFFD", euros);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(euros) <= ActivityEvidence.LIMITS.FieldBytes);
+        Assert.All(euros[..^"\n[excerpt truncated]".Length], character => Assert.Equal('\u20ac', character));
+
+        var gate = new System.Threading.Barrier(8);
+        var results = new string[8];
+        System.Threading.Tasks.Parallel.For(0, 8, i =>
+        {
+            gate.SignalAndWait();
+            results[i] = ActivityEvidence.Redact("password=\"VALUE " + i + "\"\nBearer TOKEN" + i);
+        });
+        for (var i = 0; i < results.Length; i++)
+        {
+            Assert.DoesNotContain("VALUE", results[i]);
+            Assert.DoesNotContain("TOKEN", results[i]);
+            Assert.Contains("password=[REDACTED]", results[i]);
+            Assert.Contains("Bearer [REDACTED]", results[i]);
+        }
+    }
 }

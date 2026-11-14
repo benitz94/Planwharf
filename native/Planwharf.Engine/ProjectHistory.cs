@@ -1,4 +1,6 @@
 // Port of engine/project-history.cjs.
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Planwharf.Engine;
@@ -7,20 +9,50 @@ namespace Planwharf.Engine;
 // to verify safety before an autonomous or user-guided resume.
 public static class ProjectHistory
 {
+    // A JavaScript value used as a map key. Strings and numbers stay distinct: "1" !== 1.
+    readonly record struct IdKey(int Kind, string Text)
+    {
+        public static bool TryRead(JsonObject owner, string key, out IdKey id)
+        {
+            id = default;
+            if (!owner.TryGetPropertyValue(key, out var node) || node is not JsonValue value) return false;
+            switch (value.GetValueKind())
+            {
+                case JsonValueKind.String:
+                    var text = value.GetValue<string>();
+                    if (text.Length == 0) return false;
+                    id = new(1, text);
+                    return true;
+                case JsonValueKind.True:
+                    id = new(2, "true");
+                    return true;
+                case JsonValueKind.Number:
+                    var number = Number(value);
+                    if (number == 0 || double.IsNaN(number)) return false;
+                    id = new(3, number.ToString("R", CultureInfo.InvariantCulture));
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public string Suffix => Kind == 3
+            ? double.Parse(Text, NumberStyles.Float, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+            : Text;
+    }
+
     public static JsonArray SummarizeTimeline(JsonArray events, JsonObject execution)
     {
-        var groups = new Dictionary<string, List<JsonObject>>();
-        var groupOrder = new List<string>();
+        var groups = new Dictionary<IdKey, List<JsonObject>>();
+        var groupOrder = new List<IdKey>();
         var milestones = new List<JsonObject>();
 
         foreach (var item in events)
         {
-            if (item is not JsonObject ev) continue;
-            var megaTaskId = ev["reference"] is JsonObject reference && reference.TryGetPropertyValue("megaTaskId", out var idNode) && idNode is JsonValue val && val.TryGetValue<string>(out var idStr) && !string.IsNullOrEmpty(idStr)
-                ? idStr
-                : null;
-
-            if (megaTaskId is null)
+            if (item is not JsonObject ev) throw new InvalidOperationException("Cannot read properties of null (reading 'reference')");
+            IdKey megaTaskId = default;
+            var hasId = ev["reference"] is JsonObject reference && IdKey.TryRead(reference, "megaTaskId", out megaTaskId);
+            if (!hasId)
             {
                 milestones.Add((JsonObject)ev.DeepClone());
                 continue;
@@ -28,7 +60,7 @@ public static class ProjectHistory
 
             if (!groups.TryGetValue(megaTaskId, out var list))
             {
-                list = new List<JsonObject>();
+                list = [];
                 groups[megaTaskId] = list;
                 groupOrder.Add(megaTaskId);
             }
@@ -46,7 +78,7 @@ public static class ProjectHistory
             {
                 foreach (var m in megaTasks)
                 {
-                    if (m is JsonObject mObj && mObj["id"]?.GetValue<string>() == id)
+                    if (m is JsonObject mObj && IdKey.TryRead(mObj, "id", out var megaId) && megaId.Equals(id))
                     {
                         mega = mObj;
                         break;
@@ -60,52 +92,43 @@ public static class ProjectHistory
                 continue;
             }
 
-            var matchingResults = new List<string>();
+            var joined = new List<string>();
             if (resultsArray is not null)
             {
                 foreach (var r in resultsArray)
                 {
-                    if (r is JsonObject rObj &&
-                        rObj["megaTaskId"]?.GetValue<string>() == id &&
-                        rObj["status"]?.GetValue<string>() == "COMPLETE")
-                    {
-                        matchingResults.Add(rObj["summary"]?.GetValue<string>() ?? "");
-                    }
+                    if (r is not JsonObject rObj || !IdKey.TryRead(rObj, "megaTaskId", out var resultId) || !resultId.Equals(id)) continue;
+                    if (!rObj.TryGetPropertyValue("status", out var statusNode) || statusNode is not JsonValue statusValue || statusValue.GetValueKind() != JsonValueKind.String || statusValue.GetValue<string>() != "COMPLETE") continue;
+                    rObj.TryGetPropertyValue("summary", out var summaryNode);
+                    joined.Add(summaryNode is null ? "" : JsText(summaryNode, true));
                 }
             }
 
             var last = evidence[^1];
             var milestone = (JsonObject)last.DeepClone();
-            milestone["id"] = "milestone:" + id;
+            milestone["id"] = "milestone:" + id.Suffix;
             milestone["type"] = "MEGATASK_MILESTONE";
 
-            var megaStatus = mega["status"]?.GetValue<string>() ?? "";
-            var megaTitle = mega["title"]?.GetValue<string>() ?? "";
-            var prefix = megaStatus == "COMPLETE" ? "Completed " : "";
-            var resultsText = "";
-            if (matchingResults.Count > 0)
-            {
-                var joined = string.Join(" ", matchingResults);
-                resultsText = joined.Length > 600 ? joined.Substring(0, 600) : joined;
-            }
-
-            var summary = $"{prefix}{megaTitle}: {megaStatus}. {resultsText}".Trim();
-            milestone["summary"] = summary;
+            var statusIsComplete = mega.TryGetPropertyValue("status", out var megaStatus) && megaStatus is JsonValue complete && complete.GetValueKind() == JsonValueKind.String && complete.GetValue<string>() == "COMPLETE";
+            var resultsText = joined.Count == 0 ? "" : string.Join(" ", joined);
+            if (resultsText.Length > 600) resultsText = resultsText[..600];
+            var titlePresent = mega.TryGetPropertyValue("title", out var titleNode);
+            var statusPresent = mega.TryGetPropertyValue("status", out megaStatus);
+            milestone["summary"] = $"{(statusIsComplete ? "Completed " : "")}{JsText(titleNode, titlePresent)}: {JsText(megaStatus, statusPresent)}. {resultsText}".Trim();
             milestone["evidenceCount"] = evidence.Count;
 
             var evidenceArr = new JsonArray();
             foreach (var ev in evidence) evidenceArr.Add((JsonNode)ev.DeepClone());
             milestone["evidence"] = evidenceArr;
-
             milestones.Add(milestone);
         }
 
-        milestones.Sort((a, b) =>
-        {
-            var ca = a["createdAt"]?.GetValue<string>() ?? "";
-            var cb = b["createdAt"]?.GetValue<string>() ?? "";
-            return string.CompareOrdinal(ca, cb);
-        });
+        milestones = milestones
+            .Select((milestone, index) => (milestone, index))
+            .OrderBy(pair => CreatedAt(pair.milestone), StringComparer.Ordinal)
+            .ThenBy(pair => pair.index)
+            .Select(pair => pair.milestone)
+            .ToList();
 
         var result = new JsonArray();
         foreach (var m in milestones) result.Add((JsonNode)m);
@@ -114,38 +137,32 @@ public static class ProjectHistory
 
     public static JsonObject CheckpointDiff(JsonObject checkpoint, JsonObject current, int planRevisionId, JsonArray? completed = null)
     {
-        var before = checkpoint["repoState"] as JsonObject ?? new JsonObject();
+        if (!checkpoint.TryGetPropertyValue("repoState", out var beforeNode) || beforeNode is not JsonObject before)
+            throw new InvalidOperationException("Cannot read properties of " + (beforeNode is null ? "undefined" : "null") + " (reading 'repoHead')");
         var changes = new JsonArray();
 
-        var beforeHead = before["repoHead"]?.GetValue<string>();
-        var currentHead = current["repoHead"]?.GetValue<string>();
-        if (beforeHead != currentHead)
+        if (!StrictSame(before, "repoHead", current, "repoHead"))
         {
-            var from = string.IsNullOrEmpty(beforeHead) ? "unavailable" : beforeHead;
-            var to = string.IsNullOrEmpty(currentHead) ? "unavailable" : currentHead;
+            var from = Shown(before, "repoHead");
+            var to = Shown(current, "repoHead");
             changes.Add((JsonNode)JsonValue.Create($"HEAD changed from {from} to {to}"));
         }
 
-        var beforeFp = before["fingerprint"]?.GetValue<string>();
-        var currentFp = current["fingerprint"]?.GetValue<string>();
-        if (beforeFp != currentFp)
+        if (!StrictSame(before, "fingerprint", current, "fingerprint"))
         {
-            var dirtyCount = current["dirtyFiles"] is JsonArray da ? da.Count : 0;
-            changes.Add((JsonNode)JsonValue.Create($"External repository changes detected; {dirtyCount} files currently changed locally"));
+            if (!current.TryGetPropertyValue("dirtyFiles", out var dirty) || dirty is null)
+                throw new InvalidOperationException("Cannot read properties of undefined (reading 'length')");
+            if (dirty is not JsonArray files) throw new InvalidOperationException("Cannot read properties of " + JsText(dirty, true) + " (reading 'length')");
+            changes.Add((JsonNode)JsonValue.Create($"External repository changes detected; {files.Count} files currently changed locally"));
         }
 
-        var cpPlanRev = checkpoint["planRevisionId"]?.GetValue<int>() ?? 0;
-        if (cpPlanRev != planRevisionId)
-        {
-            changes.Add((JsonNode)JsonValue.Create($"Living Plan changed from R{cpPlanRev} to R{planRevisionId}"));
-        }
+        var hasRevision = checkpoint.TryGetPropertyValue("planRevisionId", out var revisionNode);
+        var sameRevision = hasRevision && revisionNode is JsonValue revisionValue && revisionValue.GetValueKind() == JsonValueKind.Number && Number(revisionValue) == planRevisionId;
+        if (!sameRevision)
+            changes.Add((JsonNode)JsonValue.Create($"Living Plan changed from R{JsText(revisionNode, hasRevision)} to R{planRevisionId.ToString(CultureInfo.InvariantCulture)}"));
 
-        var beforeComp = before["comparable"]?.GetValue<bool>() ?? false;
-        var currentComp = current["comparable"]?.GetValue<bool>() ?? false;
-        if (!beforeComp || !currentComp)
-        {
+        if (!Truthy(before, "comparable") || !Truthy(current, "comparable"))
             changes.Add((JsonNode)JsonValue.Create("Repository comparison is incomplete; inspect technical evidence before Resume"));
-        }
 
         var completedIds = new HashSet<string>();
         if (checkpoint["completedSubTaskIds"] is JsonArray cpComp)
@@ -190,5 +207,90 @@ public static class ProjectHistory
             ["before"] = before.DeepClone(),
             ["current"] = current.DeepClone()
         };
+    }
+
+    static string CreatedAt(JsonObject ev)
+    {
+        if (!ev.TryGetPropertyValue("createdAt", out var node) || node is not JsonValue value || value.GetValueKind() != JsonValueKind.String)
+            throw new InvalidOperationException("createdAt.localeCompare is not a function");
+        return value.GetValue<string>();
+    }
+
+    // `${value}` and `value || 'unavailable'`. Missing and JSON null are different.
+    static string JsText(JsonNode? node, bool present)
+    {
+        if (!present) return "undefined";
+        if (node is null) return "null";
+        if (node is JsonValue value)
+        {
+            return value.GetValueKind() switch
+            {
+                JsonValueKind.String => value.GetValue<string>(),
+                JsonValueKind.Number => JsNumber(Number(value)),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                _ => value.ToJsonString()
+            };
+        }
+        if (node is JsonArray array) return string.Join(",", array.Select(item => item is null ? "" : JsText(item, true)));
+        return "[object Object]";
+    }
+
+    static string Shown(JsonObject owner, string key)
+    {
+        var present = owner.TryGetPropertyValue(key, out var node);
+        return Falsy(node, present) ? "unavailable" : JsText(node, present);
+    }
+
+    static bool StrictSame(JsonObject left, string leftKey, JsonObject right, string rightKey)
+    {
+        var leftHas = left.TryGetPropertyValue(leftKey, out var leftNode);
+        var rightHas = right.TryGetPropertyValue(rightKey, out var rightNode);
+        if (leftHas != rightHas) return false;
+        if (!leftHas || ReferenceEquals(leftNode, rightNode)) return true;
+        if (leftNode is null || rightNode is null) return leftNode is null && rightNode is null;
+        if (leftNode is JsonValue a && rightNode is JsonValue b)
+        {
+            if (a.GetValueKind() != b.GetValueKind()) return false;
+            return a.GetValueKind() switch
+            {
+                JsonValueKind.String => a.GetValue<string>() == b.GetValue<string>(),
+                JsonValueKind.Number => Number(a) == Number(b),
+                _ => true
+            };
+        }
+        return false;
+    }
+
+    static bool Truthy(JsonObject owner, string key)
+    {
+        var present = owner.TryGetPropertyValue(key, out var node);
+        return !Falsy(node, present);
+    }
+
+    static bool Falsy(JsonNode? node, bool present)
+    {
+        if (!present || node is null) return true;
+        if (node is not JsonValue value) return false;
+        return value.GetValueKind() switch
+        {
+            JsonValueKind.False => true,
+            JsonValueKind.String => value.GetValue<string>().Length == 0,
+            JsonValueKind.Number => Number(value) is var number && (number == 0 || double.IsNaN(number)),
+            _ => false
+        };
+    }
+
+    static double Number(JsonValue value) => double.Parse(value.ToJsonString(), NumberStyles.Float, CultureInfo.InvariantCulture);
+
+    static string JsNumber(double number)
+    {
+        if (double.IsNaN(number)) return "NaN";
+        if (double.IsPositiveInfinity(number)) return "Infinity";
+        if (double.IsNegativeInfinity(number)) return "-Infinity";
+        if (number == 0) return "0";
+        return number == Math.Truncate(number) && Math.Abs(number) < 1e21
+            ? number.ToString("0", CultureInfo.InvariantCulture)
+            : number.ToString("R", CultureInfo.InvariantCulture);
     }
 }

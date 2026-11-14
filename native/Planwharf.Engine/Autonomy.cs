@@ -1,5 +1,6 @@
 // Port of engine/autonomy.cjs.
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Planwharf.Engine;
@@ -43,10 +44,8 @@ public static class Autonomy
     public static Dictionary<string, string> PushGuardEnvironment(IReadOnlyDictionary<string, string?>? env = null)
     {
         var index = 0;
-        if (env is not null && env.TryGetValue("GIT_CONFIG_COUNT", out var countVal) && int.TryParse(countVal, out var c))
-        {
-            index = c;
-        }
+        if (env is not null && env.TryGetValue("GIT_CONFIG_COUNT", out var countVal))
+            index = ParseIntOrZero(countVal);
 
         return new Dictionary<string, string>
         {
@@ -204,13 +203,13 @@ public static class Autonomy
         if (checks is null && !isNullChecks) return new List<string>();
         if (checks is null) return new List<string> { "Planwharf found no recognised test entry point (package.json test script or test files) in the project folder." };
 
-        var timedOut = checks["timedOut"]?.GetValue<bool>() == true;
-        var exitCode = checks["exitCode"]?.GetValue<int>() ?? 0;
-        var verdict = timedOut ? "TIMED OUT" : exitCode == 0 ? "PASSED" : $"FAILED (exit {exitCode})";
-        var label = checks["label"]?.GetValue<string>() ?? "";
-        var seconds = checks["seconds"]?.ToString() ?? "0";
-        var output = checks["output"]?.GetValue<string>();
-        if (string.IsNullOrEmpty(output)) output = "(no output)";
+        var timedOut = Truthy(checks, "timedOut");
+        var hasExit = checks.TryGetPropertyValue("exitCode", out var exitNode);
+        var passed = hasExit && exitNode is JsonValue exitValue && exitValue.GetValueKind() == JsonValueKind.Number && Number(exitValue) == 0;
+        var verdict = timedOut ? "TIMED OUT" : passed ? "PASSED" : $"FAILED (exit {JsText(exitNode, hasExit)})";
+        var label = JsText(checks, "label");
+        var seconds = JsText(checks, "seconds");
+        var output = Truthy(checks, "output") ? JsText(checks, "output") : "(no output)";
 
         return new List<string>
         {
@@ -225,7 +224,8 @@ public static class Autonomy
     public static bool CleanFinish(JsonArray? results, JsonObject? checks)
     {
         if (results is null || results.Count < 2 || checks is null) return false;
-        if (checks["timedOut"]?.GetValue<bool>() == true || (checks["exitCode"]?.GetValue<int>() ?? 0) != 0) return false;
+        var exitIsZero = checks.TryGetPropertyValue("exitCode", out var exitNode) && exitNode is JsonValue exitValue && exitValue.GetValueKind() == JsonValueKind.Number && Number(exitValue) == 0;
+        if (Truthy(checks, "timedOut") || !exitIsZero) return false;
 
         foreach (var r in results)
         {
@@ -239,8 +239,7 @@ public static class Autonomy
 
     public static string EvaluationPrompt(JsonObject options)
     {
-        var name = options["name"]?.GetValue<string>() ?? "";
-        var goal = options["goal"]?.GetValue<string>();
+        var name = JsText(options, "name");
         var results = options["results"] as JsonArray;
         var checksNode = options.TryGetPropertyValue("checks", out var cn) ? cn : null;
         var checks = checksNode as JsonObject;
@@ -255,9 +254,8 @@ public static class Autonomy
             {
                 if (results[i] is JsonObject r)
                 {
-                    var status = r["status"]?.GetValue<string>() ?? "";
-                    var summary = r["summary"]?.GetValue<string>() ?? "no summary";
-                    lines.Add($"- {status}: {summary}");
+                    var summary = Truthy(r, "summary") ? JsText(r, "summary") : "no summary";
+                    lines.Add($"- {JsText(r, "status")}: {summary}");
                 }
             }
         }
@@ -265,7 +263,7 @@ public static class Autonomy
         var parts = new List<string>
         {
             $"Autonomous review of project {name}. The current MegaTask finished.",
-            $"Goal: {goal ?? "not recorded"}",
+            $"Goal: {(Truthy(options, "goal") ? JsText(options, "goal") : "not recorded")}",
             "Recorded results:"
         };
 
@@ -284,14 +282,13 @@ public static class Autonomy
     public static string NudgePrompt(JsonObject options)
     {
         var name = options["name"]?.GetValue<string>() ?? "";
-        var goal = options["goal"]?.GetValue<string>();
         var alert = options["alert"] as JsonObject ?? new JsonObject();
         var title = alert["title"]?.GetValue<string>() ?? "";
         var message = alert["message"]?.GetValue<string>() ?? "";
 
         return string.Join("\n",
             $"Supervisor alert for project {name}: {title}. {message}",
-            $"Goal: {goal ?? "not recorded"}",
+            $"Goal: {(Truthy(options, "goal") ? JsText(options, "goal") : "not recorded")}",
             "If active workers are still making progress, set next to null. If the work is stuck, name the objective that recovers it.",
             LeadInstructions());
     }
@@ -363,9 +360,9 @@ public static class Autonomy
             var provider = m["provider"]?.GetValue<string>();
             var tier = m["tier"]?.GetValue<string>();
             string quota;
-            if (m.TryGetPropertyValue("left", out var leftNode) && leftNode is JsonValue lv && lv.TryGetValue<double>(out var leftVal) && double.IsFinite(leftVal))
+            if (TryFinite(m, "left", out var leftVal))
             {
-                quota = $", {leftVal}% quota left";
+                quota = ", " + JsNumber(leftVal) + "% quota left";
             }
             else quota = ", quota not reported";
             return $"{id} ({label}, provider {provider}, {tier}{quota})";
@@ -619,26 +616,27 @@ public static class Autonomy
                         if (options.Count == 0) continue;
                         if (currentTier is not null && Array.IndexOf(FITS[size], tier) >= Array.IndexOf(FITS[size], currentTier)) break;
 
-                        options.Sort((a, b) =>
+                        var ranked = options.Select((model, index) => (model, index)).ToList();
+                        ranked.Sort((a, b) =>
                         {
-                            var aId = a["id"]?.GetValue<string>() ?? "";
-                            var bId = b["id"]?.GetValue<string>() ?? "";
+                            var aId = a.model["id"]?.GetValue<string>() ?? "";
+                            var bId = b.model["id"]?.GetValue<string>() ?? "";
                             load.TryGetValue(aId, out var aLoad);
                             load.TryGetValue(bId, out var bLoad);
                             var diff = aLoad - bLoad;
                             if (diff != 0) return diff;
 
-                            var aFinite = a.TryGetPropertyValue("left", out var aLeftNode) && aLeftNode is JsonValue av && av.TryGetValue<double>(out var aL) && double.IsFinite(aL);
-                            var bFinite = b.TryGetPropertyValue("left", out var bLeftNode) && bLeftNode is JsonValue bv && bv.TryGetValue<double>(out var bL) && double.IsFinite(bL);
+                            var aFinite = TryFinite(a.model, "left", out var aVal);
+                            var bFinite = TryFinite(b.model, "left", out var bVal);
                             var finiteDiff = (aFinite ? 0 : 1) - (bFinite ? 0 : 1);
                             if (finiteDiff != 0) return finiteDiff;
-
-                            var aVal = aFinite ? aLeftNode!.GetValue<double>() : 0;
-                            var bVal = bFinite ? bLeftNode!.GetValue<double>() : 0;
-                            return bVal.CompareTo(aVal);
+                            if (!aFinite) aVal = 0;
+                            if (!bFinite) bVal = 0;
+                            var quota = bVal.CompareTo(aVal);
+                            return quota != 0 ? quota : a.index.CompareTo(b.index);
                         });
 
-                        chosen = options[0]["id"]!.GetValue<string>();
+                        chosen = ranked[0].model["id"]!.GetValue<string>();
                         break;
                     }
                 }
@@ -825,6 +823,93 @@ public static class Autonomy
             ["verify"] = verify,
             ["why"] = why
         };
+    }
+
+    // Number.parseInt(text, 10) || 0. Leading JavaScript whitespace is skipped and trailing junk is ignored.
+    static int ParseIntOrZero(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+        var index = 0;
+        while (index < text.Length && IsJsWhitespace(text[index])) index++;
+        if (index >= text.Length) return 0;
+        var sign = 1;
+        if (text[index] == '+') index++;
+        else if (text[index] == '-') { sign = -1; index++; }
+        if (index >= text.Length || text[index] is < '0' or > '9') return 0;
+        long value = 0;
+        while (index < text.Length && text[index] is >= '0' and <= '9')
+        {
+            value = value * 10 + (text[index] - '0');
+            if (value > int.MaxValue) return sign < 0 ? int.MinValue : int.MaxValue;
+            index++;
+        }
+        var parsed = sign < 0 ? -value : value;
+        return parsed == 0 ? 0 : (int)parsed;
+    }
+
+    static bool IsJsWhitespace(char character) => character is '\t' or '\n' or '\v' or '\f' or '\r' or ' ' or '\u00a0' or '\u1680' or '\u2028' or '\u2029' or '\u202f' or '\u205f' or '\u3000' or '\ufeff' || character is >= '\u2000' and <= '\u200a';
+
+    static string JsText(JsonObject owner, string key)
+    {
+        var present = owner.TryGetPropertyValue(key, out var node);
+        return JsText(node, present);
+    }
+
+    static string JsText(JsonNode? node, bool present)
+    {
+        if (!present) return "undefined";
+        if (node is null) return "null";
+        if (node is JsonValue value)
+        {
+            return value.GetValueKind() switch
+            {
+                JsonValueKind.String => value.GetValue<string>(),
+                JsonValueKind.Number => JsNumber(Number(value)),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                _ => value.ToJsonString()
+            };
+        }
+        if (node is JsonArray array) return string.Join(",", array.Select(item => item is null ? "" : JsText(item, true)));
+        return "[object Object]";
+    }
+
+    static bool Truthy(JsonObject owner, string key)
+    {
+        var present = owner.TryGetPropertyValue(key, out var node);
+        if (!present || node is null) return false;
+        if (node is not JsonValue value) return true;
+        return value.GetValueKind() switch
+        {
+            JsonValueKind.False => false,
+            JsonValueKind.String => value.GetValue<string>().Length > 0,
+            JsonValueKind.Number => Number(value) is var number && number != 0 && !double.IsNaN(number),
+            _ => true
+        };
+    }
+
+    static bool TryFinite(JsonObject owner, string key, out double number)
+    {
+        number = 0;
+        if (!owner.TryGetPropertyValue(key, out var node) || node is not JsonValue value || value.GetValueKind() != JsonValueKind.Number) return false;
+        if (value.TryGetValue<double>(out var parsed)) number = parsed;
+        else if (value.TryGetValue<int>(out var integer)) number = integer;
+        else if (value.TryGetValue<long>(out var wide)) number = wide;
+        else return false;
+        return double.IsFinite(number);
+    }
+
+    static double Number(JsonValue value) => double.Parse(value.ToJsonString(), NumberStyles.Float, CultureInfo.InvariantCulture);
+
+    static string JsNumber(double number)
+    {
+        if (double.IsNaN(number)) return "NaN";
+        if (double.IsPositiveInfinity(number)) return "Infinity";
+        if (double.IsNegativeInfinity(number)) return "-Infinity";
+        if (number == 0) return "0";
+        return number == Math.Truncate(number) && Math.Abs(number) < 1e21
+            ? number.ToString("0", CultureInfo.InvariantCulture)
+            : number.ToString("R", CultureInfo.InvariantCulture);
     }
 
 }

@@ -103,4 +103,28 @@ public class ProviderRefusalTests
         Assert.Null(ProviderRefusal.RefusalReason("out of credits" + new string('y', 3990)));
         Assert.Equal(new string('z', 240), ProviderRefusal.RefusalReason(new string('z', 250) + " quota exceeded"));
     }
+
+    [Fact]
+    public void A_falsy_refusal_map_is_replaced_and_a_zero_cooldown_expires_immediately()
+    {
+        var store = new JsonObject { ["refusals"] = false, ["keep"] = 1 };
+        var row = ProviderRefusal.RecordRefusal(store, "m", "r", "2026-11-04T10:00:00.000Z", 0);
+        Assert.Equal("r", row["reason"]!.GetValue<string>());
+        Assert.Equal("2026-11-04T10:00:00.000Z", row["until"]!.GetValue<string>());
+        Assert.Null(ProviderRefusal.ActiveRefusal(store, "m", Ms("2026-11-04T10:00:00.000Z")));
+        Assert.Equal("{}", store["refusals"]!.ToJsonString());
+        Assert.Equal(1, store["keep"]!.GetValue<int>());
+
+        var gate = new System.Threading.Barrier(4);
+        var reasons = new string?[4];
+        System.Threading.Tasks.Parallel.For(0, 4, i =>
+        {
+            gate.SignalAndWait();
+            reasons[i] = ProviderRefusal.RefusalReason(i % 2 == 0 ? "out of credits" : "all good");
+        });
+        Assert.Equal("out of credits", reasons[0]);
+        Assert.Null(reasons[1]);
+        Assert.Equal("out of credits", reasons[2]);
+        Assert.Null(reasons[3]);
+    }
 }
