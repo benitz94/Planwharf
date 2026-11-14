@@ -5,6 +5,7 @@ namespace Planwharf.Native.Core;
 
 public sealed record ProjectItem(string Id, string Name, string Status);
 public sealed record ChatMessage(bool FromUser, string Who, string Text, DateTimeOffset At);
+public sealed record StepResult(string Role, string Model, string Summary);
 public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "");
 public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results)
 {
@@ -15,6 +16,7 @@ public sealed record WorkView(string Title, string Status, int Done, int Total, 
     public string StartedAt { get; init; } = "";
     public string CompletedAt { get; init; } = "";
     public string Waiting { get; init; } = "";
+    public IReadOnlyList<StepResult> StepResults { get; init; } = [];
     public string Id { get; init; } = "";
 }
 public enum CrewAction { None, LetTheCrewDoIt, StopTheCrew, Approve, Resume, StopWork }
@@ -97,7 +99,11 @@ public static class ProjectViews
                 Row = row, Id = S(mega["id"]), CanResume = B(row["canResume"]),
                 NextAction = new[] { S(mega["nextAction"]), S(row["next"]), S(row["label"]) }.FirstOrDefault(text => text.Length > 0) ?? "",
                 StartedAt = S(mega["approvedAt"]) is { Length: > 0 } approved ? approved : S(mega["createdAt"]), CompletedAt = S(mega["completedAt"]),
-                Waiting = subs.Select(sub => S(sub["status"]).ToUpperInvariant() == "PENDING" ? S(sub["waitingFor"]) : "").FirstOrDefault(text => text.Length > 0) ?? ""
+                Waiting = subs.Select(sub => S(sub["status"]).ToUpperInvariant() == "PENDING" ? S(sub["waitingFor"]) : "").FirstOrDefault(text => text.Length > 0) ?? "",
+                // What each step reported, in order, with its role and model: the commit message is made from it.
+                StepResults = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"]) && S(result["summary"]).Length > 0)
+                    .Select(result => steps.FirstOrDefault(step => step.Id == S(result["subTaskId"])) is { } step ? new StepResult(step.Role, step.Model, S(result["summary"])) : null)
+                    .OfType<StepResult>().ToList()
             };
         }
 
