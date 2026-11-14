@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { LIMITS, createSettings, pushGuardEnvironment, nextStep, parseDecision, nudgePrompt } = require('./autonomy.cjs');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 
 const on = (extra = {}) => ({ ...createSettings('s1', '2026-11-03T10:00:00Z'), started: true, ...extra });
 const step = (settings, row, extra = {}) => nextStep({ mode: 'auto', sessionId: 's1', settings, row, ...extra });

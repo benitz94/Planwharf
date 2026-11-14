@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createUpdateManager } = require('./app-updates.cjs');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 
 // The version shown next to the name is known at start, before any update check.
 test('the portable app knows its version from its install record', t => {

@@ -12,6 +12,7 @@ const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { createOrchestrator } = require('./orchestrator.js');
 const { createAttemptEngine } = require('./attempts.js');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-updates-'));
   const sources = { 'planwharf.cjs': 'old app', 'server.cjs': 'old server', 'chat.html': 'old page',
@@ -26,7 +27,20 @@ function fixture() {
     assets: [{ name: 'planwharf-update.json.gz', digest: 'sha256:' + digest(bytes), browser_download_url: 'https://github.com/benitz94/Planwharf/releases/download/' + bundle.version + '/planwharf-update.json.gz' }] };
   let downloads = 0;
   const fetchImpl = async url => { if (url.endsWith('/latest')) return new Response(JSON.stringify(release)); downloads++; return new Response(bytes); };
-  return { root, manifest, bundle, bytes, release, fetchImpl, get downloads() { return downloads; }, cleanup() { assert.ok(root.startsWith(os.tmpdir() + path.sep)); fs.rmSync(root, { recursive: true, force: true }); } };
+  return { root, manifest, bundle, bytes, release, fetchImpl, get downloads() { return downloads; }, cleanup() {
+    assert.ok(root.startsWith(os.tmpdir() + path.sep));
+    const pause = new Int32Array(new SharedArrayBuffer(4));
+    let last;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      try { fs.rmSync(root, { recursive: true, force: true }); return; }
+      catch (error) {
+        last = error;
+        if (!['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) throw error;
+        Atomics.wait(pause, 0, 0, 100);
+      }
+    }
+    throw last;
+  } };
 }
 test('stable version comparison and packages reject protected files, traversal and corrupt checksums', () => {
   assert.equal(newer('v1.2.0', 'v1.1.9'), true); assert.equal(newer('v1.2.0', 'v1.2.0'), false); assert.equal(newer('v1.2.0-beta', 'v1.1.0'), false);

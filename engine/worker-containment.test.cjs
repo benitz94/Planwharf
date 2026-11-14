@@ -104,7 +104,7 @@ test('canonical linked directory survives the runner job file and research keeps
       const input = JSON.parse(fs.readFileSync(receipt.inputPath, 'utf8'));
       assert.equal(input.folder, fs.realpathSync(alpha));
       assert.equal(input.linkedFolder, kind === 'research' ? '' : fs.realpathSync(alpha));
-      for (let i = 0; i < 100 && !fs.existsSync(resultPath); i++) await new Promise(resolve => setTimeout(resolve, 20));
+      for (let i = 0; i < 400 && !fs.existsSync(resultPath); i++) await new Promise(resolve => setTimeout(resolve, 25));
       assert.match(fs.readFileSync(resultPath, 'utf8'), /FAILED/);
       fs.unlinkSync(receipt.inputPath);
     }

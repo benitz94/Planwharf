@@ -3,6 +3,7 @@
 // reroutes the slice, Planwharf runs the tests before the lead judges, and a failed lead
 // decision is retried once with a lead from another provider.
 const test = require('node:test');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const { refusalReason, activeRefusal, recordRefusal } = require('./provider-refusal.cjs');
@@ -28,6 +29,39 @@ test('a locked rename is retried, other errors are not', () => {
   const busy = () => { calls += 1; if (calls < 3) throw Object.assign(Error('locked'), { code: 'EPERM' }); };
   assert.equal(renameWithRetry('a', 'b', { rename: busy }), 3);
   assert.throws(() => renameWithRetry('a', 'b', { rename: () => { throw Object.assign(Error('gone'), { code: 'ENOENT' }); } }), /gone/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-rename-keep-'));
+  const from = path.join(dir, 'from.txt'), to = path.join(dir, 'to.txt');
+  fs.writeFileSync(from, 'kept'); fs.writeFileSync(to, 'old');
+  const locked = () => { throw Object.assign(Error('locked'), { code: 'EPERM' }); };
+  assert.throws(() => renameWithRetry(from, to, { attempts: 1, keepOnFailure: true, rename: locked }), /locked/);
+  assert.equal(fs.readFileSync(from, 'utf8'), 'kept');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('a real rename replaces the target, and a final lock or other error removes the temporary file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-rename-real-'));
+  const from = path.join(dir, 'next.tmp');
+  const to = path.join(dir, 'plan.json');
+  try {
+    fs.writeFileSync(to, 'old');
+    fs.writeFileSync(from, 'new');
+    assert.equal(renameWithRetry(from, to), 1);
+    assert.equal(fs.readFileSync(to, 'utf8'), 'new');
+    assert.equal(fs.existsSync(from), false);
+
+    fs.writeFileSync(from, 'again');
+    assert.throws(() => renameWithRetry(from, to, { attempts: 2, rename: () => { throw Object.assign(Error('held'), { code: 'EBUSY' }); } }), /held/);
+    assert.equal(fs.existsSync(from), false, 'the temporary file is not left behind');
+    assert.equal(fs.readFileSync(to, 'utf8'), 'new');
+
+    fs.writeFileSync(from, 'access');
+    let calls = 0;
+    assert.equal(renameWithRetry(from, to, { rename: () => { calls += 1; if (calls < 2) throw Object.assign(Error('access'), { code: 'EACCES' }); } }), 2);
+
+    fs.writeFileSync(from, 'gone');
+    assert.throws(() => renameWithRetry(from, to, { rename: () => { throw Object.assign(Error('gone'), { code: 'ENOENT' }); } }), /gone/);
+    assert.equal(fs.existsSync(from), false);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
 test('a build job is split into implement and an independent verify, without an inspection slice', () => {

@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { createServer } = require('../server.cjs');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 
 const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
 
@@ -80,12 +81,15 @@ test('the app keeps answering while a slow push runs', async t => {
   const { folder, post, base } = await fixture(t);
   // A pre-push hook that takes 2 seconds stands for a push waiting on the network or a sign-in.
   const hook = path.join(folder, '.git', 'hooks', 'pre-push');
-  fs.writeFileSync(hook, '#!/bin/sh\nsleep 2\n'); fs.chmodSync(hook, 0o755);
+  // Git runs the hook with an empty PATH on Windows, so `sleep` is missing. Node is the test runtime.
+  const node = process.execPath.replace(/\\/g, '/');
+  fs.writeFileSync(hook, `#!/bin/sh\n"${node}" -e "setTimeout(() => {}, 2000)"\n`); fs.chmodSync(hook, 0o755);
   let pushDone = false;
   const pending = post({ projectId: 'p', message: 'In the background', push: true }).then(response => { pushDone = true; return response; });
   await new Promise(resolve => setTimeout(resolve, 300));
   const answered = await fetch(base + '/api/app');
   assert.equal(answered.status, 200);
   assert.equal(pushDone, false, 'the app answered while the push was still running');
-  assert.equal((await pending).status, 200);
+  const finished = await pending;
+  assert.equal(finished.status, 200, JSON.stringify(await finished.json()));
 });

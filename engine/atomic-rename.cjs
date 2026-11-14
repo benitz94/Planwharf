@@ -13,7 +13,7 @@ function renameWithRetry(from, to, options = {}) {
     try { rename(from, to); return attempt; }
     catch (error) {
       if (!RETRY_CODES.has(error.code) || attempt >= attempts) {
-        try { fs.unlinkSync(from); } catch {}
+        if (!options.keepOnFailure) { try { fs.unlinkSync(from); } catch { /* The caller replaces or removes it. */ } }
         throw error;
       }
       Atomics.wait(pause, 0, 0, Math.min(200, 10 * 2 ** (attempt - 1)));

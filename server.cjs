@@ -36,16 +36,36 @@ async function readPlan(file) {
 async function writePlan(file, plan) {
   const temporary = `${file}.${crypto.randomUUID()}.tmp`;
   let handle;
+  let published = false;
   try {
     handle = await fs.open(temporary, 'wx');
     await handle.writeFile(JSON.stringify(plan, null, 2) + '\n', 'utf8');
     await handle.sync();
     await handle.close();
     handle = null;
-    await fs.rename(temporary, file);
+    // A reader that still has the notebook open makes Windows refuse the rename.
+    // Yield so that read can finish; copying is only the last resort, because a
+    // copy can be observed mid-write.
+    const { RETRY_CODES } = require('./engine/atomic-rename.cjs');
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        await fs.rename(temporary, file);
+        published = true;
+        break;
+      } catch (error) {
+        if (!RETRY_CODES.has(error.code) || attempt >= 40) {
+          if (!RETRY_CODES.has(error.code)) throw error;
+          await fs.copyFile(temporary, file);
+          published = true;
+          await fs.rm(temporary, { force: true }).catch(() => {});
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+    }
   } finally {
     if (handle) await handle.close();
-    await fs.rm(temporary, { force: true });
+    if (!published) await fs.rm(temporary, { force: true });
   }
 }
 async function body(request, maxBytes = 65536, tooLarge = 'Revision too large.') {
@@ -1159,7 +1179,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         await orchestra.refreshRepositories();
         const state = await orchestra.snapshot();
         if (state.projects.some(row => row.status === 'watching') || (state.researches || []).some(row => row.status === 'watching')) await enqueue(() => updates.busy ? orchestra.snapshot() : orchestra.tick());
-      } catch (error) { console.error('Execution monitoring failed:', error.message); }
+      } catch (error) { if (!closing) console.error('Execution monitoring failed:', error.message); }
       finally { monitoring = false; }
       if (!closing && !updates.busy) void orchestra.autonomyTick().catch(error => console.error('Project autonomy failed:', error.message));
       if (!closing && !updates.busy && typeof orchestra.quotaWatchTick === 'function') void orchestra.quotaWatchTick().catch(error => console.error('Automatic model switch failed:', error.message));

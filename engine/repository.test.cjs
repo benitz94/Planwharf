@@ -9,6 +9,7 @@ const { createOrchestrator, packState, defaultInspect } = require('./orchestrato
 const { createAttemptEngine } = require('./attempts.js');
 const { askPrompt } = require('./runner.cjs');
 const { createServer } = require('../server.cjs');
+require('./test-isolation.cjs').stripWorkerLaunchEnv();
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-repository-'));
 const remote = path.join(dir, 'remote.git'), local = path.join(dir, 'local'), writer = path.join(dir, 'writer');
 function command(args) {
