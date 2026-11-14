@@ -94,6 +94,33 @@ public class ParityTests
         ["provider-accounts/accountType"] = a => ProviderAccounts.AccountType(Text(a, 0)),
         ["provider-accounts/accountLabel"] = a => ProviderAccounts.AccountLabel(Text(a, 0)!,
             Obj(a, 1) is { } account ? new ProviderAccounts.AccountMetadata(null, account["type"]?.GetValue<string>() ?? "unread", "", null) : null),
+        ["provider-refusal/refusalReason"] = a => ProviderRefusal.RefusalReason(Text(a, 0)),
+        ["provider-refusal/activeRefusal"] = a => ProviderRefusal.ActiveRefusal(Obj(a, 0), Text(a, 1)!, a[2]!.GetValue<double>()),
+        ["provider-refusal/recordRefusal"] = a => a.Count > 4
+            ? ProviderRefusal.RecordRefusal(Obj(a, 0)!, Text(a, 1)!, Text(a, 2)!, Text(a, 3)!, a[4]!.GetValue<double>())
+            : ProviderRefusal.RecordRefusal(Obj(a, 0)!, Text(a, 1)!, Text(a, 2)!, Text(a, 3)!),
+        ["provider-diagnostics/diagnoseProvider"] = a => ProviderDiagnostics.DiagnoseProvider(Obj(a, 0)!, Text(a, 1), Node(a, 2)),
+        ["briefing/compactState"] = a => Briefing.CompactState(Obj(a, 0)!, Node(a, 1)),
+        ["briefing/recentContext"] = a => Briefing.RecentContext(Arr(a, 0)!),
+        ["project-history/summarizeTimeline"] = a => ProjectHistory.SummarizeTimeline(Arr(a, 0)!, Obj(a, 1)!),
+        ["project-history/checkpointDiff"] = a => a.Count > 3
+            ? ProjectHistory.CheckpointDiff(Obj(a, 0)!, Obj(a, 1)!, a[2]!.GetValue<int>(), Arr(a, 3))
+            : ProjectHistory.CheckpointDiff(Obj(a, 0)!, Obj(a, 1)!, a[2]!.GetValue<int>()),
+        ["activity-evidence/redact"] = a => ActivityEvidence.Redact(Text(a, 0)),
+        ["activity-evidence/technicalEvidence"] = a => ActivityEvidence.TechnicalEvidence(Text(a, 0), Obj(a, 1)),
+        ["autonomy/createSettings"] = a => Autonomy.CreateSettings(Text(a, 0)!, Text(a, 1)!),
+        ["autonomy/pushGuardEnvironment"] = a => Autonomy.PushGuardEnvironment(Obj(a, 0)),
+        ["autonomy/nextStep"] = a => Autonomy.NextStep(Obj(a, 0)!),
+        ["autonomy/strictDecisionPrompt"] = a => Autonomy.StrictDecisionPrompt(Text(a, 0)!),
+        ["autonomy/cleanFinish"] = a => Autonomy.CleanFinish(Arr(a, 0), Obj(a, 1)),
+        ["autonomy/evaluationPrompt"] = a => Autonomy.EvaluationPrompt(Obj(a, 0)!),
+        ["autonomy/nudgePrompt"] = a => Autonomy.NudgePrompt(Obj(a, 0)!),
+        ["autonomy/assignmentPrompt"] = a => Autonomy.AssignmentPrompt(Obj(a, 0)!),
+        ["autonomy/parseDecision"] = a => Autonomy.ParseDecision(Text(a, 0)),
+        ["autonomy/parseAssignment"] = a => Autonomy.ParseAssignment(Text(a, 0), a[1]!.GetValue<int>(), Node(a, 2)),
+        ["autonomy/splitPrompt"] = a => Autonomy.SplitPrompt(Obj(a, 0)!),
+        ["autonomy/fitWeights"] = a => Autonomy.FitWeights(Arr(a, 0), Arr(a, 1)),
+        ["autonomy/parseSplit"] = a => Autonomy.ParseSplit(Text(a, 0), Obj(a, 1)!),
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

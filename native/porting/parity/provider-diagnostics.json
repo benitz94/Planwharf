@@ -1,0 +1,814 @@
+[
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "lead",
+        "provider": "antigravity",
+        "cli": "gemini-3.1-pro-high",
+        "enabled": true,
+        "available": true,
+        "kind": "default"
+      },
+      "invalid model selection (--model \"gemini-3.1-pro-high\" --effort \"\"): model gemini-3.1-pro-high is not recognized as a known model or custom model in settings"
+    ],
+    "result": {
+      "code": "PROVIDER_MODEL_UNAVAILABLE",
+      "provider": "antigravity",
+      "adapter": "antigravity",
+      "model": "gemini-3.1-pro-high",
+      "exitCode": null,
+      "message": "PROVIDER_MODEL_UNAVAILABLE: antigravity / gemini-3.1-pro-high. Refresh models and verify access to this exact provider/model ID.",
+      "suggestion": "Refresh models and verify access to this exact provider/model ID.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_MODEL_UNAVAILABLE\nProvider: antigravity\nAdapter: antigravity\nExact model: gemini-3.1-pro-high\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_MODEL_UNAVAILABLE%3A%20antigravity&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_MODEL_UNAVAILABLE%0AProvider%3A%20antigravity%0AAdapter%3A%20antigravity%0AExact%20model%3A%20gemini-3.1-pro-high%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "lead",
+        "provider": "codex",
+        "cli": "gpt-6-astra",
+        "plan": "ChatGPT",
+        "enabled": true,
+        "kind": "premium"
+      },
+      "unknown flag --old token secret personal prompt",
+      2
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_INCOMPATIBLE",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-6-astra",
+      "exitCode": 2,
+      "message": "PROVIDER_CLI_INCOMPATIBLE: codex / gpt-6-astra. The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "suggestion": "The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_INCOMPATIBLE\nProvider: codex\nAdapter: codex\nExact model: gpt-6-astra\nExit code: 2\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_INCOMPATIBLE%3A%20codex&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_INCOMPATIBLE%0AProvider%3A%20codex%0AAdapter%3A%20codex%0AExact%20model%3A%20gpt-6-astra%0AExit%20code%3A%202%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "lead",
+        "provider": "codex",
+        "cli": "gpt-6-astra"
+      },
+      "Missing or invalid structured worker result."
+    ],
+    "result": {
+      "code": "PROVIDER_PROTOCOL_CHANGED",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-6-astra",
+      "exitCode": null,
+      "message": "PROVIDER_PROTOCOL_CHANGED: codex / gpt-6-astra. The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "suggestion": "The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_PROTOCOL_CHANGED\nProvider: codex\nAdapter: codex\nExact model: gpt-6-astra\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_PROTOCOL_CHANGED%3A%20codex&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_PROTOCOL_CHANGED%0AProvider%3A%20codex%0AAdapter%3A%20codex%0AExact%20model%3A%20gpt-6-astra%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "lead",
+        "provider": "codex",
+        "cli": "gpt-6-astra"
+      },
+      "PROVIDER_PROTOCOL_CHANGED"
+    ],
+    "result": {
+      "code": "PROVIDER_PROTOCOL_CHANGED",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-6-astra",
+      "exitCode": null,
+      "message": "PROVIDER_PROTOCOL_CHANGED: codex / gpt-6-astra. The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "suggestion": "The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_PROTOCOL_CHANGED\nProvider: codex\nAdapter: codex\nExact model: gpt-6-astra\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_PROTOCOL_CHANGED%3A%20codex&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_PROTOCOL_CHANGED%0AProvider%3A%20codex%0AAdapter%3A%20codex%0AExact%20model%3A%20gpt-6-astra%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "claude"
+      },
+      "PERMISSION_MODE_UNSUPPORTED: bypass",
+      1
+    ],
+    "result": {
+      "code": "PERMISSION_MODE_UNSUPPORTED",
+      "provider": "claude",
+      "adapter": "claude",
+      "model": "m",
+      "exitCode": 1,
+      "message": "PERMISSION_MODE_UNSUPPORTED: claude / m. Choose a supported permission mode or another adapter.",
+      "suggestion": "Choose a supported permission mode or another adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PERMISSION_MODE_UNSUPPORTED\nProvider: claude\nAdapter: claude\nExact model: m\nExit code: 1\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PERMISSION_MODE_UNSUPPORTED%3A%20claude&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PERMISSION_MODE_UNSUPPORTED%0AProvider%3A%20claude%0AAdapter%3A%20claude%0AExact%20model%3A%20m%0AExit%20code%3A%201%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "claude"
+      },
+      "permission_mode_unsupported"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "claude",
+      "adapter": "claude",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: claude / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: claude\nAdapter: claude\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20claude&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20claude%0AAdapter%3A%20claude%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "claude"
+      },
+      "PROVIDER_MODEL_IDENTITY_CHANGED: answered as sonnet"
+    ],
+    "result": {
+      "code": "PROVIDER_MODEL_IDENTITY_CHANGED",
+      "provider": "claude",
+      "adapter": "claude",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_MODEL_IDENTITY_CHANGED: claude / m. The response identified a different model. Verify the exact model ID and provider aliases before retrying.",
+      "suggestion": "The response identified a different model. Verify the exact model ID and provider aliases before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_MODEL_IDENTITY_CHANGED\nProvider: claude\nAdapter: claude\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_MODEL_IDENTITY_CHANGED%3A%20claude&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_MODEL_IDENTITY_CHANGED%0AProvider%3A%20claude%0AAdapter%3A%20claude%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "api"
+      },
+      "API_CONFIGURATION_INVALID"
+    ],
+    "result": {
+      "code": "PROVIDER_CONFIGURATION_INVALID",
+      "provider": "api",
+      "adapter": "api",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONFIGURATION_INVALID: api / m. Review the endpoint, protocol and declared CLI arguments for this connection.",
+      "suggestion": "Review the endpoint, protocol and declared CLI arguments for this connection.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONFIGURATION_INVALID\nProvider: api\nAdapter: api\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONFIGURATION_INVALID%3A%20api&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONFIGURATION_INVALID%0AProvider%3A%20api%0AAdapter%3A%20api%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "api"
+      },
+      "CLI_CONFIGURATION_INVALID"
+    ],
+    "result": {
+      "code": "PROVIDER_CONFIGURATION_INVALID",
+      "provider": "api",
+      "adapter": "api",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONFIGURATION_INVALID: api / m. Review the endpoint, protocol and declared CLI arguments for this connection.",
+      "suggestion": "Review the endpoint, protocol and declared CLI arguments for this connection.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONFIGURATION_INVALID\nProvider: api\nAdapter: api\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONFIGURATION_INVALID%3A%20api&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONFIGURATION_INVALID%0AProvider%3A%20api%0AAdapter%3A%20api%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "error: unexpected argument '--x' found"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_INCOMPATIBLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_INCOMPATIBLE: grok / m. The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "suggestion": "The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_INCOMPATIBLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_INCOMPATIBLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_INCOMPATIBLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "flag provided but not defined: -y"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_INCOMPATIBLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_INCOMPATIBLE: grok / m. The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "suggestion": "The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_INCOMPATIBLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_INCOMPATIBLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_INCOMPATIBLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Unsupported output format"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_INCOMPATIBLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_INCOMPATIBLE: grok / m. The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "suggestion": "The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_INCOMPATIBLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_INCOMPATIBLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_INCOMPATIBLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "unsupported\noutput format"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "unsupported format"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Incompatible wire protocol"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_INCOMPATIBLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_INCOMPATIBLE: grok / m. The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "suggestion": "The CLI interface may have changed. Check its version and update the Planwharf adapter.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_INCOMPATIBLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_INCOMPATIBLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_INCOMPATIBLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "unreadable session metadata"
+    ],
+    "result": {
+      "code": "PROVIDER_PROTOCOL_CHANGED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_PROTOCOL_CHANGED: grok / m. The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "suggestion": "The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_PROTOCOL_CHANGED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_PROTOCOL_CHANGED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_PROTOCOL_CHANGED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "No recognized response"
+    ],
+    "result": {
+      "code": "PROVIDER_PROTOCOL_CHANGED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_PROTOCOL_CHANGED: grok / m. The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "suggestion": "The response contract could not be verified. Review CLI versions and the adapter parser.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_PROTOCOL_CHANGED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_PROTOCOL_CHANGED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_PROTOCOL_CHANGED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "HTTP 401"
+    ],
+    "result": {
+      "code": "PROVIDER_AUTHENTICATION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_AUTHENTICATION_FAILED: grok / m. Sign in to this provider again, then refresh models.",
+      "suggestion": "Sign in to this provider again, then refresh models.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_AUTHENTICATION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_AUTHENTICATION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_AUTHENTICATION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Not logged in. Run login."
+    ],
+    "result": {
+      "code": "PROVIDER_AUTHENTICATION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_AUTHENTICATION_FAILED: grok / m. Sign in to this provider again, then refresh models.",
+      "suggestion": "Sign in to this provider again, then refresh models.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_AUTHENTICATION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_AUTHENTICATION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_AUTHENTICATION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Invalid API key"
+    ],
+    "result": {
+      "code": "PROVIDER_AUTHENTICATION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_AUTHENTICATION_FAILED: grok / m. Sign in to this provider again, then refresh models.",
+      "suggestion": "Sign in to this provider again, then refresh models.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_AUTHENTICATION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_AUTHENTICATION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_AUTHENTICATION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "429 Too Many Requests"
+    ],
+    "result": {
+      "code": "PROVIDER_USAGE_LIMIT",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_USAGE_LIMIT: grok / m. Check provider quota and your configured usage policy.",
+      "suggestion": "Check provider quota and your configured usage policy.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_USAGE_LIMIT\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_USAGE_LIMIT%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_USAGE_LIMIT%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Spending limit reached"
+    ],
+    "result": {
+      "code": "PROVIDER_USAGE_LIMIT",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_USAGE_LIMIT: grok / m. Check provider quota and your configured usage policy.",
+      "suggestion": "Check provider quota and your configured usage policy.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_USAGE_LIMIT\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_USAGE_LIMIT%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_USAGE_LIMIT%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "You are out of CREDITS"
+    ],
+    "result": {
+      "code": "PROVIDER_USAGE_LIMIT",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_USAGE_LIMIT: grok / m. Check provider quota and your configured usage policy.",
+      "suggestion": "Check provider quota and your configured usage policy.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_USAGE_LIMIT\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_USAGE_LIMIT%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_USAGE_LIMIT%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Model gpt-x not found"
+    ],
+    "result": {
+      "code": "PROVIDER_MODEL_UNAVAILABLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_MODEL_UNAVAILABLE: grok / m. Refresh models and verify access to this exact provider/model ID.",
+      "suggestion": "Refresh models and verify access to this exact provider/model ID.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_MODEL_UNAVAILABLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_MODEL_UNAVAILABLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_MODEL_UNAVAILABLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "You do not have access to this model"
+    ],
+    "result": {
+      "code": "PROVIDER_MODEL_UNAVAILABLE",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_MODEL_UNAVAILABLE: grok / m. Refresh models and verify access to this exact provider/model ID.",
+      "suggestion": "Refresh models and verify access to this exact provider/model ID.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_MODEL_UNAVAILABLE\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_MODEL_UNAVAILABLE%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_MODEL_UNAVAILABLE%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "spawn grok ENOENT"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_MISSING",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_MISSING: grok / m. Install or configure this adapter executable.",
+      "suggestion": "Install or configure this adapter executable.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_MISSING\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_MISSING%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_MISSING%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "executable not found in PATH"
+    ],
+    "result": {
+      "code": "PROVIDER_CLI_MISSING",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CLI_MISSING: grok / m. Install or configure this adapter executable.",
+      "suggestion": "Install or configure this adapter executable.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CLI_MISSING\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CLI_MISSING%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CLI_MISSING%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "connect ETIMEDOUT 1.2.3.4:443"
+    ],
+    "result": {
+      "code": "PROVIDER_CONNECTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONNECTION_FAILED: grok / m. Check connectivity and certificates before retrying.",
+      "suggestion": "Check connectivity and certificates before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONNECTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONNECTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONNECTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "getaddrinfo ENOTFOUND api.example"
+    ],
+    "result": {
+      "code": "PROVIDER_CONNECTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONNECTION_FAILED: grok / m. Check connectivity and certificates before retrying.",
+      "suggestion": "Check connectivity and certificates before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONNECTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONNECTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONNECTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "self signed certificate in chain"
+    ],
+    "result": {
+      "code": "PROVIDER_CONNECTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONNECTION_FAILED: grok / m. Check connectivity and certificates before retrying.",
+      "suggestion": "Check connectivity and certificates before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONNECTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONNECTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONNECTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Network error"
+    ],
+    "result": {
+      "code": "PROVIDER_CONNECTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_CONNECTION_FAILED: grok / m. Check connectivity and certificates before retrying.",
+      "suggestion": "Check connectivity and certificates before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONNECTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONNECTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONNECTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Segmentation fault",
+      139
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": 139,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: 139\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20139%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      "Key invalid"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      ""
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "id": "m",
+        "provider": "grok"
+      },
+      null
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "grok",
+      "adapter": "grok",
+      "model": "m",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: grok / m. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: grok\nAdapter: grok\nExact model: m\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20grok&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20grok%0AAdapter%3A%20grok%0AExact%20model%3A%20m%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {},
+      "boom"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "unknown",
+      "adapter": "unknown",
+      "model": "unknown",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: unknown / unknown. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: unknown\nAdapter: unknown\nExact model: unknown\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20unknown&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20unknown%0AAdapter%3A%20unknown%0AExact%20model%3A%20unknown%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "providerId": "custom",
+        "adapter": "api",
+        "provider": "p",
+        "cli": "model (beta)!*'~",
+        "id": "m"
+      },
+      "timeout",
+      0
+    ],
+    "result": {
+      "code": "PROVIDER_CONNECTION_FAILED",
+      "provider": "custom",
+      "adapter": "api",
+      "model": "model (beta)!*'~",
+      "exitCode": 0,
+      "message": "PROVIDER_CONNECTION_FAILED: custom / model (beta)!*'~. Check connectivity and certificates before retrying.",
+      "suggestion": "Check connectivity and certificates before retrying.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_CONNECTION_FAILED\nProvider: custom\nAdapter: api\nExact model: model (beta)!*'~\nExit code: 0\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_CONNECTION_FAILED%3A%20api&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_CONNECTION_FAILED%0AProvider%3A%20custom%0AAdapter%3A%20api%0AExact%20model%3A%20model%20(beta)!*'~%0AExit%20code%3A%200%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  },
+  {
+    "fn": "diagnoseProvider",
+    "args": [
+      {
+        "provider": "café & co",
+        "id": "müde/😀?#"
+      },
+      "boom"
+    ],
+    "result": {
+      "code": "PROVIDER_EXECUTION_FAILED",
+      "provider": "café & co",
+      "adapter": "café & co",
+      "model": "müde/😀?#",
+      "exitCode": null,
+      "message": "PROVIDER_EXECUTION_FAILED: café & co / müde/😀?#. Review the retained local output and retry after checking the provider CLI.",
+      "suggestion": "Review the retained local output and retry after checking the provider CLI.",
+      "report": "Planwharf provider integration report\n\nCategory: PROVIDER_EXECUTION_FAILED\nProvider: café & co\nAdapter: café & co\nExact model: müde/😀?#\nExit code: unavailable\n\nCLI version: [fill in locally]\nExpected behavior: [describe]\nObserved behavior: [describe without credentials or personal project data]\n\nRaw logs and prompts are intentionally excluded.",
+      "reportUrl": "https://github.com/benitz94/Planwharf/issues/new?title=PROVIDER_EXECUTION_FAILED%3A%20caf%C3%A9%20%26%20co&body=Planwharf%20provider%20integration%20report%0A%0ACategory%3A%20PROVIDER_EXECUTION_FAILED%0AProvider%3A%20caf%C3%A9%20%26%20co%0AAdapter%3A%20caf%C3%A9%20%26%20co%0AExact%20model%3A%20m%C3%BCde%2F%F0%9F%98%80%3F%23%0AExit%20code%3A%20unavailable%0A%0ACLI%20version%3A%20%5Bfill%20in%20locally%5D%0AExpected%20behavior%3A%20%5Bdescribe%5D%0AObserved%20behavior%3A%20%5Bdescribe%20without%20credentials%20or%20personal%20project%20data%5D%0A%0ARaw%20logs%20and%20prompts%20are%20intentionally%20excluded."
+    }
+  }
+]
