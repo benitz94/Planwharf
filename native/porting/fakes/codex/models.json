@@ -1,0 +1,14 @@
+{
+  "models": [
+    {
+      "slug": "gpt-5-codex",
+      "display_name": "GPT-5 Codex",
+      "description": "High-capability coding and agentic execution model."
+    },
+    {
+      "slug": "gpt-5.1-codex",
+      "display_name": "GPT-5.1 Codex",
+      "description": "Fast reasoning and code generation model."
+    }
+  ]
+}

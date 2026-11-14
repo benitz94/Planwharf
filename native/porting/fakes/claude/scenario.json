@@ -1,0 +1,43 @@
+[
+  {
+    "fakeAs": "claude",
+    "argsContain": ["auth", "status"],
+    "stdout": "{\"loggedIn\":true,\"authMethod\":\"claude.ai\"}"
+  },
+  {
+    "fakeAs": "claude",
+    "promptContains": "control_request",
+    "stdout": "{\"type\":\"control_response\",\"response\":{\"request_id\":\"planwharf-models\",\"subtype\":\"success\",\"response\":{\"models\":[{\"value\":\"default\",\"resolvedModel\":\"claude-3-7-sonnet-20250219\",\"displayName\":\"Claude 3.7 Sonnet\"},{\"value\":\"claude-3-5-haiku-20241022\",\"resolvedModel\":\"claude-3-5-haiku-20241022\",\"displayName\":\"Claude 3.5 Haiku\"}]}}}"
+  },
+  {
+    "fakeAs": "claude",
+    "argContains": "fail",
+    "stdout": [
+      "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-3-7-sonnet-20250219\"}",
+      "{\"type\":\"result\",\"subtype\":\"error_max_turns\",\"is_error\":true,\"result\":\"Command execution failed with exit code 1: build errors in project file.\",\"duration_ms\":950}"
+    ],
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "claude",
+    "argContains": "quota",
+    "stdout": "{\"type\":\"result\",\"subtype\":\"error\",\"is_error\":true,\"result\":\"Rate limit reached (HTTP 429): You have exceeded your current quota or spending limit.\"}",
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "claude",
+    "argContains": "--json-schema",
+    "stdout": [
+      "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-3-7-sonnet-20250219\"}",
+      "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"Work completed successfully.\",\"duration_ms\":3100,\"usage\":{\"input_tokens\":2150,\"output_tokens\":320},\"structured_output\":{\"resultId\":\"R-attempt-1\",\"attemptId\":\"attempt-1\",\"subTaskId\":\"MT-01-ST-01\",\"megaTaskId\":\"MT-01\",\"status\":\"COMPLETE\",\"summary\":\"Implemented unit tests and validated behavior.\",\"filesChanged\":[\"src/Worker.cs\",\"tests/WorkerTests.cs\"],\"tests\":[{\"command\":\"dotnet test\",\"status\":\"PASSED\",\"evidence\":\"Total tests: 5. Passed: 5. Failed: 0.\"}],\"blockers\":[],\"nextAction\":\"Ready for merge review.\"}}"
+    ]
+  },
+  {
+    "fakeAs": "claude",
+    "stdout": [
+      "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-3-7-sonnet-20250219\"}",
+      "{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"The project workspace is verified and ready for task dispatch.\\n\"}}}",
+      "{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"The project workspace is verified and ready for task dispatch.\\n\",\"duration_ms\":1250,\"usage\":{\"input_tokens\":1420,\"output_tokens\":85}}"
+    ]
+  }
+]

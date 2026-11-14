@@ -47,6 +47,8 @@ jobs:
         run: dotnet test native/Planwharf.Native.Tests --nologo --logger GitHubActions --logger "console;verbosity=normal"
       - name: Test the C# engine
         run: dotnet test native/Planwharf.Engine.Tests --nologo --logger GitHubActions --logger "console;verbosity=normal"
+      - name: Test the fake AI programs
+        run: dotnet test native/Planwharf.FakeCli.Tests --nologo --logger GitHubActions --logger "console;verbosity=normal"
       - name: Publish
         shell: bash
         run: |

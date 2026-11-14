@@ -1,0 +1,1 @@
+{"event":"result","result":{"conversation_id":"fixture-conversation","status":"ERROR","response":"","error":"Resource has been exhausted: quota limit reached for Gemini Models (HTTP 429)."}}

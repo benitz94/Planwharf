@@ -1,0 +1,15 @@
+{
+  "config": {
+    "creditUsagePercent": 35.0,
+    "currentPeriod": {
+      "start": "2026-11-01T00:00:00Z",
+      "end": "2026-12-01T00:00:00Z"
+    },
+    "productUsage": [
+      {
+        "product": "grok-4.7",
+        "usagePercent": 28.0
+      }
+    ]
+  }
+}
