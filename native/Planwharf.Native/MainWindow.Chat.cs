@@ -275,7 +275,9 @@ public sealed partial class MainWindow
         // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
         if (Pending == null && view.NextGoal == null && view.Action == CrewAction.LetTheCrewDoIt
             && !TeamViews.GoalReady(row, null)
-            && items.OfType<AskItem>().OrderBy(ask => ask.At).LastOrDefault() is { Question.Length: > 0 } mine && mine.Question.Trim() != Str(row?["goal"]).Trim())
+            && items.OfType<AskItem>().OrderBy(ask => ask.At).LastOrDefault() is { Question.Length: > 0 } mine && mine.Question.Trim() != Str(row?["goal"]).Trim()
+            // A message written before the last work started was already acted on: it is not offered again.
+            && !(view.Work is { } last && DateTimeOffset.TryParse(last.StartedAt, out var started) && mine.At <= started))
         {
             var use = Look.Button("Use my message as the goal", "check", Look.Kind.Small);
             use.HorizontalAlignment = HorizontalAlignment.Left;

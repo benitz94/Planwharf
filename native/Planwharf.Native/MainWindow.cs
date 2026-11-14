@@ -466,7 +466,9 @@ public sealed partial class MainWindow : Window
         var ahead = repo?.Ahead ?? 0;
         if (repo is not { Git: true } || (changed == 0 && ahead == 0 && busy == null && said == default)) return null;
         var panel = new StackPanel { Spacing = 8, Margin = new Thickness(0, 6, 0, 0) };
-        var message = Look.Field(new TextBox { MaxLength = 500, Text = commitMessages.TryGetValue(projectId, out var kept) ? kept : DefaultMessage(work.Title) });
+        // A short first line, then the goal and who did what: the user can change all of it.
+        var message = Look.Field(new TextBox { MaxLength = 2000, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 64,
+            Text = commitMessages.TryGetValue(projectId, out var kept) ? kept : CommitMessages.Default(work) });
         message.TextChanged += (_, _) => commitMessages[projectId] = message.Text ?? "";
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         Button Git(string label, bool push, bool primary)
@@ -493,8 +495,6 @@ public sealed partial class MainWindow : Window
         else if (said != default) panel.Children.Add(Line(said.Text, said.Ok ? Palette.Accent : Palette.Danger, 13));
         return panel;
     }
-
-    static string DefaultMessage(string title) => title.Length == 0 ? "Work by the crew" : title[..Math.Min(200, title.Length)];
 
     async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)
     {
