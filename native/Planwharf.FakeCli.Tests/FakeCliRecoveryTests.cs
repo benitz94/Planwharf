@@ -419,8 +419,11 @@ public class FakeCliRecoveryTests : IDisposable
         Assert.Equal("claude", entry["fakeAs"]?.GetValue<string>());
 
         File.SetAttributes(log, FileAttributes.ReadOnly);
+        // An administrator (root) can still write a read-only file: that part checks nothing there.
+        var readOnlyHolds = !CanWrite(log);
         try
         {
+            if (readOnlyHolds) {
             var scenario = CreateScenario("""
             [
               { "callNumber": 1, "stdout": "stale" },
@@ -434,6 +437,7 @@ public class FakeCliRecoveryTests : IDisposable
             Assert.Equal(0, code);
             Assert.Equal("next\n", Norm(stdout));
             Assert.Single(File.ReadAllLines(log));
+            }
         }
         finally
         {
@@ -478,5 +482,12 @@ public class FakeCliRecoveryTests : IDisposable
         }
 
         Assert.Equal(Enumerable.Range(1, count).ToHashSet(), seen);
+    }
+
+    static bool CanWrite(string file)
+    {
+        try { using var stream = new FileStream(file, FileMode.Append, FileAccess.Write); return true; }
+        catch (UnauthorizedAccessException) { return false; }
+        catch (IOException) { return false; }
     }
 }

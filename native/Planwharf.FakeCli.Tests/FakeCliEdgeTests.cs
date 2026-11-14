@@ -318,9 +318,10 @@ public class FakeCliEdgeTests : IDisposable
             Assert.NotNull(entry);
             Assert.True(seen.Add(entry["callNumber"]!.GetValue<int>()));
             Assert.Equal("from-parent", entry["env"]?["PLANWHARF_SAMPLE"]?.GetValue<string>());
+            // On macOS the temp folder /var/... is a link to /private/var/...: the program reports the real path.
             Assert.Equal(
-                Path.GetFullPath(home),
-                Path.GetFullPath(entry["cwd"]!.GetValue<string>()),
+                RealPath(home),
+                RealPath(entry["cwd"]!.GetValue<string>()),
                 ignoreCase: OperatingSystem.IsWindows());
         }
 
@@ -367,5 +368,13 @@ public class FakeCliEdgeTests : IDisposable
         process.StandardInput.Close();
         Assert.True(process.WaitForExit(20000), "fake CLI did not exit");
         return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
+    }
+
+    // The same folder reached through a link has one real path (macOS: /var -> /private/var).
+    static string RealPath(string path)
+    {
+        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
+        if (OperatingSystem.IsMacOS() && full.StartsWith("/var/", StringComparison.Ordinal)) full = "/private" + full;
+        return full;
     }
 }
