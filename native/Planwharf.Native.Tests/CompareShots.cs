@@ -23,7 +23,7 @@ public class CompareShots
         var height = int.TryParse(Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_HEIGHT"), out var h) ? h : 900;
         // PLANWHARF_COMPARE_THEME=light draws the light theme (and the dark one again afterwards for the other tests).
         var light = Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_THEME") == "light";
-        Palette.Apply(!light, null);
+        Palette.Apply(!light, null, Environment.GetEnvironmentVariable("PLANWHARF_COMPARE_ACCENT"));
         Avalonia.Application.Current!.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
         try { await Draw(url, output, width, height); }
         finally { Palette.Apply(true, null); Avalonia.Application.Current!.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark; }

@@ -43,10 +43,19 @@ public static class Palette
         ("lavender", "Lavender", "#dccfff"), ("sky", "Sky", "#bcdcff"), ("turquoise", "Turquoise", "#99f6e4"), ("mint", "Mint", "#b4f0d2"), ("lime", "Lime", "#d9f99d"),
     ];
 
+    // The main colour of Planwharf (buttons, the open project, chips, links): green unless the user picks
+    // another. Each has a bright shade for the dark theme and a deep one for the light theme.
+    public static readonly (string Key, string Label, string Dark, string Light)[] Accents =
+    [
+        ("green", "Green", "#5fcf98", "#1f7a52"), ("blue", "Blue", "#7fa9f5", "#2563c9"), ("purple", "Purple", "#a993ff", "#6d4fd8"),
+        ("teal", "Teal", "#5fcbd6", "#0b8794"), ("orange", "Orange", "#f2a560", "#c2600f"), ("pink", "Pink", "#f08bbd", "#c0367a"),
+        ("red", "Red", "#f08a8a", "#b42525"), ("gold", "Gold", "#e8c55a", "#946c00"),
+    ];
+
     static Palette() => Apply(true, null);
 
-    // ink: a key of Inks or a #rrggbb colour; only the dark theme uses it.
-    public static void Apply(bool dark, string? ink)
+    // ink: a key of Inks or a #rrggbb colour; only the dark theme uses it. accent: a key of Accents.
+    public static void Apply(bool dark, string? ink, string? accent = null)
     {
         Dark = dark;
         IBrush B(string hex) => Brush.Parse(hex);
@@ -68,6 +77,22 @@ public static class Palette
             Lead = B("#6d4fd8"); LeadSoft = B("#eee9fd"); Build = B("#2563c9"); BuildSoft = B("#e4edfc");
             Verify = B("#c2600f"); VerifySoft = B("#fdeedd"); Review = B("#0b8794"); ReviewSoft = B("#dff3f5"); Watch = B("#c0367a"); WatchSoft = B("#fbe6f0");
         }
+        // Another main colour: its shade for this theme, a soft tint of it on the background, and readable text on it.
+        if (Accents.FirstOrDefault(item => item.Key == accent) is { Key: not null and not "green" } chosen)
+        {
+            var main = Color.Parse(dark ? chosen.Dark : chosen.Light);
+            Accent = new SolidColorBrush(main);
+            AccentHover = new SolidColorBrush(Mix(main, Colors.White, dark ? 0.15 : 0.12));
+            AccentSoft = new SolidColorBrush(Mix(main, ColorOf(Background), dark ? 0.78 : 0.88));
+            AccentText = new SolidColorBrush(dark ? Mix(main, Colors.Black, 0.85) : Colors.White);
+        }
+    }
+
+    // A colour moved part of the way towards another (0: unchanged, 1: the other).
+    public static Color Mix(Color from, Color to, double amount)
+    {
+        byte Step(byte a, byte b) => (byte)Math.Round(a + (b - a) * amount);
+        return Color.FromRgb(Step(from.R, to.R), Step(from.G, to.G), Step(from.B, to.B));
     }
 
     public static string InkColour(string? ink) =>
