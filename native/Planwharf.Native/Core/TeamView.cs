@@ -86,7 +86,7 @@ public static class TeamViews
                 LimitNone = B(model["quotaLimit"]?["none"]), LimitCustom = B(model["quotaLimit"]?["custom"]),
                 LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"]),
                 Weight = S(model["weight"]) is { Length: > 0 } weight ? weight : "default",
-                NotOffered = B(model["catalogExcluded"])
+                NotOffered = B(model["catalogExcluded"]) || B(model["neverUsable"])
             };
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),

@@ -54,7 +54,7 @@ public sealed partial class MainWindow
             fold.IsExpanded = bench.Count <= 4 || teamFilter.Values.Any(value => value.Length > 0);
             benchSection.Children.Add(fold);
         }
-        if (hidden > 0) benchSection.Children.Add(Explain($"{hidden} model{(hidden == 1 ? " is" : "s are")} not shown: the AI tools on this computer do not offer {(hidden == 1 ? "it" : "them")} any more."));
+        if (hidden > 0) benchSection.Children.Add(Explain($"{hidden} model{(hidden == 1 ? " is" : "s are")} not shown: the AI tools on this computer no longer offer {(hidden == 1 ? "it" : "them")}, or Planwharf cannot run {(hidden == 1 ? "it" : "them")} (such as Codex's own review model)."));
         side.Children.Add(benchSection);
 
         var tools = Look.Section("chip", Palette.Build, Palette.BuildSoft, "AI tools", "Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.");
