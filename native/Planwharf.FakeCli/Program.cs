@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -98,7 +99,18 @@ public static class Program
         foreach (var item in answers)
         {
             if (item is not JsonObject candidate) continue;
-            if (Matches(candidate, args, stdin, promptFromFile, callNumber, fakeAs))
+            bool matched;
+            try
+            {
+                matched = Matches(candidate, args, stdin, promptFromFile, callNumber, fakeAs);
+            }
+            catch (Exception ex)
+            {
+                errWriter.WriteLine($"Planwharf.FakeCli: skipped an answer that could not be read: {ex.Message}");
+                continue;
+            }
+
+            if (matched)
             {
                 matchedAnswer = candidate;
                 break;
@@ -112,14 +124,42 @@ public static class Program
             return 2;
         }
 
-        return ExecuteAnswer(matchedAnswer, args, outWriter, errWriter);
+        try
+        {
+            return ExecuteAnswer(matchedAnswer, args, outWriter, errWriter);
+        }
+        catch (Exception ex)
+        {
+            errWriter.WriteLine($"Planwharf.FakeCli: failed to run the answer: {ex.Message}");
+            return 2;
+        }
+    }
+
+    private static string LogMutexName(string logPath)
+    {
+        var full = Path.GetFullPath(logPath);
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(full)));
+        return "PlanwharfFakeCli-" + hash;
     }
 
     private static int RecordCall(string logPath, string[] args, string stdin, string fakeAs, IReadOnlyDictionary<string, string?>? envOverride)
     {
         var existingCalls = 0;
+        var needsLeadingNewline = false;
+        Mutex? mutex = null;
+        var ownsMutex = false;
         try
         {
+            mutex = new Mutex(false, LogMutexName(logPath));
+            try
+            {
+                ownsMutex = mutex.WaitOne(TimeSpan.FromSeconds(30));
+            }
+            catch (AbandonedMutexException)
+            {
+                ownsMutex = true;
+            }
+
             var logDir = Path.GetDirectoryName(logPath);
             if (!string.IsNullOrEmpty(logDir) && !Directory.Exists(logDir))
             {
@@ -128,10 +168,17 @@ public static class Program
 
             if (File.Exists(logPath))
             {
-                using var reader = new StreamReader(new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
-                while (reader.ReadLine() != null)
+                var bytes = File.ReadAllBytes(logPath);
+                if (bytes.Length > 0)
                 {
-                    existingCalls++;
+                    var newlines = 0;
+                    foreach (var b in bytes)
+                    {
+                        if (b == (byte)'\n') newlines++;
+                    }
+
+                    needsLeadingNewline = bytes[^1] != (byte)'\n';
+                    existingCalls = newlines + (needsLeadingNewline ? 1 : 0);
                 }
             }
         }
@@ -188,11 +235,21 @@ public static class Program
 
         try
         {
-            using var fileStream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            using var fileStream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.Read);
             using var writer = new StreamWriter(fileStream, new UTF8Encoding(false));
+            if (needsLeadingNewline) writer.Write('\n');
             writer.WriteLine(callRecord.ToJsonString());
         }
         catch { }
+        finally
+        {
+            if (ownsMutex)
+            {
+                try { mutex?.ReleaseMutex(); } catch { }
+            }
+
+            mutex?.Dispose();
+        }
 
         return callNumber;
     }
@@ -267,21 +324,27 @@ public static class Program
 
     private static bool CheckPromptContains(JsonNode node, string stdin, string promptFromFile)
     {
-        var combinedPrompt = stdin + "\n" + promptFromFile;
         if (node is JsonArray arr)
         {
             foreach (var item in arr)
             {
                 var s = item?.GetValue<string>();
-                if (!string.IsNullOrEmpty(s) && !combinedPrompt.Contains(s, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
+                if (string.IsNullOrEmpty(s)) continue;
+                if (!PromptHas(s, stdin, promptFromFile)) return false;
             }
             return true;
         }
-        var expected = node.GetValue<string>();
-        return !string.IsNullOrEmpty(expected) && combinedPrompt.Contains(expected, StringComparison.OrdinalIgnoreCase);
+
+        return PromptHas(node.GetValue<string>(), stdin, promptFromFile);
+    }
+
+    // Stdin and --prompt-file are searched separately. Joining them would make the
+    // inserted newline look like part of the prompt.
+    private static bool PromptHas(string? expected, string stdin, string promptFromFile)
+    {
+        if (string.IsNullOrEmpty(expected)) return false;
+        return stdin.Contains(expected, StringComparison.OrdinalIgnoreCase)
+            || promptFromFile.Contains(expected, StringComparison.OrdinalIgnoreCase);
     }
 
     private static int ExecuteAnswer(JsonObject answer, string[] args, TextWriter outWriter, TextWriter errWriter)
