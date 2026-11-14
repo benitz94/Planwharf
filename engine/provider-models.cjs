@@ -97,6 +97,9 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
   function applyCatalog(provider, entries, checkedAt, verified) {
     for (const model of models.filter(m => m.providerId === provider.id)) {
       model.available = entries.some(m => m.cli === model.cli);
+      // A model found earlier with only its id gets the readable name the tool gives now.
+      const named = entries.find(m => m.cli === model.cli && m.label);
+      if (named && (!model.label || model.label === model.cli)) model.label = named.label;
       model.notInstalled = false;
       model.catalogExcluded = !model.available;
       model.unavailableReason = model.available ? null : `The ${provider.label || provider.id} catalog does not list exact model ${model.cli}. Configuration retained; no substitute selected.`;

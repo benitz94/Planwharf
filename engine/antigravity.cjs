@@ -32,7 +32,13 @@ async function readAntigravity({ command = executable('antigravity'), run = exec
 function parseModels(output) {
   const text = String(output || '').replace(/\x1b\[[0-9;]*m/g, '');
   const ids = [...new Set(text.match(/\b(?:gemini|claude|gpt-oss)-[a-zA-Z0-9][a-zA-Z0-9._:-]*/g) || [])];
-  return ids.length ? { ok: true, ids } : { ok: false, reason: 'Antigravity returned no exact model IDs. Configured routes remain unverified; no aliases were guessed.' };
+  // agy prints each id with its readable name ("claude-opus-4-6-thinking   Claude Opus 4.6 (Thinking)").
+  const labels = new Map();
+  for (const line of text.split(/\r?\n/)) {
+    const named = /^\s*((?:gemini|claude|gpt-oss)-[a-zA-Z0-9][a-zA-Z0-9._:-]*)\s{2,}(\S.*?)\s*$/.exec(line);
+    if (named && !labels.has(named[1])) labels.set(named[1], named[2]);
+  }
+  return ids.length ? { ok: true, ids, models: ids.map(cli => labels.has(cli) ? { cli, label: labels.get(cli) } : { cli }) } : { ok: false, reason: 'Antigravity returned no exact model IDs. Configured routes remain unverified; no aliases were guessed.' };
 }
 async function listAntigravity({ command = executable('antigravity'), run = execFile } = {}) {
   if (!command) return { ok: false, reason: 'Antigravity agy executable not found.' };
