@@ -181,3 +181,63 @@ test('a model under the switch threshold is not offered for a part, so it is not
     assert.match(question, /\bc \(C,/);
   } finally { await server.shutdown(); server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('when the lead only picks the crew, a model under its limit is not offered either', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const { createServer } = require('../server.cjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-crew-split-')), folder = path.join(dir, 'project');
+  fs.mkdirSync(path.join(folder, 'test'), { recursive: true });
+  fs.writeFileSync(path.join(folder, 'test', 'ok.test.cjs'), "require('node:test')('ok', () => {});\n");
+  const planFile = path.join(dir, 'plan.json');
+  const starter = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'fixtures', 'starter-notebook.json'), 'utf8'));
+  for (const project of starter.projects) project.tasks = [];
+  fs.writeFileSync(planFile, JSON.stringify(starter));
+  const model = (id, provider, cli) => ({ id, label: id.toUpperCase(), provider, adapter: provider, cli, enabled: true, available: true, kind: 'premium', cost: 8, plan: provider, providerCatalog: true, orchestratorEligible: true,
+    capabilities: { canOrchestrate: true, canCode: true, canUseTools: true }, roles: { orchestrator: true, worker: true, verifier: true, reviewer: false, supervisor: false }, policy: { alwaysApprove: true, minRemainingPercent: null, warningRemainingPercent: null, fallbackModelId: null } });
+  const models = [model('a', 'codex', 'gpt-6-luna'), model('b', 'grok', 'grok-4.7'), model('c', 'claude', 'claude-opus-5-5'), { ...model('review', 'codex', 'codex-auto-review'), modelRouting: undefined }];
+  const launches = [], asks = [];
+  const denied = () => { throw Error('windows are not used here'); };
+  const server = createServer({ planFile, attemptsDir: path.join(dir, 'attempts'), models, refreshModels: false, fetchPlans: async () => [{ id: 'ChatGPT', label: 'ChatGPT', readable: true, leftPct: 15, windows: [{ name: '5 hours', leftPct: 15 }] }], monitorIntervalMs: 50,
+    openFolder: denied, openUrl: denied, openWatchWindow: denied, openPlanWindow: denied,
+    spawnWorker(info) {
+      launches.push(info);
+      fs.mkdirSync(path.dirname(info.logPath), { recursive: true }); fs.writeFileSync(info.logPath, 'worked\n');
+      fs.mkdirSync(path.dirname(info.structuredResultPath), { recursive: true }); fs.writeFileSync(info.resultPath, 'done');
+      fs.writeFileSync(info.structuredResultPath, JSON.stringify({ resultId: info.resultId, attemptId: info.attemptId, subTaskId: info.subTaskId, megaTaskId: info.megaTaskId, status: 'COMPLETE', summary: 'Slice by ' + info.worker.id, filesChanged: [], tests: [], blockers: [], nextAction: 'None' }));
+      fs.writeFileSync(info.exitPath, JSON.stringify({ attemptId: info.attemptId, exitCode: 0, resultVerified: true, signal: null, provider: info.worker.provider, model: info.worker.cli, createdAt: new Date().toISOString() }));
+      return { pid: 900000 + launches.length };
+    },
+    isProcessAlive: () => false, killWorker: () => {}, abortAsk: () => {},
+    askModel: async info => {
+      asks.push(info.question);
+      if (/Your crew can work in parallel/.test(info.question)) return { answer: 'One part is enough here.' };
+      if (false) return { answer: JSON.stringify({ why: 'unused', verify: 'c', parts: [
+        { title: 'Port quota', detail: 'Port the quota module.', files: ['src/quota.cs'], dependsOn: [], size: 'light', model: 'b' },
+        { title: 'Port skills', detail: 'Port the skills module.', files: ['src/skills.cs'], dependsOn: [], size: 'heavy', model: 'c' }] }) };
+      return { answer: '{"done":true,"next":null,"assumptions":["split worked"]}' };
+    } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = 'http://127.0.0.1:' + server.address().port;
+  const api = async (route, data) => { const response = await fetch(base + route, data === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); return response.json(); };
+  try {
+    const current = await api('/api/plan');
+    const created = await api('/api/projects', { version: current.version, project: { name: 'Split', direction: 'Port two modules and write tests.', folder }, createFolder: false });
+    const projectId = created.plan.projects.at(-1).project.id;
+    await api('/api/orchestrator/lead', { id: 'a' });
+    await api('/api/focus', { projectId });
+    // Planwharf reads the quota first, as it does on its own a few seconds after starting.
+    await api('/api/orchestrator');
+    await api('/api/orchestrator/mode', { mode: 'auto' });
+    await api('/api/orchestrator/autonomy', { projectId, enabled: true });
+    let view, deadline = Date.now() + 60000;
+    while (Date.now() < deadline) { view = await api('/api/orchestrator'); if (view.autonomy?.[projectId]?.stopReason) break; await new Promise(resolve => setTimeout(resolve, 100)); }
+    const question = asks.find(text => /Each lists the models allowed to take it/.test(text));
+    assert.ok(question, 'the lead was asked to pick the crew: ' + asks.map(text => text.slice(0, 80)).join(' | '));
+    assert.doesNotMatch(question, /\ba \(A,/, 'the model at 15% is not offered');
+    assert.match(question, /\bb \(B,/);
+    // A model the AI tool lists but Planwharf cannot run is marked, so Team can hide it.
+    const snap = await api('/api/orchestrator');
+    assert.equal(snap.models.find(item => item.id === 'review').neverUsable, true);
+    assert.equal(snap.models.find(item => item.id === 'b').neverUsable, false);
+  } finally { await server.shutdown(); server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
+});

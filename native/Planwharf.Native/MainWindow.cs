@@ -290,7 +290,9 @@ public sealed partial class MainWindow : Window
             auto?["enabled"] is JsonValue enabled && enabled.TryGetValue<bool>(out var on) && on);
     }
 
-    static bool IsStopped(WorkView work) => work.Status is "FAILED" or "BLOCKED" or "PAUSED" or "STOPPED" or "CHECKPOINTED" || work.CanResume && work.Status != "COMPLETE";
+    // Work running again after Resume is at work, even while an older checkpoint is still saved.
+    static bool IsStopped(WorkView work) => work.Status is "FAILED" or "BLOCKED" or "PAUSED" or "STOPPED" or "CHECKPOINTED"
+        || work.CanResume && work.Status is not ("COMPLETE" or "RUNNING") && !work.Steps.Any(step => step.Status == "working");
 
     static Control Note(string text) => new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(14, 10),
         Child = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Muted, FontSize = 13 } };

@@ -185,6 +185,9 @@ function normalizeModels(models) {
       enabled: item.enabled === true && (item.providerCatalog || item.available !== false && !routeError),
       available: item.available !== false && !routeError,
       unavailableReason: item.unavailableReason || routeError || null,
+      // Listed by the AI tool but impossible to run this way (Codex's internal review model): never usable,
+      // unlike a model that is out of quota or failed a moment ago.
+      neverUsable: item.catalogExcluded === true || (item.available !== false && Boolean(routeError)),
       availabilityVerified: item.availabilityVerified,
       availabilityWarning: item.availabilityWarning || null,
       provider: item.provider,
@@ -833,6 +836,7 @@ function fleetOf(models, projects, leadId, plans) {
       available: item.available !== false,
       unavailableReason: item.unavailableReason || null,
       catalogExcluded: item.catalogExcluded === true,
+      neverUsable: item.neverUsable === true || item.catalogExcluded === true,
       availabilityVerified: item.availabilityVerified === true,
       availabilityCheckedAt: item.availabilityCheckedAt || null,
       availabilityWarning: item.availabilityWarning || null,
@@ -2117,7 +2121,9 @@ function createOrchestrator(options) {
           approved: Boolean(row.approved),
           sessionId: row.authorizedSessionId || null,
           canStart: true,
-          canResume: Boolean(row.status !== 'complete' && row.checkpoint && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
+          // Work running again after Resume is not "stopped": its checkpoint stays on disk, but there is nothing to resume.
+          canResume: Boolean(row.status !== 'complete' && row.checkpoint && String(row.megaTask?.status || '').toUpperCase() !== 'RUNNING' && !(row.dispatch || []).some(part => part && part.alive)
+            && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
           canStop: Boolean(
             row.status === 'watching'
             && (item.tasks || []).some(task => task.status === 'running')
@@ -2696,7 +2702,9 @@ function createOrchestrator(options) {
     const lead = leadModel();
     if (subs.length < 2 || !lead || typeof opts.askModel !== 'function') return;
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
-    const candidates = subs.map(sub => roster().filter(model => usable(model) && permitsAssignment(model, sub)));
+    // A model under its quota limit would be moved off at once: it is offered only when no other model can take the step.
+    const roomy = list => { const ok = list.filter(model => !isLow(model)); return ok.length ? ok : list; };
+    const candidates = subs.map(sub => roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))));
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
     // The lead's last answer in this project's chat, where it may have proposed the crew.
