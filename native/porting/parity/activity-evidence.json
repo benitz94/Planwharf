@@ -1,0 +1,231 @@
+[
+  {
+    "fn": "redact",
+    "args": [
+      "api_key=VALUE-1\npassword=\"VALUE 2\"\nAuthorization: Bearer VALUE-3\nhttps://user:VALUE-4@example.invalid?token=VALUE-5\n-----BEGIN PRIVATE KEY-----\nVALUE-6\n-----END PRIVATE KEY-----\n<script>unsafe</script>\u001b[31m\u001b]0;secret title\u0007"
+    ],
+    "result": "api_key=[REDACTED]\npassword=[REDACTED]\nAuthorization: [REDACTED] [REDACTED]\nhttps://[REDACTED]@example.invalid?token=[REDACTED]\n[REDACTED PRIVATE KEY]\n&lt;script&gt;unsafe&lt;/script&gt;"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "--token=secret-token-12345 --password \"my pass\" --api-key VALUE"
+    ],
+    "result": "--token=[REDACTED] --password [REDACTED] --api-key [REDACTED]"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "nested: {\"api_key\":\"NESTED-SECRET\",\"password\":\"NESTED-PASSWORD\"}"
+    ],
+    "result": "nested: {\"api_key\":[REDACTED],\"password\":[REDACTED]}"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "sk-1234567890abcdef gh_1234567890 github_pat_1234567890abcdef"
+    ],
+    "result": "[REDACTED] gh_1234567890 [REDACTED]"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE="
+    ],
+    "result": "[REDACTED ENCODED VALUE]"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "Normal string without secrets <tag> & ok"
+    ],
+    "result": "Normal string without secrets &lt;tag&gt; & ok"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "redact",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "{\"type\":\"item.completed\",\"timestamp\":\"2026-10-16T10:00:00Z\",\"item\":{\"type\":\"command_execution\",\"command\":\"node --test\",\"aggregated_output\":\"ok 1\",\"exit_code\":0,\"CodeContent\":\"NEVER\"}}",
+      {
+        "adapter": "codex"
+      }
+    ],
+    "result": {
+      "entries": [
+        {
+          "protocol": "item-events",
+          "provenance": "observed",
+          "eventType": "item.completed",
+          "command": "node --test",
+          "output": "ok 1",
+          "exitCode": 0,
+          "sourceTimestamp": "2026-10-16T10:00:00Z"
+        }
+      ],
+      "truncated": false,
+      "warnings": [
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"tool_use\",\"name\":\"Bash\",\"input\":{\"command\":\"node --test\"}}]}}",
+      {
+        "adapter": "claude"
+      }
+    ],
+    "result": {
+      "entries": [
+        {
+          "protocol": "message-events",
+          "provenance": "observed",
+          "eventType": "assistant",
+          "tool": "Bash",
+          "command": "node --test"
+        }
+      ],
+      "truncated": false,
+      "warnings": [
+        "Claude Code excerpts contain retained tool metadata only; detailed output is not verified.",
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "{\"event\":\"step_update\",\"step_update\":{\"step_type\":\"tool\",\"state\":\"DONE\",\"tool_name\":\"run_command\",\"tool_info\":{\"parameters\":{\"CommandLine\":\"npm test\"}}}}",
+      {
+        "adapter": "antigravity"
+      }
+    ],
+    "result": {
+      "entries": [
+        {
+          "protocol": "antigravity-step",
+          "provenance": "observed",
+          "eventType": "step_update",
+          "tool": "run_command",
+          "state": "DONE",
+          "command": "npm test"
+        }
+      ],
+      "truncated": false,
+      "warnings": [
+        "Antigravity excerpts contain retained tool command/state metadata only; detailed output is not verified.",
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "compiler output line 1\nline 2\n",
+      {
+        "adapter": "codex"
+      }
+    ],
+    "result": {
+      "entries": [
+        {
+          "protocol": "plain",
+          "provenance": "reported",
+          "output": "compiler output line 1\nline 2\n"
+        }
+      ],
+      "truncated": false,
+      "warnings": [
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "{\"broken\": json",
+      {
+        "adapter": "codex"
+      }
+    ],
+    "result": {
+      "entries": [],
+      "truncated": false,
+      "warnings": [
+        "Malformed structured evidence was omitted.",
+        "No supported original technical evidence is retained for this assignment.",
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"cmd\",\"aggregated_output\":\"out\"}}",
+      {
+        "adapter": "unknown"
+      }
+    ],
+    "result": {
+      "entries": [
+        {
+          "protocol": "item-events",
+          "provenance": "unknown",
+          "eventType": "item.completed",
+          "command": "cmd",
+          "output": "out"
+        }
+      ],
+      "truncated": false,
+      "warnings": [
+        "Adapter identity is unknown; protocol excerpts are not verified provider evidence.",
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      "",
+      {}
+    ],
+    "result": {
+      "entries": [],
+      "truncated": false,
+      "warnings": [
+        "Adapter identity is unknown; protocol excerpts are not verified provider evidence.",
+        "No supported original technical evidence is retained for this assignment.",
+        "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+        "Reported output and zero exit codes do not establish validated success."
+      ]
+    }
+  },
+  {
+    "fn": "technicalEvidence",
+    "args": [
+      null,
+      null
+    ],
+    "error": "Cannot read properties of null (reading 'adapter')"
+  }
+]

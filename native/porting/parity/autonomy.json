@@ -1,0 +1,740 @@
+[
+  {
+    "fn": "createSettings",
+    "args": [
+      "s1",
+      "2026-11-03T10:00:00Z"
+    ],
+    "result": {
+      "enabled": true,
+      "sessionId": "s1",
+      "enabledAt": "2026-11-03T10:00:00Z",
+      "started": false,
+      "approved": [],
+      "evaluated": [],
+      "nudgedKeys": [],
+      "nudgeTimes": [],
+      "assumptions": [],
+      "stopReason": null
+    }
+  },
+  {
+    "fn": "pushGuardEnvironment",
+    "args": [
+      {}
+    ],
+    "result": {
+      "GIT_CONFIG_COUNT": "1",
+      "GIT_CONFIG_KEY_0": "url.planwharf-push-blocked://.pushInsteadOf",
+      "GIT_CONFIG_VALUE_0": ""
+    }
+  },
+  {
+    "fn": "pushGuardEnvironment",
+    "args": [
+      {
+        "GIT_CONFIG_COUNT": "2"
+      }
+    ],
+    "result": {
+      "GIT_CONFIG_COUNT": "3",
+      "GIT_CONFIG_KEY_2": "url.planwharf-push-blocked://.pushInsteadOf",
+      "GIT_CONFIG_VALUE_2": ""
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "settings": {
+          "enabled": false
+        }
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "off"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "manual",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1"
+        },
+        "row": {}
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "manual-mode"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s2",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1"
+        },
+        "row": {}
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "other-session"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "stopReason": "GOAL_REACHED"
+        },
+        "row": {}
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "stopped"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1"
+        },
+        "row": null
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "no-project"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1"
+        },
+        "row": {
+          "status": "checkpointed",
+          "checkpoint": {
+            "reason": "stop"
+          }
+        }
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "user-paused"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "nudgedKeys": [],
+          "nudgeTimes": []
+        },
+        "row": {
+          "status": "checkpointed",
+          "checkpoint": {
+            "reason": "worker failure"
+          }
+        },
+        "alerts": [
+          {
+            "key": "k1",
+            "title": "t",
+            "message": "m"
+          }
+        ],
+        "now": 1000000
+      }
+    ],
+    "result": {
+      "type": "start"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "approved": []
+        },
+        "row": {
+          "status": "needs_approval",
+          "megaTaskId": "m1"
+        }
+      }
+    ],
+    "result": {
+      "type": "approve",
+      "megaTaskId": "m1"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "approved": [
+            "m1",
+            "m2",
+            "m3",
+            "m4",
+            "m5"
+          ]
+        },
+        "row": {
+          "status": "needs_approval",
+          "megaTaskId": "m6"
+        }
+      }
+    ],
+    "result": {
+      "type": "limit",
+      "reason": "MEGATASK_LIMIT"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": false
+        },
+        "row": {
+          "status": "complete",
+          "megaTaskId": "m1"
+        }
+      }
+    ],
+    "result": {
+      "type": "start"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true,
+          "evaluated": []
+        },
+        "row": {
+          "status": "complete",
+          "megaTaskId": "m1"
+        }
+      }
+    ],
+    "result": {
+      "type": "evaluate",
+      "megaTaskId": "m1"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true,
+          "nudgedKeys": [],
+          "nudgeTimes": []
+        },
+        "row": {
+          "status": "watching"
+        },
+        "alerts": [
+          {
+            "key": "a1",
+            "title": "t",
+            "message": "m"
+          }
+        ],
+        "now": 1000000
+      }
+    ],
+    "result": {
+      "type": "nudge",
+      "alert": {
+        "key": "a1",
+        "title": "t",
+        "message": "m"
+      }
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true,
+          "nudgedKeys": [
+            "a1"
+          ],
+          "nudgeTimes": []
+        },
+        "row": {
+          "status": "watching"
+        },
+        "alerts": [
+          {
+            "key": "a1",
+            "title": "t",
+            "message": "m"
+          }
+        ],
+        "now": 1000000
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "idle"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true,
+          "nudgedKeys": [],
+          "nudgeTimes": [
+            "1970-01-01T00:10:00Z",
+            "1970-01-01T00:20:00Z",
+            "1970-01-01T00:30:00Z"
+          ]
+        },
+        "row": {
+          "status": "watching"
+        },
+        "alerts": [
+          {
+            "key": "a1",
+            "title": "t",
+            "message": "m"
+          }
+        ],
+        "now": 2000000
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "nudge-limit"
+    }
+  },
+  {
+    "fn": "strictDecisionPrompt",
+    "args": [
+      "Review project."
+    ],
+    "result": "Review project.\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it."
+  },
+  {
+    "fn": "cleanFinish",
+    "args": [
+      [
+        {
+          "status": "COMPLETE",
+          "blockers": []
+        },
+        {
+          "status": "COMPLETE",
+          "blockers": []
+        }
+      ],
+      {
+        "exitCode": 0,
+        "timedOut": false
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "cleanFinish",
+    "args": [
+      [
+        {
+          "status": "COMPLETE",
+          "blockers": [
+            "err"
+          ]
+        }
+      ],
+      {
+        "exitCode": 0,
+        "timedOut": false
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "cleanFinish",
+    "args": [
+      [],
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "evaluationPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "results": [
+          {
+            "status": "COMPLETE",
+            "summary": "ok"
+          }
+        ],
+        "checks": {
+          "label": "test",
+          "exitCode": 0,
+          "seconds": 1,
+          "output": "ok"
+        }
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: Goal\nRecorded results:\n- COMPLETE: ok\nPlanwharf ran `test` in the project folder just now: PASSED in 1 s. Output tail:\n```\nok\n```\nThis run is fresh evidence. Do not run commands or edit files yourself: decide from the goal, the results and this run.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"]}.\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "evaluationPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": null,
+        "results": []
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: not recorded\nRecorded results:\n- none recorded\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"]}.\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "nudgePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "alert": {
+          "title": "T",
+          "message": "M"
+        }
+      }
+    ],
+    "result": "Supervisor alert for project Proj: T. M\nGoal: Goal\nIf active workers are still making progress, set next to null. If the work is stuck, name the objective that recovers it.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"]}.\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "assignmentPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "slices": [
+          "Build",
+          "Verify"
+        ],
+        "candidates": [
+          [
+            {
+              "id": "a",
+              "label": "A",
+              "provider": "p1"
+            }
+          ],
+          [
+            {
+              "id": "b",
+              "label": "B",
+              "provider": "p2"
+            }
+          ]
+        ],
+        "said": "Suggest crew."
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYou told the user in the chat, before this work started:\n<<<\nSuggest crew.\n>>>\nIf you proposed a crew there, keep that crew unless one of its models is not allowed below; if you choose differently, say why in \"why\".\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build\n   Allowed: a (A, provider p1)\n2. Verify\n   Allowed: b (B, provider p2)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nDo not run commands or read files: decide from this message only.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
+  },
+  {
+    "fn": "parseDecision",
+    "args": [
+      "{\"done\":true,\"next\":\"ignored\",\"assumptions\":[\"a\"]}"
+    ],
+    "result": {
+      "done": true,
+      "next": null,
+      "assumptions": [
+        "a"
+      ]
+    }
+  },
+  {
+    "fn": "parseDecision",
+    "args": [
+      "Sure:\n{\"done\":false,\"next\":\"Add tests\"}"
+    ],
+    "result": {
+      "done": false,
+      "next": "Add tests",
+      "assumptions": []
+    }
+  },
+  {
+    "fn": "parseDecision",
+    "args": [
+      "{\"done\":false,\"next\":null}"
+    ],
+    "result": {
+      "done": false,
+      "next": null,
+      "assumptions": []
+    }
+  },
+  {
+    "fn": "parseDecision",
+    "args": [
+      "invalid"
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseDecision",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseAssignment",
+    "args": [
+      "{\"assign\":[\"b\",\"a\"],\"why\":\"fast\"}",
+      2,
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "result": {
+      "assign": [
+        "b",
+        "a"
+      ],
+      "why": "fast"
+    }
+  },
+  {
+    "fn": "parseAssignment",
+    "args": [
+      "{\"assign\":[\"a\",\"b\"]}",
+      2,
+      [
+        [
+          "a"
+        ],
+        [
+          "b"
+        ]
+      ]
+    ],
+    "result": {
+      "assign": [
+        "a",
+        "b"
+      ],
+      "why": ""
+    }
+  },
+  {
+    "fn": "parseAssignment",
+    "args": [
+      "broken",
+      2,
+      [
+        "a"
+      ]
+    ],
+    "result": null
+  },
+  {
+    "fn": "splitPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "builders": [
+          {
+            "id": "a",
+            "label": "A",
+            "provider": "p1",
+            "tier": "light",
+            "left": 50
+          }
+        ],
+        "verifiers": [
+          {
+            "id": "b",
+            "label": "B",
+            "provider": "p2",
+            "tier": "premium"
+          }
+        ],
+        "files": [
+          "a.js",
+          "b.js"
+        ]
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSplit the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nDo not run commands or read files: decide from this message only.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+  },
+  {
+    "fn": "fitWeights",
+    "args": [
+      [
+        {
+          "title": "T",
+          "size": "light",
+          "model": "heavy-m"
+        }
+      ],
+      [
+        {
+          "id": "light-m",
+          "tier": "light",
+          "left": 90
+        },
+        {
+          "id": "heavy-m",
+          "tier": "premium"
+        }
+      ]
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "T",
+          "size": "light",
+          "model": "light-m"
+        }
+      ],
+      "moved": [
+        {
+          "title": "T",
+          "size": "light",
+          "from": "heavy-m",
+          "to": "light-m"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseSplit",
+    "args": [
+      "{\"parts\":[{\"title\":\"T1\",\"detail\":\"D1\",\"files\":[\"a.js\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"T2\",\"detail\":\"D2\",\"files\":[\"a.js\",\"b.js\"],\"size\":\"normal\",\"model\":\"m1\"}],\"verify\":\"v1\",\"why\":\"ok\"}",
+      {
+        "builders": [
+          "m1"
+        ],
+        "verifiers": [
+          "v1"
+        ]
+      }
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "T1",
+          "detail": "D1",
+          "files": [
+            "a.js"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "T2",
+          "detail": "D2",
+          "files": [
+            "a.js",
+            "b.js"
+          ],
+          "dependsOn": [
+            0
+          ],
+          "size": "normal",
+          "model": "m1"
+        }
+      ],
+      "verify": "v1",
+      "why": "ok"
+    }
+  },
+  {
+    "fn": "parseSplit",
+    "args": [
+      "not json",
+      {
+        "builders": [],
+        "verifiers": []
+      }
+    ],
+    "result": null
+  }
+]
