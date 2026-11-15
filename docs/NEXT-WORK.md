@@ -45,7 +45,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | ARM builds | Windows and Linux ARM | — | Done (#80) |
 | 05 | Before the porting goes on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | Done, waiting for review |
 | 06 | Before the porting goes on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | Done, waiting for review |
-| 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
+| 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | Done, waiting for review |
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | To do |
 | 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | To do |
 | 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | To do |

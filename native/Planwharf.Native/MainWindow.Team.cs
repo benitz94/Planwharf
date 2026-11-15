@@ -38,8 +38,7 @@ public sealed partial class MainWindow
         var onTeam = Look.Section("team", Palette.Accent, Palette.AccentSoft, $"On the team · {active.Count}");
         onTeam.Children.Add(new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
             new Avalonia.Controls.Documents.Run("Build") { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" writes code and tests. "),
-            new Avalonia.Controls.Documents.Run("Verify") { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" checks the work and fixes it, ideally a model from another company. "),
-            new Avalonia.Controls.Documents.Run("Review") { Foreground = Palette.Review, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.") } });
+            new Avalonia.Controls.Documents.Run("Verify") { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.") } });
         if (active.Count == 0) onTeam.Children.Add(Explain("Nobody yet. Bring models in from the bench."));
         foreach (var model in active) onTeam.Children.Add(Member(model, team.LeadId));
         side.Children.Add(onTeam);
@@ -120,7 +119,7 @@ public sealed partial class MainWindow
         section.Children.Add(Choices("state", ("", "Anywhere"), ("team", "On the team"), ("bench", "On the bench"), ("low", "Under its limit")));
         section.Children.Add(Explain($"For the {shown.Count} model{(shown.Count == 1 ? "" : "s")} shown:"));
         var bulk = new WrapPanel();
-        foreach (var (role, label) in new[] { ("worker", "Build"), ("verifier", "Verify"), ("reviewer", "Review") })
+        foreach (var (role, label) in new[] { ("worker", "Build"), ("verifier", "Verify") })
         {
             bulk.Children.Add(new TextBlock { Text = label, FontSize = 12, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 4) });
             foreach (var (on, text) in new[] { (true, "All"), (false, "None") })
@@ -194,7 +193,6 @@ public sealed partial class MainWindow
         if (model.Bench) chips.Children.Add(new TextBlock { Text = "Bring in as:", Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
         chips.Children.Add(RoleChip(model, "Build", "worker", model.Build, model.CanBuild, "Writes the code and the tests"));
         chips.Children.Add(RoleChip(model, "Verify", "verifier", model.Verify, model.CanVerify, "Checks the work and fixes what fails"));
-        if (model.CanReview) chips.Children.Add(RoleChip(model, "Review", "reviewer", model.Review, true, "Optional: reads the work and reports problems, without changing files"));
         if (!model.Bench)
         {
             var bench = Look.Chip("Bench", null, Palette.Muted, Palette.Surface2, false);

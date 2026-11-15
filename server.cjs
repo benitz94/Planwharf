@@ -272,7 +272,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       const live = (await orchestra.snapshot(projectId)).projects.find(row => row.id === projectId);
       if (live && live.workerAlive) return { ok: false, reason: 'This project has active workers. Stop its current job before preparing a new task.' };
       if (!stillAuthorized()) return { ok: false, reason: 'Request cancelled before creating the task.' };
-      const task = { id: 'chat-' + crypto.randomUUID(), projectId, revision_id: item.revisions.at(-1).id, title: question.split('\n')[0].slice(0, 120), detail: question, status: 'running', ...(phase2 ? { executionVersion: 2 } : {}), source: 'chat', ...(goldModel ? { goldModel } : {}), createdAt: new Date().toISOString(), timing: 'discretion', kind: /\b(audit|review)\b/i.test(question) && !/\b(implement|fix|sistema)\b/i.test(question) ? 'audit' : 'implementation' };
+      const task = { id: 'chat-' + crypto.randomUUID(), projectId, revision_id: item.revisions.at(-1).id, title: question.split('\n')[0].slice(0, 120), detail: question, status: 'running', ...(phase2 ? { executionVersion: 2 } : {}), source: 'chat', ...(goldModel ? { goldModel } : {}), createdAt: new Date().toISOString(), timing: 'discretion', kind: 'implementation' };
       const updated = { ...item, tasks: [...item.tasks.map(task => task.status === 'running' ? { ...task, status: 'superseded' } : task), task] };
       const next = current.schema === 2 ? { ...current, projects: current.projects.map(item => item.project.id === projectId ? updated : item) } : updated;
       if (!Plan.validate(next)) return { ok: false, reason: 'New task failed notebook validation.' };
