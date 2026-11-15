@@ -20,6 +20,7 @@ const { adapterFor } = require('./provider-adapters.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { createInvocationLedger } = require('./invocations.cjs');
 const { compactState, recentContext } = require('./briefing.cjs');
+const planFile = require('./plan-file.cjs');
 const Quota = require('../quota.js');
 const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaLimit, quotaWindows, quotaSwitches, availableAgain } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
@@ -1311,6 +1312,39 @@ function createOrchestrator(options) {
     const row = entry(id);
     const line = { at: now(), text };
     row.log = [line, ...(Array.isArray(row.log) ? row.log : [])].slice(0, 12);
+  }
+
+  // The goal the user approved, plus the crew steps, written before anyone starts.
+  function planSteps(subs) {
+    const models = roster();
+    return (subs || []).filter(Boolean).map(sub => ({
+      role: sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || sub.slice || '')) ? 'Verify' : 'Build',
+      model: models.find(model => model.id === (sub.assignedModelId || sub.modelId))?.label || sub.label || sub.assignedModelId || sub.modelId || 'unassigned',
+      title: sub.title || sub.slice || ''
+    }));
+  }
+  function openWorkPlan(projectId, item, steps) {
+    const folder = linkedWorkspace(item?.project?.folder);
+    if (!folder) return { ok: true };
+    const goal = String(item.revisions?.at(-1)?.direction || '').trim();
+    let prepared;
+    try { prepared = planFile.prepare(folder, { goal, steps: steps || [] }); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    if (!prepared.ok) {
+      note(projectId, prepared.reason);
+      try { bridge.event(projectId, 'AUTONOMY', prepared.reason); } catch { /* the reason is returned to the chat */ }
+      return prepared;
+    }
+    if (prepared.chat) {
+      note(projectId, prepared.chat);
+      try { bridge.event(projectId, 'AUTONOMY', prepared.chat); } catch { /* the note stays on the project */ }
+    }
+    return prepared;
+  }
+  function attachWorkPlan(folder, state) {
+    const text = folder ? planFile.read(folder) : '';
+    if (!text) return state || {};
+    return Object.assign({}, state, { workPlanPath: '.planwharf/plan.md', workPlan: text.slice(0, 12000) });
   }
 
   function resultPathFor(attemptId) {
@@ -2622,7 +2656,7 @@ function createOrchestrator(options) {
       tried.add(lead.id);
       let spoken;
       try {
-        spoken = await opts.askModel({ question: ask, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
+        spoken = await opts.askModel({ question: ask, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder }) });
       } catch (error) { failure = 'LEAD_FAILED: ' + error.message; continue; }
       const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
       const refused = spoken?.failure ? refusals.refusalReason(text) : null;
@@ -2677,7 +2711,7 @@ function createOrchestrator(options) {
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
     const question = autonomy.splitPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction || mega.goal, builders: builders.map(describe), verifiers: verifiers.map(describe), files: projectFiles(item.project.folder), said });
     let spoken;
-    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return false; }
+    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return false; }
     const split = autonomy.parseSplit(spoken && typeof spoken === 'object' ? spoken.answer : spoken, { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) });
     if (!split) { note(projectId, 'The lead did not split the work in a usable way; it keeps the usual plan.'); return false; }
     // Light parts on light models: the strong ones and their quota stay for the heavy work.
@@ -2711,7 +2745,7 @@ function createOrchestrator(options) {
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
     const question = autonomy.assignmentPrompt({ name: item.project.name, said, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
     let spoken;
-    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return; }
+    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return; }
     if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
     const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, candidates.map(list => list.map(model => model.id)));
     if (!choice) { note(projectId, 'Lead crew choice was unreadable; keeping the proposed crew.'); return; }
@@ -3176,7 +3210,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             projectId: (row && row.id) || fallback.projectId,
             folder: linkedWorkspace(row && row.folder),
             github: row && row.github || null,
-            state: Object.assign({}, compactState(packState(snap, row), store.briefingBaselines[row?.id]), { history, contextArchive: contextProjectId ? null : stateFile, earlierTurns: Math.max(0, (conversation || []).length - history.length), currentRequest: { projectId: row?.id || null, text: q, taskId: currentTask?.id || null, requestMode, goldModel, grillKind } }),
+            state: attachWorkPlan(linkedWorkspace(row && row.folder), Object.assign({}, compactState(packState(snap, row), store.briefingBaselines[row?.id]), { history, contextArchive: contextProjectId ? null : stateFile, earlierTurns: Math.max(0, (conversation || []).length - history.length), currentRequest: { projectId: row?.id || null, text: q, taskId: currentTask?.id || null, requestMode, goldModel, grillKind } })),
             onProgress: part => {
               if (!part || typeof part !== 'object') return;
               thinkingByKey[chatKey] = {
@@ -3469,9 +3503,17 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       if (!mega) return { ok: false, reason: 'No MegaTask proposal is available.' };
       if (typeof megaTaskId !== 'string') return { ok: false, reason: 'Approve requires the explicit proposed MegaTask ID.' };
       if (megaTaskId && megaTaskId !== mega.id) return { ok: false, reason: 'Approval targets a different MegaTask from the current proposal.' };
+      if (job.kind !== 'research' && !mega.detached) {
+        const opened = openWorkPlan(projectId, item, planSteps(entry(projectId).subTasks));
+        if (!opened.ok) { persist(); return { ok: false, reason: opened.reason }; }
+      }
       try { bridge.approve(projectId, megaTaskId, policy); } catch (error) { return { ok: false, reason: error.message }; }
       row.authorizedSessionId = sessionId;
       return { ok: true, megaTaskId: mega.id, snapshot: await tick(projectId) };
+    }
+    if (job.kind !== 'research') {
+      const opened = openWorkPlan(projectId, item, planSteps(row.dispatch));
+      if (!opened.ok) { persist(); return { ok: false, reason: opened.reason }; }
     }
     row.approved = true;
     row.authorizedSessionId = sessionId;
@@ -3505,7 +3547,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           clarificationKind: kind,
           projectId: item.project.id,
           folder: item.project.folder || null,
-          state: { name: item.project.name, goal: latest && latest.direction, folder: item.project.folder, docs },
+          state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name, goal: latest && latest.direction, folder: item.project.folder, docs }),
           allowActions: false
         });
         const text = spoken && typeof spoken === 'object' && !Array.isArray(spoken) ? spoken.answer : spoken;
@@ -3613,6 +3655,12 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         replace: genericOpen,
         clearJob
       };
+    }
+    const opened = openWorkPlan(projectId, item, []);
+    if (!opened.ok) {
+      row.pendingAutoStart = null;
+      persist();
+      return { ok: false, reason: opened.reason };
     }
     const job = jobFromFacts(latest, facts);
     row.jobId = null;

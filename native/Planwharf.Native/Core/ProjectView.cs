@@ -118,6 +118,8 @@ public static class ProjectViews
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         var nextGoal = lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
+        var suggestedAt = lastAsk != null && DateTimeOffset.TryParse(S(lastAsk["at"]), out var parsedAsk) ? parsedAsk : (DateTimeOffset?)null;
+        if (nextGoal != null && !TeamViews.SuggestionIsCurrent(suggestedAt, work?.StartedAt)) nextGoal = null;
 
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")

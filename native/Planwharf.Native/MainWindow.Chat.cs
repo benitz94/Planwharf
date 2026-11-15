@@ -91,13 +91,22 @@ public sealed partial class MainWindow
         projectList.SelectedIndex = rows.FindIndex(row => row.project.Id == projectId);
     }
 
+    // When the lead wrote the latest suggestion, so a goal from before the last work is not offered again.
+    DateTimeOffset? AskAt(string? id)
+    {
+        DateTimeOffset? best = null;
+        foreach (var ask in (snapshot?["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => Str(ask["projectId"]) == id))
+            if (DateTimeOffset.TryParse(Str(ask["at"]), out var at) && (best == null || at >= best)) best = at;
+        return best;
+    }
+
     void RenderFooter(ProjectView? view)
     {
         timedRow.Children.Clear();
         timedRow.IsVisible = false;
         if (view == null) return;
         var row = RowOf(view.Id);
-        var goalReady = TeamViews.GoalReady(row, view.NextGoal);
+        var goalReady = TeamViews.GoalReady(row, view.NextGoal, AskAt(view.Id), view.Work?.StartedAt);
         var missing = view.Action == CrewAction.LetTheCrewDoIt ? TeamViews.Missing(snapshot!, view.Id, goalReady) : [];
         // Right after start Planwharf shows saved data while it checks the AI tools again.
         var checking = view.Action == CrewAction.LetTheCrewDoIt && Flag(snapshot?["modelsChecking"]);
@@ -233,7 +242,7 @@ public sealed partial class MainWindow
         var items = ChatViews.Thread(snapshot!, view.Id, ModelLabel);
         var live = snapshot?["thinkingByProject"]?[view.Id];
         var row = RowOf(view.Id);
-        var goalReady = TeamViews.GoalReady(row, view.NextGoal);
+        var goalReady = TeamViews.GoalReady(row, view.NextGoal, AskAt(view.Id), view.Work?.StartedAt);
         var sig = string.Join("|", items.Select(item => item is AskItem ask ? ask.At.ToUnixTimeMilliseconds() + ":" + ask.Answer.Length + ask.Elapsed : item.At.ToUnixTimeMilliseconds() + ((EventItem)item).Text))
             + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
             + string.Join(",", TeamViews.Missing(snapshot!, view.Id, goalReady))
@@ -266,7 +275,8 @@ public sealed partial class MainWindow
         }
         if (finished != null && !placed) thread.Children.Add(WorkCard(view.Id, finished, team, card));
 
-        if (Pending == null && view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt)
+        if (Pending == null && view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt
+            && TeamViews.SuggestionIsCurrent(AskAt(view.Id), view.Work?.StartedAt))
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 6, Children = {
                 new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection {
                     new Run("Nothing has started yet. When the plan is right, press "), new Run("Let the crew do it") { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(": the crew will work on") } },

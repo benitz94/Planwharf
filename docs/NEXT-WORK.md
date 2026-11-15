@@ -40,7 +40,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | 1b. Test bench | Module-by-module comparison with the JavaScript | — | Done (#81) |
 | — | 2. Modules with no dependencies | Jobs 01, 02, 04: skills, worker results, structured final, model roles and policy, accounts, browser settings, activity events, refusals, diagnostics, briefing, project history, evidence, autonomy | — | Done (#64, #74, #90) |
 | — | ARM builds | Windows and Linux ARM | — | Done (#80) |
-| 05 | Fixes before going on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | To do |
+| 05 | Fixes before going on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | Done, waiting for review |
 | 06 | Fixes before going on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | To do |
 | 07 | Fixes before going on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
 | 08 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/08-sheet` | To do |
