@@ -60,7 +60,8 @@ test('stopped work is dropped and the crew then starts the new goal, not the old
     await goal('New goal: port the five modules of job 02.');
     assert.equal(row(await api('/api/orchestrator')).goalStarted, false, 'a new goal not started yet');
     await api('/api/orchestrator/autonomy', { projectId, enabled: true });
-    view = await until(view => /New goal/.test(row(view)?.megaTask?.title || ''), 'the crew starts the new goal');
+    // The proposal is titled at once. The worker starts on the next autonomy step, so wait for that launch.
+    view = await until(view => /New goal/.test(row(view)?.megaTask?.title || '') && launches.some(launch => /New goal/.test(launch.job.title + launch.job.detail)), 'the crew starts the new goal');
     assert.doesNotMatch(row(view).megaTask.title, /Old goal/);
     assert.ok(launches.some(launch => /New goal/.test(launch.job.title + launch.job.detail)), 'a worker got the new goal');
   } finally { await server.shutdown(); server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }

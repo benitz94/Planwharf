@@ -33,19 +33,42 @@ async function readPlan(file) {
   if (!Plan.validate(plan)) throw new Error('The plan file is invalid.');
   return plan;
 }
+// One notebook is replaced at a time. The wait yields so a reader can close the file.
+const notebookReplaces = new Map();
+const replaceRetry = new Set(['EPERM', 'EBUSY', 'EACCES']);
+function replaceNotebook(from, to) {
+  const previous = notebookReplaces.get(to) || Promise.resolve();
+  const run = previous.catch(() => {}).then(() => replaceNotebookOnce(from, to));
+  notebookReplaces.set(to, run);
+  return run.finally(() => { if (notebookReplaces.get(to) === run) notebookReplaces.delete(to); });
+}
+async function replaceNotebookOnce(from, to) {
+  let last;
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    try { await fs.rename(from, to); return; }
+    catch (error) {
+      last = error;
+      if (!replaceRetry.has(error.code)) throw error;
+      await new Promise(resolve => setTimeout(resolve, Math.min(250, 25 * attempt)));
+    }
+  }
+  // A scanner can block the replace and still allow the bytes to be written over the file.
+  try { await fs.copyFile(from, to); }
+  catch { throw last; }
+}
 async function writePlan(file, plan) {
   const temporary = `${file}.${crypto.randomUUID()}.tmp`;
-  let handle;
+  const handle = await fs.open(temporary, 'wx');
   try {
-    handle = await fs.open(temporary, 'wx');
     await handle.writeFile(JSON.stringify(plan, null, 2) + '\n', 'utf8');
     await handle.sync();
-    await handle.close();
-    handle = null;
-    await fs.rename(temporary, file);
   } finally {
-    if (handle) await handle.close();
-    await fs.rm(temporary, { force: true });
+    await handle.close();
+  }
+  try {
+    await replaceNotebook(temporary, file);
+  } finally {
+    await fs.rm(temporary, { force: true }).catch(() => {});
   }
 }
 async function body(request, maxBytes = 65536, tooLarge = 'Revision too large.') {

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { gitEnvironment } = require('./project-workspace.cjs');
 const { createRepositoryInspector, githubRepo, cleanError } = require('./repository.cjs');
 const { createOrchestrator, packState, defaultInspect } = require('./orchestrator.js');
 const { createAttemptEngine } = require('./attempts.js');
@@ -12,7 +13,7 @@ const { createServer } = require('../server.cjs');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-repository-'));
 const remote = path.join(dir, 'remote.git'), local = path.join(dir, 'local'), writer = path.join(dir, 'writer');
 function command(args) {
-  const row = spawnSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { encoding: 'utf8', windowsHide: true, timeout: 10000 });
+  const row = spawnSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { encoding: 'utf8', windowsHide: true, timeout: 10000, env: gitEnvironment() });
   if (row.status !== 0) throw new Error(row.stderr);
   return row.stdout.trim();
 }
@@ -38,7 +39,7 @@ async function execute(exe, args) {
     assert.ok(args.some(arg => arg.includes('refs/planwharf/inspection/')));
     if (fetchFail) return { ok: false, stdout: '', error: 'Network offline' };
   }
-  const row = spawnSync('git', converted, { encoding: 'utf8', windowsHide: true, timeout: 10000 });
+  const row = spawnSync('git', converted, { encoding: 'utf8', windowsHide: true, timeout: 10000, env: gitEnvironment() });
   return { ok: row.status === 0, stdout: row.stdout.trim(), error: row.status ? row.stderr.trim() : null };
 }
 let server;
