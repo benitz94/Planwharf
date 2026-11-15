@@ -28,6 +28,9 @@ jobs itself, one at a time, in the order below; each one is reviewed before it i
    and asks for a review.
 8. Stop and ask the owner when a phase says so, when the two engines cannot be kept equal, or when a job
    needs a decision.
+9. Do only the job you took. A test that already fails on `origin/main`, before your change, is not
+   yours to fix: name it to the owner in your answer and in the commit message, and go on with the job
+   (job 14 collects those failures).
 
 ## The list
 
