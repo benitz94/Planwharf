@@ -78,7 +78,9 @@ test('the guard stops real pushes for URL and local remotes and keeps prior Git 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-guard-'));
   try {
     const repo = path.join(dir, 'repo'), bare = path.join(dir, 'bare.git');
-    const git = (args, env = {}) => spawnSync('git', args, { cwd: repo, env: { ...process.env, ...env }, encoding: 'utf8' });
+    // The worker that runs this file already carries the push guard. Start clean, then add the guard only when the case asks for it.
+    const cleanGit = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_CONFIG_')));
+    const git = (args, env = {}) => spawnSync('git', args, { cwd: repo, env: { ...cleanGit, ...env }, encoding: 'utf8' });
     fs.mkdirSync(repo); git(['init', '-q']); git(['init', '-q', '--bare', bare]);
     git(['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x']);
     git(['remote', 'add', 'local', bare]); git(['remote', 'add', 'web', 'https://example.invalid/x.git']);

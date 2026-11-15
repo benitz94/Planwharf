@@ -15,7 +15,8 @@ const ICON = path.join(__dirname, 'build', 'icon.png');
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 
-const STARTER = path.join(APP_DIR, 'fixtures', 'starter-notebook.json');
+const packagedStarter = path.join(APP_DIR, 'fixtures', 'starter-notebook.json');
+const STARTER = fs.existsSync(packagedStarter) ? packagedStarter : path.join(__dirname, '..', 'fixtures', 'starter-notebook.json');
 const projectNames = file => { try { return (JSON.parse(fs.readFileSync(file, 'utf8')).projects || []).map(p => p && p.project && p.project.name); } catch { return null; } };
 
 // Where the ZIP (portable) version keeps its projects: next to its own planwharf.cjs, wherever it was unpacked.

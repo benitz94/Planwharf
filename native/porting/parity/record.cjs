@@ -29,7 +29,9 @@ function text(moduleName) { return JSON.stringify(record(moduleName), null, 2) +
 function check() {
   return Object.keys(cases).filter(moduleName => {
     const file = path.join(__dirname, moduleName + '.json');
-    return !fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== text(moduleName);
+    // A Windows checkout may store the recorded file with CRLF. That is not a JavaScript change.
+    const saved = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n') : null;
+    return saved !== text(moduleName);
   });
 }
 
