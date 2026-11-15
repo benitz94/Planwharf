@@ -136,7 +136,11 @@ public static class ProjectViews
         var suggestedAt = lastAsk != null && DateTimeOffset.TryParse(S(lastAsk["at"]), out var parsedAsk) ? parsedAsk : (DateTimeOffset?)null;
         if (nextGoal != null && !TeamViews.SuggestionIsCurrent(suggestedAt, work?.StartedAt)) nextGoal = null;
 
-        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", "The crew is working. You can keep chatting with the lead and change models at any time.")
+        // Between two works the crew is still on: the lead checks the result and decides the next step.
+        var running = work != null && work.Status is "RUNNING" or "READY_FOR_APPROVAL" || B(row["canStop"]);
+        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", running
+                ? "The crew is working. You can keep chatting with the lead and change models at any time."
+                : "The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on.")
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
             : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
             : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point, or drop it to start something new.")

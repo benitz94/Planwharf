@@ -46,6 +46,8 @@ public class ProjectViewTests
     {
         Assert.Equal(CrewAction.LetTheCrewDoIt, ProjectViews.Project(SampleState.Finished(), "weather")!.Action);
         Assert.Equal(CrewAction.StopTheCrew, ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Action);
+        Assert.StartsWith("The work is done. The lead is checking", ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Hint);
+        Assert.StartsWith("The crew is working", ProjectViews.Project(SampleState.Working(), "weather")!.Hint);
         var idle = ProjectViews.Project(SampleState.Finished(), "notes")!;
         Assert.StartsWith("Talk with the lead about what to build", idle.Hint);
     }
