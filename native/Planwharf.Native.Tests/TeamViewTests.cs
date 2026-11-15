@@ -91,6 +91,29 @@ public class TeamViewTests
     }
 
     [Fact]
+    public void Supervisor_and_reviewer_alone_remain_on_the_bench_and_verifier_is_not_offered_for_review()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "models": [
+            { "id": "s", "label": "Supervisor only", "provider": "codex", "adapter": "codex", "enabled": true, "available": true,
+              "roles": { "supervisor": true, "reviewer": true } },
+            { "id": "v", "label": "Verifier", "provider": "claude", "adapter": "claude", "enabled": true, "available": true,
+              "roles": { "verifier": true, "reviewer": true } } ] }
+        """)!);
+        var supervisor = team.Models.Single(model => model.Id == "s");
+        Assert.True(supervisor.Bench);
+        Assert.False(supervisor.CanReview);
+
+        var verifier = team.Models.Single(model => model.Id == "v");
+        Assert.False(verifier.Bench);
+        Assert.False(verifier.CanReview);
+        Assert.True(verifier.Verify);
+        Assert.False(verifier.Build);
+        Assert.Contains("v", TeamViews.ModelsFor(team, "Verify").Select(m => m.Id));
+        Assert.DoesNotContain("v", TeamViews.ModelsFor(team, "Review").Select(m => m.Id));
+    }
+
+    [Fact]
     public void Says_what_is_missing_before_the_crew_can_start()
     {
         Assert.Equal(["Choose a lead in Team.", "Give at least one model the Build role in Team.", "Set the project folder in Settings.", TeamViews.NoGoalText],
