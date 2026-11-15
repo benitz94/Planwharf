@@ -120,6 +120,119 @@ git(folder, ['remote', 'set-url', 'origin', remote]);
 
 console.log('plan-file tests passed');
 
+// --- Independent verification (ST-02): edge, error and recovery paths the first pass left uncovered. ---
+
+function freshRepo(tag) {
+  const place = fs.mkdtempSync(path.join(root, tag + '-'));
+  const rem = path.join(place, 'remote.git');
+  const work = path.join(place, 'work');
+  fs.mkdirSync(rem, { recursive: true });
+  git(rem, ['init', '--bare', '-q', '-b', 'main']);
+  fs.mkdirSync(work, { recursive: true });
+  git(work, ['init', '-q', '-b', 'main']);
+  git(work, ['config', 'user.name', 'Fixture']);
+  git(work, ['config', 'user.email', 'fixture@example.invalid']);
+  git(work, ['config', 'core.autocrlf', 'false']);
+  fs.writeFileSync(path.join(work, 'readme.txt'), 'start\n');
+  git(work, ['add', 'readme.txt']);
+  git(work, ['commit', '-q', '-m', 'start']);
+  git(work, ['remote', 'add', 'origin', rem]);
+  git(work, ['push', '-q', '-u', 'origin', 'main']);
+  git(work, ['remote', 'set-head', 'origin', 'main']);
+  return { place, rem, work };
+}
+
+// The branch name is read from the lead's text: backticks, quotes or a bare token, never a stop-word.
+assert.equal(planFile.namedBranch('Do it on branch `fix/plan-file` now'), 'fix/plan-file');
+assert.equal(planFile.namedBranch("use branch 'feat/x' please"), 'feat/x');
+assert.equal(planFile.namedBranch('on branch port/09-phase2 next'), 'port/09-phase2');
+assert.equal(planFile.namedBranch('just do the work, nothing named here'), null);
+assert.equal(planFile.namedBranch('create the branch from origin/main'), null);
+assert.equal(planFile.branchName('Make the thing nicer', null), 'planwharf/make-the-thing-nicer');
+assert.equal(planFile.branchName('whatever the goal says', 'given/branch'), 'given/branch');
+assert.equal(planFile.shortGoal(''), 'work');
+assert.equal(planFile.shortGoal('!!!'), 'work');
+
+// The dirty message lists up to eight names, counts the rest, and follows a rename to its new name.
+const manyDirty = ['A  a.txt', 'A  b.txt', 'A  c.txt', 'A  d.txt', 'A  e.txt', 'A  f.txt', 'A  g.txt', 'A  h.txt', 'A  i.txt', 'A  j.txt'];
+assert.match(planFile.dirtyMessage(manyDirty), /first: a\.txt, b\.txt, c\.txt, d\.txt, e\.txt, f\.txt, g\.txt, h\.txt, and 2 more, then press/);
+assert.match(planFile.dirtyMessage(['R  old.txt -> renamed.txt']), /first: renamed\.txt, then press/);
+
+// A re-run of the same goal keeps the ticked boxes (a resume after a stop); a new goal archives the old plan.
+{
+  const { work } = freshRepo('resume');
+  const first = planFile.prepare(work, { goal: 'First goal to finish', steps: [{ role: 'Build', model: 'Grok' }] });
+  assert.equal(first.ok, true, first.reason);
+  assert.equal(planFile.tickStep(work, { role: 'Build', model: 'Grok', commit: 'abc1234' }), true);
+  git(work, ['switch', '-q', 'main']);
+  const again = planFile.prepare(work, { goal: 'First goal to finish', steps: [{ role: 'Build', model: 'Grok' }] });
+  assert.equal(again.ok, true, again.reason);
+  assert.match(planFile.read(work), /- \[x\] Build \(Grok\) — abc1234/);
+  assert.equal(fs.existsSync(path.join(work, '.planwharf', 'done')), false, 'the same goal is not archived');
+  git(work, ['switch', '-q', 'main']);
+  const next = planFile.prepare(work, { goal: 'A second, different goal', steps: [{ role: 'Build', model: 'Grok' }] });
+  assert.equal(next.ok, true, next.reason);
+  assert.match(planFile.read(work), /A second, different goal/);
+  assert.match(planFile.read(work), /- \[ \] Build \(Grok\)/);
+  const archived = fs.readdirSync(path.join(work, '.planwharf', 'done')).filter(name => name.endsWith('.md'));
+  assert.equal(archived.length, 1, 'the old plan is kept under done/');
+  assert.match(fs.readFileSync(path.join(work, '.planwharf', 'done', archived[0]), 'utf8'), /First goal to finish/);
+}
+
+// An existing branch that does not contain the base commit is refused, not silently reused on the old base.
+{
+  const { work } = freshRepo('stale');
+  git(work, ['switch', '-q', '-c', 'port/stale']);
+  fs.writeFileSync(path.join(work, 'stale.txt'), 's\n');
+  git(work, ['add', 'stale.txt']);
+  git(work, ['commit', '-q', '-m', 'stale work off the old base']);
+  git(work, ['switch', '-q', 'main']);
+  fs.writeFileSync(path.join(work, 'readme.txt'), 'advanced\n');
+  git(work, ['commit', '-q', '-am', 'advance main']);
+  git(work, ['push', '-q', 'origin', 'main']);
+  git(work, ['switch', '-q', 'port/stale']);
+  git(work, ['status', '--porcelain']);
+  const refused = planFile.prepare(work, { goal: 'resume on branch `port/stale`', steps: [{ role: 'Build', model: 'Grok' }] });
+  assert.equal(refused.ok, false);
+  assert.match(refused.reason, /Branch port\/stale does not contain origin\/main [0-9a-f]{7}\./);
+}
+
+// Two goals that repeat on the same day do not overwrite each other's archive.
+{
+  const { work } = freshRepo('collide');
+  for (const goal of ['alpha goal', 'beta goal', 'alpha goal', 'beta goal']) {
+    const r = planFile.prepare(work, { goal, steps: [{ role: 'Build', model: 'G' }] });
+    assert.equal(r.ok, true, r.reason);
+    git(work, ['switch', '-q', 'main']);
+  }
+  const day = new Date().toISOString().slice(0, 10);
+  const names = fs.readdirSync(path.join(work, '.planwharf', 'done')).filter(name => name.endsWith('.md')).sort();
+  assert.deepEqual(names, [`${day}-alpha-goal-2.md`, `${day}-alpha-goal.md`, `${day}-beta-goal.md`], 'a repeated goal keeps a numbered copy');
+}
+
+// commitNote: the base is uncommitted, a real commit shows its short sha, a dirty tree is uncommitted again.
+{
+  const { work } = freshRepo('note');
+  const prep = planFile.prepare(work, { goal: 'note goal', steps: [{ role: 'Build', model: 'G' }] });
+  assert.equal(prep.ok, true, prep.reason);
+  assert.equal(planFile.commitNote(work), 'not committed', 'at the base commit nothing new is committed');
+  fs.writeFileSync(path.join(work, 'done.txt'), 'x\n');
+  git(work, ['add', 'done.txt']);
+  git(work, ['commit', '-q', '-m', 'the work']);
+  assert.match(planFile.commitNote(work), /^[0-9a-f]{7}$/, 'a new commit is reported by its short sha');
+  fs.writeFileSync(path.join(work, 'leftover.txt'), 'dirty\n');
+  assert.equal(planFile.commitNote(work), 'not committed', 'a dirty tree is not reported as committed');
+}
+
+// tickStep and finish do nothing and report false when there is no plan file yet.
+{
+  const empty = fs.mkdtempSync(path.join(root, 'empty-'));
+  assert.equal(planFile.tickStep(empty, { role: 'Build', model: 'G' }), false);
+  assert.equal(planFile.finish(empty, { summary: 'nothing to finish' }), false);
+}
+
+console.log('plan-file verification tests passed');
+
 (async () => {
   const { createOrchestrator } = require('./orchestrator.js');
   const { createAttemptEngine } = require('./attempts.js');
