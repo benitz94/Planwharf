@@ -21,6 +21,8 @@ async function removeTempDir(target, options = {}) {
   for (;;) {
     try { fs.rmSync(resolved, { recursive: true, force: true }); return true; }
     catch (error) {
+      // A path under a file does not exist: Linux and macOS answer ENOTDIR where Windows answers ENOENT (which force ignores).
+      if (error.code === 'ENOTDIR') return true;
       if (!BUSY.has(error.code) || Date.now() >= until) throw error;
       await pause(stepMs);
     }
