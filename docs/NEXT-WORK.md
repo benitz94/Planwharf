@@ -43,7 +43,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | 1b. Test bench | Module-by-module comparison with the JavaScript | — | Done (#81) |
 | — | 2. Modules with no dependencies | Jobs 01, 02, 04: skills, worker results, structured final, model roles and policy, accounts, browser settings, activity events, refusals, diagnostics, briefing, project history, evidence, autonomy | — | Done (#64, #74, #90) |
 | — | ARM builds | Windows and Linux ARM | — | Done (#80) |
-| 05 | Before the porting goes on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | To do |
+| 05 | Before the porting goes on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | Done, waiting for review |
 | 06 | Before the porting goes on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | To do |
 | 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | To do |

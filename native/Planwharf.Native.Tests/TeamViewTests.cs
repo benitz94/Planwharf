@@ -26,6 +26,8 @@ public class TeamViewTests
         row["goalStarted"] = true;
         Assert.False(TeamViews.GoalReady(row, null));
         Assert.True(TeamViews.GoalReady(row, "Port the next module."), "a new goal suggested by the lead");
+        Assert.False(TeamViews.GoalReady(row, "Port the five modules.", DateTimeOffset.Parse("2026-11-11T15:40:00Z"), "2026-11-11T15:41:00Z"), "a suggestion from before the work started");
+        Assert.True(TeamViews.GoalReady(row, "Port the next module.", DateTimeOffset.Parse("2026-11-13T12:00:00Z"), "2026-11-11T15:41:00Z"));
         var state = State("a", true, true);
         state["projects"]![0]!["goal"] = "Port the five modules.";
         state["projects"]![0]!["goalStarted"] = true;

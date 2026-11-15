@@ -477,8 +477,12 @@
     // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
     state.goalCandidate = null; state.suggestedGoal = null;
     const suggested = String(lastAsk?.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim() || null;
+    // A suggestion from before the last work started is not offered again.
+    const startedAt = Date.parse(row?.megaTask?.approvedAt || '');
+    const askedAt = Date.parse(lastAsk?.at || '');
+    const staleSuggestion = Number.isFinite(startedAt) && Number.isFinite(askedAt) && askedAt <= startedAt;
     // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
-    const nextGoal = suggested || '';
+    const nextGoal = !staleSuggestion && suggested || '';
     if (row && lastAsk && !busy && !pendingHere && nextGoal && nextGoal !== row.goal?.trim() && lastAsk.question?.trim() !== row.goal?.trim()) {
       state.goalCandidate = suggested; state.suggestedGoal = suggested;
       html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;

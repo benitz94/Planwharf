@@ -1,10 +1,15 @@
 using System.Globalization;
+using System.IO;
 using System.Text.Json.Nodes;
 
 namespace Planwharf.Native.Core;
 
 public sealed record ProgressStep(string Status, string Title, string Model);
-public sealed record ProgressPanel(string Status, string Next, IReadOnlyList<ProgressStep> Steps, IReadOnlyList<(string At, string Text)> Recent, string Folder);
+public sealed record ProgressPanel(string Status, string Next, IReadOnlyList<ProgressStep> Steps, IReadOnlyList<(string At, string Text)> Recent, string Folder)
+{
+    // .planwharf/plan.md in the project folder. The Progress panel opens it.
+    public string WorkPlan { get; init; } = "";
+}
 public sealed record QuotaWindow(string Name, int LeftPct, string Resets);
 public sealed record QuotaPlan(string Label, string? Note, IReadOnlyList<QuotaWindow> Windows);
 public sealed record UsagePanel(IReadOnlyList<QuotaPlan> Plans, IReadOnlyList<(string Model, string Text)> Lead, IReadOnlyList<(string Model, string Text)> Crew);
@@ -31,7 +36,8 @@ public static class PanelViews
                 Label(S(sub["assignedModelId"]) is { Length: > 0 } a ? a : S(sub["modelId"])))).ToList();
         var recent = (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId)
             .TakeLast(15).Reverse().Select(e => (Clock(S(e["createdAt"]), zone), S(e["summary"]) is var text && text.Length > 200 ? text[..200] : text)).ToList();
-        return new ProgressPanel(status, S(row?["next"]), steps, recent, S(row?["folder"]));
+        var folder = S(row?["folder"]);
+        return new ProgressPanel(status, S(row?["next"]), steps, recent, folder) { WorkPlan = folder.Length == 0 ? "" : Path.Combine(folder, ".planwharf", "plan.md") };
     }
 
     static string WindowName(string name) => name switch
