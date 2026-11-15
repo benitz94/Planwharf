@@ -41,5 +41,6 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   if (isProcessAlive(pid)) killWorker(pid);
   const resolved = path.resolve(dir);
   assert.ok(resolved.startsWith(path.resolve(os.tmpdir()) + path.sep) && path.basename(resolved).startsWith('pw-worker-startup-'));
-  fs.rmSync(resolved, { recursive: true, force: true });
+  // Windows can keep the folder locked for a moment after the detached worker exits.
+  fs.rmSync(resolved, { recursive: true, force: true, maxRetries: 20, retryDelay: 50 });
 });
