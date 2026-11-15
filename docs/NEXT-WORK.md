@@ -1,21 +1,37 @@
 # Next work, in order
 
-Written on 15 November 2026. Planwharf does these jobs itself, one at a time, in this order; each one
-is reviewed before it is merged. The C# porting plan goes on in between ([native/porting/PLAN.md](../native/porting/PLAN.md)).
+The owner only says: **"Read docs/NEXT-WORK.md and continue."** This file tells the lead what comes
+next and how to do it. Planwharf does these jobs itself, one at a time, in this order; each one is
+reviewed before it is merged.
 
-## Before every job
+## For the lead: how to continue
 
-The project folder must be on `main`, up to date and clean, because today the worker creates its
-branch from wherever the folder is (job A fixes this):
+1. Read this file on the refreshed `origin/main` (`git fetch`, then `git show origin/main:docs/NEXT-WORK.md`):
+   the copy in the folder may be older.
+2. Take the **first job of the list below whose status is "To do"**. Skip a job whose branch already
+   exists on `origin` (`git branch -r`): it is done and waiting for review; say so to the owner.
+3. If the folder has uncommitted changes, stop and tell the owner which files: do not start.
+4. Create the job's branch (its name is in the list) from the refreshed `origin/main`, whatever branch
+   the folder is on: `git fetch origin`, then `git switch -c <branch> origin/main`.
+5. Plan the job as its section says: build, then an independent verification by a model of another
+   company. Each section says what to build, the tests, and the rules.
+6. In the same branch, change the job's status in the list below to **"Done, waiting for review"**,
+   so that once merged, the next reading starts from the next job.
+7. Commit on the branch. Do not push and do not merge: the owner pushes with `git push -u origin HEAD`
+   and asks for a review.
+8. If the next job has no job sheet yet, or a job needs a decision, stop and ask the owner.
 
-```
-git checkout main
-git pull
-git status        # must say "nothing to commit, working tree clean"
-```
+## The list
 
-Give the lead the goal text of the job (the block under "Goal to give the lead"). When the work is done,
-push the branch with `git push -u origin HEAD` (job B fixes the Push button), and ask for a review.
+| Order | Job | Branch | Status |
+|---|---|---|---|
+| 1 | A. The work plan file, and checks before the crew starts (below) | `fix/plan-file` | To do |
+| 2 | B. The Push button pushes the branch where it belongs (below) | `fix/push-button` | To do |
+| 3 | C. Remove the Review role (below) | `fix/remove-review` | To do |
+| 4 | Porting job 05: the next phase 2 modules. Needs its job sheet first: ask the owner. | `port/05-…` | Waiting for the sheet |
+
+Already done: porting jobs 01 to 04 (job 04 in #90), the crew switches on the project's team (#92),
+the chat box keeping every line (#91). The porting phases are in [native/porting/PLAN.md](../native/porting/PLAN.md).
 
 Rules for every job:
 
@@ -84,12 +100,6 @@ created from `origin/main` even when the folder was on another branch; a dirty f
 with the message; an existing branch is reused; a step done ticks its box; a finished goal goes to
 "Done" and to `done/`. Native: a test for point 6.
 
-**Goal to give the lead:**
-
-```
-Do job A of docs/NEXT-WORK.md (the work plan file and the checks before the crew starts), exactly as written there, with its tests, on a new branch from the refreshed origin/main. Do not push or merge.
-```
-
 ---
 
 ## Job B. The Push button pushes the branch where it belongs
@@ -111,12 +121,6 @@ branch". Git then suggests `git push origin HEAD:main`, which would push to `mai
 **Tests.** In `engine/commit-push.test.cjs`, with a bare remote: a branch whose upstream is
 `origin/main` is pushed to its own name and gets that upstream; on `main` the push is refused and the
 remote's `main` is unchanged.
-
-**Goal to give the lead:**
-
-```
-Do job B of docs/NEXT-WORK.md (the Push button pushes the branch where it belongs), exactly as written there, with its tests, on a new branch from the refreshed origin/main. Do not push or merge.
-```
 
 ---
 
@@ -141,18 +145,12 @@ the Team panel shows it as if it did. The owner decided to remove it.
 **Tests.** Native `TeamViewTests`: a model with only `reviewer` is on the bench, no Review chip; engine:
 a chat message with "review" makes an implementation task.
 
-**Goal to give the lead:**
-
-```
-Do job C of docs/NEXT-WORK.md (remove the Review role), exactly as written there, with its tests, on a new branch from the refreshed origin/main. Do not push or merge.
-```
-
 ---
 
 ## After these
 
-Back to the porting plan: phase 2 goes on with the next modules (`plan.js`, `quota.js`, `models.js`,
-`sentinel`, `invocations`, `notebook-file`, `project-checks`, `project-workspace`), job sheet 05.
-Still waiting for the owner's decision on order: alerts on the computer when work ends, an estimate of
+Porting job 05 covers the next phase 2 modules (`plan.js`, `quota.js`, `models.js`, `sentinel`,
+`invocations`, `notebook-file`, `project-checks`, `project-workspace`).
+Not in the list yet, the owner decides the order: alerts on the computer when work ends, an estimate of
 the time left, phone notifications (Telegram), the native app updating itself, tools chosen per model,
 and the commit "16 failing test files" kept on `fix/failing-tests-review`.
