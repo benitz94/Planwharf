@@ -40,28 +40,31 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | 1b. Test bench | Module-by-module comparison with the JavaScript | — | Done (#81) |
 | — | 2. Modules with no dependencies | Jobs 01, 02, 04: skills, worker results, structured final, model roles and policy, accounts, browser settings, activity events, refusals, diagnostics, briefing, project history, evidence, autonomy | — | Done (#64, #74, #90) |
 | — | ARM builds | Windows and Linux ARM | — | Done (#80) |
-| 05 | Fixes before going on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | To do |
-| 06 | Fixes before going on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | To do |
-| 07 | Fixes before going on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
-| 08 | Fixes before going on | An estimate of the time left for the work (sheet below) | `fix/time-left` | To do |
-| 09 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/09-sheet` | To do |
-| 10 | 2. | Port them, as sheet 09 says | `port/10-phase2-rest` | To do |
-| 11 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/11-sheet` | To do |
-| 12 | 3. | Port them, as sheet 11 says | `port/12-phase3` | To do |
-| 13 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/13-sheet` | To do |
-| 14 | 4. | Port them, as sheet 13 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/14-phase4` | To do |
-| 15 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/15-sheet` | To do |
-| 16 | 5. | Port them, as sheet 15 says. Then **stop**: the owner approves the orchestrator split | `port/16-phase5` | To do |
-| 17 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/17-sheets` | To do |
-| 18+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/18-…` | To do |
+| 05 | Before the porting goes on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | To do |
+| 06 | Before the porting goes on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | To do |
+| 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
+| 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | To do |
+| 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | To do |
+| 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | To do |
+| 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | To do |
+| 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | To do |
+| 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | To do |
+| 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | To do |
+| 15 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/15-sheet` | To do |
+| 16 | 2. | Port them, as sheet 15 says | `port/16-phase2-rest` | To do |
+| 17 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/17-sheet` | To do |
+| 18 | 3. | Port them, as sheet 17 says | `port/18-phase3` | To do |
+| 19 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/19-sheet` | To do |
+| 20 | 4. | Port them, as sheet 19 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/20-phase4` | To do |
+| 21 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/21-sheet` | To do |
+| 22 | 5. | Port them, as sheet 21 says. Then **stop**: the owner approves the orchestrator split | `port/22-phase5` | To do |
+| 23 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/23-sheets` | To do |
+| 24+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/24-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
-| — | 8. Removal | **Stop first:** the list of what the native app still lacks compared with the web app and Electron, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
+| — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
 Every phase ends with the review done, CI green on Windows, macOS and Linux, and the comparison showing
 no difference for its modules. Until phase 7 Planwharf keeps running on the Node engine.
-
-Not in the plan yet; the owner decides if and when: alerts on the computer when work ends, phone notifications (Telegram), the native app updating itself, tools chosen per
-model, and the commit "16 failing test files" kept on `fix/failing-tests-review`.
 
 Rules for every job:
 
@@ -207,3 +210,106 @@ to decide whether to wait, stop for the night, or move models.
 **Tests.** `engine/time-left.test.cjs`: no history (defaults), history of the same model, a working step
 past its median, parallel steps counted once, sequence added. The history file: a line per step, cut at
 500 lines. Native: the line shown and hidden.
+
+---
+
+## Job 09. The native app updates itself
+
+**Why.** Today "Update available" opens the releases page and the owner downloads the zip by hand.
+
+**Start from** `docs/drafts/NativeUpdater.cs`, a draft that is not built yet: it finds the latest
+release, downloads `Planwharf-native-<rid>-<tag>.zip`, checks its SHA-256 against the digest GitHub
+publishes, unpacks it next to the installed folder in `.planwharf-update-<tag>`, and starts the new
+copy with `--finish-update <installed folder> <pid>`; the new copy waits for the old one to close,
+copies itself over the installed folder, starts it again and removes the staging folders.
+
+**What to build:**
+
+1. Move the draft to `native/Planwharf.Native/Core/NativeUpdater.cs` and make it build with no warning.
+2. `Program.cs`: handle `--finish-update` before the window opens.
+3. Settings → Updates: "Update now" when a newer release exists, with progress and a clear error that
+   leaves the installed app as it was (bad digest, no write access, offline).
+4. Before quitting for the update, the engine saves a checkpoint of running work (the same as Stop the
+   crew); after the restart the owner presses Resume. Refuse the update while a step is running
+   unless the owner confirms.
+5. Projects and settings are in another folder and are never touched.
+
+**Tests.** Native tests with a local fake release (a zip and its digest served from a temporary folder):
+digest wrong → nothing changes; finish step copies over a folder with spaces and non-ASCII names;
+staging folders are cleaned. Runs on Windows, macOS and Linux (rule 11).
+
+---
+
+## Job 10. Tools chosen per model
+
+**Why.** The tools (MCP, Browser, Hooks, Memory) are set per project for every model at once. The owner
+wants them per model: for example Browser for one model only.
+
+**What to build:**
+
+1. The engine keeps, per project, the tools of each model: `store.projectTools[projectId]` becomes
+   `{ default: {mcp, browser, hooks, memory}, models: { <modelId>: {...} } }`. A saved project of the old
+   shape reads as `default` and is saved again in the new shape.
+2. A worker or the lead gets the tools of its own model, else the project default (where the tools
+   reach the launch today: `engine/claude.cjs`, `engine/provider-runtime.cjs`, `engine/runner.cjs`).
+3. `POST /api/projects/tools` accepts an optional `modelId`.
+4. Native Team panel: each model card gets a "Tools" fold with the four boxes and "Same as the project".
+   The web app does not get it (frozen); it keeps working with the default.
+
+**Tests.** Engine: old shape migrated; a model with its own tools launches with them, another with the
+default; the lead gets its own. Native: the fold reads and saves.
+
+---
+
+## Job 11. An alert on the computer when work ends
+
+**What to build** (native app only): when a work ends (done, failed, or stopped waiting for the owner),
+a system notification ("Planwharf: <goal> is done" / "needs you"), the taskbar icon flashes until the
+window is opened, and a short sound. Settings → Look gets "Alerts: notification, flash, sound", each on
+or off, all on by default. Windows, macOS and Linux, with what each system offers; no NuGet package if
+the base library or Avalonia covers it.
+
+**Tests.** The decision of when to alert (done, failed, needs you; not on every step) as a pure function
+with tests; the system calls stay thin.
+
+---
+
+## Job 12. Alerts and commands on the phone
+
+**What to build:** two channels, each optional, set in Settings → Phone:
+
+1. **ntfy** (no account): the owner picks a private topic name; Planwharf posts to `https://ntfy.sh/<topic>`
+   when work ends, fails, or needs the owner. The owner installs the ntfy app and subscribes.
+2. **Telegram bot**: the owner creates a bot with BotFather and pastes its token; Planwharf keeps it in
+   the system's secure store when there is one, else in a file readable only by the user, never in the
+   project. Planwharf answers only the chat that sends the start code shown in Settings. Messages: the
+   same alerts, plus the estimate of job 08. Commands: `/status` (each project: working, steps, time
+   left), `/stop <project>` (Stop the crew, after "yes"), `/resume <project>`.
+3. The engine runs the channels (they must work with the window closed but Planwharf running).
+   Never send prompts, code, file names or paths: only project name, goal title, status and times.
+
+**Tests.** Engine tests with a fake HTTP server for ntfy and Telegram: what is sent, nothing private in
+it, a message from another chat is ignored, `/stop` asks for "yes".
+
+---
+
+## Job 13. The logo follows the main colour; the plan file can be kept in git
+
+1. The native logo (the compass, `Look.cs`) takes the main colour chosen in Settings → Look instead of
+   staying green. Test: the logo's colour after changing the main colour.
+2. Settings gets "Keep the work plan in git" (off by default). When on, the engine of job 05 does not
+   add `/.planwharf/` to `.git/info/exclude` and removes the line it added; the plan file is committed
+   with the work. Test in `engine/plan-file.test.cjs`.
+
+---
+
+## Job 14. Review the commit "16 failing test files"
+
+The commit `02a4c80` on `fix/failing-tests-review` fixes engine tests that failed on the owner's Windows
+computer, but it changes `server.cjs`, Electron and engine files together.
+
+1. Run `node --test` on refreshed `origin/main` and list what fails, with the reason.
+2. Take from `02a4c80` only what fixes a failure that still happens, one fix per commit, with the
+   reason in the message. A change to the program (not to a test) needs its reason written in the
+   pull request. Electron: only if a test of it fails.
+3. Do not take the rest. Full engine CI green.
