@@ -2897,7 +2897,7 @@ function createOrchestrator(options) {
           }
           for (const change of lostRole) {
             const from = models.find(model => model.id === change.fromModelId);
-            apply(change, `${from?.label || change.fromModelId} no longer has the ${assignmentRole(change.sub)} role in this project's team.`);
+            apply(change, `${from?.label || change.fromModelId} no longer has the ${{ worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(change.sub)] || 'Build'} role in this project's team.`);
           }
         });
       }

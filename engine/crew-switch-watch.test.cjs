@@ -82,7 +82,7 @@ test('quotaWatchTick uses the project team and moves a step whose model lost its
   assert.match(view.projects.find(row => row.id === 'alpha').log.map(line => line.text).join('\n'), /Switched Terra to Sonnet: Quota of Terra is at 12%/);
   // Opus still has quota, but Beta's team took its worker role away.
   assert.equal(beta.assignedModelId, 'sonnet');
-  assert.match(view.projects.find(row => row.id === 'beta').log.map(line => line.text).join('\n'), /no longer has the worker role in this project's team/);
+  assert.match(view.projects.find(row => row.id === 'beta').log.map(line => line.text).join('\n'), /no longer has the Build role in this project's team/);
   assert.equal(research.assignedModelId, 'terra', 'research is not switched');
   assert.equal(research.status, 'RUNNING');
   assert.equal(stayed.assignedModelId, 'opus', 'a gold step is not switched');
@@ -163,8 +163,8 @@ test('quotaWatchTick moves verifier and reviewer steps when models lose respecti
   assert.equal(reviewStepAfter.assignedModelId, 'sonnet');
 
   const logText = view.projects.find(p => p.id === 'roles-proj').log.map(line => line.text).join('\n');
-  assert.match(logText, /Opus no longer has the verifier role in this project's team/);
-  assert.match(logText, /Terra no longer has the reviewer role in this project's team/);
+  assert.match(logText, /Opus no longer has the Verify role in this project's team/);
+  assert.match(logText, /Terra no longer has the Review role in this project's team/);
 });
 
 test('quotaWatchTick leaves step in place when no eligible model is above quota', async t => {
@@ -336,7 +336,7 @@ test('quotaWatchTick moves step when role is removed in shared team for project 
   assert.equal(sub.assignedModelId, 'terra');
   assert.equal(sub.status, 'PENDING');
   const logText = view.projects.find(p => p.id === 'shared-proj').log.map(line => line.text).join('\n');
-  assert.match(logText, /Opus no longer has the worker role in this project's team/);
+  assert.match(logText, /Opus no longer has the Build role in this project's team/);
 });
 
 test('quotaWatchTick prefers an independent provider when moving a step that lost its role', async t => {
