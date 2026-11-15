@@ -43,24 +43,24 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 05 | Fixes before going on | The work plan file, and checks before the crew starts (sheet below) | `fix/plan-file` | To do |
 | 06 | Fixes before going on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | To do |
 | 07 | Fixes before going on | Remove the Review role (sheet below) | `fix/remove-review` | To do |
-| 08 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/08-sheet` | To do |
-| 09 | 2. | Port them, as sheet 08 says | `port/09-phase2-rest` | To do |
-| 10 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/10-sheet` | To do |
-| 11 | 3. | Port them, as sheet 10 says | `port/11-phase3` | To do |
-| 12 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/12-sheet` | To do |
-| 13 | 4. | Port them, as sheet 12 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/13-phase4` | To do |
-| 14 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/14-sheet` | To do |
-| 15 | 5. | Port them, as sheet 14 says. Then **stop**: the owner approves the orchestrator split | `port/15-phase5` | To do |
-| 16 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/16-sheets` | To do |
-| 17+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/17-…` | To do |
+| 08 | Fixes before going on | An estimate of the time left for the work (sheet below) | `fix/time-left` | To do |
+| 09 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/09-sheet` | To do |
+| 10 | 2. | Port them, as sheet 09 says | `port/10-phase2-rest` | To do |
+| 11 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/11-sheet` | To do |
+| 12 | 3. | Port them, as sheet 11 says | `port/12-phase3` | To do |
+| 13 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/13-sheet` | To do |
+| 14 | 4. | Port them, as sheet 13 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/14-phase4` | To do |
+| 15 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/15-sheet` | To do |
+| 16 | 5. | Port them, as sheet 15 says. Then **stop**: the owner approves the orchestrator split | `port/16-phase5` | To do |
+| 17 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/17-sheets` | To do |
+| 18+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/18-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** the list of what the native app still lacks compared with the web app and Electron, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
 Every phase ends with the review done, CI green on Windows, macOS and Linux, and the comparison showing
 no difference for its modules. Until phase 7 Planwharf keeps running on the Node engine.
 
-Not in the plan yet; the owner decides if and when: alerts on the computer when work ends, an estimate
-of the time left, phone notifications (Telegram), the native app updating itself, tools chosen per
+Not in the plan yet; the owner decides if and when: alerts on the computer when work ends, phone notifications (Telegram), the native app updating itself, tools chosen per
 model, and the commit "16 failing test files" kept on `fix/failing-tests-review`.
 
 Rules for every job:
@@ -176,3 +176,34 @@ the Team panel shows it as if it did. The owner decided to remove it.
 a chat message with "review" makes an implementation task.
 
 ---
+
+---
+
+## Job 08. An estimate of the time left
+
+**Why.** The owner wants to know, while the crew works, about how long is left before the work ends,
+to decide whether to wait, stop for the night, or move models.
+
+**What to build:**
+
+1. **Remember how long steps take.** When a step ends (`collect` in `engine/execution.cjs`), the engine
+   appends one line to `step-times.jsonl` in its data folder: role (Build, Verify), model id, size or
+   weight of the part when known, number of files changed, minutes from start to end, and whether it
+   ended done or failed. Keep the last 500 lines. No prompt, path or project name in it.
+2. **Estimate.** A new `engine/time-left.cjs`, data only (it will be ported, so no files or clock inside:
+   the caller passes the history, the steps and the current time):
+   - a step waiting: the median of the past steps of the same role and model, else of the same role,
+     else 20 minutes for Build and 10 for Verify;
+   - a step working: that median minus the minutes already spent, never under 2 minutes; past the
+     median, "longer than usual";
+   - steps that run at the same time count once (the longest); steps in sequence add up;
+   - the result: minutes left, the expected end time, and how sure it is ("rough" with fewer than 5 past
+     steps of that role, else "based on N past steps").
+3. **Show it.** The engine adds `timeLeft` to the work in the snapshot. The native app shows it in the
+   chat under "The crew is working" and in Progress: "About 25 minutes left (ends around 17:40) ·
+   rough". Hidden when no step is running or waiting. The web app does not get it (frozen).
+4. Do not change modules already ported to C#.
+
+**Tests.** `engine/time-left.test.cjs`: no history (defaults), history of the same model, a working step
+past its median, parallel steps counted once, sequence added. The history file: a line per step, cut at
+500 lines. Native: the line shown and hidden.
