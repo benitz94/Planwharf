@@ -29,7 +29,7 @@ function fixture() {
     assets: [{ name: 'planwharf-update.json.gz', digest: 'sha256:' + digest(bytes), browser_download_url: 'https://github.com/benitz94/Planwharf/releases/download/' + bundle.version + '/planwharf-update.json.gz' }] };
   let downloads = 0;
   const fetchImpl = async url => { if (url.endsWith('/latest')) return new Response(JSON.stringify(release)); downloads++; return new Response(bytes); };
-  return { root, manifest, bundle, bytes, release, fetchImpl, get downloads() { return downloads; }, cleanup() { assert.ok(root.startsWith(os.tmpdir() + path.sep)); fs.rmSync(root, { recursive: true, force: true }); } };
+  return { root, manifest, bundle, bytes, release, fetchImpl, get downloads() { return downloads; }, cleanup() { assert.ok(root.startsWith(os.tmpdir() + path.sep)); fs.rmSync(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 50 }); } };
 }
 test('stable version comparison and packages reject protected files, traversal and corrupt checksums', () => {
   assert.equal(newer('v1.2.0', 'v1.1.9'), true); assert.equal(newer('v1.2.0', 'v1.2.0'), false); assert.equal(newer('v1.2.0-beta', 'v1.1.0'), false);
@@ -122,7 +122,8 @@ test('update API requires consent and does not checkpoint on checks or declined 
 test('detached helper applies verified files and restarts with the same notebook arguments', async () => {
   const f = fixture();
   try {
-    const newScript = "require('node:fs').writeFileSync('restarted.json', JSON.stringify(process.argv.slice(2)));";
+    // The restarted app records its pid and writes its arguments in one rename, so the test reads whole JSON and can wait for it to exit.
+    const newScript = "const fs=require('node:fs');fs.writeFileSync('restarted.pid',String(process.pid));fs.writeFileSync('restarted.tmp',JSON.stringify(process.argv.slice(2)));fs.renameSync('restarted.tmp','restarted.json');";
     f.bundle.files[0].data = Buffer.from(newScript).toString('base64'); f.bundle.files[0].sha256 = digest(Buffer.from(newScript));
     const stage = path.join(f.root, '.planwharf-updates/helper-test'); fs.mkdirSync(stage, { recursive: true });
     fs.writeFileSync(path.join(stage, 'package.json.gz'), zlib.gzipSync(JSON.stringify(f.bundle)));
@@ -132,11 +133,23 @@ test('detached helper applies verified files and restarts with the same notebook
     const job = { root: f.root, stage, installed: f.manifest, version: 'v1.0.1', parentPid: 2147483647, node: process.execPath, args };
     const jobFile = path.join(stage, 'job.json'); fs.writeFileSync(jobFile, JSON.stringify(job));
     await promisify(execFile)(process.execPath, [path.join(stage, 'apply-update.cjs'), jobFile], { timeout: 10000 });
-    for (let i = 0; i < 100 && !fs.existsSync(path.join(f.root, 'restarted.json')); i++) await new Promise(resolve => setTimeout(resolve, 20));
+    for (let i = 0; i < 500 && !fs.existsSync(path.join(f.root, 'restarted.json')); i++) await new Promise(resolve => setTimeout(resolve, 20));
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(f.root, 'restarted.json'), 'utf8')), args.slice(1));
     assert.equal(JSON.parse(fs.readFileSync(path.join(stage, 'result.json'))).ok, true);
     assert.equal(installation(f.root).version, 'v1.0.1');
-  } finally { f.cleanup(); }
+  } finally {
+    // Windows keeps the folder busy while the restarted app (its working directory) is still exiting.
+    const pidFile = path.join(f.root, 'restarted.pid');
+    const pid = fs.existsSync(pidFile) ? Number(fs.readFileSync(pidFile, 'utf8')) : 0;
+    const alive = () => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    for (let i = 0; pid && i < 500 && alive(); i++) await new Promise(resolve => setTimeout(resolve, 20));
+    for (let i = 0; ; i++) {
+      try { f.cleanup(); break; } catch (error) {
+        if (i >= 50 || !['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code)) throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+  }
 });
 
 test('desktop boot checks updates once without installing or launching any worker', async () => {

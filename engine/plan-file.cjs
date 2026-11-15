@@ -68,14 +68,28 @@ function namedBranch(text) {
     /\bbranch\s+`([^`]+)`/i,
     /\bbranch\s+'([^']+)'/i,
     /\bbranch\s+"([^"]+)"/i,
-    /\bbranch\s+([A-Za-z0-9][A-Za-z0-9._/-]*)/i
+    // A bare word is a name only when the text says so ("on branch develop", "branch named develop")
+    // or when it looks like one (a slash, dash, dot, underscore or digit). "branch creation" is not a branch.
+    /\bbranch\s+(?:named|called)\s+([A-Za-z0-9][A-Za-z0-9._/-]*)/i,
+    /\b(?:on|to|onto|into|new|use|switch|checkout)\s+(?:the\s+|a\s+)?branch\s+([A-Za-z0-9][A-Za-z0-9._/-]*)/i,
+    /\bbranch\s+((?=[A-Za-z0-9._/-]*(?:[0-9]|[._/-][A-Za-z0-9]))[A-Za-z0-9][A-Za-z0-9._/-]*)/i
   ];
   for (const pattern of patterns) {
     const match = source.match(pattern);
     if (!match) continue;
     const name = match[1].trim().replace(/[.,;:]+$/g, '');
-    if (/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(name) && !/^(from|the|a|an|on|name|is)$/i.test(name)) return name;
+    if (/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(name) && !/^(from|the|a|an|on|name|named|called|is|that|this|and|or)$/i.test(name)) return name;
   }
+  return null;
+}
+
+// "On fix/plan-file, ..." names a branch only when that branch already exists here or on the remote.
+function leadingBranch(folder, text) {
+  const match = String(text || '').match(/^\s*on\s+([A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9._/-]*[A-Za-z0-9_-])\s*[,:]/i);
+  if (!match) return null;
+  const name = match[1];
+  if (branchExists(folder, name)) return name;
+  if (git(folder, ['show-ref', '--verify', '--quiet', 'refs/remotes/origin/' + name]).ok) return name;
   return null;
 }
 
@@ -129,6 +143,12 @@ function stepLabel(step, all) {
   return `${role} (${model})${title}`;
 }
 
+// Section text on its own lines: one newline style, and no line that reads as a section heading,
+// so a goal or summary that quotes "## Steps" cannot take over the plan's sections when it is read back.
+function block(text) {
+  return String(text || '').replace(/\r\n?/g, '\n').trim().replace(/^(#+\s)/gm, '\\$1');
+}
+
 function render(spec) {
   const steps = (spec.steps || []).map(step => {
     if (typeof step === 'string') return step;
@@ -142,15 +162,15 @@ function render(spec) {
     '',
     '## Goal',
     '',
-    String(spec.goal || '').trim(),
+    block(spec.goal),
     '',
     '## Base',
     '',
-    String(spec.base || '').trim(),
+    block(spec.base),
     '',
     '## Branch',
     '',
-    String(spec.branch || '').trim(),
+    block(spec.branch),
     '',
     '## Steps',
     '',
@@ -162,7 +182,7 @@ function render(spec) {
     '',
     '## Done',
     '',
-    String(spec.done || '').trim(),
+    block(spec.done),
     '',
     ''
   ].join('\n');
@@ -186,9 +206,10 @@ function archive(folder, goal) {
 
 function writePlan(folder, spec) {
   const previous = parse(read(folder));
-  const goal = String(spec.goal || '').trim();
+  const goal = block(spec.goal);
   const same = previous.goal && previous.goal === goal;
-  if (previous.goal && !same) archive(folder, previous.goal);
+  // A finished plan (its Done section is filled) was already archived by finish(); do not keep a second copy.
+  if (previous.goal && !same && !previous.done) archive(folder, previous.goal);
   const steps = spec.steps && spec.steps.length
     ? spec.steps.map(step => {
       const label = step.label || stepLabel(step, spec.steps);
@@ -242,8 +263,9 @@ function prepare(folder, options = {}) {
   const dirty = dirtyLines(folder);
   if (dirty.length) return { ok: false, reason: dirtyMessage(dirty) };
   const goal = String(options.goal || '').trim();
-  const name = branchName(goal, options.branch);
   const fetched = git(folder, ['fetch', 'origin'], 30000);
+  const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;
+  const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
   let base = '';
   let baseSha = '';
   let startPoint = null;

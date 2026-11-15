@@ -233,6 +233,98 @@ assert.match(planFile.dirtyMessage(['R  old.txt -> renamed.txt']), /first: renam
 
 console.log('plan-file verification tests passed');
 
+// --- Second verification pass: wording that is not a branch, the leading "On <branch>," form, finished-plan archive. ---
+
+// Plain words after "branch" are not branch names; explicit wording and branch-shaped tokens still are.
+assert.equal(planFile.namedBranch('fix the failures (plan file, branch creation, dirty-folder gate)'), null);
+assert.equal(planFile.namedBranch('commit on that branch, and do not push'), null);
+assert.equal(planFile.namedBranch('the branch main.'), null);
+assert.equal(planFile.namedBranch('work on branch develop today'), 'develop');
+assert.equal(planFile.namedBranch('a new branch named feature please'), 'feature');
+assert.equal(planFile.namedBranch('cut branch v2 for it'), 'v2');
+assert.equal(planFile.namedBranch('cut branch feat_x, ok'), 'feat_x');
+
+// The goal of this very job: "On fix/plan-file, ... branch creation ..." stays on the existing branch.
+{
+  const { work } = freshRepo('leading');
+  git(work, ['switch', '-q', '-c', 'fix/plan-file']);
+  fs.writeFileSync(path.join(work, 'fix.txt'), 'fix\n');
+  git(work, ['add', 'fix.txt']);
+  git(work, ['commit', '-q', '-m', 'fix work']);
+  const fixHead = git(work, ['rev-parse', 'HEAD']);
+  git(work, ['switch', '-q', 'main']);
+  const jobGoal = 'On fix/plan-file, re-run node --test, fix the failures (job 05 plan file, branch creation, dirty-folder gate), commit on that branch, and do not push or merge.';
+  const r = planFile.prepare(work, { goal: jobGoal, steps: [{ role: 'Build', model: 'G' }] });
+  assert.equal(r.ok, true, r.reason);
+  assert.equal(r.branch, 'fix/plan-file');
+  assert.equal(git(work, ['rev-parse', 'HEAD']), fixHead, 'the named branch is reused, not a new "creation" branch');
+  assert.equal(spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/creation'], { cwd: work }).status, 1);
+
+  // "On <path>," where no such branch exists is not taken as a branch name.
+  git(work, ['switch', '-q', 'main']);
+  const pathGoal = 'On src/app.js, tidy the imports.';
+  const p = planFile.prepare(work, { goal: pathGoal, steps: [] });
+  assert.equal(p.ok, true, p.reason);
+  assert.equal(p.branch, 'planwharf/' + planFile.shortGoal(pathGoal));
+}
+
+// A finished plan is archived once by finish(); starting the next goal does not archive it again.
+{
+  const { work } = freshRepo('finish-once');
+  assert.equal(planFile.prepare(work, { goal: 'Finished goal', steps: [{ role: 'Build', model: 'G' }] }).ok, true);
+  assert.equal(planFile.finish(work, { summary: 'all done', pushed: false }), true);
+  git(work, ['switch', '-q', 'main']);
+  assert.equal(planFile.prepare(work, { goal: 'Next goal', steps: [{ role: 'Build', model: 'G' }] }).ok, true);
+  const archived = fs.readdirSync(path.join(work, '.planwharf', 'done')).filter(name => name.endsWith('.md'));
+  assert.equal(archived.length, 1, 'one archived copy of the finished plan');
+  assert.match(fs.readFileSync(path.join(work, '.planwharf', 'done', archived[0]), 'utf8'), /Summary: all done/);
+  assert.equal(planFile.parse(planFile.read(work)).done, '', 'the new plan starts with an empty Done section');
+}
+
+// A goal written with CRLF and a summary that quotes markdown headings round-trip without breaking the sections.
+{
+  const { work } = freshRepo('headings');
+  const crlfGoal = 'Line one\r\n## Steps\r\n- [ ] not a real step';
+  assert.equal(planFile.prepare(work, { goal: crlfGoal, steps: [{ role: 'Build', model: 'G' }] }).ok, true);
+  assert.equal(planFile.tickStep(work, { role: 'Build', model: 'G', commit: 'abc1234' }), true);
+  let parsed = planFile.parse(planFile.read(work));
+  assert.equal(parsed.steps.length, 1, 'the quoted heading in the goal does not add steps');
+  assert.equal(parsed.steps[0].done, true);
+  git(work, ['switch', '-q', 'main']);
+  assert.equal(planFile.prepare(work, { goal: crlfGoal, steps: [{ role: 'Build', model: 'G' }] }).ok, true);
+  assert.equal(fs.existsSync(path.join(work, '.planwharf', 'done')), false, 'the same CRLF goal is recognised, not archived');
+  assert.match(planFile.read(work), /- \[x\] Build \(G\) — abc1234/, 'the ticked step survives the re-run');
+  assert.equal(planFile.finish(work, { summary: 'ok\n## Steps\n- [ ] injected', pushed: false }), true);
+  parsed = planFile.parse(planFile.read(work));
+  assert.equal(parsed.steps.length, 1, 'a summary that quotes a heading does not add steps');
+  assert.match(parsed.done, /Summary: ok/);
+}
+
+// Twin steps (same role and model) are told apart by title and ticked one by one.
+{
+  const { work } = freshRepo('twins');
+  const twinSteps = [{ role: 'Build', model: 'G', title: 'Part one' }, { role: 'Build', model: 'G', title: 'Part two' }];
+  assert.equal(planFile.prepare(work, { goal: 'twin goal', steps: twinSteps }).ok, true);
+  assert.equal(planFile.tickStep(work, { title: 'Part two', role: 'Build', model: 'G', commit: 'bbbbbbb' }), true);
+  const lines = planFile.parse(planFile.read(work)).steps;
+  assert.deepEqual(lines.map(step => step.done), [false, true]);
+  assert.equal(lines[1].commit, 'bbbbbbb');
+}
+
+// The exclude file without a final newline gets the line on its own line, once.
+{
+  const { work } = freshRepo('exclude');
+  const excludeFile = path.join(work, '.git', 'info', 'exclude');
+  fs.writeFileSync(excludeFile, '*.log');
+  assert.equal(planFile.prepare(work, { goal: 'exclude goal', steps: [] }).ok, true);
+  git(work, ['switch', '-q', 'main']);
+  assert.equal(planFile.prepare(work, { goal: 'exclude goal', steps: [] }).ok, true);
+  assert.deepEqual(fs.readFileSync(excludeFile, 'utf8').split('\n'), ['*.log', '/.planwharf/', '']);
+  assert.equal(git(work, ['status', '--porcelain']), '', 'the plan folder stays out of git status');
+}
+
+console.log('plan-file second verification tests passed');
+
 (async () => {
   const { createOrchestrator } = require('./orchestrator.js');
   const { createAttemptEngine } = require('./attempts.js');
