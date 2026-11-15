@@ -2844,6 +2844,16 @@ function createOrchestrator(options) {
   // While steps work, a model whose quota runs low hands its step to another model with the same role.
   let quotaWatchRunning = false;
   const quotaSwitchedAt = new Map();
+  // Same order as a quota switch: another company first, quota that is read before quota that is not, then the most left above the limit.
+  function bestAboveQuota(step, models) {
+    const fits = candidate => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+    return models
+      .filter(model => model.id !== step.modelId && model.enabled && model.available !== false && model.providerEnabled !== false && fits(model))
+      .map(model => ({ model, left: quotaLeft(model, plansLive) }))
+      .filter(item => !lowQuota(item.model, plansLive, limitFor))
+      .map(item => ({ ...item, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) }))
+      .sort((a, b) => (a.shared - b.shared) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))[0]?.model || null;
+  }
   async function quotaWatchTick() {
     const settings = autoSwitch();
     if (!settings.enabled || quotaWatchRunning || shuttingDown) return;
@@ -2854,19 +2864,42 @@ function createOrchestrator(options) {
       if (!busy.length) return;
       await refreshPlans(false);
       for (const row of busy) {
-        const running = (row.subTasks || []).filter(sub => sub.status === 'RUNNING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
-          .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
-            // The companies of the work's other steps: the switch avoids them when it can.
-            avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = roster().find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
-        const switches = quotaSwitches({ running, models: roster(), plans: plansLive, thresholdPercent: limitFor,
-          eligible: (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked });
-        for (const change of switches) {
-          quotaSwitchedAt.set(change.subTaskId, Date.now());
-          const from = roster().find(model => model.id === change.fromModelId), to = roster().find(model => model.id === change.toModelId);
-          const why = `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}).`;
-          try { await inTeam(row.id, async () => { bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why, 'auto'); note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`); }); }
-          catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
-        }
+        // Roles belong to this project's team. The shared team is a different crew.
+        await inTeam(row.id, async () => {
+          const models = roster();
+          const running = (row.subTasks || []).filter(sub => sub.status === 'RUNNING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
+            .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
+              // The companies of the work's other steps: the switch avoids them when it can.
+              avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = models.find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
+          const eligible = (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+          const switches = quotaSwitches({ running, models, plans: plansLive, thresholdPercent: limitFor, eligible });
+          const switched = new Set(switches.map(change => change.subTaskId));
+          // The user removed this model from the step's role in Team. Quota can still be fine; the step still moves.
+          const lostRole = [];
+          for (const step of running) {
+            if (switched.has(step.subTaskId)) continue;
+            const current = models.find(model => model.id === step.modelId);
+            if (current && permitsAssignment(current, step.sub)) continue;
+            const best = bestAboveQuota(step, models);
+            if (best) lostRole.push({ subTaskId: step.subTaskId, fromModelId: step.modelId, toModelId: best.id, sub: step.sub });
+          }
+          const apply = (change, why) => {
+            quotaSwitchedAt.set(change.subTaskId, Date.now());
+            const from = models.find(model => model.id === change.fromModelId), to = models.find(model => model.id === change.toModelId);
+            try {
+              bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why, 'auto');
+              note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`);
+            } catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
+          };
+          for (const change of switches) {
+            const from = models.find(model => model.id === change.fromModelId);
+            apply(change, `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}).`);
+          }
+          for (const change of lostRole) {
+            const from = models.find(model => model.id === change.fromModelId);
+            apply(change, `${from?.label || change.fromModelId} no longer has the ${assignmentRole(change.sub)} role in this project's team.`);
+          }
+        });
       }
       persist();
     } finally { quotaWatchRunning = false; }
