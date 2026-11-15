@@ -90,7 +90,7 @@ async function stopServer() { await new Promise(resolve => server.close(resolve)
     await post('/api/orchestrator/approve', { projectId: 'alpha' });
     assert.equal(launches.at(-1).worker.provider, selected.provider);
     assert.doesNotMatch(launches.at(-1).job.detail, /Matt|SKILL\.md/);
-    assert.equal(launches.at(-1).job.kind, 'audit');
+    assert.equal(launches.at(-1).job.kind, 'implementation');
     assert.doesNotMatch(promptFor({ kind: 'audit', detail: launches.at(-1).job.detail }), /Implement the job in this folder/);
     await post('/api/orchestrator/stop', { projectId: 'alpha' });
   }

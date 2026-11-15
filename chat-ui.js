@@ -84,7 +84,8 @@
   const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false);
   const verifiers = () => models().filter(model => model.roles?.verifier && model.enabled && model.available !== false);
   const ROLE_KEYS = ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor'];
-  const onBench = model => !ROLE_KEYS.some(role => model.roles?.[role]);
+  // On the bench with none of lead, Build and Verify. Review is not a role.
+  const onBench = model => !['orchestrator', 'worker', 'verifier'].some(role => model.roles?.[role]);
   const NO_ROLES = Object.fromEntries(ROLE_KEYS.map(role => [role, false]));
   // One colour per provider, so the same company is recognisable everywhere.
   const PROVIDER_COLOURS = { codex: '#10a37f', openai: '#10a37f', claude: '#d97757', anthropic: '#d97757', grok: '#6b7280', xai: '#6b7280', antigravity: '#4285f4', gemini: '#4285f4', google: '#4285f4', api: '#8b5cf6' };
@@ -353,7 +354,7 @@
     const said = (row.results || []).filter(result => result.summary && result.summary.trim() && !result.modelChange);
     return said.length ? `<h4 class="small">What was done</h4><ul class="plain small">${said.map(result => `<li>${escape(result.summary)}</li>`).join('')}</ul>` : '';
   }
-  const ROLE_FOR_STEP = { Build: ['worker'], Verify: ['verifier', 'worker'], Review: ['reviewer'], Research: ['worker'] };
+  const ROLE_FOR_STEP = { Build: ['worker'], Verify: ['verifier', 'worker'], Review: ['worker'], Research: ['worker'] };
   function crewPicker(sub, role) {
     const keys = ROLE_FOR_STEP[role] || ['worker'];
     const list = models().filter(model => model.enabled && model.available !== false && keys.some(key => model.roles?.[key]));
@@ -606,11 +607,11 @@
       <div class="chips">${chip('weight', '', 'Any weight')}${chip('weight', 'light', 'Light')}${chip('weight', 'default', 'Default')}${chip('weight', 'premium', 'Premium')}</div>
       <div class="chips">${chip('state', '', 'Anywhere')}${chip('state', 'team', 'On the team')}${chip('state', 'bench', 'On the bench')}${chip('state', 'low', 'Under its limit')}</div>
       <p class="explain">For the ${shown.length} model${shown.length === 1 ? '' : 's'} shown:</p>
-      <div class="chips">${bulk('worker', 'Build')}${bulk('verifier', 'Verify')}${bulk('reviewer', 'Review')}</div></div>`;
+      <div class="chips">${bulk('worker', 'Build')}${bulk('verifier', 'Verify')}</div></div>`;
   }
   async function setRolesForShown(ids, role, enabled) {
     if (!ids.length) return;
-    try { await post('/api/models/roles/many', { ids, roles: { [role]: enabled }, projectId: state.projectId }); await refresh({ tick: false }); toast(`${{ worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[role]} ${enabled ? 'on' : 'off'} for ${ids.length} model${ids.length === 1 ? '' : 's'}.`); }
+    try { await post('/api/models/roles/many', { ids, roles: { [role]: enabled }, projectId: state.projectId }); await refresh({ tick: false }); toast(`${{ worker: 'Build', verifier: 'Verify' }[role]} ${enabled ? 'on' : 'off'} for ${ids.length} model${ids.length === 1 ? '' : 's'}.`); }
     catch (error) { toast(error.message); }
     state.sideSig = ''; renderSide();
   }
@@ -622,13 +623,12 @@
       const [icon, tone] = ROLE_LOOK[label] || ROLE_LOOK.Build;
       return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
-    const optional = ['reviewer'].filter(role => model.roleEligibility?.[role] !== false);
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
       <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ` · <span title="${escape(model.unavailableReason || '')}">not available now${model.unavailableReason ? ': ' + escape(String(model.unavailableReason).slice(0, 140)) : ''}${model.unavailableAt ? ' (tried again in a few minutes)' : ''}</span>` : ''}${quotaText(model, left)}</div>
       ${left != null && !benched ? `<div class="bar${model.lowQuota ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}${benched ? '' : limitEditor(model)}</div>
-      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
+      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
   }
   // Who takes over as lead when the lead's quota reaches the switch threshold or runs out, in order.
@@ -657,7 +657,7 @@
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>${leadBackupsLine()}</div>
       ${filterBar(offered, shown)}
-      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
+      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 || filterActive() ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}
@@ -979,7 +979,7 @@
   const NEEDS_OK = ['claude', 'grok', 'antigravity'];
   function toolsNeedingOk(forLead = false) {
     const list = forLead ? [lead()].filter(Boolean)
-      : models().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && (model.roles?.worker || model.roles?.verifier || model.roles?.reviewer));
+      : models().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && (model.roles?.worker || model.roles?.verifier));
     const ids = [...new Set(list.filter(model => model.alwaysApprove !== true && (forLead ? model.adapter === 'antigravity' : NEEDS_OK.includes(model.adapter))).map(model => model.providerId || model.provider))];
     return ids.map(id => (state.orchestra?.providers || []).find(provider => provider.id === id) || { id, label: id });
   }

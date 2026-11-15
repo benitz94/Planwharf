@@ -42,6 +42,27 @@ public class ProjectViewTests
     }
 
     [Fact]
+    public void An_old_audit_step_still_shows_the_review_role()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "projects": [
+            { "id": "audit-proj", "name": "Audit Sample",
+              "megaTask": { "id": "mt-audit", "title": "Audit dependencies", "status": "COMPLETE" },
+              "subTasks": [
+                { "id": "st-audit", "type": "AUDIT", "title": "Check package integrity", "status": "COMPLETE", "assignedModelId": "opus" }
+              ],
+              "results": [ { "subTaskId": "st-audit", "status": "COMPLETE", "summary": "Audit passed" } ] }
+          ] }
+        """)!;
+        var view = ProjectViews.Project(snapshot, "audit-proj")!;
+        Assert.NotNull(view.Work);
+        Assert.Single(view.Work.Steps);
+        Assert.Equal("Review", view.Work.Steps[0].Role);
+        Assert.Equal("Check package integrity", view.Work.Steps[0].Title);
+        Assert.Equal("done", view.Work.Steps[0].Status);
+    }
+
+    [Fact]
     public void Offers_one_clear_next_action()
     {
         Assert.Equal(CrewAction.LetTheCrewDoIt, ProjectViews.Project(SampleState.Finished(), "weather")!.Action);

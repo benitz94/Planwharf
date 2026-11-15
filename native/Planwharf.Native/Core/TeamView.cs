@@ -73,11 +73,12 @@ public static class TeamViews
             var label = S(model["label"]) is { Length: > 0 } text ? text : S(model["id"]);
             return new TeamModel(S(model["id"]), label, S(model["plan"]) is { Length: > 0 } plan ? plan : S(model["provider"]), QuotaLeft(snapshot, model),
                 model["available"] is not JsonValue available || !available.TryGetValue<bool>(out var ok) || ok, S(model["unavailableReason"]) is { Length: > 0 } why ? why : null,
-                S(model["id"]) == lead, B(roles?["worker"]), B(roles?["verifier"]), B(roles?["reviewer"]), Eligible(model, "orchestrator"))
+                S(model["id"]) == lead, B(roles?["worker"]), B(roles?["verifier"]), false, Eligible(model, "orchestrator"))
             {
                 Enabled = model["enabled"] is not JsonValue enabled || !enabled.TryGetValue<bool>(out var on) || on,
-                Bench = !new[] { "orchestrator", "worker", "verifier", "reviewer", "supervisor" }.Any(role => B(roles?[role])),
-                CanBuild = Eligible(model, "worker"), CanVerify = Eligible(model, "verifier"), CanReview = Eligible(model, "reviewer"),
+                // On the bench with none of lead, Build and Verify. Review is not a role.
+                Bench = !new[] { "orchestrator", "worker", "verifier" }.Any(role => B(roles?[role])),
+                CanBuild = Eligible(model, "worker"), CanVerify = Eligible(model, "verifier"), CanReview = false,
                 RetrySoon = model["unavailableAt"] != null,
                 ProviderId = S(model["providerId"]) is { Length: > 0 } providerId ? providerId : S(model["provider"]),
                 Adapter = S(model["adapter"]) is { Length: > 0 } adapter ? adapter : S(model["provider"]),
@@ -120,7 +121,6 @@ public static class TeamViews
     public static IReadOnlyList<TeamModel> ModelsFor(TeamView team, string role) => team.Models.Where(model => model.Available && model.Enabled && role switch
     {
         "Verify" => model.Verify || model.Build,
-        "Review" => model.Review,
         _ => model.Build
     }).ToList();
 
@@ -131,7 +131,7 @@ public static class TeamViews
     public static IReadOnlyList<ProviderView> ToolsNeedingOk(TeamView team, bool forLead = false)
     {
         var models = forLead ? team.Models.Where(model => model.Id == team.LeadId)
-            : team.Models.Where(model => model.Enabled && model.Available && model.ProviderEnabled && (model.Build || model.Verify || model.Review));
+            : team.Models.Where(model => model.Enabled && model.Available && model.ProviderEnabled && (model.Build || model.Verify));
         return models.Where(model => !model.WorksUnasked && (forLead ? model.Adapter == "antigravity" : NeedsOk.Contains(model.Adapter)))
             .Select(model => model.ProviderId).Distinct()
             .Select(id => team.Providers.FirstOrDefault(provider => provider.Id == id) ?? new ProviderView(id, id, true, 0)).ToList();

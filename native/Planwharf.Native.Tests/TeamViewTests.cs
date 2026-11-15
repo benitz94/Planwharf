@@ -61,7 +61,56 @@ public class TeamViewTests
         var team = TeamViews.Team(State("a", true, true));
         Assert.Equal(["a"], TeamViews.ModelsFor(team, "Build").Select(model => model.Id));
         Assert.Equal(["a", "c"], TeamViews.ModelsFor(team, "Verify").Select(model => model.Id));
-        Assert.Empty(TeamViews.ModelsFor(team, "Review"));
+        // An old Review step offers Build models. The reviewer flag is not a role.
+        Assert.Equal(["a"], TeamViews.ModelsFor(team, "Review").Select(model => model.Id));
+    }
+
+    [Fact]
+    public void A_model_with_only_the_reviewer_role_is_on_the_bench_with_no_review_chip()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "models": [
+            { "id": "r", "label": "Only review", "provider": "claude", "adapter": "claude", "providerId": "claude", "enabled": true, "available": true,
+              "roles": { "orchestrator": false, "worker": false, "verifier": false, "reviewer": true, "supervisor": false },
+              "roleEligibility": { "reviewer": true, "worker": true, "verifier": true, "orchestrator": true } },
+            { "id": "b", "label": "Builder", "provider": "codex", "adapter": "codex", "enabled": true, "available": true,
+              "roles": { "worker": true } } ],
+          "providers": [ { "id": "claude", "label": "Claude Code" } ] }
+        """)!);
+        var reviewer = team.Models.Single(model => model.Id == "r");
+        Assert.True(reviewer.Bench);
+        Assert.False(reviewer.Lead);
+        Assert.False(reviewer.Build);
+        Assert.False(reviewer.Verify);
+        Assert.False(reviewer.Review);
+        Assert.False(reviewer.CanReview);
+        Assert.DoesNotContain("r", TeamViews.ModelsFor(team, "Build").Select(model => model.Id));
+        Assert.DoesNotContain("r", TeamViews.ModelsFor(team, "Review").Select(model => model.Id));
+        Assert.Equal(["b"], TeamViews.ModelsFor(team, "Review").Select(model => model.Id));
+        Assert.Empty(TeamViews.ToolsNeedingOk(team));
+    }
+
+    [Fact]
+    public void Supervisor_and_reviewer_alone_remain_on_the_bench_and_verifier_is_not_offered_for_review()
+    {
+        var team = TeamViews.Team(JsonNode.Parse("""
+        { "models": [
+            { "id": "s", "label": "Supervisor only", "provider": "codex", "adapter": "codex", "enabled": true, "available": true,
+              "roles": { "supervisor": true, "reviewer": true } },
+            { "id": "v", "label": "Verifier", "provider": "claude", "adapter": "claude", "enabled": true, "available": true,
+              "roles": { "verifier": true, "reviewer": true } } ] }
+        """)!);
+        var supervisor = team.Models.Single(model => model.Id == "s");
+        Assert.True(supervisor.Bench);
+        Assert.False(supervisor.CanReview);
+
+        var verifier = team.Models.Single(model => model.Id == "v");
+        Assert.False(verifier.Bench);
+        Assert.False(verifier.CanReview);
+        Assert.True(verifier.Verify);
+        Assert.False(verifier.Build);
+        Assert.Contains("v", TeamViews.ModelsFor(team, "Verify").Select(m => m.Id));
+        Assert.DoesNotContain("v", TeamViews.ModelsFor(team, "Review").Select(m => m.Id));
     }
 
     [Fact]
