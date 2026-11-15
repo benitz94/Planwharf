@@ -23,6 +23,7 @@ public class PanelViewsTests
         Assert.Equal([new ProgressStep("complete", "Build the page", "Opus 5.5"), new ProgressStep("planned", "Check it", "not assigned")], panel.Steps);
         Assert.Equal([("09:20", "Build finished."), ("09:05", "Work approved.")], panel.Recent);
         Assert.Equal("/home/sample/site", panel.Folder);
+        Assert.Equal(Path.Combine("/home/sample/site", ".planwharf", "plan.md"), panel.WorkPlan);
     }
 
     [Fact]

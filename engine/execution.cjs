@@ -28,6 +28,7 @@ function changedFiles(folder) {
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const planFile = require('./plan-file.cjs');
 const { spawnSync } = require('node:child_process');
 const { readJSON, readValidatedResult, validateResult, reportExists } = require('./worker-result.cjs');
 const { linkedWorkspace, within, safeGitWorkspace, gitEnvironment } = require('./project-workspace.cjs');
@@ -190,6 +191,10 @@ function createExecutionBridge(options) {
     attempts.closeAttempt({ attemptId: part.attemptId, reason: result.status.toLowerCase() });
     // A step stopped to change its model did not fail: it is shown as a change, not as an error.
     event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : result.modelChange ? 'SUBTASK_REASSIGNED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
+    if (result.status === 'COMPLETE' && sub.type !== 'RESEARCH') {
+      try { planFile.tickStep(part.projectFolder, { title: sub.title, role: stepRole(sub), model: part.label, commit: planFile.commitNote(part.projectFolder) }); }
+      catch { /* the step result is already saved */ }
+    }
   }
   // A provider that refused the slice for credits or quota did no work: close that attempt,
   // put the model on cooldown, and give the slice to another eligible model.
@@ -329,6 +334,10 @@ function createExecutionBridge(options) {
     mega.repoAfter.sourceChangesObserved = mega.repoAfter.gitReadable && mega.repoAfter.fingerprint && mega.repoBefore.fingerprint ? mega.repoAfter.fingerprint !== mega.repoBefore.fingerprint : null;
     mega.nextAction = data.results.filter(result => result.megaTaskId === mega.id).at(-1)?.nextAction || 'Review the completed results.';
     event(mega.projectId, 'MEGATASK_COMPLETED', `Completed ${mega.title}. ${mega.repoAfter.disposition}.`, { megaTaskId: mega.id });
+    try {
+      const summary = data.results.filter(result => result.megaTaskId === mega.id && result.status === 'COMPLETE').map(result => result.summary).filter(Boolean).slice(-3).join(' ') || mega.title;
+      planFile.finish(item.project.folder, { summary, pushed: planFile.pushed(item.project.folder) });
+    } catch { /* the mega task is already complete */ }
     if (mega.repoAfter.repoHead && mega.repoAfter.repoHead !== mega.repoBefore.repoHead) event(mega.projectId, 'GIT_COMMIT_OBSERVED', `Repository HEAD changed: ${mega.repoAfter.repoHead}`, { megaTaskId: mega.id, repoHead: mega.repoAfter.repoHead }, `commit:${mega.projectId}:${mega.repoAfter.repoHead}`);
   }
   function enforceDeadline(item, job, mega) {

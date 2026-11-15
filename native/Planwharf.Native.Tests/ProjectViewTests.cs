@@ -53,7 +53,13 @@ public class ProjectViewTests
         var state = SampleState.Finished();
         Assert.Null(ProjectViews.Project(state, "weather")!.NextGoal);
         state["projects"]![0]!["goal"] = "Something older";
-        Assert.Equal("Add a 7-day forecast page with charts and tests.", ProjectViews.Project(state, "weather")!.NextGoal);
+        // That reply is older than the work that already started, so it is not offered again.
+        Assert.Null(ProjectViews.Project(state, "weather")!.NextGoal);
+        var fresh = state["asks"]![0]!.DeepClone();
+        fresh["at"] = "2026-11-13T12:00:00Z";
+        fresh["answer"] = "Next.\n\nSuggested next goal: Port the five modules of job 02.";
+        state["asks"] = new JsonArray(fresh);
+        Assert.Equal("Port the five modules of job 02.", ProjectViews.Project(state, "weather")!.NextGoal);
     }
 
     // Planwharf keeps the chat newest first: the goal offered is the one from the lead's latest reply,

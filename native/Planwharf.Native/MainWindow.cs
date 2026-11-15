@@ -585,11 +585,24 @@ public sealed partial class MainWindow : Window
         return new DockPanel { Children = { time, new TextBlock { Text = text, Foreground = Palette.Text, FontSize = 13, TextWrapping = TextWrapping.Wrap } } };
     }
 
+    static void OpenWorkPlan(string file)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = file, UseShellExecute = true }); }
+        catch { /* the line stays; opening the file is best effort */ }
+    }
+
     void ProgressSide(ProgressPanel panel)
     {
         var nowSection = Look.Section("play", Palette.Accent, Palette.AccentSoft, "Now");
         nowSection.Children.Add(Look.Badge(panel.Status, Palette.Muted, Palette.Surface2).With(b => b.HorizontalAlignment = HorizontalAlignment.Left));
         if (panel.Next.Length > 0) nowSection.Children.Add(Line(panel.Next, Palette.Text, 13));
+        if (panel.WorkPlan.Length > 0)
+        {
+            var openPlan = Look.Button("Work plan", "file", Look.Kind.Small);
+            openPlan.HorizontalAlignment = HorizontalAlignment.Left;
+            openPlan.Click += (_, _) => OpenWorkPlan(panel.WorkPlan);
+            nowSection.Children.Add(openPlan);
+        }
         side.Children.Add(nowSection);
         if (panel.Steps.Count > 0)
         {

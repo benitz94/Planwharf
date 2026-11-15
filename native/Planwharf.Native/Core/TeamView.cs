@@ -162,6 +162,17 @@ public static class TeamViews
     // The crew already worked on this goal: it is not a plan ready to start.
     public static bool GoalStarted(JsonObject? row) => B(row?["goalStarted"]);
     // Only a plan ready and not yet worked on starts the crew: a goal the lead just suggested, or one saved and not started.
-    public static bool GoalReady(JsonObject? row, string? nextGoal) => nextGoal != null || HasGoal(row) && !GoalStarted(row);
+    // A suggestion written before the last work started is not offered again.
+    public static bool SuggestionIsCurrent(DateTimeOffset? suggestedAt, string? workStartedAt)
+    {
+        if (suggestedAt == null || string.IsNullOrEmpty(workStartedAt)) return true;
+        return DateTimeOffset.TryParse(workStartedAt, out var started) && suggestedAt > started;
+    }
+
+    public static bool GoalReady(JsonObject? row, string? nextGoal, DateTimeOffset? suggestedAt = null, string? workStartedAt = null)
+    {
+        if (nextGoal != null && !SuggestionIsCurrent(suggestedAt, workStartedAt)) nextGoal = null;
+        return nextGoal != null || HasGoal(row) && !GoalStarted(row);
+    }
     public const string NextGoalText = "Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.";
 }
