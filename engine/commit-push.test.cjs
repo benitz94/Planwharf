@@ -41,13 +41,15 @@ async function fixture(t, { withGit = true } = {}) {
 
 test('commit and push the finished work to the remote', async t => {
   const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'topic');
   const response = await post({ projectId: 'p', message: 'Add the folder check', push: true });
   const body = await response.json();
   assert.equal(response.status, 200, JSON.stringify(body));
   assert.equal(body.pushed, true);
-  assert.equal(body.branch, 'main');
+  assert.equal(body.branch, 'topic');
   assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Add the folder check');
-  assert.equal(git(remote, 'log', '-1', '--format=%s', 'main').stdout.trim(), 'Add the folder check');
+  assert.equal(git(remote, 'log', '-1', '--format=%s', 'topic').stdout.trim(), 'Add the folder check');
+  assert.equal(git(folder, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}').stdout.trim(), 'origin/topic');
   assert.equal(git(folder, 'status', '--porcelain').stdout.trim(), '');
 });
 
@@ -70,17 +72,19 @@ test('a folder without git or an empty message is refused', async t => {
 
 test('a commit already made can be pushed on its own', async t => {
   const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'topic');
   git(folder, 'add', '-A'); git(folder, 'commit', '-q', '-m', 'Made earlier');
   const response = await post({ projectId: 'p', message: 'unused', push: true });
   const body = await response.json();
   assert.equal(response.status, 200, JSON.stringify(body));
   assert.equal(body.commit, null);
   assert.equal(body.pushed, true);
-  assert.equal(git(remote, 'log', '-1', '--format=%s', 'main').stdout.trim(), 'Made earlier');
+  assert.equal(git(remote, 'log', '-1', '--format=%s', 'topic').stdout.trim(), 'Made earlier');
 });
 
 test('the app keeps answering while a slow push runs', async t => {
   const { folder, post, base } = await fixture(t);
+  git(folder, 'switch', '-c', 'topic');
   // A pre-push hook that takes 2 seconds stands for a push waiting on the network or a sign-in.
   const hook = path.join(folder, '.git', 'hooks', 'pre-push');
   // Git's hook shell on Windows does not provide sleep. Node waits the same two seconds.
@@ -93,4 +97,62 @@ test('the app keeps answering while a slow push runs', async t => {
   assert.equal(answered.status, 200);
   assert.equal(pushDone, false, 'the app answered while the push was still running');
   assert.equal((await pending).status, 200);
+});
+
+test('a branch whose upstream is origin/main is pushed to its own name', async t => {
+  const { folder, remote, post } = await fixture(t);
+  assert.equal(git(folder, 'push', '-u', 'origin', 'main').status, 0);
+  const main = git(folder, 'rev-parse', 'HEAD').stdout.trim();
+  git(folder, 'switch', '-c', 'work');
+  assert.equal(git(folder, 'branch', '--set-upstream-to', 'origin/main').status, 0);
+  const response = await post({ projectId: 'p', message: 'On the work branch', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 200, JSON.stringify(body));
+  assert.equal(body.pushed, true);
+  assert.equal(body.branch, 'work');
+  const published = git(folder, 'rev-parse', 'HEAD').stdout.trim();
+  assert.equal(git(remote, 'rev-parse', 'work').stdout.trim(), published);
+  assert.equal(git(remote, 'rev-parse', 'main').stdout.trim(), main);
+  assert.notEqual(published, main);
+  assert.equal(git(folder, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}').stdout.trim(), 'origin/work');
+});
+
+test('a push from main is refused and remote main is unchanged', async t => {
+  const { folder, remote, post } = await fixture(t);
+  assert.equal(git(folder, 'push', '-u', 'origin', 'main').status, 0);
+  const before = git(remote, 'rev-parse', 'main').stdout.trim();
+  const response = await post({ projectId: 'p', message: 'Do not publish main', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'This is main: Planwharf does not push it. Push it yourself if you mean to.');
+  assert.equal(git(remote, 'rev-parse', 'main').stdout.trim(), before);
+  assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Do not publish main');
+});
+
+test('a push of the remote default branch is refused when it is not named main', async t => {
+  const { folder, remote, post } = await fixture(t);
+  assert.equal(git(remote, 'symbolic-ref', 'HEAD', 'refs/heads/trunk').status, 0);
+  assert.equal(git(folder, 'branch', '-m', 'main', 'trunk').status, 0);
+  assert.equal(git(folder, 'push', '-u', 'origin', 'trunk').status, 0);
+  const before = git(remote, 'rev-parse', 'trunk').stdout.trim();
+  const response = await post({ projectId: 'p', message: 'Do not publish the default', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'This is main: Planwharf does not push it. Push it yourself if you mean to.');
+  assert.equal(git(remote, 'rev-parse', 'trunk').stdout.trim(), before);
+});
+
+test('a failed push shows the first error line and hides the HEAD:main advice', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'work');
+  const hook = path.join(folder, '.git', 'hooks', 'pre-push');
+  fs.writeFileSync(hook, '#!/bin/sh\necho "fatal: rejected by the remote" >&2\necho "hint: git push origin HEAD:main" >&2\nexit 1\n');
+  fs.chmodSync(hook, 0o755);
+  const response = await post({ projectId: 'p', message: 'Will fail', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'fatal: rejected by the remote\nPush failed. The commit is saved; nothing was sent.');
+  assert.equal(body.error.includes('HEAD:main'), false);
+  assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Will fail');
+  assert.notEqual(git(remote, 'rev-parse', '--verify', 'work').status, 0);
 });

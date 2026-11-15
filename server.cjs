@@ -599,10 +599,21 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           if (!input.push) return { ok: true, commit, branch, pushed: false };
           const done = commit ? `Committed ${commit}, but` : 'Nothing new to commit, and';
           if (!branch || branch === 'HEAD') throw new RequestError(400, `${done} not pushed: the folder is not on a branch.`);
-          // Never a force push: the branch's own upstream, or origin with the same branch name.
-          const upstream = await run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']);
-          const pushed = upstream.status === 0 ? await run(['push'], { push: true }) : await run(['push', '-u', 'origin', branch], { push: true });
-          if (pushed.status !== 0) throw new RequestError(400, `${done} the push failed: ` + said(pushed));
+          // The button never publishes main, or whatever branch the remote calls its default.
+          let defaultBranch = '';
+          if (branch !== 'main') {
+            const remoteHead = await run(['ls-remote', '--symref', 'origin', 'HEAD']);
+            const symref = remoteHead.status === 0 && remoteHead.stdout.split(/\r?\n/).find(line => line.startsWith('ref:'));
+            const match = symref && symref.match(/^ref:\s+refs\/heads\/(\S+)\s+HEAD\b/);
+            if (match) defaultBranch = match[1];
+          }
+          if (branch === 'main' || defaultBranch === branch) throw new RequestError(400, 'This is main: Planwharf does not push it. Push it yourself if you mean to.');
+          // Publish this branch under its own name and set that name as its upstream, even when the old upstream was origin/main.
+          const pushed = await run(['push', '-u', 'origin', 'HEAD'], { push: true });
+          if (pushed.status !== 0) {
+            const first = `${pushed.stderr}\n${pushed.stdout}`.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.includes('HEAD:'));
+            throw new RequestError(400, (first ? first + '\n' : '') + 'Push failed. The commit is saved; nothing was sent.');
+          }
           return { ok: true, commit, branch, pushed: true };
         })();
         return json(200, result);
