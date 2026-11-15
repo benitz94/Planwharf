@@ -240,7 +240,7 @@ function switchTo(folder, name, startPoint) {
     const switched = git(folder, ['switch', name]);
     return switched.ok ? { ok: true } : { ok: false, reason: `Could not switch to ${name}: ${(switched.stderr || switched.error?.message || 'git switch failed').split('\n')[0]}` };
   }
-  const args = startPoint ? ['switch', '-c', name, startPoint] : ['switch', '-c', name];
+  const args = startPoint ? ['switch', '--no-track', '-c', name, startPoint] : ['switch', '-c', name];
   const made = git(folder, args);
   return made.ok ? { ok: true } : { ok: false, reason: `Could not create ${name}: ${(made.stderr || made.error?.message || 'git switch failed').split('\n')[0]}` };
 }

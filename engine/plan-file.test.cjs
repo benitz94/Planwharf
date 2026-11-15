@@ -49,6 +49,7 @@ assert.equal(prepared.ok, true, prepared.reason);
 assert.equal(prepared.branch, 'fix/plan-file');
 assert.equal(git(folder, ['branch', '--show-current']), 'fix/plan-file');
 assert.equal(git(folder, ['rev-parse', 'HEAD']), base, 'the branch starts at origin/main, not the branch the folder was on');
+assert.equal(spawnSync('git', ['rev-parse', '--abbrev-ref', '@{upstream}'], { cwd: folder }).status === 0, false, 'the new branch does not track main, so a plain push never goes to main');
 
 const text = planFile.read(folder);
 assert.match(text, new RegExp(goal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
