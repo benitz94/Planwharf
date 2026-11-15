@@ -24,6 +24,8 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     public bool LowQuota { get; init; }
     public bool LimitNone { get; init; }
     public bool LimitCustom { get; init; }
+    public string LimitSource { get; init; } = "general";   // model, company or general
+    public string Pool { get; init; } = "";
     public int? LimitFiveHour { get; init; }
     public int? LimitWeekly { get; init; }
     // Light, default or premium; and whether the AI tools on this computer no longer offer the model.
@@ -84,6 +86,7 @@ public static class TeamViews
                 FiveHourLeft = Pct(model["quotaWindows"]?["fiveHour"]), WeeklyLeft = Pct(model["quotaWindows"]?["weekly"]),
                 LowQuota = B(model["lowQuota"]),
                 LimitNone = B(model["quotaLimit"]?["none"]), LimitCustom = B(model["quotaLimit"]?["custom"]),
+                LimitSource = S(model["quotaLimit"]?["source"]) is { Length: > 0 } source ? source : B(model["quotaLimit"]?["custom"]) ? "model" : "general", Pool = S(model["quotaLimit"]?["pool"]) is { Length: > 0 } pool ? pool : S(model["quotaPoolId"]) is { Length: > 0 } quotaPool ? quotaPool : S(model["plan"]),
                 LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"]),
                 Weight = S(model["weight"]) is { Length: > 0 } weight ? weight : "default",
                 NotOffered = B(model["catalogExcluded"]) || B(model["neverUsable"])
