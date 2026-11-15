@@ -11,6 +11,17 @@ public class ProjectViewTests
         Assert.Equal("http://127.0.0.1:4173", ServerHost.ReadAddress("Planwharf starting\nhttp://127.0.0.1:4173\n"));
 
     [Fact]
+    public void Lists_the_project_used_last_first()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "projects": [ { "id": "old", "name": "Old" }, { "id": "new", "name": "New" }, { "id": "never", "name": "Never" }, { "id": "work", "name": "Work" } ],
+          "asks": [ { "projectId": "old", "at": "2026-11-01T10:00:00Z" }, { "projectId": "new", "at": "2026-11-15T09:00:00Z" } ],
+          "execution": { "megaTasks": [ { "projectId": "work", "createdAt": "2026-11-10T08:00:00Z", "completedAt": "2026-11-15T10:00:00Z" } ] } }
+        """)!;
+        Assert.Equal(["work", "new", "old", "never"], ProjectViews.Projects(snapshot).Select(project => project.Id));
+    }
+
+    [Fact]
     public void Lists_projects_with_the_crew_status()
     {
         var projects = ProjectViews.Projects(SampleState.Finished());

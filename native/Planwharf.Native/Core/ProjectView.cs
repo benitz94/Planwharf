@@ -61,8 +61,23 @@ public static class ProjectViews
 
     public static string? SuggestedGoal(string answer) => Suggested.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
 
+    // The project used last comes first, so a message is not sent to a project the user left long ago.
+    // Used means a message to its lead or work of its crew; only opening a project does not move it.
     public static IReadOnlyList<ProjectItem> Projects(JsonNode snapshot) =>
-        (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().Select(row => new ProjectItem(S(row["id"]), S(row["name"]), StatusOf(snapshot, row))).ToList();
+        (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select((row, index) => (row, index, used: LastUsed(snapshot, S(row["id"]))))
+            .OrderByDescending(item => item.used).ThenBy(item => item.index)
+            .Select(item => new ProjectItem(S(item.row["id"]), S(item.row["name"]), StatusOf(snapshot, item.row))).ToList();
+
+    public static DateTimeOffset LastUsed(JsonNode snapshot, string projectId)
+    {
+        var last = DateTimeOffset.MinValue;
+        void Take(JsonNode? value) { if (DateTimeOffset.TryParse(S(value), out var at) && at > last) last = at; }
+        foreach (var ask in (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => S(ask["projectId"]) == projectId)) Take(ask["at"]);
+        foreach (var mega in (snapshot["execution"]?["megaTasks"] as JsonArray ?? []).OfType<JsonObject>().Where(mega => S(mega["projectId"]) == projectId))
+        { Take(mega["createdAt"]); Take(mega["approvedAt"]); Take(mega["completedAt"]); }
+        return last;
+    }
 
     static string StatusOf(JsonNode snapshot, JsonObject row) => ChatViews.Status(snapshot, row).Text;
 
