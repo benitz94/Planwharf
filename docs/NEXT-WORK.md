@@ -23,12 +23,12 @@ reviewed before it is merged.
 
 ## The list
 
-| Order | Job | Branch | Status |
+| Order | Job (numbered after the porting jobs 01 to 04) | Branch | Status |
 |---|---|---|---|
-| 1 | A. The work plan file, and checks before the crew starts (below) | `fix/plan-file` | To do |
-| 2 | B. The Push button pushes the branch where it belongs (below) | `fix/push-button` | To do |
-| 3 | C. Remove the Review role (below) | `fix/remove-review` | To do |
-| 4 | Porting job 05: the next phase 2 modules. Needs its job sheet first: ask the owner. | `port/05-…` | Waiting for the sheet |
+| 1 | 05. The work plan file, and checks before the crew starts (below) | `fix/plan-file` | To do |
+| 2 | 06. The Push button pushes the branch where it belongs (below) | `fix/push-button` | To do |
+| 3 | 07. Remove the Review role (below) | `fix/remove-review` | To do |
+| 4 | 08. Porting: the next phase 2 modules. Needs its job sheet first: ask the owner. | `port/08-…` | Waiting for the sheet |
 
 Already done: porting jobs 01 to 04 (job 04 in #90), the crew switches on the project's team (#92),
 the chat box keeping every line (#91). The porting phases are in [native/porting/PLAN.md](../native/porting/PLAN.md).
@@ -50,7 +50,7 @@ Rules for every job:
 
 ---
 
-## Job A. The work plan file, and checks before the crew starts
+## Job 05. The work plan file, and checks before the crew starts
 
 **Why.** The crew must not depend on a model remembering the plan. Three things went wrong:
 a worker created its branch from the job 04 branch although the plan said `origin/main`; after a work
@@ -102,7 +102,7 @@ with the message; an existing branch is reused; a step done ticks its box; a fin
 
 ---
 
-## Job B. The Push button pushes the branch where it belongs
+## Job 06. The Push button pushes the branch where it belongs
 
 **Why.** The crew's branch was created from `origin/main` and kept it as its upstream, so the Push
 button failed: "The upstream branch of your current branch does not match the name of your current
@@ -124,7 +124,7 @@ remote's `main` is unchanged.
 
 ---
 
-## Job C. Remove the Review role
+## Job 07. Remove the Review role
 
 **Why.** Review never runs in normal work (only when a chat message is classified as an audit), and
 the Team panel shows it as if it did. The owner decided to remove it.
@@ -149,7 +149,7 @@ a chat message with "review" makes an implementation task.
 
 ## After these
 
-Porting job 05 covers the next phase 2 modules (`plan.js`, `quota.js`, `models.js`, `sentinel`,
+Porting job 08 covers the next phase 2 modules (`plan.js`, `quota.js`, `models.js`, `sentinel`,
 `invocations`, `notebook-file`, `project-checks`, `project-workspace`).
 Not in the list yet, the owner decides the order: alerts on the computer when work ends, an estimate of
 the time left, phone notifications (Telegram), the native app updating itself, tools chosen per model,
