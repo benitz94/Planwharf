@@ -136,3 +136,18 @@ public class TeamViewTests
         Assert.Equal(["C", "B"], team.LeadBackups);
     }
 }
+
+public class CompanyLimitTests
+{
+    [Fact]
+    public void Reads_where_a_model_limit_comes_from()
+    {
+        var team = TeamViews.Team(System.Text.Json.Nodes.JsonNode.Parse("""
+        { "models": [
+          { "id": "opus", "label": "Opus", "plan": "claude", "enabled": true, "quotaLimit": { "fiveHourPercent": 80, "weeklyPercent": 80, "source": "company", "pool": "claude" } },
+          { "id": "old", "label": "Old", "plan": "chatgpt", "enabled": true, "quotaLimit": { "fiveHourPercent": 40, "weeklyPercent": 40, "custom": true } } ] }
+        """)!);
+        Assert.Equal(("company", "claude", 80), (team.Models[0].LimitSource, team.Models[0].Pool, team.Models[0].LimitFiveHour));
+        Assert.Equal(("model", "chatgpt"), (team.Models[1].LimitSource, team.Models[1].Pool));
+    }
+}

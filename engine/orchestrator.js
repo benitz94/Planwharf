@@ -1153,6 +1153,7 @@ function createOrchestrator(options) {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
           autoSwitch: parsed.autoSwitch && typeof parsed.autoSwitch === 'object' ? parsed.autoSwitch : undefined,
           quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
+          poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -1809,7 +1810,7 @@ function createOrchestrator(options) {
       item.usagePolicy = usagePolicy(item, plansLive);
       // What is left on each window, the model's limit (its own or the general one), and whether it is under it.
       item.quotaWindows = quotaWindows(item, plansLive);
-      item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]) };
+      item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]), source: limitSource(item), pool: item.quotaPoolId || item.plan || null };
       item.lowQuota = isLow(item);
       // Light, default or premium: what Team filters by and what the lead's parts are matched against.
       item.weight = ['premium', 'default', 'light'][leadTier(item)] || 'default';
@@ -2845,32 +2846,44 @@ function createOrchestrator(options) {
     return { ok: true, autoSwitch: autoSwitch() };
   }
   // Each model follows the general limit unless the user gave it its own, or no limit at all.
+  // A model's limit: its own, else its company's (its quota pool, such as claude or chatgpt), else the general one.
   function limitFor(model) {
     const own = store.quotaLimits && model ? store.quotaLimits[model.id] : null;
+    const pool = model ? model.quotaPoolId || model.plan : null;
+    const company = store.poolLimits && pool ? store.poolLimits[pool] : null;
     const general = autoSwitch();
-    if (own?.none === true) return quotaLimit({ none: true });
-    return quotaLimit({ fiveHourPercent: Number.isFinite(own?.fiveHourPercent) ? own.fiveHourPercent : general.fiveHourPercent, weeklyPercent: Number.isFinite(own?.weeklyPercent) ? own.weeklyPercent : general.weeklyPercent });
+    if (own?.none === true || !own && company?.none === true) return quotaLimit({ none: true });
+    const pick = key => Number.isFinite(own?.[key]) ? own[key] : Number.isFinite(company?.[key]) ? company[key] : general[key];
+    return quotaLimit({ fiveHourPercent: pick('fiveHourPercent'), weeklyPercent: pick('weeklyPercent') });
+  }
+  function limitSource(model) {
+    if (store.quotaLimits && store.quotaLimits[model.id]) return 'model';
+    const pool = model.quotaPoolId || model.plan;
+    return store.poolLimits && pool && store.poolLimits[pool] ? 'company' : 'general';
   }
   function limitText(model) {
     const limit = limitFor(model);
     return limit.none ? 'no limit' : limit.fiveHourPercent === limit.weeklyPercent ? `${limit.fiveHourPercent}%` : `${limit.fiveHourPercent}% on 5 hours, ${limit.weeklyPercent}% on the week`;
   }
   function isLow(model) { return autoSwitch().enabled && lowQuota(model, plansLive, limitFor); }
+  // input.pool sets the limit of a whole company (every model of that quota pool); otherwise of model id.
   function setQuotaLimit(id, input = {}) {
-    if (!roster().some(model => model.id === id)) return { ok: false, reason: 'Unknown model.' };
-    store.quotaLimits = store.quotaLimits && typeof store.quotaLimits === 'object' ? store.quotaLimits : {};
-    if (input.reset === true) delete store.quotaLimits[id];
-    else if (input.none === true) store.quotaLimits[id] = { none: true };
+    const pool = typeof input.pool === 'string' ? input.pool : null;
+    if (pool ? !roster().some(model => (model.quotaPoolId || model.plan) === pool) : !roster().some(model => model.id === id)) return { ok: false, reason: pool ? 'Unknown company.' : 'Unknown model.' };
+    const key = pool ? 'poolLimits' : 'quotaLimits', name = pool || id;
+    store[key] = store[key] && typeof store[key] === 'object' ? store[key] : {};
+    if (input.reset === true) delete store[key][name];
+    else if (input.none === true) store[key][name] = { none: true };
     else {
       const own = {};
-      for (const key of ['fiveHourPercent', 'weeklyPercent']) {
-        if (input[key] === undefined) continue;
-        const value = Number(input[key]);
+      for (const field of ['fiveHourPercent', 'weeklyPercent']) {
+        if (input[field] === undefined) continue;
+        const value = Number(input[field]);
         if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
-        own[key] = Math.round(value);
+        own[field] = Math.round(value);
       }
       if (!Object.keys(own).length) return { ok: false, reason: 'Give a threshold, no limit, or reset.' };
-      store.quotaLimits[id] = own;
+      store[key][name] = own;
     }
     persist();
     return { ok: true };

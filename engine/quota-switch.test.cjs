@@ -97,7 +97,7 @@ test('the general limit and each model\'s own limit are saved, shown on the mode
     orchestra = make();
     const view = await orchestra.tick();
     opus = view.models.find(model => model.id === 'opus');
-    assert.deepEqual({ ...opus.quotaLimit }, { none: false, fiveHourPercent: 35, weeklyPercent: 40, custom: true });
+    assert.deepEqual({ ...opus.quotaLimit }, { none: false, fiveHourPercent: 35, weeklyPercent: 40, custom: true, source: 'model', pool: 'claude' });
     assert.equal(opus.lowQuota, true, 'its own weekly limit of 40% applies');
     assert.equal(view.models.find(model => model.id === 'grok').quotaLimit.none, true);
     assert.equal(orchestra.setQuotaLimit('opus', { reset: true }).ok, true);
@@ -117,4 +117,41 @@ test('an old saved single threshold applies to both windows; the former 20% defa
       assert.deepEqual([orchestra.autoSwitch().fiveHourPercent, orchestra.autoSwitch().weeklyPercent], [expected, expected], `saved ${saved}%`);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   }
+});
+
+test('a company limit applies to every model of its quota pool; a model\'s own limit still wins', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const { createOrchestrator } = require('./orchestrator.js');
+  const { createAttemptEngine } = require('./attempts.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-company-limits-'));
+  const plan = require('../plan.js').example(); plan.tasks = [];
+  const claude = (id, label) => ({ id, label, provider: 'claude', adapter: 'claude', cli: id, plan: 'claude', enabled: true, available: true, cost: 1, limit: 100, capabilities: { canCode: true } });
+  const roster = [claude('opus', 'Opus 5.5'), claude('sonnet', 'Sonnet 5.5'),
+    { id: 'terra', label: 'Terra', provider: 'codex', adapter: 'codex', cli: 'gpt-6-terra', plan: 'chatgpt', enabled: true, available: true, cost: 1, limit: 100, capabilities: { canCode: true } }];
+  const plans = [{ id: 'claude', readable: true, leftPct: 60, windows: [{ name: '5-hour', leftPct: 60 }, { name: 'weekly', leftPct: 90 }] },
+    { id: 'chatgpt', readable: true, leftPct: 60, windows: [{ name: '5-hour', leftPct: 60 }, { name: 'weekly', leftPct: 90 }] }];
+  const make = () => createOrchestrator({ dir, readPlan: async () => plan, models: roster, attempts: createAttemptEngine({ dir: path.join(dir, 'attempts') }), fetchPlans: async () => plans, plansTtl: 0 });
+  const view = async orchestra => Object.fromEntries((await orchestra.tick()).models.map(model => [model.id, model]));
+  try {
+    let orchestra = make();
+    assert.equal(orchestra.setQuotaLimit(null, { pool: 'claude', fiveHourPercent: 80, weeklyPercent: 80 }).ok, true);
+    let models = await view(orchestra);
+    assert.equal(models.opus.lowQuota, true, 'Claude at 60% is under its company limit of 80%');
+    assert.equal(models.sonnet.lowQuota, true);
+    assert.equal(models.terra.lowQuota, false, 'ChatGPT keeps the general 35%');
+    assert.deepEqual([models.opus.quotaLimit.source, models.opus.quotaLimit.pool, models.opus.quotaLimit.fiveHourPercent], ['company', 'claude', 80]);
+    assert.equal(models.terra.quotaLimit.source, 'general');
+    // A model's own limit wins over its company's.
+    assert.equal(orchestra.setQuotaLimit('sonnet', { fiveHourPercent: 50, weeklyPercent: 50 }).ok, true);
+    models = await view(orchestra);
+    assert.equal(models.sonnet.lowQuota, false);
+    assert.equal(models.sonnet.quotaLimit.source, 'model');
+    assert.equal(orchestra.setQuotaLimit(null, { pool: 'nobody', none: true }).ok, false, 'an unknown company is refused');
+    // Saved and read again after a restart; reset goes back to the general limit.
+    orchestra.shutdown?.();
+    orchestra = make();
+    assert.equal((await view(orchestra)).opus.quotaLimit.fiveHourPercent, 80);
+    assert.equal(orchestra.setQuotaLimit(null, { pool: 'claude', reset: true }).ok, true);
+    assert.equal((await view(orchestra)).opus.quotaLimit.source, 'general');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

@@ -97,6 +97,10 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetQuotaLimitAsync(string id, int fiveHourPercent, int weeklyPercent) => PostAsync("/api/models/quota-limit", new { id, fiveHourPercent, weeklyPercent });
     public Task<JsonNode?> SetNoQuotaLimitAsync(string id) => PostAsync("/api/models/quota-limit", new { id, none = true });
     public Task<JsonNode?> ResetQuotaLimitAsync(string id) => PostAsync("/api/models/quota-limit", new { id, reset = true });
+    // The limit of a whole company: every model of that quota pool (claude, chatgpt…) that has no limit of its own.
+    public Task<JsonNode?> SetCompanyLimitAsync(string pool, int fiveHourPercent, int weeklyPercent) => PostAsync("/api/models/quota-limit", new { pool, fiveHourPercent, weeklyPercent });
+    public Task<JsonNode?> SetCompanyNoLimitAsync(string pool) => PostAsync("/api/models/quota-limit", new { pool, none = true });
+    public Task<JsonNode?> ResetCompanyLimitAsync(string pool) => PostAsync("/api/models/quota-limit", new { pool, reset = true });
 
     public Task<JsonNode> SkillsAsync() => GetAsync("/api/skills");
     public Task<JsonNode?> OpenSkillsAsync(string cli, string what) => PostAsync("/api/skills/open", new { cli, what });

@@ -214,23 +214,43 @@ public sealed partial class MainWindow
         return MemberCard(card, !model.Bench, model.Bench);
     }
 
-    // The model's quota limit: the general one, its own two thresholds, or no limit at all.
+    // The quota limit: the company's (every model of the same quota, such as all the Claude models), or this
+    // model's own, or the general one; or no limit at all.
     Control LimitEditor(TeamModel model)
     {
-        var said = model.LimitNone ? "No limit"
-            : $"{(model.LimitCustom ? "Own limit" : "Limit")}: " + (model.LimitFiveHour == model.LimitWeekly ? $"{model.LimitFiveHour}%" : $"5h {model.LimitFiveHour}% · week {model.LimitWeekly}%");
+        var company = model.Provider.Length > 0 ? model.Provider : model.Pool;
+        var whose = model.LimitSource switch { "model" => "Own limit", "company" => $"{company} limit", _ => "Limit" };
+        var said = model.LimitNone ? $"No limit{(model.LimitSource == "company" ? $" for {company}" : "")}"
+            : $"{whose}: " + (model.LimitFiveHour == model.LimitWeekly ? $"{model.LimitFiveHour}%" : $"5h {model.LimitFiveHour}% · week {model.LimitWeekly}%");
         var five = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitFiveHour ?? 35, FormatString = "0", Width = 110 };
         var week = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitWeekly ?? 35, FormatString = "0", Width = 110 };
-        var save = Small("Save");
-        save.Click += async (_, _) => await DoAsync(() => api!.SetQuotaLimitAsync(model.Id, (int)(five.Value ?? 35), (int)(week.Value ?? 35)), $"Quota limit of {model.Label} saved.");
+        int Five() => (int)(five.Value ?? 35); int Week() => (int)(week.Value ?? 35);
+        var buttons = new WrapPanel();
+        void Add(Button button) { button.Margin = new Thickness(0, 0, 6, 4); buttons.Children.Add(button); }
+        if (model.Pool.Length > 0)
+        {
+            var forAll = Small($"Save for all {company}", primary: true);
+            ToolTip.SetTip(forAll, $"Every {company} model without a limit of its own");
+            forAll.Click += async (_, _) => await DoAsync(() => api!.SetCompanyLimitAsync(model.Pool, Five(), Week()), $"Quota limit of {company} saved.");
+            Add(forAll);
+        }
+        var save = Small("Only this model");
+        save.Click += async (_, _) => await DoAsync(() => api!.SetQuotaLimitAsync(model.Id, Five(), Week()), $"Quota limit of {model.Label} saved.");
+        Add(save);
         var none = Small("No limit");
         none.Click += async (_, _) => await DoAsync(() => api!.SetNoQuotaLimitAsync(model.Id), $"{model.Label} has no quota limit now.");
-        var buttons = new WrapPanel { Children = { save.With(b => b.Margin = new Thickness(0, 0, 6, 4)), none.With(b => b.Margin = new Thickness(0, 0, 6, 4)) } };
-        if (model.LimitCustom)
+        Add(none);
+        if (model.LimitSource == "model")
         {
-            var reset = Small("Use the general limit");
-            reset.Click += async (_, _) => await DoAsync(() => api!.ResetQuotaLimitAsync(model.Id), $"{model.Label} follows the general limit.");
-            buttons.Children.Add(reset);
+            var reset = Small(model.Pool.Length > 0 ? $"Use the {company} limit" : "Use the general limit");
+            reset.Click += async (_, _) => await DoAsync(() => api!.ResetQuotaLimitAsync(model.Id), $"{model.Label} follows the {(model.Pool.Length > 0 ? company : "general")} limit.");
+            Add(reset);
+        }
+        else if (model.LimitSource == "company")
+        {
+            var reset = Small($"{company}: use the general limit");
+            reset.Click += async (_, _) => await DoAsync(() => api!.ResetCompanyLimitAsync(model.Pool), $"{company} follows the general limit.");
+            Add(reset);
         }
         var form = new StackPanel { Spacing = 6, Children = {
             Row(new TextBlock { Text = "5 hours", Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, five),

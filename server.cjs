@@ -871,7 +871,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'POST' && pathname === '/api/models/quota-limit') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
         const input = await body(request);
-        if (!input || typeof input.id !== 'string' || Object.keys(input).some(key => !['id', 'fiveHourPercent', 'weeklyPercent', 'none', 'reset'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        if (!input || typeof input.id !== 'string' && typeof input.pool !== 'string' || Object.keys(input).some(key => !['id', 'pool', 'fiveHourPercent', 'weeklyPercent', 'none', 'reset'].includes(key))) throw new RequestError(400, 'Invalid data.');
         const result = orchestra.setQuotaLimit(input.id, input);
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(200, await orchestra.tick());
