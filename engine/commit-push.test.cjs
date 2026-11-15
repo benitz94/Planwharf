@@ -156,3 +156,86 @@ test('a failed push shows the first error line and hides the HEAD:main advice', 
   assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Will fail');
   assert.notEqual(git(remote, 'rev-parse', '--verify', 'work').status, 0);
 });
+
+test('a push on main with a clean working tree is refused', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'add', '-A'); git(folder, 'commit', '-q', '-m', 'Clean');
+  assert.equal(git(folder, 'push', '-u', 'origin', 'main').status, 0);
+  const before = git(remote, 'rev-parse', 'main').stdout.trim();
+  const response = await post({ projectId: 'p', message: 'Push main', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'This is main: Planwharf does not push it. Push it yourself if you mean to.');
+  assert.equal(git(remote, 'rev-parse', 'main').stdout.trim(), before);
+});
+
+test('a push on detached HEAD is refused and nothing is pushed', async t => {
+  const { folder, post } = await fixture(t);
+  const sha = git(folder, 'rev-parse', 'HEAD').stdout.trim();
+  git(folder, 'checkout', '-q', sha);
+  const response = await post({ projectId: 'p', message: 'Detached commit', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.match(body.error, /not pushed: the folder is not on a branch/);
+});
+
+test('a failed push with an unreachable remote preserves the local commit', async t => {
+  const { folder, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'work');
+  git(folder, 'remote', 'set-url', 'origin', 'file:///nonexistent-remote-path-invalid.git');
+  const response = await post({ projectId: 'p', message: 'Local work saved', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.match(body.error, /Push failed\. The commit is saved; nothing was sent\./);
+  assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Local work saved');
+});
+
+test('a push failure where the first line mentions HEAD:main hides it and shows the error', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'work');
+  const hook = path.join(folder, '.git', 'hooks', 'pre-push');
+  fs.writeFileSync(hook, '#!/bin/sh\necho "hint: git push origin HEAD:main" >&2\necho "fatal: real error below advice" >&2\nexit 1\n');
+  fs.chmodSync(hook, 0o755);
+  const response = await post({ projectId: 'p', message: 'Will fail advice first', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'fatal: real error below advice\nPush failed. The commit is saved; nothing was sent.');
+  assert.equal(body.error.includes('HEAD:main'), false);
+});
+
+test('a feature branch pushes cleanly when remote default branch is trunk', async t => {
+  const { folder, remote, post } = await fixture(t);
+  assert.equal(git(remote, 'symbolic-ref', 'HEAD', 'refs/heads/trunk').status, 0);
+  assert.equal(git(folder, 'branch', '-m', 'main', 'trunk').status, 0);
+  assert.equal(git(folder, 'push', '-u', 'origin', 'trunk').status, 0);
+  git(folder, 'switch', '-c', 'feat-1');
+  const response = await post({ projectId: 'p', message: 'Feature on custom default', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 200, JSON.stringify(body));
+  assert.equal(body.pushed, true);
+  assert.equal(body.branch, 'feat-1');
+  assert.equal(git(remote, 'log', '-1', '--format=%s', 'feat-1').stdout.trim(), 'Feature on custom default');
+  assert.equal(git(folder, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}').stdout.trim(), 'origin/feat-1');
+});
+
+test('a non-fast-forward push failure hides advice and keeps the local commit', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'work');
+  const first = await post({ projectId: 'p', message: 'First on work', push: true });
+  assert.equal(first.status, 200);
+  const other = path.join(path.dirname(folder), 'other');
+  git(path.dirname(folder), 'clone', '-q', remote, other);
+  git(other, 'config', 'user.name', 'Other'); git(other, 'config', 'user.email', 'other@example.invalid');
+  git(other, 'switch', 'work');
+  fs.writeFileSync(path.join(other, 'conflict.txt'), 'other');
+  git(other, 'add', '-A'); git(other, 'commit', '-q', '-m', 'Other commit');
+  assert.equal(git(other, 'push', 'origin', 'work').status, 0);
+  fs.writeFileSync(path.join(folder, 'conflict.txt'), 'local');
+  const response = await post({ projectId: 'p', message: 'Local commit ahead of fetch', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  assert.match(body.error, /Push failed\. The commit is saved; nothing was sent\./);
+  assert.equal(body.error.includes('hint:'), false);
+  assert.equal(body.error.includes('HEAD:'), false);
+  assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Local commit ahead of fetch');
+});
