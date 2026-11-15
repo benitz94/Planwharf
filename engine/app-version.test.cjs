@@ -5,6 +5,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createUpdateManager } = require('./app-updates.cjs');
+// A Planwharf worker is launched as the desktop app. These cases build their own install.
+delete process.env.PLANWHARF_DESKTOP;
+delete process.env.PLANWHARF_DESKTOP_VERSION;
 
 // The version shown next to the name is known at start, before any update check.
 test('the portable app knows its version from its install record', t => {

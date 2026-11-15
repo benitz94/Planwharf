@@ -20,7 +20,9 @@ Module._load = function (request, ...rest) { return request === 'electron' ? fak
 const { offerImport, findPortable } = require('./main.cjs');
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'pw-import-'));
-const starter = path.join(__dirname, 'app', 'fixtures', 'starter-notebook.json');
+const starter = fs.existsSync(path.join(__dirname, 'app', 'fixtures', 'starter-notebook.json'))
+  ? path.join(__dirname, 'app', 'fixtures', 'starter-notebook.json')
+  : path.join(__dirname, '..', 'fixtures', 'starter-notebook.json');
 const base = JSON.parse(fs.readFileSync(starter, 'utf8'));
 const notebook = (...names) => JSON.stringify({ ...base, projects: names.map(name => ({ ...base.projects[0], project: { ...base.projects[0].project, name } })) });
 function portable(parent, ...names) {

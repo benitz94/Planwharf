@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnWorker, isProcessAlive, killWorker } = require('./runner.cjs');
+const { removeTempDir, waitForExit } = require('./temp-cleanup.cjs');
 
 test('implementation launch rejects missing real linked folder before creating launch artifacts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-containment-'));
@@ -104,18 +105,17 @@ test('canonical linked directory survives the runner job file and research keeps
       const input = JSON.parse(fs.readFileSync(receipt.inputPath, 'utf8'));
       assert.equal(input.folder, fs.realpathSync(alpha));
       assert.equal(input.linkedFolder, kind === 'research' ? '' : fs.realpathSync(alpha));
-      for (let i = 0; i < 100 && !fs.existsSync(resultPath); i++) await new Promise(resolve => setTimeout(resolve, 20));
-      assert.match(fs.readFileSync(resultPath, 'utf8'), /FAILED/);
+      // A loaded machine can take seconds to start the detached runner, and a half-written result reads as not ready.
+      const readResult = () => { try { return fs.readFileSync(resultPath, 'utf8'); } catch (_) { return ''; } };
+      for (const until = Date.now() + 60000; Date.now() < until && !/STATUS:\s*\S+/.test(readResult());) await new Promise(resolve => setTimeout(resolve, 20));
+      assert.match(readResult(), /FAILED/);
       fs.unlinkSync(receipt.inputPath);
     }
   } finally {
     if (previous === undefined) delete process.env.PLANWHARF_CODEX; else process.env.PLANWHARF_CODEX = previous;
     // The result can be written before the detached runner releases its Windows cwd.
-    for (const pid of pids) {
-      for (let i = 0; i < 100 && isProcessAlive(pid); i++) await new Promise(resolve => setTimeout(resolve, 20));
-      if (isProcessAlive(pid)) killWorker(pid);
-    }
-    fs.rmSync(root, { recursive: true, force: true });
+    for (const pid of pids) if (!await waitForExit(isProcessAlive, pid)) killWorker(pid);
+    await removeTempDir(root);
   }
 });
 for (const redirected of ['gitdir', 'HEAD']) test(`repository inspection rejects redirected ${redirected} metadata before commands`, async t => {

@@ -6,6 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
 const { createUpdateManager, digest, newer, unpack, verifyLocal, installation } = require('./app-updates.cjs');
+// A Planwharf worker is launched as the desktop app. These cases build their own install.
+delete process.env.PLANWHARF_DESKTOP;
+delete process.env.PLANWHARF_DESKTOP_VERSION;
 const { apply } = require('./apply-update.cjs');
 const { createServer } = require('../server.cjs');
 const { execFile } = require('node:child_process');

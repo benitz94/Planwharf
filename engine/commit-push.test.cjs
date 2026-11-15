@@ -7,7 +7,10 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { createServer } = require('../server.cjs');
 
-const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+const { gitEnvironment } = require('./project-workspace.cjs');
+// The worker that runs the suite blocks every push. The user's commit button, and these fixtures, use a clean Git environment.
+for (const key of Object.keys(process.env)) if (key === 'GIT_CONFIG_COUNT' || /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(key)) delete process.env[key];
+const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8', env: gitEnvironment() });
 
 // The user commits and pushes the finished work from the app, never Planwharf by itself.
 async function fixture(t, { withGit = true } = {}) {
@@ -80,7 +83,9 @@ test('the app keeps answering while a slow push runs', async t => {
   const { folder, post, base } = await fixture(t);
   // A pre-push hook that takes 2 seconds stands for a push waiting on the network or a sign-in.
   const hook = path.join(folder, '.git', 'hooks', 'pre-push');
-  fs.writeFileSync(hook, '#!/bin/sh\nsleep 2\n'); fs.chmodSync(hook, 0o755);
+  // Git's hook shell on Windows does not provide sleep. Node waits the same two seconds.
+  const node = process.execPath.replace(/\\/g, '/');
+  fs.writeFileSync(hook, `#!/bin/sh\n"${node}" -e "setTimeout(() => {}, 2000)"\n`); fs.chmodSync(hook, 0o755);
   let pushDone = false;
   const pending = post({ projectId: 'p', message: 'In the background', push: true }).then(response => { pushDone = true; return response; });
   await new Promise(resolve => setTimeout(resolve, 300));
