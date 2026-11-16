@@ -147,7 +147,11 @@ public static class NativeUpdater
         }
         var root = Directory.GetDirectories(stage) is [var only] && Directory.GetFiles(stage).Length == 0 ? only : stage;
         var exe = Path.Combine(root, ExeName);
-        if (!File.Exists(exe)) throw new InvalidOperationException("The update does not contain the Planwharf program. Nothing was changed.");
+        if (!File.Exists(exe))
+        {
+            TryDeleteDirectory(stage);
+            throw new InvalidOperationException("The update does not contain the Planwharf program. Nothing was changed.");
+        }
         return exe;
     }
 
@@ -254,7 +258,7 @@ public static class NativeUpdater
         NativeRelease? release;
         try { release = await CheckAsync(http, cancel); }
         catch (InvalidOperationException) { throw; }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or System.Text.Json.JsonException)
         {
             throw new InvalidOperationException(OfflineMessage, ex);
         }

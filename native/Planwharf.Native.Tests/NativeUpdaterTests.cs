@@ -116,6 +116,47 @@ public class NativeUpdaterTests
     }
 
     [Fact]
+    public async Task A_zip_that_cannot_be_unpacked_or_has_no_program_leaves_the_app_and_no_stage()
+    {
+        using var home = new Home();
+        var marker = home.Install("keep me.txt", "original");
+        var junk = Path.Combine(home.Parent, "broken.zip");
+        File.WriteAllText(junk, "this is not a zip");
+        var broken = await Assert.ThrowsAsync<InvalidOperationException>(() => NativeUpdater.RunAsync(home.Client(junk, Sha(junk)), home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal(NativeUpdater.UnpackMessage, broken.Message);
+        Assert.Equal("original", File.ReadAllText(marker));
+        Assert.Empty(Directory.GetDirectories(home.Parent, NativeUpdater.StagePrefix + "*"));
+
+        var empty = Path.Combine(home.Parent, "empty-pack");
+        Directory.CreateDirectory(Path.Combine(empty, "Planwharf-native"));
+        File.WriteAllText(Path.Combine(empty, "Planwharf-native", "readme.txt"), "no program");
+        var zip = Path.Combine(home.Parent, "no-program.zip");
+        ZipFile.CreateFromDirectory(empty, zip);
+        var missing = await Assert.ThrowsAsync<InvalidOperationException>(() => NativeUpdater.RunAsync(home.Client(zip, Sha(zip)), home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal("The update does not contain the Planwharf program. Nothing was changed.", missing.Message);
+        Assert.Equal("original", File.ReadAllText(marker));
+        Assert.Equal("notebook", File.ReadAllText(home.Notebook));
+        Assert.Empty(Directory.GetDirectories(home.Parent, NativeUpdater.StagePrefix + "*"));
+    }
+
+    [Fact]
+    public async Task A_release_that_is_not_newer_or_not_json_changes_nothing()
+    {
+        using var home = new Home();
+        var marker = home.Install("keep me.txt", "original");
+        var zip = home.Zip();
+        var same = await Assert.ThrowsAsync<InvalidOperationException>(() => NativeUpdater.RunAsync(home.Client(zip, Sha(zip), "v0.0.1"), home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal("This release is not newer than the installed Planwharf. Nothing was changed.", same.Message);
+        Assert.Empty(Directory.GetDirectories(home.Parent, NativeUpdater.StagePrefix + "*"));
+
+        var garbage = new HttpClient(new TextHandler("{")) { Timeout = TimeSpan.FromSeconds(5) };
+        var bad = await Assert.ThrowsAsync<InvalidOperationException>(() => NativeUpdater.RunAsync(garbage, home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal(NativeUpdater.OfflineMessage, bad.Message);
+        Assert.Equal("original", File.ReadAllText(marker));
+        Assert.Equal("notebook", File.ReadAllText(home.Notebook));
+    }
+
+    [Fact]
     public void Finish_update_is_handled_before_a_window_and_rejects_bad_arguments()
     {
         Assert.Null(Program.FinishUpdate([]));
@@ -188,6 +229,12 @@ public class NativeUpdaterTests
     }
 
     static string Sha(string file) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(file))).ToLowerInvariant();
+
+    sealed class TextHandler(string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+    }
 
     sealed class FolderHandler(string json, byte[] zip) : HttpMessageHandler
     {
