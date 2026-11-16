@@ -136,12 +136,12 @@ test('enabled: the policy approves, records itself, guards the worker, and disab
   } finally { await f.orchestra.shutdown(); fs.rmSync(f.dir, { recursive: true, force: true }); }
 });
 
-test('a manual approval carries no autonomy claim and no push guard', async () => {
+test('a manual approval carries no autonomy claim, and its worker is still guarded against pushing', async () => {
   const f = fixture(() => '{"done":true}');
   try {
     const first = await f.orchestra.tick();
     await f.orchestra.approve('demo', first.projects[0].megaTaskId);
-    assert.equal(f.launches[0].env, undefined);
+    assert.ok(Object.values(f.launches[0].env || {}).includes('url.planwharf-push-blocked://.pushInsteadOf'), 'workers never push, with or without autonomy');
     assert.ok(!f.orchestra.executionView('demo').timeline.some(event => /autonomy setting/.test(event.summary)));
   } finally { await f.orchestra.shutdown(); fs.rmSync(f.dir, { recursive: true, force: true }); }
 });

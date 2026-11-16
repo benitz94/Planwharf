@@ -1121,7 +1121,8 @@ function createOrchestrator(options) {
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
     info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId) } };
-    if (autonomyActive(info.projectId)) info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
+    // Workers never push, with or without autonomy: the owner pushes with the Push button.
+    info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
     const id = ledger.start({ role: 'worker', projectId: info.projectId, megaTaskId: info.megaTaskId, subTaskId: info.subTaskId, attemptId: info.attemptId,
       provider: info.worker.providerId || info.worker.provider, model: info.worker.cli, modelId: info.worker.id, accountKey: info.worker.accountKey, accountType: info.worker.accountType, reason: info.job?.kind === 'research' ? 'approved research' : 'approved work' });
