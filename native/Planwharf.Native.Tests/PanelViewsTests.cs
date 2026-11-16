@@ -24,6 +24,20 @@ public class PanelViewsTests
         Assert.Equal([("09:20", "Build finished."), ("09:05", "Work approved.")], panel.Recent);
         Assert.Equal("/home/sample/site", panel.Folder);
         Assert.Equal(Path.Combine("/home/sample/site", ".planwharf", "plan.md"), panel.WorkPlan);
+        Assert.Equal("", panel.TimeLeft);
+    }
+
+    [Fact]
+    public void Progress_shows_the_time_left_only_while_a_step_is_running_or_waiting()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "projects": [ { "id": "p", "subTasks": [ { "status": "RUNNING", "title": "Build the page" }, { "status": "PENDING", "title": "Check it" } ],
+            "timeLeft": { "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" } } ] }
+        """)!;
+        Assert.Equal("About 25 minutes left (ends around 17:40) · rough", PanelViews.Progress(snapshot, "p", "Crew working", TimeZoneInfo.Utc).TimeLeft);
+        snapshot["projects"]![0]!["subTasks"]![0]!["status"] = "COMPLETE";
+        snapshot["projects"]![0]!["subTasks"]![1]!["status"] = "COMPLETE";
+        Assert.Equal("", PanelViews.Progress(snapshot, "p", "Done", TimeZoneInfo.Utc).TimeLeft);
     }
 
     [Fact]

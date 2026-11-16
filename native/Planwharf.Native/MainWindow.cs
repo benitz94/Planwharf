@@ -555,7 +555,7 @@ public sealed partial class MainWindow : Window
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
         var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);
         var files = sideMode == "files" ? PanelViews.Files(raw.Json, folder, raw.Error) : null;
-        sig += progress is { } p ? p.Status + p.Next + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
+        sig += progress is { } p ? p.Status + p.Next + p.TimeLeft + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
         sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) : "";
         sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
         if (sig == sideSig) return;
@@ -601,6 +601,7 @@ public sealed partial class MainWindow : Window
     {
         var nowSection = Look.Section("play", Palette.Accent, Palette.AccentSoft, "Now");
         nowSection.Children.Add(Look.Badge(panel.Status, Palette.Muted, Palette.Surface2).With(b => b.HorizontalAlignment = HorizontalAlignment.Left));
+        if (panel.TimeLeft.Length > 0) nowSection.Children.Add(Line(panel.TimeLeft, Palette.Text, 13));
         if (panel.Next.Length > 0) nowSection.Children.Add(Line(panel.Next, Palette.Text, 13));
         if (panel.WorkPlan.Length > 0)
         {

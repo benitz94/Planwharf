@@ -77,8 +77,26 @@ public class ProjectViewTests
         Assert.Equal(CrewAction.StopTheCrew, ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Action);
         Assert.StartsWith("The work is done. The lead is checking", ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Hint);
         Assert.StartsWith("The crew is working", ProjectViews.Project(SampleState.Working(), "weather")!.Hint);
+        Assert.Equal("", ProjectViews.Project(SampleState.Working(), "weather")!.TimeLeft);
         var idle = ProjectViews.Project(SampleState.Finished(), "notes")!;
         Assert.StartsWith("Talk with the lead about what to build", idle.Hint);
+    }
+
+    [Fact]
+    public void Shows_the_time_left_under_the_crew_and_hides_it_when_nothing_is_open()
+    {
+        var working = SampleState.Working();
+        working["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough", "longerThanUsual": false }""");
+        var view = ProjectViews.Project(working, "weather", TimeZoneInfo.Utc)!;
+        Assert.StartsWith("The crew is working", view.Hint);
+        Assert.Equal("About 25 minutes left (ends around 17:40) · rough", view.TimeLeft);
+
+        working["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 2, "endsAt": "2026-11-12T17:40:00Z", "sure": "based on 6 past steps", "longerThanUsual": true }""");
+        Assert.Equal("Longer than usual · about 2 minutes left (ends around 17:40) · based on 6 past steps", ProjectViews.Project(working, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var finished = SampleState.Finished();
+        finished["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("", ProjectViews.Project(finished, "weather", TimeZoneInfo.Utc)!.TimeLeft);
     }
 
     [Fact]

@@ -21,7 +21,11 @@ public sealed record WorkView(string Title, string Status, int Done, int Total, 
 }
 public enum CrewAction { None, LetTheCrewDoIt, StopTheCrew, Approve, Resume, StopWork }
 public sealed record ProjectView(string Id, string Name, string Status, IReadOnlyList<ChatMessage> Messages, WorkView? Work,
-    CrewAction Action, string ActionText, string Hint, string? NextGoal, string? MegaTaskId);
+    CrewAction Action, string ActionText, string Hint, string? NextGoal, string? MegaTaskId)
+{
+    // Shown under "The crew is working" while a step is running or waiting. Empty otherwise.
+    public string TimeLeft { get; init; } = "";
+}
 
 // Reads the server's snapshot the way the chat page does: same labels, same next action, same stop sentences.
 public static class ProjectViews
@@ -88,7 +92,7 @@ public static class ProjectViews
 
     static string StatusOf(JsonNode snapshot, JsonObject row) => ChatViews.Status(snapshot, row).Text;
 
-    public static ProjectView? Project(JsonNode snapshot, string? projectId)
+    public static ProjectView? Project(JsonNode snapshot, string? projectId, TimeZoneInfo? zone = null)
     {
         var rows = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().ToList();
         var row = rows.FirstOrDefault(item => S(item["id"]) == projectId) ?? rows.FirstOrDefault();
@@ -155,6 +159,9 @@ public static class ProjectViews
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
                 : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it."
                 : "Ready. The crew will plan, build, check and stop when the goal is reached.");
-        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null);
+        var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
+        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft };
     }
+
+    static bool stepsStillOpen(WorkView work) => work.Steps.Any(step => step.Status is "working" or "waiting" or "waiting for quota");
 }

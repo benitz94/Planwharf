@@ -122,8 +122,9 @@ public sealed partial class MainWindow
         if (Pending == null)
         {
             var waiting = view.Action == CrewAction.StopTheCrew && view.Work?.Waiting.Length > 0;
-            hint.Text = checking ? "Checking your AI tools…" : missing.FirstOrDefault()
+            var line = checking ? "Checking your AI tools…" : missing.FirstOrDefault()
                 ?? (waiting ? "Waiting for quota: the crew starts again by itself. You can change models in Team or in a step's menu at any time." : view.Hint);
+            hint.Text = view.TimeLeft.Length > 0 ? line + "\n" + view.TimeLeft : line;
             hint.Foreground = missing.Count > 0 ? Palette.Warn : Palette.Muted;
         }
         if (timedStop is { } timed && timed.ProjectId == view.Id)

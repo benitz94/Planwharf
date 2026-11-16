@@ -36,6 +36,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 05 | #97 | The work plan file, and checks before the crew starts | Split from fixes for Windows tests (#98) |
 | 06 | #101 | The Push button pushes the branch where it belongs, never main | — |
 | 07 | #104 | Remove the Review role | Jobs 05 and 06 marked done in the plan |
+| 08 | #? | An estimate of the time left | — |
 
 ## Improvements found while Planwharf worked on itself
 

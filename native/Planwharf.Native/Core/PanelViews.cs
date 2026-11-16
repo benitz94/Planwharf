@@ -9,6 +9,8 @@ public sealed record ProgressPanel(string Status, string Next, IReadOnlyList<Pro
 {
     // .planwharf/plan.md in the project folder. The Progress panel opens it.
     public string WorkPlan { get; init; } = "";
+    // "About 25 minutes left (ends around 17:40) · rough", or empty when nothing is running or waiting.
+    public string TimeLeft { get; init; } = "";
 }
 public sealed record QuotaWindow(string Name, int LeftPct, string Resets);
 public sealed record QuotaPlan(string Label, string? Note, IReadOnlyList<QuotaWindow> Windows);
@@ -37,7 +39,13 @@ public static class PanelViews
         var recent = (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId)
             .TakeLast(15).Reverse().Select(e => (Clock(S(e["createdAt"]), zone), S(e["summary"]) is var text && text.Length > 200 ? text[..200] : text)).ToList();
         var folder = S(row?["folder"]);
-        return new ProgressPanel(status, S(row?["next"]), steps, recent, folder) { WorkPlan = folder.Length == 0 ? "" : Path.Combine(folder, ".planwharf", "plan.md") };
+        var subs = (row?["subTasks"] as JsonArray ?? row?["megaTask"]?["subTasks"] as JsonArray ?? []).OfType<JsonObject>();
+        var open = subs.Any(sub => S(sub["status"]).ToUpperInvariant() is "RUNNING" or "PENDING");
+        return new ProgressPanel(status, S(row?["next"]), steps, recent, folder)
+        {
+            WorkPlan = folder.Length == 0 ? "" : Path.Combine(folder, ".planwharf", "plan.md"),
+            TimeLeft = open ? ChatViews.TimeLeft(row?["timeLeft"], zone) : ""
+        };
     }
 
     static string WindowName(string name) => name switch
