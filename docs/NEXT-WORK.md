@@ -47,7 +47,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 06 | Before the porting goes on | The Push button pushes the branch where it belongs (sheet below) | `fix/push-button` | Done (#101) |
 | 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | Done (#104) |
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | Done, waiting for review |
-| 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | To do |
+| 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | Done, waiting for review |
 | 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | To do |
 | 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | To do |
 | 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | To do |

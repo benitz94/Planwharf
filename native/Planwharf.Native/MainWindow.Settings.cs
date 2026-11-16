@@ -323,21 +323,83 @@ public sealed partial class MainWindow
         var state = Str(updates?["state"]);
         var busy = state is "downloading" or "checkpointing" or "restarting" or "checking";
         var line = updates == null ? "" : busy ? state switch { "downloading" => "Downloading the update…", "checkpointing" => "Saving unfinished work…", "restarting" => "Restarting…", _ => "Checking…" }
-            : state == "error" ? "Could not check: " + (Str(updates["reason"]) is { Length: > 0 } reason ? reason : "unknown error")
+            : state == "error" ? Flag(updates["updateFailed"])
+                ? (Str(updates["reason"]) is { Length: > 0 } why ? why : "The update stopped. Nothing was changed.")
+                : "Could not check: " + (Str(updates["reason"]) is { Length: > 0 } reason ? reason : "unknown error")
             : Flag(updates["available"]) ? $"Planwharf {Str(updates["latestVersion"])} is available{(Str(updates["currentVersion"]) is { Length: > 0 } current ? $" (you have {current})" : "")}."
             : Str(updates["currentVersion"]) is { Length: > 0 } now && state != "unchecked" ? $"Planwharf {now} is up to date." : "";
         if (line.Length > 0) side.Children.Add(Explain(line));
         check.IsEnabled = !busy;
         if (updates == null || state == "unchecked") check.Content = "Check for updates";
         var buttons = Row(check);
-        // The native app is replaced by downloading the new version, like the desktop installer.
-        if (Flag(updates?["available"]) && Str(updates?["releaseUrl"]) is { Length: > 0 } url)
+        // A newer release is installed from its checked zip. The release page stays as a way to download it by hand.
+        if (Flag(updates?["available"]))
         {
-            var download = Small("Download it", primary: true);
-            download.Click += async (_, _) => await OpenLink(url);
-            buttons.Children.Insert(0, download);
+            var update = Small("Update now", primary: true);
+            update.IsEnabled = api != null && !busy;
+            update.Click += async (_, _) => await UpdateNowAsync();
+            buttons.Children.Insert(0, update);
+            if (Str(updates?["releaseUrl"]) is { Length: > 0 } url)
+            {
+                var page = Small("Release page");
+                page.IsEnabled = !busy;
+                page.Click += async (_, _) => await OpenLink(url);
+                buttons.Children.Add(page);
+            }
         }
         side.Children.Add(buttons);
+    }
+
+    // Downloads the checked native zip, saves running work the same way as Stop the crew, then quits so the new copy can replace this folder.
+    async Task UpdateNowAsync()
+    {
+        if (updating || api == null) return;
+        updating = true;
+        try
+        {
+            if (!NativeUpdater.MayUpdate(NativeUpdater.StepIsRunning(snapshot), confirmed: false))
+            {
+                if (!await Confirm("A step is still running. Planwharf will save that work, then update. After it restarts, press Resume.", "Save and update")) return;
+            }
+            ShowUpdate("downloading");
+            await NativeUpdater.RunAsync(NativeUpdater.SharedHttp, NativeUpdater.InstallFolder, version, snapshot, confirmed: true, async ids =>
+            {
+                ShowUpdate("checkpointing");
+                foreach (var id in ids)
+                {
+                    try { await api.SetAutonomyAsync(id, false); } catch { /* the crew mode may already be off */ }
+                    try { await api.StopAsync(id); }
+                    catch (InvalidOperationException error) when (AlreadyStopped(error.Message)) { /* this project was already saved */ }
+                }
+            }, (exe, folder) => NativeUpdater.Launch(exe, folder), state => ShowUpdate(state));
+            Close();
+        }
+        catch (Exception error)
+        {
+            ShowUpdate("error", error.Message);
+            hint.Text = error.Message; hint.Foreground = Palette.Danger;
+        }
+        finally { updating = false; }
+    }
+
+    bool updating;
+
+    static bool AlreadyStopped(string message) =>
+        message.Contains("no running", StringComparison.OrdinalIgnoreCase) || message.Contains("nothing to stop", StringComparison.OrdinalIgnoreCase);
+
+    void ShowUpdate(string state, string? reason = null)
+    {
+        var next = new JsonObject
+        {
+            ["state"] = state,
+            ["available"] = true,
+            ["updateFailed"] = state == "error",
+            ["latestVersion"] = Str(updates?["latestVersion"]),
+            ["currentVersion"] = Str(updates?["currentVersion"]),
+            ["releaseUrl"] = Str(updates?["releaseUrl"])
+        };
+        if (!string.IsNullOrEmpty(reason)) next["reason"] = reason;
+        updates = next; sideSig = null; Render();
     }
 
     async Task ExportAsync(string id, string name)
