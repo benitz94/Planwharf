@@ -24,16 +24,19 @@ Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonom
 
 ## Jobs done by Planwharf
 
-| Job | Pull request | What | Crew | What the review changed |
-|---|---|---|---|---|
-| 01 | #64 | First port: skills, structured final output, worker results | Build Fable, Opus, GPT Astra and Grok 4.7 in parallel, Verify Grok 4.6 | — |
-| 02 | #74 | Model roles and policy, provider accounts, browser settings, activity limits | Planwharf crew | A test found the real Chrome on the macOS runners; made it independent of the machine |
-| 03 | #86 | Fake AI programs (claude, codex, grok, agy) that replay recorded answers, 64 tests | Build Gemini, Verify Grok (fixed a real bug) | Two tests depended on macOS paths and on running as administrator |
-| 04 | #90 | Six modules: refusals, diagnostics, briefing, project history, evidence, autonomy; 149 comparison cases | Build Gemini 3.8 Flash, Verify Grok 4.7 Business | A commit outside the job was left out and reviewed on its own |
-| — | #92 | Crew switches use the project's team; a step moves when its model loses its role | Build Grok Build Business, Verify Gemini 3.8 Flash | Branch rebuilt on main; notes name roles as Team shows them |
-| 05 | #97 | The work plan file, and checks before the crew starts | Build Grok Build Business, Verify Gemini 3.8 Flash (34 edge cases) | Split from fixes for Windows tests (#98) |
-| 06 | #101 | The Push button pushes the branch where it belongs, never main | Build Grok Build Business, Verify Gemini 3.8 Flash | — |
-| 07 | #104 | Remove the Review role | Build Grok Build Business, Verify Gemini 3.8 Flash | Jobs 05 and 06 marked done in the plan |
+The crews so far use models from Anthropic, OpenAI, Google and xAI; each job is built by one model and
+checked by a model of another company.
+
+| Job | Pull request | What | What the review changed |
+|---|---|---|---|
+| 01 | #64 | First port: skills, structured final output, worker results | — |
+| 02 | #74 | Model roles and policy, provider accounts, browser settings, activity limits | A test found the real Chrome on the macOS runners; made it independent of the machine |
+| 03 | #86 | Fake AI programs (claude, codex, grok, agy) that replay recorded answers, 64 tests | Two tests depended on macOS paths and on running as administrator |
+| 04 | #90 | Six modules: refusals, diagnostics, briefing, project history, evidence, autonomy; 149 comparison cases | A commit outside the job was left out and reviewed on its own |
+| — | #92 | Crew switches use the project's team; a step moves when its model loses its role | Branch rebuilt on main; notes name roles as Team shows them |
+| 05 | #97 | The work plan file, and checks before the crew starts | Split from fixes for Windows tests (#98) |
+| 06 | #101 | The Push button pushes the branch where it belongs, never main | — |
+| 07 | #104 | Remove the Review role | Jobs 05 and 06 marked done in the plan |
 
 ## Improvements found while Planwharf worked on itself
 
