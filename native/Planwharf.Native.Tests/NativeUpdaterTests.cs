@@ -291,6 +291,166 @@ public class NativeUpdaterTests
         Assert.Equal(1, code);
     }
 
+    [Fact]
+    public async Task RunAsync_reports_offline_when_zip_download_returns_http_error()
+    {
+        using var home = new Home();
+        var marker = home.Install("keep me.txt", "original");
+        var tag = "v1.2.4";
+        var name = $"Planwharf-native-{NativeUpdater.Rid}-{tag}.zip";
+        var url = $"https://github.com/{NativeUpdater.Repo}/releases/download/{tag}/{name}";
+        var json = new JsonObject
+        {
+            ["draft"] = false,
+            ["prerelease"] = false,
+            ["tag_name"] = tag,
+            ["html_url"] = $"https://github.com/{NativeUpdater.Repo}/releases/tag/{tag}",
+            ["assets"] = new JsonArray(new JsonObject { ["name"] = name, ["browser_download_url"] = url, ["digest"] = "sha256:" + new string('0', 64) })
+        };
+        // Release metadata succeeds, but zip download endpoint returns 404 NotFound.
+        var client = new HttpClient(new MockHttpHandler(req =>
+        {
+            if (req.RequestUri?.AbsolutePath.Contains("/releases/latest") == true)
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json") };
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        }));
+
+        var err = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NativeUpdater.RunAsync(client, home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal(NativeUpdater.OfflineMessage, err.Message);
+        Assert.Equal("original", File.ReadAllText(marker));
+        Assert.Empty(Directory.GetDirectories(home.Parent, NativeUpdater.StagePrefix + "*"));
+    }
+
+    [Fact]
+    public async Task RunAsync_reports_missing_asset_when_release_has_no_asset_for_this_rid()
+    {
+        using var home = new Home();
+        var otherRid = NativeUpdater.Rid == "win-x64" ? "linux-x64" : "win-x64";
+        var tag = "v1.2.4";
+        var name = $"Planwharf-native-{otherRid}-{tag}.zip";
+        var url = $"https://github.com/{NativeUpdater.Repo}/releases/download/{tag}/{name}";
+        var json = new JsonObject
+        {
+            ["draft"] = false,
+            ["prerelease"] = false,
+            ["tag_name"] = tag,
+            ["html_url"] = $"https://github.com/{NativeUpdater.Repo}/releases/tag/{tag}",
+            ["assets"] = new JsonArray(new JsonObject { ["name"] = name, ["browser_download_url"] = url, ["digest"] = "sha256:" + new string('0', 64) })
+        };
+        var client = new HttpClient(new MockHttpHandler(_ =>
+            new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json") }));
+
+        var err = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NativeUpdater.RunAsync(client, home.InstallFolder, "v0.0.1", null, true, _ => Task.CompletedTask, (_, _) => { }));
+        Assert.Equal(NativeUpdater.MissingAssetMessage, err.Message);
+        Assert.Empty(Directory.GetDirectories(home.Parent, NativeUpdater.StagePrefix + "*"));
+    }
+
+    [Fact]
+    public async Task RunAsync_overwrites_existing_staging_folder_from_aborted_update()
+    {
+        using var home = new Home();
+        var zip = home.Zip();
+        var tag = "v1.2.4";
+        var stage = Path.Combine(home.Parent, NativeUpdater.StagePrefix + tag);
+        Directory.CreateDirectory(stage);
+        File.WriteAllText(Path.Combine(stage, "stale.txt"), "leftover");
+
+        var launched = false;
+        await NativeUpdater.RunAsync(home.Client(zip, Sha(zip), tag), home.InstallFolder, "v0.0.1", null, true,
+            _ => Task.CompletedTask,
+            (exe, _) => { launched = File.Exists(exe); });
+
+        Assert.True(launched);
+        Assert.False(File.Exists(Path.Combine(stage, "stale.txt")));
+    }
+
+    [Fact]
+    public void CleanStages_preserves_installFolder_when_inside_stage_and_removes_other_stages()
+    {
+        using var home = new Home();
+        // Create an outer stage folder that actually contains an install folder inside it
+        var insideStage = Path.Combine(home.Parent, NativeUpdater.StagePrefix + "v1.0.0");
+        var nestedInstall = Path.Combine(insideStage, "installed-app");
+        Directory.CreateDirectory(nestedInstall);
+
+        // Create an unrelated abandoned stage folder
+        var abandonedStage = Path.Combine(insideStage, NativeUpdater.StagePrefix + "v0.9.0");
+        Directory.CreateDirectory(abandonedStage);
+
+        // Create an unrelated normal directory
+        var normalDir = Path.Combine(insideStage, "my-normal-dir");
+        Directory.CreateDirectory(normalDir);
+
+        NativeUpdater.CleanStages(nestedInstall);
+
+        // The nestedInstall parent is insideStage. Because nestedInstall is inside insideStage, insideStage is kept.
+        // abandonedStage should be deleted.
+        Assert.False(Directory.Exists(abandonedStage));
+        // normalDir should be preserved.
+        Assert.True(Directory.Exists(normalDir));
+
+        // Calling CleanStages on a root or non-existent parent does not throw
+        NativeUpdater.CleanStages(Path.GetPathRoot(home.Parent)!);
+    }
+
+    [Fact]
+    public void FinishStart_configures_process_start_info_correctly()
+    {
+        var exe = Path.Combine(Path.GetTempPath(), "test-stage", NativeUpdater.ExeName);
+        var install = Path.Combine(Path.GetTempPath(), "test-install");
+        var psi = NativeUpdater.FinishStart(exe, install, 4321);
+
+        Assert.Equal(exe, psi.FileName);
+        Assert.Equal(Path.GetDirectoryName(exe), psi.WorkingDirectory);
+        Assert.False(psi.UseShellExecute);
+        Assert.Equal(3, psi.ArgumentList.Count);
+        Assert.Equal(NativeUpdater.FinishFlag, psi.ArgumentList[0]);
+        Assert.Equal(Path.GetFullPath(install), psi.ArgumentList[1]);
+        Assert.Equal("4321", psi.ArgumentList[2]);
+    }
+
+    [Fact]
+    public void Verify_checks_sha256_case_insensitively_and_handles_empty_file()
+    {
+        var temp = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllBytes(temp, [1, 2, 3, 4, 5]);
+            var sha = Convert.ToHexString(SHA256.HashData([1, 2, 3, 4, 5]));
+            Assert.True(NativeUpdater.Verify(temp, sha.ToLowerInvariant()));
+            Assert.True(NativeUpdater.Verify(temp, sha.ToUpperInvariant()));
+            Assert.False(NativeUpdater.Verify(temp, new string('0', 64)));
+
+            File.WriteAllBytes(temp, []);
+            var emptySha = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+            Assert.True(NativeUpdater.Verify(temp, emptySha));
+        }
+        finally
+        {
+            if (File.Exists(temp)) File.Delete(temp);
+        }
+    }
+
+    [Fact]
+    public async Task DownloadAsync_rejects_untrusted_asset_url()
+    {
+        using var home = new Home();
+        var release = new NativeRelease("v1.2.4", "https://github.com/benitz94/Planwharf/releases/tag/v1.2.4",
+            "malicious.zip", "https://untrusted-domain.com/malicious.zip", new string('0', 64));
+        var client = new HttpClient();
+        var err = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            NativeUpdater.DownloadAsync(client, release, home.InstallFolder));
+        Assert.Equal(NativeUpdater.MissingAssetMessage, err.Message);
+    }
+
+    sealed class MockHttpHandler(Func<HttpRequestMessage, HttpResponseMessage> handle) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(handle(request));
+    }
+
     sealed class ThrowingHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
