@@ -2,7 +2,7 @@
 
 **Your team of AI models, in one chat.**
 
-<p align="center"><img src="docs/images/planwharf-flow.svg" width="760" alt="What Planwharf does after you press Let the crew do it: a safe start on a new branch, the lead splits the work, the crew builds the parts in parallel while a quota watch hands a step to another model when one runs low, the parts are joined, another model verifies and flags what needs you, and the lead checks whether the goal is reached before the work is finished and you push it."></p>
+<p align="center"><img src="docs/images/planwharf-flow.svg" width="900" alt="What Planwharf does after you press Let the crew do it: a safe start on a new branch, the lead splits the work, the crew builds the parts in parallel while a quota watch hands a step to another model when one runs low, the parts are joined, another model verifies and flags what needs you, and the lead checks whether the goal is reached before the work is finished and you push it."></p>
 
 Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what you want built, in plain words. A crew of AI models builds it, a second model checks the work and fixes what fails, and you follow everything in the chat. You can stop it at any time.
 
