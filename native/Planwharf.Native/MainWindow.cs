@@ -386,6 +386,12 @@ public sealed partial class MainWindow : Window
             var changed = card.Repo is { Git: true } repo ? $"{repo.Uncommitted} files not yet committed" : card.Repo == null ? "Counting changed files…" : "Changed files: unknown";
             panel.Children.Add(Line(string.Join("   ·   ", new[] { $"{work.Done}/{work.Total} steps done", card.Took, changed }.Where(part => part.Length > 0)), Palette.Muted, 13));
         }
+        if ((done || stopped) && ProjectViews.Decisions(work.Results) is { Count: > 0 } decisions)
+        {
+            var asks = new StackPanel { Spacing = 3, Children = { Line("Needs your decision", Palette.Warn, 13, FontWeight.SemiBold) } };
+            foreach (var decision in decisions) asks.Children.Add(Line("• " + decision, Palette.Text, 13));
+            panel.Children.Add(new Border { Background = Palette.WarnSoft, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8), Child = asks });
+        }
         if (card.Summary.Count > 0) panel.Children.Add(List("Summary", card.Summary));
         if (done && work.Results.Count > 0) panel.Children.Add(List("What was done", work.Results));
         if (!done && !proposal)

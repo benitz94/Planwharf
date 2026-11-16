@@ -343,7 +343,7 @@ function dispatchPlan(workers, job, facts) {
     : [
       dirty ? 'Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.'
         : 'Implement the whole job in the project folder, with automated tests. Run the tests before you finish.',
-      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
+      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself (a design choice, a change outside the files you may touch, a failure that was there before this work), write it in your summary on its own line starting with "Needs your decision:".'
     ];
   return list.map((worker, index) => ({
     modelId: worker.id,
@@ -1121,7 +1121,8 @@ function createOrchestrator(options) {
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
     info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId) } };
-    if (autonomyActive(info.projectId)) info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
+    // Workers never push, with or without autonomy: the owner pushes with the Push button.
+    info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
     const id = ledger.start({ role: 'worker', projectId: info.projectId, megaTaskId: info.megaTaskId, subTaskId: info.subTaskId, attemptId: info.attemptId,
       provider: info.worker.providerId || info.worker.provider, model: info.worker.cli, modelId: info.worker.id, accountKey: info.worker.accountKey, accountType: info.worker.accountType, reason: info.job?.kind === 'research' ? 'approved research' : 'approved work' });

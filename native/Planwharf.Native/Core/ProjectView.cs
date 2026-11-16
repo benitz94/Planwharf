@@ -59,6 +59,13 @@ public static class ProjectViews
         return detail.Length > 0 ? $"{sentence.TrimEnd('.')}: {detail}" : sentence.EndsWith('.') ? sentence : sentence + ".";
     }
 
+    // What a worker found and must not decide alone: the lines of its summary that start with "Needs your
+    // decision:" (the Verify step is asked to write them so), shown apart so the owner does not miss them.
+    public static IReadOnlyList<string> Decisions(IEnumerable<string> results) =>
+        results.SelectMany(text => text.Split('\n')).Select(line => line.Trim().TrimStart('-', '•', '*', ' '))
+            .Select(line => line.IndexOf("Needs your decision:", StringComparison.OrdinalIgnoreCase) is var at && at >= 0 ? line[(at + "Needs your decision:".Length)..].Trim() : "")
+            .Where(line => line.Length > 0).Distinct().ToList();
+
     public static string? SuggestedGoal(string answer) => Suggested.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
 
     // The project used last comes first, so a message is not sent to a project the user left long ago.

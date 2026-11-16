@@ -22,6 +22,14 @@ public class ProjectViewTests
     }
 
     [Fact]
+    public void Picks_out_what_needs_the_owner_decision()
+    {
+        var results = new[] { "Verified job 05. Added 34 tests.\nNeeds your decision: test X fails already on main.", "Built it.", "- needs your decision: keep the plan file in git?" };
+        Assert.Equal(["test X fails already on main.", "keep the plan file in git?"], ProjectViews.Decisions(results));
+        Assert.Empty(ProjectViews.Decisions(["All good."]));
+    }
+
+    [Fact]
     public void Lists_projects_with_the_crew_status()
     {
         var projects = ProjectViews.Projects(SampleState.Finished());
