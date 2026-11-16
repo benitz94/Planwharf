@@ -52,6 +52,29 @@ public static class ChatViews
     public static string WorkingText(string who, DateTimeOffset? since, DateTimeOffset now) =>
         $"{who} is working{(since is { } start ? " · " + (WorkDetails.Duration((now - start).TotalMilliseconds) is { Length: > 0 } d ? d : "1 s") : "")}";
 
+    // "About 25 minutes left (ends around 17:40) · rough". Empty when the engine has no estimate.
+    public static string TimeLeft(JsonNode? node, TimeZoneInfo? zone = null)
+    {
+        if (node is not JsonObject obj) return "";
+        double? minutes = null;
+        if (obj["minutes"] is JsonValue value)
+        {
+            if (value.TryGetValue<double>(out var number) && double.IsFinite(number)) minutes = number;
+            else if (value.TryGetValue<int>(out var whole)) minutes = whole;
+            else if (value.TryGetValue<string>(out var text) && double.TryParse(text, CultureInfo.InvariantCulture, out var parsed) && double.IsFinite(parsed)) minutes = parsed;
+        }
+        if (minutes is not { } left) return "";
+        var rounded = (int)Math.Round(left);
+        if (rounded < 0) return "";
+        var about = rounded == 1 ? "About 1 minute left" : $"About {rounded} minutes left";
+        var ends = PanelViews.Clock(S(obj["endsAt"]), zone);
+        var when = ends.Length > 0 ? $" (ends around {ends})" : "";
+        var sure = S(obj["sure"]);
+        var confidence = sure.Length > 0 ? " · " + sure : "";
+        var longer = obj["longerThanUsual"] is JsonValue flag && flag.TryGetValue<bool>(out var on) && on;
+        return longer ? "Longer than usual · " + char.ToLowerInvariant(about[0]) + about[1..] + when + confidence : about + when + confidence;
+    }
+
     static readonly Regex Shown = new("LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
     static readonly Regex News = new("LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
 

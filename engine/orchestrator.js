@@ -9,7 +9,8 @@ const Plan = require('../plan.js');
 const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
 const { modelRouteError } = require('./model-routing.cjs');
-const { createExecutionBridge } = require('./execution.cjs');
+const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
+const { estimate: estimateTimeLeft } = require('./time-left.cjs');
 const { renameWithRetry } = require('./atomic-rename.cjs');
 const refusals = require('./provider-refusal.cjs');
 const projectChecks = require('./project-checks.cjs');
@@ -2192,8 +2193,22 @@ function createOrchestrator(options) {
         };
       })
     };
+    const stepHistory = readStepTimes(dir);
     view.projects.forEach(row => {
       row.analysis = analysisOf(row);
+      const started = new Map((row.dispatch || []).filter(Boolean).map(part => [part.subTaskId, part.startedAt]));
+      row.timeLeft = estimateTimeLeft({
+        history: stepHistory, now: now(),
+        steps: (row.subTasks || []).map(sub => ({
+          id: sub.id,
+          role: sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || '')) ? 'Verify' : 'Build',
+          model: sub.assignedModelId || sub.modelId || '',
+          status: sub.status,
+          startedAt: started.get(sub.id) || null,
+          dependencies: sub.dependencies || [],
+          size: sub.size
+        }))
+      });
     });
     view.orchestratorFallbackFrom = lead?.fallbackFrom || null;
     for (const research of view.researches) {

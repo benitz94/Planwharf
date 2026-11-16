@@ -36,6 +36,7 @@ const { executionNext } = require('./execution-next.cjs');
 const { adapterFor } = require('./provider-adapters.cjs');
 const { checkpointDiff } = require('./project-history.cjs');
 const { refusalReason } = require('./provider-refusal.cjs');
+const timeLeft = require('./time-left.cjs');
 const clone = value => structuredClone(value);
 const fingerprint = job => crypto.createHash('sha256').update(JSON.stringify([job.id, job.title, job.detail, job.revision_id || null, ...(job.goldModel ? [job.goldModel] : [])])).digest('hex');
 
@@ -195,6 +196,14 @@ function createExecutionBridge(options) {
       try { planFile.tickStep(part.projectFolder, { title: sub.title, role: stepRole(sub), model: part.label, commit: planFile.commitNote(part.projectFolder) }); }
       catch { /* the step result is already saved */ }
     }
+    // How long this step took, for the time-left estimate. No prompt, path or project name.
+    try {
+      appendStepTime(dir, timeLeft.stepRecord({
+        role: stepRole(sub), model: sub.assignedModelId, size: sub.size,
+        files: Array.isArray(result.filesChanged) ? result.filesChanged.length : 0,
+        startedAt: part.startedAt, endedAt: sub.finishedAt, status: result.status, modelChange: Boolean(result.modelChange)
+      }));
+    } catch { /* the step result is already saved */ }
   }
   // A provider that refused the slice for credits or quota did no work: close that attempt,
   // put the model on cooldown, and give the slice to another eligible model.
@@ -596,4 +605,15 @@ function createExecutionBridge(options) {
   }
   return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining };
 }
-module.exports = { createExecutionBridge, repoState };
+function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
+function readStepTimes(dir) {
+  if (!dir) return [];
+  try { return timeLeft.parseHistory(fs.readFileSync(stepTimesFile(dir), 'utf8')); }
+  catch { return []; }
+}
+function appendStepTime(dir, record) {
+  if (!dir || !record) return;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
+}
+module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime };
