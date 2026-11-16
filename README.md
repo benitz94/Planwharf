@@ -32,13 +32,13 @@ When the work is done, a summary says what happened, who did what and what is le
 
 ## Download
 
-**Use the native app.** It is the version that is developed from now on. The desktop app (Electron) and the web app are **being retired**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
+**Use the native app.** It is the version that is developed from now on. The desktop app (Electron) and the web app are **deprecated**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
 
 | Kind | Windows | Linux | macOS | Needs Node.js | Status |
 |---|---|---|---|---|---|
-| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip`, or `…-win-arm64-…` on ARM | ✅ `…-linux-x64-…zip`, or `…-linux-arm64-…` on ARM | ✅ Apple silicon and Intel | No: it includes Node.js today (its engine still runs on it) | Developed |
-| **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included | Being retired |
-| **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer | Being retired |
+| **Native app** (recommended) | ✅ `Planwharf-native-win-x64-vX.Y.Z.zip`, or `…-win-arm64-…` on ARM | ✅ `…-linux-x64-…zip`, or `…-linux-arm64-…` on ARM | ✅ Apple silicon and Intel | No: it includes Node.js today (its engine still runs on it) | **In development** |
+| **Desktop app** (Electron) | ✅ `Planwharf-Setup-X.Y.Z.exe` | ✅ `.AppImage` or `.deb` | not yet | No, included | Deprecated |
+| **Web app** (portable ZIP) | ✅ | ✅ | ✅ | Yes, 18 or newer | Deprecated |
 
 With any kind you also need at least one AI coding tool, installed and signed in: [Claude Code](https://github.com/anthropics/claude-code), [Codex](https://github.com/openai/codex), Grok CLI or Antigravity. A chat subscription alone does not include the command-line tool.
 
@@ -53,7 +53,7 @@ A native window instead of a web page, much lighter than the desktop app, with e
 
 More in [native/README.md](native/README.md).
 
-### Desktop app (Electron), being retired
+### Desktop app (Electron), deprecated
 
 Its own window, with Node.js included. No new features: only fixes for serious errors, until it is removed. Download it from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), under **Assets**:
 
@@ -63,7 +63,7 @@ Its own window, with Node.js included. No new features: only fixes for serious e
 To update, install the new version over the old one: your projects are kept. More in [docs/DESKTOP.md](docs/DESKTOP.md).
 
 
-### Web app (portable ZIP), being retired
+### Web app (portable ZIP), deprecated
 
 No new features: only fixes for serious errors, until it is removed.
 
