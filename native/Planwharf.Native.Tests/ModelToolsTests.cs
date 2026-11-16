@@ -67,4 +67,78 @@ public class ModelToolsTests
         Assert.True(legacy.SameAsProject);
         Assert.True(legacy.Tools["hooks"]);
     }
+
+    [AvaloniaFact]
+    public void Unchecking_same_as_project_copies_effective_set_and_enables_editing()
+    {
+        var snapshot = JsonNode.Parse("""{ "projectToolSettings": { "p": { "default": { "browser": true, "hooks": true }, "models": {} } } }""");
+        var saved = new List<IDictionary<string, bool>?>();
+        var view = ModelToolsView.Read(snapshot, "p", "worker");
+        Assert.True(view.SameAsProject);
+        Assert.True(view.Tools["browser"]);
+        Assert.True(view.Tools["hooks"]);
+        Assert.False(view.Tools["mcp"]);
+        Assert.False(view.Tools["memory"]);
+
+        var fold = ModelToolsEditor.Create(view, tools => { saved.Add(tools); return Task.CompletedTask; });
+        var boxes = ((StackPanel)fold.Content!).Children.OfType<CheckBox>().ToList();
+        Assert.True(boxes[0].IsChecked);
+        Assert.All(boxes.Skip(1), box => Assert.False(box.IsEnabled));
+
+        boxes[0].IsChecked = false;
+        boxes[0].RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
+
+        Assert.All(boxes.Skip(1), box => Assert.True(box.IsEnabled));
+        Assert.NotNull(saved.Single());
+        Assert.True(saved.Single()!["browser"]);
+        Assert.True(saved.Single()!["hooks"]);
+        Assert.False(saved.Single()!["mcp"]);
+        Assert.False(saved.Single()!["memory"]);
+
+        boxes[2].IsChecked = false;
+        boxes[2].RaiseEvent(new RoutedEventArgs(CheckBox.ClickEvent));
+        Assert.Equal(2, saved.Count);
+        Assert.False(saved.Last()!["browser"]);
+        Assert.True(saved.Last()!["hooks"]);
+    }
+
+    [Fact]
+    public void ModelToolsView_Read_handles_null_empty_and_partial_snapshots()
+    {
+        var fromNull = ModelToolsView.Read(null, "p", "m");
+        Assert.True(fromNull.SameAsProject);
+        Assert.All(ModelToolsView.Names, name => Assert.False(fromNull.Tools[name]));
+
+        var fromEmpty = ModelToolsView.Read(new JsonObject(), "p", "m");
+        Assert.True(fromEmpty.SameAsProject);
+        Assert.All(ModelToolsView.Names, name => Assert.False(fromEmpty.Tools[name]));
+
+        var partial = ModelToolsView.Read(JsonNode.Parse("""{ "projectToolSettings": { "p": { "default": { "browser": true }, "models": { "m": { "memory": true } } } } }"""), "p", "m");
+        Assert.False(partial.SameAsProject);
+        Assert.True(partial.Tools["memory"]);
+        Assert.False(partial.Tools["browser"]);
+        Assert.False(partial.Tools["mcp"]);
+        Assert.False(partial.Tools["hooks"]);
+    }
+
+    [Fact]
+    public void ChatViews_Thread_attaches_model_id_to_ask_items()
+    {
+        var snapshot = JsonNode.Parse("""
+        {
+            "asks": [
+                { "at": "2026-11-16T12:00:00Z", "question": "Check page", "answer": "I need browser", "toolRequest": "browser", "projectId": "p", "orchestratorId": "claude-lead" },
+                { "at": "2026-11-16T12:05:00Z", "question": "Check code", "answer": "All fine", "projectId": "p" }
+            ],
+            "execution": { "timeline": [] }
+        }
+        """);
+        var thread = ChatViews.Thread(snapshot!, "p", id => id);
+        var askWithModel = Assert.IsType<AskItem>(thread[0]);
+        Assert.Equal("claude-lead", askWithModel.ModelId);
+        Assert.Equal("browser", askWithModel.ToolRequest);
+
+        var askWithoutModel = Assert.IsType<AskItem>(thread[1]);
+        Assert.Equal("", askWithoutModel.ModelId);
+    }
 }

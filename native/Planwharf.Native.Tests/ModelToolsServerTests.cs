@@ -32,6 +32,7 @@ public class ModelToolsServerTests
             Assert.True(ModelToolsView.Read(state, id, other).SameAsProject);
             Assert.True(ModelToolsView.Read(state, id, other).Tools["browser"]);
             await Assert.ThrowsAsync<InvalidOperationException>(() => api.SetToolsAsync(id, new Dictionary<string, bool>(), "missing-model"));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => api.SetToolsAsync(id, null));
             await api.SetToolsAsync(id, null, modelId);
             view = ModelToolsView.Read(await api.SnapshotAsync(false, id), id, modelId);
             Assert.True(view.SameAsProject);

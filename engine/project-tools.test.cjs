@@ -174,3 +174,100 @@ test('resolved tools control Claude and Codex launch arguments for leads and wor
     }
   }
 });
+
+test('multi-project tool isolation and archiving preserve model overrides independently', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-multi-tools-'));
+  let plan = Plan.example();
+  plan = Plan.createProject(plan, { name: 'alpha', direction: 'Build alpha' });
+  plan = Plan.createProject(plan, { name: 'beta', direction: 'Build beta' });
+  const open = () => createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: ['lead', 'worker'].map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'premium' })),
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }), askModel: async () => ({ answer: 'OK', actions: [] }) });
+  let orchestra = open();
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+
+  await orchestra.setProjectTools('alpha', { browser: true });
+  await orchestra.setProjectTools('alpha', { browser: false, memory: true }, 'lead');
+  await orchestra.setProjectTools('beta', { hooks: true });
+
+  const snap = await orchestra.snapshot();
+  assert.equal(snap.projectToolSettings.alpha.default.browser, true);
+  assert.equal(snap.projectToolSettings.alpha.models.lead.memory, true);
+  assert.equal(snap.projectToolSettings.alpha.models.lead.browser, false);
+  assert.equal(snap.projectToolSettings.beta.default.hooks, true);
+  assert.equal(snap.projectToolSettings.beta.default.browser, false);
+  assert.deepEqual(snap.projectToolSettings.beta.models, {});
+
+  const archiveResult = await orchestra.archiveProject('alpha', 'test-archive', { keepTeam: true });
+  assert.equal(archiveResult.ok, true);
+  const snapAfterKeep = await orchestra.snapshot();
+  assert.equal(snapAfterKeep.projectToolSettings.alpha.default.browser, true);
+  assert.equal(snapAfterKeep.projectToolSettings.alpha.models.lead.memory, true);
+
+  await orchestra.archiveProject('beta', 'test-archive', { keepTeam: false });
+  const snapAfterDelete = await orchestra.snapshot();
+  assert.equal(snapAfterDelete.projectToolSettings.beta, undefined);
+
+  await orchestra.shutdown();
+  orchestra = open();
+  const snapRestart = await orchestra.snapshot();
+  assert.equal(snapRestart.projectToolSettings.alpha.default.browser, true);
+  assert.equal(snapRestart.projectToolSettings.alpha.models.lead.memory, true);
+});
+
+test('malformed saved project tools recover cleanly to valid defaults and models', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-corrupt-tools-'));
+  const file = path.join(dir, 'orchestrator.json');
+  const plan = Plan.createProject(Plan.example(), { name: 'gamma', direction: 'Build gamma' });
+  fs.writeFileSync(file, JSON.stringify({
+    orchestratorId: 'lead',
+    projectTools: {
+      gamma: {
+        default: null,
+        models: {
+          lead: 'invalid',
+          worker: { browser: 1, memory: true, invalidProp: true },
+          corruptArray: []
+        }
+      },
+      corruptString: 'bogus',
+      corruptNull: null
+    }
+  }));
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: ['lead', 'worker'].map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true })),
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }), askModel: async () => ({ answer: 'OK', actions: [] }) });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+
+  const snap = await orchestra.snapshot('gamma');
+  assert.deepEqual(snap.projectToolSettings.gamma.default, { mcp: false, browser: false, hooks: false, memory: false });
+  assert.deepEqual(snap.projectToolSettings.gamma.models.worker, { mcp: false, browser: false, hooks: false, memory: true });
+  assert.equal(snap.projectToolSettings.gamma.models.lead, undefined);
+  assert.equal(snap.projectToolSettings.gamma.models.corruptArray, undefined);
+
+  const set = await orchestra.setProjectTools('gamma', { mcp: true }, 'lead');
+  assert.equal(set.ok, true);
+  assert.equal(set.tools.mcp, true);
+});
+
+test('concurrent updates to default tools and model overrides preserve both changes', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-concurrency-tools-'));
+  const plan = Plan.createProject(Plan.example(), { name: 'delta', direction: 'Build delta' });
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: ['lead', 'worker'].map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true })),
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }), askModel: async () => ({ answer: 'OK', actions: [] }) });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+
+  await Promise.all([
+    orchestra.setProjectTools('delta', { browser: true }),
+    orchestra.setProjectTools('delta', { memory: true }, 'worker')
+  ]);
+
+  const snap = await orchestra.snapshot('delta');
+  assert.equal(snap.projectToolSettings.delta.default.browser, true);
+  assert.equal(snap.projectToolSettings.delta.models.worker.memory, true);
+  await orchestra.setProjectTools('delta', {}, 'lead');
+  const snapLead = await orchestra.snapshot('delta');
+  assert.equal(snapLead.projectToolSettings.delta.models.lead.browser, true);
+  assert.equal(snapLead.projectToolSettings.delta.models.lead.memory, false);
+});
