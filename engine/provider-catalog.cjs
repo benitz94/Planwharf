@@ -22,7 +22,7 @@ function loadCatalog(config) {
     for (const original of provider.models) {
       if (!original.id || modelIds.has(original.id)) throw new Error('Model IDs must be nonempty and unique.');
       modelIds.add(original.id);
-      const model = { ...original, providerId: provider.id, provider: explicit || original.provider ? provider.id : undefined, adapter: provider.adapter, quotaPoolId: provider.quotaPoolId, plan: provider.quotaPoolId,
+      const model = { ...original, providerId: provider.id, provider: explicit || original.provider ? provider.id : undefined, adapter: provider.adapter, ...((pool => ({ quotaPoolId: pool, plan: pool }))(provider.adapter === 'antigravity' ? require('./antigravity.cjs').poolOf(original.cli, provider.quotaPoolId) : provider.quotaPoolId)),
         orchestratorEligible: original.orchestratorEligible ?? original.capabilities?.orchestratorEligible ?? original.capabilities?.canOrchestrate ?? (original.kind !== 'local'), workerEligible: original.workerEligible ?? original.capabilities?.workerEligible ?? true,
         reviewerEligible: original.reviewerEligible ?? original.capabilities?.reviewerEligible ?? (original.workerEligible !== false),
         providerCatalog: explicit || original.providerCatalog === true, capabilities: { ...(adapterFor(provider)?.capabilities || {}), ...(original.capabilities || {}) }, providerConfig: providerConfiguration(provider) };
