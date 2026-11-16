@@ -1130,8 +1130,9 @@ function createOrchestrator(options) {
   };
   // Resolve a complete model override, otherwise the project's default.
   const toolFlags = chosen => Object.fromEntries(TOOL_NAMES.map(name => [name, chosen?.[name] === true]));
-  const toolSettings = value => ({ default: toolFlags(value?.default || value),
-    models: Object.fromEntries(Object.entries(value?.models || {}).filter(([, tools]) => tools && typeof tools === 'object' && !Array.isArray(tools)).map(([id, tools]) => [id, toolFlags(tools)])) });
+  const plainTools = value => value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  const toolSettings = value => ({ default: toolFlags(plainTools(value?.default) || value),
+    models: Object.fromEntries(Object.entries(plainTools(value?.models) || {}).filter(([, tools]) => plainTools(tools)).map(([id, tools]) => [id, toolFlags(tools)])) });
   const toolsFor = (projectId, modelId) => {
     const settings = toolSettings(store.projectTools?.[projectId]);
     return Object.hasOwn(settings.models, modelId) ? settings.models[modelId] : settings.default;

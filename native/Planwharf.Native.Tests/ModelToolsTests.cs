@@ -141,4 +141,57 @@ public class ModelToolsTests
         var askWithoutModel = Assert.IsType<AskItem>(thread[1]);
         Assert.Equal("", askWithoutModel.ModelId);
     }
+
+    [Fact]
+    public void Read_ignores_a_null_or_array_override_and_non_boolean_flags()
+    {
+        var snapshot = JsonNode.Parse("""
+        {
+          "projectTools": { "p": { "hooks": true } },
+          "projectToolSettings": {
+            "p": { "default": null, "models": { "m": null, "list": [], "empty": {}, "text": "browser" } },
+            "q": { "default": { "browser": "true", "memory": true }, "models": { "m": { "mcp": 1, "hooks": true } } }
+          }
+        }
+        """);
+        var inherited = ModelToolsView.Read(snapshot, "p", "m");
+        Assert.True(inherited.SameAsProject);
+        Assert.True(inherited.Tools["hooks"]);
+        Assert.False(inherited.Tools["browser"]);
+
+        var listed = ModelToolsView.Read(snapshot, "p", "list");
+        Assert.True(listed.SameAsProject);
+        Assert.True(listed.Tools["hooks"]);
+
+        var empty = ModelToolsView.Read(snapshot, "p", "empty");
+        Assert.False(empty.SameAsProject);
+        Assert.All(ModelToolsView.Names, name => Assert.False(empty.Tools[name]));
+
+        var text = ModelToolsView.Read(snapshot, "p", "text");
+        Assert.True(text.SameAsProject);
+
+        var partial = ModelToolsView.Read(snapshot, "q", "m");
+        Assert.False(partial.SameAsProject);
+        Assert.True(partial.Tools["hooks"]);
+        Assert.False(partial.Tools["mcp"]);
+        Assert.False(partial.Tools["memory"]);
+        Assert.False(partial.Tools["browser"]);
+
+        var sibling = ModelToolsView.Read(snapshot, "q", "other");
+        Assert.True(sibling.SameAsProject);
+        Assert.True(sibling.Tools["memory"]);
+        Assert.False(sibling.Tools["browser"]);
+    }
+
+    [Fact]
+    public void Chat_thread_ignores_a_non_string_lead_id_on_a_tool_request()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "asks": [ { "at": "2026-11-16T12:00:00Z", "question": "Check", "answer": "Need it", "toolRequest": "browser", "projectId": "p", "orchestratorId": 4 } ],
+          "execution": { "timeline": [] } }
+        """);
+        var ask = Assert.IsType<AskItem>(ChatViews.Thread(snapshot!, "p", id => id)[0]);
+        Assert.Equal("", ask.ModelId);
+        Assert.Equal("browser", ask.ToolRequest);
+    }
 }

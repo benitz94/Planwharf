@@ -37,7 +37,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 06 | #101 | The Push button pushes the branch where it belongs, never main | — |
 | 07 | #104 | Remove the Review role | Jobs 05 and 06 marked done in the plan |
 | 08 | #110 | An estimate of the time left | — |
-| 10 | #? | Tools per model: project defaults, saved-setting migration, lead and worker overrides, native Team tools folds | Waiting for independent verification and review |
+| 10 | #? | Tools per model: project defaults, saved-setting migration, lead and worker overrides, native Team tools folds | Verification: a saved models list is not a model named 0, and a null override on a Team card follows the project |
 
 ## Improvements found while Planwharf worked on itself
 

@@ -271,3 +271,171 @@ test('concurrent updates to default tools and model overrides preserve both chan
   assert.equal(snapLead.projectToolSettings.delta.models.lead.browser, true);
   assert.equal(snapLead.projectToolSettings.delta.models.lead.memory, false);
 });
+
+test('an override stays complete when the default changes, and a bad save changes nothing', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-tools-isolate-'));
+  const file = path.join(dir, 'orchestrator.json');
+  const plan = Plan.createProject(Plan.example(), { name: 'alpha', direction: 'Build alpha' });
+  const seen = [];
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: ['lead', 'other'].map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'premium' })),
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }),
+    askModel: async info => { seen.push(info.model); return { answer: 'Need the browser.\nTOOL REQUEST: browser', actions: [] }; } });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+  assert.equal((await orchestra.setOrchestrator('lead')).ok, true);
+  assert.equal((await orchestra.setProjectTools('alpha', { browser: true, hooks: true })).ok, true);
+  assert.equal((await orchestra.setProjectTools('alpha', { browser: false }, 'lead')).ok, true);
+  let settings = (await orchestra.snapshot('alpha')).projectToolSettings.alpha;
+  assert.deepEqual(settings.models.lead, { mcp: false, browser: false, hooks: true, memory: false });
+  assert.equal((await orchestra.setProjectTools('alpha', { memory: true })).ok, true);
+  settings = (await orchestra.snapshot('alpha')).projectToolSettings.alpha;
+  assert.equal(settings.default.browser, true);
+  assert.equal(settings.default.hooks, true);
+  assert.equal(settings.default.memory, true);
+  assert.deepEqual(settings.models.lead, { mcp: false, browser: false, hooks: true, memory: false });
+  assert.equal((await orchestra.snapshot('alpha')).projectTools.alpha.memory, true, 'the flat snapshot stays the default');
+  await orchestra.ask('Check the page', 'alpha');
+  assert.equal(seen.at(-1).tools.browser, false);
+  assert.equal(seen.at(-1).tools.hooks, true);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).asks[0].toolRequest, 'browser');
+  await orchestra.setProjectTools('alpha', { browser: true }, 'lead');
+  await orchestra.ask('Check the page again', 'alpha');
+  assert.equal(seen.at(-1).tools.browser, true);
+  assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).asks[0].toolRequest, undefined);
+  const saved = JSON.parse(fs.readFileSync(file, 'utf8')).projectTools.alpha;
+  for (const [tools, modelId] of [[{ browser: 'yes' }, 'lead'], [null, undefined], [[], 'lead'], [{ mcp: true }, 'missing']]) {
+    assert.equal((await orchestra.setProjectTools('alpha', tools, modelId)).ok, false);
+  }
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).projectTools.alpha, saved);
+  assert.equal((await orchestra.setProjectTools('alpha', null, 'other')).ok, true);
+  assert.equal((await orchestra.snapshot('alpha')).projectToolSettings.alpha.models.other, undefined);
+  assert.equal((await orchestra.snapshot('alpha')).projectToolSettings.alpha.models.lead.browser, true);
+});
+
+test('legacy tools are rewritten on shutdown, and partial or corrupt saves do not inherit', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-tools-rewrite-'));
+  const file = path.join(dir, 'orchestrator.json');
+  const plan = Plan.createProject(Plan.example(), { name: 'alpha', direction: 'Build alpha' });
+  fs.writeFileSync(file, JSON.stringify({
+    orchestratorId: 'lead',
+    projectTools: {
+      alpha: { browser: true, models: [{ mcp: true }] },
+      beta: { default: { browser: 'true', hooks: true }, models: { lead: { memory: 'yes', mcp: true }, drop: null, list: [] } },
+      gone: 'nope'
+    }
+  }));
+  const open = () => createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: [{ id: 'lead', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'premium' }],
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }), askModel: async () => ({ answer: 'OK', actions: [] }) });
+  let orchestra = open();
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+  const first = await orchestra.snapshot();
+  assert.deepEqual(first.projectToolSettings.alpha.default, { mcp: false, browser: true, hooks: false, memory: false });
+  assert.deepEqual(first.projectToolSettings.alpha.models, {});
+  assert.equal(first.projectToolSettings.beta.default.browser, false);
+  assert.equal(first.projectToolSettings.beta.default.hooks, true);
+  assert.deepEqual(first.projectToolSettings.beta.models.lead, { mcp: true, browser: false, hooks: false, memory: false });
+  assert.equal(first.projectToolSettings.beta.models.drop, undefined);
+  assert.equal(first.projectToolSettings.beta.models.list, undefined);
+  await orchestra.shutdown();
+  const rewritten = JSON.parse(fs.readFileSync(file, 'utf8')).projectTools;
+  assert.deepEqual(rewritten.alpha, { default: { mcp: false, browser: true, hooks: false, memory: false }, models: {} });
+  assert.equal(rewritten.beta.models.lead.mcp, true);
+  assert.equal(rewritten.beta.models.drop, undefined);
+  orchestra = open();
+  assert.equal((await orchestra.snapshot()).projectToolSettings.alpha.default.browser, true);
+});
+
+test('each project gives the same lead its own tools', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-tools-leads-'));
+  let plan = Plan.createProject(Plan.example(), { name: 'alpha', direction: 'Build alpha' });
+  plan = Plan.createProject(plan, { name: 'beta', direction: 'Build beta' });
+  const seen = [];
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models: [{ id: 'lead', provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true, kind: 'premium' }],
+    fetchPlans: async () => [], inspectFolder: () => ({ git: false }),
+    askModel: async info => { seen.push({ projectId: info.projectId, tools: info.model.tools }); return { answer: 'OK', actions: [] }; } });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+  assert.equal((await orchestra.setOrchestrator('lead')).ok, true);
+  await orchestra.setProjectTools('alpha', { browser: true });
+  await orchestra.setProjectTools('alpha', { browser: false, memory: true }, 'lead');
+  await orchestra.setProjectTools('beta', { hooks: true });
+  await orchestra.ask('Check alpha', 'alpha');
+  await orchestra.ask('Check beta', 'beta');
+  assert.equal(seen.at(-2).projectId, 'alpha');
+  assert.deepEqual(seen.at(-2).tools, { mcp: false, browser: false, hooks: false, memory: true });
+  assert.equal(seen.at(-1).projectId, 'beta');
+  assert.deepEqual(seen.at(-1).tools, { mcp: false, browser: false, hooks: true, memory: false });
+});
+
+test('a launched worker gets its own tools when another model differs', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-worker-own-tools-'));
+  const folder = path.join(dir, 'project'); fs.mkdirSync(folder);
+  const plan = { schema: 2, projects: [{ project: { id: 'demo', name: 'Demo', folder },
+    revisions: [{ id: 1, direction: 'Build', open: [] }],
+    tasks: [{ id: 't1', title: 'Build', detail: 'Build it', status: 'running', executionVersion: 2, revision_id: 1, source: 'chat' }] }] };
+  const launches = []; let alive = true;
+  const models = ['builder', 'other'].map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true }));
+  const orchestra = createOrchestrator({ dir, phase2: true, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    models, fetchPlans: null, inspectFolder: () => ({ git: false, dirty: [] }),
+    spawnWorker: info => { launches.push(info); return { pid: 3000 + launches.length }; },
+    isProcessAlive: () => alive, killWorker: () => { alive = false; }, askModel: async () => ({ answer: '{"done":true}' }) });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+  await orchestra.setProjectTools('demo', { browser: true, hooks: true });
+  await orchestra.setProjectTools('demo', { mcp: true, browser: false }, 'builder');
+  await orchestra.setProjectTools('demo', { memory: true, browser: false, hooks: false }, 'other');
+  await orchestra.setMode('auto'); await orchestra.tick();
+  await orchestra.setAutonomy('demo', true); await orchestra.autonomyTick();
+  assert.ok(launches.length >= 1);
+  const expected = {
+    builder: { mcp: true, browser: false, hooks: true, memory: false },
+    other: { mcp: false, browser: false, hooks: false, memory: true }
+  };
+  for (const info of launches) assert.deepEqual(info.worker.tools, expected[info.worker.id]);
+});
+
+test('overlapping tool saves keep every model, including a slow tick', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-tools-race-'));
+  const plan = Plan.createProject(Plan.example(), { name: 'delta', direction: 'Build delta' });
+  const ids = ['lead', 'a', 'b', 'c', 'd'];
+  const orchestra = createOrchestrator({ dir, readPlan: async () => { await new Promise(resolve => setTimeout(resolve, 20)); return plan; },
+    attempts: createAttemptEngine({ dir }),
+    models: ids.map(id => ({ id, provider: 'codex', cli: 'gpt-6-luna', enabled: true, available: true })),
+    fetchPlans: async () => { await new Promise(resolve => setTimeout(resolve, 20)); return []; },
+    inspectFolder: () => ({ git: false }), askModel: async () => ({ answer: 'OK', actions: [] }) });
+  t.after(async () => { await orchestra.shutdown(); fs.rmSync(dir, { recursive: true, force: true }); });
+  const writes = await Promise.all([
+    orchestra.setProjectTools('delta', { browser: true, hooks: true }),
+    ...ids.filter(id => id !== 'lead').map((id, index) => orchestra.setProjectTools('delta', { memory: index % 2 === 0, mcp: index % 2 === 1 }, id)),
+    orchestra.setProjectTools('delta', null, 'a')
+  ]);
+  assert.ok(writes.every(result => result.ok));
+  const settings = (await orchestra.snapshot('delta')).projectToolSettings.delta;
+  assert.equal(settings.default.browser, true);
+  assert.equal(settings.default.hooks, true);
+  assert.equal(settings.models.a, undefined);
+  for (const [index, id] of ['b', 'c', 'd'].entries()) {
+    assert.equal(settings.models[id].memory, index % 2 === 1);
+    assert.equal(settings.models[id].mcp, index % 2 === 0);
+    assert.equal(settings.models[id].browser, true, 'the override copied the default that was saved');
+  }
+});
+
+test('the lead prompt and launch follow that model\'s tools', () => {
+  const { askPrompt, askCliArgs } = require('./runner.cjs');
+  const tools = { mcp: false, browser: true, hooks: false, memory: true };
+  const prompt = askPrompt({ question: 'Check the page', allowActions: true, model: { id: 'lead', label: 'Lead', tools } });
+  assert.match(prompt, /Project tools that are off for your model: mcp, hooks \(/);
+  const previous = process.env.PLANWHARF_CLAUDE;
+  process.env.PLANWHARF_CLAUDE = process.execPath;
+  try {
+    const spec = askCliArgs({ question: 'Check the page', folder: os.tmpdir(), model: { id: 'lead', provider: 'claude', cli: 'claude-sonnet-4-6', alwaysApprove: true, tools } });
+    assert.equal(spec.args.includes('--chrome'), true);
+    assert.equal(spec.args.includes('--strict-mcp-config'), true);
+    const settings = JSON.parse(spec.args[spec.args.indexOf('--settings') + 1]);
+    assert.equal(settings.autoMemoryEnabled, true);
+    assert.equal(settings.disableAllHooks, true);
+  } finally {
+    if (previous === undefined) delete process.env.PLANWHARF_CLAUDE; else process.env.PLANWHARF_CLAUDE = previous;
+  }
+});

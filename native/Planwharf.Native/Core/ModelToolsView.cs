@@ -8,9 +8,12 @@ public sealed record ModelToolsView(bool SameAsProject, IReadOnlyDictionary<stri
 
     public static ModelToolsView Read(JsonNode? snapshot, string projectId, string modelId)
     {
-        var settings = snapshot?["projectToolSettings"]?[projectId];
-        var own = settings?["models"]?[modelId];
-        var chosen = own ?? settings?["default"] ?? snapshot?["projectTools"]?[projectId];
+        var settings = snapshot?["projectToolSettings"] is JsonObject all ? all[projectId] as JsonObject : null;
+        var models = settings?["models"] as JsonObject;
+        var own = models != null && models.TryGetPropertyValue(modelId, out var row) ? row as JsonObject : null;
+        var defaults = settings?["default"] as JsonObject
+            ?? (snapshot?["projectTools"] is JsonObject flat ? flat[projectId] as JsonObject : null);
+        var chosen = own ?? defaults;
         return new(own == null, Names.ToDictionary(name => name,
             name => chosen?[name] is JsonValue value && value.TryGetValue<bool>(out var on) && on));
     }
