@@ -268,7 +268,8 @@ async function fetchPlanUsage(options) {
     readGrok(home, fetchImpl, now),
     require('./antigravity.cjs').readAntigravity(opts.antigravity || {})
   ]);
-  return [chatgpt, grok, gemini];
+  // Antigravity also reports the quota of the Claude and GPT models it runs, as a pool of its own.
+  return [chatgpt, grok, gemini, ...(Array.isArray(gemini && gemini.extraPlans) ? gemini.extraPlans : [])];
 }
 
 function emptyPlans() {
