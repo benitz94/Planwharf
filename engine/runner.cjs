@@ -546,8 +546,8 @@ function whenFinished(child, finish) {
 const TOOL_REQUEST = /^\s*TOOL REQUEST:\s*(mcp|browser|hooks|memory)\s*$/im;
 function toolRequestRule(tools) {
   const off = ['mcp', 'browser', 'hooks', 'memory'].filter(name => tools[name] !== true);
-  if (!off.length) return 'Project tools on for the team: MCP servers, browser, hooks and memory.';
-  return `Project tools that are off for the team: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
+  if (!off.length) return 'Project tools on for your model: MCP servers, browser, hooks and memory.';
+  return `Project tools that are off for your model: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
     + 'Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly "TOOL REQUEST: <name>" for one of these names. '
     + 'Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents.';
 }

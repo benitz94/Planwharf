@@ -48,7 +48,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | Done (#104) |
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | Done, waiting for review |
 | 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | To do |
-| 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | To do |
+| 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | Done, waiting for review |
 | 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | To do |
 | 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | To do |
 | 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | To do |
@@ -265,6 +265,16 @@ wants them per model: for example Browser for one model only.
 
 **Tests.** Engine: old shape migrated; a model with its own tools launches with them, another with the
 default; the lead gets its own. Native: the fold reads and saves.
+
+Implementation notes: model overrides are complete tool sets; editing one flag initially copies the
+current effective set. `tools: null` with `modelId` removes its override ("Same as the project").
+The snapshot keeps `projectTools` as the flat defaults for existing clients and adds
+`projectToolSettings` with defaults and model overrides. Both `/api/projects/tools` and the existing
+`/api/project-tools` accept the optional model ID. Validation: `node scripts/engineering/ci.cjs`
+passed; `dotnet test native/Planwharf.Native.Tests` passed all 79 tests. The known TeamServerTests
+lead mismatch remains for job 14; that test passed in this environment. Independent verification is
+the next slice.
+
 
 ---
 

@@ -6,7 +6,7 @@ namespace Planwharf.Native.Core;
 
 public sealed record ProjectStatusView(string Text, string Kind);
 public abstract record ThreadItem(DateTimeOffset At);
-public sealed record AskItem(DateTimeOffset At, string Question, string Answer, string Who, string Elapsed, bool Failed, string Thinking, string ToolRequest) : ThreadItem(At);
+public sealed record AskItem(DateTimeOffset At, string Question, string Answer, string Who, string Elapsed, bool Failed, string Thinking, string ToolRequest) : ThreadItem(At) { public string ModelId { get; init; } = ""; }
 public sealed record EventItem(DateTimeOffset At, string Kind, string Text) : ThreadItem(At);
 public enum CommandKind { None, StopNow, StopIn, OpenPanel, Bench }
 public sealed record LocalCommand(CommandKind Kind, int Minutes = 0, string Panel = "", string Model = "");
@@ -106,7 +106,7 @@ public static class ChatViews
             var ms = ask["ms"] is JsonValue value && value.TryGetValue<double>(out var number) && double.IsFinite(number) ? number : (double?)null;
             var who = modelLabel(S(ask["orchestratorId"])) is { Length: > 0 } label ? label : "Lead";
             items.Add(new AskItem(T(S(ask["at"])), S(ask["question"]), S(ask["answer"]), who, ms is { } m ? $"{Math.Max(1, Math.Round(m / 1000))} s" : "",
-                ask["diagnostic"] is JsonObject, S(ask["thinking"]) is var thinking && thinking.Length > 4000 ? thinking[^4000..] : thinking, S(ask["toolRequest"])));
+                ask["diagnostic"] is JsonObject, S(ask["thinking"]) is var thinking && thinking.Length > 4000 ? thinking[^4000..] : thinking, S(ask["toolRequest"])) { ModelId = S(ask["orchestratorId"]) });
         }
         foreach (var e in (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId && Shown.IsMatch(S(e["type"]))).TakeLast(60))
         {
