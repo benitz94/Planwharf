@@ -4,18 +4,39 @@
 
 const DEFAULT_MINUTES = { Build: 20, Verify: 10, Review: 20, Research: 20 };
 const WORKING_FLOOR = 2;
+const HISTORY_LIMIT = 500;
+const ROLES = new Set(['Build', 'Verify', 'Review', 'Research']);
+const CANONICAL_ROLES = {
+  build: 'Build',
+  builder: 'Build',
+  verify: 'Verify',
+  verifier: 'Verify',
+  review: 'Review',
+  reviewer: 'Review',
+  audit: 'Review',
+  research: 'Research',
+  researcher: 'Research'
+};
+
+function canonicalRole(role) {
+  if (!role) return null;
+  const key = String(role).trim().toLowerCase();
+  return CANONICAL_ROLES[key] || (ROLES.has(role) ? role : null);
+}
 
 function roleOf(step) {
-  if (step && typeof step.role === 'string' && step.role) return step.role;
   if (!step) return 'Build';
+  const role = canonicalRole(step.role);
+  if (role) return role;
+  if (step.role && typeof step.role === 'string') return step.role;
   return step.type === 'AUDIT' ? 'Review' : step.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(step.title || '')) ? 'Verify' : 'Build';
 }
 
 function stateOf(status) {
   const text = String(status || '').toUpperCase();
-  if (text === 'RUNNING' || text === 'WORKING') return 'working';
-  if (text === 'PENDING' || text === 'WAITING') return 'waiting';
-  if (text === 'COMPLETE' || text === 'DONE') return 'done';
+  if (text === 'RUNNING' || text === 'WORKING' || text === 'IN_PROGRESS') return 'working';
+  if (text === 'PENDING' || text === 'WAITING' || text.startsWith('WAITING')) return 'waiting';
+  if (text === 'COMPLETE' || text === 'DONE' || text === 'SUCCEEDED' || text === 'FINISHED') return 'done';
   return 'other';
 }
 
@@ -65,7 +86,7 @@ function estimate({ history = [], steps = [], now } = {}) {
     if (stateOf(step.status) !== 'working') {
       for (const id of Array.isArray(step.dependencies) ? step.dependencies : []) {
         const dep = byId.get(String(id));
-        if (dep && each.has(dep.id)) wait = Math.max(wait, finish(dep, stack));
+        if (dep && dep.id !== step.id && each.has(dep.id)) wait = Math.max(wait, finish(dep, stack));
       }
     }
     stack.delete(step.id);
@@ -86,9 +107,6 @@ function estimate({ history = [], steps = [], now } = {}) {
   };
 }
 
-const HISTORY_LIMIT = 500;
-const ROLES = new Set(['Build', 'Verify', 'Review', 'Research']);
-
 // One history line: role, model id, size when known, files changed, minutes, done or failed.
 // Nothing else (no prompt, path or project name) is kept.
 function stepRecord({ role, model, size, files, startedAt, endedAt, status, modelChange } = {}) {
@@ -96,7 +114,7 @@ function stepRecord({ role, model, size, files, startedAt, endedAt, status, mode
   const start = Date.parse(startedAt || '');
   const end = Date.parse(endedAt || '');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const name = ROLES.has(role) ? role : roleOf({ role, title: '', type: '' });
+  const name = canonicalRole(role) || (ROLES.has(role) ? role : roleOf({ role, title: '', type: '' }));
   if (!ROLES.has(name)) return null;
   const line = {
     role: name,
@@ -120,7 +138,7 @@ function parseHistory(text) {
       if (!clean) continue;
       clean.minutes = Number(row.minutes);
       if (!Number.isFinite(clean.minutes) || clean.minutes < 0) continue;
-      if (row.size !== undefined && row.size !== null && row.size !== '') clean.size = typeof row.size === 'number' ? row.size : String(row.size).slice(0, 40);
+      if (row.size !== undefined && row.size !== null && row.size !== '') clean.size = typeof row.size === 'number' && Number.isFinite(row.size) ? row.size : String(row.size).slice(0, 40);
       else delete clean.size;
       rows.push(clean);
     } catch { /* a torn last line is dropped */ }
@@ -129,11 +147,13 @@ function parseHistory(text) {
 }
 
 function keepLine(record) {
-  if (!record || typeof record !== 'object' || !ROLES.has(record.role)) return null;
+  if (!record || typeof record !== 'object') return null;
+  const role = canonicalRole(record.role);
+  if (!role || !ROLES.has(role)) return null;
   const minutes = Number(record.minutes);
   if (!Number.isFinite(minutes) || minutes < 0) return null;
   const line = {
-    role: record.role,
+    role,
     model: String(record.model || ''),
     files: Number.isFinite(Number(record.files)) ? Math.max(0, Math.round(Number(record.files))) : 0,
     minutes,

@@ -97,6 +97,17 @@ public class ProjectViewTests
         var finished = SampleState.Finished();
         finished["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
         Assert.Equal("", ProjectViews.Project(finished, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var quotaState = SampleState.Working();
+        quotaState["projects"]![0]!["subTasks"]![1]!["status"] = "PENDING";
+        quotaState["projects"]![0]!["subTasks"]![1]!["waitingFor"] = "Waiting for quota: Opus 0%";
+        quotaState["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 15, "endsAt": "2026-11-12T17:30:00Z", "sure": "rough" }""");
+        Assert.Equal("About 15 minutes left (ends around 17:30) · rough", ProjectViews.Project(quotaState, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var cancelledState = SampleState.Working();
+        cancelledState["projects"]![0]!["megaTask"]!["status"] = "CANCELLED";
+        cancelledState["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("", ProjectViews.Project(cancelledState, "weather", TimeZoneInfo.Utc)!.TimeLeft);
     }
 
     [Fact]

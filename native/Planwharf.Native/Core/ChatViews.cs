@@ -61,6 +61,7 @@ public static class ChatViews
         {
             if (value.TryGetValue<double>(out var number) && double.IsFinite(number)) minutes = number;
             else if (value.TryGetValue<int>(out var whole)) minutes = whole;
+            else if (value.TryGetValue<string>(out var text) && double.TryParse(text, CultureInfo.InvariantCulture, out var parsed) && double.IsFinite(parsed)) minutes = parsed;
         }
         if (minutes is not { } left) return "";
         var rounded = (int)Math.Round(left);

@@ -41,6 +41,53 @@ public class PanelViewsTests
     }
 
     [Fact]
+    public void ChatViews_TimeLeft_formats_edge_cases_cleanly()
+    {
+        // 1 minute remaining
+        var oneMinute = JsonNode.Parse("""{ "minutes": 1, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("About 1 minute left (ends around 17:40) · rough", ChatViews.TimeLeft(oneMinute, TimeZoneInfo.Utc));
+
+        // Longer than usual with 1 minute remaining
+        var longerOne = JsonNode.Parse("""{ "minutes": 1, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough", "longerThanUsual": true }""");
+        Assert.Equal("Longer than usual · about 1 minute left (ends around 17:40) · rough", ChatViews.TimeLeft(longerOne, TimeZoneInfo.Utc));
+
+        // Missing endsAt
+        var noEndsAt = JsonNode.Parse("""{ "minutes": 25, "sure": "rough" }""");
+        Assert.Equal("About 25 minutes left · rough", ChatViews.TimeLeft(noEndsAt, TimeZoneInfo.Utc));
+
+        // Missing sure
+        var noSure = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z" }""");
+        Assert.Equal("About 25 minutes left (ends around 17:40)", ChatViews.TimeLeft(noSure, TimeZoneInfo.Utc));
+
+        // String minutes and float minutes
+        var stringMinutes = JsonNode.Parse("""{ "minutes": "25", "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("About 25 minutes left (ends around 17:40) · rough", ChatViews.TimeLeft(stringMinutes, TimeZoneInfo.Utc));
+
+        var floatMinutes = JsonNode.Parse("""{ "minutes": 24.8, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("About 25 minutes left (ends around 17:40) · rough", ChatViews.TimeLeft(floatMinutes, TimeZoneInfo.Utc));
+
+        // Negative minutes or null node return empty string
+        var negative = JsonNode.Parse("""{ "minutes": -5 }""");
+        Assert.Equal("", ChatViews.TimeLeft(negative, TimeZoneInfo.Utc));
+        Assert.Equal("", ChatViews.TimeLeft(null, TimeZoneInfo.Utc));
+    }
+
+    [Fact]
+    public void Progress_handles_quota_wait_and_missing_subtasks()
+    {
+        // Waiting for quota step keeps progress time-left visible
+        var quotaWait = JsonNode.Parse("""
+        { "projects": [ { "id": "p", "subTasks": [ { "status": "PENDING", "waitingFor": "Waiting for quota: Claude 0%" } ],
+            "timeLeft": { "minutes": 15, "endsAt": "2026-11-12T17:30:00Z", "sure": "rough" } } ] }
+        """)!;
+        Assert.Equal("About 15 minutes left (ends around 17:30) · rough", PanelViews.Progress(quotaWait, "p", "Waiting", TimeZoneInfo.Utc).TimeLeft);
+
+        // Missing subTasks / megaTask does not throw and returns empty TimeLeft
+        var emptyProject = JsonNode.Parse("""{ "projects": [ { "id": "p", "timeLeft": { "minutes": 15 } } ] }""")!;
+        Assert.Equal("", PanelViews.Progress(emptyProject, "p", "Idle", TimeZoneInfo.Utc).TimeLeft);
+    }
+
+    [Fact]
     public void Usage_shows_each_limit_and_what_is_not_reported()
     {
         var snapshot = JsonNode.Parse("""

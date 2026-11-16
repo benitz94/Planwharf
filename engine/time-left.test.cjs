@@ -152,3 +152,236 @@ test('the snapshot carries timeLeft for work that still has a step to do', async
   assert.equal(row.timeLeft.longerThanUsual, false);
   assert.equal(snap.projects.find(item => item.id === 'idle').timeLeft, null);
 });
+
+test('roles are canonicalized and synonyms mapped for defaults and history matching', () => {
+  // Lowercase verify gets default 10 minutes, not 20
+  const verifyEstimate = estimate({ history: [], steps: [step({ role: 'verify' })], now });
+  assert.equal(verifyEstimate.minutes, 10);
+
+  // Verifier synonym gets default 10 minutes
+  const verifierEstimate = estimate({ history: [], steps: [step({ role: 'verifier' })], now });
+  assert.equal(verifierEstimate.minutes, 10);
+
+  // Uppercase BUILD gets default 20 minutes
+  const buildEstimate = estimate({ history: [], steps: [step({ role: 'BUILD' })], now });
+  assert.equal(buildEstimate.minutes, 20);
+
+  // Lowercase verify matches history with canonical 'Verify' role
+  const history = [
+    { role: 'Verify', model: 'opus', minutes: 7 },
+    { role: 'Verify', model: 'opus', minutes: 9 },
+    { role: 'Verify', model: 'opus', minutes: 11 }
+  ];
+  const matched = estimate({ history, steps: [step({ role: 'verify' })], now });
+  assert.equal(matched.minutes, 9);
+});
+
+test('various status representations (waiting for quota, in_progress, working) are recognized', () => {
+  // Waiting for quota is treated as waiting
+  const quotaWait = estimate({ history: [], steps: [step({ status: 'WAITING FOR QUOTA' })], now });
+  assert.equal(quotaWait.minutes, 20);
+
+  const lowercaseQuota = estimate({ history: [], steps: [step({ status: 'waiting for quota' })], now });
+  assert.equal(lowercaseQuota.minutes, 20);
+
+  // in_progress is treated as working
+  const inProgress = estimate({ history: [], steps: [step({ status: 'in_progress', startedAt: '2026-11-12T17:10:00.000Z' })], now });
+  assert.equal(inProgress.minutes, 15); // 20 - 5 = 15
+
+  // All completed or failed returns null
+  assert.equal(estimate({ history: [], steps: [step({ status: 'COMPLETE' }), step({ status: 'FAILED' })], now }), null);
+});
+
+test('dependency edge cases: self-dependency, cycle, non-existent deps, and diamond graph', () => {
+  // Self dependency (A depends on A): does not hang or double
+  const selfDep = estimate({
+    history: [],
+    steps: [step({ id: 'a', role: 'Build', dependencies: ['a'] })],
+    now
+  });
+  assert.equal(selfDep.minutes, 20);
+
+  // Cycle (A -> B -> A): does not hang
+  const cycle = estimate({
+    history: [],
+    steps: [
+      step({ id: 'a', role: 'Verify', dependencies: ['b'] }),
+      step({ id: 'b', role: 'Verify', dependencies: ['a'] })
+    ],
+    now
+  });
+  assert.ok(Number.isFinite(cycle.minutes));
+
+  // Dependency on a non-existent step ID is ignored
+  const missingDep = estimate({
+    history: [],
+    steps: [step({ id: 'a', role: 'Build', dependencies: ['ghost-step'] })],
+    now
+  });
+  assert.equal(missingDep.minutes, 20);
+
+  // Diamond dependency graph:
+  // A (RUNNING, started 10m ago, typical 20m -> 10m remaining)
+  // B (PENDING, Verify -> 10m, depends on A)
+  // C (PENDING, Build -> 20m, depends on A)
+  // D (PENDING, Verify -> 10m, depends on [B, C])
+  // Path B: A(10) + B(10) = 20 before D
+  // Path C: A(10) + C(20) = 30 before D
+  // Max wait before D is 30. Total for D = 30 + 10 = 40.
+  const diamond = estimate({
+    history: [],
+    steps: [
+      step({ id: 'a', role: 'Build', status: 'RUNNING', startedAt: '2026-11-12T17:05:00.000Z' }),
+      step({ id: 'b', role: 'Verify', status: 'PENDING', dependencies: ['a'] }),
+      step({ id: 'c', role: 'Build', status: 'PENDING', dependencies: ['a'] }),
+      step({ id: 'd', role: 'Verify', status: 'PENDING', dependencies: ['b', 'c'] })
+    ],
+    now
+  });
+  assert.equal(diamond.minutes, 40);
+});
+
+test('exact confidence levels (sure) for single and multiple roles', () => {
+  const makeHistory = (role, n) => Array.from({ length: n }, () => ({ role, minutes: 10 }));
+
+  // Single role: 4 steps -> rough, 5 steps -> based on 5 past steps
+  assert.equal(estimate({ history: makeHistory('Build', 4), steps: [step({ role: 'Build' })], now }).sure, 'rough');
+  assert.equal(estimate({ history: makeHistory('Build', 5), steps: [step({ role: 'Build' })], now }).sure, 'based on 5 past steps');
+
+  // Multiple roles: one role has 4, other has 5 -> rough
+  const mixedHistory = [...makeHistory('Build', 5), ...makeHistory('Verify', 4)];
+  const multiStep = [step({ id: '1', role: 'Build' }), step({ id: '2', role: 'Verify' })];
+  assert.equal(estimate({ history: mixedHistory, steps: multiStep, now }).sure, 'rough');
+
+  // Multiple roles: both have 5 -> based on 10 past steps
+  const sufficientHistory = [...makeHistory('Build', 5), ...makeHistory('Verify', 6)];
+  assert.equal(estimate({ history: sufficientHistory, steps: multiStep, now }).sure, 'based on 11 past steps');
+});
+
+test('timing edge cases: clock skew (future startedAt), invalid startedAt, and exact median boundary', () => {
+  // Clock skew: startedAt is 5 minutes in the future relative to now. Spent is clamped to 0.
+  const future = estimate({
+    history: [],
+    steps: [step({ status: 'RUNNING', startedAt: '2026-11-12T17:20:00.000Z' })],
+    now
+  });
+  assert.equal(future.minutes, 20);
+  assert.equal(future.longerThanUsual, false);
+
+  // Invalid startedAt string defaults spent to 0
+  const invalidDate = estimate({
+    history: [],
+    steps: [step({ status: 'RUNNING', startedAt: 'not-a-valid-date' })],
+    now
+  });
+  assert.equal(invalidDate.minutes, 20);
+  assert.equal(invalidDate.longerThanUsual, false);
+
+  // Exact median boundary: default is 20m. Spent is exactly 20m.
+  // spent <= typical, so longerThanUsual is false, and minutes is at floor (2m).
+  const atMedian = estimate({
+    history: [],
+    steps: [step({ status: 'RUNNING', startedAt: '2026-11-12T16:55:00.000Z' })],
+    now
+  });
+  assert.equal(atMedian.minutes, 2);
+  assert.equal(atMedian.longerThanUsual, false);
+
+  // Spent is 20m 1s: spent > typical, so longerThanUsual is true, minutes is 2m.
+  const pastMedian = estimate({
+    history: [],
+    steps: [step({ status: 'RUNNING', startedAt: '2026-11-12T16:54:59.000Z' })],
+    now
+  });
+  assert.equal(pastMedian.minutes, 2);
+  assert.equal(pastMedian.longerThanUsual, true);
+});
+
+test('stepRecord and parseHistory validate inputs and sanitize data', () => {
+  // Negative duration returns 0 minutes
+  const negDuration = stepRecord({
+    role: 'Build',
+    model: 'opus',
+    startedAt: '2026-11-12T17:10:00.000Z',
+    endedAt: '2026-11-12T17:00:00.000Z',
+    status: 'COMPLETE'
+  });
+  assert.equal(negDuration.minutes, 0);
+
+  // Negative or non-numeric files defaults to 0
+  const badFiles = stepRecord({
+    role: 'Build',
+    model: 'opus',
+    files: -5,
+    startedAt: '2026-11-12T17:00:00.000Z',
+    endedAt: '2026-11-12T17:10:00.000Z',
+    status: 'COMPLETE'
+  });
+  assert.equal(badFiles.files, 0);
+
+  // Extra metadata (prompt, project name, paths) is stripped
+  const stripped = stepRecord({
+    role: 'Verify',
+    model: 'haiku',
+    secretKey: 'do-not-leak',
+    prompt: 'confidential prompt',
+    projectFolder: '/secrets/planwharf',
+    startedAt: '2026-11-12T17:00:00.000Z',
+    endedAt: '2026-11-12T17:10:00.000Z',
+    status: 'COMPLETE'
+  });
+  assert.deepEqual(stripped, {
+    role: 'Verify',
+    model: 'haiku',
+    files: 0,
+    minutes: 10,
+    outcome: 'done'
+  });
+
+  // Long size string is truncated to 40 characters
+  const longSize = stepRecord({
+    role: 'Build',
+    model: 'opus',
+    size: 'a'.repeat(60),
+    startedAt: '2026-11-12T17:00:00.000Z',
+    endedAt: '2026-11-12T17:10:00.000Z',
+    status: 'COMPLETE'
+  });
+  assert.equal(longSize.size.length, 40);
+
+  // parseHistory handles malformed JSON lines, empty lines, negative minutes
+  const corruptedHistory = [
+    '{"role":"Build","model":"opus","minutes":12,"outcome":"done"}',
+    '{not valid json}',
+    '',
+    '   ',
+    '{"role":"Build","model":"opus","minutes":-10,"outcome":"done"}', // negative minutes skipped
+    '{"role":"InvalidRole","model":"opus","minutes":10,"outcome":"done"}', // unknown role skipped
+    '{"role":"verify","model":"haiku","minutes":5,"outcome":"done"}' // canonicalized role accepted
+  ].join('\n');
+
+  const parsed = parseHistory(corruptedHistory);
+  assert.equal(parsed.length, 2);
+  assert.equal(parsed[0].role, 'Build');
+  assert.equal(parsed[1].role, 'Verify');
+  assert.equal(parsed[1].minutes, 5);
+});
+
+test('appendStepTime and readStepTimes handle non-existent directories and invalid inputs', t => {
+  const dir = path.join(os.tmpdir(), 'pw-nonexistent-' + Date.now());
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  // Reading non-existent dir returns empty array
+  assert.deepEqual(readStepTimes(dir), []);
+
+  // Appending to non-existent dir automatically creates it
+  appendStepTime(dir, { role: 'Build', model: 'opus', minutes: 15, outcome: 'done', files: 1 });
+  const rows = readStepTimes(dir);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].minutes, 15);
+
+  // Appending null / empty record is safe no-op
+  appendStepTime(dir, null);
+  assert.equal(readStepTimes(dir).length, 1);
+  appendStepTime('', { role: 'Build', model: 'opus', minutes: 15, outcome: 'done' });
+});

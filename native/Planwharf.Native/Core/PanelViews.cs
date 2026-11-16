@@ -40,7 +40,7 @@ public static class PanelViews
             .TakeLast(15).Reverse().Select(e => (Clock(S(e["createdAt"]), zone), S(e["summary"]) is var text && text.Length > 200 ? text[..200] : text)).ToList();
         var folder = S(row?["folder"]);
         var subs = (row?["subTasks"] as JsonArray ?? row?["megaTask"]?["subTasks"] as JsonArray ?? []).OfType<JsonObject>();
-        var open = subs.Any(sub => S(sub["status"]).ToUpperInvariant() is "RUNNING" or "PENDING");
+        var open = subs.Any(sub => S(sub["status"]).ToUpperInvariant() is "RUNNING" or "PENDING" or "WORKING" or "WAITING" || S(sub["status"]).StartsWith("WAITING", StringComparison.OrdinalIgnoreCase));
         return new ProgressPanel(status, S(row?["next"]), steps, recent, folder)
         {
             WorkPlan = folder.Length == 0 ? "" : Path.Combine(folder, ".planwharf", "plan.md"),
