@@ -26,7 +26,7 @@ Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonom
 
 | Job | Pull request | What | Crew | What the review changed |
 |---|---|---|---|---|
-| 01 | #64 | First port: skills, structured final output, worker results | Planwharf crew | — |
+| 01 | #64 | First port: skills, structured final output, worker results | Build Fable, Opus, GPT Astra and Grok 4.7 in parallel, Verify Grok 4.6 | — |
 | 02 | #74 | Model roles and policy, provider accounts, browser settings, activity limits | Planwharf crew | A test found the real Chrome on the macOS runners; made it independent of the machine |
 | 03 | #86 | Fake AI programs (claude, codex, grok, agy) that replay recorded answers, 64 tests | Build Gemini, Verify Grok (fixed a real bug) | Two tests depended on macOS paths and on running as administrator |
 | 04 | #90 | Six modules: refusals, diagnostics, briefing, project history, evidence, autonomy; 149 comparison cases | Build Gemini 3.8 Flash, Verify Grok 4.7 Business | A commit outside the job was left out and reviewed on its own |
