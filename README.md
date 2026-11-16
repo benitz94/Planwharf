@@ -108,6 +108,7 @@ Updates arrive inside the app: **Settings > Updates**. Your projects and setting
 - [User guide](docs/USER-GUIDE.md) · [The chat screen](docs/CHAT-VIEW.md) · [FAQ](docs/FAQ.md)
 - [Benchmark: a small SQL database, four AI tools and Planwharf](docs/benchmarks/2026-11-minidb/README.md)
 - [Benchmark: Planwharf and four AI tools on the same task](docs/benchmarks/2026-11-logbook/README.md)
+- [Built with Planwharf](docs/BUILT-WITH-PLANWHARF.md): Planwharf moves its own engine to C# with its own crew, and what it improved on the way
 - [Technical reference](docs/REFERENCE.md), for advanced users and contributors
 - Past verification reports, reviews and handoff notes: the [`archive/old-material-2026-11`](https://github.com/benitz94/Planwharf/tree/archive/old-material-2026-11) branch
 
