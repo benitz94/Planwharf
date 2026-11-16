@@ -53,16 +53,18 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | To do |
 | 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | To do |
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | To do |
-| 15 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/15-sheet` | To do |
-| 16 | 2. | Port them, as sheet 15 says | `port/16-phase2-rest` | To do |
-| 17 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/17-sheet` | To do |
-| 18 | 3. | Port them, as sheet 17 says | `port/18-phase3` | To do |
-| 19 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/19-sheet` | To do |
-| 20 | 4. | Port them, as sheet 19 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/20-phase4` | To do |
-| 21 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/21-sheet` | To do |
-| 22 | 5. | Port them, as sheet 21 says. Then **stop**: the owner approves the orchestrator split | `port/22-phase5` | To do |
-| 23 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/23-sheets` | To do |
-| 24+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/24-…` | To do |
+| 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | To do |
+| 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
+| 17 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/17-sheet` | To do |
+| 18 | 2. | Port them, as sheet 17 says | `port/18-phase2-rest` | To do |
+| 19 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/19-sheet` | To do |
+| 20 | 3. | Port them, as sheet 19 says | `port/20-phase3` | To do |
+| 21 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/21-sheet` | To do |
+| 22 | 4. | Port them, as sheet 21 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/22-phase4` | To do |
+| 23 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/23-sheet` | To do |
+| 24 | 5. | Port them, as sheet 23 says. Then **stop**: the owner approves the orchestrator split | `port/24-phase5` | To do |
+| 25 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/25-sheets` | To do |
+| 26+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/26-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -316,3 +318,64 @@ computer, but it changes `server.cjs`, Electron and engine files together.
    reason in the message. A change to the program (not to a test) needs its reason written in the
    pull request. Electron: only if a test of it fails.
 3. Do not take the rest. Full engine CI green.
+
+---
+
+## Job 15. Each parallel worker in its own copy of the folder
+
+**Why.** Parallel parts share one project folder today and are kept apart only by the files each part
+may change: a worker that steps outside its files overwrites another's work. With a git worktree per
+part, each worker has its own folder and branch, and the parts are joined at the end.
+
+**What to build:**
+
+1. When a work has two or more parts that run at the same time, the engine creates one worktree per part
+   from the work branch (job 05): branch `<work branch>--part-<n>`, folder outside the project folder,
+   in Planwharf's data folder (`worktrees/<project>/<part>`), so the project folder is not cluttered.
+   A work with one part, and every Verify step, runs in the project folder as today.
+2. The worker of a part runs in its worktree; its scope check (`scopeCheck` in `engine/execution.cjs`)
+   still applies there.
+3. When the parts are done, the engine merges each part branch into the work branch, in order, with
+   `git merge --no-ff`. On a conflict it stops the merge (`git merge --abort`), and the integration part
+   (or a new one when there is none) gets the conflict to resolve: which branches, which files.
+4. The worktrees and part branches are removed when the work is complete; kept when it fails, so the
+   owner can look, and removed by "Drop this work". On start, worktrees of works that no longer exist
+   are cleaned (`git worktree prune`).
+5. A folder that is not a git repository runs as today, all parts in the one folder.
+
+**Tests.** `engine/worktrees.test.cjs` with a real repository: two parts get two worktrees on their own
+branches; their commits are merged into the work branch; a conflict is handed to the integration part
+and leaves the work branch clean; worktrees are removed at the end and kept on failure; a non-git
+folder runs as today. Paths with spaces and non-ASCII names (Windows).
+
+---
+
+## Job 16. More than one account per company, and plans that expired
+
+**Why.** The owner may have two subscriptions of one company (two Claude accounts) and wants the second
+used before switching company. And a plan can expire while its program stays installed and signed in:
+today its models stay in the list and a worker fails later with an unclear error.
+
+**What to build:**
+
+1. **Plan status.** For each account, the engine keeps a status: active, expired, or not signed in. It is
+   read with the quota (`engine/claude-usage.cjs`, `engine/planUsage.js`, the Antigravity usage) and from
+   a refusal that says the subscription or plan is not active. Each program says it differently: handle
+   each one on its own, from real messages recorded in `native/porting/fakes/` (job 03), and keep
+   "unknown" when a program does not say.
+2. **Models of an expired or signed-out account** are never assigned and are hidden in the Team panel,
+   with one line at the bottom: "4 models hidden: Claude plan expired. Renew it or sign in again, then
+   look for models again." Looking for models again reads the status again.
+3. **Several accounts of one company**, where the program allows a separate settings folder
+   (Claude Code: `CLAUDE_CONFIG_DIR`; Codex: `CODEX_HOME`). Settings → AI tools → "Add another account":
+   Planwharf makes the folder and shows the exact sign-in command to run with it. Each account has its own
+   quota, limit (the company limit of #103 applies to each account) and status. Where the program has a
+   single account, the button is not shown.
+4. **Switching:** when an account is under its limit, a step moves first to the same model on another
+   account of the same company with room, then to another company, as the quota switch does today.
+5. No credential, token or email is read or stored: only the settings folder path and what the usage
+   call returns (porting rule, `engine/provider-accounts.cjs` keeps this rule).
+
+**Tests.** Plan status from recorded expired, signed-out and active answers of each program; hidden models
+and the line; two Claude accounts with their own quota and a switch to the second before another company;
+nothing private stored.
