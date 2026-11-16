@@ -343,7 +343,7 @@ function dispatchPlan(workers, job, facts) {
     : [
       dirty ? 'Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.'
         : 'Implement the whole job in the project folder, with automated tests. Run the tests before you finish.',
-      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
+      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself (a design choice, a change outside the files you may touch, a failure that was there before this work), write it in your summary on its own line starting with "Needs your decision:".'
     ];
   return list.map((worker, index) => ({
     modelId: worker.id,
