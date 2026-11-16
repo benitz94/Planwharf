@@ -182,6 +182,7 @@ public static class NativeUpdater
         catch (InvalidOperationException) { /* already closed */ }
 
         var from = source ?? InstallFolder;
+        if (!File.Exists(Path.Combine(from, ExeName))) return 1;
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
         while (true)
         {

@@ -266,6 +266,7 @@ public class NativeUpdaterTests
     public void Finish_returns_1_when_no_exe_is_found_in_the_source_folder()
     {
         using var home = new Home();
+        var marker = home.Install("keep me.txt", "original");
         var source = Path.Combine(home.Parent, NativeUpdater.StagePrefix + "v1.2.4");
         Directory.CreateDirectory(source);
         File.WriteAllText(Path.Combine(source, "readme.txt"), "no exe here");
@@ -274,6 +275,8 @@ public class NativeUpdaterTests
             source: source, startInstalled: _ => launched = true);
         Assert.Equal(1, code);
         Assert.False(launched);
+        Assert.Equal("original", File.ReadAllText(marker));
+        Assert.False(File.Exists(Path.Combine(home.InstallFolder, "readme.txt")));
     }
 
     [Fact]
