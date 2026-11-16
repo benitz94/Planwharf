@@ -85,6 +85,8 @@ Rules for every job:
 - Tests that do not depend on the computer (porting rule 11), and the full engine CI green:
   `node scripts/engineering/ci.cjs`.
 - English in code, comments, tests and commit messages.
+- Update [BUILT-WITH-PLANWHARF.md](BUILT-WITH-PLANWHARF.md) in the same branch: the job's row (pull
+  request number left as `#?`), and the progress numbers when modules are ported.
 
 ---
 
