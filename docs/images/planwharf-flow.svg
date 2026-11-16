@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1276" width="1200" height="1276">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 Z" fill="#1f7a52"/>
+    </marker>
+  </defs>
+
+  <rect x="8" y="8" width="1184" height="1260" rx="18" fill="#ffffff" stroke="#e1e6e0"/>
+
+  <!-- 1 -->
+  <rect x="300" y="24" width="600" height="84" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="24" width="600" height="5" rx="2" fill="#1f7a52"/>
+  <text x="600" y="58" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#1f7a52">Let the crew do it</text>
+  <text x="600" y="84" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">The user approves the goal.</text>
+  <line x1="600" y1="108" x2="600" y2="138" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 2 -->
+  <rect x="300" y="140" width="600" height="104" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="140" width="600" height="5" rx="2" fill="#1f7a52"/>
+  <text x="600" y="174" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#1f7a52">Safe start</text>
+  <text x="600" y="200" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Checks the folder is clean, creates a new branch from main,</text>
+  <text x="600" y="220" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">writes the work plan.</text>
+  <line x1="600" y1="244" x2="600" y2="274" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3 -->
+  <rect x="300" y="276" width="600" height="108" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="276" width="600" height="5" rx="2" fill="#6d4fd8"/>
+  <text x="600" y="310" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#6d4fd8">The lead splits the work</text>
+  <text x="600" y="336" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Parts that can run at the same time, each with its own files.</text>
+  <text x="600" y="356" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Light parts to light models, heavy parts to strong ones.</text>
+
+  <line x1="600" y1="384" x2="600" y2="440" stroke="#1f7a52" stroke-width="2"/>
+  <text x="614" y="418" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" font-weight="650" fill="#2563c9">The crew builds in parallel</text>
+  <g transform="translate(0,36)">
+  <path d="M 600 404 L 230 404 L 230 428" fill="none" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 600 404 L 600 428" fill="none" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M 600 404 L 970 404 L 970 428" fill="none" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 4 -->
+  <rect x="120" y="430" width="220" height="88" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="120" y="430" width="220" height="5" rx="2" fill="#2563c9"/>
+  <text x="230" y="468" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" font-weight="650" fill="#2563c9">Part 1</text>
+  <text x="230" y="492" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Build</text>
+
+  <rect x="490" y="430" width="220" height="88" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="490" y="430" width="220" height="5" rx="2" fill="#2563c9"/>
+  <text x="600" y="468" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" font-weight="650" fill="#2563c9">Part 2</text>
+  <text x="600" y="492" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Build</text>
+
+  <rect x="860" y="430" width="220" height="88" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="860" y="430" width="220" height="5" rx="2" fill="#2563c9"/>
+  <text x="970" y="468" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" font-weight="650" fill="#2563c9">Part 3</text>
+  <text x="970" y="492" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Build</text>
+
+  <!-- 5 side note, attached under the crew without crossing the flow -->
+  <path d="M 600 518 L 600 534" fill="none" stroke="#2563c9" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <rect x="280" y="536" width="640" height="72" rx="14" fill="#ffffff" stroke="#2563c9" stroke-dasharray="6 4"/>
+  <text x="600" y="564" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="16" font-weight="650" fill="#2563c9">Quota watch</text>
+  <text x="600" y="588" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">A model under its quota limit hands its step to another model, with a handoff.</text>
+
+  <!-- join around the note -->
+  <path d="M 230 518 L 230 624 L 600 624" fill="none" stroke="#1f7a52" stroke-width="2"/>
+  <path d="M 970 518 L 970 624 L 600 624" fill="none" stroke="#1f7a52" stroke-width="2"/>
+  <line x1="600" y1="624" x2="600" y2="652" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 6 -->
+  <rect x="300" y="654" width="600" height="76" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="654" width="600" height="5" rx="2" fill="#1f7a52"/>
+  <text x="600" y="686" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#1f7a52">Integration</text>
+  <text x="600" y="710" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Joins the parts.</text>
+  <line x1="600" y1="730" x2="600" y2="758" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 7 -->
+  <rect x="300" y="760" width="600" height="112" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="760" width="600" height="5" rx="2" fill="#c2600f"/>
+  <text x="600" y="794" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#c2600f">Verify</text>
+  <text x="600" y="820" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Another model runs the tests, adds tests for edge cases and fixes what fails.</text>
+  <text x="600" y="844" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">What needs the user is flagged: Needs your decision.</text>
+  <line x1="600" y1="872" x2="600" y2="900" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 8 -->
+  <polygon points="600,902 708,966 600,1030 492,966" fill="#ffffff" stroke="#6d4fd8" stroke-width="2"/>
+  <text x="600" y="972" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" font-weight="650" fill="#6d4fd8">Goal reached?</text>
+
+  <line x1="600" y1="1030" x2="600" y2="1064" stroke="#1f7a52" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="614" y="1054" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="650" fill="#1f7a52">Yes</text>
+
+
+  <!-- 9 -->
+  <rect x="300" y="1066" width="600" height="96" rx="14" fill="#ffffff" stroke="#e1e6e0"/>
+  <rect x="300" y="1066" width="600" height="5" rx="2" fill="#1f7a52"/>
+  <text x="600" y="1102" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="18" font-weight="650" fill="#1f7a52">Work finished</text>
+  <text x="600" y="1128" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" fill="#1b211d">Summary in the chat. You push it with one button. Never to main.</text>
+  </g>
+  <path d="M 492 1002 L 64 1002 L 64 330 L 298 330" fill="none" stroke="#6d4fd8" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+  <text x="80" y="990" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="650" fill="#6d4fd8">No: the lead plans the next work</text>
+</svg>
