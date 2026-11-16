@@ -2,7 +2,7 @@
 
 Planwharf is moving its own engine from JavaScript to C# (see [the plan](NEXT-WORK.md)), and it does
 the work itself: the owner gives the lead one line, "Read docs/NEXT-WORK.md and continue.", the lead
-picks the next job, a crew of models from different companies builds and verifies it, and every pull
+picks the next job, a crew of models builds and verifies it, and every pull
 request is reviewed before it is merged. Using Planwharf on itself every day also shows where it falls
 short; those findings are fixed along the way and listed here.
 
@@ -24,8 +24,7 @@ Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonom
 
 ## Jobs done by Planwharf
 
-The crews so far use models from Anthropic, OpenAI, Google and xAI; each job is built by one model and
-checked by a model of another company.
+The crews so far use models from Anthropic, OpenAI, Google and xAI.
 
 | Job | Pull request | What | What the review changed |
 |---|---|---|---|
