@@ -166,6 +166,128 @@ public class NativeUpdaterTests
         Assert.Equal(2, Program.FinishUpdate([NativeUpdater.FinishFlag, "C:\\Plan wharf", "nope"]));
     }
 
+    [Fact]
+    public void Pick_rejects_draft_prerelease_bad_tag_bad_url_missing_asset_and_bad_digest()
+    {
+        var rid = NativeUpdater.Rid;
+        var tag = "v1.2.4";
+        var name = $"Planwharf-native-{rid}-{tag}.zip";
+        var url = $"https://github.com/{NativeUpdater.Repo}/releases/download/{tag}/{name}";
+        var digest = "sha256:" + new string('a', 64);
+
+        JsonObject Valid() => new()
+        {
+            ["draft"] = false, ["prerelease"] = false, ["tag_name"] = tag,
+            ["html_url"] = $"https://github.com/{NativeUpdater.Repo}/releases/tag/{tag}",
+            ["assets"] = new JsonArray(new JsonObject { ["name"] = name, ["browser_download_url"] = url, ["digest"] = digest })
+        };
+
+        var draft = Valid(); draft["draft"] = true;
+        Assert.Null(NativeUpdater.Pick(draft, rid));
+
+        var pre = Valid(); pre["prerelease"] = true;
+        Assert.Null(NativeUpdater.Pick(pre, rid));
+
+        var badTag = Valid(); badTag["tag_name"] = "latest";
+        Assert.Null(NativeUpdater.Pick(badTag, rid));
+
+        var badPage = Valid(); badPage["html_url"] = $"https://github.com/other/repo/releases/tag/{tag}";
+        Assert.Null(NativeUpdater.Pick(badPage, rid));
+
+        // No asset for a different rid
+        Assert.Null(NativeUpdater.Pick(Valid(), rid == "win-x64" ? "linux-x64" : "win-x64"));
+
+        var badDigest = Valid();
+        ((badDigest["assets"] as JsonArray)![0] as JsonObject)!["digest"] = "md5:abcdef";
+        Assert.Null(NativeUpdater.Pick(badDigest, rid));
+
+        Assert.Null(NativeUpdater.Pick(null, rid));
+
+        // A well-formed release is accepted
+        Assert.NotNull(NativeUpdater.Pick(Valid(), rid));
+    }
+
+    [Fact]
+    public void Newer_compares_all_three_version_positions_and_handles_invalid_input()
+    {
+        Assert.True(NativeUpdater.Newer("v2.0.0", "v1.9.9"));
+        Assert.True(NativeUpdater.Newer("v1.1.0", "v1.0.9"));
+        Assert.True(NativeUpdater.Newer("v1.0.1", "v1.0.0"));
+        Assert.False(NativeUpdater.Newer("v1.0.0", "v1.0.0"));
+        Assert.False(NativeUpdater.Newer("v1.0.0", "v1.0.1"));
+        Assert.False(NativeUpdater.Newer("v1.0.0", "v2.0.0"));
+        // A tag that cannot be parsed is never newer
+        Assert.False(NativeUpdater.Newer("not-a-tag", "v1.0.0"));
+        // An unknown installed version: any valid tag is treated as newer
+        Assert.True(NativeUpdater.Newer("v1.0.0", "unknown"));
+        // Versions without the v prefix are accepted
+        Assert.True(NativeUpdater.Newer("1.0.1", "1.0.0"));
+    }
+
+    [Fact]
+    public void Null_and_finished_snapshot_have_no_running_step_and_empty_checkpoint_list()
+    {
+        Assert.False(NativeUpdater.StepIsRunning(null));
+        Assert.Empty(NativeUpdater.ProjectsToCheckpoint(null));
+        var finished = SampleState.Finished();
+        Assert.False(NativeUpdater.StepIsRunning(finished));
+        Assert.Empty(NativeUpdater.ProjectsToCheckpoint(finished));
+    }
+
+    [Fact]
+    public void A_paused_project_with_canStop_is_included_in_the_checkpoint_list()
+    {
+        var state = SampleState.Working().AsObject();
+        var project = state["projects"]![0]!.AsObject();
+        // Clear the running step so StepIsRunning returns false, then mark the project as stoppable.
+        project["subTasks"]![1]!["status"] = "WAITING";
+        project["canStop"] = true;
+        Assert.False(NativeUpdater.StepIsRunning(state));
+        var ids = NativeUpdater.ProjectsToCheckpoint(state);
+        Assert.Contains("weather", ids);
+    }
+
+    [Fact]
+    public void Stage_handles_a_flat_zip_with_the_exe_at_the_root()
+    {
+        using var home = new Home();
+        var pack = Path.Combine(home.Parent, "flat-pack");
+        Directory.CreateDirectory(pack);
+        File.WriteAllText(Path.Combine(pack, NativeUpdater.ExeName), "flat-build");
+        var zip = Path.Combine(home.Parent, "flat.zip");
+        ZipFile.CreateFromDirectory(pack, zip);
+        var exe = NativeUpdater.Stage(zip, home.InstallFolder, "v1.3.0");
+        var stageDir = Path.Combine(home.Parent, NativeUpdater.StagePrefix + "v1.3.0");
+        Assert.Equal(Path.Combine(stageDir, NativeUpdater.ExeName), exe);
+        Assert.True(File.Exists(exe));
+    }
+
+    [Fact]
+    public void Finish_returns_1_when_no_exe_is_found_in_the_source_folder()
+    {
+        using var home = new Home();
+        var source = Path.Combine(home.Parent, NativeUpdater.StagePrefix + "v1.2.4");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "readme.txt"), "no exe here");
+        var launched = false;
+        var code = NativeUpdater.Finish(home.InstallFolder, oldPid: int.MaxValue, wait: TimeSpan.Zero,
+            source: source, startInstalled: _ => launched = true);
+        Assert.Equal(1, code);
+        Assert.False(launched);
+    }
+
+    [Fact]
+    public void Finish_returns_1_when_starting_the_installed_app_raises_an_exception()
+    {
+        using var home = new Home();
+        var source = Path.Combine(home.Parent, NativeUpdater.StagePrefix + "v1.2.4");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, NativeUpdater.ExeName), "new-build");
+        var code = NativeUpdater.Finish(home.InstallFolder, oldPid: int.MaxValue, wait: TimeSpan.Zero,
+            source: source, startInstalled: _ => throw new InvalidOperationException("cannot start"));
+        Assert.Equal(1, code);
+    }
+
     sealed class ThrowingHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
