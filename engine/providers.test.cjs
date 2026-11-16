@@ -100,6 +100,20 @@ zero.command.data.groups[0].buckets[1].remaining_fraction = 0;
 assert.equal(parseUsage(zero).exhausted, true);
 zero.command.data.groups[0].buckets[1].remaining_fraction = 0.0001;
 assert.equal(parseUsage(zero).exhausted, false);
+// The Claude and GPT models of Antigravity have their own quota: a pool apart from Gemini's.
+{
+  const { CLAUDE_GPT_POOL, poolOf } = require('./antigravity.cjs');
+  const other = parseUsage(fixture).extraPlans.find(plan => plan.id === CLAUDE_GPT_POOL);
+  assert.equal(other.readable, true);
+  assert.equal(other.windows.length, 2);
+  const spent = structuredClone(fixture);
+  for (const bucket of spent.command.data.groups.find(group => /Claude and GPT/.test(group.name)).buckets) bucket.remaining_fraction = 0;
+  assert.equal(parseUsage(spent).exhausted, false, 'Gemini keeps its own quota');
+  assert.equal(parseUsage(spent).extraPlans[0].exhausted, true, 'the Claude and GPT quota is spent');
+  assert.equal(poolOf('claude-opus-4-6-thinking', 'Gemini'), CLAUDE_GPT_POOL);
+  assert.equal(poolOf('gpt-oss-120b-medium', 'Gemini'), CLAUDE_GPT_POOL);
+  assert.equal(poolOf('gemini-3-flash', 'Gemini'), 'Gemini');
+}
 (async () => {
   const failed = await readAntigravity({ command: 'fake', run: (_exe, args, _opts, done) => { assert.deepEqual(args.slice(0, 4), ['-p', '/usage', '--output-format', 'json']); done(new Error('No login'), ''); } });
   assert.equal(failed.pct, null);

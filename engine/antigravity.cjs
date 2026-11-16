@@ -4,19 +4,28 @@ const { executable } = require('./providers.cjs');
 const { unreadPlan } = require('./planUsage.js');
 
 // Verified with agy 1.3.3: /usage is a CLI command, num_turns=0, numeric quota buckets.
-function parseUsage(body) {
-  const groups = body && body.status === 'SUCCESS' && body.command && body.command.name === 'usage' && body.command.data && body.command.data.groups;
-  const gemini = (Array.isArray(groups) ? groups : []).filter(group => /^Gemini Models$/i.test(group.name || ''));
-  const windows = gemini.flatMap(group => (Array.isArray(group.buckets) ? group.buckets : []).flatMap(bucket => {
+// Antigravity keeps two separate quotas: "Gemini Models", and "Claude and GPT models" for the Claude and
+// GPT models it also runs. Each is its own pool, so a Claude model is not judged by Gemini's quota.
+const CLAUDE_GPT_POOL = 'Antigravity Claude/GPT';
+const poolOf = (cli, pool) => /^(?:claude|gpt-oss)-/.test(String(cli || '')) ? CLAUDE_GPT_POOL : pool;
+function groupPlan(groups, pattern, id, label) {
+  const windows = (Array.isArray(groups) ? groups : []).filter(group => pattern.test(group.name || '')).flatMap(group => (Array.isArray(group.buckets) ? group.buckets : []).flatMap(bucket => {
     const fraction = bucket.remaining_fraction;
     if (typeof fraction !== 'number' || !Number.isFinite(fraction) || fraction < 0 || fraction > 1) return [];
     const leftPct = Math.round(fraction * 100);
     return [{ name: bucket.window || bucket.name, pct: 100 - leftPct, leftPct, remainingFraction: fraction, resetAt: bucket.reset_time || null }];
   }));
-  if (!windows.length) return unreadPlan('Gemini', 'Antigravity returned no numeric Gemini quota.');
+  if (!windows.length) return unreadPlan(id, `Antigravity returned no numeric ${label} quota.`);
   const tight = windows.reduce((a, b) => a.remainingFraction < b.remainingFraction ? a : b);
-  return { id: 'Gemini', label: 'Gemini', readable: true, exhausted: windows.some(w => w.remainingFraction === 0),
+  return { id, label, readable: true, exhausted: windows.some(w => w.remainingFraction === 0),
     pct: tight.pct, leftPct: tight.leftPct, source: 'agy /usage JSON', reason: null, windows };
+}
+// The Gemini plan, as before, with the Claude and GPT plan alongside in extraPlans.
+function parseUsage(body) {
+  const groups = body && body.status === 'SUCCESS' && body.command && body.command.name === 'usage' && body.command.data && body.command.data.groups;
+  const gemini = groupPlan(groups, /^Gemini Models$/i, 'Gemini', 'Gemini');
+  const other = groupPlan(groups, /^Claude and GPT models$/i, CLAUDE_GPT_POOL, CLAUDE_GPT_POOL);
+  return Object.assign(gemini, { extraPlans: [other] });
 }
 
 async function readAntigravity({ command = executable('antigravity'), run = execFile } = {}) {
@@ -51,4 +60,4 @@ async function listAntigravity({ command = executable('antigravity'), run = exec
     });
   });
 }
-module.exports = { parseUsage, readAntigravity, parseModels, listAntigravity };
+module.exports = { CLAUDE_GPT_POOL, poolOf, parseUsage, readAntigravity, parseModels, listAntigravity };
