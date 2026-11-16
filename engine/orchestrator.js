@@ -224,12 +224,17 @@ const LEAD_TIERS = { premium: 0, default: 1, local: 2 };
 // Claude's families are known by name, whatever category the catalog gives them; other models by their category.
 const CLAUDE_FAMILIES = [[/fable/i, 0, 0], [/opus/i, 0, 1], [/sonnet/i, 1, 2], [/haiku/i, 2, 3]];
 const modelName = model => String(model?.label || model?.cli || model?.id || '');
+// Small fast models are light whatever category the catalog gives them (Gemini Flash, GPT mini or Luna…).
+const LIGHT_NAMES = /\b(?:flash|mini|lite|nano|luna)\b/i;
 function leadTier(model) {
   const known = CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)));
   if (known) return known[1];
-  if (model && LEAD_TIERS[model.kind] !== undefined) return LEAD_TIERS[model.kind];
+  if (model && LEAD_TIERS[model.kind] !== undefined && model.kind !== 'default') return LEAD_TIERS[model.kind];
+  if (LIGHT_NAMES.test(modelName(model))) return 2;
   return 1;
 }
+// Verify checks the whole work and fixes it: a light model is given it only when no stronger one can.
+const ableToVerify = list => { const strong = list.filter(model => leadTier(model) < 2); return strong.length ? strong : list; };
 // "claude-opus-4-6-thinking" is Opus 4.6: dashes between digits are a version, and a Claude family is
 // known by its name whatever else the catalog writes around it.
 const plainName = model => modelName(model).replace(/(\d)-(\d)/g, '$1.$2');
@@ -286,7 +291,8 @@ function pickWorker(models, options) {
   if (!pool.length) return null;
   // A model under its quota limit is taken only when no other one can do the job.
   const roomy = typeof opts.low === 'function' ? pool.filter(item => !opts.low(item)) : pool;
-  const chosen = (roomy.length ? roomy : pool)[0];
+  const fit = roomy.length ? roomy : pool;
+  const chosen = (assignmentRole(opts.job) === 'verifier' ? ableToVerify(fit) : fit)[0];
   chosen.why = `${kind} job · ${chosen.label} on ${chosen.plan}; user catalog order`;
   return chosen;
 }
@@ -2734,7 +2740,7 @@ function createOrchestrator(options) {
     const settings = autoSwitch();
     const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list; return ok.length ? ok : list; };
     const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
-    const verifiers = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE })));
+    const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }))));
     // With a single model that can build there is no crew to split the work among: no lead call.
     if (builders.length < 2 || !verifiers.length) return false;
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
@@ -2767,7 +2773,7 @@ function createOrchestrator(options) {
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     // A model under its quota limit would be moved off at once: it is offered only when no other model can take the step.
     const roomy = list => { const ok = list.filter(model => !isLow(model)); return ok.length ? ok : list; };
-    const candidates = subs.map(sub => roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))));
+    const candidates = subs.map(sub => { const list = roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))); return assignmentRole(sub) === 'verifier' ? ableToVerify(list) : list; });
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
     // The lead's last answer in this project's chat, where it may have proposed the crew.
@@ -3968,4 +3974,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
