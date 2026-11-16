@@ -14,6 +14,22 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 - **Your crew decides the cost.** Planwharf does not save tokens or time by itself: what a goal costs depends on the models you choose and on the task.
 - **Nothing is published without you.** The work stays in your project folder: Planwharf never commits or pushes by itself. When you are happy with the result, you can commit it, and push it to GitHub, from the Work finished card.
 
+## Planwharf builds Planwharf
+
+Planwharf is rewriting its own engine, from JavaScript to C#, **with its own crew**. The owner writes one
+line to the lead, *"Read docs/NEXT-WORK.md and continue."*; the lead picks the next job of the plan, one
+model builds it, a model from another company checks it and fixes what fails, and every pull request is
+reviewed before it is merged.
+
+| So far | |
+|---|---|
+| Jobs done by Planwharf on itself | **8**, from the first C# modules to the Push button |
+| C# engine | **15 of 55 modules** ported, 459 tests, 149 cases compared with the JavaScript result by result |
+| Improvements found by using Planwharf on itself, and fixed | **16** |
+| Companies in the crew | Google, xAI, Anthropic, OpenAI: one builds, another checks |
+
+The full record, job by job, with each crew and what the review changed: [Built with Planwharf](docs/BUILT-WITH-PLANWHARF.md).
+
 ## See it
 
 You talk with the lead in a chat; when the plan is right you press **Let the crew do it**, and the crew builds and checks the work while you watch.
