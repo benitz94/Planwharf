@@ -1075,6 +1075,18 @@ function checkpointMatches(checkpoint, job) {
   return true;
 }
 
+// A refusal for quota, said as a person would: what happened and when the model is tried again, in local
+// time, instead of the program's raw error (AGY_ERROR: {"short_error":...}).
+function refusalSentence(refused, today = new Date()) {
+  const raw = String(refused?.reason || '');
+  const short = /"short_error"\s*:\s*"([^"]+)"/.exec(raw)?.[1] || raw.replace(/^[A-Z_]+_ERROR:\s*/, '');
+  const detail = short.replace(/\s+/g, ' ').trim().slice(0, 100);
+  const until = new Date(refused?.until || '');
+  const pad = value => String(value).padStart(2, '0');
+  const when = Number.isNaN(until.getTime()) ? '' : until.toDateString() === today.toDateString()
+    ? ` Tried again at ${pad(until.getHours())}:${pad(until.getMinutes())}.` : ` Tried again on ${until.getFullYear()}-${pad(until.getMonth() + 1)}-${pad(until.getDate())} at ${pad(until.getHours())}:${pad(until.getMinutes())}.`;
+  return `Quota used up${detail ? ` (${detail})` : ''}.${when}`;
+}
 function createOrchestrator(options) {
   const opts = options && typeof options === 'object' ? { ...options } : {};
   if (typeof opts.readPlan !== 'function') throw new Error('orchestrator requires readPlan');
@@ -1820,7 +1832,7 @@ function createOrchestrator(options) {
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
       const refused = refusals.activeRefusal(store, item.id, Date.parse(now()));
-      if (refused) Object.assign(resolved, { available: false, unavailableReason: 'Provider refused work until ' + refused.until + ': ' + refused.reason });
+      if (refused) Object.assign(resolved, { available: false, unavailableReason: refusalSentence(refused) });
       return resolved;
     });
   }
@@ -3956,4 +3968,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
