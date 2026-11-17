@@ -1143,12 +1143,19 @@ function createOrchestrator(options) {
     } catch (error) { ledger.finish(id, 'FAILED'); throw error; }
     finally { if (activeLeadInvocations.get(key) === id) activeLeadInvocations.delete(key); }
   };
-  // The project's Tools checkboxes travel with every lead and worker call of that project.
-  const toolsFor = projectId => { const chosen = (projectId && store.projectTools?.[projectId]) || {}; return Object.fromEntries(TOOL_NAMES.map(name => [name, chosen[name] === true])); };
-  if (typeof opts.askModel === 'function') { const withLedger = opts.askModel; opts.askModel = info => withLedger(info?.model ? { ...info, model: { ...info.model, tools: toolsFor(info.projectId) } } : info); }
+  // Resolve a complete model override, otherwise the project's default.
+  const toolFlags = chosen => Object.fromEntries(TOOL_NAMES.map(name => [name, chosen?.[name] === true]));
+  const plainTools = value => value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  const toolSettings = value => ({ default: toolFlags(plainTools(value?.default) || value),
+    models: Object.fromEntries(Object.entries(plainTools(value?.models) || {}).filter(([, tools]) => plainTools(tools)).map(([id, tools]) => [id, toolFlags(tools)])) });
+  const toolsFor = (projectId, modelId) => {
+    const settings = toolSettings(store.projectTools?.[projectId]);
+    return Object.hasOwn(settings.models, modelId) ? settings.models[modelId] : settings.default;
+  };
+  if (typeof opts.askModel === 'function') { const withLedger = opts.askModel; opts.askModel = info => withLedger(info?.model ? { ...info, model: { ...info.model, tools: toolsFor(info.projectId, info.model.id) } } : info); }
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
-    info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId) } };
+    info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId, info.worker.id) } };
     // Workers never push, with or without autonomy: the owner pushes with the Push button.
     info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
@@ -1223,6 +1230,7 @@ function createOrchestrator(options) {
       }
     } catch (_) {}
   }
+  store.projectTools = Object.fromEntries(Object.entries(store.projectTools || {}).map(([id, tools]) => [id, toolSettings(tools)]));
   store.providerPolicies ||= {};
   store.modelPolicies ||= {};
   store.modelRoles ||= {};
@@ -1299,14 +1307,20 @@ function createOrchestrator(options) {
   }
 
   // Tools checkboxes for one project. Only the known names are kept; anything else is refused.
-  async function setProjectTools(projectId, tools) {
-    if (typeof projectId !== 'string' || !projectId) return { ok: false, reason: 'Project not found.' };
-    if (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean')) return { ok: false, reason: 'Invalid tools.' };
-    store.projectTools = store.projectTools || {};
-    store.projectTools[projectId] = { ...toolsFor(projectId), ...tools };
-    note(projectId, 'Tools: ' + (TOOL_NAMES.filter(name => store.projectTools[projectId][name]).join(', ') || 'none') + '.');
+  async function setProjectTools(projectId, tools, modelId) {
+    if (typeof projectId !== 'string' || !projectId || ['__proto__', 'constructor', 'prototype'].includes(projectId)) return { ok: false, reason: 'Project not found.' };
+    if (modelId !== undefined && (typeof modelId !== 'string' || !modelId || !roster().some(model => model.id === modelId))) return { ok: false, reason: 'Model not found.' };
+    // null removes an override; omitted modelId still edits the project default.
+    if (!(modelId !== undefined && tools === null) && (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean'))) return { ok: false, reason: 'Invalid tools.' };
+    store.projectTools ||= {};
+    const settings = toolSettings(store.projectTools[projectId]);
+    if (modelId === undefined) settings.default = { ...settings.default, ...tools };
+    else if (tools === null) delete settings.models[modelId];
+    else Object.defineProperty(settings.models, modelId, { value: { ...toolsFor(projectId, modelId), ...tools }, enumerable: true, configurable: true, writable: true });
+    store.projectTools[projectId] = settings;
+    note(projectId, 'Tools' + (modelId ? ' for ' + modelId : '') + ': ' + (TOOL_NAMES.filter(name => toolsFor(projectId, modelId)[name]).join(', ') || 'none') + '.');
     persist();
-    return { ok: true, tools: toolsFor(projectId), snapshot: await tick() };
+    return { ok: true, tools: toolsFor(projectId, modelId), snapshot: await tick() };
   }
 
   // Start over and Remove leave nothing of a project live, and lose nothing: its chat, lead state,
@@ -2106,6 +2120,7 @@ function createOrchestrator(options) {
       thinking: clone(liveThinking(projectId)),
       thinkingByProject: clone(thinkingByKey),
       projectTools: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolsFor(id)])),
+      projectToolSettings: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolSettings(store.projectTools?.[id])])),
       asking: Object.keys(thinkingByKey).length > 0,
       orchestratorId: lead ? lead.id : null,
       selectedOrchestratorId: leadId(),
@@ -3372,7 +3387,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const toolAsked = typeof item.answer === 'string' && item.projectId ? item.answer.match(TOOL_REQUEST) : null;
     if (toolAsked) {
       item.answer = item.answer.replace(TOOL_REQUEST, '').trim();
-      if (!toolsFor(item.projectId)[toolAsked[1].toLowerCase()]) item.toolRequest = toolAsked[1].toLowerCase();
+      if (!toolsFor(item.projectId, lead?.id)[toolAsked[1].toLowerCase()]) item.toolRequest = toolAsked[1].toLowerCase();
     }
     store.asks = [item, ...(Array.isArray(store.asks) ? store.asks : [])];
     persist();

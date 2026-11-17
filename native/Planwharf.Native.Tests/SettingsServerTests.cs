@@ -39,6 +39,27 @@ public class SettingsServerTests
             Assert.NotNull((await api.SkillsAsync())["programs"] as JsonArray);
             Assert.NotNull((await api.UpdatesAsync(check: false))["state"]);
 
+            var initialPhone = await api.PhoneSettingsAsync();
+            Assert.False(initialPhone["ntfy"]?["enabled"]?.GetValue<bool>());
+            Assert.False(initialPhone["telegram"]?["enabled"]?.GetValue<bool>());
+            Assert.True(initialPhone["telegram"]?["startCode"]?.GetValue<string>()?.StartsWith("pw-"));
+
+            var savedPhone = await api.SetPhoneSettingsAsync(new {
+                ntfy = new { enabled = true, topic = "test-topic", serverUrl = "http://127.0.0.1:9" },
+                telegram = new { enabled = true, pairedChatId = "99999", startCode = "pw-1" },
+                telegramToken = "123456:fake-token"
+            });
+            Assert.True(savedPhone?["ntfy"]?["enabled"]?.GetValue<bool>());
+            Assert.Equal("test-topic", savedPhone?["ntfy"]?["topic"]?.GetValue<string>());
+            Assert.True(savedPhone?["telegram"]?["enabled"]?.GetValue<bool>());
+            Assert.True(savedPhone?["telegram"]?["tokenConfigured"]?.GetValue<bool>());
+            Assert.False(savedPhone?["telegram"]?["paired"]?.GetValue<bool>());
+            Assert.NotEqual("pw-1", savedPhone?["telegram"]?["startCode"]?.GetValue<string>());
+            Assert.DoesNotContain("123456:fake-token", savedPhone?.ToJsonString());
+
+            var testAlert = await api.TestPhoneAlertAsync();
+            Assert.True(testAlert?["ok"]?.GetValue<bool>());
+
             var file = await api.ExportProjectAsync(id);
             await api.RemoveProjectAsync(id);
             Assert.DoesNotContain(ProjectViews.Projects(await api.SnapshotAsync(false)), project => project.Id == id);

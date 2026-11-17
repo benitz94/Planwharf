@@ -38,9 +38,11 @@ public sealed partial class MainWindow : Window
     readonly string version;
 
     PlanwharfApi? api;
+    DesktopAlerts? desktopAlerts;
+    internal Action<WorkAlert>? AlertReceived { get; set; }
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
-    bool busy, menuOpen;
+    bool busy, menuOpen, refreshing, closed;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
@@ -52,6 +54,7 @@ public sealed partial class MainWindow : Window
     public MainWindow(string version)
     {
         this.version = version;
+        Closed += (_, _) => closed = true;
         Title = "Planwharf"; Width = 1360; Height = 860; MinWidth = 960; MinHeight = 560; Background = Palette.Background;
         threadScroll = new ScrollViewer { Content = thread, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
@@ -184,6 +187,13 @@ public sealed partial class MainWindow : Window
     public void Connect(PlanwharfApi connected)
     {
         api = connected;
+        if (desktopAlerts == null)
+        {
+            desktopAlerts = new DesktopAlerts(this);
+            AlertReceived = desktopAlerts.Show;
+            Activated += (_, _) => desktopAlerts.ClearAttention();
+            Closing += (_, _) => desktopAlerts.Dispose();
+        }
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         timer.Tick += async (_, _) => await RefreshAsync(readOnly: ticks++ % 5 != 0);
         timer.Start();
@@ -207,7 +217,15 @@ public sealed partial class MainWindow : Window
     public void ShowError(string message) { title.Text = "Planwharf could not start"; hint.Text = message; hint.Foreground = Palette.Danger; }
 
     // Shows a snapshot of the server's state; the window redraws only what changed.
-    public void Show(JsonNode state) { snapshot = state; Render(); }
+    public void Show(JsonNode state)
+    {
+        // A refresh started before closing can complete after a replacement window opens.
+        if (closed) return;
+        var alerts = WorkAlerts.Decide(snapshot, state, Prefs.Alerts);
+        snapshot = state;
+        foreach (var alert in alerts) AlertReceived?.Invoke(alert);
+        Render();
+    }
 
     // For the window tests: the repository as the server would report it.
     public void ShowRepo(string projectId, string workId, JsonNode repository)
@@ -230,9 +248,11 @@ public sealed partial class MainWindow : Window
 
     async Task RefreshAsync(bool readOnly)
     {
-        if (api == null) return;
+        if (api == null || refreshing) return;
+        refreshing = true;
         try { Show(await api.SnapshotAsync(readOnly, projectId)); }
         catch (Exception error) { hint.Text = "Planwharf is not answering: " + error.Message; }
+        finally { refreshing = false; }
     }
 
     void Render()
@@ -551,6 +571,7 @@ public sealed partial class MainWindow : Window
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => item["id"]?.GetValue<string>() == projectId);
         var folder = row?["folder"]?.GetValue<string>() ?? "";
         var sig = sideMode + projectId + folder + projectsRoot + (sideMode == "settings" ? SettingsSignature() : "") + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available + m.Bench + m.Enabled + m.UnavailableReason)) + string.Join(",", team.Providers);
+        if (sideMode == "team") sig += snapshot["projectToolSettings"]?[projectId ?? ""]?.ToJsonString();
         var progress = sideMode == "progress" && projectId != null ? PanelViews.Progress(snapshot, projectId, view?.Status ?? "") : null;
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
         var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);

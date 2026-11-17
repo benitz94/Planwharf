@@ -20,6 +20,32 @@ Its engine is still the JavaScript one: it starts the same local Planwharf serve
 - **Progress** (status, steps, recent activity), **Usage** (quota left for each limit with its reset time, lead calls and crew work, "not reported" when a provider does not say) and **Files** (changes not yet saved in Git), in the panel on the right.
 - **Settings**: the project's folder and GitHub link, the project's tools (MCP servers, browser, hooks, memory), the folder for new projects, approvals, the automatic model switch, skills and instructions, save a project to a file or open one, updates, start over, remove project, quit.
 - Closing the window, or the system ending the app, saves unfinished work and stops the server.
+- When a whole work completes, fails or waits for the owner, a system notification says the goal is done or needs you. **Settings → Look** has separate Notification, Flash and Sound switches, all on by default, saved on this computer.
+
+### Computer alerts
+
+Alerts follow changes across every project while the native app is running. Opening the app establishes
+a baseline: saved, finished work does not alert again. Completing an individual step does not alert.
+Waiting for approval, a checkpoint pause, and a stopped autonomous crew count as needing the owner.
+An already active window does not flash; opening it clears outstanding attention.
+
+No package was added. Platform delivery uses:
+
+| System | Notification | Attention until opened | Short sound |
+|---|---|---|---|
+| Windows | Shell notification area balloon | Taskbar flash | System information sound |
+| macOS | Notification Center through the system's `osascript` | Dock bounce | System beep |
+| Linux | Desktop notification service through `notify-send`, when available | X11 urgency hint | X server bell |
+
+Desktop permissions, quiet mode, the configured bell volume and the window manager decide how alerts
+appear and sound. On macOS, notification permission belongs to the system script host. On Linux,
+notification delivery requires the desktop's `notify-send` utility and a running notification service;
+X11 attention and bell also work through XWayland when supported by the desktop. Missing desktop
+facilities are skipped independently. Planwharf does not install helpers or override desktop settings.
+The notification's own sound is suppressed; the Sound switch controls the separate short sound.
+
+The alert decision, effect switches and headless window integration have automated tests. Actual
+notification appearance, Dock/taskbar behavior and audible output require manual platform checks.
 
 Not yet in the native app (use the web or desktop version meanwhile): the light theme and text colours, installers. Updates: the app tells you when a new version is out and opens the download page.
 
