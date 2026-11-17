@@ -49,7 +49,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | Done (#110) |
 | 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | Done, waiting for review |
 | 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | To do |
-| 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | To do |
+| 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | Done, waiting for review |
 | 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | To do |
 | 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | To do |
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | To do |
