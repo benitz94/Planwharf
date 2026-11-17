@@ -17,6 +17,49 @@ public sealed class TestApp : Application
 
 public class WindowTests
 {
+    [AvaloniaFact]
+    public void Work_plan_switch_reads_the_saved_preference()
+    {
+        var window = new MainWindow("test");
+        window.Show();
+        try
+        {
+            window.Show(SampleState.Working());
+            window.OpenSide("settings");
+            void ShowSettings(string json) => window.ShowSettings(new System.Text.Json.Nodes.JsonObject(), new System.Text.Json.Nodes.JsonArray(), new System.Text.Json.Nodes.JsonObject(), null, System.Text.Json.Nodes.JsonNode.Parse(json));
+            bool? Value()
+            {
+                window.UpdateLayout();
+                return Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.ToggleSwitch>()
+                    .Single(toggle => Equals(toggle.OnContent, "Keep the work plan in git")).IsChecked;
+            }
+            ShowSettings("{}");
+            Assert.False(Value());
+            ShowSettings("{\"keepWorkPlan\":true}");
+            Assert.True(Value());
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void Logo_follows_the_selected_main_colour()
+    {
+        try
+        {
+            foreach (var colour in new[] { "green", "blue" })
+            {
+                Palette.Apply(true, null, colour);
+                var window = new MainWindow("test");
+                var mark = (Avalonia.Controls.Border)typeof(MainWindow).GetMethod("BrandMark", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null)!;
+                var canvas = (Avalonia.Controls.Canvas)((Avalonia.Controls.Viewbox)mark.Child!).Child!;
+                var bezel = (Avalonia.Controls.Shapes.Path)canvas.Children[0];
+                var needle = (Avalonia.Controls.Canvas)canvas.Children[1];
+                Assert.Equal(Palette.ColorOf(Palette.Accent), Palette.ColorOf(bezel.Stroke!));
+                Assert.Equal(Palette.ColorOf(Palette.Accent), Palette.ColorOf(((Avalonia.Controls.Shapes.Path)needle.Children[0]).Fill!));
+            }
+        }
+        finally { Palette.Apply(true, null); }
+    }
     // Draws the window with sample data and saves the picture next to the test results.
     [AvaloniaFact]
     public void Draws_the_chat_and_the_finished_work()

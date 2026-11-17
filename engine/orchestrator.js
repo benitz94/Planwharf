@@ -1372,7 +1372,7 @@ function createOrchestrator(options) {
     if (!folder) return { ok: true };
     const goal = String(item.revisions?.at(-1)?.direction || '').trim();
     let prepared;
-    try { prepared = planFile.prepare(folder, { goal, steps: steps || [] }); }
+    try { prepared = planFile.prepare(folder, { goal, steps: steps || [], keepWorkPlan: opts.keepWorkPlan?.() === true }); }
     catch (error) { return { ok: false, reason: error.message }; }
     if (!prepared.ok) {
       note(projectId, prepared.reason);

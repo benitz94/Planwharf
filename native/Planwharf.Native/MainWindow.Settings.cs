@@ -12,7 +12,7 @@ namespace Planwharf.Native;
 // skills, moving a project, updates, start over, remove, quit.
 public sealed partial class MainWindow
 {
-    JsonNode? autoSwitch, skills, updates, phone;
+    JsonNode? autoSwitch, skills, updates, phone, appSettings;
     readonly HashSet<string> githubDeclined = new();
 
     // Extra tools for one project's team, all off by default (same words as the chat page).
@@ -28,15 +28,16 @@ public sealed partial class MainWindow
     static bool Flag(JsonNode? node) => node is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
     // For the window tests: what the server would answer for these sections.
-    public void ShowSettings(JsonNode autoSwitchState, JsonNode programs, JsonNode updateState, JsonNode? phoneState = null)
+    public void ShowSettings(JsonNode autoSwitchState, JsonNode programs, JsonNode updateState, JsonNode? phoneState = null, JsonNode? applicationSettings = null)
     {
-        autoSwitch = autoSwitchState; skills = programs; updates = updateState; phone = phoneState; sideSig = null; Render();
+        autoSwitch = autoSwitchState; skills = programs; updates = updateState; phone = phoneState; appSettings = applicationSettings; sideSig = null; Render();
     }
 
     async Task LoadSettingsAsync(bool checkUpdates = false)
     {
         if (api == null) return;
         try { projectsRoot = await api.ProjectsRootAsync(); } catch { /* shown as empty */ }
+        try { appSettings = await api.SettingsAsync(); } catch { appSettings = null; }
         try { autoSwitch = await api.AutoSwitchAsync(); } catch { /* section hidden */ }
         try { skills = (await api.SkillsAsync())["programs"]; } catch { skills = new JsonArray(); }
         try { updates = await api.UpdatesAsync(checkUpdates); } catch { /* offline checks never interrupt work */ }
@@ -56,7 +57,7 @@ public sealed partial class MainWindow
     }
 
     string SettingsSignature() => (CurrentRow()?["github"]?.ToJsonString() ?? "") + GithubOffer(CurrentRow()) + snapshot?["mode"]?.ToJsonString()
-        + snapshot?["projectTools"]?[projectId ?? ""]?.ToJsonString() + autoSwitch?.ToJsonString() + skills?.ToJsonString() + updates?.ToJsonString() + phone?.ToJsonString();
+        + snapshot?["projectTools"]?[projectId ?? ""]?.ToJsonString() + autoSwitch?.ToJsonString() + skills?.ToJsonString() + updates?.ToJsonString() + phone?.ToJsonString() + appSettings?.ToJsonString();
 
     // The heading of a Settings section, with the same icon and colour as in the chat page.
     static Control SettingsHead(string text)
@@ -168,6 +169,14 @@ public sealed partial class MainWindow
         rootSave.Click += async (_, _) => await DoAsync(async () => { await api!.SetProjectsRootAsync(root.Text?.Trim() ?? ""); projectsRoot = await api.ProjectsRootAsync(); }, "Saved.");
         side.Children.Add(root);
         side.Children.Add(Row(rootBrowse, rootSave));
+
+        var keepPlan = new ToggleSwitch { OnContent = "Keep the work plan in git", OffContent = "Keep the work plan in git", IsChecked = Flag(appSettings?["keepWorkPlan"]) };
+        keepPlan.IsCheckedChanged += async (_, _) =>
+        {
+            if ((keepPlan.IsChecked == true) != Flag(appSettings?["keepWorkPlan"]))
+                await DoAsync(async () => appSettings = await api!.SetKeepWorkPlanAsync(keepPlan.IsChecked == true), "Work plan preference saved.");
+        };
+        side.Children.Add(keepPlan);
 
         side.Children.Add(SettingsHead("Approvals"));
         var auto = Str(snapshot?["mode"]) == "auto";

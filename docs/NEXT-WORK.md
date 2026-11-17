@@ -48,10 +48,10 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 07 | Before the porting goes on | Remove the Review role (sheet below) | `fix/remove-review` | Done (#104) |
 | 08 | Before the porting goes on | An estimate of the time left for the work (sheet below) | `fix/time-left` | Done (#110) |
 | 09 | Before the porting goes on | The native app updates itself (sheet below) | `feat/native-update` | Done (#114) |
-| 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | Done, waiting for review |
-| 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | Done, waiting for review |
-| 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | Done, waiting for review |
-| 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | To do |
+| 10 | Before the porting goes on | Tools chosen per model (sheet below) | `feat/tools-per-model` | Done (#118) |
+| 11 | Before the porting goes on | An alert on the computer when work ends (sheet below) | `feat/pc-alert` | Done (#118) |
+| 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | Done (#118) |
+| 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | Done, waiting for review |
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | To do |
 | 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | To do |
 | 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
@@ -313,6 +313,10 @@ it, a message from another chat is ignored, `/stop` asks for "yes".
 2. Settings gets "Keep the work plan in git" (off by default). When on, the engine of job 05 does not
    add `/.planwharf/` to `.git/info/exclude` and removes the line it added; the plan file is committed
    with the work. Test in `engine/plan-file.test.cjs`.
+
+   Planwharf marks new exclusion rules so that it can remove only its own. Older unmarked rules and
+   project or global ignores remain untouched; if one still ignores the plan, the user must adjust it
+   before git can include the plan. Turning the option off does not untrack an already tracked file.
 
 ---
 

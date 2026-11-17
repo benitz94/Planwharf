@@ -54,6 +54,8 @@ public sealed class PlanwharfApi(string address)
 
     // Where Planwharf creates the folders of new projects that have none.
     public async Task<string> ProjectsRootAsync() => (await GetAsync("/api/settings"))["projectsRoot"]?.GetValue<string>() ?? "";
+    public Task<JsonNode> SettingsAsync() => GetAsync("/api/settings");
+    public Task<JsonNode?> SetKeepWorkPlanAsync(bool keep) => PostAsync("/api/settings", new { keepWorkPlan = keep });
     public Task<JsonNode?> SetProjectsRootAsync(string folder) => PostAsync("/api/settings", new { projectsRoot = folder });
 
     public Task SetFolderAsync(string projectId, string folder) => SetPlaceAsync(projectId, folder, null);
