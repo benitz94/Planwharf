@@ -250,7 +250,7 @@ public sealed partial class MainWindow
             + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
             + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
             + string.Join("", card.Summary) + string.Join("", card.Usage) + card.Activity + string.Join(",", card.Alerts.Select(a => a.Id)) + card.Repo + card.Since + card.AutoApprove
-            + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id) + snapshot?["projectTools"]?[view.Id]?.ToJsonString();
+            + gitBusy.GetValueOrDefault(view.Id) + gitSaid.GetValueOrDefault(view.Id) + snapshot?["projectTools"]?[view.Id]?.ToJsonString() + snapshot?["projectToolSettings"]?[view.Id]?.ToJsonString();
         if (sig == threadSig || menuOpen) return;
         var atBottom = threadScroll.Offset.Y + threadScroll.Viewport.Height >= threadScroll.Extent.Height - 120;
         // The chat follows a new message once; after that it moves only if the user is at the bottom.
@@ -384,13 +384,13 @@ public sealed partial class MainWindow
             under.Children.Add(copy);
         }
         // The lead asked to turn on a tool: one button, and only a click from the user turns it on.
-        if (Tools.FirstOrDefault(tool => tool.Name == ask.ToolRequest) is { Name.Length: > 0 } wanted && !Flag(snapshot?["projectTools"]?[id]?[wanted.Name]))
+        if (Tools.FirstOrDefault(tool => tool.Name == ask.ToolRequest) is { Name.Length: > 0 } wanted && !ModelToolsView.Read(snapshot, id, ask.ModelId).Tools[wanted.Name])
         {
-            var turnOn = Small($"Turn on {wanted.Label} for this project");
+            var turnOn = Small($"Turn on {wanted.Label} for {ask.Who}");
             turnOn.Click += async (_, _) =>
             {
-                if (wanted.Name == "mcp" && !await Confirm(wanted.Explain + " Turn it on for this project?", "Yes, turn on MCP servers")) return;
-                await DoAsync(() => api!.SetToolsAsync(id, new Dictionary<string, bool> { [wanted.Name] = true }), $"{wanted.Label} on for this project.");
+                if (wanted.Name == "mcp" && !await Confirm(wanted.Explain + $" Turn it on for {ask.Who}?", "Yes, turn on MCP servers")) return;
+                await DoAsync(() => api!.SetToolsAsync(id, new Dictionary<string, bool> { [wanted.Name] = true }, ask.ModelId.Length > 0 ? ask.ModelId : null), $"{wanted.Label} on for {ask.Who}.");
             };
             under.Children.Add(turnOn);
         }

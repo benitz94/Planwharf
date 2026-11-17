@@ -139,7 +139,7 @@ public sealed partial class MainWindow
             side.Children.Add(buttons);
 
             side.Children.Add(SettingsHead("Tools"));
-            side.Children.Add(Explain($"Extra tools for the team of {name}. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work."));
+            side.Children.Add(Explain($"Project defaults for {name}. Models with their own tools use those instead. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work."));
             var on = snapshot?["projectTools"]?[Str(row["id"])];
             foreach (var (tool, label, explain) in Tools)
             {

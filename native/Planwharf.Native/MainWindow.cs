@@ -551,6 +551,7 @@ public sealed partial class MainWindow : Window
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => item["id"]?.GetValue<string>() == projectId);
         var folder = row?["folder"]?.GetValue<string>() ?? "";
         var sig = sideMode + projectId + folder + projectsRoot + (sideMode == "settings" ? SettingsSignature() : "") + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available + m.Bench + m.Enabled + m.UnavailableReason)) + string.Join(",", team.Providers);
+        if (sideMode == "team") sig += snapshot["projectToolSettings"]?[projectId ?? ""]?.ToJsonString();
         var progress = sideMode == "progress" && projectId != null ? PanelViews.Progress(snapshot, projectId, view?.Status ?? "") : null;
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
         var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);

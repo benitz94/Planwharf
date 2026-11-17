@@ -701,10 +701,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (target.folder) openFolder(target.file); else openText(target.file);
         return json(200, { ok: true, path: target.file });
       }
-      if (request.method === 'POST' && pathname === '/api/project-tools') {
+      if (request.method === 'POST' && ['/api/project-tools', '/api/projects/tools'].includes(pathname)) {
         const input = await body(request);
-        if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['projectId', 'tools'].includes(key))) throw new RequestError(400, 'Invalid data.');
-        const result = await orchestra.setProjectTools(input.projectId, input.tools);
+        if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['projectId', 'tools', 'modelId'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const result = await orchestra.setProjectTools(input.projectId, input.tools, input.modelId);
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(200, result);
       }

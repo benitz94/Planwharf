@@ -88,7 +88,9 @@ public sealed class PlanwharfApi(string address)
     }
 
     // Extra tools for one project's team (mcp, browser, hooks, memory), all off by default.
-    public Task<JsonNode?> SetToolsAsync(string projectId, IDictionary<string, bool> tools) => PostAsync("/api/project-tools", new { projectId, tools });
+    public Task<JsonNode?> SetToolsAsync(string projectId, IDictionary<string, bool>? tools, string? modelId = null) => modelId == null
+        ? PostAsync("/api/projects/tools", new { projectId, tools })
+        : PostAsync("/api/projects/tools", new { projectId, tools, modelId });
 
     public Task<JsonNode> AutoSwitchAsync() => GetAsync("/api/orchestrator/auto-switch");
     public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? fiveHourPercent = null, int? weeklyPercent = null) =>

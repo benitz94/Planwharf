@@ -209,6 +209,9 @@ public sealed partial class MainWindow
         if (model.QuotaLeft is { } quota && !model.Bench) info.Children.Add(Look.Bar(quota, model.LowQuota));
         var card = new StackPanel { Spacing = 8, Children = { info, chips } };
         if (!model.Bench) card.Children.Add(LimitEditor(model));
+        var toolsProject = projectId!;
+        card.Children.Add(ModelToolsEditor.Create(ModelToolsView.Read(snapshot, toolsProject, model.Id),
+            tools => DoAsync(() => api!.SetToolsAsync(toolsProject, tools, model.Id), $"Tools for {model.Label} saved.")));
         return MemberCard(card, !model.Bench, model.Bench);
     }
 
