@@ -30,8 +30,8 @@ function isGit(folder) {
   return result.ok && result.stdout.trim() === 'true';
 }
 
-function dirtyLines(folder) {
-  const result = git(folder, ['status', '--porcelain']);
+function dirtyLines(folder, allUntracked = false) {
+  const result = git(folder, ['status', '--porcelain', ...(allUntracked ? ['--untracked-files=all'] : [])]);
   if (!result.ok) return [];
   return result.stdout.split('\n').map(line => line.trimEnd()).filter(Boolean);
 }
@@ -269,7 +269,13 @@ function prepare(folder, options = {}) {
   // Check the existing ignore state first when enabling: a plan previously hidden by our
   // rule should not itself prevent switching the preference on.
   if (options.keepWorkPlan !== true) ensureExclude(folder, false);
-  const dirty = dirtyLines(folder);
+  let dirty = dirtyLines(folder, options.keepWorkPlan === true);
+  if (options.keepWorkPlan === true) {
+    const previous = parse(read(folder));
+    const branch = git(folder, ['branch', '--show-current']).stdout.trim();
+    if (previous.goal && previous.goal === block(options.goal) && previous.branch === branch && !previous.done)
+      dirty = dirty.filter(line => line !== '?? .planwharf/plan.md');
+  }
   if (dirty.length) return { ok: false, reason: dirtyMessage(dirty) };
   if (options.keepWorkPlan === true) ensureExclude(folder, true);
   const goal = String(options.goal || '').trim();
