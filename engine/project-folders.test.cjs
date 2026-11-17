@@ -21,12 +21,19 @@ let server;
     const response = await fetch(base + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
     return { status: response.status, body: await response.json() };
   }
+  assert.equal((await (await fetch(base + '/api/settings')).json()).keepWorkPlan, false);
+  await fs.writeFile(`${planFile}.settings.json`, JSON.stringify({ projectsRoot: '' }));
+  assert.equal((await (await fetch(base + '/api/settings')).json()).keepWorkPlan, false);
+  assert.equal((await post('/api/settings', { keepWorkPlan: 'yes' })).status, 400);
+  assert.equal((await post('/api/settings', { keepWorkPlan: true })).body.keepWorkPlan, true);
   assert.equal((await post('/api/settings', { projectsRoot: 'relative' })).status, 400);
   assert.equal((await post('/api/settings', { projectsRoot: path.join(dir, 'missing') })).status, 400);
   assert.equal((await post('/api/settings', { projectsRoot })).status, 200);
   await new Promise(resolve => server.close(resolve));
   base = await start();
   assert.equal((await (await fetch(base + '/api/settings')).json()).projectsRoot, projectsRoot);
+  assert.equal((await (await fetch(base + '/api/settings')).json()).keepWorkPlan, true);
+  assert.equal((await post('/api/settings', { keepWorkPlan: false })).body.keepWorkPlan, false);
   let notebook = await (await fetch(base + '/api/plan')).json();
   const original = structuredClone(notebook.plan.projects);
   for (const expected of ['Calculator', 'Calculator-2', 'Project-CON', '..-escape']) {

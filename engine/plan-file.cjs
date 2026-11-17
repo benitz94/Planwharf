@@ -9,6 +9,7 @@ const { spawnSync } = require('node:child_process');
 const { gitEnvironment } = require('./project-workspace.cjs');
 
 const EXCLUDE_LINE = '/.planwharf/';
+const EXCLUDE_MARKER = '# Planwharf managed work plan';
 const RULES = 'No push or merge. Files outside the goal are not touched.';
 
 function git(folder, args, timeout = 20000) {
@@ -46,14 +47,20 @@ function dirtyMessage(lines) {
   return `Commit or stash the changes in the folder first: ${names.join(', ')}${more}, then press Let the crew do it again.`;
 }
 
-function ensureExclude(folder) {
+function ensureExclude(folder, keepWorkPlan = false) {
   const located = git(folder, ['rev-parse', '--git-path', 'info/exclude']);
   if (!located.ok || !located.stdout.trim()) return;
   const file = path.resolve(folder, located.stdout.trim());
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  if (keepWorkPlan) {
+    const escaped = EXCLUDE_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const next = current.replace(new RegExp('^' + escaped + '\\r?\\n/\\.planwharf/\\r?\\n', 'gm'), '');
+    if (next !== current) fs.writeFileSync(file, next);
+    return;
+  }
   if (current.split(/\r?\n/).some(line => line.trim() === EXCLUDE_LINE)) return;
-  const next = current.length === 0 || current.endsWith('\n') ? current + EXCLUDE_LINE + '\n' : current + '\n' + EXCLUDE_LINE + '\n';
+  const next = current + (current.length && !current.endsWith('\n') ? '\n' : '') + EXCLUDE_MARKER + '\n' + EXCLUDE_LINE + '\n';
   fs.writeFileSync(file, next);
 }
 
@@ -259,9 +266,12 @@ function prepare(folder, options = {}) {
     }
     return { ok: true, git: false, chat: null };
   }
-  ensureExclude(folder);
+  // Check the existing ignore state first when enabling: a plan previously hidden by our
+  // rule should not itself prevent switching the preference on.
+  if (options.keepWorkPlan !== true) ensureExclude(folder, false);
   const dirty = dirtyLines(folder);
   if (dirty.length) return { ok: false, reason: dirtyMessage(dirty) };
+  if (options.keepWorkPlan === true) ensureExclude(folder, true);
   const goal = String(options.goal || '').trim();
   const fetched = git(folder, ['fetch', 'origin'], 30000);
   const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;

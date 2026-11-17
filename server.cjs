@@ -178,9 +178,9 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     try {
       const value = JSON.parse(await fs.readFile(settingsFile, 'utf8'));
       if (typeof value.projectsRoot !== 'string') throw new Error('Invalid projects folder settings.');
-      return { projectsRoot: value.projectsRoot };
+      return { projectsRoot: value.projectsRoot, keepWorkPlan: value.keepWorkPlan === true };
     } catch (error) {
-      if (error.code === 'ENOENT') return { projectsRoot: '' };
+      if (error.code === 'ENOENT') return { projectsRoot: '', keepWorkPlan: false };
       throw error;
     }
   }
@@ -189,7 +189,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     const folder = value.trim();
     if (folder && !path.isAbsolute(folder)) throw new RequestError(400, 'Use an absolute projects folder path.');
     await assertFolder(folder);
-    const settings = { projectsRoot: folder ? path.resolve(folder) : '' };
+    const settings = { ...(await readSettings()), projectsRoot: folder ? path.resolve(folder) : '' };
     await writePlan(settingsFile, settings);
     return settings;
   }
@@ -231,6 +231,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   });
   orchestra = createOrchestrator({
     phase2,
+    keepWorkPlan: () => {
+      try { return JSON.parse(require('node:fs').readFileSync(settingsFile, 'utf8')).keepWorkPlan === true; }
+      catch { return false; }
+    },
     runExclusive: work => enqueue(work),
     readPlan: () => readPlan(planFile),
     completeTasks: completions => enqueue(async () => {
@@ -511,8 +515,13 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'POST' && pathname === '/api/settings') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
         const input = await body(request);
-        if (!input || Object.keys(input).some(key => key !== 'projectsRoot')) throw new RequestError(400, 'Invalid settings.');
-        return json(200, await enqueue(() => setProjectsRoot(input.projectsRoot)));
+        if (!input || Object.keys(input).some(key => !['projectsRoot', 'keepWorkPlan'].includes(key))) throw new RequestError(400, 'Invalid settings.');
+        if ('keepWorkPlan' in input && typeof input.keepWorkPlan !== 'boolean') throw new RequestError(400, 'Invalid work plan preference.');
+        return json(200, await enqueue(async () => {
+          let settings = 'projectsRoot' in input ? await setProjectsRoot(input.projectsRoot) : await readSettings();
+          if ('keepWorkPlan' in input) { settings = { ...settings, keepWorkPlan: input.keepWorkPlan }; await writePlan(settingsFile, settings); }
+          return settings;
+        }));
       }
       if (request.method === 'GET' && pathname === '/api/settings/phone') {
         return json(200, phoneNotifier.getSettings());

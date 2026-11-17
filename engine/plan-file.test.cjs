@@ -320,7 +320,7 @@ assert.equal(planFile.namedBranch('cut branch feat_x, ok'), 'feat_x');
   assert.equal(planFile.prepare(work, { goal: 'exclude goal', steps: [] }).ok, true);
   git(work, ['switch', '-q', 'main']);
   assert.equal(planFile.prepare(work, { goal: 'exclude goal', steps: [] }).ok, true);
-  assert.deepEqual(fs.readFileSync(excludeFile, 'utf8').split('\n'), ['*.log', '/.planwharf/', '']);
+  assert.deepEqual(fs.readFileSync(excludeFile, 'utf8').split('\n'), ['*.log', '# Planwharf managed work plan', '/.planwharf/', '']);
   assert.equal(git(work, ['status', '--porcelain']), '', 'the plan folder stays out of git status');
 }
 
@@ -353,6 +353,7 @@ console.log('plan-file second verification tests passed');
   let asked = null;
   const orchestra = createOrchestrator({
     dir, phase2: true, readPlan: async () => plan, attempts: createAttemptEngine({ dir }),
+    keepWorkPlan: () => true,
     models: [{ id: 'grok', label: 'Grok 4.7 Business', provider: 'codex', cli: 'gpt-6-luna', kind: 'premium', enabled: true, available: true, cost: 1, limit: 200 }],
     inspectFolder: () => ({ git: true, dirty: ['dirty.txt'], names: ['readme.txt'], fileCount: 1, head: 'x', lastCommit: 'x' }),
     askModel: async info => { asked = info; return { answer: 'Noted.' }; }
@@ -364,6 +365,8 @@ console.log('plan-file second verification tests passed');
   fs.unlinkSync(path.join(project, 'dirty.txt'));
   const started = await orchestra.startAutoTask('demo');
   assert.equal(started.ok, true, started.reason);
+  assert.doesNotMatch(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /# Planwharf managed work plan/);
+  assert.match(git(project, ['status', '--porcelain']), /\.planwharf/);
   assert.equal(git(project, ['branch', '--show-current']), 'port/04-briefing-refusals-autonomy');
   assert.equal(git(project, ['rev-parse', 'HEAD']), git(project, ['rev-parse', 'origin/main']));
   const lead = await orchestra.setOrchestrator('grok', 'demo');

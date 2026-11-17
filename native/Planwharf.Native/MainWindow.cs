@@ -171,11 +171,11 @@ public sealed partial class MainWindow : Window
         _ = turn.RunAsync(needle, needleTurning.Token);
     }
 
-    // The compass of the chat page's logo: a green bezel and a needle.
+    // The compass follows the selected main colour.
     Control BrandMark()
     {
         var canvas = new Canvas { Width = 64, Height = 64 };
-        var green = Brush.Parse("#5fcf98"); // the logo keeps its colours in both themes
+        var green = Palette.Accent;
         canvas.Children.Add(new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse("M11.5,32 A20.5,20.5 0 1 0 52.5,32 A20.5,20.5 0 1 0 11.5,32 Z M32 12v5.5M32 46.5V52M12 32h5.5M46.5 32H52"), Stroke = green, StrokeThickness = 4.2, StrokeLineCap = PenLineCap.Round });
         needle = new Canvas { Width = 64, Height = 64, RenderTransform = new RotateTransform(40), RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative) };
         needle.Children.Add(new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse("M32 16 36 32H28Z"), Fill = green });

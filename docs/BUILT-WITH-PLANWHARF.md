@@ -41,6 +41,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 10 | #118 | Tools (MCP, browser, hooks, memory) chosen per model, or the same as the project | — |
 | 11 | #118 | An alert on the computer when work ends or needs the owner: notification, taskbar flash, sound, each switchable | — |
 | 12 | #118 | Alerts and commands on the phone: ntfy, and a Telegram bot with /status, /stop, /resume | — |
+| 13 | #? | The native logo follows the main colour; optionally keep the work plan in git | Existing unmarked ignore rules remain under the user's control |
 
 ## Improvements found while Planwharf worked on itself
 
