@@ -38,6 +38,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 07 | #104 | Remove the Review role | Jobs 05 and 06 marked done in the plan |
 | 08 | #110 | An estimate of the time left | — |
 | 09 | #114 | The native app updates itself | — |
+| 12 | #? | Alerts and commands on the phone (ntfy and Telegram bot) | — |
 
 ## Improvements found while Planwharf worked on itself
 

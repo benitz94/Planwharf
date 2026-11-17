@@ -19,6 +19,7 @@ const defaultModels = defaultCatalog.models;
 const { exportProject, importProject } = require('./engine/project-export.cjs');
 const { projectHome } = require('./engine/project-home.cjs');
 const { ensureDefaultNotebook } = require('./engine/notebook-file.cjs');
+const { createPhoneNotifier } = require('./engine/phone.cjs');
 
 // Notes and visit markers do not invalidate an open Living Plan editor.
 const withoutHome = ({ home, ...project }) => project;
@@ -343,6 +344,12 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     const snapshot = await orchestra.tick();
     return { ok: true, plan: next, version: version(next), snapshot, phase: prepared.phase || (prepared.job ? 'plan' : 'grill') };
   }
+  const phoneNotifier = createPhoneNotifier({
+    storeDir,
+    getSnapshot: () => orchestra.snapshot(),
+    onStopProject: projectId => enqueue(() => orchestra.stop(projectId)),
+    onResumeProject: projectId => enqueue(() => orchestra.resume(projectId))
+  });
   let modelsChecking = true;
   const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {}).finally(() => { modelsChecking = false; });
   // A task saved as running before Phase 2 cannot run any more: close it once at start, with the way forward.
@@ -506,6 +513,24 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const input = await body(request);
         if (!input || Object.keys(input).some(key => key !== 'projectsRoot')) throw new RequestError(400, 'Invalid settings.');
         return json(200, await enqueue(() => setProjectsRoot(input.projectsRoot)));
+      }
+      if (request.method === 'GET' && pathname === '/api/settings/phone') {
+        return json(200, phoneNotifier.getSettings());
+      }
+      if (request.method === 'POST' && pathname === '/api/settings/phone') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
+        const input = await body(request);
+        const updated = phoneNotifier.updateSettings(input, input?.telegramToken);
+        return json(200, updated);
+      }
+      if (request.method === 'POST' && pathname === '/api/settings/phone/test') {
+        const res = await phoneNotifier.sendAlert({
+          type: 'done',
+          projectName: 'Planwharf Test',
+          goalTitle: 'Test Phone Alert',
+          durationMinutes: 1
+        });
+        return json(200, { ok: true, result: res });
       }
       if (request.method === 'GET' && pathname === '/api/attempts') {
         return json(200, { attempts: attempts.getAttempts() });
@@ -1198,6 +1223,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   const updates = updateManager || require('./engine/app-updates.cjs').createUpdateManager({ root: __dirname,
     checkpoint: () => orchestra.checkpointForUpdate(), activeCount: updateActiveCount, restart: restartAfterUpdate });
   server.updates = updates;
+  server.phoneNotifier = phoneNotifier;
   let closing;
   let monitorTimer, monitoring = false;
   server.on('listening', () => {
@@ -1214,6 +1240,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       finally { monitoring = false; }
       if (!closing && !updates.busy) void orchestra.autonomyTick().catch(error => console.error('Project autonomy failed:', error.message));
       if (!closing && !updates.busy && typeof orchestra.quotaWatchTick === 'function') void orchestra.quotaWatchTick().catch(error => console.error('Automatic model switch failed:', error.message));
+      if (!closing && !updates.busy) {
+        void phoneNotifier.checkTransitions().catch(error => console.error('Phone alert transitions failed:', error.message));
+        void phoneNotifier.pollUpdates().catch(error => console.error('Telegram bot polling failed:', error.message));
+      }
     }, monitorIntervalMs);
     monitorTimer.unref();
   });
