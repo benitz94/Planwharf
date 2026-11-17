@@ -42,11 +42,13 @@ test('enabled plans are included by an ordinary git commit', t => {
   assert.equal(plan.prepare(folder, { goal: 'keep this', keepWorkPlan: true }).ok, true);
   assert.equal(plan.prepare(folder, { goal: 'keep this', keepWorkPlan: true }).ok, true, 'the generated plan permits resuming');
   fs.writeFileSync(path.join(folder, '.planwharf', 'personal.txt'), 'personal');
-  assert.equal(plan.prepare(folder, { goal: 'keep this', keepWorkPlan: true }).ok, false, 'other untracked files still block work');
+  // On the work's own branch, unfinished changes do not block the same work (#119); a new work does.
+  assert.equal(plan.prepare(folder, { goal: 'keep this', keepWorkPlan: true }).ok, true, 'the same work goes on');
+  assert.equal(plan.prepare(folder, { goal: 'another goal on `fix/other`', keepWorkPlan: true }).ok, false, 'other untracked files block a new work');
   fs.unlinkSync(path.join(folder, '.planwharf', 'personal.txt'));
   git('add', '-A');
   git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'work');
   assert.match(git('show', 'HEAD:.planwharf/plan.md'), /keep this/);
   fs.appendFileSync(path.join(folder, '.planwharf', 'plan.md'), 'personal edit\n');
-  assert.equal(plan.prepare(folder, { goal: 'keep this', keepWorkPlan: true }).ok, false, 'tracked edits still block work');
+  assert.equal(plan.prepare(folder, { goal: 'another goal on `fix/other`', keepWorkPlan: true }).ok, false, 'tracked edits block a new work');
 });

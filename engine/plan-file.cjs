@@ -55,8 +55,7 @@ function ensureExclude(folder, keepWorkPlan = false) {
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   if (keepWorkPlan) {
     const escaped = EXCLUDE_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Our line, with its marker, or bare as the first version of the plan file wrote it.
-    const next = current.replace(new RegExp('^' + escaped + '\\r?\\n/\\.planwharf/\\r?\\n', 'gm'), '').replace(/^\/\.planwharf\/\r?\n/gm, '');
+    const next = current.replace(new RegExp('^' + escaped + '\\r?\\n/\\.planwharf/\\r?\\n', 'gm'), '');
     if (next !== current) fs.writeFileSync(file, next);
     return;
   }
