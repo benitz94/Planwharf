@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const statuses = ['COMPLETE', 'FAILED', 'BLOCKED'];
+const slash = file => String(file).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
 function readJSON(file) {
   try { if (fs.statSync(file).size > 1024 * 1024) return null; return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); } catch { return null; }
 }
@@ -33,13 +34,24 @@ function resultContract(opts) {
   return `Planwharf structured result contract:\nWrite one UTF-8 JSON object to ${opts.structuredResultPath}. If a write_result tool is provided, submit the JSON through that tool instead of writing the result with write_file. Use these exact identity fields:\n${JSON.stringify(template, null, 2)}\nUse one status from the listed choices. Record only observed work and tests. No tests means an empty array. Exit 0 alone is not completion. For research, include reportPath (the absolute report.md path), sources (URLs), and recommendedNextAction. Keep the text execution evidence separate.`;
 }
 // A COMPLETE result naming a file that is not there is a false claim. A missing
-// path is accepted only when Git tracks it, which is what a deletion looks like.
+// path is accepted when Git still tracks it, or when HEAD (or the index) deleted it.
+function deletedByHead(folder, file) {
+  const name = slash(file);
+  const show = spawnSync('git', ['diff-tree', '--no-commit-id', '--name-status', '-r', '--root', 'HEAD'], { cwd: folder, windowsHide: true, encoding: 'utf8', timeout: 4000 });
+  if (show.status !== 0) return false;
+  return show.stdout.split(/\r?\n/).some(line => line.startsWith('D\t') && slash(line.slice(2)) === name);
+}
+function stagedDeletion(folder, file) {
+  const status = spawnSync('git', ['status', '--porcelain', '--', file], { cwd: folder, windowsHide: true, encoding: 'utf8', timeout: 4000 });
+  return status.status === 0 && /^D /.test(status.stdout);
+}
 function missingClaims(result, folder) {
   if (result?.status !== 'COMPLETE' || !Array.isArray(result.filesChanged)) return [];
   return result.filesChanged.filter(file => {
     if (typeof file !== 'string' || !file.trim()) return false;
     if (fs.existsSync(path.resolve(folder, file))) return false;
-    return spawnSync('git', ['ls-files', '--error-unmatch', '--', file], { cwd: folder, windowsHide: true, stdio: 'ignore' }).status !== 0;
+    if (spawnSync('git', ['ls-files', '--error-unmatch', '--', file], { cwd: folder, windowsHide: true, stdio: 'ignore' }).status === 0) return false;
+    return !deletedByHead(folder, file) && !stagedDeletion(folder, file);
   });
 }
 function rejectMissingClaims(result, folder) {
