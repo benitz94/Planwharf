@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: implementation launch rejects missing real linked folder before creating launch artifacts
+ok 1 - implementation launch rejects missing real linked folder before creating launch artifacts
+  ---
+  duration_ms: 2.4916
+  type: 'test'
+  ...
+# Subtest: missing project directory never reaches injected inspection or launch
+ok 2 - missing project directory never reaches injected inspection or launch
+  ---
+  duration_ms: 21.5363
+  type: 'test'
+  ...
+# Subtest: repository inspection never inherits a parent repository outside the linked folder
+ok 3 - repository inspection never inherits a parent repository outside the linked folder
+  ---
+  duration_ms: 84.5208
+  type: 'test'
+  ...
+# Subtest: worker launch rejects sibling, traversal and symlink destinations before artifacts
+ok 4 - worker launch rejects sibling, traversal and symlink destinations before artifacts
+  ---
+  duration_ms: 5.8013
+  type: 'test'
+  ...
+# Subtest: execution comparison does not read dirty files through a foreign directory symlink
+ok 5 - execution comparison does not read dirty files through a foreign directory symlink
+  ---
+  duration_ms: 4.6654
+  type: 'test'
+  ...
+# Subtest: explicit launch cwd and job folder cannot select a different directory
+ok 6 - explicit launch cwd and job folder cannot select a different directory
+  ---
+  duration_ms: 5.0537
+  type: 'test'
+  ...
+# Subtest: runner rejects a provider specification that changes the launch cwd
+ok 7 - runner rejects a provider specification that changes the launch cwd
+  ---
+  duration_ms: 68.1501
+  type: 'test'
+  ...
+# Subtest: canonical linked directory survives the runner job file and research keeps its isolated directory
+ok 8 - canonical linked directory survives the runner job file and research keeps its isolated directory
+  ---
+  duration_ms: 1401.1142
+  type: 'test'
+  ...
+# Subtest: repository inspection rejects redirected gitdir metadata before commands
+ok 9 - repository inspection rejects redirected gitdir metadata before commands
+  ---
+  duration_ms: 80.7771
+  type: 'test'
+  ...
+# Subtest: repository inspection rejects redirected HEAD metadata before commands
+ok 10 - repository inspection rejects redirected HEAD metadata before commands
+  ---
+  duration_ms: 156.7512
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1873.7565

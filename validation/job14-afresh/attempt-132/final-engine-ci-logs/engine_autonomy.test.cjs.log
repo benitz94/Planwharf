@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: authority needs the setting, Automatic mode and the session that enabled it
+ok 1 - authority needs the setting, Automatic mode and the session that enabled it
+  ---
+  duration_ms: 1.8403
+  type: 'test'
+  ...
+# Subtest: a user pause or stop is never overridden, even with an active alert
+ok 2 - a user pause or stop is never overridden, even with an active alert
+  ---
+  duration_ms: 0.8617
+  type: 'test'
+  ...
+# Subtest: a slice that ends blocked or failed reaches the lead instead of waiting forever
+ok 3 - a slice that ends blocked or failed reaches the lead instead of waiting forever
+  ---
+  duration_ms: 0.186
+  type: 'test'
+  ...
+# Subtest: the MegaTask cap stops approval and reports the limit
+ok 4 - the MegaTask cap stops approval and reports the limit
+  ---
+  duration_ms: 0.1825
+  type: 'test'
+  ...
+# Subtest: a completed MegaTask is evaluated once
+ok 5 - a completed MegaTask is evaluated once
+  ---
+  duration_ms: 0.1447
+  type: 'test'
+  ...
+# Subtest: turning the crew on after finished work starts new work instead of re-judging the old one
+ok 6 - turning the crew on after finished work starts new work instead of re-judging the old one
+  ---
+  duration_ms: 0.2224
+  type: 'test'
+  ...
+# Subtest: each alert nudges once, ignored alerts never, and the hourly cap holds
+ok 7 - each alert nudges once, ignored alerts never, and the hourly cap holds
+  ---
+  duration_ms: 0.2439
+  type: 'test'
+  ...
+# Subtest: a nudge is written from detected facts
+ok 8 - a nudge is written from detected facts
+  ---
+  duration_ms: 0.2576
+  type: 'test'
+  ...
+# Subtest: lead replies only yield done, an objective or assumptions; anything else is rejected
+ok 9 - lead replies only yield done, an objective or assumptions; anything else is rejected
+  ---
+  duration_ms: 0.6103
+  type: 'test'
+  ...
+# Subtest: the guard stops real pushes for URL and local remotes and keeps prior Git config
+ok 10 - the guard stops real pushes for URL and local remotes and keeps prior Git config
+  ---
+  duration_ms: 779.4877
+  type: 'test'
+  ...
+# Subtest: off by default: nothing is approved, and enabling requires Automatic mode
+ok 11 - off by default: nothing is approved, and enabling requires Automatic mode
+  ---
+  duration_ms: 88.6356
+  type: 'test'
+  ...
+# Subtest: enabled: the policy approves, records itself, guards the worker, and disabling stops it
+ok 12 - enabled: the policy approves, records itself, guards the worker, and disabling stops it
+  ---
+  duration_ms: 134.2224
+  type: 'test'
+  ...
+# Subtest: a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+ok 13 - a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+  ---
+  duration_ms: 90.8881
+  type: 'test'
+  ...
+# Subtest: full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+ok 14 - full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+  ---
+  duration_ms: 942.3382
+  type: 'test'
+  ...
+# Subtest: a restart turns autonomy off instead of resuming it
+ok 15 - a restart turns autonomy off instead of resuming it
+  ---
+  duration_ms: 22.1266
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2071.1712

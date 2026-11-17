@@ -1,0 +1,1 @@
+Worker snapshots refresh liveness and keep terminal jobs inactive, including reused PIDs.

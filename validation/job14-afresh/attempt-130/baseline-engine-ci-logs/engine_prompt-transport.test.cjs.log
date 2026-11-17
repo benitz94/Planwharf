@@ -1,0 +1,1 @@
+OK: full long Unicode lead and worker prompts over real stdin pipes; early provider exit is handled.

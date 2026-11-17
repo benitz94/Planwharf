@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: the lead can move a remaining step to a model the user allowed
+ok 1 - the lead can move a remaining step to a model the user allowed
+  ---
+  duration_ms: 7.4169
+  type: 'test'
+  ...
+# Subtest: a model without the role, or an unknown step, is refused and nothing changes
+ok 2 - a model without the role, or an unknown step, is refused and nothing changes
+  ---
+  duration_ms: 2.0132
+  type: 'test'
+  ...
+# Subtest: work that still reads RUNNING with a blocked step can change its models
+ok 3 - work that still reads RUNNING with a blocked step can change its models
+  ---
+  duration_ms: 1.8511
+  type: 'test'
+  ...
+# Subtest: a working step can change model: its worker stops and the step restarts with the new one
+ok 4 - a working step can change model: its worker stops and the step restarts with the new one
+  ---
+  duration_ms: 9.3428
+  type: 'test'
+  ...
+# Subtest: the chat says who changed the crew: the lead, the user or the automatic switch
+ok 5 - the chat says who changed the crew: the lead, the user or the automatic switch
+  ---
+  duration_ms: 2.5843
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31.9757

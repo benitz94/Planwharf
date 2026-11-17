@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: sanitizeText strips absolute paths, relative paths, code files, and secrets
+ok 1 - sanitizeText strips absolute paths, relative paths, code files, and secrets
+  ---
+  duration_ms: 1.5826
+  type: 'test'
+  ...
+# Subtest: sanitizeGoalTitle extracts first line, removes paths, and truncates
+ok 2 - sanitizeGoalTitle extracts first line, removes paths, and truncates
+  ---
+  duration_ms: 0.2793
+  type: 'test'
+  ...
+# Subtest: formatAlertMessage formats done, failed, and needs_owner without leaking private data
+ok 3 - formatAlertMessage formats done, failed, and needs_owner without leaking private data
+  ---
+  duration_ms: 0.2738
+  type: 'test'
+  ...
+# Subtest: maskToken hides token details while leaving enough to recognize
+ok 4 - maskToken hides token details while leaving enough to recognize
+  ---
+  duration_ms: 0.1866
+  type: 'test'
+  ...
+# Subtest: loadPhoneSettings and savePhoneSettings persist in storeDir with 0o600 permissions
+ok 5 - loadPhoneSettings and savePhoneSettings persist in storeDir with 0o600 permissions
+  ---
+  duration_ms: 68.2474
+  type: 'test'
+  ...
+# Subtest: HTTP isolation: sendNtfyAlert posts to fake server and handles errors
+ok 6 - HTTP isolation: sendNtfyAlert posts to fake server and handles errors
+  ---
+  duration_ms: 54.1838
+  type: 'test'
+  ...
+# Subtest: HTTP isolation: sendTelegramMessage and pollTelegramUpdates with fake Telegram API
+ok 7 - HTTP isolation: sendTelegramMessage and pollTelegramUpdates with fake Telegram API
+  ---
+  duration_ms: 14.9541
+  type: 'test'
+  ...
+# Subtest: formatStatusMessage lists projects without exposing files, paths or prompts
+ok 8 - formatStatusMessage lists projects without exposing files, paths or prompts
+  ---
+  duration_ms: 0.3011
+  type: 'test'
+  ...
+# Subtest: Telegram bot lifecycle: pairing with start code, ignoring foreign chats, and commands
+ok 9 - Telegram bot lifecycle: pairing with start code, ignoring foreign chats, and commands
+  ---
+  duration_ms: 73.8454
+  type: 'test'
+  ...
+# Subtest: checkTransitions detects work ending, failing, or needing owner and alerts both channels
+ok 10 - checkTransitions detects work ending, failing, or needing owner and alerts both channels
+  ---
+  duration_ms: 69.6397
+  type: 'test'
+  ...
+# Subtest: server.cjs HTTP endpoints for phone settings and test alert
+ok 11 - server.cjs HTTP endpoints for phone settings and test alert
+  ---
+  duration_ms: 449.3772
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 739.5154

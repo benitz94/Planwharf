@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: imported paused project without a linked folder offers relink, never resume
+ok 1 - imported paused project without a linked folder offers relink, never resume
+  ---
+  duration_ms: 4.2408
+  type: 'test'
+  ...
+# Subtest: Home priority is relink, approval, resume, execution, question, review
+ok 2 - Home priority is relink, approval, resume, execution, question, review
+  ---
+  duration_ms: 9.5423
+  type: 'test'
+  ...
+# Subtest: Git inspection rejects inherited parent repositories instead of inspecting siblings
+ok 3 - Git inspection rejects inherited parent repositories instead of inspecting siblings
+  ---
+  duration_ms: 366.153
+  type: 'test'
+  ...
+# Subtest: linked project inspection does not fingerprint files through a directory symlink to another project
+ok 4 - linked project inspection does not fingerprint files through a directory symlink to another project
+  ---
+  duration_ms: 913.0357
+  type: 'test'
+  ...
+# Subtest: current durable MegaTask outranks stale row flags and another project or later task
+ok 5 - current durable MegaTask outranks stale row flags and another project or later task
+  ---
+  duration_ms: 2.3669
+  type: 'test'
+  ...
+# Subtest: Git metadata symlink and gitdir redirect to another project fail closed
+ok 6 - Git metadata symlink and gitdir redirect to another project fail closed
+  ---
+  duration_ms: 78.2948
+  type: 'test'
+  ...
+# Subtest: Git inspection rejects redirected HEAD metadata before reading another project
+ok 7 - Git inspection rejects redirected HEAD metadata before reading another project
+  ---
+  duration_ms: 80.5211
+  type: 'test'
+  ...
+# Subtest: Git inspection ignores a submodule redirected to another project but observes local edits
+ok 8 - Git inspection ignores a submodule redirected to another project but observes local edits
+  ---
+  duration_ms: 3823.2575
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5282.4722

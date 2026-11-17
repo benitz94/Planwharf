@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: tools off give Claude the same isolated launch as before; each checkbox turns on one thing
+ok 1 - tools off give Claude the same isolated launch as before; each checkbox turns on one thing
+  ---
+  duration_ms: 2.162
+  type: 'test'
+  ...
+# Subtest: the lead is told which tools are off and asks with one exact line
+ok 2 - the lead is told which tools are off and asks with one exact line
+  ---
+  duration_ms: 0.4669
+  type: 'test'
+  ...
+# Subtest: project tools reach lead and workers, the lead request becomes a button, and only valid names are saved
+ok 3 - project tools reach lead and workers, the lead request becomes a button, and only valid names are saved
+  ---
+  duration_ms: 56.4466
+  type: 'test'
+  ...
+# Subtest: saved legacy tools migrate; overrides survive restart and reset to the current default
+ok 4 - saved legacy tools migrate; overrides survive restart and reset to the current default
+  ---
+  duration_ms: 76.9369
+  type: 'test'
+  ...
+# Subtest: worker launches receive their own tools or the project default
+ok 5 - worker launches receive their own tools or the project default
+  ---
+  duration_ms: 274.887
+  type: 'test'
+  ...
+# Subtest: tools API supports model overrides, reset, validation and the legacy default route
+ok 6 - tools API supports model overrides, reset, validation and the legacy default route
+  ---
+  duration_ms: 115.4467
+  type: 'test'
+  ...
+# Subtest: resolved tools control Claude and Codex launch arguments for leads and workers
+ok 7 - resolved tools control Claude and Codex launch arguments for leads and workers
+  ---
+  duration_ms: 3.0019
+  type: 'test'
+  ...
+# Subtest: multi-project tool isolation and archiving preserve model overrides independently
+ok 8 - multi-project tool isolation and archiving preserve model overrides independently
+  ---
+  duration_ms: 35.2236
+  type: 'test'
+  ...
+# Subtest: malformed saved project tools recover cleanly to valid defaults and models
+ok 9 - malformed saved project tools recover cleanly to valid defaults and models
+  ---
+  duration_ms: 11.1618
+  type: 'test'
+  ...
+# Subtest: concurrent updates to default tools and model overrides preserve both changes
+ok 10 - concurrent updates to default tools and model overrides preserve both changes
+  ---
+  duration_ms: 18.4564
+  type: 'test'
+  ...
+# Subtest: an override stays complete when the default changes, and a bad save changes nothing
+ok 11 - an override stays complete when the default changes, and a bad save changes nothing
+  ---
+  duration_ms: 54.5037
+  type: 'test'
+  ...
+# Subtest: legacy tools are rewritten on shutdown, and partial or corrupt saves do not inherit
+ok 12 - legacy tools are rewritten on shutdown, and partial or corrupt saves do not inherit
+  ---
+  duration_ms: 13.9584
+  type: 'test'
+  ...
+# Subtest: each project gives the same lead its own tools
+ok 13 - each project gives the same lead its own tools
+  ---
+  duration_ms: 34.6155
+  type: 'test'
+  ...
+# Subtest: a launched worker gets its own tools when another model differs
+ok 14 - a launched worker gets its own tools when another model differs
+  ---
+  duration_ms: 143.9729
+  type: 'test'
+  ...
+# Subtest: overlapping tool saves keep every model, including a slow tick
+ok 15 - overlapping tool saves keep every model, including a slow tick
+  ---
+  duration_ms: 116.1823
+  type: 'test'
+  ...
+# Subtest: the lead prompt and launch follow that model's tools
+ok 16 - the lead prompt and launch follow that model's tools
+  ---
+  duration_ms: 0.9267
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 970.3383

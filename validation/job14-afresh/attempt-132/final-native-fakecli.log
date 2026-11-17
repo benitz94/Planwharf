@@ -1,0 +1,81 @@
+  Individuazione dei progetti da ripristinare...
+  Tutti i progetti sono aggiornati per il ripristino.
+  Planwharf.Engine -> D:\benit\Desktop\Projects\Planwharf-engine\native\Planwharf.Engine\bin\Debug\net10.0\Planwharf.Engine.dll
+  Planwharf.FakeCli -> D:\benit\Desktop\Projects\Planwharf-engine\native\Planwharf.FakeCli\bin\Debug\net10.0\Planwharf.FakeCli.dll
+  Planwharf.FakeCli.Tests -> D:\benit\Desktop\Projects\Planwharf-engine\native\Planwharf.FakeCli.Tests\bin\Debug\net10.0\Planwharf.FakeCli.Tests.dll
+Esecuzione dei test per D:\benit\Desktop\Projects\Planwharf-engine\native\Planwharf.FakeCli.Tests\bin\Debug\net10.0\Planwharf.FakeCli.Tests.dll (.NETCoreApp,Version=v10.0)
+Un totale di 1 file di test corrisponde al criterio specificato.
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.15)
+[xUnit.net 00:00:00.07]   Discovering: Planwharf.FakeCli.Tests
+[xUnit.net 00:00:00.11]   Discovered:  Planwharf.FakeCli.Tests
+[xUnit.net 00:00:00.11]   Starting:    Planwharf.FakeCli.Tests
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.RefusalQuota_MatchesDiagnosticQuotaPattern [7 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.RefusalQuota_MatchesDiagnosticQuotaPattern [9 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.WorkerSuccess_ConformsToStructuredFinalResultSchema [446 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.AgyScenario_ExecutesViaFakeCli [434 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.GrokScenario_ExecutesViaFakeCli [446 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.WorkerFail_RejectedByStructuredFinalReadFinalResult [435 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.LeadNormal_ContainsAgentMessageAndTurnCompleted [2 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.UsageJson_ContainsValidGeminiBuckets [3 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.UsageJson_ContainsValidCreditUsage [3 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.UsageJson_ContainsValidRateLimitWindows [2 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.LeadNormal_ParsesValidStreamJson [3 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.WorkerFail_ContainsTurnFailed [2 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.ExitCodes_And_PauseBeforeAnswering [454 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.WorkerSuccess_IsAcceptedByStructuredFinalReadFinalResult [3 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.ModelList_MatchesEngineDiscoveryRegex [4 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.WorkerSuccess_ConformsToStructuredFinalResultSchema [< 1 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.NoScenario_ExitsWithCode2AndExplainsOnStderr [1 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.WorkerFail_ContainsFailureMessage [1 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.ModelList_MatchesClaudeModelRegex [< 1 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.FirstMatchingAnswerWins_AndEveryConditionIsRequired [456 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.ClaudeScenario_ExecutesViaFakeCli [< 1 ms]
+  Superato Planwharf.FakeCli.Tests.ClaudeFakeTests.UsageJson_ParsesValidWindows [< 1 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.GrokScenario_ModelsCommand_ReturnsExactIds [2 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.RefusalQuota_MatchesDiagnosticQuotaPattern [1 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.AgyScenario_ModelsCommand_ReturnsExactIds [11 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.LeadNormal_ContainsStreamEventAndResult [1 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.ModelList_MatchesEngineDiscoveryRegex [2 ms]
+  Superato Planwharf.FakeCli.Tests.GrokFakeTests.WorkerSuccess_ConformsToStructuredFinalResultSchema [2 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.WorkerSuccess_ConformsToStructuredFinalResultSchema [1 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.AgyScenario_UsageCommand_ReturnsValidJson [1 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.CodexScenario_ExecutesViaFakeCli [15 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.LogSurvivesMissingScenario_SpecialStdin_AndUnwritablePath [469 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.WorkerFail_ContainsResultErrorStatus [1 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.RefusalQuota_MatchesDiagnosticQuotaPattern [1 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.ChooseAnswer_ByPrompt_FromPromptFile [14 ms]
+  Superato Planwharf.FakeCli.Tests.CodexFakeTests.ModelList_MatchesNativeCodexModelPrefix [2 ms]
+  Superato Planwharf.FakeCli.Tests.AgyFakeTests.LeadNormal_ContainsInitStepUpdateAndSuccessResult [2 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.FilesWritten_DirectPath_And_PathAfterArg [21 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.NoAnswerApplies_ExitsWithCode2AndExplainsOnStderr [10 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.ChooseAnswer_ByCallNumber [13 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.ChooseAnswer_ByArgument [2 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.FileWrites_MapContent_PartialFailure_AndExactArgument [60 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.CallLog_AppendsJsonLine_WithExpectedFields [19 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliCoreTests.ChooseAnswer_ByPrompt_FromStdin [8 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.ConcurrentCalls_AppendDistinctParseableLines [108 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.OutputLines_AreRawText_NotJsonEncoded [9 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.Files_CreateMissingFolders_ForSpacedAndNonAsciiPaths [5 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.FailedCall_IsStillOneJsonLineInTheLog [9 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.ConcurrentCalls_UseEachNumberOnce_AndKeepArgsWithStdin [76 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.BrokenScenario_Exits2AndExplains [17 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.PromptNeedle_DoesNotMatchTheInsertedSeparator [32 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.CallIndex_AndCallNumberWinsOverNthCall [12 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.AnswersWrapper_AndWrongAnswersField [19 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.PauseSeconds_AndNegativePause_DoNotChangeTheAnswer [213 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.NullFields_AreAbsent_AndABadValueDoesNotFallThrough [9 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.AlternateMatchers_AreCaseInsensitive_AndAllRequired [18 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.ScenarioWithBom_AndLockedFile_AreHandled [11 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.WithoutALog_EveryProcessIsCallOne [7 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.FailedMatch_StillAdvancesTheNextCall [9 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliRecoveryTests.BadAnswerIsSkipped_AndALaterAnswerRuns [7 ms]
+[xUnit.net 00:00:02.60]   Finished:    Planwharf.FakeCli.Tests
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.Process_UsesSpacedNonAsciiPaths_AndKeepsASharedLog [1 s]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.UnreadableAnswer_DoesNotEscapeRun [7 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.FileWriteFailure_IsReported_AndDoesNotThrow [8 ms]
+  Superato Planwharf.FakeCli.Tests.FakeCliEdgeTests.NthCall_AcrossInvocations_AndLogSurvivesAPartialLine [25 ms]
+
+L'esecuzione dei test ├¿ riuscita.
+Totale test: 64
+     Superati: 64
+ Tempo totale: 3,0403 Secondi

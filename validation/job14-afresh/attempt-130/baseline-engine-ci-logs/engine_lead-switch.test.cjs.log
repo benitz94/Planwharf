@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: the ranking knows Claude by name, puts the newer version of a family first, and Fable before Opus at equal quota
+ok 1 - the ranking knows Claude by name, puts the newer version of a family first, and Fable before Opus at equal quota
+  ---
+  duration_ms: 2.2382
+  type: 'test'
+  ...
+# Subtest: the lead menu ranks by quality, not by quota, and reads names like claude-opus-4-6-thinking
+ok 2 - the lead menu ranks by quality, not by quota, and reads names like claude-opus-4-6-thinking
+  ---
+  duration_ms: 0.8669
+  type: 'test'
+  ...
+# Subtest: the ranking puts stronger leads first, then more quota; unknown quota comes after known
+ok 3 - the ranking puts stronger leads first, then more quota; unknown quota comes after known
+  ---
+  duration_ms: 0.306
+  type: 'test'
+  ...
+# Subtest: a lead at the threshold hands over to the next in the ranking, and the chat says so
+ok 4 - a lead at the threshold hands over to the next in the ranking, and the chat says so
+  ---
+  duration_ms: 63.2276
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74.9118

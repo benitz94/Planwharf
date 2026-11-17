@@ -1,0 +1,16 @@
+TAP version 13
+# Subtest: skills are listed per program; only the fixed places open; existing files are never changed
+ok 1 - skills are listed per program; only the fixed places open; existing files are never changed
+  ---
+  duration_ms: 13.2714
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20.091

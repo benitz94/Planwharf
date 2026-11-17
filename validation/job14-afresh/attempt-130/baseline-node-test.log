@@ -1,0 +1,2426 @@
+TAP version 13
+# Subtest: init, append, read
+ok 1 - init, append, read
+  ---
+  duration_ms: 479.9285
+  type: 'test'
+  ...
+# Subtest: usage errors come first
+ok 2 - usage errors come first
+  ---
+  duration_ms: 375.2488
+  type: 'test'
+  ...
+# Subtest: idempotent append and duplicate ids
+ok 3 - idempotent append and duplicate ids
+  ---
+  duration_ms: 1182.541
+  type: 'test'
+  ...
+# Subtest: compaction raises cursors and poll moves them
+ok 4 - compaction raises cursors and poll moves them
+  ---
+  duration_ms: 2160.8689
+  type: 'test'
+  ...
+# Subtest: import is all or nothing
+ok 5 - import is all or nothing
+  ---
+  duration_ms: 544.8903
+  type: 'test'
+  ...
+# Subtest: concurrent appends lose nothing
+ok 6 - concurrent appends lose nothing
+  ---
+  duration_ms: 1444.6497
+  type: 'test'
+  ...
+# Subtest: the ZIP version is found on the Desktop without asking where it is
+ok 7 - the ZIP version is found on the Desktop without asking where it is
+  ---
+  duration_ms: 470.7264
+  type: 'test'
+  ...
+# Subtest: a fresh desktop app offers the projects it found and copies them, keeping both
+ok 8 - a fresh desktop app offers the projects it found and copies them, keeping both
+  ---
+  duration_ms: 59.5412
+  type: 'test'
+  ...
+# Subtest: nothing found: the app starts without any question
+ok 9 - nothing found: the app starts without any question
+  ---
+  duration_ms: 17.8333
+  type: 'test'
+  ...
+# Subtest: Not now (or closing the box) starts empty and asks again next time
+ok 10 - Not now (or closing the box) starts empty and asks again next time
+  ---
+  duration_ms: 29.0685
+  type: 'test'
+  ...
+# Subtest: a desktop app that already has its own projects is never asked
+ok 11 - a desktop app that already has its own projects is never asked
+  ---
+  duration_ms: 22.7027
+  type: 'test'
+  ...
+# OK: structured activity provenance, provider identity, conservative capabilities, failure/completion separation, redaction, malformed protocols and bounded history. Fixture validation only; no live provider delivery.
+# Subtest: engine\\activity-events.test.cjs
+ok 3 - engine\\activity-events.test.cjs
+  ---
+  duration_ms: 125.4924
+  type: 'test'
+  ...
+# PASS: source-whitelisted technical excerpts/provenance/redaction/newlines/limits and exact assignment mapping; 60 retained assignments reachable in bounded project-scoped pages with selected-page-only log reads. Fixtures only.
+# Subtest: engine\\activity-evidence.test.cjs
+ok 4 - engine\\activity-evidence.test.cjs
+  ---
+  duration_ms: 143.7199
+  type: 'test'
+  ...
+# OK: real snapshot wiring, stored assignment identity/roles, retained history, project boundaries, restart, bounded log reading, redaction and completion validation. Fixtures only.
+# Subtest: engine\\activity-sessions.test.cjs
+ok 5 - engine\\activity-sessions.test.cjs
+  ---
+  duration_ms: 244.5986
+  type: 'test'
+  ...
+# OK: readable multi-provider activity, exact targets, latest-action ordering, errors and truncated protocol without invented test success.
+# Subtest: engine\\activity.test.cjs
+ok 6 - engine\\activity.test.cjs
+  ---
+  duration_ms: 114.6786
+  type: 'test'
+  ...
+# Subtest: a fresh install approves nothing by itself
+ok 16 - a fresh install approves nothing by itself
+  ---
+  duration_ms: 47.4075
+  type: 'test'
+  ...
+# Subtest: a worker that needs the OK does not start without it; a lead reads without it
+ok 17 - a worker that needs the OK does not start without it; a lead reads without it
+  ---
+  duration_ms: 5.56
+  type: 'test'
+  ...
+# Subtest: a sandboxed Codex worker can write its result file, and nothing else outside the project
+ok 18 - a sandboxed Codex worker can write its result file, and nothing else outside the project
+  ---
+  duration_ms: 0.9516
+  type: 'test'
+  ...
+# Subtest: stable version comparison and packages reject protected files, traversal and corrupt checksums
+ok 19 - stable version comparison and packages reject protected files, traversal and corrupt checksums
+  ---
+  duration_ms: 35.286
+  type: 'test'
+  ...
+# Subtest: checking never downloads; confirmation, verified stage, checkpoints and restart occur in that order
+ok 20 - checking never downloads; confirmation, verified stage, checkpoints and restart occur in that order
+  ---
+  duration_ms: 73.2054
+  type: 'test'
+  ...
+# Subtest: checkpoint failure, local edits, Git checkouts and missing verified assets prevent replacement
+ok 21 - checkpoint failure, local edits, Git checkouts and missing verified assets prevent replacement
+  ---
+  duration_ms: 58.31
+  type: 'test'
+  ...
+# Subtest: applying an update preserves notebooks, settings, credentials and evidence; failures restore old files
+ok 22 - applying an update preserves notebooks, settings, credentials and evidence; failures restore old files
+  ---
+  duration_ms: 172.656
+  type: 'test'
+  ...
+# Subtest: two active projects checkpoint durably; an unkillable worker blocks the update
+ok 23 - two active projects checkpoint durably; an unkillable worker blocks the update
+  ---
+  duration_ms: 768.7925
+  type: 'test'
+  ...
+# Subtest: update API requires consent and does not checkpoint on checks or declined confirmation
+ok 24 - update API requires consent and does not checkpoint on checks or declined confirmation
+  ---
+  duration_ms: 168.711
+  type: 'test'
+  ...
+# Subtest: detached helper applies verified files and restarts with the same notebook arguments
+ok 25 - detached helper applies verified files and restarts with the same notebook arguments
+  ---
+  duration_ms: 1320.5931
+  type: 'test'
+  ...
+# Planwharf
+# http://127.0.0.1:64473
+# Plan: C:\\Users\\benit\\AppData\\Local\\Temp\\pw-updates-YDMHqG\\boot-notebook.json
+# Desktop launch opens one window. Closing the desktop window saves checkpoints and quits. Quit application or Ctrl+C also shuts down.
+# Subtest: desktop boot checks updates once without installing or launching any worker
+ok 26 - desktop boot checks updates once without installing or launching any worker
+  ---
+  duration_ms: 62.638
+  type: 'test'
+  ...
+# Subtest: the portable app knows its version from its install record
+ok 27 - the portable app knows its version from its install record
+  ---
+  duration_ms: 7.7063
+  type: 'test'
+  ...
+# Subtest: the desktop app knows its version from the shell
+ok 28 - the desktop app knows its version from the shell
+  ---
+  duration_ms: 2.0526
+  type: 'test'
+  ...
+# Subtest: a source checkout has no version
+ok 29 - a source checkout has no version
+  ---
+  duration_ms: 1.7329
+  type: 'test'
+  ...
+# PASS first claim writes a file row
+# DOUBLE_CLAIM same_task first.ok=true second.ok=false first.id=attempt-1 second.attempt=null reason=task already assigned
+# PASS second claim same task fails and writes no extra row
+# DOUBLE_CLAIM same_project first.ok=true second.ok=false reason=project already assigned
+# PASS second claim same project different task fails and writes no extra row
+# PASS reconstructed engine finds the same attempt
+# PASS distinct project and task may claim
+# PASS same task id on two projects may claim
+# PASS disabled and missing models are refused without a row
+# PASS close releases the claim so another model may take it
+# PASS sentinel: written COMPLETE ends waiting even if process is alive
+# PASS sentinel: missing verdict closes the attempt
+# PASS sentinel: does not open a second attempt while the first is active
+# passed=11 failed=0
+# Subtest: engine\\attempts.test.cjs
+ok 10 - engine\\attempts.test.cjs
+  ---
+  duration_ms: 258.3384
+  type: 'test'
+  ...
+# Subtest: refusals are read from the end of an output, and expire
+ok 31 - refusals are read from the end of an output, and expire
+  ---
+  duration_ms: 5.723
+  type: 'test'
+  ...
+# Subtest: a locked rename is retried, other errors are not
+ok 32 - a locked rename is retried, other errors are not
+  ---
+  duration_ms: 53.1524
+  type: 'test'
+  ...
+# Subtest: a build job is split into implement and an independent verify, without an inspection slice
+ok 33 - a build job is split into implement and an independent verify, without an inspection slice
+  ---
+  duration_ms: 0.8819
+  type: 'test'
+  ...
+# Subtest: the crew reply must name one allowed worker per slice
+ok 34 - the crew reply must name one allowed worker per slice
+  ---
+  duration_ms: 1.2713
+  type: 'test'
+  ...
+# Subtest: the Verifier role takes the verify slice
+ok 35 - the Verifier role takes the verify slice
+  ---
+  duration_ms: 4.6183
+  type: 'test'
+  ...
+# Subtest: project checks run node --test when test files exist and report a failure
+ok 36 - project checks run node --test when test files exist and report a failure
+  ---
+  duration_ms: 1147.8547
+  type: 'test'
+  ...
+# Subtest: a clean finish needs two complete slices without blockers and a fresh passing run
+ok 37 - a clean finish needs two complete slices without blockers and a fresh passing run
+  ---
+  duration_ms: 0.6575
+  type: 'test'
+  ...
+# Subtest: full loop: the lead picks the crew, a refusal reroutes, checks feed the verdict, a failed lead is replaced
+ok 38 - full loop: the lead picks the crew, a refusal reroutes, checks feed the verdict, a failed lead is replaced
+  ---
+  duration_ms: 2942.3678
+  type: 'test'
+  ...
+# Execution monitoring failed: ENOENT: no such file or directory, open 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-crew-loop-5EYtmL\\plan.json'
+# Subtest: authority needs the setting, Automatic mode and the session that enabled it
+ok 39 - authority needs the setting, Automatic mode and the session that enabled it
+  ---
+  duration_ms: 3.0183
+  type: 'test'
+  ...
+# Subtest: a user pause or stop is never overridden, even with an active alert
+ok 40 - a user pause or stop is never overridden, even with an active alert
+  ---
+  duration_ms: 1.7656
+  type: 'test'
+  ...
+# Subtest: a slice that ends blocked or failed reaches the lead instead of waiting forever
+ok 41 - a slice that ends blocked or failed reaches the lead instead of waiting forever
+  ---
+  duration_ms: 0.3374
+  type: 'test'
+  ...
+# Subtest: the MegaTask cap stops approval and reports the limit
+ok 42 - the MegaTask cap stops approval and reports the limit
+  ---
+  duration_ms: 0.2929
+  type: 'test'
+  ...
+# Subtest: a completed MegaTask is evaluated once
+ok 43 - a completed MegaTask is evaluated once
+  ---
+  duration_ms: 0.231
+  type: 'test'
+  ...
+# Subtest: turning the crew on after finished work starts new work instead of re-judging the old one
+ok 44 - turning the crew on after finished work starts new work instead of re-judging the old one
+  ---
+  duration_ms: 0.3819
+  type: 'test'
+  ...
+# Subtest: each alert nudges once, ignored alerts never, and the hourly cap holds
+ok 45 - each alert nudges once, ignored alerts never, and the hourly cap holds
+  ---
+  duration_ms: 0.4316
+  type: 'test'
+  ...
+# Subtest: a nudge is written from detected facts
+ok 46 - a nudge is written from detected facts
+  ---
+  duration_ms: 0.3729
+  type: 'test'
+  ...
+# Subtest: lead replies only yield done, an objective or assumptions; anything else is rejected
+ok 47 - lead replies only yield done, an objective or assumptions; anything else is rejected
+  ---
+  duration_ms: 0.9489
+  type: 'test'
+  ...
+# Subtest: the guard stops real pushes for URL and local remotes and keeps prior Git config
+ok 48 - the guard stops real pushes for URL and local remotes and keeps prior Git config
+  ---
+  duration_ms: 2912.6718
+  type: 'test'
+  ...
+# Subtest: off by default: nothing is approved, and enabling requires Automatic mode
+ok 49 - off by default: nothing is approved, and enabling requires Automatic mode
+  ---
+  duration_ms: 338.3495
+  type: 'test'
+  ...
+# Subtest: enabled: the policy approves, records itself, guards the worker, and disabling stops it
+ok 50 - enabled: the policy approves, records itself, guards the worker, and disabling stops it
+  ---
+  duration_ms: 488.6648
+  type: 'test'
+  ...
+# Subtest: a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+ok 51 - a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+  ---
+  duration_ms: 313.8951
+  type: 'test'
+  ...
+# Subtest: full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+ok 52 - full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+  ---
+  duration_ms: 2835.1804
+  type: 'test'
+  ...
+# Subtest: a restart turns autonomy off instead of resuming it
+ok 53 - a restart turns autonomy off instead of resuming it
+  ---
+  duration_ms: 33.9346
+  type: 'test'
+  ...
+# Execution monitoring failed: ENOENT: no such file or directory, open 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-autonomy-loop-Wvcjw0\\plan.json'
+# Subtest: browser choice persists through HTTP and rejects missing executables
+ok 54 - browser choice persists through HTTP and rejects missing executables
+  ---
+  duration_ms: 327.0329
+  type: 'test'
+  ...
+# Subtest: Firefox launch uses an isolated Firefox profile; Chromium browsers retain app mode
+ok 55 - Firefox launch uses an isolated Firefox profile; Chromium browsers retain app mode
+  ---
+  duration_ms: 3.1786
+  type: 'test'
+  ...
+# OK: isolated HTTP chat accepts >64 KiB Unicode, enforces 1 MiB, preserves other request limits and notebook data.
+# Subtest: engine\\chat-request.test.cjs
+ok 14 - engine\\chat-request.test.cjs
+  ---
+  duration_ms: 672.5173
+  type: 'test'
+  ...
+# Subtest: a chat message that says review makes an implementation task
+ok 57 - a chat message that says review makes an implementation task
+  ---
+  duration_ms: 522.8072
+  type: 'test'
+  ...
+# Subtest: the proposal route accepts audit kind and AUDIT subtask type
+ok 58 - the proposal route accepts audit kind and AUDIT subtask type
+  ---
+  duration_ms: 119.314
+  type: 'test'
+  ...
+# PASS first claim succeeds
+# DOUBLE_CLAIM same_task first.ok=true second.ok=false attempts_before=1 attempts_after=1 first.id=attempt-1 second.attempt=null
+# PASS duplicate claim for the same task
+# DOUBLE_CLAIM same_project first.ok=true second.ok=false attempts_after=1
+# PASS different task in the same project
+# DOUBLE_CLAIM same_task_other_project first.ok=true second.ok=false attempts_after=1
+# PASS same task in another project
+# PASS distinct projects and tasks are allowed
+# PASS invariants and counter unchanged after rejection
+# PASS disabled model is not eligible
+# PASS empty list and all disabled models
+# PASS missing model rejected
+# PASS snapshot copies do not alter internal state
+# PASS invalid input does not corrupt state
+# PASS module exposes UMD createClaimEngine
+# RESULT passed=12 failed=0
+# Subtest: engine\\claim.test.cjs
+ok 16 - engine\\claim.test.cjs
+  ---
+  duration_ms: 110.5898
+  type: 'test'
+  ...
+# Subtest: actual reader feeds readable quota through provider views and remaining UI
+ok 60 - actual reader feeds readable quota through provider views and remaining UI
+  ---
+  duration_ms: 45.9308
+  type: 'test'
+  ...
+# Subtest: global windows determine shared remaining quota; scoped windows cannot exhaust siblings
+ok 61 - global windows determine shared remaining quota; scoped windows cannot exhaust siblings
+  ---
+  duration_ms: 0.7517
+  type: 'test'
+  ...
+# Subtest: file credentials respect CLI auth method, config directory and expiry without rewriting files
+ok 62 - file credentials respect CLI auth method, config directory and expiry without rewriting files
+  ---
+  duration_ms: 16.7495
+  type: 'test'
+  ...
+# Subtest: missing/expired authentication never issues a network request
+ok 63 - missing/expired authentication never issues a network request
+  ---
+  duration_ms: 0.4794
+  type: 'test'
+  ...
+# Subtest: failed responses clear earlier success and never disclose raw errors or credentials
+ok 64 - failed responses clear earlier success and never disclose raw errors or credentials
+  ---
+  duration_ms: 5.1386
+  type: 'test'
+  ...
+# Subtest: rate limiting honors retry-after and coalesces repeated requests
+ok 65 - rate limiting honors retry-after and coalesces repeated requests
+  ---
+  duration_ms: 2.3122
+  type: 'test'
+  ...
+# Subtest: cache is scoped to current credentials and ends at the earliest reset
+ok 66 - cache is scoped to current credentials and ends at the earliest reset
+  ---
+  duration_ms: 2.0905
+  type: 'test'
+  ...
+# Subtest: account changes while a response is pending cannot publish old quota
+ok 67 - account changes while a response is pending cannot publish old quota
+  ---
+  duration_ms: 1.5497
+  type: 'test'
+  ...
+# Subtest: catalog resolves CLI aliases only from explicit resolvedModel, deduplicates and rejects unsafe IDs
+ok 68 - catalog resolves CLI aliases only from explicit resolvedModel, deduplicates and rejects unsafe IDs
+  ---
+  duration_ms: 2.978
+  type: 'test'
+  ...
+# Subtest: missing CLI and unauthenticated login never enumerate or claim model access
+ok 69 - missing CLI and unauthenticated login never enumerate or claim model access
+  ---
+  duration_ms: 0.787
+  type: 'test'
+  ...
+# Subtest: native launch preserves long Unicode stdin and explicit permissions without fallback
+ok 70 - native launch preserves long Unicode stdin and explicit permissions without fallback
+  ---
+  duration_ms: 13.3439
+  type: 'test'
+  ...
+# Subtest: stream requires final success and exact identity; extracts observed usage
+ok 71 - stream requires final success and exact identity; extracts observed usage
+  ---
+  duration_ms: 3.4467
+  type: 'test'
+  ...
+# Subtest: unsupported source-protected research remains unavailable
+ok 72 - unsupported source-protected research remains unavailable
+  ---
+  duration_ms: 0.2343
+  type: 'test'
+  ...
+# Subtest: isolated notebook exposes Claude catalog and persists explicit roles without dispatch
+ok 73 - isolated notebook exposes Claude catalog and persists explicit roles without dispatch
+  ---
+  duration_ms: 387.4978
+  type: 'test'
+  ...
+# Subtest: the lead's steps say what each tool did, and when it was refused
+ok 74 - the lead's steps say what each tool did, and when it was refused
+  ---
+  duration_ms: 1.8447
+  type: 'test'
+  ...
+# Subtest: a tool cut off by the end of the stream is still listed
+ok 75 - a tool cut off by the end of the stream is still listed
+  ---
+  duration_ms: 0.7694
+  type: 'test'
+  ...
+# Subtest: commit and push the finished work to the remote
+ok 76 - commit and push the finished work to the remote
+  ---
+  duration_ms: 7056.0888
+  type: 'test'
+  ...
+# Subtest: commit only, without push, and nothing to commit is refused
+ok 77 - commit only, without push, and nothing to commit is refused
+  ---
+  duration_ms: 4047.3437
+  type: 'test'
+  ...
+# Subtest: a folder without git or an empty message is refused
+ok 78 - a folder without git or an empty message is refused
+  ---
+  duration_ms: 210.9425
+  type: 'test'
+  ...
+# Subtest: a commit already made can be pushed on its own
+ok 79 - a commit already made can be pushed on its own
+  ---
+  duration_ms: 3556.552
+  type: 'test'
+  ...
+# Subtest: the app keeps answering while a slow push runs
+ok 80 - the app keeps answering while a slow push runs
+  ---
+  duration_ms: 5623.9329
+  type: 'test'
+  ...
+# Subtest: a branch whose upstream is origin/main is pushed to its own name
+ok 81 - a branch whose upstream is origin/main is pushed to its own name
+  ---
+  duration_ms: 2272.6315
+  type: 'test'
+  ...
+# Subtest: a push from main is refused and remote main is unchanged
+ok 82 - a push from main is refused and remote main is unchanged
+  ---
+  duration_ms: 1146.1643
+  type: 'test'
+  ...
+# Subtest: a push of the remote default branch is refused when it is not named main
+ok 83 - a push of the remote default branch is refused when it is not named main
+  ---
+  duration_ms: 1369.0782
+  type: 'test'
+  ...
+# Subtest: a failed push shows the first error line and hides the HEAD:main advice
+ok 84 - a failed push shows the first error line and hides the HEAD:main advice
+  ---
+  duration_ms: 1076.9689
+  type: 'test'
+  ...
+# Subtest: a push on main with a clean working tree is refused
+ok 85 - a push on main with a clean working tree is refused
+  ---
+  duration_ms: 1027.7482
+  type: 'test'
+  ...
+# Subtest: a push on detached HEAD is refused and nothing is pushed
+ok 86 - a push on detached HEAD is refused and nothing is pushed
+  ---
+  duration_ms: 819.8609
+  type: 'test'
+  ...
+# Subtest: a failed push with an unreachable remote preserves the local commit
+ok 87 - a failed push with an unreachable remote preserves the local commit
+  ---
+  duration_ms: 1045.344
+  type: 'test'
+  ...
+# Subtest: a push failure where the first line mentions HEAD:main hides it and shows the error
+ok 88 - a push failure where the first line mentions HEAD:main hides it and shows the error
+  ---
+  duration_ms: 1016.6868
+  type: 'test'
+  ...
+# Subtest: a feature branch pushes cleanly when remote default branch is trunk
+ok 89 - a feature branch pushes cleanly when remote default branch is trunk
+  ---
+  duration_ms: 1507.5859
+  type: 'test'
+  ...
+# Subtest: a non-fast-forward push failure hides advice and keeps the local commit
+ok 90 - a non-fast-forward push failure hides advice and keeps the local commit
+  ---
+  duration_ms: 2461.0462
+  type: 'test'
+  ...
+# OK: all 45+ conversation exchanges preserved, with six recent turns sent chronologically across answer, cancellation, and reload.
+# Subtest: engine\\conversation-history.test.cjs
+ok 20 - engine\\conversation-history.test.cjs
+  ---
+  duration_ms: 379.9535
+  type: 'test'
+  ...
+# Subtest: the lead can move a remaining step to a model the user allowed
+ok 92 - the lead can move a remaining step to a model the user allowed
+  ---
+  duration_ms: 15.6386
+  type: 'test'
+  ...
+# Subtest: a model without the role, or an unknown step, is refused and nothing changes
+ok 93 - a model without the role, or an unknown step, is refused and nothing changes
+  ---
+  duration_ms: 4.9217
+  type: 'test'
+  ...
+# Subtest: work that still reads RUNNING with a blocked step can change its models
+ok 94 - work that still reads RUNNING with a blocked step can change its models
+  ---
+  duration_ms: 4.4128
+  type: 'test'
+  ...
+# Subtest: a working step can change model: its worker stops and the step restarts with the new one
+ok 95 - a working step can change model: its worker stops and the step restarts with the new one
+  ---
+  duration_ms: 15.9044
+  type: 'test'
+  ...
+# Subtest: the chat says who changed the crew: the lead, the user or the automatic switch
+ok 96 - the chat says who changed the crew: the lead, the user or the automatic switch
+  ---
+  duration_ms: 5.0064
+  type: 'test'
+  ...
+# Subtest: the split question gives the lead the rules, the crew and the project files
+ok 97 - the split question gives the lead the rules, the crew and the project files
+  ---
+  duration_ms: 1.8771
+  type: 'test'
+  ...
+# Subtest: a valid split is read; overlapping parts are put in order; the check of the whole comes last
+ok 98 - a valid split is read; overlapping parts are put in order; the check of the whole comes last
+  ---
+  duration_ms: 2.4544
+  type: 'test'
+  ...
+# Subtest: a split that breaks the rules is refused, and the work keeps its usual plan
+ok 99 - a split that breaks the rules is refused, and the work keeps its usual plan
+  ---
+  duration_ms: 3.8482
+  type: 'test'
+  ...
+# Subtest: light parts go to light models: a part given to a heavier model moves to a lighter one
+ok 100 - light parts go to light models: a part given to a heavier model moves to a lighter one
+  ---
+  duration_ms: 1.2
+  type: 'test'
+  ...
+# Subtest: full loop: the lead splits the work, the parts run together, each within its files, then one check of the whole
+ok 101 - full loop: the lead splits the work, the parts run together, each within its files, then one check of the whole
+  ---
+  duration_ms: 3081.3196
+  type: 'test'
+  ...
+# Subtest: a model under the switch threshold is not offered for a part, so it is not moved off right away
+ok 102 - a model under the switch threshold is not offered for a part, so it is not moved off right away
+  ---
+  duration_ms: 3276.2645
+  type: 'test'
+  ...
+# Execution monitoring failed: ENOENT: no such file or directory, open 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-crew-split-3WlVjp\\plan.json'
+# Subtest: when the lead only picks the crew, a model under its limit is not offered either
+ok 103 - when the lead only picks the crew, a model under its limit is not offered either
+  ---
+  duration_ms: 2295.252
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick uses the project team and moves a step whose model lost its role
+ok 104 - quotaWatchTick uses the project team and moves a step whose model lost its role
+  ---
+  duration_ms: 1354.4568
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick moves verifier and reviewer steps when models lose respective roles
+ok 105 - quotaWatchTick moves verifier and reviewer steps when models lose respective roles
+  ---
+  duration_ms: 441.3372
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick leaves step in place when no eligible model is above quota
+ok 106 - quotaWatchTick leaves step in place when no eligible model is above quota
+  ---
+  duration_ms: 334.0707
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick catches reassignRemaining error without crashing
+ok 107 - quotaWatchTick catches reassignRemaining error without crashing
+  ---
+  duration_ms: 262.6197
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick moves step when role is removed in shared team for project without own team
+ok 108 - quotaWatchTick moves step when role is removed in shared team for project without own team
+  ---
+  duration_ms: 468.1236
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick prefers an independent provider when moving a step that lost its role
+ok 109 - quotaWatchTick prefers an independent provider when moving a step that lost its role
+  ---
+  duration_ms: 436.8041
+  type: 'test'
+  ...
+# Subtest: stopped work is dropped and the crew then starts the new goal, not the old one
+ok 110 - stopped work is dropped and the crew then starts the new goal, not the old one
+  ---
+  duration_ms: 3358.5404
+  type: 'test'
+  ...
+# Subtest: A proposal permits approval
+ok 111 - A proposal permits approval
+  ---
+  duration_ms: 12.0042
+  type: 'test'
+  ...
+# Subtest: B approval immediately replaces proposal text
+ok 112 - B approval immediately replaces proposal text
+  ---
+  duration_ms: 4.757
+  type: 'test'
+  ...
+# Subtest: C active first slice
+ok 113 - C active first slice
+  ---
+  duration_ms: 4.015
+  type: 'test'
+  ...
+# Subtest: D first complete and second pending
+ok 114 - D first complete and second pending
+  ---
+  duration_ms: 4.013
+  type: 'test'
+  ...
+# Subtest: E active second slice
+ok 115 - E active second slice
+  ---
+  duration_ms: 4.379
+  type: 'test'
+  ...
+# Subtest: F dependency waiting identifies prerequisite
+ok 116 - F dependency waiting identifies prerequisite
+  ---
+  duration_ms: 4.5033
+  type: 'test'
+  ...
+# Subtest: H resumed work ignores saved checkpoint nextAction
+ok 117 - H resumed work ignores saved checkpoint nextAction
+  ---
+  duration_ms: 5.2623
+  type: 'test'
+  ...
+# Subtest: reconciliation never reuses proposal
+ok 118 - reconciliation never reuses proposal
+  ---
+  duration_ms: 4.746
+  type: 'test'
+  ...
+# Subtest: G paused fallback uses remaining work
+ok 119 - G paused fallback uses remaining work
+  ---
+  duration_ms: 6.4565
+  type: 'test'
+  ...
+# Subtest: I completion without a result action is neutral
+ok 120 - I completion without a result action is neutral
+  ---
+  duration_ms: 3.9609
+  type: 'test'
+  ...
+# Subtest: J failed without structured recovery is neutral
+ok 121 - J failed without structured recovery is neutral
+  ---
+  duration_ms: 3.6342
+  type: 'test'
+  ...
+# Subtest: J blocked MegaTask uses durable blockers
+ok 122 - J blocked MegaTask uses durable blockers
+  ---
+  duration_ms: 5.0135
+  type: 'test'
+  ...
+# Subtest: G checkpoint action stays authoritative; absent/empty actions use remaining state
+ok 123 - G checkpoint action stays authoritative; absent/empty actions use remaining state
+  ---
+  duration_ms: 0.3108
+  type: 'test'
+  ...
+# Subtest: I final structured result wins, with a neutral fallback rather than an older action
+ok 124 - I final structured result wins, with a neutral fallback rather than an older action
+  ---
+  duration_ms: 0.2374
+  type: 'test'
+  ...
+# Subtest: J failed/blocked slices use current structured recovery and retain checkpoint behavior
+ok 125 - J failed/blocked slices use current structured recovery and retain checkpoint behavior
+  ---
+  duration_ms: 0.2888
+  type: 'test'
+  ...
+# Subtest: active work has priority; runnable pending work retains graph order and never selects a blocked dependent
+ok 126 - active work has priority; runnable pending work retains graph order and never selects a blocked dependent
+  ---
+  duration_ms: 0.2213
+  type: 'test'
+  ...
+# Subtest: API protocols run tool rounds, enforce permissions, preserve identity and contain invalid responses
+ok 127 - API protocols run tool rounds, enforce permissions, preserve identity and contain invalid responses
+  ---
+  duration_ms: 220.8075
+  type: 'test'
+  ...
+# Subtest: API lead and structured worker run through real child processes without secrets in argv or evidence
+ok 128 - API lead and structured worker run through real child processes without secrets in argv or evidence
+  ---
+  duration_ms: 1164.4995
+  type: 'test'
+  ...
+# Subtest: configured CLI uses declared command, exact ID, prompt transport and independent permission arguments
+ok 129 - configured CLI uses declared command, exact ID, prompt transport and independent permission arguments
+  ---
+  duration_ms: 653.4943
+  type: 'test'
+  ...
+# Subtest: targeted approve, stop and resume never inspect or dispatch the other project
+ok 130 - targeted approve, stop and resume never inspect or dispatch the other project
+  ---
+  duration_ms: 961.8554
+  type: 'test'
+  ...
+# Subtest: ledger retains exact identity, durations, terminal states and reliable tokens across restart
+ok 131 - ledger retains exact identity, durations, terminal states and reliable tokens across restart
+  ---
+  duration_ms: 26.1116
+  type: 'test'
+  ...
+# Subtest: compact briefing excludes user-only notes and completed history, preserves checkpoint identity
+ok 132 - compact briefing excludes user-only notes and completed history, preserves checkpoint identity
+  ---
+  duration_ms: 1.3088
+  type: 'test'
+  ...
+# Subtest: registered provider executes without brand-specific core edits; capabilities and pools are explicit
+ok 133 - registered provider executes without brand-specific core edits; capabilities and pools are explicit
+  ---
+  duration_ms: 2.4919
+  type: 'test'
+  ...
+# Subtest: timeline groups technical evidence; checkpoint diff reports changes without replay
+ok 134 - timeline groups technical evidence; checkpoint diff reports changes without replay
+  ---
+  duration_ms: 1.0244
+  type: 'test'
+  ...
+# Subtest: export selects one project metadata and excludes credential fields and raw logs
+ok 135 - export selects one project metadata and excludes credential fields and raw logs
+  ---
+  duration_ms: 1.8703
+  type: 'test'
+  ...
+# Subtest: separate windows open together, focus independently, and closing one preserves the other
+ok 136 - separate windows open together, focus independently, and closing one preserves the other
+  ---
+  duration_ms: 8.7757
+  type: 'test'
+  ...
+# Subtest: HTTP status, quota, stop acknowledgements and mode use no model; export and notes stay scoped
+ok 137 - HTTP status, quota, stop acknowledgements and mode use no model; export and notes stay scoped
+  ---
+  duration_ms: 580.8585
+  type: 'test'
+  ...
+# Subtest: the lead decision is read even with prose or braces around the JSON
+ok 138 - the lead decision is read even with prose or braces around the JSON
+  ---
+  duration_ms: 2.8204
+  type: 'test'
+  ...
+# Subtest: an unreadable decision is asked again with a strict prompt
+ok 139 - an unreadable decision is asked again with a strict prompt
+  ---
+  duration_ms: 0.8507
+  type: 'test'
+  ...
+# Subtest: a model change is not reported as a failed assignment
+ok 140 - a model change is not reported as a failed assignment
+  ---
+  duration_ms: 1.7977
+  type: 'test'
+  ...
+# Subtest: a model marked unavailable after a failure is tried again after a few minutes
+ok 141 - a model marked unavailable after a failure is tried again after a few minutes
+  ---
+  duration_ms: 1.7576
+  type: 'test'
+  ...
+# Subtest: Gitea URLs and tokens are explicit, host scoped, and backward compatible
+ok 142 - Gitea URLs and tokens are explicit, host scoped, and backward compatible
+  ---
+  duration_ms: 4.2919
+  type: 'test'
+  ...
+# Subtest: Gitea inspection uses real isolated git history without changing source, and contains API drift
+ok 143 - Gitea inspection uses real isolated git history without changing source, and contains API drift
+  ---
+  duration_ms: 8725.5598
+  type: 'test'
+  ...
+# Subtest: periodic repository metadata checks do not block scheduling or dispatch projects
+ok 144 - periodic repository metadata checks do not block scheduling or dispatch projects
+  ---
+  duration_ms: 21.418
+  type: 'test'
+  ...
+# Subtest: an idle backend checks linked repositories with no open UI or running jobs
+ok 145 - an idle backend checks linked repositories with no open UI or running jobs
+  ---
+  duration_ms: 159.5043
+  type: 'test'
+  ...
+# Execution monitoring failed: ENOENT: no such file or directory, open 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-idle-repository-YgATzl\\notebook.json'
+# Subtest: Gold pins exact provider/model for workers while reviewers keep their roles
+ok 146 - Gold pins exact provider/model for workers while reviewers keep their roles
+  ---
+  duration_ms: 3.8601
+  type: 'test'
+  ...
+# Subtest: bulk roles persist independently; Gold survives restart and blocks quota fallback and reassignment
+ok 147 - bulk roles persist independently; Gold survives restart and blocks quota fallback and reassignment
+  ---
+  duration_ms: 1536.2752
+  type: 'test'
+  ...
+# Subtest: Grill starts a real lead turn with Grill me instructions and keeps follow-up decisions in chat without a source folder
+ok 148 - Grill starts a real lead turn with Grill me instructions and keeps follow-up decisions in chat without a source folder
+  ---
+  duration_ms: 356.3749
+  type: 'test'
+  ...
+# Subtest: a missing lead is reported in the conversation
+ok 149 - a missing lead is reported in the conversation
+  ---
+  duration_ms: 58.4544
+  type: 'test'
+  ...
+# Subtest: unrecognized Antigravity model is classified precisely and never replaced with another provider
+ok 150 - unrecognized Antigravity model is classified precisely and never replaced with another provider
+  ---
+  duration_ms: 57.9082
+  type: 'test'
+  ...
+# Subtest: Antigravity discovery only accepts exact listed IDs and keeps auth failures unread
+ok 151 - Antigravity discovery only accepts exact listed IDs and keeps auth failures unread
+  ---
+  duration_ms: 1.3059
+  type: 'test'
+  ...
+# Subtest: explicit Start after chat grilling prepares the discussed task without reopening the old questionnaire
+ok 152 - explicit Start after chat grilling prepares the discussed task without reopening the old questionnaire
+  ---
+  duration_ms: 428.1602
+  type: 'test'
+  ...
+# Subtest: imported paused project without a linked folder offers relink, never resume
+ok 153 - imported paused project without a linked folder offers relink, never resume
+  ---
+  duration_ms: 11.3077
+  type: 'test'
+  ...
+# Subtest: Home priority is relink, approval, resume, execution, question, review
+ok 154 - Home priority is relink, approval, resume, execution, question, review
+  ---
+  duration_ms: 59.3381
+  type: 'test'
+  ...
+# Subtest: Git inspection rejects inherited parent repositories instead of inspecting siblings
+ok 155 - Git inspection rejects inherited parent repositories instead of inspecting siblings
+  ---
+  duration_ms: 1228.9385
+  type: 'test'
+  ...
+# Subtest: linked project inspection does not fingerprint files through a directory symlink to another project
+ok 156 - linked project inspection does not fingerprint files through a directory symlink to another project
+  ---
+  duration_ms: 3983.5497
+  type: 'test'
+  ...
+# Subtest: current durable MegaTask outranks stale row flags and another project or later task
+ok 157 - current durable MegaTask outranks stale row flags and another project or later task
+  ---
+  duration_ms: 3.9165
+  type: 'test'
+  ...
+# Subtest: Git metadata symlink and gitdir redirect to another project fail closed
+ok 158 - Git metadata symlink and gitdir redirect to another project fail closed
+  ---
+  duration_ms: 195.3833
+  type: 'test'
+  ...
+# Subtest: Git inspection rejects redirected HEAD metadata before reading another project
+ok 159 - Git inspection rejects redirected HEAD metadata before reading another project
+  ---
+  duration_ms: 307.3544
+  type: 'test'
+  ...
+# Subtest: Git inspection ignores a submodule redirected to another project but observes local edits
+ok 160 - Git inspection ignores a submodule redirected to another project but observes local edits
+  ---
+  duration_ms: 11413.3158
+  type: 'test'
+  ...
+# Subtest: the work is titled with its goal, also in a git project
+ok 161 - the work is titled with its goal, also in a git project
+  ---
+  duration_ms: 3.3319
+  type: 'test'
+  ...
+# Subtest: the crew receives the whole goal, not a cut version
+ok 162 - the crew receives the whole goal, not a cut version
+  ---
+  duration_ms: 0.4213
+  type: 'test'
+  ...
+# Subtest: with no goal, a git project continues from its latest changes
+ok 163 - with no goal, a git project continues from its latest changes
+  ---
+  duration_ms: 0.3915
+  type: 'test'
+  ...
+# Subtest: the ranking knows Claude by name, puts the newer version of a family first, and Fable before Opus at equal quota
+ok 164 - the ranking knows Claude by name, puts the newer version of a family first, and Fable before Opus at equal quota
+  ---
+  duration_ms: 5.2484
+  type: 'test'
+  ...
+# Subtest: the lead menu ranks by quality, not by quota, and reads names like claude-opus-4-6-thinking
+ok 165 - the lead menu ranks by quality, not by quota, and reads names like claude-opus-4-6-thinking
+  ---
+  duration_ms: 1.012
+  type: 'test'
+  ...
+# Subtest: the ranking puts stronger leads first, then more quota; unknown quota comes after known
+ok 166 - the ranking puts stronger leads first, then more quota; unknown quota comes after known
+  ---
+  duration_ms: 0.7347
+  type: 'test'
+  ...
+# Subtest: a lead at the threshold hands over to the next in the ranking, and the chat says so
+ok 167 - a lead at the threshold hands over to the next in the ranking, and the chat says so
+  ---
+  duration_ms: 118.3056
+  type: 'test'
+  ...
+# Subtest: an old running task from before Phase 2 is closed at start with a clear reason
+ok 168 - an old running task from before Phase 2 is closed at start with a clear reason
+  ---
+  duration_ms: 260.6732
+  type: 'test'
+  ...
+# OK: shutdown, years of persistence, repeated ticks, wrong-job rejection, fresh provider assignment on Resume.
+# Subtest: engine\\lifecycle.test.cjs
+ok 36 - engine\\lifecycle.test.cjs
+  ---
+  duration_ms: 1366.8883
+  type: 'test'
+  ...
+# Subtest: a tool that is not installed has no usable models and says how to install it
+ok 170 - a tool that is not installed has no usable models and says how to install it
+  ---
+  duration_ms: 20.1192
+  type: 'test'
+  ...
+# Subtest: ChatGPT siblings inherit one provider policy while Grok stays independent after restart
+ok 171 - ChatGPT siblings inherit one provider policy while Grok stays independent after restart
+  ---
+  duration_ms: 75.0184
+  type: 'test'
+  ...
+# Subtest: shared usage boundaries, unread quotas, explicit fallbacks and cycles
+ok 172 - shared usage boundaries, unread quotas, explicit fallbacks and cycles
+  ---
+  duration_ms: 1.9498
+  type: 'test'
+  ...
+# Subtest: remaining quota semantics, automatic early warning, reset and legacy migration
+ok 173 - remaining quota semantics, automatic early warning, reset and legacy migration
+  ---
+  duration_ms: 1.0233
+  type: 'test'
+  ...
+# Subtest: automatic fallback skips sibling pools, restricted roles, disabled and limited providers
+ok 174 - automatic fallback skips sibling pools, restricted roles, disabled and limited providers
+  ---
+  duration_ms: 0.9111
+  type: 'test'
+  ...
+# Subtest: permission restrictions and privacy-safe categorized reports
+ok 175 - permission restrictions and privacy-safe categorized reports
+  ---
+  duration_ms: 2.1547
+  type: 'test'
+  ...
+# Subtest: a failed quota refresh cannot keep authorizing calls using stale percentages
+ok 176 - a failed quota refresh cannot keep authorizing calls using stale percentages
+  ---
+  duration_ms: 15.001
+  type: 'test'
+  ...
+# Subtest: policy API persists, lead and approved workers use automatic fallback without inference
+ok 177 - policy API persists, lead and approved workers use automatic fallback without inference
+  ---
+  duration_ms: 942.4697
+  type: 'test'
+  ...
+# Subtest: user role permissions constrain routing independently of model capability
+ok 178 - user role permissions constrain routing independently of model capability
+  ---
+  duration_ms: 2.9987
+  type: 'test'
+  ...
+# Subtest: role settings persist, incompatible roles are rejected, exact audit/implementation assignments honor flags
+ok 179 - role settings persist, incompatible roles are rejected, exact audit/implementation assignments honor flags
+  ---
+  duration_ms: 1165.0829
+  type: 'test'
+  ...
+# OK: configured exact model IDs, explicit adapters, compatibility guards, unavailable routes and bounded IDs.
+# Subtest: engine\\model-routing.test.cjs
+ok 40 - engine\\model-routing.test.cjs
+  ---
+  duration_ms: 260.8744
+  type: 'test'
+  ...
+# OK: orchestrator helpers, the lead in the chat, idle and ready projects, auto start, chat over HTTP (Phase 2).
+# Subtest: engine\\orchestrator.test.cjs
+ok 41 - engine\\orchestrator.test.cjs
+  ---
+  duration_ms: 2566.6688
+  type: 'test'
+  ...
+# Subtest: two projects ask the lead at once; Stop in one leaves the other
+ok 182 - two projects ask the lead at once; Stop in one leaves the other
+  ---
+  duration_ms: 222.2553
+  type: 'test'
+  ...
+# Subtest: the recorded JavaScript results for the C\# comparison are up to date
+ok 183 - the recorded JavaScript results for the C\# comparison are up to date
+  ---
+  duration_ms: 123.3088
+  type: 'test'
+  ...
+# Subtest: quota remaining bands and explicit text including shared provider pools
+ok 184 - quota remaining bands and explicit text including shared provider pools
+  ---
+  duration_ms: 3.2855
+  type: 'test'
+  ...
+# Subtest: one application window opens, switches views, focuses and reopens without backend lifecycle coupling
+ok 185 - one application window opens, switches views, focuses and reopens without backend lifecycle coupling
+  ---
+  duration_ms: 2.1462
+  type: 'test'
+  ...
+# Subtest: desktop launcher configures a single shared window by default
+ok 186 - desktop launcher configures a single shared window by default
+  ---
+  duration_ms: 84.1942
+  type: 'test'
+  ...
+# Closing old work failed: ENOENT: no such file or directory, open 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-single-window-25zOdW\\notebook.json.2fca9e6d-364f-4a73-aeff-56ee2de6e929.tmp'
+# Subtest: project notes and visits persist, are isolated, and do not conflict with revisions
+ok 187 - project notes and visits persist, are isolated, and do not conflict with revisions
+  ---
+  duration_ms: 365.7862
+  type: 'test'
+  ...
+# Subtest: local Git comparison counts actual commits and same-file dirty edits
+ok 188 - local Git comparison counts actual commits and same-file dirty edits
+  ---
+  duration_ms: 9942.9587
+  type: 'test'
+  ...
+# Subtest: relaunch reuses the same backend process and notebook
+ok 189 - relaunch reuses the same backend process and notebook
+  ---
+  duration_ms: 924.5892
+  type: 'test'
+  ...
+# Subtest: expired approval checkpoints without launching a worker
+ok 190 - expired approval checkpoints without launching a worker
+  ---
+  duration_ms: 14.8754
+  type: 'test'
+  ...
+# Subtest: deadline preserves completed work, stops active work, and never launches dependencies
+ok 191 - deadline preserves completed work, stops active work, and never launches dependencies
+  ---
+  duration_ms: 426.5248
+  type: 'test'
+  ...
+# Subtest: complete evidence at the deadline completes instead of checkpointing
+ok 192 - complete evidence at the deadline completes instead of checkpointing
+  ---
+  duration_ms: 507.1253
+  type: 'test'
+  ...
+# Subtest: completion racing with deadline termination preserves valid results and completes
+ok 193 - completion racing with deadline termination preserves valid results and completes
+  ---
+  duration_ms: 812.5014
+  type: 'test'
+  ...
+# Subtest: discretion mode does not enforce a stray deadline field
+ok 194 - discretion mode does not enforce a stray deadline field
+  ---
+  duration_ms: 17.8283
+  type: 'test'
+  ...
+# Subtest: an unapproved overdue proposal remains awaiting approval
+ok 195 - an unapproved overdue proposal remains awaiting approval
+  ---
+  duration_ms: 3.7178
+  type: 'test'
+  ...
+# Subtest: failed termination stays visible, stops other slices, and retries without launching more work
+ok 196 - failed termination stays visible, stops other slices, and retries without launching more work
+  ---
+  duration_ms: 128.595
+  type: 'test'
+  ...
+# Subtest: persisted older MegaTasks acquire their job deadline and expire after restart
+ok 197 - persisted older MegaTasks acquire their job deadline and expire after restart
+  ---
+  duration_ms: 45.4221
+  type: 'test'
+  ...
+# Subtest: successful explicit Stop clears a prior deadline failure before Resume
+ok 198 - successful explicit Stop clears a prior deadline failure before Resume
+  ---
+  duration_ms: 118.8889
+  type: 'test'
+  ...
+# Subtest: a deadline crossing during dispatch prevents later parallel launches
+ok 199 - a deadline crossing during dispatch prevents later parallel launches
+  ---
+  duration_ms: 68.8408
+  type: 'test'
+  ...
+# PASS: background deadline stopped the actual parent and descendant, saved a checkpoint, and preserved the unrelated worker without any open window or client polling.
+# Subtest: background monitoring expires a deadline with no open window and stops the actual process tree
+ok 200 - background monitoring expires a deadline with no open window and stops the actual process tree
+  ---
+  duration_ms: 2979.7918
+  type: 'test'
+  ...
+# PASS Phase 2 Git: persisted completed work, before/after HEAD, both observed commit IDs, uncommitted changes kept distinct and displayed without AI.
+# Subtest: engine\\phase2-git.test.cjs
+ok 46 - engine\\phase2-git.test.cjs
+  ---
+  duration_ms: 8456.502
+  type: 'test'
+  ...
+# PASS: actual parent and descendant processes terminated.
+# PASS Phase 2 worker: large UTF-8 stdin prompt intact, exact Codex/model argv, structured status/identity validation, exit 0 insufficient.
+# Subtest: engine\\phase2-worker.test.cjs
+ok 47 - engine\\phase2-worker.test.cjs
+  ---
+  duration_ms: 16214.8902
+  type: 'test'
+  ...
+# PASS Phase 2: proposal/approval binding, dependencies, targeting/focus, structured completion, stop/checkpoint, explicit resume, external changes, alternate lead, stable SubTasks/fresh Attempts, Home/timeline, dead-PID failure.
+# Subtest: engine\\phase2.test.cjs
+ok 48 - engine\\phase2.test.cjs
+  ---
+  duration_ms: 5166.0804
+  type: 'test'
+  ...
+# Subtest: both channels send the estimate and neither sends paths, prompts, or the token
+ok 204 - both channels send the estimate and neither sends paths, prompts, or the token
+  ---
+  duration_ms: 312.4587
+  type: 'test'
+  ...
+# Subtest: an ambiguous or duplicate project name does not stop a crew
+ok 205 - an ambiguous or duplicate project name does not stop a crew
+  ---
+  duration_ms: 174.1831
+  type: 'test'
+  ...
+# Subtest: stop and resume errors do not send paths, and a foreign yes does not confirm
+ok 206 - stop and resume errors do not send paths, and a foreign yes does not confirm
+  ---
+  duration_ms: 205.3911
+  type: 'test'
+  ...
+# Subtest: overlapping transition checks and polls run once
+ok 207 - overlapping transition checks and polls run once
+  ---
+  duration_ms: 899.5914
+  type: 'test'
+  ...
+# Subtest: a restarted notifier does not replay Telegram commands
+ok 208 - a restarted notifier does not replay Telegram commands
+  ---
+  duration_ms: 464.0518
+  type: 'test'
+  ...
+# Subtest: commands recover from expiry, snapshot failure, bot suffix, and a bad settings file
+ok 209 - commands recover from expiry, snapshot failure, bot suffix, and a bad settings file
+  ---
+  duration_ms: 430.3231
+  type: 'test'
+  ...
+# Subtest: the token file is owner-only and the settings API cannot pair a chat
+ok 210 - the token file is owner-only and the settings API cannot pair a chat
+  ---
+  duration_ms: 1282.414
+  type: 'test'
+  ...
+# Subtest: failed polls, unpaired stops, and simultaneous pairing stay safe
+ok 211 - failed polls, unpaired stops, and simultaneous pairing stay safe
+  ---
+  duration_ms: 714.9755
+  type: 'test'
+  ...
+# Subtest: alerts fire when work fails or stops for the owner, and stay quiet otherwise
+ok 212 - alerts fire when work fails or stops for the owner, and stay quiet otherwise
+  ---
+  duration_ms: 444.3386
+  type: 'test'
+  ...
+# Subtest: sanitizeText strips absolute paths, relative paths, code files, and secrets
+ok 213 - sanitizeText strips absolute paths, relative paths, code files, and secrets
+  ---
+  duration_ms: 1.7922
+  type: 'test'
+  ...
+# Subtest: sanitizeGoalTitle extracts first line, removes paths, and truncates
+ok 214 - sanitizeGoalTitle extracts first line, removes paths, and truncates
+  ---
+  duration_ms: 0.3309
+  type: 'test'
+  ...
+# Subtest: formatAlertMessage formats done, failed, and needs_owner without leaking private data
+ok 215 - formatAlertMessage formats done, failed, and needs_owner without leaking private data
+  ---
+  duration_ms: 0.2959
+  type: 'test'
+  ...
+# Subtest: maskToken hides token details while leaving enough to recognize
+ok 216 - maskToken hides token details while leaving enough to recognize
+  ---
+  duration_ms: 0.1963
+  type: 'test'
+  ...
+# Subtest: loadPhoneSettings and savePhoneSettings persist in storeDir with 0o600 permissions
+ok 217 - loadPhoneSettings and savePhoneSettings persist in storeDir with 0o600 permissions
+  ---
+  duration_ms: 361.7189
+  type: 'test'
+  ...
+# Subtest: HTTP isolation: sendNtfyAlert posts to fake server and handles errors
+ok 218 - HTTP isolation: sendNtfyAlert posts to fake server and handles errors
+  ---
+  duration_ms: 115.1415
+  type: 'test'
+  ...
+# Subtest: HTTP isolation: sendTelegramMessage and pollTelegramUpdates with fake Telegram API
+ok 219 - HTTP isolation: sendTelegramMessage and pollTelegramUpdates with fake Telegram API
+  ---
+  duration_ms: 30.7522
+  type: 'test'
+  ...
+# Subtest: formatStatusMessage lists projects without exposing files, paths or prompts
+ok 220 - formatStatusMessage lists projects without exposing files, paths or prompts
+  ---
+  duration_ms: 0.5778
+  type: 'test'
+  ...
+# Subtest: Telegram bot lifecycle: pairing with start code, ignoring foreign chats, and commands
+ok 221 - Telegram bot lifecycle: pairing with start code, ignoring foreign chats, and commands
+  ---
+  duration_ms: 689.269
+  type: 'test'
+  ...
+# Subtest: checkTransitions detects work ending, failing, or needing owner and alerts both channels
+ok 222 - checkTransitions detects work ending, failing, or needing owner and alerts both channels
+  ---
+  duration_ms: 544.4817
+  type: 'test'
+  ...
+# Subtest: server.cjs HTTP endpoints for phone settings and test alert
+ok 223 - server.cjs HTTP endpoints for phone settings and test alert
+  ---
+  duration_ms: 845.6174
+  type: 'test'
+  ...
+# verify-1: input validation and fallback paths passed
+# verify-2: pushed detection, finish auto, edge cases passed
+# verify-3: recovery, fallback and idempotence paths passed
+# verify-4: concurrency, roundtrip, edge cases passed
+# Subtest: engine\\plan-file-verify.test.cjs
+ok 51 - engine\\plan-file-verify.test.cjs
+  ---
+  duration_ms: 48995.2896
+  type: 'test'
+  ...
+# plan-file tests passed
+# plan-file verification tests passed
+# plan-file second verification tests passed
+# plan-file orchestrator tests passed
+# Subtest: engine\\plan-file.test.cjs
+ok 52 - engine\\plan-file.test.cjs
+  ---
+  duration_ms: 40885.7036
+  type: 'test'
+  ...
+# Subtest: managed exclusions can be toggled without changing personal rules
+ok 226 - managed exclusions can be toggled without changing personal rules
+  ---
+  duration_ms: 11841.7658
+  type: 'test'
+  ...
+# Subtest: enabled plans are included by an ordinary git commit
+ok 227 - enabled plans are included by an ordinary git commit
+  ---
+  duration_ms: 4724.8616
+  type: 'test'
+  ...
+# OK: concrete commit subjects, changed files, decisions and human worker actions since the prior visit, with original progress/logs preserved.
+# Subtest: engine\\progress-detail.test.cjs
+ok 54 - engine\\progress-detail.test.cjs
+  ---
+  duration_ms: 4535.8406
+  type: 'test'
+  ...
+# Subtest: HTTP implementation approval without a folder fails closed and Home asks to relink
+ok 229 - HTTP implementation approval without a folder fails closed and Home asks to relink
+  ---
+  duration_ms: 221.5628
+  type: 'test'
+  ...
+# Subtest: HTTP implementation approval with a missing folder rejects before the launcher
+ok 230 - HTTP implementation approval with a missing folder rejects before the launcher
+  ---
+  duration_ms: 78.4758
+  type: 'test'
+  ...
+# Subtest: selected project approve, inspect, ask, stop and resume leave its sibling untouched
+ok 231 - selected project approve, inspect, ask, stop and resume leave its sibling untouched
+  ---
+  duration_ms: 579.7969
+  type: 'test'
+  ...
+# Subtest: HTTP import without folder asks to relink before Resume
+ok 232 - HTTP import without folder asks to relink before Resume
+  ---
+  duration_ms: 484.8315
+  type: 'test'
+  ...
+# Subtest: HTTP import with confirmed folder offers Resume
+ok 233 - HTTP import with confirmed folder offers Resume
+  ---
+  duration_ms: 462.2516
+  type: 'test'
+  ...
+# Subtest: folder removed or replaced by a file after proposal blocks approval without launch
+ok 234 - folder removed or replaced by a file after proposal blocks approval without launch
+  ---
+  duration_ms: 81.914
+  type: 'test'
+  ...
+# Subtest: an explicit command naming beta cannot retarget the selected alpha recipient
+ok 235 - an explicit command naming beta cannot retarget the selected alpha recipient
+  ---
+  duration_ms: 332.9453
+  type: 'test'
+  ...
+# OK: project history/context isolation with absent/shared/new chat IDs, inferred recipients, preserved global history, restart, scoped cancellation and no worker dispatch. Mock providers only.
+# Subtest: engine\\project-context.test.cjs
+ok 56 - engine\\project-context.test.cjs
+  ---
+  duration_ms: 460.7591
+  type: 'test'
+  ...
+# Subtest: export marks restore supported and still strips secrets
+ok 237 - export marks restore supported and still strips secrets
+  ---
+  duration_ms: 5.2783
+  type: 'test'
+  ...
+# Subtest: import creates a new notebook project and remaps paused execution
+ok 238 - import creates a new notebook project and remaps paused execution
+  ---
+  duration_ms: 6.3712
+  type: 'test'
+  ...
+# Subtest: import twice keeps both restored executions
+ok 239 - import twice keeps both restored executions
+  ---
+  duration_ms: 2.0619
+  type: 'test'
+  ...
+# Subtest: import relinks a confirmed folder and rejects a colliding overwrite
+ok 240 - import relinks a confirmed folder and rejects a colliding overwrite
+  ---
+  duration_ms: 3.3584
+  type: 'test'
+  ...
+# Subtest: import rejects unknown payloads
+ok 241 - import rejects unknown payloads
+  ---
+  duration_ms: 0.9165
+  type: 'test'
+  ...
+# Subtest: HTTP import restores one project without touching the other or launching workers
+ok 242 - HTTP import restores one project without touching the other or launching workers
+  ---
+  duration_ms: 239.9374
+  type: 'test'
+  ...
+# OK: persistent projects root, unique subfolders, safe names, preserved projects, stale request and failed-save rollback.
+# Subtest: engine\\project-folders.test.cjs
+ok 58 - engine\\project-folders.test.cjs
+  ---
+  duration_ms: 737.2833
+  type: 'test'
+  ...
+# OK: isolated recipient routing, checkpoint protection, research target guard, individual worker stop and restoration.
+# Subtest: engine\\project-recipient.test.cjs
+ok 59 - engine\\project-recipient.test.cjs
+  ---
+  duration_ms: 1148.4133
+  type: 'test'
+  ...
+# project-teams: ok
+# Subtest: engine\\project-teams.test.cjs
+ok 60 - engine\\project-teams.test.cjs
+  ---
+  duration_ms: 339.999
+  type: 'test'
+  ...
+# Subtest: tools off give Claude the same isolated launch as before; each checkbox turns on one thing
+ok 246 - tools off give Claude the same isolated launch as before; each checkbox turns on one thing
+  ---
+  duration_ms: 2.7349
+  type: 'test'
+  ...
+# Subtest: the lead is told which tools are off and asks with one exact line
+ok 247 - the lead is told which tools are off and asks with one exact line
+  ---
+  duration_ms: 1.6613
+  type: 'test'
+  ...
+# Subtest: project tools reach lead and workers, the lead request becomes a button, and only valid names are saved
+ok 248 - project tools reach lead and workers, the lead request becomes a button, and only valid names are saved
+  ---
+  duration_ms: 105.8633
+  type: 'test'
+  ...
+# Subtest: saved legacy tools migrate; overrides survive restart and reset to the current default
+ok 249 - saved legacy tools migrate; overrides survive restart and reset to the current default
+  ---
+  duration_ms: 119.8004
+  type: 'test'
+  ...
+# Subtest: worker launches receive their own tools or the project default
+ok 250 - worker launches receive their own tools or the project default
+  ---
+  duration_ms: 708.0761
+  type: 'test'
+  ...
+# Subtest: tools API supports model overrides, reset, validation and the legacy default route
+ok 251 - tools API supports model overrides, reset, validation and the legacy default route
+  ---
+  duration_ms: 232.1303
+  type: 'test'
+  ...
+# Subtest: resolved tools control Claude and Codex launch arguments for leads and workers
+ok 252 - resolved tools control Claude and Codex launch arguments for leads and workers
+  ---
+  duration_ms: 5.2625
+  type: 'test'
+  ...
+# Subtest: multi-project tool isolation and archiving preserve model overrides independently
+ok 253 - multi-project tool isolation and archiving preserve model overrides independently
+  ---
+  duration_ms: 64.0323
+  type: 'test'
+  ...
+# Subtest: malformed saved project tools recover cleanly to valid defaults and models
+ok 254 - malformed saved project tools recover cleanly to valid defaults and models
+  ---
+  duration_ms: 26.3981
+  type: 'test'
+  ...
+# Subtest: concurrent updates to default tools and model overrides preserve both changes
+ok 255 - concurrent updates to default tools and model overrides preserve both changes
+  ---
+  duration_ms: 30.8038
+  type: 'test'
+  ...
+# Subtest: an override stays complete when the default changes, and a bad save changes nothing
+ok 256 - an override stays complete when the default changes, and a bad save changes nothing
+  ---
+  duration_ms: 90.3306
+  type: 'test'
+  ...
+# Subtest: legacy tools are rewritten on shutdown, and partial or corrupt saves do not inherit
+ok 257 - legacy tools are rewritten on shutdown, and partial or corrupt saves do not inherit
+  ---
+  duration_ms: 36.9905
+  type: 'test'
+  ...
+# Subtest: each project gives the same lead its own tools
+ok 258 - each project gives the same lead its own tools
+  ---
+  duration_ms: 91.2747
+  type: 'test'
+  ...
+# Subtest: a launched worker gets its own tools when another model differs
+ok 259 - a launched worker gets its own tools when another model differs
+  ---
+  duration_ms: 304.0484
+  type: 'test'
+  ...
+# Subtest: overlapping tool saves keep every model, including a slow tick
+ok 260 - overlapping tool saves keep every model, including a slow tick
+  ---
+  duration_ms: 161.3054
+  type: 'test'
+  ...
+# Subtest: the lead prompt and launch follow that model's tools
+ok 261 - the lead prompt and launch follow that model's tools
+  ---
+  duration_ms: 1.6587
+  type: 'test'
+  ...
+# OK: full long Unicode lead and worker prompts over real stdin pipes; early provider exit is handled.
+# Subtest: engine\\prompt-transport.test.cjs
+ok 62 - engine\\prompt-transport.test.cjs
+  ---
+  duration_ms: 6085.4069
+  type: 'test'
+  ...
+# Subtest: provider metadata distinguishes business from paid personal accounts without exposing credentials
+ok 263 - provider metadata distinguishes business from paid personal accounts without exposing credentials
+  ---
+  duration_ms: 63.5787
+  type: 'test'
+  ...
+# Subtest: account switching isolates roles, invalidates quota and stale access, and survives restart
+ok 264 - account switching isolates roles, invalidates quota and stale access, and survives restart
+  ---
+  duration_ms: 451.7091
+  type: 'test'
+  ...
+# Subtest: failed cache invalidation does not commit switched account identity and retries safely
+ok 265 - failed cache invalidation does not commit switched account identity and retries safely
+  ---
+  duration_ms: 105.3203
+  type: 'test'
+  ...
+# Subtest: connection validation rejects secrets, ambiguous IDs and unsupported CLI contracts
+ok 266 - connection validation rejects secrets, ambiguous IDs and unsupported CLI contracts
+  ---
+  duration_ms: 2.7454
+  type: 'test'
+  ...
+# Subtest: connections and provider policies persist without provider calls and future siblings inherit settings
+ok 267 - connections and provider policies persist without provider calls and future siblings inherit settings
+  ---
+  duration_ms: 282.4898
+  type: 'test'
+  ...
+# Subtest: account invalidation survives restart and cannot restore cached access until fresh discovery succeeds
+ok 268 - account invalidation survives restart and cannot restore cached access until fresh discovery succeeds
+  ---
+  duration_ms: 172.8731
+  type: 'test'
+  ...
+# Subtest: an old-account discovery cannot grant access after a switch and queued refresh checks the active account
+ok 269 - an old-account discovery cannot grant access after a switch and queued refresh checks the active account
+  ---
+  duration_ms: 13.8168
+  type: 'test'
+  ...
+# Subtest: same-account return and changed configuration reject old in-flight generation results
+ok 270 - same-account return and changed configuration reject old in-flight generation results
+  ---
+  duration_ms: 2.6521
+  type: 'test'
+  ...
+# Subtest: failed durable invalidation rejects without allowing pending stale discovery to clear the block
+ok 271 - failed durable invalidation rejects without allowing pending stale discovery to clear the block
+  ---
+  duration_ms: 158.8573
+  type: 'test'
+  ...
+# OK: exact Grok model discovery, preserved access on failed checks and no invented provider/model substitutions.
+# OK: native provider long Unicode lead/worker transports, Claude model discovery and identity, interface changes and zero-exit errors; early exits are handled.
+# Subtest: engine\\provider-transport.test.cjs
+ok 66 - engine\\provider-transport.test.cjs
+  ---
+  duration_ms: 10874.5974
+  type: 'test'
+  ...
+# OK: explicit provider routing, noninteractive workers and leads, verified agy quota schema and failures.
+# Subtest: engine\\providers.test.cjs
+ok 67 - engine\\providers.test.cjs
+  ---
+  duration_ms: 3250.6736
+  type: 'test'
+  ...
+# Subtest: a push refused for a private email goes through once the new commits use the noreply address
+not ok 274 - a push refused for a private email goes through once the new commits use the noreply address
+  ---
+  duration_ms: 7956.4622
+  type: 'test'
+  location: 'D:\\benit\\Desktop\\Projects\\Planwharf-engine\\engine\\push-email.test.cjs:42:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the files are unchanged
+    
+    'c\r\n' !== 'c\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    c
+    
+  actual: |-
+    c
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (D:\benit\Desktop\Projects\Planwharf-engine\engine\push-email.test.cjs:52:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: the noreply address is read from the GitHub CLI, and nothing else is accepted
+ok 275 - the noreply address is read from the GitHub CLI, and nothing else is accepted
+  ---
+  duration_ms: 0.7057
+  type: 'test'
+  ...
+# Subtest: a long summary keeps its "Needs your decision" line whole
+ok 276 - a long summary keeps its "Needs your decision" line whole
+  ---
+  duration_ms: 83.6811
+  type: 'test'
+  ...
+# Subtest: the default threshold is 35% left, on the 5-hour window and on the weekly one
+ok 277 - the default threshold is 35% left, on the 5-hour window and on the weekly one
+  ---
+  duration_ms: 1.8392
+  type: 'test'
+  ...
+# Subtest: quota is low at or under the threshold, or when exhausted; unread quota is not low
+ok 278 - quota is low at or under the threshold, or when exhausted; unread quota is not low
+  ---
+  duration_ms: 1.2351
+  type: 'test'
+  ...
+# Subtest: a working step on a low model moves to the eligible model with the most quota left
+ok 279 - a working step on a low model moves to the eligible model with the most quota left
+  ---
+  duration_ms: 1.7974
+  type: 'test'
+  ...
+# Subtest: no switch without an eligible model above the threshold, and none when switching is off
+ok 280 - no switch without an eligible model above the threshold, and none when switching is off
+  ---
+  duration_ms: 1.8565
+  type: 'test'
+  ...
+# Subtest: either window under its limit makes a model low; each model can have its own limit, or none
+ok 281 - either window under its limit makes a model low; each model can have its own limit, or none
+  ---
+  duration_ms: 1.0137
+  type: 'test'
+  ...
+# Subtest: the switch keeps the check independent: it prefers a company the other steps do not use
+ok 282 - the switch keeps the check independent: it prefers a company the other steps do not use
+  ---
+  duration_ms: 0.5136
+  type: 'test'
+  ...
+# Subtest: the general limit and each model's own limit are saved, shown on the model, and survive a restart
+ok 283 - the general limit and each model's own limit are saved, shown on the model, and survive a restart
+  ---
+  duration_ms: 162.1837
+  type: 'test'
+  ...
+# Subtest: an old saved single threshold applies to both windows; the former 20% default becomes 35%
+ok 284 - an old saved single threshold applies to both windows; the former 20% default becomes 35%
+  ---
+  duration_ms: 30.4269
+  type: 'test'
+  ...
+# Subtest: a company limit applies to every model of its quota pool; a model's own limit still wins
+ok 285 - a company limit applies to every model of its quota pool; a model's own limit still wins
+  ---
+  duration_ms: 40.9446
+  type: 'test'
+  ...
+# Subtest: with no model that has quota, the step waits instead of blocking, and says why
+ok 286 - with no model that has quota, the step waits instead of blocking, and says why
+  ---
+  duration_ms: 17.9563
+  type: 'test'
+  ...
+# Subtest: when quota returns, the waiting step starts by itself
+ok 287 - when quota returns, the waiting step starts by itself
+  ---
+  duration_ms: 82.817
+  type: 'test'
+  ...
+# Subtest: a problem that is not quota blocks the step with a clear message
+ok 288 - a problem that is not quota blocks the step with a clear message
+  ---
+  duration_ms: 5.6962
+  type: 'test'
+  ...
+# PASS: reconciliation requires every slice and successful exit, checks job identity, archives without losing history, and keeps dry runs immutable.
+# Subtest: engine\\reconcile-attempts.test.cjs
+ok 71 - engine\\reconcile-attempts.test.cjs
+  ---
+  duration_ms: 263.1205
+  type: 'test'
+  ...
+# OK: actual git graphs, ahead/behind/diverged, private auth, missing branch, offline failure, cache, full lead briefing and safe API inspection.
+# Subtest: engine\\repository.test.cjs
+ok 72 - engine\\repository.test.cjs
+  ---
+  duration_ms: 14792.1806
+  type: 'test'
+  ...
+# OK: conversational research dispatch receipts, isolated exact-model workers, gates, reports, stop/resume, and cancellation.
+# Subtest: engine\\research-dispatch.test.cjs
+ok 73 - engine\\research-dispatch.test.cjs
+  ---
+  duration_ms: 1272.0538
+  type: 'test'
+  ...
+# Subtest: after Resume, running work cannot be resumed again: the card shows it at work, with its activity
+ok 292 - after Resume, running work cannot be resumed again: the card shows it at work, with its activity
+  ---
+  duration_ms: 1460.4628
+  type: 'test'
+  ...
+# Subtest: a finished CLI is recorded even when a command it started still holds its output open
+ok 293 - a finished CLI is recorded even when a command it started still holds its output open
+  ---
+  duration_ms: 5138.2977
+  type: 'test'
+  ...
+# OK: runner args, prompt, result patch, pid check.
+# Subtest: engine\\runner.test.cjs
+ok 76 - engine\\runner.test.cjs
+  ---
+  duration_ms: 183.7931
+  type: 'test'
+  ...
+# OK: no skill instructions for any provider, exact Grok refresh, fresh current-request tasks, preserved history and startup dispatch barrier.
+# Subtest: engine\\runtime-integration.test.cjs
+ok 77 - engine\\runtime-integration.test.cjs
+  ---
+  duration_ms: 2912.9691
+  type: 'test'
+  ...
+# Subtest: a part that reports a file outside its scope is stopped and named
+ok 296 - a part that reports a file outside its scope is stopped and named
+  ---
+  duration_ms: 1485.6565
+  type: 'test'
+  ...
+# Subtest: when the part runs again its worker is told what it touched last time
+ok 297 - when the part runs again its worker is told what it touched last time
+  ---
+  duration_ms: 1673.3562
+  type: 'test'
+  ...
+# Subtest: git is not used to blame a part while another part was working at the same time
+ok 298 - git is not used to blame a part while another part was working at the same time
+  ---
+  duration_ms: 1964.3433
+  type: 'test'
+  ...
+# Subtest: a part alone in its time is checked against git; files dirty before the work do not count
+ok 299 - a part alone in its time is checked against git; files dirty before the work do not count
+  ---
+  duration_ms: 1414.0488
+  type: 'test'
+  ...
+# Subtest: a part with no scope (the check of the whole) may change any file
+ok 300 - a part with no scope (the check of the whole) may change any file
+  ---
+  duration_ms: 1327.256
+  type: 'test'
+  ...
+# Subtest: skills are listed per program; only the fixed places open; existing files are never changed
+ok 301 - skills are listed per program; only the fixed places open; existing files are never changed
+  ---
+  duration_ms: 25.5505
+  type: 'test'
+  ...
+# Subtest: Start over keeps the project and archives its history; nothing is deleted
+ok 302 - Start over keeps the project and archives its history; nothing is deleted
+  ---
+  duration_ms: 65.0226
+  type: 'test'
+  ...
+# Subtest: closing a native window without a close beacon permits immediate relaunch
+ok 303 - closing a native window without a close beacon permits immediate relaunch
+  ---
+  duration_ms: 3.3888
+  type: 'test'
+  ...
+# Subtest: a failed browser spawn does not suppress the next launch
+ok 304 - a failed browser spawn does not suppress the next launch
+  ---
+  duration_ms: 0.592
+  type: 'test'
+  ...
+# Application window failed (Isolated spawn failure). Opening your default browser: http://127.0.0.1:4173/
+# Application window failed (browser exit 23). Opening your default browser: http://127.0.0.1:4173/
+# Subtest: failed native focus reopens despite a stale heartbeat and deduplicates requests
+ok 305 - failed native focus reopens despite a stale heartbeat and deduplicates requests
+  ---
+  duration_ms: 7.7358
+  type: 'test'
+  ...
+# Subtest: a late exit from an old browser cannot clear a newer launch
+ok 306 - a late exit from an old browser cannot clear a newer launch
+  ---
+  duration_ms: 1.0091
+  type: 'test'
+  ...
+# Subtest: browser errors fall back once; normal close and application quit never reopen
+ok 307 - browser errors fall back once; normal close and application quit never reopen
+  ---
+  duration_ms: 5.5236
+  type: 'test'
+  ...
+# Subtest: closing the owned desktop window requests Quit once; failures and fallback helpers do not
+ok 308 - closing the owned desktop window requests Quit once; failures and fallback helpers do not
+  ---
+  duration_ms: 0.9836
+  type: 'test'
+  ...
+# Subtest: desktop close shuts down a real isolated backend and releases its notebook lock
+ok 309 - desktop close shuts down a real isolated backend and releases its notebook lock
+  ---
+  duration_ms: 661.2711
+  type: 'test'
+  ...
+# Subtest: external browser close requests Quit after grace, but reload cancels it
+ok 310 - external browser close requests Quit after grace, but reload cancels it
+  ---
+  duration_ms: 104.327
+  type: 'test'
+  ...
+# Subtest: a delayed focus failure cannot reopen after application shutdown
+ok 311 - a delayed focus failure cannot reopen after application shutdown
+  ---
+  duration_ms: 3.5818
+  type: 'test'
+  ...
+# Subtest: Quit closes owned browsers even after a focus recovery replaces the latest handle
+ok 312 - Quit closes owned browsers even after a focus recovery replaces the latest handle
+  ---
+  duration_ms: 2.0914
+  type: 'test'
+  ...
+# Subtest: old corrupt startup locks recover while preserving the original bytes
+ok 313 - old corrupt startup locks recover while preserving the original bytes
+  ---
+  duration_ms: 89.2445
+  type: 'test'
+  ...
+# Subtest: dead owner locks recover; live unresponsive owners stay protected
+ok 314 - dead owner locks recover; live unresponsive owners stay protected
+  ---
+  duration_ms: 460.6083
+  type: 'test'
+  ...
+# Subtest: a recently interrupted partial lock recovers within the same launch
+ok 315 - a recently interrupted partial lock recovers within the same launch
+  ---
+  duration_ms: 336.2848
+  type: 'test'
+  ...
+# Subtest: malformed identity responses do not crash or release a live owner
+ok 316 - malformed identity responses do not crash or release a live owner
+  ---
+  duration_ms: 262.0247
+  type: 'test'
+  ...
+# Subtest: missing notebook and attempts arguments are rejected explicitly
+ok 317 - missing notebook and attempts arguments are rejected explicitly
+  ---
+  duration_ms: 0.8121
+  type: 'test'
+  ...
+# Subtest: an occupied default port selects the next port without touching the notebook
+ok 318 - an occupied default port selects the next port without touching the notebook
+  ---
+  duration_ms: 59.4272
+  type: 'test'
+  ...
+# Closing old work failed: ENOENT: no such file or directory, rename 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-startup-port-0BeteR\\notebook.json.ea34d026-2956-4a21-a8a9-7b3d58a4d8ff.tmp' -> 'C:\\Users\\benit\\AppData\\Local\\Temp\\pw-startup-port-0BeteR\\notebook.json'
+# Subtest: only adapters with a verified format use final output
+ok 319 - only adapters with a verified format use final output
+  ---
+  duration_ms: 1.5313
+  type: 'test'
+  ...
+# Subtest: the schema pins the attempt identity
+ok 320 - the schema pins the attempt identity
+  ---
+  duration_ms: 1.45
+  type: 'test'
+  ...
+# Subtest: reads the Claude result event and refuses error results
+ok 321 - reads the Claude result event and refuses error results
+  ---
+  duration_ms: 0.495
+  type: 'test'
+  ...
+# Subtest: free text is never read as a result
+ok 322 - free text is never read as a result
+  ---
+  duration_ms: 0.244
+  type: 'test'
+  ...
+# Subtest: other adapters and empty output yield nothing
+ok 323 - other adapters and empty output yield nothing
+  ---
+  duration_ms: 0.2055
+  type: 'test'
+  ...
+# Subtest: a COMPLETE result naming a missing file fails; deletions and other statuses do not
+ok 324 - a COMPLETE result naming a missing file fails; deletions and other statuses do not
+  ---
+  duration_ms: 823.6016
+  type: 'test'
+  ...
+# Subtest: fourth permission is opt-in, preserves old roles, and never authorizes implementation or review
+ok 325 - fourth permission is opt-in, preserves old roles, and never authorizes implementation or review
+  ---
+  duration_ms: 3.512
+  type: 'test'
+  ...
+# Subtest: legacy advisory selection does not silently grant new role or automatic calls; name/history survive restart
+ok 326 - legacy advisory selection does not silently grant new role or automatic calls; name/history survive restart
+  ---
+  duration_ms: 48.5868
+  type: 'test'
+  ...
+# Subtest: advisory permission, exact selection, provider availability and quota are checked before every call
+ok 327 - advisory permission, exact selection, provider availability and quota are checked before every call
+  ---
+  duration_ms: 26.7346
+  type: 'test'
+  ...
+# Subtest: Supervisor usage is separate and unfinished calls become blocked after restart
+ok 328 - Supervisor usage is separate and unfinished calls become blocked after restart
+  ---
+  duration_ms: 16.9782
+  type: 'test'
+  ...
+# Subtest: Core keeps observing concurrent worker evidence while a bounded advisory is pending
+ok 329 - Core keeps observing concurrent worker evidence while a bounded advisory is pending
+  ---
+  duration_ms: 10.6191
+  type: 'test'
+  ...
+# Subtest: HTTP migrates legacy and per-account permissions; generic enabling cannot silently grant Supervisor
+ok 330 - HTTP migrates legacy and per-account permissions; generic enabling cannot silently grant Supervisor
+  ---
+  duration_ms: 304.8944
+  type: 'test'
+  ...
+# Subtest: HTTP blocks exhausted internal budgets without invocation, debits accepted calls durably, and honors catalog exemption
+ok 331 - HTTP blocks exhausted internal budgets without invocation, debits accepted calls durably, and honors catalog exemption
+  ---
+  duration_ms: 211.975
+  type: 'test'
+  ...
+# Subtest: unverified CLI advisory transports fail before executable discovery or launch
+ok 332 - unverified CLI advisory transports fail before executable discovery or launch
+  ---
+  duration_ms: 2.2581
+  type: 'test'
+  ...
+# Subtest: advisory API omits tools and rejects model attempts to execute shell, write or dispatch
+ok 333 - advisory API omits tools and rejects model attempts to execute shell, write or dispatch
+  ---
+  duration_ms: 46.524
+  type: 'test'
+  ...
+# Subtest: facts separate worker/reviewer evidence, projects, liveness and repeated failures
+ok 334 - facts separate worker/reviewer evidence, projects, liveness and repeated failures
+  ---
+  duration_ms: 5.9427
+  type: 'test'
+  ...
+# Subtest: alerts acknowledge without changing work; recurrence, persistence, names and automatic review budgets
+ok 335 - alerts acknowledge without changing work; recurrence, persistence, names and automatic review budgets
+  ---
+  duration_ms: 78.0313
+  type: 'test'
+  ...
+# Subtest: backend restart marks unfinished advisory evidence as interrupted
+ok 336 - backend restart marks unfinished advisory evidence as interrupted
+  ---
+  duration_ms: 24.7863
+  type: 'test'
+  ...
+# Subtest: real Supervisor HTTP: independent questions, strict roles, scoped ignore, no command dispatch
+ok 337 - real Supervisor HTTP: independent questions, strict roles, scoped ignore, no command dispatch
+  ---
+  duration_ms: 249.8636
+  type: 'test'
+  ...
+# Subtest: Supervisor API transport has no tools, uses exact identity, and does not cancel a live Orchestrator request
+ok 338 - Supervisor API transport has no tools, uses exact identity, and does not cancel a live Orchestrator request
+  ---
+  duration_ms: 519.5532
+  type: 'test'
+  ...
+# PASS: all slices required, claims closed, tasks completed, repeat polls and restart do not relaunch, historical evidence retained, default notebook never overwritten.
+# Subtest: engine\\task-completion.test.cjs
+ok 86 - engine\\task-completion.test.cjs
+  ---
+  duration_ms: 654.8593
+  type: 'test'
+  ...
+# Subtest: several models get or lose a role at once; one that cannot take it is skipped, not refused
+ok 340 - several models get or lose a role at once; one that cannot take it is skipped, not refused
+  ---
+  duration_ms: 62.9689
+  type: 'test'
+  ...
+# Subtest: a path outside temp is refused before anything is removed
+ok 341 - a path outside temp is refused before anything is removed
+  ---
+  duration_ms: 2.8435
+  type: 'test'
+  ...
+# Subtest: a path that only looks like it leaves temp is still removed
+ok 342 - a path that only looks like it leaves temp is still removed
+  ---
+  duration_ms: 4.3845
+  type: 'test'
+  ...
+# Subtest: a missing path inside temp is already clean, and an invalid path fails at once
+ok 343 - a missing path inside temp is already clean, and an invalid path fails at once
+  ---
+  duration_ms: 5.7742
+  type: 'test'
+  ...
+# Subtest: a different drive-letter case is still inside temp on Windows
+ok 344 - a different drive-letter case is still inside temp on Windows
+  ---
+  duration_ms: 3.1557
+  type: 'test'
+  ...
+# Subtest: removing a symlink removes the link and leaves the target
+ok 345 - removing a symlink removes the link and leaves the target
+  ---
+  duration_ms: 5.9775
+  type: 'test'
+  ...
+# Subtest: two removals of the same folder both finish
+ok 346 - two removals of the same folder both finish
+  ---
+  duration_ms: 4.8089
+  type: 'test'
+  ...
+# Subtest: cleanup waits out a holder, then removes the folder after it exits
+ok 347 - cleanup waits out a holder, then removes the folder after it exits
+  ---
+  duration_ms: 396.9495
+  type: 'test'
+  ...
+# Subtest: waitForExit reports a dead pid and gives up on one that stays
+ok 348 - waitForExit reports a dead pid and gives up on one that stays
+  ---
+  duration_ms: 110.4762
+  type: 'test'
+  ...
+# Subtest: no history uses 20 minutes for Build and 10 for Verify
+ok 349 - no history uses 20 minutes for Build and 10 for Verify
+  ---
+  duration_ms: 3.7095
+  type: 'test'
+  ...
+# Subtest: history of the same model is used before the role
+ok 350 - history of the same model is used before the role
+  ---
+  duration_ms: 0.6671
+  type: 'test'
+  ...
+# Subtest: a working step past its median is longer than usual and stays at 2 minutes
+ok 351 - a working step past its median is longer than usual and stays at 2 minutes
+  ---
+  duration_ms: 0.381
+  type: 'test'
+  ...
+# Subtest: parallel steps count once, as the longest
+ok 352 - parallel steps count once, as the longest
+  ---
+  duration_ms: 0.2722
+  type: 'test'
+  ...
+# Subtest: steps in sequence add up
+ok 353 - steps in sequence add up
+  ---
+  duration_ms: 0.5009
+  type: 'test'
+  ...
+# Subtest: the history file keeps one line per step and the last 500
+ok 354 - the history file keeps one line per step and the last 500
+  ---
+  duration_ms: 5382.7244
+  type: 'test'
+  ...
+# Subtest: a finished step is recorded when it ends, without the project or the prompt
+ok 355 - a finished step is recorded when it ends, without the project or the prompt
+  ---
+  duration_ms: 151.0021
+  type: 'test'
+  ...
+# Subtest: the snapshot carries timeLeft for work that still has a step to do
+ok 356 - the snapshot carries timeLeft for work that still has a step to do
+  ---
+  duration_ms: 96.3021
+  type: 'test'
+  ...
+# Subtest: roles are canonicalized and synonyms mapped for defaults and history matching
+ok 357 - roles are canonicalized and synonyms mapped for defaults and history matching
+  ---
+  duration_ms: 0.5977
+  type: 'test'
+  ...
+# Subtest: various status representations (waiting for quota, in_progress, working) are recognized
+ok 358 - various status representations (waiting for quota, in_progress, working) are recognized
+  ---
+  duration_ms: 0.3993
+  type: 'test'
+  ...
+# Subtest: dependency edge cases: self-dependency, cycle, non-existent deps, and diamond graph
+ok 359 - dependency edge cases: self-dependency, cycle, non-existent deps, and diamond graph
+  ---
+  duration_ms: 0.3278
+  type: 'test'
+  ...
+# Subtest: exact confidence levels (sure) for single and multiple roles
+ok 360 - exact confidence levels (sure) for single and multiple roles
+  ---
+  duration_ms: 0.3986
+  type: 'test'
+  ...
+# Subtest: timing edge cases: clock skew (future startedAt), invalid startedAt, and exact median boundary
+ok 361 - timing edge cases: clock skew (future startedAt), invalid startedAt, and exact median boundary
+  ---
+  duration_ms: 0.2211
+  type: 'test'
+  ...
+# Subtest: stepRecord and parseHistory validate inputs and sanitize data
+ok 362 - stepRecord and parseHistory validate inputs and sanitize data
+  ---
+  duration_ms: 0.3632
+  type: 'test'
+  ...
+# Subtest: appendStepTime and readStepTimes handle non-existent directories and invalid inputs
+ok 363 - appendStepTime and readStepTimes handle non-existent directories and invalid inputs
+  ---
+  duration_ms: 9.4942
+  type: 'test'
+  ...
+# Subtest: a light model is not chosen to verify when a stronger one can
+ok 364 - a light model is not chosen to verify when a stronger one can
+  ---
+  duration_ms: 3.4753
+  type: 'test'
+  ...
+# Subtest: a light model still verifies when it is the only one
+ok 365 - a light model still verifies when it is the only one
+  ---
+  duration_ms: 0.2173
+  type: 'test'
+  ...
+# Subtest: building is not affected: the first model in order still builds
+ok 366 - building is not affected: the first model in order still builds
+  ---
+  duration_ms: 0.3064
+  type: 'test'
+  ...
+# Subtest: closing UI views neither kills workers nor disables backend monitoring
+ok 367 - closing UI views neither kills workers nor disables backend monitoring
+  ---
+  duration_ms: 667.8302
+  type: 'test'
+  ...
+# Subtest: a finished work explains what happened, in English
+ok 368 - a finished work explains what happened, in English
+  ---
+  duration_ms: 2.3593
+  type: 'test'
+  ...
+# Subtest: problems are named, and a model change is not a problem
+ok 369 - problems are named, and a model change is not a problem
+  ---
+  duration_ms: 0.5517
+  type: 'test'
+  ...
+# Subtest: a confirmed goal says so
+ok 370 - a confirmed goal says so
+  ---
+  duration_ms: 0.2405
+  type: 'test'
+  ...
+# Subtest: implementation launch rejects missing real linked folder before creating launch artifacts
+ok 371 - implementation launch rejects missing real linked folder before creating launch artifacts
+  ---
+  duration_ms: 4.1276
+  type: 'test'
+  ...
+# Subtest: missing project directory never reaches injected inspection or launch
+ok 372 - missing project directory never reaches injected inspection or launch
+  ---
+  duration_ms: 42.3921
+  type: 'test'
+  ...
+# Subtest: repository inspection never inherits a parent repository outside the linked folder
+ok 373 - repository inspection never inherits a parent repository outside the linked folder
+  ---
+  duration_ms: 194.7152
+  type: 'test'
+  ...
+# Subtest: worker launch rejects sibling, traversal and symlink destinations before artifacts
+ok 374 - worker launch rejects sibling, traversal and symlink destinations before artifacts
+  ---
+  duration_ms: 8.5887
+  type: 'test'
+  ...
+# Subtest: execution comparison does not read dirty files through a foreign directory symlink
+ok 375 - execution comparison does not read dirty files through a foreign directory symlink
+  ---
+  duration_ms: 7.7767
+  type: 'test'
+  ...
+# Subtest: explicit launch cwd and job folder cannot select a different directory
+ok 376 - explicit launch cwd and job folder cannot select a different directory
+  ---
+  duration_ms: 7.7178
+  type: 'test'
+  ...
+# Subtest: runner rejects a provider specification that changes the launch cwd
+ok 377 - runner rejects a provider specification that changes the launch cwd
+  ---
+  duration_ms: 236.4389
+  type: 'test'
+  ...
+# Subtest: canonical linked directory survives the runner job file and research keeps its isolated directory
+ok 378 - canonical linked directory survives the runner job file and research keeps its isolated directory
+  ---
+  duration_ms: 3551.9166
+  type: 'test'
+  ...
+# Subtest: repository inspection rejects redirected gitdir metadata before commands
+ok 379 - repository inspection rejects redirected gitdir metadata before commands
+  ---
+  duration_ms: 105.239
+  type: 'test'
+  ...
+# Subtest: repository inspection rejects redirected HEAD metadata before commands
+ok 380 - repository inspection rejects redirected HEAD metadata before commands
+  ---
+  duration_ms: 189.4193
+  type: 'test'
+  ...
+# Worker snapshots refresh liveness and keep terminal jobs inactive, including reused PIDs.
+# Subtest: engine\\worker-snapshot.test.cjs
+ok 94 - engine\\worker-snapshot.test.cjs
+  ---
+  duration_ms: 288.684
+  type: 'test'
+  ...
+# Detached worker startup receives full long Unicode research job via preserved input file.
+# Temp cleanup outlasts a process holding the folder and refuses paths outside temp.
+# Subtest: engine\\worker-startup.test.cjs
+ok 95 - engine\\worker-startup.test.cjs
+  ---
+  duration_ms: 3171.26
+  type: 'test'
+  ...
+# PASS browser discovery fixtures; no real browser coverage
+# PASS actual disposable child startup failure classification; this is not a browser test
+# Subtest: scripts\\engineering\\browser.test.cjs
+ok 96 - scripts\\engineering\\browser.test.cjs
+  ---
+  duration_ms: 386.0957
+  type: 'test'
+  ...
+# PASS diagnostic allowlist, exact-preview confirmation, no overwrite
+# Subtest: scripts\\engineering\\diagnostics.test.cjs
+ok 97 - scripts\\engineering\\diagnostics.test.cjs
+  ---
+  duration_ms: 156.1797
+  type: 'test'
+  ...
+# PASS launcher presence, executable header and missing-file regression
+# Subtest: scripts\\engineering\\release.test.cjs
+ok 98 - scripts\\engineering\\release.test.cjs
+  ---
+  duration_ms: 279.8798
+  type: 'test'
+  ...
+1..385
+# tests 385
+# suites 0
+# pass 384
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 53751.7553

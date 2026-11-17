@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: ChatGPT siblings inherit one provider policy while Grok stays independent after restart
+ok 1 - ChatGPT siblings inherit one provider policy while Grok stays independent after restart
+  ---
+  duration_ms: 41.3004
+  type: 'test'
+  ...
+# Subtest: shared usage boundaries, unread quotas, explicit fallbacks and cycles
+ok 2 - shared usage boundaries, unread quotas, explicit fallbacks and cycles
+  ---
+  duration_ms: 0.6738
+  type: 'test'
+  ...
+# Subtest: remaining quota semantics, automatic early warning, reset and legacy migration
+ok 3 - remaining quota semantics, automatic early warning, reset and legacy migration
+  ---
+  duration_ms: 0.571
+  type: 'test'
+  ...
+# Subtest: automatic fallback skips sibling pools, restricted roles, disabled and limited providers
+ok 4 - automatic fallback skips sibling pools, restricted roles, disabled and limited providers
+  ---
+  duration_ms: 0.4591
+  type: 'test'
+  ...
+# Subtest: permission restrictions and privacy-safe categorized reports
+ok 5 - permission restrictions and privacy-safe categorized reports
+  ---
+  duration_ms: 1.1165
+  type: 'test'
+  ...
+# Subtest: a failed quota refresh cannot keep authorizing calls using stale percentages
+ok 6 - a failed quota refresh cannot keep authorizing calls using stale percentages
+  ---
+  duration_ms: 7.4699
+  type: 'test'
+  ...
+# Subtest: policy API persists, lead and approved workers use automatic fallback without inference
+ok 7 - policy API persists, lead and approved workers use automatic fallback without inference
+  ---
+  duration_ms: 289.2063
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 347.989

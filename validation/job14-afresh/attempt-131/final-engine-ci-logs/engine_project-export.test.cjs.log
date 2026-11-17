@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: export marks restore supported and still strips secrets
+ok 1 - export marks restore supported and still strips secrets
+  ---
+  duration_ms: 3.5751
+  type: 'test'
+  ...
+# Subtest: import creates a new notebook project and remaps paused execution
+ok 2 - import creates a new notebook project and remaps paused execution
+  ---
+  duration_ms: 5.3812
+  type: 'test'
+  ...
+# Subtest: import twice keeps both restored executions
+ok 3 - import twice keeps both restored executions
+  ---
+  duration_ms: 1.7593
+  type: 'test'
+  ...
+# Subtest: import relinks a confirmed folder and rejects a colliding overwrite
+ok 4 - import relinks a confirmed folder and rejects a colliding overwrite
+  ---
+  duration_ms: 2.5307
+  type: 'test'
+  ...
+# Subtest: import rejects unknown payloads
+ok 5 - import rejects unknown payloads
+  ---
+  duration_ms: 0.6702
+  type: 'test'
+  ...
+# Subtest: HTTP import restores one project without touching the other or launching workers
+ok 6 - HTTP import restores one project without touching the other or launching workers
+  ---
+  duration_ms: 127.2785
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 178.617
