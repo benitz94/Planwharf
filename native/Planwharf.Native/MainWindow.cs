@@ -38,9 +38,11 @@ public sealed partial class MainWindow : Window
     readonly string version;
 
     PlanwharfApi? api;
+    DesktopAlerts? desktopAlerts;
+    internal Action<WorkAlert>? AlertReceived { get; set; }
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
-    bool busy, menuOpen;
+    bool busy, menuOpen, refreshing;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
@@ -184,6 +186,13 @@ public sealed partial class MainWindow : Window
     public void Connect(PlanwharfApi connected)
     {
         api = connected;
+        if (desktopAlerts == null)
+        {
+            desktopAlerts = new DesktopAlerts(this);
+            AlertReceived = desktopAlerts.Show;
+            Activated += (_, _) => desktopAlerts.ClearAttention();
+            Closing += (_, _) => desktopAlerts.Dispose();
+        }
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         timer.Tick += async (_, _) => await RefreshAsync(readOnly: ticks++ % 5 != 0);
         timer.Start();
@@ -207,7 +216,13 @@ public sealed partial class MainWindow : Window
     public void ShowError(string message) { title.Text = "Planwharf could not start"; hint.Text = message; hint.Foreground = Palette.Danger; }
 
     // Shows a snapshot of the server's state; the window redraws only what changed.
-    public void Show(JsonNode state) { snapshot = state; Render(); }
+    public void Show(JsonNode state)
+    {
+        var alerts = WorkAlerts.Decide(snapshot, state, Prefs.Alerts);
+        snapshot = state;
+        foreach (var alert in alerts) AlertReceived?.Invoke(alert);
+        Render();
+    }
 
     // For the window tests: the repository as the server would report it.
     public void ShowRepo(string projectId, string workId, JsonNode repository)
@@ -230,9 +245,11 @@ public sealed partial class MainWindow : Window
 
     async Task RefreshAsync(bool readOnly)
     {
-        if (api == null) return;
+        if (api == null || refreshing) return;
+        refreshing = true;
         try { Show(await api.SnapshotAsync(readOnly, projectId)); }
         catch (Exception error) { hint.Text = "Planwharf is not answering: " + error.Message; }
+        finally { refreshing = false; }
     }
 
     void Render()

@@ -201,6 +201,21 @@ public sealed partial class MainWindow
 
         // Light or dark, and in the dark theme the text colour, as in the chat page.
         side.Children.Add(SettingsHead("Look"));
+        side.Children.Add(Explain("Alerts when work is done or needs you"));
+        foreach (var alertName in new[] { "Notification", "Flash", "Sound" })
+        {
+            var enabled = alertName switch { "Notification" => Prefs.Alerts.Notification, "Flash" => Prefs.Alerts.Flash, _ => Prefs.Alerts.Sound };
+            var alertToggle = new ToggleSwitch { OnContent = alertName, OffContent = alertName, IsChecked = enabled };
+            Avalonia.Automation.AutomationProperties.SetName(alertToggle, $"Alerts: {alertName.ToLowerInvariant()}");
+            alertToggle.IsCheckedChanged += (_, _) =>
+            {
+                var on = alertToggle.IsChecked == true;
+                Prefs.Save(alerts: alertName switch { "Notification" => Prefs.Alerts with { Notification = on },
+                    "Flash" => Prefs.Alerts with { Flash = on }, _ => Prefs.Alerts with { Sound = on } });
+                if (alertName == "Flash" && !on) desktopAlerts?.ClearAttention();
+            };
+            side.Children.Add(alertToggle);
+        }
         var themes = new WrapPanel();
         foreach (var (value, icon, label) in new[] { ("light", "sun", "Light"), ("dark", "moon", "Dark") })
         {
