@@ -5,7 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const { privateEmailRefused, githubNoreply, useNoreply } = require('./push-email.cjs');
+const { privateEmailRefused, githubNoreply, useNoreply, HOW_TO } = require('./push-email.cjs');
 
 const NOREPLY = '123+owner@users.noreply.github.com';
 const env = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))), GIT_AUTHOR_NAME: 'Owner', GIT_COMMITTER_NAME: 'Owner' };
@@ -73,6 +73,7 @@ test('a refused rewrite preserves dirty bytes and can be retried after the edit 
   assert.equal((await useNoreply(run(work), NOREPLY)).ok, false);
   assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
   assert.equal(fs.readFileSync(file, 'utf8'), 'unsaved\r\n');
+  assert.equal(git(work, ['config', 'user.email']).stdout.trim(), NOREPLY);
   assert.equal(git(work, ['add', 'windows.txt']).status, 0);
   assert.equal(git(work, ['commit', '-q', '-m', 'save edit']).status, 0);
   assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 3 });
@@ -103,6 +104,85 @@ test('already published commits are unchanged on a repeated email repair', async
   const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
   assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 0 });
   assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+});
+
+test('GH007 detection and noreply parsing cover empty, CRLF, quotes and non-word matches', async () => {
+  assert.equal(privateEmailRefused(), false);
+  assert.equal(privateEmailRefused(''), false);
+  assert.equal(privateEmailRefused('remote: error: GH007: Your push would publish a private email address.'), true);
+  assert.equal(privateEmailRefused('stdout only\nGH007\n'), true);
+  assert.equal(privateEmailRefused('xGH007'), false);
+  assert.equal(privateEmailRefused('gh007'), false);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: NOREPLY + '\r\n' })), NOREPLY);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '  ' + NOREPLY + '  ' })), NOREPLY);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '"' + NOREPLY + '"' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0 })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: NOREPLY + ' extra' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '012+user_name@users.noreply.github.com' })), null);
+  assert.match(HOW_TO, /noreply\.github\.com/);
+});
+
+test('useNoreply reports config and rev-list failures without rewriting', async () => {
+  const calls = [];
+  assert.deepEqual(await useNoreply(async args => {
+    calls.push(args);
+    return { status: 1, stdout: '', stderr: 'config denied' };
+  }, NOREPLY), { ok: false, reason: 'Could not set the GitHub noreply email for this project.' });
+  assert.deepEqual(calls, [['config', 'user.email', NOREPLY]]);
+  assert.deepEqual(await useNoreply(async args => {
+    if (args[0] === 'config') return { status: 0, stdout: '', stderr: '' };
+    if (args[0] === 'rev-list') return { status: 1, stdout: '', stderr: 'rev-list failed' };
+    throw new Error('unexpected ' + args.join(' '));
+  }, NOREPLY), { ok: false, reason: 'Could not list the commits not yet on GitHub.' });
+});
+
+test('the first unpublished commit is rewritten from the root', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-email-root-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  git(dir, ['init', '-q', '-b', 'main']);
+  git(dir, ['config', 'core.autocrlf', 'false']);
+  git(dir, ['config', 'user.email', 'owner@private.example']);
+  git(dir, ['config', 'user.name', 'Owner']);
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');
+  git(dir, ['add', '-A']); git(dir, ['commit', '-q', '-m', 'first']);
+  assert.deepEqual(await useNoreply(run(dir), NOREPLY), { ok: true, rewritten: 1 });
+  assert.equal(git(dir, ['log', '-1', '--format=%ae %ce %s']).stdout.trim(), `${NOREPLY} ${NOREPLY} first`);
+  assert.equal(fs.readFileSync(path.join(dir, 'a.txt'), 'utf8'), 'a\n');
+});
+
+test('untracked files survive a successful rewrite', async t => {
+  const { work } = fixture(t);
+  const stray = path.join(work, 'stray.txt');
+  fs.writeFileSync(stray, 'keep me\n');
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(fs.readFileSync(stray, 'utf8'), 'keep me\n');
+});
+
+test('concurrent rewrites leave the repository usable for a retry', async t => {
+  const { work } = fixture(t);
+  await Promise.all([useNoreply(run(work), NOREPLY), useNoreply(run(work), NOREPLY)]);
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-merge')), false);
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-apply')), false);
+  const retry = await useNoreply(run(work), NOREPLY);
+  assert.equal(retry.ok, true);
+  assert.equal(git(work, ['log', '-1', '--format=%ae']).stdout.trim(), NOREPLY);
+  assert.equal(fs.readFileSync(path.join(work, 'c.txt'), 'utf8'), 'c\n');
+});
+
+test('a folder with spaces and a non-ASCII name still rewrites unpublished commits', async t => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-email-'));
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }));
+  const dir = path.join(parent, 'città work');
+  fs.mkdirSync(dir);
+  git(dir, ['init', '-q', '-b', 'main']);
+  git(dir, ['config', 'core.autocrlf', 'false']);
+  git(dir, ['config', 'user.email', 'owner@private.example']);
+  git(dir, ['config', 'user.name', 'Owner']);
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');
+  git(dir, ['add', '-A']); git(dir, ['commit', '-q', '-m', 'first']);
+  assert.deepEqual(await useNoreply(run(dir), NOREPLY), { ok: true, rewritten: 1 });
+  assert.equal(git(dir, ['log', '-1', '--format=%ae']).stdout.trim(), NOREPLY);
 });
 
 test('a long summary keeps its "Needs your decision" line whole', () => {
