@@ -38,7 +38,9 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 07 | #104 | Remove the Review role | Jobs 05 and 06 marked done in the plan |
 | 08 | #110 | An estimate of the time left | — |
 | 09 | #114 | The native app updates itself | — |
-| 11 | #? | Computer alerts when work finishes or needs the owner: system notification, taskbar attention and sound, independently switchable in Look | Independent verification caught alerts from late refreshes after window closure; added regression, resume, effect recovery and concurrent decision tests. Waiting for review |
+| 10 | #? | Tools (MCP, browser, hooks, memory) chosen per model, or the same as the project | — |
+| 11 | #? | An alert on the computer when work ends or needs the owner: notification, taskbar flash, sound, each switchable | — |
+| 12 | #? | Alerts and commands on the phone: ntfy, and a Telegram bot with /status, /stop, /resume | — |
 
 ## Improvements found while Planwharf worked on itself
 
