@@ -92,6 +92,10 @@ public sealed class PlanwharfApi(string address)
         ? PostAsync("/api/projects/tools", new { projectId, tools })
         : PostAsync("/api/projects/tools", new { projectId, tools, modelId });
 
+    public Task<JsonNode> PhoneSettingsAsync() => GetAsync("/api/settings/phone");
+    public Task<JsonNode?> SetPhoneSettingsAsync(object body) => PostAsync("/api/settings/phone", body);
+    public Task<JsonNode?> TestPhoneAlertAsync() => PostAsync("/api/settings/phone/test", new { });
+
     public Task<JsonNode> AutoSwitchAsync() => GetAsync("/api/orchestrator/auto-switch");
     public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? fiveHourPercent = null, int? weeklyPercent = null) =>
         fiveHourPercent is { } five && weeklyPercent is { } week ? PostAsync("/api/orchestrator/auto-switch", new { enabled, fiveHourPercent = five, weeklyPercent = week }) : PostAsync("/api/orchestrator/auto-switch", new { enabled });

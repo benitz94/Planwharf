@@ -12,7 +12,7 @@ namespace Planwharf.Native;
 // skills, moving a project, updates, start over, remove, quit.
 public sealed partial class MainWindow
 {
-    JsonNode? autoSwitch, skills, updates;
+    JsonNode? autoSwitch, skills, updates, phone;
     readonly HashSet<string> githubDeclined = new();
 
     // Extra tools for one project's team, all off by default (same words as the chat page).
@@ -28,9 +28,9 @@ public sealed partial class MainWindow
     static bool Flag(JsonNode? node) => node is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
     // For the window tests: what the server would answer for these sections.
-    public void ShowSettings(JsonNode autoSwitchState, JsonNode programs, JsonNode updateState)
+    public void ShowSettings(JsonNode autoSwitchState, JsonNode programs, JsonNode updateState, JsonNode? phoneState = null)
     {
-        autoSwitch = autoSwitchState; skills = programs; updates = updateState; sideSig = null; Render();
+        autoSwitch = autoSwitchState; skills = programs; updates = updateState; phone = phoneState; sideSig = null; Render();
     }
 
     async Task LoadSettingsAsync(bool checkUpdates = false)
@@ -40,6 +40,7 @@ public sealed partial class MainWindow
         try { autoSwitch = await api.AutoSwitchAsync(); } catch { /* section hidden */ }
         try { skills = (await api.SkillsAsync())["programs"]; } catch { skills = new JsonArray(); }
         try { updates = await api.UpdatesAsync(checkUpdates); } catch { /* offline checks never interrupt work */ }
+        try { phone = await api.PhoneSettingsAsync(); } catch { phone = new JsonObject(); }
         if (projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
         sideSig = null; Render();
     }
@@ -55,7 +56,7 @@ public sealed partial class MainWindow
     }
 
     string SettingsSignature() => (CurrentRow()?["github"]?.ToJsonString() ?? "") + GithubOffer(CurrentRow()) + snapshot?["mode"]?.ToJsonString()
-        + snapshot?["projectTools"]?[projectId ?? ""]?.ToJsonString() + autoSwitch?.ToJsonString() + skills?.ToJsonString() + updates?.ToJsonString();
+        + snapshot?["projectTools"]?[projectId ?? ""]?.ToJsonString() + autoSwitch?.ToJsonString() + skills?.ToJsonString() + updates?.ToJsonString() + phone?.ToJsonString();
 
     // The heading of a Settings section, with the same icon and colour as in the chat page.
     static Control SettingsHead(string text)
@@ -74,6 +75,7 @@ public sealed partial class MainWindow
             "Quit" => ("power", Palette.Muted, Palette.Surface2),
             "Updates" => ("refresh", Palette.Accent, Palette.AccentSoft),
             "Look" => ("sun", Palette.Lead, Palette.LeadSoft),
+            "Phone" => ("phone", Palette.Accent, Palette.AccentSoft),
             _ => ("settings", Palette.Muted, Palette.Surface2),
         };
         return Look.Head(icon, color, soft, text).With(head => head.Margin = new Thickness(0, 12, 0, 0));
@@ -303,6 +305,7 @@ public sealed partial class MainWindow
         side.Children.Add(move);
 
         UpdatesSection();
+        PhoneSection();
 
         if (row != null)
         {
@@ -363,6 +366,100 @@ public sealed partial class MainWindow
             }
         }
         side.Children.Add(buttons);
+    }
+
+    void PhoneSection()
+    {
+        side.Children.Add(SettingsHead("Phone"));
+        side.Children.Add(Explain("Alerts on your phone when work finishes or needs you, and short Telegram commands."));
+
+        var ntfyEnabled = Flag(phone?["ntfy"]?["enabled"]);
+        var ntfyToggle = new ToggleSwitch { OnContent = "ntfy alerts", OffContent = "ntfy alerts", IsChecked = ntfyEnabled };
+        var ntfyTopicBox = Look.Field(new TextBox { Text = Str(phone?["ntfy"]?["topic"]), Watermark = "Topic name, e.g. pw-my-alerts" });
+        side.Children.Add(ntfyToggle);
+        side.Children.Add(Explain("ntfy (no account): pick a private topic name, then install the ntfy app and subscribe to it."));
+        side.Children.Add(ntfyTopicBox);
+
+        var tgEnabled = Flag(phone?["telegram"]?["enabled"]);
+        var tgToggle = new ToggleSwitch { OnContent = "Telegram bot", OffContent = "Telegram bot", IsChecked = tgEnabled };
+        side.Children.Add(tgToggle);
+        side.Children.Add(Explain("Create a bot with @BotFather and paste its token here."));
+        var tokenBox = Look.Field(new TextBox { Watermark = Flag(phone?["telegram"]?["tokenConfigured"]) ? $"Token saved ({Str(phone?["telegram"]?["tokenPreview"])}). Paste new token to replace." : "Bot token from @BotFather" });
+        side.Children.Add(tokenBox);
+
+        var paired = Flag(phone?["telegram"]?["paired"]);
+        if (paired)
+        {
+            var who = Str(phone?["telegram"]?["pairedUsername"]) is { Length: > 0 } u ? $" (@{u})" : "";
+            side.Children.Add(Explain($"Connected to chat {Str(phone?["telegram"]?["pairedChatId"])}{who}. Responds to /status, /stop <project>, /resume <project>."));
+            var unpairBtn = Small("Unpair");
+            unpairBtn.Click += async (_, _) =>
+            {
+                await DoAsync(async () => {
+                    phone = await api!.SetPhoneSettingsAsync(new { telegram = new { unpair = true } });
+                    sideSig = null; Render();
+                }, "Telegram unpaired.");
+            };
+            side.Children.Add(unpairBtn);
+        }
+        else
+        {
+            var code = Str(phone?["telegram"]?["startCode"]);
+            if (code.Length > 0)
+            {
+                side.Children.Add(Explain($"Open your bot in Telegram and send this code to connect:\n{code}"));
+                var newCodeBtn = Small("New code");
+                newCodeBtn.Click += async (_, _) =>
+                {
+                    await DoAsync(async () => {
+                        phone = await api!.SetPhoneSettingsAsync(new { telegram = new { resetStartCode = true } });
+                        sideSig = null; Render();
+                    }, "New start code generated.");
+                };
+                side.Children.Add(newCodeBtn);
+            }
+        }
+
+        var saveBtn = Small("Save Phone settings", primary: true);
+        saveBtn.Click += async (_, _) =>
+        {
+            var topic = ntfyTopicBox.Text?.Trim() ?? "";
+            var token = tokenBox.Text?.Trim();
+            var patch = new Dictionary<string, object>
+            {
+                ["ntfy"] = new Dictionary<string, object>
+                {
+                    ["enabled"] = ntfyToggle.IsChecked == true,
+                    ["topic"] = topic
+                },
+                ["telegram"] = new Dictionary<string, object>
+                {
+                    ["enabled"] = tgToggle.IsChecked == true
+                }
+            };
+            if (!string.IsNullOrEmpty(token))
+            {
+                patch["telegramToken"] = token;
+            }
+            await DoAsync(async () => {
+                phone = await api!.SetPhoneSettingsAsync(patch);
+                sideSig = null; Render();
+            }, "Phone settings saved.");
+        };
+
+        var testBtn = Small("Send test alert");
+        testBtn.Click += async (_, _) =>
+        {
+            await DoAsync(async () => {
+                var sent = await api!.TestPhoneAlertAsync();
+                var ntfy = sent?["result"]?["ntfy"];
+                var telegram = sent?["result"]?["telegram"];
+                if (ntfy == null && telegram == null) throw new InvalidOperationException("Turn on a phone channel and save it before sending a test.");
+                if ((ntfy != null && !Flag(ntfy["ok"])) || (telegram != null && !Flag(telegram["ok"]))) throw new InvalidOperationException("The test alert could not be delivered.");
+            }, "Test alert sent.");
+        };
+
+        side.Children.Add(Row(saveBtn, testBtn));
     }
 
     // Downloads the checked native zip, saves running work the same way as Stop the crew, then quits so the new copy can replace this folder.

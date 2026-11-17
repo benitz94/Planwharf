@@ -58,7 +58,8 @@ public class WindowTests
         window.OpenSide("settings");
         window.ShowSettings(System.Text.Json.Nodes.JsonNode.Parse("""{ "enabled": true, "thresholdPercent": 20 }""")!,
             System.Text.Json.Nodes.JsonNode.Parse("""[ { "cli": "claude", "label": "Claude Code", "skillsFolder": "/home/sample/.claude/skills", "instructions": "/home/sample/.claude/CLAUDE.md", "settingsExist": true, "skills": [ { "name": "release-notes", "description": "Writes release notes from the git log.", "source": "yours" } ] } ]""")!,
-            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!);
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "ntfy": { "enabled": true, "topic": "my-alerts" }, "telegram": { "enabled": true, "tokenConfigured": true, "tokenPreview": "123...456", "paired": false, "startCode": "pw-481920" } }""")!);
         var dialog = new ProjectDialog();
         dialog.Show();
         var ok = new ConfirmDialog(Planwharf.Native.Core.TeamViews.OkQuestion([new Planwharf.Native.Core.ProviderView("claude", "Claude Code", true, 2)]), "Allow Claude Code", "Planwharf needs your OK", "Cancel");
