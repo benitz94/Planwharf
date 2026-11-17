@@ -66,9 +66,15 @@ const excludeAgain = fs.readFileSync(path.join(folder, '.git', 'info', 'exclude'
 assert.equal(excludeAgain.split(/\r?\n/).filter(line => line.trim() === '/.planwharf/').length, 1);
 
 fs.writeFileSync(path.join(folder, 'notes.txt'), 'dirty\n');
-const blocked = planFile.prepare(folder, { goal, steps });
+// The same work going on, on its own branch: the crew's unfinished changes do not block it.
+const resumed = planFile.prepare(folder, { goal, steps });
+assert.equal(resumed.ok, true, resumed.reason);
+assert.equal(fs.readFileSync(path.join(folder, 'notes.txt'), 'utf8'), 'dirty\n', 'the changes stay');
+// A new work, from another branch, is blocked by them.
+const blocked = planFile.prepare(folder, { goal: 'Another goal on `fix/other-work`', steps });
 assert.equal(blocked.ok, false);
 assert.equal(blocked.reason, 'Commit or stash the changes in the folder first: notes.txt, then press Let the crew do it again.');
+assert.equal(git(folder, ['branch', '--show-current']), 'fix/plan-file', 'a blocked start does not change branch');
 fs.unlinkSync(path.join(folder, 'notes.txt'));
 
 fs.writeFileSync(path.join(folder, 'work.txt'), 'work\n');

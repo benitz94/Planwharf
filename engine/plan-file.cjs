@@ -260,12 +260,14 @@ function prepare(folder, options = {}) {
     return { ok: true, git: false, chat: null };
   }
   ensureExclude(folder);
-  const dirty = dirtyLines(folder);
-  if (dirty.length) return { ok: false, reason: dirtyMessage(dirty) };
   const goal = String(options.goal || '').trim();
-  const fetched = git(folder, ['fetch', 'origin'], 30000);
   const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;
   const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
+  // Uncommitted changes block a new work, not the same work going on: on its own branch they are the
+  // crew's unfinished changes, and the next step starts from them.
+  const dirty = dirtyLines(folder);
+  if (dirty.length && currentBranch(folder) !== name) return { ok: false, reason: dirtyMessage(dirty) };
+  const fetched = git(folder, ['fetch', 'origin'], 30000);
   let base = '';
   let baseSha = '';
   let startPoint = null;
