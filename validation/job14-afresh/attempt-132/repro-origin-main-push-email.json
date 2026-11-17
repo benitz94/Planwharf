@@ -1,9 +1,0 @@
-{
-  "ok": true,
-  "rewritten": 2,
-  "workAutocrlf": "true",
-  "beforeHex": "630a",
-  "afterHex": "630d0a",
-  "bytesEqual": false,
-  "afterUtf8": "\"c\\r\\n\""
-}

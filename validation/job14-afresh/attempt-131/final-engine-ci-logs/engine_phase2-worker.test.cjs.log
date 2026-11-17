@@ -1,2 +1,0 @@
-PASS: actual parent and descendant processes terminated.
-PASS Phase 2 worker: large UTF-8 stdin prompt intact, exact Codex/model argv, structured status/identity validation, exit 0 insufficient.
