@@ -10,6 +10,20 @@ namespace Planwharf.Native.Tests;
 public class WorkAlertWindowTests
 {
     [AvaloniaFact]
+    public void Late_snapshot_after_close_does_not_alert_from_the_old_window()
+    {
+        var alerts = new List<WorkAlert>();
+        var window = new MainWindow("test") { AlertReceived = alerts.Add };
+        window.Show();
+        window.Show(SampleState.Working());
+        window.Close();
+
+        // A pending HTTP refresh can finish after a look change closes this window.
+        window.Show(SampleState.Finished());
+        Assert.Empty(alerts);
+    }
+
+    [AvaloniaFact]
     public void Snapshot_refresh_delivers_once_for_each_project_including_background_projects()
     {
         var alerts = new List<WorkAlert>();

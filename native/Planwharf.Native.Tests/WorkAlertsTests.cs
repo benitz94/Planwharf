@@ -6,6 +6,42 @@ namespace Planwharf.Native.Tests;
 
 public class WorkAlertsTests
 {
+    [Fact]
+    public void Resuming_the_same_work_rearms_its_next_pause()
+    {
+        var running = SampleState.Working();
+        var paused = running.DeepClone();
+        paused["projects"]![0]!["megaTask"]!["status"] = "PAUSED";
+        Assert.Single(WorkAlerts.Decide(running, paused, new()));
+        Assert.Empty(WorkAlerts.Decide(paused, running, new()));
+        Assert.Single(WorkAlerts.Decide(running, paused, new()));
+    }
+
+    [Fact]
+    public void Unavailable_attention_does_not_prevent_sound_or_later_delivery()
+    {
+        var called = new List<string>();
+        DesktopAlerts.Deliver(new(), false, () => called.Add("notification"),
+            () => throw new InvalidOperationException("No window manager"), () => called.Add("sound"));
+        DesktopAlerts.Deliver(new(), false, () => called.Add("notification"),
+            () => called.Add("flash"), () => called.Add("sound"));
+        Assert.Equal(new[] { "notification", "sound", "notification", "flash", "sound" }, called);
+    }
+
+    [Fact]
+    public async Task Concurrent_decisions_do_not_mutate_or_consume_snapshots()
+    {
+        var before = SampleState.Working();
+        var after = SampleState.Finished();
+        var originalBefore = before.ToJsonString();
+        var originalAfter = after.ToJsonString();
+        var results = await Task.WhenAll(Enumerable.Range(0, 16).Select(_ => Task.Run(() =>
+            WorkAlerts.Decide(before, after, new()))));
+        Assert.All(results, result => Assert.True(Assert.Single(result).Done));
+        Assert.Equal(originalBefore, before.ToJsonString());
+        Assert.Equal(originalAfter, after.ToJsonString());
+    }
+
     [Theory]
     [InlineData("COMPLETE", true)]
     [InlineData("FAILED", false)]

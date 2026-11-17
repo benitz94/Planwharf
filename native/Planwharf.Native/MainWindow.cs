@@ -42,7 +42,7 @@ public sealed partial class MainWindow : Window
     internal Action<WorkAlert>? AlertReceived { get; set; }
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
-    bool busy, menuOpen, refreshing;
+    bool busy, menuOpen, refreshing, closed;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
@@ -54,6 +54,7 @@ public sealed partial class MainWindow : Window
     public MainWindow(string version)
     {
         this.version = version;
+        Closed += (_, _) => closed = true;
         Title = "Planwharf"; Width = 1360; Height = 860; MinWidth = 960; MinHeight = 560; Background = Palette.Background;
         threadScroll = new ScrollViewer { Content = thread, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
@@ -218,6 +219,8 @@ public sealed partial class MainWindow : Window
     // Shows a snapshot of the server's state; the window redraws only what changed.
     public void Show(JsonNode state)
     {
+        // A refresh started before closing can complete after a replacement window opens.
+        if (closed) return;
         var alerts = WorkAlerts.Decide(snapshot, state, Prefs.Alerts);
         snapshot = state;
         foreach (var alert in alerts) AlertReceived?.Invoke(alert);
