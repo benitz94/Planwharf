@@ -436,7 +436,11 @@ public sealed partial class MainWindow
         testBtn.Click += async (_, _) =>
         {
             await DoAsync(async () => {
-                await api!.TestPhoneAlertAsync();
+                var sent = await api!.TestPhoneAlertAsync();
+                var ntfy = sent?["result"]?["ntfy"];
+                var telegram = sent?["result"]?["telegram"];
+                if (ntfy == null && telegram == null) throw new InvalidOperationException("Turn on a phone channel and save it before sending a test.");
+                if ((ntfy != null && !Flag(ntfy["ok"])) || (telegram != null && !Flag(telegram["ok"]))) throw new InvalidOperationException("The test alert could not be delivered.");
             }, "Test alert sent.");
         };
 

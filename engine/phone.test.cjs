@@ -460,8 +460,9 @@ test('checkTransitions detects work ending, failing, or needing owner and alerts
 
     notifier.updateSettings({
       ntfy: { enabled: true, topic: 'engine-alerts', serverUrl: 'http://fake.ntfy.invalid' },
-      telegram: { enabled: true, pairedChatId: '12345' }
+      telegram: { enabled: true }
     }, 'secret-bot-token');
+    savePhoneSettings(tempDir, { telegram: { pairedChatId: '12345' } });
 
     // First call establishes baseline
     await notifier.checkTransitions();

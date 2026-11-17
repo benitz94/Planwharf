@@ -1,7 +1,26 @@
 'use strict';
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
+
+function restrictToOwner(file) {
+  try { fs.chmodSync(file, 0o600); } catch { /* Some systems ignore Unix modes. */ }
+  if (process.platform !== 'win32') return;
+  let user = '';
+  try { user = os.userInfo().username || ''; } catch { /* userInfo can fail on a locked account. */ }
+  if (!user) user = process.env.USERNAME || '';
+  if (!user) return;
+  try {
+    spawnSync('icacls', [file, '/inheritance:r', '/grant:r', `${user}:(R,W)`], { windowsHide: true, stdio: 'ignore' });
+  } catch { /* Leave the file in the user profile if the ACL tool is missing. */ }
+}
+
+function writePrivate(file, contents) {
+  fs.writeFileSync(file, contents, { mode: 0o600 });
+  restrictToOwner(file);
+}
 
 // Job 12: Alerts and commands on the phone (ntfy and Telegram bot).
 // Strict privacy rule: Never send prompts, code, file names or paths:
@@ -13,6 +32,7 @@ function sanitizeText(text) {
   if (!text || typeof text !== 'string') return '';
   // Strip file paths (Windows D:\... or Unix /... or relative ./...)
   let clean = text
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
     .replace(/[a-zA-Z]:\\[^\s"'<>]+/g, '[path]')
     .replace(/(?:^|\s)(?:\/|\.\/)[^\s"'<>]+/g, ' [path]')
     // Strip file extensions like .js, .cjs, .cs, .ts, .json, .md
@@ -82,6 +102,7 @@ function loadPhoneSettings(storeDir) {
   const settingsPath = path.join(storeDir, 'phone-settings.json');
   const tokenPath = path.join(storeDir, 'telegram-bot.token');
 
+  let corrupt = false;
   let config = {
     ntfy: {
       enabled: false,
@@ -92,7 +113,8 @@ function loadPhoneSettings(storeDir) {
       enabled: false,
       startCode: generateStartCode(),
       pairedChatId: null,
-      pairedUsername: null
+      pairedUsername: null,
+      updateOffset: 0
     }
   };
 
@@ -112,11 +134,13 @@ function loadPhoneSettings(storeDir) {
           }
           config.telegram.pairedChatId = raw.telegram.pairedChatId != null ? String(raw.telegram.pairedChatId) : null;
           config.telegram.pairedUsername = raw.telegram.pairedUsername != null ? String(raw.telegram.pairedUsername) : null;
+          const offset = Number(raw.telegram.updateOffset);
+          config.telegram.updateOffset = Number.isInteger(offset) && offset >= 0 ? offset : 0;
         }
       }
     }
   } catch (err) {
-    // Return default config if parse fails
+    corrupt = true;
   }
 
   let token = null;
@@ -128,7 +152,8 @@ function loadPhoneSettings(storeDir) {
 
   return {
     ...config,
-    telegramToken: token
+    telegramToken: token,
+    corrupt
   };
 }
 
@@ -152,17 +177,20 @@ function savePhoneSettings(storeDir, settings, newToken) {
         ? generateStartCode()
         : (settings.telegram?.startCode ? String(settings.telegram.startCode).trim() : current.telegram.startCode),
       pairedChatId: settings.telegram?.unpair ? null : (settings.telegram?.pairedChatId !== undefined ? (settings.telegram.pairedChatId ? String(settings.telegram.pairedChatId) : null) : current.telegram.pairedChatId),
-      pairedUsername: settings.telegram?.unpair ? null : (settings.telegram?.pairedUsername !== undefined ? (settings.telegram.pairedUsername ? String(settings.telegram.pairedUsername) : null) : current.telegram.pairedUsername)
+      pairedUsername: settings.telegram?.unpair ? null : (settings.telegram?.pairedUsername !== undefined ? (settings.telegram.pairedUsername ? String(settings.telegram.pairedUsername) : null) : current.telegram.pairedUsername),
+      updateOffset: settings.telegram?.updateOffset !== undefined && Number.isInteger(Number(settings.telegram.updateOffset))
+        ? Math.max(0, Number(settings.telegram.updateOffset))
+        : (Number(current.telegram.updateOffset) || 0)
     }
   };
 
-  fs.writeFileSync(settingsPath, JSON.stringify(updated, null, 2) + '\n', { mode: 0o600 });
+  writePrivate(settingsPath, JSON.stringify(updated, null, 2) + '\n');
 
   if (newToken !== undefined) {
     if (newToken === null || newToken === '') {
       try { fs.unlinkSync(tokenPath); } catch {}
     } else {
-      fs.writeFileSync(tokenPath, String(newToken).trim() + '\n', { mode: 0o600 });
+      writePrivate(tokenPath, String(newToken).trim() + '\n');
     }
   }
 
@@ -176,8 +204,8 @@ async function sendNtfyAlert({ topic, serverUrl = 'https://ntfy.sh', message, ti
   const base = serverUrl.replace(/\/+$/, '');
   const url = `${base}/${encodeURIComponent(topic.trim())}`;
   const headers = {
-    'Title': title,
-    'Priority': priority
+    'Title': String(title || '').replace(/[\r\n]+/g, ' ').slice(0, 200),
+    'Priority': String(priority || 'default').replace(/[\r\n]+/g, '')
   };
   if (tags && tags.length) headers['Tags'] = tags.join(',');
 
@@ -274,12 +302,12 @@ function matchProject(projects = [], query = '') {
     if (working.length === 1) return working[0];
     return null;
   }
-  // Try exact match on id or name
-  let found = projects.find(p => (p.id && p.id.toLowerCase() === q) || (p.name && p.name.toLowerCase() === q));
-  if (found) return found;
-  // Try partial match on name or id
-  found = projects.find(p => (p.id && p.id.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q)));
-  return found || null;
+  const named = value => (value && value.toLowerCase() === q);
+  const exact = projects.filter(p => named(p.id) || named(p.name));
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return null;
+  const partial = projects.filter(p => (p.id && p.id.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q)));
+  return partial.length === 1 ? partial[0] : null;
 }
 
 function createPhoneNotifier({
@@ -289,15 +317,30 @@ function createPhoneNotifier({
   onResumeProject,
   fetchImpl = globalThis.fetch,
   apiBaseUrl = 'https://api.telegram.org',
-  ntfyServerUrl = 'https://ntfy.sh'
+  ntfyServerUrl = 'https://ntfy.sh',
+  confirmWindowMs: confirmWindowMsOption = 60000
 }) {
   let settings = loadPhoneSettings(storeDir);
-  let telegramOffset = 0;
+  let telegramOffset = Number(settings.telegram.updateOffset) || 0;
   let pendingConfirmation = null; // { action: 'stop', projectId, projectName, expiresAt }
   const projectStates = new Map(); // projectId -> status
+  const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
+  const confirmWindowMs = Number.isFinite(confirmWindowMsOption) && confirmWindowMsOption > 0 ? confirmWindowMsOption : 60000;
+
+  function enqueue(lane, fn) {
+    const run = lanes[lane].then(() => fn(), () => fn());
+    lanes[lane] = run.then(() => {}, () => {});
+    return run;
+  }
+
+  function rememberOffset(next) {
+    telegramOffset = next;
+    savePhoneSettings(storeDir, { telegram: { updateOffset: next } });
+  }
 
   function getPublicSettings() {
     settings = loadPhoneSettings(storeDir);
+    if (settings.corrupt) settings = savePhoneSettings(storeDir, {});
     return {
       ntfy: {
         enabled: settings.ntfy.enabled,
@@ -317,18 +360,22 @@ function createPhoneNotifier({
   }
 
   function updateSettings(patch = {}, newToken) {
-    settings = savePhoneSettings(storeDir, patch, newToken);
-    if (patch.telegram?.unpair) {
-      pendingConfirmation = null;
+    const telegram = {};
+    if (patch.telegram && typeof patch.telegram === 'object') {
+      if (patch.telegram.enabled !== undefined) telegram.enabled = patch.telegram.enabled;
+      if (patch.telegram.unpair) telegram.unpair = true;
+      if (patch.telegram.resetStartCode) telegram.resetStartCode = true;
     }
+    settings = savePhoneSettings(storeDir, { ntfy: patch.ntfy, telegram }, newToken);
+    if (telegram.unpair) pendingConfirmation = null;
     return getPublicSettings();
   }
 
   async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft }) {
     const fresh = loadPhoneSettings(storeDir);
+    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft });
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
-        const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes });
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
         const priority = type === 'failed' ? 'high' : type === 'needs_owner' ? 'urgent' : 'default';
         const tags = type === 'failed' ? ['warning'] : type === 'needs_owner' ? ['bell'] : ['white_check_mark'];
@@ -347,7 +394,6 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
-        const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft });
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
@@ -364,6 +410,10 @@ function createPhoneNotifier({
   }
 
   async function checkTransitions() {
+    return enqueue('transitions', () => checkTransitionsNow());
+  }
+
+  async function checkTransitionsNow() {
     if (!getSnapshot) return;
     let snapshot;
     try {
@@ -374,6 +424,7 @@ function createPhoneNotifier({
     if (!snapshot || !Array.isArray(snapshot.projects)) return;
 
     for (const p of snapshot.projects) {
+      if (p?.id == null || p.id === '') continue;
       const prev = projectStates.get(p.id);
       const curr = p.status;
       projectStates.set(p.id, curr);
@@ -403,6 +454,10 @@ function createPhoneNotifier({
   }
 
   async function processTelegramMessage(msg) {
+    return enqueue('commands', () => handleTelegramMessage(msg));
+  }
+
+  async function handleTelegramMessage(msg) {
     if (!msg || !msg.chat || !msg.chat.id) return;
     const chatId = String(msg.chat.id);
     const text = String(msg.text || '').trim();
@@ -464,7 +519,7 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token,
             chatId,
-            text: `Failed to stop crew: ${err.message}`,
+            text: 'Planwharf could not complete that.',
             apiBaseUrl,
             fetchImpl
           });
@@ -487,18 +542,34 @@ function createPhoneNotifier({
       pendingConfirmation = null;
     }
 
-    // 4. Commands handling
-    const snapshot = getSnapshot ? await getSnapshot().catch(() => null) : null;
+    // 4. Commands handling. Telegram may append @BotName and any letter case.
+    let snapshot = null;
+    let snapshotFailed = false;
+    if (getSnapshot) {
+      try { snapshot = await getSnapshot(); }
+      catch { snapshotFailed = true; }
+    }
+    if (snapshotFailed) {
+      await sendTelegramMessage({
+        token,
+        chatId,
+        text: 'Planwharf could not read the projects. Try again.',
+        apiBaseUrl,
+        fetchImpl
+      });
+      return;
+    }
     const projects = snapshot?.projects || [];
+    const command = text.replace(/^\/([a-z0-9]+)(?:@[A-Za-z0-9_]+)?/i, (_, verb) => '/' + verb.toLowerCase());
 
-    if (text === '/status' || text.startsWith('/status ')) {
+    if (command === '/status' || command.startsWith('/status ')) {
       const statusText = formatStatusMessage(projects);
       await sendTelegramMessage({ token, chatId, text: statusText, apiBaseUrl, fetchImpl });
       return;
     }
 
-    if (text.startsWith('/stop')) {
-      const arg = text.replace(/^\/stop\s*/i, '').trim();
+    if (command.startsWith('/stop')) {
+      const arg = command.replace(/^\/stop\s*/i, '').trim();
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
@@ -513,7 +584,7 @@ function createPhoneNotifier({
         action: 'stop',
         projectId: matched.id,
         projectName: matched.name || matched.id,
-        expiresAt: Date.now() + 60000
+        expiresAt: Date.now() + confirmWindowMs
       };
       await sendTelegramMessage({
         token,
@@ -525,8 +596,8 @@ function createPhoneNotifier({
       return;
     }
 
-    if (text.startsWith('/resume')) {
-      const arg = text.replace(/^\/resume\s*/i, '').trim();
+    if (command.startsWith('/resume')) {
+      const arg = command.replace(/^\/resume\s*/i, '').trim();
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
@@ -552,7 +623,7 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: `Failed to resume: ${err.message}`,
+          text: 'Planwharf could not complete that.',
           apiBaseUrl,
           fetchImpl
         });
@@ -560,7 +631,7 @@ function createPhoneNotifier({
       return;
     }
 
-    if (text === '/help' || text.startsWith('/start')) {
+    if (command === '/help' || command.startsWith('/start')) {
       await sendTelegramMessage({
         token,
         chatId,
@@ -582,8 +653,13 @@ function createPhoneNotifier({
   }
 
   async function pollUpdates() {
+    return enqueue('commands', () => pollUpdatesNow());
+  }
+
+  async function pollUpdatesNow() {
     const fresh = loadPhoneSettings(storeDir);
     if (!fresh.telegram.enabled || !fresh.telegramToken) return;
+    telegramOffset = Number(fresh.telegram.updateOffset) || telegramOffset;
 
     const res = await pollTelegramUpdates({
       token: fresh.telegramToken,
@@ -595,12 +671,10 @@ function createPhoneNotifier({
 
     if (res.ok && res.updates.length) {
       for (const u of res.updates) {
-        if (u.update_id >= telegramOffset) {
-          telegramOffset = u.update_id + 1;
-        }
-        if (u.message) {
-          await processTelegramMessage(u.message);
-        }
+        const id = Number(u.update_id);
+        if (!Number.isInteger(id) || id < telegramOffset) continue;
+        rememberOffset(id + 1);
+        if (u.message) await handleTelegramMessage(u.message);
       }
     }
   }
