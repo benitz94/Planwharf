@@ -42,6 +42,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 11 | #118 | An alert on the computer when work ends or needs the owner: notification, taskbar flash, sound, each switchable | — |
 | 12 | #118 | Alerts and commands on the phone: ntfy, and a Telegram bot with /status, /stop, /resume | — |
 | 13 | #121 | The native logo follows the main colour; optionally keep the work plan in git | Existing unmarked ignore rules remain under the user's control |
+| 14 (verification pending) | #? | Reviewed the failing-test candidate; isolated Git line endings in the email rewrite fixture | Gemini Flash reran validation and added line-ending, dirty-file, abort/retry and published-commit coverage; cross-provider verification remains outstanding |
 
 ## Improvements found while Planwharf worked on itself
 
