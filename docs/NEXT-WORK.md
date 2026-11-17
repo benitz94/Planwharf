@@ -55,16 +55,17 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | To do |
 | 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | To do |
 | 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
-| 17 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/17-sheet` | To do |
-| 18 | 2. | Port them, as sheet 17 says | `port/18-phase2-rest` | To do |
-| 19 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/19-sheet` | To do |
-| 20 | 3. | Port them, as sheet 19 says | `port/20-phase3` | To do |
-| 21 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/21-sheet` | To do |
-| 22 | 4. | Port them, as sheet 21 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/22-phase4` | To do |
-| 23 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/23-sheet` | To do |
-| 24 | 5. | Port them, as sheet 23 says. Then **stop**: the owner approves the orchestrator split | `port/24-phase5` | To do |
-| 25 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/25-sheets` | To do |
-| 26+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/26-…` | To do |
+| 17 | Before the porting goes on | The native app in English and Italian, with the language chosen in Settings (sheet below) | `feat/languages` | To do |
+| 18 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/18-sheet` | To do |
+| 19 | 2. | Port them, as sheet 18 says | `port/19-phase2-rest` | To do |
+| 20 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/20-sheet` | To do |
+| 21 | 3. | Port them, as sheet 20 says | `port/21-phase3` | To do |
+| 22 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/22-sheet` | To do |
+| 23 | 4. | Port them, as sheet 22 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/23-phase4` | To do |
+| 24 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/24-sheet` | To do |
+| 25 | 5. | Port them, as sheet 24 says. Then **stop**: the owner approves the orchestrator split | `port/25-phase5` | To do |
+| 26 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/26-sheets` | To do |
+| 27+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/27-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -381,3 +382,34 @@ today its models stay in the list and a worker fails later with an unclear error
 **Tests.** Plan status from recorded expired, signed-out and active answers of each program; hidden models
 and the line; two Claude accounts with their own quota and a switch to the second before another company;
 nothing private stored.
+
+---
+
+## Job 17. The native app in English and Italian
+
+**Why.** The app is in English. The owner wants an Italian version too, chosen in Settings; English stays
+the default.
+
+**What to build** (native app only; the web app and Electron are frozen):
+
+1. **One place for the words.** `native/Planwharf.Native/Strings.cs`: every text the native app shows
+   (buttons, titles, hints, explanations, tooltips, dialogs, errors written by the app) gets a key, with
+   its English and its Italian text, in two dictionaries. No reflection and no NuGet package (Native
+   AOT): plain C# dictionaries, and a `T("key")` lookup, with placeholders like `{0}` for numbers and
+   names. Every text written in the app's code today moves there; the English text stays exactly as it is.
+2. **The Italian text.** Natural Italian, short as the English, with the same capital letters, the
+   product names unchanged (Planwharf, Lead, Build, Verify, Team, Push and the names of the AI programs and
+   models stay as they are, since the engine and the docs use them).
+3. **Settings → Look → Language:** English, Italiano. Saved in `native-window.json` with the theme and the
+   colours (`Prefs.cs`); the window is built again at once, as for the theme. English when nothing is saved.
+4. **Dates and times** follow the chosen language (days and months in Italian).
+5. **Texts that come from the engine** (statuses, reasons, the lead's and the crew's answers) stay as the
+   engine writes them in this job. List in the pull request the engine sentences the owner sees most, for
+   a later job.
+6. Local chat commands already understand Italian ("apri team", "mostra impostazioni"): keep them, in
+   both languages.
+
+**Tests.** The two dictionaries have the same keys and the same placeholders; no key is empty; the
+window draws in Italian (a headless picture like the existing ones) with no text cut off; the language is
+saved and read again; a test that fails when the app's code shows a literal English sentence instead of a
+key (a scan of the UI files for text given straight to `Text =`, `Content =`, tooltips and dialogs).

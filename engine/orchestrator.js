@@ -1093,6 +1093,15 @@ function refusalSentence(refused, today = new Date()) {
     ? ` Tried again at ${pad(until.getHours())}:${pad(until.getMinutes())}.` : ` Tried again on ${until.getFullYear()}-${pad(until.getMonth() + 1)}-${pad(until.getDate())} at ${pad(until.getHours())}:${pad(until.getMinutes())}.`;
   return `Quota used up${detail ? ` (${detail})` : ''}.${when}`;
 }
+// A step's summary as the chat shows it: at most 600 characters, but the lines that ask the owner to
+// decide ("Needs your decision: …") are always kept whole, even past the cut.
+function clipSummary(value) {
+  const full = String(value || '');
+  if (full.length <= 600) return full;
+  const decisions = full.split(/\r?\n/).filter(line => /needs your decision:/i.test(line)).map(line => line.trim());
+  const body = full.slice(0, 600).replace(/\s*\S*$/, '').replace(/\n[^\n]*needs your deci[^\n]*$/i, '') + '…';
+  return [body, ...decisions.filter(line => !body.includes(line))].join('\n');
+}
 function createOrchestrator(options) {
   const opts = options && typeof options === 'object' ? { ...options } : {};
   if (typeof opts.readPlan !== 'function') throw new Error('orchestrator requires readPlan');
@@ -2161,7 +2170,7 @@ function createOrchestrator(options) {
           megaTaskId: row.megaTaskId || null,
           megaTask: row.megaTask || null,
           subTasks: row.subTasks || [],
-          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: String(result.summary || '').slice(0, 600), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
+          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: clipSummary(result.summary), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
           modelId: row.modelId,
@@ -3974,4 +3983,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { clipSummary, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

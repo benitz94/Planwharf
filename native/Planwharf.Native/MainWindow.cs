@@ -420,7 +420,7 @@ public sealed partial class MainWindow : Window
         }
         if (done)
         {
-            panel.Children.Add(Line("Try the result in the project folder. Planwharf did not commit or publish anything.", Palette.Muted, 13));
+            panel.Children.Add(Line("Try the result in the project folder. Nothing is published until you push it.", Palette.Muted, 13));
             var seeFiles = Look.Button("See changed files", "file", Look.Kind.Small);
             seeFiles.Click += (_, _) => OpenSide("files");
             var seeUsage = Look.Button("See usage", "usage", Look.Kind.Small);
