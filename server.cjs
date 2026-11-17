@@ -609,7 +609,24 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           }
           if (branch === 'main' || defaultBranch === branch) throw new RequestError(400, 'This is main: Planwharf does not push it. Push it yourself if you mean to.');
           // Publish this branch under its own name and set that name as its upstream, even when the old upstream was origin/main.
-          const pushed = await run(['push', '-u', 'origin', 'HEAD'], { push: true });
+          let pushed = await run(['push', '-u', 'origin', 'HEAD'], { push: true });
+          // GitHub refused a private email (GH007): the commits not yet on GitHub take the owner's noreply
+          // address, and the push is tried once more, so the button does not stop there.
+          const pushEmail = require('./engine/push-email.cjs');
+          if (pushed.status !== 0 && pushEmail.privateEmailRefused(`${pushed.stderr}\n${pushed.stdout}`)) {
+            const gh = args => new Promise(resolve => {
+              const child = spawn('gh', args, { cwd: folder, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+              let stdout = '', stderr = '';
+              child.stdout.on('data', chunk => { stdout += chunk; }); child.stderr.on('data', chunk => { stderr += chunk; });
+              child.on('error', error => resolve({ status: 1, stdout, stderr: error.message }));
+              child.on('close', code => resolve({ status: code, stdout, stderr }));
+            });
+            const email = await pushEmail.githubNoreply(gh);
+            if (!email) throw new RequestError(400, 'GitHub refused a private email address in the commits. ' + pushEmail.HOW_TO);
+            const fixed = await pushEmail.useNoreply(run, email);
+            if (!fixed.ok) throw new RequestError(400, fixed.reason + ' ' + pushEmail.HOW_TO);
+            pushed = await run(['push', '-u', 'origin', 'HEAD'], { push: true });
+          }
           if (pushed.status !== 0) {
             const first = `${pushed.stderr}\n${pushed.stdout}`.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.includes('HEAD:'));
             throw new RequestError(400, (first ? first + '\n' : '') + 'Push failed. The commit is saved; nothing was sent.');

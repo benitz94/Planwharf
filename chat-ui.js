@@ -410,7 +410,7 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Planwharf did not commit or publish anything.</p>
+        ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing is published until you push it.</p>
         <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div>
         ${gitBox(row, repo, changed, mega)}</div>`;
     }

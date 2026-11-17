@@ -12,7 +12,7 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 - **Your AI providers do see your work.** The tools Planwharf runs (Claude Code, Codex, Grok CLI, Antigravity) or the API you connect send your instructions and the code they read to their provider (Anthropic, OpenAI, xAI, Google), under your own agreement with that provider.
 - **No passwords.** Planwharf uses the sign-ins you already have. For an API it stores only the name of the environment variable that holds the key, never the key.
 - **Your crew decides the cost.** Planwharf does not save tokens or time by itself: what a goal costs depends on the models you choose and on the task.
-- **Nothing is published without you.** The work stays in your project folder: Planwharf never commits or pushes by itself. When you are happy with the result, you can commit it, and push it to GitHub, from the Work finished card.
+- **Nothing is published without you.** The crew works on its own branch in your project folder and never pushes; only you publish the result, with one button, and never to `main`. See [Commits and pushes](#commits-and-pushes).
 
 ## Planwharf builds Planwharf
 
@@ -109,6 +109,24 @@ sh planwharf.sh
 **Windows:** download **`Planwharf-vX.Y.Z.zip`** from the [latest release](https://github.com/benitz94/Planwharf/releases/latest) (under **Assets**), extract the whole folder and double-click **`Planwharf.exe`**.
 
 Something not working on your system? Please [tell us](https://github.com/benitz94/Planwharf/issues): so far Windows has been tested the most.
+
+## Commits and pushes
+
+All git work runs with the git on your computer, under your own name and GitHub sign-in.
+
+1. **Safe start.** When you press **Let the crew do it**, Planwharf checks that the project folder has no
+   uncommitted changes (if it has, it tells you which files and waits), fetches GitHub, and creates a new
+   branch for the work from the latest `main`. It never works on `main` itself.
+2. **The crew commits on that branch** when the goal asks it to, as a developer would. The commits carry
+   your git name and email; which model did what is in the commit messages and in the chat.
+3. **The crew never pushes.** Every worker runs with a git setting that makes any push fail.
+4. **You push.** Under a finished work, **Push** sends the branch to GitHub under its own name. If
+   changes are still uncommitted, the card offers a commit message first, which you can edit. Push never
+   publishes `main` (or the branch GitHub uses by default): that one you push yourself, if you mean to.
+5. **Private email.** If GitHub refuses the push because a commit shows your private email (GH007), the
+   commits not yet on GitHub get your GitHub noreply address, the project keeps it for later commits, and
+   the push is tried again. Commits already on GitHub are never rewritten.
+6. Then you open a pull request on GitHub, review it and merge it as usual.
 
 ## First steps
 
