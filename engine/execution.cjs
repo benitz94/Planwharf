@@ -72,6 +72,23 @@ function repoState(folder, facts = {}) {
     disposition: !facts.git ? 'NOT APPLICABLE' : dirtyFiles.length ? 'UNCOMMITTED' : 'COMMITTED' };
 }
 
+
+// A dead worker with no structured result still delivered when it left a new commit
+// on the branch, exit 0, and (when the step has a scope) only those files. Exit 0
+// alone is not enough: there must be a commit after the step started.
+function deliveredWithoutVerdict({ folder, before, after, exitCode, scope, names }) {
+  if (exitCode !== 0) return null;
+  if (!folder || !before || !after || before === after) return null;
+  if (!/^[a-f0-9]{40,64}$/.test(before) || !/^[a-f0-9]{40,64}$/.test(after)) return null;
+  const files = (names || []).map(slash).filter(Boolean);
+  if (!files.length) return null;
+  if (Array.isArray(scope) && scope.length) {
+    const owned = scope.map(slash);
+    if (files.some(file => !inScope(file, owned))) return null;
+  }
+  return { filesChanged: files.slice(0, 40), summary: `Delivered on disk without a structured result: ${files.length} file(s) committed after the step started.` };
+}
+
 function createExecutionBridge(options) {
   const { store, attempts, dir, rowFor, inspect, spawnWorker, isProcessAlive, killWorker, models, now, persist, leadId } = options;
   store.execution ||= { megaTasks: [], subTasks: [], results: [], checkpoints: [], timeline: [], observations: {} };
@@ -223,6 +240,19 @@ function createExecutionBridge(options) {
     persist();
     return true;
   }
+  function deliveryOf(mega, sub, part) {
+    const exit = readJSON(part.exitPath);
+    if (!exit || exit.attemptId !== part.attemptId || !Number.isInteger(exit.exitCode)) return null;
+    if (exit.provider && exit.provider !== sub.provider) return null;
+    if (exit.model && exit.model !== sub.cli) return null;
+    const folder = linkedWorkspace(part.projectFolder);
+    if (!folder || !safeGitWorkspace(folder)) return null;
+    const before = mega.repoBefore?.repoHead;
+    const after = spawnSync('git', ['--no-optional-locks', '-C', folder, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true }).stdout.trim();
+    const listed = spawnSync('git', ['--no-optional-locks', '-C', folder, 'diff', '--name-only', before + '..' + after], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true });
+    const names = listed.status === 0 ? listed.stdout.trim().split(/\r?\n/).filter(Boolean) : [];
+    return deliveredWithoutVerdict({ folder, before, after, exitCode: exit.exitCode, scope: sub.scope, names });
+  }
   function reconcile(mega) {
     const row = rowFor(mega.projectId, mega.id);
     for (const sub of subtasks(mega).filter(sub => sub.status === 'RUNNING')) {
@@ -234,7 +264,14 @@ function createExecutionBridge(options) {
       const result = readValidatedResult(part.structuredResultPath, identity(mega, sub, part.attemptId), part.exitPath);
       const valid = result && (sub.type !== 'RESEARCH' || result.status !== 'COMPLETE' || reportExists(result, part.folder));
       if (!valid && rerouteRefusal(mega, sub, part)) continue;
-      collect(mega, sub, part, valid ? result : technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
+      if (!valid) {
+        const delivered = deliveryOf(mega, sub, part);
+        collect(mega, sub, part, delivered
+          ? technical(mega, sub, part, 'COMPLETE', delivered.summary, delivered)
+          : technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
+        continue;
+      }
+      collect(mega, sub, part, result);
     }
     row.workerAlive = (row.dispatch || []).some(part => part.alive);
     row.monitoring = { ...row.monitoring, workers: (row.dispatch || []).filter(part => part.pid).length, alive: (row.dispatch || []).filter(part => part.alive).length };
@@ -616,4 +653,4 @@ function appendStepTime(dir, record) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
 }
-module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime };
+module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict };
