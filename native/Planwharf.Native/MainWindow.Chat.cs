@@ -372,6 +372,17 @@ public sealed partial class MainWindow
     Control AskControls(string id, AskItem ask)
     {
         var panel = new StackPanel { Spacing = 12, Children = { Bubble(true, "You", ask.Question) } };
+        // The user's own message can be copied, or put back in the box to send again (for commands used often).
+        if (ask.Question.Trim().Length > 0)
+        {
+            var copyMine = Look.Button("Copy", "copy", Look.Kind.Quiet);
+            ToolTip.SetTip(copyMine, "Copy your message");
+            copyMine.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Question); copyMine.Content = Look.Label("Copied", "check", 14, 5); copyMine.Foreground = Palette.Accent; } };
+            var again = Look.Button("Use again", "refresh", Look.Kind.Quiet);
+            ToolTip.SetTip(again, "Put this message in the box, to send it again or change it first");
+            again.Click += (_, _) => { input.Text = ask.Question; input.CaretIndex = input.Text.Length; input.Focus(); };
+            panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, -8, 0, 0), Children = { copyMine, again } });
+        }
         var reply = new StackPanel { Spacing = 4 };
         var meta = string.Join(" · ", new[] { ask.Who, ask.At == DateTimeOffset.MinValue ? "" : ask.At.ToLocalTime().ToString("HH:mm"), ask.Elapsed }.Where(part => part.Length > 0));
         reply.Children.Add(Bubble(false, meta, ask.Answer, ask.Failed));

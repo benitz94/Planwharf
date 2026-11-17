@@ -132,4 +132,19 @@ public class ChatBoxTests
         window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter, Avalonia.Input.RawInputModifiers.Shift);
         Assert.Equal(3, box.Text!.Split('\n').Length - 1);
     }
+
+    // Under each of the user's messages, "Use again" puts it back in the box, ready to send again.
+    [AvaloniaFact]
+    public void A_message_of_mine_can_be_used_again()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 1700 };
+        window.Show();
+        window.Show(SampleState.Finished());
+        var again = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.Button>()
+            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) is string tip && tip.StartsWith("Put this message in the box"));
+        Assert.NotNull(again);
+        again!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        var box = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.TextBox>().First(item => (item.Watermark ?? "").StartsWith("Tell the lead"));
+        Assert.False(string.IsNullOrWhiteSpace(box.Text));
+    }
 }
