@@ -55,7 +55,8 @@ function ensureExclude(folder, keepWorkPlan = false) {
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   if (keepWorkPlan) {
     const escaped = EXCLUDE_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const next = current.replace(new RegExp('^' + escaped + '\\r?\\n/\\.planwharf/\\r?\\n', 'gm'), '');
+    // Our line, with its marker, or bare as the first version of the plan file wrote it.
+    const next = current.replace(new RegExp('^' + escaped + '\\r?\\n/\\.planwharf/\\r?\\n', 'gm'), '').replace(/^\/\.planwharf\/\r?\n/gm, '');
     if (next !== current) fs.writeFileSync(file, next);
     return;
   }
@@ -269,19 +270,20 @@ function prepare(folder, options = {}) {
   // Check the existing ignore state first when enabling: a plan previously hidden by our
   // rule should not itself prevent switching the preference on.
   if (options.keepWorkPlan !== true) ensureExclude(folder, false);
+  const goal = String(options.goal || '').trim();
+  const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;
+  const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
+  // Uncommitted changes block a new work, not the same work going on: on its own branch they are the
+  // crew's unfinished changes, and the next step starts from them.
   let dirty = dirtyLines(folder, options.keepWorkPlan === true);
   if (options.keepWorkPlan === true) {
     const previous = parse(read(folder));
-    const branch = git(folder, ['branch', '--show-current']).stdout.trim();
-    if (previous.goal && previous.goal === block(options.goal) && previous.branch === branch && !previous.done)
+    if (previous.goal && previous.goal === block(options.goal) && previous.branch === currentBranch(folder) && !previous.done)
       dirty = dirty.filter(line => line !== '?? .planwharf/plan.md');
   }
-  if (dirty.length) return { ok: false, reason: dirtyMessage(dirty) };
+  if (dirty.length && currentBranch(folder) !== name) return { ok: false, reason: dirtyMessage(dirty) };
   if (options.keepWorkPlan === true) ensureExclude(folder, true);
-  const goal = String(options.goal || '').trim();
   const fetched = git(folder, ['fetch', 'origin'], 30000);
-  const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;
-  const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
   let base = '';
   let baseSha = '';
   let startPoint = null;
@@ -301,8 +303,17 @@ function prepare(folder, options = {}) {
     base = `${remote} ${shortSha(baseSha)}`;
     startPoint = remote;
   }
-  const switched = switchTo(folder, name, branchExists(folder, name) ? null : startPoint);
+  const existed = branchExists(folder, name);
+  const switched = switchTo(folder, name, existed ? null : startPoint);
   if (!switched.ok) return switched;
+  // A work that already has its branch goes on from where it started: main may have moved on since, and
+  // that is fine. The branch only has to come from the same history; its base is where it left main.
+  if (existed && startPoint) {
+    const since = git(folder, ['merge-base', 'HEAD', startPoint]);
+    if (!since.ok || !since.stdout.trim()) return { ok: false, reason: `Branch ${name} has no history in common with ${startPoint}. Delete the branch and press Let the crew do it again.` };
+    baseSha = since.stdout.trim();
+    base = `${startPoint} ${shortSha(baseSha)}`;
+  }
   if (!contains(folder, baseSha)) {
     return { ok: false, reason: `Branch ${name} does not contain ${base}. Start again from that commit, or delete the branch and press Let the crew do it again.` };
   }

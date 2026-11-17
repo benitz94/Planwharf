@@ -66,9 +66,15 @@ const excludeAgain = fs.readFileSync(path.join(folder, '.git', 'info', 'exclude'
 assert.equal(excludeAgain.split(/\r?\n/).filter(line => line.trim() === '/.planwharf/').length, 1);
 
 fs.writeFileSync(path.join(folder, 'notes.txt'), 'dirty\n');
-const blocked = planFile.prepare(folder, { goal, steps });
+// The same work going on, on its own branch: the crew's unfinished changes do not block it.
+const resumed = planFile.prepare(folder, { goal, steps });
+assert.equal(resumed.ok, true, resumed.reason);
+assert.equal(fs.readFileSync(path.join(folder, 'notes.txt'), 'utf8'), 'dirty\n', 'the changes stay');
+// A new work, from another branch, is blocked by them.
+const blocked = planFile.prepare(folder, { goal: 'Another goal on `fix/other-work`', steps });
 assert.equal(blocked.ok, false);
 assert.equal(blocked.reason, 'Commit or stash the changes in the folder first: notes.txt, then press Let the crew do it again.');
+assert.equal(git(folder, ['branch', '--show-current']), 'fix/plan-file', 'a blocked start does not change branch');
 fs.unlinkSync(path.join(folder, 'notes.txt'));
 
 fs.writeFileSync(path.join(folder, 'work.txt'), 'work\n');
@@ -180,7 +186,7 @@ assert.match(planFile.dirtyMessage(['R  old.txt -> renamed.txt']), /first: renam
   assert.match(fs.readFileSync(path.join(work, '.planwharf', 'done', archived[0]), 'utf8'), /First goal to finish/);
 }
 
-// An existing branch that does not contain the base commit is refused, not silently reused on the old base.
+// An existing branch goes on from where it left main, even when main moved on since (a work resumed).
 {
   const { work } = freshRepo('stale');
   git(work, ['switch', '-q', '-c', 'port/stale']);
@@ -193,9 +199,12 @@ assert.match(planFile.dirtyMessage(['R  old.txt -> renamed.txt']), /first: renam
   git(work, ['push', '-q', 'origin', 'main']);
   git(work, ['switch', '-q', 'port/stale']);
   git(work, ['status', '--porcelain']);
-  const refused = planFile.prepare(work, { goal: 'resume on branch `port/stale`', steps: [{ role: 'Build', model: 'Grok' }] });
-  assert.equal(refused.ok, false);
-  assert.match(refused.reason, /Branch port\/stale does not contain origin\/main [0-9a-f]{7}\./);
+  const oldBase = git(work, ['merge-base', 'port/stale', 'origin/main']);
+  const resumed = planFile.prepare(work, { goal: 'resume on branch `port/stale`', steps: [{ role: 'Build', model: 'Grok' }] });
+  assert.equal(resumed.ok, true, resumed.reason);
+  assert.equal(git(work, ['branch', '--show-current']), 'port/stale');
+  assert.equal(fs.readFileSync(path.join(work, 'stale.txt'), 'utf8'), 's\n', 'its work is kept');
+  assert.match(planFile.read(work), new RegExp(`origin/main ${oldBase.slice(0, 7)}`), 'the plan names where it left main');
 }
 
 // Two goals that repeat on the same day do not overwrite each other's archive.
