@@ -56,16 +56,21 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | To do |
 | 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
 | 17 | Before the porting goes on | The native app in English and Italian, with the language chosen in Settings (sheet below) | `feat/languages` | To do |
-| 18 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/18-sheet` | To do |
-| 19 | 2. | Port them, as sheet 18 says | `port/19-phase2-rest` | To do |
-| 20 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/20-sheet` | To do |
-| 21 | 3. | Port them, as sheet 20 says | `port/21-phase3` | To do |
-| 22 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/22-sheet` | To do |
-| 23 | 4. | Port them, as sheet 22 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/23-phase4` | To do |
-| 24 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/24-sheet` | To do |
-| 25 | 5. | Port them, as sheet 24 says. Then **stop**: the owner approves the orchestrator split | `port/25-phase5` | To do |
-| 26 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/26-sheets` | To do |
-| 27+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/27-…` | To do |
+| 18 | Protocol and pipeline | Planwharf's own MCP tools for workers: `ask`, `progress`, `finish` (checked at once), `decision`, `handoff`; the JSON file stays for programs without MCP. Write the sheet first, from [the design](DESIGN-PIPELINE.md), then stop for review | `feat/mcp-protocol` | To do |
+| 19 | Protocol and pipeline | Acceptance tests and the gate: the engine runs the checks itself, before review and before a work counts as done; a branch cannot change its own checks. Sheet first, then stop | `feat/gate` | To do |
+| 20 | Protocol and pipeline | Pipeline, part 1: the queue (GitHub issues labelled `planwharf` and a local list, each an option), intake with questions, spec with acceptance tests, job state in files. Sheet first, then stop | `feat/pipeline-intake` | To do |
+| 21 | Protocol and pipeline | Pipeline, part 2: routing by risk and parts touched, build and review in pairs per task with rounds, gate, a pull request per job. Sheet first, then stop | `feat/pipeline-build` | To do |
+| 22 | Protocol and pipeline | Pipeline, part 3: several jobs at once in their worktrees within the quota, the pipeline view in the native app (stages, time, quota per job), and the merge option (you merge by default; optionally Planwharf merges low-risk pull requests that pass every check). Sheet first, then stop | `feat/pipeline-run` | To do |
+| 23 | 2. Modules with no dependencies | Write the sheet for the rest of phase 2: `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, `project-workspace` | `port/23-sheet` | To do |
+| 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | To do |
+| 25 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime` (split in two jobs if it is too large) | `port/25-sheet` | To do |
+| 26 | 3. | Port them, as sheet 25 says | `port/26-phase3` | To do |
+| 27 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; the tests use the fake AI programs of job 03 | `port/27-sheet` | To do |
+| 28 | 4. | Port them, as sheet 27 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/28-phase4` | To do |
+| 29 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/29-sheet` | To do |
+| 30 | 5. | Port them, as sheet 29 says. Then **stop**: the owner approves the orchestrator split | `port/30-phase5` | To do |
+| 31 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/31-sheets` | To do |
+| 32+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/32-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
