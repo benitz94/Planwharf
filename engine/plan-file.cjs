@@ -287,8 +287,17 @@ function prepare(folder, options = {}) {
     base = `${remote} ${shortSha(baseSha)}`;
     startPoint = remote;
   }
-  const switched = switchTo(folder, name, branchExists(folder, name) ? null : startPoint);
+  const existed = branchExists(folder, name);
+  const switched = switchTo(folder, name, existed ? null : startPoint);
   if (!switched.ok) return switched;
+  // A work that already has its branch goes on from where it started: main may have moved on since, and
+  // that is fine. The branch only has to come from the same history; its base is where it left main.
+  if (existed && startPoint) {
+    const since = git(folder, ['merge-base', 'HEAD', startPoint]);
+    if (!since.ok || !since.stdout.trim()) return { ok: false, reason: `Branch ${name} has no history in common with ${startPoint}. Delete the branch and press Let the crew do it again.` };
+    baseSha = since.stdout.trim();
+    base = `${startPoint} ${shortSha(baseSha)}`;
+  }
   if (!contains(folder, baseSha)) {
     return { ok: false, reason: `Branch ${name} does not contain ${base}. Start again from that commit, or delete the branch and press Let the crew do it again.` };
   }
