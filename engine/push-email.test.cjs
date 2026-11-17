@@ -29,6 +29,7 @@ done
 `);
   fs.chmodSync(hook, 0o755);
   git(dir, ['clone', '-q', remote, work]);
+  git(work, ['config', 'core.autocrlf', 'false']);
   git(work, ['config', 'user.email', NOREPLY]);
   fs.writeFileSync(path.join(work, 'a.txt'), 'a\n');
   git(work, ['add', '-A']); git(work, ['commit', '-q', '-m', 'first']);
@@ -36,6 +37,8 @@ done
   git(work, ['switch', '-q', '-c', 'feature']);
   git(work, ['config', 'user.email', 'owner@private.example']);
   for (const name of ['b', 'c']) { fs.writeFileSync(path.join(work, name + '.txt'), name + '\n'); git(work, ['add', '-A']); git(work, ['commit', '-q', '-m', name]); }
+  fs.writeFileSync(path.join(work, 'windows.txt'), 'windows\r\n');
+  git(work, ['add', '-A']); git(work, ['commit', '--amend', '--no-edit', '-q']);
   return { remote, work };
 }
 
@@ -50,6 +53,7 @@ test('a push refused for a private email goes through once the new commits use t
   assert.deepEqual(git(work, ['log', '-3', '--format=%ae %ce %s']).stdout.trim().split('\n'), [`${NOREPLY} ${NOREPLY} c`, `${NOREPLY} ${NOREPLY} b`, `${NOREPLY} ${NOREPLY} first`]);
   assert.equal(git(work, ['rev-parse', 'HEAD~2']).stdout.trim(), before, 'the commit already on the remote is not rewritten');
   assert.equal(fs.readFileSync(path.join(work, 'c.txt'), 'utf8'), 'c\n', 'the files are unchanged');
+  assert.equal(fs.readFileSync(path.join(work, 'windows.txt'), 'utf8'), 'windows\r\n', 'CRLF files are unchanged');
   assert.equal(git(work, ['config', 'user.email']).stdout.trim(), NOREPLY, 'later commits use it too');
   assert.equal(git(work, ['push', '-u', 'origin', 'HEAD']).status, 0);
 });
@@ -59,6 +63,46 @@ test('the noreply address is read from the GitHub CLI, and nothing else is accep
   assert.equal(await githubNoreply(async () => ({ status: 1, stdout: '' })), null, 'not signed in');
   assert.equal(await githubNoreply(async () => ({ status: 0, stdout: 'owner@private.example' })), null);
   assert.equal(privateEmailRefused('rejected: non-fast-forward'), false);
+});
+
+test('a refused rewrite preserves dirty bytes and can be retried after the edit is saved', async t => {
+  const { work } = fixture(t);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  const file = path.join(work, 'windows.txt');
+  fs.writeFileSync(file, 'unsaved\r\n');
+  assert.equal((await useNoreply(run(work), NOREPLY)).ok, false);
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'unsaved\r\n');
+  assert.equal(git(work, ['add', 'windows.txt']).status, 0);
+  assert.equal(git(work, ['commit', '-q', '-m', 'save edit']).status, 0);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 3 });
+  assert.equal(fs.readFileSync(file, 'utf8'), 'unsaved\r\n');
+});
+
+test('an amend hook failure aborts the rewrite and a later retry succeeds', async t => {
+  const { work } = fixture(t);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  const tree = git(work, ['rev-parse', 'HEAD^{tree}']).stdout.trim();
+  const hook = path.join(work, '.git', 'hooks', 'pre-commit');
+  fs.writeFileSync(hook, '#!/bin/sh\nexit 1\n');
+  fs.chmodSync(hook, 0o755);
+  assert.equal((await useNoreply(run(work), NOREPLY)).ok, false);
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+  assert.equal(git(work, ['status', '--porcelain']).stdout, '');
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-merge')), false);
+  fs.unlinkSync(hook);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(git(work, ['rev-parse', 'HEAD^{tree}']).stdout.trim(), tree);
+  assert.equal(fs.readFileSync(path.join(work, 'windows.txt'), 'utf8'), 'windows\r\n');
+});
+
+test('already published commits are unchanged on a repeated email repair', async t => {
+  const { work } = fixture(t);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(git(work, ['push', '-u', 'origin', 'HEAD']).status, 0);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 0 });
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
 });
 
 test('a long summary keeps its "Needs your decision" line whole', () => {
