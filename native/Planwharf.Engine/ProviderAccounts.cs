@@ -35,7 +35,7 @@ public static class ProviderAccounts
         return "unread";
     }
 
-    public static AccountMetadata UnknownAccount() => new(null, "unread", "Account metadata not exposed", null);
+    public static AccountMetadata UnknownAccount() => new(null, "unread", Strings.T("Account metadata not exposed"), null);
 
     public static string AccountLabel(string label, AccountMetadata? account) =>
         account?.Type == "business" ? label + " Business" : label;
@@ -58,7 +58,7 @@ public static class ProviderAccounts
         string? identity = Truthy(selected) ? JsString(selected) + ":" + user : null;
         var plan = Prop(info, "chatgpt_plan_type");
         var type = matches ? AccountType(Truthy(plan) ? JsString(plan) : "") : "unread";
-        return Metadata(string.IsNullOrEmpty(providerId) ? "codex" : providerId, identity, type, "Codex login metadata");
+        return Metadata(string.IsNullOrEmpty(providerId) ? "codex" : providerId, identity, type, Strings.T("Codex login metadata"));
     }
 
     public static AccountMetadata GrokAccount(string? providerId, string? home = null)
@@ -74,7 +74,7 @@ public static class ProviderAccounts
         }
         var principal = Prop(entry, "principal_type");
         var teamId = Prop(entry, "team_id");
-        var team = TextIs(principal, "Team") && Truthy(teamId);
+        var team = TextIs(principal, Strings.T("Team")) && Truthy(teamId);
         var type = team ? "business" : TextIs(principal, "User") ? "normal" : "unread";
         string? identity = null;
         if (!string.IsNullOrEmpty(subject))
@@ -83,7 +83,7 @@ public static class ProviderAccounts
             var scope = team ? JsString(teamId) : Truthy(principalId) ? JsString(principalId) : "personal";
             identity = subject + ":" + scope;
         }
-        return Metadata(string.IsNullOrEmpty(providerId) ? "grok" : providerId, identity, type, "Grok login metadata");
+        return Metadata(string.IsNullOrEmpty(providerId) ? "grok" : providerId, identity, type, Strings.T("Grok login metadata"));
     }
 
     // Match the normal first-party CLI scope; do not guess between multiple logins.

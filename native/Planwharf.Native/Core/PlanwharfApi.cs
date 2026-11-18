@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -19,7 +20,7 @@ public sealed class PlanwharfApi(string address)
         using var response = await http.PostAsync(path, content);
         var text = await response.Content.ReadAsStringAsync();
         var json = string.IsNullOrWhiteSpace(text) ? null : JsonNode.Parse(text);
-        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(json?["error"]?.GetValue<string>() ?? json?["reason"]?.GetValue<string>() ?? $"Request failed ({(int)response.StatusCode}).");
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(json?["error"]?.GetValue<string>() ?? json?["reason"]?.GetValue<string>() ?? Strings.Format("Request failed ({0}).", (int)response.StatusCode));
         return json;
     }
 
@@ -40,13 +41,14 @@ public sealed class PlanwharfApi(string address)
 
     async Task<string?> PlanVersionAsync() => (await GetAsync("/api/plan"))["version"]?.GetValue<string>();
 
+    // Server-recognized sentinel, persisted in the project protocol.
     public const string NoGoal = "Not set yet: tell the lead in the chat what to build.";
 
     // A new project needs only a name, and an existing folder or none (then Planwharf creates one): what to build is said later, in the chat.
     public async Task<string?> CreateProjectAsync(string name, string? folder)
     {
         if (string.IsNullOrWhiteSpace(folder) && (await ProjectsRootAsync()).Length == 0)
-            throw new InvalidOperationException(OperatingSystem.IsWindows() ? @"Enter the folder for this project, for example C:\Projects\my-website, or set the projects folder in Settings." : "Enter the folder for this project, for example ~/Projects/my-website, or set the projects folder in Settings.");
+            throw new InvalidOperationException(OperatingSystem.IsWindows() ? Strings.T("Enter the folder for this project, for example C:\\Projects\\my-website, or set the projects folder in Settings.") : Strings.T("Enter the folder for this project, for example ~/Projects/my-website, or set the projects folder in Settings."));
         object project = string.IsNullOrWhiteSpace(folder) ? new { name, direction = NoGoal } : new { name, direction = NoGoal, folder };
         var created = await PostAsync("/api/projects", new { version = await PlanVersionAsync(), project, createFolder = string.IsNullOrWhiteSpace(folder) });
         return (created?["plan"]?["projects"] as JsonArray)?.LastOrDefault()?["project"]?["id"]?.GetValue<string>();
@@ -119,7 +121,7 @@ public sealed class PlanwharfApi(string address)
     {
         JsonNode bundle;
         try { bundle = JsonNode.Parse(file) ?? throw new FormatException(); }
-        catch (Exception error) when (error is FormatException or JsonException) { throw new InvalidOperationException("This is not a Planwharf project file."); }
+        catch (Exception error) when (error is FormatException or JsonException) { throw new InvalidOperationException(Strings.T("This is not a Planwharf project file.")); }
         var result = await PostAsync("/api/project-import", new { version = await PlanVersionAsync(), bundle });
         // "continue" is the saved point to resume from, or null.
         return (result?["projectId"]?.GetValue<string>(), result?["continue"] is JsonObject || result?["continue"] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag);
@@ -160,6 +162,6 @@ public sealed class PlanwharfApi(string address)
     public async Task SaveGoalAsync(string projectId, string goal)
     {
         var plan = await GetAsync("/api/plan");
-        await PostAsync("/api/revisions", new { version = plan["version"]?.GetValue<string>(), projectId, draft = new { title = "Goal from the chat", direction = goal, state = "Not started.", closed = Array.Empty<string>(), open = Array.Empty<string>() } });
+        await PostAsync("/api/revisions", new { version = plan["version"]?.GetValue<string>(), projectId, draft = new { title = Strings.T("Goal from the chat"), direction = goal, state = Strings.T("Not started."), closed = Array.Empty<string>(), open = Array.Empty<string>() } });
     }
 }
