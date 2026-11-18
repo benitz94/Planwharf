@@ -4,8 +4,8 @@ const stepRole = sub => sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH
 // Up to this many steps of one work run at the same time; the lead decides how many it needs.
 const MAX_PARALLEL = 10;
 // A step limited to some files is told so, and why: other workers change the rest at the same time.
-const scopeText = sub => Array.isArray(sub.scope) && sub.scope.length
-  ? `\n\nYour scope: change only these files or folders, relative to the project folder: ${sub.scope.join(', ')}. Other workers are changing other files in this folder at the same time. A change outside your scope stops your part.`
+const scopeText = (sub, isolated = false) => Array.isArray(sub.scope) && sub.scope.length
+  ? `\n\nYour scope: change only these files or folders, relative to ${isolated ? 'this worker folder' : 'the project folder'}: ${sub.scope.join(', ')}. ${isolated ? 'Other workers have their own folders.' : 'Other workers are changing other files in this folder at the same time.'} A change outside your scope stops your part.`
     + (Array.isArray(sub.scopeViolation) && sub.scopeViolation.length ? `\nLast time this part was stopped for changing files outside its scope: ${sub.scopeViolation.join(', ')}. Do not touch them: if the work needs them, say so in your result and stop.` : '')
   : '';
 const slash = file => String(file).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
@@ -37,6 +37,7 @@ const { adapterFor } = require('./provider-adapters.cjs');
 const { checkpointDiff } = require('./project-history.cjs');
 const { refusalReason } = require('./provider-refusal.cjs');
 const timeLeft = require('./time-left.cjs');
+const worktrees = require('./worktrees.cjs');
 const clone = value => structuredClone(value);
 const fingerprint = job => crypto.createHash('sha256').update(JSON.stringify([job.id, job.title, job.detail, job.revision_id || null, ...(job.goldModel ? [job.goldModel] : [])])).digest('hex');
 
@@ -178,8 +179,8 @@ function createExecutionBridge(options) {
       nextAction: 'Review the evidence and resume the remaining work from an explicit checkpoint.', createdAt: now(), exitCode, evidenceKind: 'TECHNICAL', evidencePath: part.logPath || null };
   }
   // A part limited to some files that changed others is stopped, and told why when it runs again.
-  // Its own report is always checked; git's list of changed files only when no other part worked at the
-  // same time, so the change can only be this part's. Files changed before the work are not counted.
+  // Its own report is always checked. An isolated worktree can also be checked against its base
+  // while other parts run; the shared folder is checked only when no other part worked concurrently.
   function scopeCheck(mega, sub, part, result) {
     if (result.status !== 'COMPLETE' || !Array.isArray(sub.scope) || !sub.scope.length) return result;
     const scope = sub.scope.map(slash);
@@ -187,10 +188,14 @@ function createExecutionBridge(options) {
     const others = subtasks(mega).filter(other => other.id !== sub.id);
     // Only when no other part worked while this one did can a changed file be put down to this part.
     const alone = !others.some(other => other.status === 'RUNNING' || (other.finishedAt && part.startedAt && other.finishedAt > part.startedAt));
-    if (alone) {
+    if (alone || part.branch) {
       const before = new Set((mega.repoBefore?.dirtyFiles || []).map(record => slash(record.slice(/^[MADRCU?!] \S/.test(record) ? 2 : 3).split(' -> ').at(-1).replace(/^"|"$/g, ''))));
       const owned = others.filter(other => other.status === 'COMPLETE').flatMap(other => (other.scope || []).map(slash));
-      for (const file of changedFiles(part.projectFolder) || []) if (!before.has(file) && !inScope(file, scope) && !inScope(file, owned)) outside.add(file);
+      for (const file of changedFiles(part.folder) || []) if (!before.has(file) && !inScope(file, scope) && !inScope(file, owned)) outside.add(file);
+      if (part.branch && part.baseHead) {
+        try { for (const file of worktrees.git(part.folder, ['diff', '--name-only', `${part.baseHead}..HEAD`]).split(/\r?\n/).filter(Boolean)) if (!inScope(file, scope)) outside.add(file); }
+        catch { outside.add('(commit inspection unavailable)'); }
+      }
     }
     if (!outside.size) { delete sub.scopeViolation; return result; }
     sub.scopeViolation = [...outside].slice(0, 20);
@@ -200,6 +205,14 @@ function createExecutionBridge(options) {
   function collect(mega, sub, part, result) {
     if (data.results.some(item => item.resultId === result.resultId)) return;
     result = scopeCheck(mega, sub, part, result);
+    if (sub.type === 'INTEGRATION' && result.status === 'COMPLETE') {
+      try {
+        for (const branch of (mega.worktreeParts || []).filter(branch => mega.activeGroup?.includes(branch.subId))) worktrees.git(part.projectFolder, ['merge-base', '--is-ancestor', branch.branch, 'HEAD']);
+        if (worktrees.git(part.projectFolder, ['status', '--porcelain'])) throw new Error('Work branch has uncommitted changes');
+        mega.integratedSubIds = [...new Set([...(mega.integratedSubIds || []), ...(mega.activeGroup || [])])];
+        mega.activeGroup = null; mega.awaitingIntegration = false;
+      } catch (error) { result = { ...result, status: 'BLOCKED', summary: `Integration is unfinished: ${error.message}`, blockers: [...(result.blockers || []), error.message] }; }
+    }
     sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
@@ -210,7 +223,7 @@ function createExecutionBridge(options) {
     // A step stopped to change its model did not fail: it is shown as a change, not as an error.
     event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : result.modelChange ? 'SUBTASK_REASSIGNED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
     if (result.status === 'COMPLETE' && sub.type !== 'RESEARCH') {
-      try { planFile.tickStep(part.projectFolder, { title: sub.title, role: stepRole(sub), model: part.label, commit: planFile.commitNote(part.projectFolder) }); }
+      try { planFile.tickStep(part.projectFolder, { title: sub.title, role: stepRole(sub), model: part.label, commit: part.branch ? `${part.branch} ${worktrees.git(part.folder, ['rev-parse', '--short', 'HEAD'])}` : planFile.commitNote(part.projectFolder) }); }
       catch { /* the step result is already saved */ }
     }
     // How long this step took, for the time-left estimate. No prompt, path or project name.
@@ -245,9 +258,9 @@ function createExecutionBridge(options) {
     if (!exit || exit.attemptId !== part.attemptId || !Number.isInteger(exit.exitCode)) return null;
     if (exit.provider && exit.provider !== sub.provider) return null;
     if (exit.model && exit.model !== sub.cli) return null;
-    const folder = linkedWorkspace(part.projectFolder);
-    if (!folder || !safeGitWorkspace(folder)) return null;
-    const before = mega.repoBefore?.repoHead;
+    const folder = linkedWorkspace(part.folder);
+    if (!folder || !safeGitWorkspace(part.projectFolder)) return null;
+    const before = part.baseHead || mega.repoBefore?.repoHead;
     const after = spawnSync('git', ['--no-optional-locks', '-C', folder, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true }).stdout.trim();
     const listed = spawnSync('git', ['--no-optional-locks', '-C', folder, 'diff', '--name-only', before + '..' + after], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true });
     const names = listed.status === 0 ? listed.stdout.trim().split(/\r?\n/).filter(Boolean) : [];
@@ -288,6 +301,40 @@ function createExecutionBridge(options) {
     if (note.logTail) lines.push('Its last activity (log tail):\n' + note.logTail);
     return lines.join('\n') + '\n\n';
   }
+  function parallelBuilds(mega) {
+    if (mega.activeGroup?.length) return subtasks(mega).filter(sub => mega.activeGroup.includes(sub.id));
+    const ready = subtasks(mega).filter(sub => sub.status === 'PENDING' && sub.type === 'IMPLEMENTATION' && stepRole(sub) === 'Build'
+      && sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE' && (!(mega.worktreeParts || []).some(part => part.subId === id) || mega.integratedSubIds?.includes(id))));
+    return ready.length > 1 ? ready : [];
+  }
+  function allIntegrated(mega) { return !mega.activeGroup?.length && (mega.worktreeParts || []).every(part => mega.integratedSubIds?.includes(part.subId)); }
+  function integrateParts(item, mega) {
+    const group = mega.activeGroup || [];
+    if (!group.length || mega.awaitingIntegration) return;
+    if (!group.every(id => subtasks(mega).find(sub => sub.id === id)?.status === 'COMPLETE')) return;
+    const parts = (mega.worktreeParts || []).filter(part => group.includes(part.subId));
+    if (!parts.length) { mega.activeGroup = null; return; }
+    if (parts.length !== group.length) return;
+    const result = worktrees.integrate({ folder: item.project.folder, parts });
+    if (result.ok) { mega.integratedSubIds = [...new Set([...(mega.integratedSubIds || []), ...group])]; mega.activeGroup = null;
+      event(mega.projectId, 'PARTS_INTEGRATED', `Integrated ${parts.length} part branches.`, { megaTaskId: mega.id }); return; }
+    const subs = subtasks(mega);
+    const existing = subs.find(sub => sub.type === 'INTEGRATION');
+    const id = existing?.id || `${mega.id}-ST-${String(subs.length + 1).padStart(2, '0')}`;
+    const detail = `Integrate the part branches into the work branch in order: ${parts.map(part => part.branch).join(', ')}. `
+      + `The merge of ${result.branch || 'the parts'} stopped. Conflicting files: ${(result.conflicts || []).join(', ') || 'none reported'}. ${result.reason} `
+      + 'Resolve the conflict in the project folder, commit the integration, and report the result. Keep every part branch until integration succeeds.';
+    if (existing) Object.assign(existing, { detail, status: 'PENDING' });
+    else {
+      const source = parts.map(part => subs.find(sub => sub.id === part.subId)).at(-1);
+      data.subTasks.push({ id, megaTaskId: mega.id, title: 'Integrate parallel parts', detail, status: 'PENDING', assignedModelId: source.assignedModelId,
+        attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: 'INTEGRATION', dependencies: parts.map(part => part.subId),
+        proposedProvider: source.proposedProvider, proposedCli: source.proposedCli, provider: null, cli: null });
+    }
+    for (const sub of subs) if (sub.status === 'PENDING' && sub.id !== id && !sub.dependencies.includes(id)) sub.dependencies.push(id);
+    mega.awaitingIntegration = true;
+    event(mega.projectId, 'PARTS_CONFLICT', detail, { megaTaskId: mega.id, subTaskId: id });
+  }
   function launch(item, job, mega, sub) {
     const row = rowFor(mega.projectId, mega.id);
     const requested = models().find(model => model.id === sub.assignedModelId && model.enabled && model.available !== false);
@@ -313,11 +360,28 @@ function createExecutionBridge(options) {
     const claim = attempts.claim({ taskId: sub.id, projectId: mega.detached ? 'research:' + mega.id : mega.projectId, modelId: worker.id, candidates: models(), megaTaskId: mega.id, subTaskId: sub.id, research: Boolean(mega.detached) });
     if (!claim.ok) { sub.status = 'BLOCKED'; mega.nextAction = claim.reason; return; }
     const attemptId = claim.attempt.id;
-    const folder = sub.type === 'RESEARCH' ? path.join(dir, 'research', mega.id, attemptId) : item.project.folder;
+    let folder = sub.type === 'RESEARCH' ? path.join(dir, 'research', mega.id, attemptId) : item.project.folder;
+    let worktree = null;
+    if (sub.type === 'IMPLEMENTATION' && parallelBuilds(mega).includes(sub) && worktrees.repository(item.project.folder)) {
+      try {
+        const workBranch = worktrees.git(item.project.folder, ['branch', '--show-current']);
+        worktree = worktrees.create({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, subId: sub.id,
+          index: subtasks(mega).indexOf(sub) + 1, workBranch });
+        if (worktree) {
+          folder = worktree.folder;
+          mega.worktreeParts ||= [];
+          if (!mega.worktreeParts.some(part => part.subId === sub.id)) mega.worktreeParts.push({ subId: sub.id, ...worktree });
+        }
+      } catch (error) {
+        const part = { attemptId, exitPath: '', logPath: '', structuredResultPath: '', projectFolder: item.project.folder, folder: item.project.folder };
+        collect(mega, sub, part, technical(mega, sub, part, 'FAILED', 'Worktree creation failed: ' + error.message));
+        return;
+      }
+    }
     if (sub.type === 'RESEARCH') fs.mkdirSync(folder, { recursive: true });
     const part = { projectFolder: item.project.folder, modelId: worker.id, label: worker.label, provider: worker.provider, cli: worker.cli, subTaskId: sub.id, megaTaskId: mega.id, attemptId, slice: sub.title,
       resultPath: path.join(dir, 'results', attemptId + '.txt'), structuredResultPath: path.join(dir, 'results', attemptId + '.json'), exitPath: path.join(dir, 'results', attemptId + '.exit.json'),
-      logPath: path.join(dir, 'logs', attemptId + '.log'), folder, pid: null, alive: false, startedAt: now(), sessionId: options.sessionId };
+      logPath: path.join(dir, 'logs', attemptId + '.log'), folder, ...(worktree ? { branch: worktree.branch, baseHead: worktrees.git(folder, ['rev-parse', 'HEAD']) } : {}), pid: null, alive: false, startedAt: now(), sessionId: options.sessionId };
     if (sub.type === 'RESEARCH') Object.assign(part, { resultPath: path.join(folder, 'result.txt'), structuredResultPath: path.join(folder, 'result.json'), exitPath: path.join(folder, 'exit.json') });
     fs.mkdirSync(path.dirname(part.resultPath), { recursive: true }); fs.writeFileSync(part.resultPath, 'STATUS: WATCHING\n');
     attempts.attachResult({ attemptId, resultPath: part.structuredResultPath });
@@ -329,7 +393,7 @@ function createExecutionBridge(options) {
     try {
       const handoff = { megaTask: mega, subTasks: subtasks(mega), results: data.results.filter(result => result.megaTaskId === mega.id), checkpoint: data.checkpoints.find(cp => cp.id === mega.currentCheckpointId), notes: (item.home?.notes || []).filter(note => note.aiRelevant === true) };
       const launched = spawnWorker({ ...part, linkedFolder: item.project.folder, projectId: mega.projectId, worker, ...identity(mega, sub, attemptId), job: { title: sub.title, kind: sub.type === 'RESEARCH' ? 'research' : sub.type === 'AUDIT' ? 'audit' : job.kind,
-        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}${scopeText(sub)}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
+        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}${scopeText(sub, Boolean(worktree))}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
       if (!Number.isInteger(launched?.pid) || launched.pid <= 0) throw new Error('Worker did not start.');
       Object.assign(part, { pid: launched.pid, alive: true, observedAlive: true, logPath: launched.logPath || part.logPath });
       row.workerPid = part.pid; row.workerLog = part.logPath;
@@ -379,6 +443,10 @@ function createExecutionBridge(options) {
     mega.repoAfter.commitIds = observedCommits(item.project.folder, mega.repoBefore.repoHead, mega.repoAfter.repoHead);
     mega.repoAfter.sourceChangesObserved = mega.repoAfter.gitReadable && mega.repoAfter.fingerprint && mega.repoBefore.fingerprint ? mega.repoAfter.fingerprint !== mega.repoBefore.fingerprint : null;
     mega.nextAction = data.results.filter(result => result.megaTaskId === mega.id).at(-1)?.nextAction || 'Review the completed results.';
+    if (mega.worktreeParts?.length) {
+      try { worktrees.cleanup({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, parts: mega.worktreeParts }); }
+      catch (error) { mega.nextAction = `Completed; worktree cleanup needs attention: ${error.message}`; }
+    }
     event(mega.projectId, 'MEGATASK_COMPLETED', `Completed ${mega.title}. ${mega.repoAfter.disposition}.`, { megaTaskId: mega.id });
     try {
       const summary = data.results.filter(result => result.megaTaskId === mega.id && result.status === 'COMPLETE').map(result => result.summary).filter(Boolean).slice(-3).join(' ') || mega.title;
@@ -405,30 +473,40 @@ function createExecutionBridge(options) {
   }
   function advance(item, job, parts, schedule = true) {
     observe(item);
-    const mega = propose(item, job, parts), subs = reconcile(mega);
+    const mega = propose(item, job, parts);
+    let subs = reconcile(mega);
     if (mega.status === 'RUNNING') {
       if (deadlineDue(mega)) {
-        if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+        if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
         // Read-only projections reconcile evidence but never terminate processes.
         else if (schedule) enforceDeadline(item, job, mega);
       } else if (subs.some(sub => sub.status === 'FAILED')) {
         mega.pauseRequested = true; mega.nextAction = 'Review failed results and resume only the remaining work.';
         if (!subs.some(sub => sub.status === 'RUNNING')) { checkpoint(item, job, mega, 'worker failure'); mega.status = 'FAILED'; }
       } else if (mega.pauseRequested) {
-        if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+        if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
         else if (!subs.some(sub => sub.status === 'RUNNING')) checkpoint(item, job, mega, 'pause after current tasks');
       } else if (mega.authorizedSessionId !== options.sessionId && !subs.some(sub => sub.status === 'RUNNING') && subs.some(sub => sub.status !== 'COMPLETE')) {
         mega.nextAction = 'Resume the remaining work explicitly after backend restart.';
         checkpoint(item, job, mega, 'backend restarted');
       } else {
+        if (schedule && !subs.some(sub => sub.status === 'FAILED')) integrateParts(item, mega);
+        subs = subtasks(mega);
+        if (schedule && !mega.activeGroup?.length) {
+          const group = parallelBuilds(mega);
+          if (group.length) mega.activeGroup = group.map(sub => sub.id);
+        }
         for (const sub of schedule ? subs.filter(sub => sub.status === 'PENDING') : []) {
+          if (mega.activeGroup?.length && !mega.activeGroup.includes(sub.id) && sub.type !== 'INTEGRATION') continue;
+          if (sub.type !== 'INTEGRATION' && sub.dependencies.some(id => (mega.worktreeParts || []).some(part => part.subId === id) && !mega.integratedSubIds?.includes(id))) continue;
+          if (stepRole(sub) === 'Verify' && subs.some(other => other.id !== sub.id && stepRole(other) === 'Build' && other.status !== 'COMPLETE')) continue;
           if (deadlineDue(mega)) { enforceDeadline(item, job, mega); break; }
           if (subs.filter(sub => sub.status === 'RUNNING').length >= MAX_PARALLEL) break;
           if (sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE')) launch(item, job, mega, sub);
         }
         reconcile(mega);
         if (mega.status === 'RUNNING' && !deadlineDue(mega)) {
-          if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+          if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
           else if (subs.some(sub => sub.status === 'BLOCKED') && !subs.some(sub => sub.status === 'RUNNING')) checkpoint(item, job, mega, 'blocked worker');
         }
       }
@@ -518,6 +596,12 @@ function createExecutionBridge(options) {
     mega.interruptedAttemptIds = [...(mega.interruptedAttemptIds || []), part.attemptId];
     mega.nextAction = 'Finish other active slices, then resume remaining work from the checkpoint.';
     persist(); return mega;
+  }
+  function dropWork(item, megaTaskId) {
+    const mega = target(item.project.id, megaTaskId);
+    if (subtasks(mega).some(sub => sub.status === 'RUNNING')) throw new Error('Stop every worker before dropping its worktrees.');
+    if (mega.worktreeParts?.length) worktrees.cleanup({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, parts: mega.worktreeParts, discardBranches: true });
+    return mega;
   }
   function view(projectId) {
     const megas = data.megaTasks.filter(mega => mega.projectId === projectId);
@@ -640,7 +724,7 @@ function createExecutionBridge(options) {
     paint(mega); persist();
     return mega;
   }
-  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining };
+  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork };
 }
 function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
 function readStepTimes(dir) {

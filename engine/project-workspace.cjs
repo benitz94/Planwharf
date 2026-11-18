@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 function linkedWorkspace(folder) {
   if (typeof folder !== 'string' || !folder.trim() || !path.isAbsolute(folder)) return null;
@@ -18,11 +19,23 @@ function requireWorkerWorkspace(info) {
   const root = linkedWorkspace(research ? info.folder : info.linkedFolder);
   if (!root) throw new Error('A real linked project folder is required before worker launch.');
   const folder = linkedWorkspace(info.folder);
-  if (!folder || folder !== root) throw new Error('Worker launch folder must stay inside the linked project folder.');
+  if (!folder || folder !== root && (research || !registeredWorktree(root, folder, info))) throw new Error('Worker launch folder must stay inside the linked project folder.');
   for (const candidate of [info.cwd, info.job?.folder]) {
-    if (candidate !== undefined && linkedWorkspace(candidate) !== root) throw new Error('Worker cwd and job folder must match the linked project folder.');
+    if (candidate !== undefined && linkedWorkspace(candidate) !== folder) throw new Error('Worker cwd and job folder must match the linked project folder.');
   }
   return { folder, linkedFolder: research ? '' : root };
+}
+function registeredWorktree(root, folder, info) {
+  try {
+    if (!safeGitWorkspace(root)) return false;
+    const result = info.resultPath || info.result;
+    if (!result || !path.isAbsolute(result) || ![info.projectId, info.megaTaskId, info.subTaskId].every(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(id))) return false;
+    const dataRoot = path.dirname(path.dirname(result));
+    const expected = path.join(dataRoot, 'worktrees', info.projectId, info.megaTaskId, info.subTaskId);
+    if (folder !== linkedWorkspace(expected)) return false;
+    const listed = spawnSync('git', ['worktree', 'list', '--porcelain', '-z'], { cwd: root, encoding: 'utf8', env: gitEnvironment(), windowsHide: true, timeout: 10000, maxBuffer: 1024 * 1024 });
+    return listed.status === 0 && listed.stdout.split('\0').some(record => record.startsWith('worktree ') && linkedWorkspace(record.slice(9).split('\n')[0]) === folder);
+  } catch { return false; }
 }
 // Inspect only an ordinary repository whose metadata cannot redirect to another project.
 // External Git worktrees and shared object stores require a separate explicit boundary.
