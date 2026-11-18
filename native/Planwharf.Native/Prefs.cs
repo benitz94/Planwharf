@@ -40,6 +40,9 @@ static class Prefs
         var temporary = "";
         try
         {
+            // A read-only file is a lock: do not replace it. On Windows the attribute already
+            // blocks the move; on Linux and macOS it does not, so the check has to be here.
+            if (System.IO.File.Exists(File) && (System.IO.File.GetAttributes(File) & FileAttributes.ReadOnly) != 0) return;
             var directory = Path.GetDirectoryName(File);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             temporary = File + "." + Guid.NewGuid().ToString("N") + ".tmp";
