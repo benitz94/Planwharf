@@ -1818,9 +1818,11 @@ function createOrchestrator(options) {
           return next;
         }
       }
-      // The chosen lead stays the lead. A signed-out or expired plan is said in Team; it does not
-      // erase the choice, or a machine with no login (the checks) would have no lead at all.
-      if (picked && canOrchestrate(picked)) return picked;
+      // A signed-out plan is said in Team and does not erase the choice: a machine with no login
+      // (the checks) would otherwise have no lead. A quota block still drops it.
+      const policy = picked ? usagePolicy(picked, plansLive) : null;
+      const signedOut = policy && (policy.state === 'expired' || policy.state === 'not signed in');
+      if (picked && canOrchestrate(picked) && (signedOut || !policy.blocked) && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
       // A lead whose provider just refused work (credits, quota) hands over to another provider.
