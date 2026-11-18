@@ -45,7 +45,7 @@ public static class ProjectViews
     {
         ["LEAD_UNCONFIRMED"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
         ["UNREADABLE_LEAD_DECISION"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
-        ["MEGATASK_LIMIT"] = Strings.T("The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on."), ["REPEATED_FAILURE"] = Strings.T("The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it."),
+        ["MEGATASK_LIMIT"] = Strings.T("The crew stopped after 20 pieces of work in a row. Check the result, then press Let the crew do it to go on."), ["REPEATED_FAILURE"] = Strings.T("The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it."),
         ["NO_LEAD_AVAILABLE"] = Strings.T("The crew stopped: no lead is available. Choose a lead with quota in Team."),
         ["LEAD_FAILED"] = Strings.T("The crew stopped: the lead could not answer"), ["START_UNAVAILABLE"] = Strings.T("The crew could not start the work."),
         ["START_FAILED"] = Strings.T("The crew could not start the work"), ["NOTHING_STARTED"] = Strings.T("The crew started no work"),

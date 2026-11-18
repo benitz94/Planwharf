@@ -2,7 +2,7 @@
 // Project autonomy policy. The owner's setting grants authority; model text only
 // proposes the next objective and is never parsed into any other action.
 
-const LIMITS = Object.freeze({ maxMegaTasks: 5, maxNudgesPerHour: 3, maxObjectiveChars: 4000 });
+const LIMITS = Object.freeze({ maxMegaTasks: 20, maxNudgesPerHour: 3, maxObjectiveChars: 4000 });
 const HOUR_MS = 3600000;
 const WORK_ENDED = new Set(['worker failure', 'blocked worker']);
 

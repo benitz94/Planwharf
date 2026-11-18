@@ -142,7 +142,7 @@
   const STOP_SENTENCES = {
     LEAD_UNCONFIRMED: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
     UNREADABLE_LEAD_DECISION: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
-    MEGATASK_LIMIT: 'The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on.', REPEATED_FAILURE: 'The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it.',
+    MEGATASK_LIMIT: 'The crew stopped after 20 pieces of work in a row. Check the result, then press Let the crew do it to go on.', REPEATED_FAILURE: 'The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it.',
     NO_LEAD_AVAILABLE: 'The crew stopped: no lead is available. Choose a lead with quota in Team.',
     LEAD_FAILED: 'The crew stopped: the lead could not answer',
     START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',
