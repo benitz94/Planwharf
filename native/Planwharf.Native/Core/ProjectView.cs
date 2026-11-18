@@ -37,7 +37,7 @@ public static class ProjectViews
     static Dictionary<string, string> StopLabels => new()
     {
         ["GOAL_REACHED"] = Strings.T("Goal reached"), ["LEAD_UNCONFIRMED"] = Strings.T("Finished: check the result"), ["UNREADABLE_LEAD_DECISION"] = Strings.T("Finished: check the result"),
-        ["MEGATASK_LIMIT"] = Strings.T("Stopped: work limit reached"), ["NO_LEAD_AVAILABLE"] = Strings.T("Stopped: no lead available"), ["LEAD_FAILED"] = Strings.T("Stopped: the lead could not answer"),
+        ["MEGATASK_LIMIT"] = Strings.T("Stopped: work limit reached"), ["REPEATED_FAILURE"] = Strings.T("Stopped: the same work failed three times"), ["NO_LEAD_AVAILABLE"] = Strings.T("Stopped: no lead available"), ["LEAD_FAILED"] = Strings.T("Stopped: the lead could not answer"),
         ["START_UNAVAILABLE"] = Strings.T("Stopped: could not start"), ["START_FAILED"] = Strings.T("Stopped: could not start"), ["NOTHING_STARTED"] = Strings.T("Stopped: no work started"),
         ["APPROVAL_REFUSED"] = Strings.T("Stopped: work not approved"), ["AUTONOMY_ERROR"] = Strings.T("Stopped: error"), ["TIME_LIMIT"] = Strings.T("Stopped: time limit reached")
     };
@@ -45,7 +45,7 @@ public static class ProjectViews
     {
         ["LEAD_UNCONFIRMED"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
         ["UNREADABLE_LEAD_DECISION"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
-        ["MEGATASK_LIMIT"] = Strings.T("The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on."),
+        ["MEGATASK_LIMIT"] = Strings.T("The crew stopped after 20 pieces of work in a row. Check the result, then press Let the crew do it to go on."), ["REPEATED_FAILURE"] = Strings.T("The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it."),
         ["NO_LEAD_AVAILABLE"] = Strings.T("The crew stopped: no lead is available. Choose a lead with quota in Team."),
         ["LEAD_FAILED"] = Strings.T("The crew stopped: the lead could not answer"), ["START_UNAVAILABLE"] = Strings.T("The crew could not start the work."),
         ["START_FAILED"] = Strings.T("The crew could not start the work"), ["NOTHING_STARTED"] = Strings.T("The crew started no work"),
