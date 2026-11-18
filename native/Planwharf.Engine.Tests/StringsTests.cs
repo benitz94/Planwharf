@@ -71,7 +71,23 @@ public sealed class StringsTests : IDisposable
         {
             Assert.Equal(System.Text.CompositeFormat.Parse(key).MinimumArgumentCount,
                 System.Text.CompositeFormat.Parse(value).MinimumArgumentCount);
+            Assert.Equal(ArgumentIndexes(key), ArgumentIndexes(value));
         }
+    }
+
+    static int[] ArgumentIndexes(string template) =>
+        System.Text.RegularExpressions.Regex.Matches(template, @"(?<!\{)\{(\d+)(?:[,}:])")
+            .Select(match => int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture))
+            .Order().ToArray();
+
+    [Fact]
+    public void Placeholder_check_detects_a_missing_lower_argument_even_when_the_highest_matches()
+    {
+        Assert.Equal(System.Text.CompositeFormat.Parse("{0}: {1}").MinimumArgumentCount,
+            System.Text.CompositeFormat.Parse("{1}").MinimumArgumentCount);
+        Assert.False(ArgumentIndexes("{0}: {1}").SequenceEqual(ArgumentIndexes("{1}")));
+        Assert.False(ArgumentIndexes("{0} {0}").SequenceEqual(ArgumentIndexes("{0}")));
+        Assert.Equal(ArgumentIndexes("{0}: {1:0.0}"), ArgumentIndexes("{1:0.0}: {0}"));
     }
 
     [Fact]
