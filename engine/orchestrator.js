@@ -2286,7 +2286,9 @@ function createOrchestrator(options) {
     });
     // Who takes over as lead if the current one runs low, in order (Team shows it).
     // Every model that can lead now, best first: the lead menu follows this order.
-    view.leadOrder = leadQuality(roster().filter(item => leadUsable(item))).map(item => item.id);
+    // The menu is by importance, not by today's quota. A model that is out of quota stays in its
+    // place; Planwharf picks the first one that can actually lead when the work starts.
+    view.leadOrder = leadQuality(roster().filter(item => canOrchestrate({ ...item, roles: { ...item.roles, orchestrator: true } }))).map(item => item.id);
     view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !isLow(item)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
