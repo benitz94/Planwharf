@@ -57,6 +57,15 @@ test('formatAlertMessage formats done, failed, and needs_owner without leaking p
   assert.ok(failedMsg.includes('Status: Failed'));
   assert.ok(!failedMsg.includes('./test'));
   assert.ok(!failedMsg.includes('foo.cjs'));
+  const { alertForStatus, alertForStep } = require('./phone.cjs');
+  assert.equal(alertForStatus('watching', 'checkpointed'), 'stopped');
+  assert.equal(alertForStatus('checkpointed', 'watching'), 'resumed');
+  assert.equal(alertForStatus('idle', 'watching'), 'started');
+  assert.equal(alertForStatus('watching', 'failed'), 'failed');
+  assert.equal(alertForStep({ role: 'Build', model: 'Sol', attempt: 'a' }, { role: 'Verify', model: 'Grok', attempt: 'b' }), 'verify');
+  assert.equal(alertForStep({ role: 'Build', model: 'Sol', attempt: 'a' }, { role: 'Build', model: 'Gemini', attempt: 'b' }), 'switched');
+  assert.equal(alertForStep({ role: 'Build', model: 'Sol', attempt: 'a' }, { role: 'Build', model: 'Sol', attempt: 'c' }), 'restarted');
+
 
   const needsOwnerMsg = formatAlertMessage({
     type: 'needs_owner',
