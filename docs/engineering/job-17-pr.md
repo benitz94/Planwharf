@@ -26,7 +26,8 @@ the maximum argument index still matches.
   rendering, language switching, command compatibility and preserved project data.
 - The first simultaneous native/engine builds collided on their shared output
   DLL. Both suites subsequently passed when their builds ran sequentially.
-- Engine CI evidence is pending completion of `node scripts/engineering/ci.cjs`.
+- `node scripts/engineering/ci.cjs`: passed with exit code 0; all listed syntax,
+  engine, worktree and engineering checks reported PASS.
 - Manual platform checks and a complete visual clipping audit were not run.
 
 ### Engine text left for a later job
@@ -56,7 +57,16 @@ it. English remains the engine default; reviewers should assess this scope
 difference before merging. No dependency was added. Native globalization is
 enabled for Italian dates and numbers.
 
-Publication must use the authorized owner/lead path if the Planwharf worker push
-block rejects this attempt. Neither this PR nor job 16 is authorized for an
+Publication must use the authorized owner/lead path: `git push -u origin HEAD`
+failed in this attempt with `remote helper 'planwharf-push-blocked' aborted session`.
+The local branch and committed review material are preserved. From a lead/owner
+session with publishing enabled, run:
+
+```sh
+git push -u origin feat/languages
+gh pr create --base main --head feat/languages --title "Job 17: English and Italian in the native app" --body-file docs/engineering/job-17-pr.md
+```
+
+Neither this PR nor job 16 is authorized for an
 automatic merge. Job 18's sheet starts only after both jobs are merged, and its
 implementation remains subject to sheet review.
