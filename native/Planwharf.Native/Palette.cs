@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using Avalonia.Media;
 
 namespace Planwharf.Native;
@@ -36,20 +37,20 @@ public static class Palette
     public static IBrush WatchSoft { get; private set; } = null!;
 
     // The text colours offered in the dark theme, as the chat page's (INKS in chat-ui.js).
-    public static readonly (string Key, string Label, string Colour)[] Inks =
+    public static (string Key, string Label, string Colour)[] Inks =>
     [
-        ("white", "White", "#ecefeb"), ("silver", "Silver", "#c9ced6"), ("cream", "Cream", "#f3e6c8"), ("yellow", "Yellow", "#fff3a3"),
-        ("amber", "Amber", "#ffd38a"), ("peach", "Peach", "#ffcfb0"), ("coral", "Coral", "#ff9e8a"), ("pink", "Pink", "#ffc4dd"),
-        ("lavender", "Lavender", "#dccfff"), ("sky", "Sky", "#bcdcff"), ("turquoise", "Turquoise", "#99f6e4"), ("mint", "Mint", "#b4f0d2"), ("lime", "Lime", "#d9f99d"),
+        ("white", Strings.T("White"), "#ecefeb"), ("silver", Strings.T("Silver"), "#c9ced6"), ("cream", Strings.T("Cream"), "#f3e6c8"), ("yellow", Strings.T("Yellow"), "#fff3a3"),
+        ("amber", Strings.T("Amber"), "#ffd38a"), ("peach", Strings.T("Peach"), "#ffcfb0"), ("coral", Strings.T("Coral"), "#ff9e8a"), ("pink", Strings.T("Pink"), "#ffc4dd"),
+        ("lavender", Strings.T("Lavender"), "#dccfff"), ("sky", Strings.T("Sky"), "#bcdcff"), ("turquoise", Strings.T("Turquoise"), "#99f6e4"), ("mint", Strings.T("Mint"), "#b4f0d2"), ("lime", Strings.T("Lime"), "#d9f99d"),
     ];
 
     // The main colour of Planwharf (buttons, the open project, chips, links): green unless the user picks
     // another. Each has a bright shade for the dark theme and a deep one for the light theme.
-    public static readonly (string Key, string Label, string Dark, string Light)[] Accents =
+    public static (string Key, string Label, string Dark, string Light)[] Accents =>
     [
-        ("green", "Green", "#5fcf98", "#1f7a52"), ("blue", "Blue", "#7fa9f5", "#2563c9"), ("purple", "Purple", "#a993ff", "#6d4fd8"),
-        ("teal", "Teal", "#5fcbd6", "#0b8794"), ("orange", "Orange", "#f2a560", "#c2600f"), ("pink", "Pink", "#f08bbd", "#c0367a"),
-        ("red", "Red", "#f08a8a", "#b42525"), ("gold", "Gold", "#e8c55a", "#946c00"),
+        ("green", Strings.T("Green"), "#5fcf98", "#1f7a52"), ("blue", Strings.T("Blue"), "#7fa9f5", "#2563c9"), ("purple", Strings.T("Purple"), "#a993ff", "#6d4fd8"),
+        ("teal", Strings.T("Teal"), "#5fcbd6", "#0b8794"), ("orange", Strings.T("Orange"), "#f2a560", "#c2600f"), ("pink", Strings.T("Pink"), "#f08bbd", "#c0367a"),
+        ("red", Strings.T("Red"), "#f08a8a", "#b42525"), ("gold", Strings.T("Gold"), "#e8c55a", "#946c00"),
     ];
 
     static Palette() => Apply(true, null);

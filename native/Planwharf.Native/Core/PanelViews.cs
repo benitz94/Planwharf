@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Globalization;
 using System.IO;
 using System.Text.Json.Nodes;
@@ -26,15 +27,15 @@ public static class PanelViews
     static bool B(JsonNode? node) => node is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
     public static string Clock(string at, TimeZoneInfo? zone = null) =>
-        DateTimeOffset.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.None, out var when) ? TimeZoneInfo.ConvertTime(when, zone ?? TimeZoneInfo.Local).ToString("HH:mm", CultureInfo.InvariantCulture) : "";
+        DateTimeOffset.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.None, out var when) ? TimeZoneInfo.ConvertTime(when, zone ?? TimeZoneInfo.Local).ToString("HH:mm", Strings.Culture) : "";
 
     public static ProgressPanel Progress(JsonNode snapshot, string projectId, string status, TimeZoneInfo? zone = null)
     {
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => S(item["id"]) == projectId);
         var labels = (snapshot["models"] as JsonArray ?? []).OfType<JsonObject>().ToDictionary(model => S(model["id"]), model => S(model["label"]));
-        string Label(string id) => labels.TryGetValue(id, out var label) && label.Length > 0 ? label : id.Length > 0 ? id : "not assigned";
+        string Label(string id) => labels.TryGetValue(id, out var label) && label.Length > 0 ? label : id.Length > 0 ? id : Strings.T("not assigned");
         var steps = (row?["subTasks"] as JsonArray ?? row?["megaTask"]?["subTasks"] as JsonArray ?? []).OfType<JsonObject>()
-            .Select(sub => new ProgressStep(S(sub["status"]) is { Length: > 0 } s ? s.ToLowerInvariant() : "planned", S(sub["title"]) is var t && t.Length > 140 ? t[..140] : t,
+            .Select(sub => new ProgressStep(S(sub["status"]) is { Length: > 0 } s ? s.ToLowerInvariant() : Strings.T("planned"), S(sub["title"]) is var t && t.Length > 140 ? t[..140] : t,
                 Label(S(sub["assignedModelId"]) is { Length: > 0 } a ? a : S(sub["modelId"])))).ToList();
         var recent = (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId)
             .TakeLast(15).Reverse().Select(e => (Clock(S(e["createdAt"]), zone), S(e["summary"]) is var text && text.Length > 200 ? text[..200] : text)).ToList();
@@ -50,7 +51,7 @@ public static class PanelViews
 
     static string WindowName(string name) => name switch
     {
-        "5-hour" => "5 hours", "weekly" => "Week", "" => "Limit",
+        "5-hour" => Strings.T("5 hours"), "weekly" => Strings.T("Week"), "" => Strings.T("Limit"),
         _ => char.ToUpperInvariant(name.Replace('_', ' ').Replace('-', ' ')[0]) + name.Replace('_', ' ').Replace('-', ' ')[1..]
     };
 
@@ -59,7 +60,7 @@ public static class PanelViews
         if (!DateTimeOffset.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.None, out var when) || when <= now) return "";
         var local = TimeZoneInfo.ConvertTime(when, zone);
         var sameDay = local.Date == TimeZoneInfo.ConvertTime(now, zone).Date;
-        return "resets " + (sameDay ? "" : local.ToString("ddd d MMM ", CultureInfo.InvariantCulture)) + local.ToString("HH:mm", CultureInfo.InvariantCulture);
+        return Strings.T("resets ") + (sameDay ? "" : local.ToString("ddd d MMM ", Strings.Culture)) + local.ToString("HH:mm", Strings.Culture);
     }
 
     public static UsagePanel Usage(JsonNode snapshot, DateTimeOffset? now = null, TimeZoneInfo? zone = null)
@@ -72,13 +73,13 @@ public static class PanelViews
                 .Select(w => new QuotaWindow(WindowName(S(w["name"])), (int)Math.Round(N(w["leftPct"])!.Value), Resets(S(w["resetAt"]), at, tz))).ToList();
             var label = S(plan["label"]) is { Length: > 0 } l ? l : S(plan["id"]);
             if (!B(plan["readable"]) || windows.Count == 0 && N(plan["leftPct"]) == null)
-                return new QuotaPlan(label, S(plan["reason"]) is { Length: > 0 } reason ? reason : "Not reported by this provider", []);
+                return new QuotaPlan(label, S(plan["reason"]) is { Length: > 0 } reason ? reason : Strings.T("Not reported by this provider"), []);
             if (windows.Count == 0) windows.Add(new QuotaWindow("", (int)Math.Round(N(plan["leftPct"])!.Value), ""));
             return new QuotaPlan(label, null, windows);
         }).ToList();
-        static string Time(double? ms) => ms is not { } value ? "—" : value >= 60000 ? $"{Math.Round(value / 60000)} min" : $"{Math.Round(value / 1000)} s";
+        static string Time(double? ms) => ms is not { } value ? "—" : value >= 60000 ? Strings.Format("{0} min", Math.Round(value / 60000)) : Strings.Format("{0} s", Math.Round(value / 1000));
         IReadOnlyList<(string, string)> Rows(string key) => (snapshot["aiUsage"]?[key] as JsonArray ?? []).OfType<JsonObject>()
-            .Select(row => (S(row["model"]), $"{N(row["calls"]) ?? 0} · {Time(N(row["durationMs"]))} · {(N(row["outputTokens"]) is { } tokens ? tokens.ToString("#,0", CultureInfo.InvariantCulture) + " out" : "not reported")}")).ToList();
+            .Select(row => (S(row["model"]), $"{N(row["calls"]) ?? 0} · {Time(N(row["durationMs"]))} · {(N(row["outputTokens"]) is { } tokens ? tokens.ToString("#,0", Strings.Culture) + Strings.T(" out") : Strings.T("not reported"))}")).ToList();
         return new UsagePanel(plans, Rows("orchestrator"), Rows("workers"));
     }
 
@@ -86,12 +87,12 @@ public static class PanelViews
 
     public static FilesPanel Files(JsonNode? repository, string folder, string? error, TimeZoneInfo? zone = null)
     {
-        if (folder.Length == 0) return new FilesPanel("This project has no folder yet. Set it in Settings.", "", [], 0, "");
+        if (folder.Length == 0) return new FilesPanel(Strings.T("This project has no folder yet. Set it in Settings."), "", [], 0, "");
         if (error != null) return new FilesPanel(error, "", [], 0, "");
         var local = repository?["local"];
-        if (repository == null) return new FilesPanel("Reading the folder…", "", [], 0, "");
-        if (!B(local?["exists"])) return new FilesPanel($"The folder {folder} does not exist.", "", [], 0, "");
-        if (!B(local?["git"])) return new FilesPanel("This folder is not tracked by Git, so Planwharf cannot list what changed.", "", [], 0, "");
+        if (repository == null) return new FilesPanel(Strings.T("Reading the folder\u2026"), "", [], 0, "");
+        if (!B(local?["exists"])) return new FilesPanel(Strings.Format("The folder {0} does not exist.", folder), "", [], 0, "");
+        if (!B(local?["git"])) return new FilesPanel(Strings.T("This folder is not tracked by Git, so Planwharf cannot list what changed."), "", [], 0, "");
         var files = (local!["changes"] as JsonArray ?? []).Select(line => S(line)).Where(line => line.Length > 0).Select(line =>
         {
             var code = line.Length >= 2 ? line[..2].Trim() : line.Trim();

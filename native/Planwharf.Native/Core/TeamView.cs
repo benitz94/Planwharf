@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Text.Json.Nodes;
 
 namespace Planwharf.Native.Core;
@@ -140,12 +141,12 @@ public static class TeamViews
     public static string OkQuestion(IReadOnlyList<ProviderView> tools)
     {
         var names = tools.Select(tool => tool.Label).ToList();
-        var list = names.Count < 2 ? string.Join("", names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+        var list = names.Count < 2 ? string.Join("", names) : string.Join(", ", names.Take(names.Count - 1)) + Strings.T(" and ") + names[^1];
         var one = names.Count == 1;
-        return $"{list} will work in the project folder without asking each time: {(one ? "it edits" : "they edit")} files and {(one ? "runs" : "run")} commands, such as tests and installs, with network access. Without this {(one ? "it" : "they")} cannot build.\n\nYou can change this at any time in Team, under AI tools.";
+        return Strings.Format("{0} will work in the project folder without asking each time: {1} files and {2} commands, such as tests and installs, with network access. Without this {3} cannot build.\n\nYou can change this at any time in Team, under AI tools.", list, (one ? Strings.T("it edits") : Strings.T("they edit")), (one ? Strings.T("runs") : Strings.T("run")), (one ? Strings.T("it") : Strings.T("they")));
     }
 
-    public const string NoGoalText = "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.";
+    public static string NoGoalText => Strings.T("Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.");
 
     // What is missing before the crew can start, in the chat page's order. A goal is ready when the
     // project has one or the lead just suggested one.
@@ -154,9 +155,9 @@ public static class TeamViews
         var missing = new List<string>();
         var team = Team(snapshot);
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => S(item["id"]) == projectId);
-        if (team.LeadId == null) missing.Add("Choose a lead in Team.");
-        if (!team.Models.Any(model => model.Build && model.Available && model.Enabled)) missing.Add("Give at least one model the Build role in Team.");
-        if (row != null && S(row["folder"]).Length == 0) missing.Add("Set the project folder in Settings.");
+        if (team.LeadId == null) missing.Add(Strings.T("Choose a lead in Team."));
+        if (!team.Models.Any(model => model.Build && model.Available && model.Enabled)) missing.Add(Strings.T("Give at least one model the Build role in Team."));
+        if (row != null && S(row["folder"]).Length == 0) missing.Add(Strings.T("Set the project folder in Settings."));
         if (row != null && !goalReady) missing.Add(GoalStarted(row) ? NextGoalText : NoGoalText);
         return missing;
     }
@@ -177,5 +178,5 @@ public static class TeamViews
         if (nextGoal != null && !SuggestionIsCurrent(suggestedAt, workStartedAt)) nextGoal = null;
         return nextGoal != null || HasGoal(row) && !GoalStarted(row);
     }
-    public const string NextGoalText = "Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.";
+    public static string NextGoalText => Strings.T("Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.");
 }

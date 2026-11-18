@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
 using Avalonia;
@@ -40,7 +41,7 @@ public sealed partial class MainWindow
         if (pendingByProject.TryGetValue(id, out var waiting))
         {
             var lead = TeamViews.Team(snapshot!).LeadId is { } leadId ? ModelLabel(leadId) : "";
-            return (lead.Length > 0 ? lead : "The lead", waiting.Since);
+            return (lead.Length > 0 ? lead : Strings.T("The lead"), waiting.Since);
         }
         return null;
     }
@@ -66,8 +67,8 @@ public sealed partial class MainWindow
         projectList.ItemsSource = rows.Select(row =>
         {
             var open = row.project.Id == projectId;
-            var attention = !row.working && Regex.IsMatch(row.sub, "^(Stopped|Needs|Failed|Blocked|Waiting)", RegexOptions.IgnoreCase);
-            var done = !row.working && !attention && Regex.IsMatch(row.sub, "^(Done|Goal reached|Finished)", RegexOptions.IgnoreCase);
+            var attention = !row.working && Regex.IsMatch(row.sub, Strings.T("^(Stopped|Needs|Failed|Blocked|Waiting)"), RegexOptions.IgnoreCase);
+            var done = !row.working && !attention && Regex.IsMatch(row.sub, Strings.T("^(Done|Goal reached|Finished)"), RegexOptions.IgnoreCase);
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = {
                 new TextBlock { Text = row.project.Name, Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
                 new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
@@ -81,7 +82,7 @@ public sealed partial class MainWindow
             if (row.news)
             {
                 var dot = new Ellipse { Width = 9, Height = 9, Fill = Palette.Accent, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-                ToolTip.SetTip(dot, "Something happened here since you last looked");
+                ToolTip.SetTip(dot, Strings.T("Something happened here since you last looked"));
                 DockPanel.SetDock(dot, Dock.Right);
                 line.Children.Add(dot);
             }
@@ -115,25 +116,25 @@ public sealed partial class MainWindow
         Look.Paint(actionButton, stopping ? Look.Kind.Danger : Look.Kind.Primary);
         actionButton.IsEnabled = !busy && missing.Count == 0 && !checking;
         // After finished work the box asks for what comes next.
-        input.Watermark = TeamViews.GoalStarted(row) ? "Tell the lead what you want built next…" : "Tell the lead what you want built…";
+        input.Watermark = TeamViews.GoalStarted(row) ? Strings.T("Tell the lead what you want built next\u2026") : Strings.T("Tell the lead what you want built\u2026");
         dropButton.IsVisible = view.Action == CrewAction.Resume;
         dropButton.IsEnabled = !busy;
         send.IsEnabled = !busy && Pending == null;
         if (Pending == null)
         {
             var waiting = view.Action == CrewAction.StopTheCrew && view.Work?.Waiting.Length > 0;
-            var line = checking ? "Checking your AI tools…" : missing.FirstOrDefault()
-                ?? (waiting ? "Waiting for quota: the crew starts again by itself. You can change models in Team or in a step's menu at any time." : view.Hint);
+            var line = checking ? Strings.T("Checking your AI tools\u2026") : missing.FirstOrDefault()
+                ?? (waiting ? Strings.T("Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\u0027s menu at any time.") : view.Hint);
             hint.Text = view.TimeLeft.Length > 0 ? line + "\n" + view.TimeLeft : line;
             hint.Foreground = missing.Count > 0 ? Palette.Warn : Palette.Muted;
         }
         if (timedStop is { } timed && timed.ProjectId == view.Id)
         {
             var minutes = Math.Max(1, (int)Math.Ceiling((timed.At - DateTimeOffset.UtcNow).TotalMinutes));
-            var cancel = Small("Cancel");
+            var cancel = Small(Strings.T("Cancel"));
             cancel.Click += (_, _) => { timedStop = null; Render(); };
             timedRow.Children.Add(Look.Icon("clock", 16, Palette.Warn));
-            timedRow.Children.Add(new TextBlock { Text = $"Stops at {timed.At.ToLocalTime():HH:mm} (in {minutes} min)", Foreground = Palette.Warn, VerticalAlignment = VerticalAlignment.Center });
+            timedRow.Children.Add(new TextBlock { Text = Strings.Format("Stops at {0:HH:mm} (in {1} min)", timed.At.ToLocalTime(), minutes), Foreground = Palette.Warn, VerticalAlignment = VerticalAlignment.Center });
             timedRow.Children.Add(cancel);
             timedRow.IsVisible = true;
         }
@@ -151,13 +152,13 @@ public sealed partial class MainWindow
         if (timedStop?.ProjectId == id) timedStop = null;
         var auto = snapshot?["autonomy"]?[id];
         var working = Flag(auto?["enabled"]) && Str(auto?["stopReason"]).Length == 0;
-        if (!working && !Flag(RowOf(id)?["canStop"])) { hint.Text = "Nothing is running on this project."; hint.Foreground = Palette.Warn; return; }
+        if (!working && !Flag(RowOf(id)?["canStop"])) { hint.Text = Strings.T("Nothing is running on this project."); hint.Foreground = Palette.Warn; return; }
         await DoAsync(async () =>
         {
             var after = working ? await api.SetAutonomyAsync(id, false) : null;
             var row = after != null ? (after["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => Str(item["id"]) == id) : RowOf(id);
             if (Flag(row?["canStop"])) await api.StopAsync(id);
-        }, "Stopped. Work so far is saved; Resume continues from there.");
+        }, Strings.T("Stopped. Work so far is saved; Resume continues from there."));
     }
 
     // Short orders Planwharf handles itself; everything else goes to the lead.
@@ -169,14 +170,14 @@ public sealed partial class MainWindow
             case CommandKind.StopNow when projectId != null: await StopProjectAsync(projectId); return true;
             case CommandKind.StopIn when projectId != null:
                 timedStop = (projectId, DateTimeOffset.UtcNow.AddMinutes(command.Minutes));
-                hint.Text = $"The crew stops in {command.Minutes} minute{(command.Minutes == 1 ? "" : "s")}. You can cancel it below."; hint.Foreground = Palette.Accent;
+                hint.Text = Strings.Format(command.Minutes == 1 ? "The crew stops in 1 minute. You can cancel it below." : "The crew stops in {0} minutes. You can cancel it below.", command.Minutes); hint.Foreground = Palette.Accent;
                 Render(); return true;
             case CommandKind.OpenPanel: OpenSide(command.Panel); return true;
             case CommandKind.Bench when projectId != null:
                 var model = TeamViews.Team(snapshot!).Models.FirstOrDefault(item => item.Label.Contains(command.Model, StringComparison.OrdinalIgnoreCase) || item.Id.Equals(command.Model, StringComparison.OrdinalIgnoreCase));
-                if (model == null) { hint.Text = $"No model named “{command.Model}”."; hint.Foreground = Palette.Warn; return true; }
-                if (await Confirm($"Put {model.Label} on the bench? It will have no role until you bring it back.", "Yes, bench it"))
-                    await DoAsync(() => api!.BenchAsync(projectId, model.Id), $"{model.Label} is on the bench.");
+                if (model == null) { hint.Text = Strings.Format("No model named \u201C{0}\u201D.", command.Model); hint.Foreground = Palette.Warn; return true; }
+                if (await Confirm(Strings.Format("Put {0} on the bench? It will have no role until you bring it back.", model.Label), Strings.T("Yes, bench it")))
+                    await DoAsync(() => api!.BenchAsync(projectId, model.Id), Strings.Format("{0} is on the bench.", model.Label));
                 return true;
             default: return false;
         }
@@ -189,10 +190,10 @@ public sealed partial class MainWindow
         if (api == null || snapshot == null) return false;
         var tools = TeamViews.ToolsNeedingOk(TeamViews.Team(snapshot), forLead);
         if (tools.Count == 0) return true;
-        var names = string.Join(" and ", tools.Select(tool => tool.Label));
-        if (!await new ConfirmDialog(TeamViews.OkQuestion(tools), "Allow " + names, "Planwharf needs your OK", "Cancel").ShowDialog<bool>(this))
+        var names = string.Join(Strings.T(" and "), tools.Select(tool => tool.Label));
+        if (!await new ConfirmDialog(TeamViews.OkQuestion(tools), Strings.T("Allow ") + names, Strings.T("Planwharf needs your OK"), Strings.T("Cancel")).ShowDialog<bool>(this))
         {
-            hint.Text = "Nothing started."; hint.Foreground = Palette.Warn;
+            hint.Text = Strings.T("Nothing started."); hint.Foreground = Palette.Warn;
             return false;
         }
         foreach (var tool in tools) await api.SetWorksUnaskedAsync(tool.Id, true);
@@ -205,7 +206,7 @@ public sealed partial class MainWindow
         var text = input.Text?.Trim();
         if (api == null || string.IsNullOrEmpty(text) || projectId == null || Pending != null) return;
         if (await HandleCommandAsync(text)) { input.Text = ""; return; }
-        if (snapshot != null && TeamViews.Team(snapshot).LeadId == null) { hint.Text = "Choose a lead first (Team panel)."; hint.Foreground = Palette.Warn; OpenSide("team"); return; }
+        if (snapshot != null && TeamViews.Team(snapshot).LeadId == null) { hint.Text = Strings.T("Choose a lead first (Team panel)."); hint.Foreground = Palette.Warn; OpenSide("team"); return; }
         // Antigravity cannot even answer without the OK.
         try { if (!await EnsureOkAsync(forLead: true)) return; }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; return; }
@@ -280,9 +281,9 @@ public sealed partial class MainWindow
             && TeamViews.SuggestionIsCurrent(AskAt(view.Id), view.Work?.StartedAt))
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 6, Children = {
                 new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection {
-                    new Run("Nothing has started yet. When the plan is right, press "), new Run("Let the crew do it") { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(": the crew will work on") } },
+                    new Run(Strings.T("Nothing has started yet. When the plan is right, press ")), new Run(Strings.T("Let the crew do it")) { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(Strings.T(": the crew will work on")) } },
                 new TextBlock { Text = view.NextGoal, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = "Not right yet? Keep talking with the lead.", FontSize = 13, Foreground = Palette.Muted } } }));
+                new TextBlock { Text = Strings.T("Not right yet? Keep talking with the lead."), FontSize = 13, Foreground = Palette.Muted } } }));
         // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
         if (Pending == null && view.NextGoal == null && view.Action == CrewAction.LetTheCrewDoIt
             && !TeamViews.GoalReady(row, null)
@@ -290,23 +291,23 @@ public sealed partial class MainWindow
             // A message written before the last work started was already acted on: it is not offered again.
             && !(view.Work is { } last && DateTimeOffset.TryParse(last.StartedAt, out var started) && mine.At <= started))
         {
-            var use = Look.Button("Use my message as the goal", "check", Look.Kind.Small);
+            var use = Look.Button(Strings.T("Use my message as the goal"), "check", Look.Kind.Small);
             use.HorizontalAlignment = HorizontalAlignment.Left;
-            use.Click += async (_, _) => await DoAsync(() => api!.SaveGoalAsync(view.Id, mine.Question.Trim()), "Goal saved. Press Let the crew do it to start.");
+            use.Click += async (_, _) => await DoAsync(() => api!.SaveGoalAsync(view.Id, mine.Question.Trim()), Strings.T("Goal saved. Press Let the crew do it to start."));
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 8, Children = {
-                new TextBlock { Text = "No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.", FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
+                new TextBlock { Text = Strings.T("No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote."), FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
         }
         if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
         if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
         if (Pending is { } waiting)
         {
-            thread.Children.Add(Bubble(true, "You", waiting.Text));
-            var lead = team.LeadId is { } leadId ? ModelLabel(leadId) : "Lead";
-            var answer = new StackPanel { Spacing = 4, Children = { Bubble(false, lead, Str(live?["draft"]) is { Length: > 0 } draft ? draft : "Thinking…") } };
+            thread.Children.Add(Bubble(true, Strings.T("You"), waiting.Text));
+            var lead = team.LeadId is { } leadId ? ModelLabel(leadId) : Strings.T("Lead");
+            var answer = new StackPanel { Spacing = 4, Children = { Bubble(false, lead, Str(live?["draft"]) is { Length: > 0 } draft ? draft : Strings.T("Thinking\u2026")) } };
             if (Str(live?["thinking"]) is { Length: > 0 } thinking)
             {
                 // Redrawn about every second: it stays open or closed as the user left it.
-                var notes = Fold("What the lead is doing", Mono(thinking.Length > 4000 ? thinking[^4000..] : thinking));
+                var notes = Fold(Strings.T("What the lead is doing"), Mono(thinking.Length > 4000 ? thinking[^4000..] : thinking));
                 notes.IsExpanded = thinkingOpen;
                 notes.Toggled += opened => thinkingOpen = opened;
                 answer.Children.Add(notes);
@@ -371,44 +372,44 @@ public sealed partial class MainWindow
 
     Control AskControls(string id, AskItem ask)
     {
-        var panel = new StackPanel { Spacing = 12, Children = { Bubble(true, "You", ask.Question) } };
+        var panel = new StackPanel { Spacing = 12, Children = { Bubble(true, Strings.T("You"), ask.Question) } };
         // The user's own message can be copied, or put back in the box to send again (for commands used often).
         if (ask.Question.Trim().Length > 0)
         {
-            var copyMine = Look.Button("Copy", "copy", Look.Kind.Quiet);
-            ToolTip.SetTip(copyMine, "Copy your message");
-            copyMine.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Question); copyMine.Content = Look.Label("Copied", "check", 14, 5); copyMine.Foreground = Palette.Accent; } };
-            var again = Look.Button("Use again", "refresh", Look.Kind.Quiet);
-            ToolTip.SetTip(again, "Put this message in the box, to send it again or change it first");
+            var copyMine = Look.Button(Strings.T("Copy"), "copy", Look.Kind.Quiet);
+            ToolTip.SetTip(copyMine, Strings.T("Copy your message"));
+            copyMine.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Question); copyMine.Content = Look.Label(Strings.T("Copied"), "check", 14, 5); copyMine.Foreground = Palette.Accent; } };
+            var again = Look.Button(Strings.T("Use again"), "refresh", Look.Kind.Quiet);
+            ToolTip.SetTip(again, Strings.T("Put this message in the box, to send it again or change it first"));
             again.Click += (_, _) => { input.Text = ask.Question; input.CaretIndex = input.Text.Length; input.Focus(); };
             panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, -8, 0, 0), Children = { copyMine, again } });
         }
         var reply = new StackPanel { Spacing = 4 };
-        var meta = string.Join(" · ", new[] { ask.Who, ask.At == DateTimeOffset.MinValue ? "" : ask.At.ToLocalTime().ToString("HH:mm"), ask.Elapsed }.Where(part => part.Length > 0));
+        var meta = string.Join(" · ", new[] { ask.Who, ask.At == DateTimeOffset.MinValue ? "" : ask.At.ToLocalTime().ToString("HH:mm", Strings.Culture), ask.Elapsed }.Where(part => part.Length > 0));
         reply.Children.Add(Bubble(false, meta, ask.Answer, ask.Failed));
         var under = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         if (ask.Answer.Length > 0)
         {
-            var copy = Look.Button("Copy", "copy", Look.Kind.Quiet);
-            ToolTip.SetTip(copy, "Copy this reply");
-            copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Answer); copy.Content = Look.Label("Copied", "check", 14, 5); copy.Foreground = Palette.Accent; } };
+            var copy = Look.Button(Strings.T("Copy"), "copy", Look.Kind.Quiet);
+            ToolTip.SetTip(copy, Strings.T("Copy this reply"));
+            copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Answer); copy.Content = Look.Label(Strings.T("Copied"), "check", 14, 5); copy.Foreground = Palette.Accent; } };
             under.Children.Add(copy);
         }
         // The lead asked to turn on a tool: one button, and only a click from the user turns it on.
         if (Tools.FirstOrDefault(tool => tool.Name == ask.ToolRequest) is { Name.Length: > 0 } wanted && !ModelToolsView.Read(snapshot, id, ask.ModelId).Tools[wanted.Name])
         {
-            var turnOn = Small($"Turn on {wanted.Label} for {ask.Who}");
+            var turnOn = Small(Strings.Format("Turn on {0} for {1}", wanted.Label, ask.Who));
             turnOn.Click += async (_, _) =>
             {
-                if (wanted.Name == "mcp" && !await Confirm(wanted.Explain + $" Turn it on for {ask.Who}?", "Yes, turn on MCP servers")) return;
-                await DoAsync(() => api!.SetToolsAsync(id, new Dictionary<string, bool> { [wanted.Name] = true }, ask.ModelId.Length > 0 ? ask.ModelId : null), $"{wanted.Label} on for {ask.Who}.");
+                if (wanted.Name == "mcp" && !await Confirm(wanted.Explain + Strings.Format(" Turn it on for {0}?", ask.Who), Strings.T("Yes, turn on MCP servers"))) return;
+                await DoAsync(() => api!.SetToolsAsync(id, new Dictionary<string, bool> { [wanted.Name] = true }, ask.ModelId.Length > 0 ? ask.ModelId : null), Strings.Format("{0} on for {1}.", wanted.Label, ask.Who));
             };
             under.Children.Add(turnOn);
         }
         if (under.Children.Count > 0) reply.Children.Add(under);
         if (ask.Thinking.Length > 0)
         {
-            var fold = Fold("How the lead got there", Mono(ask.Thinking));
+            var fold = Fold(Strings.T("How the lead got there"), Mono(ask.Thinking));
             fold.IsExpanded = false;
             reply.Children.Add(fold);
         }
@@ -429,7 +430,7 @@ public sealed partial class MainWindow
         };
         var mark = Look.Tile(icon, color, soft, 24, 13, 12);
         mark.VerticalAlignment = VerticalAlignment.Top; mark.Margin = new Thickness(0, 0, 10, 0);
-        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm"), Foreground = Palette.Muted, FontSize = 13, Margin = new Thickness(10, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm", Strings.Culture), Foreground = Palette.Muted, FontSize = 13, Margin = new Thickness(10, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top };
         var line = new DockPanel { Children = { time, mark,
             new TextBlock { Text = e.Text, Foreground = Palette.Muted, FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) } } };
         DockPanel.SetDock(time, Dock.Right);
@@ -447,17 +448,17 @@ public sealed partial class MainWindow
                     : new TextBlock { Text = n.ToString(), Foreground = Palette.Muted, FontSize = 12, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
             new TextBlock { Text = text, Foreground = done ? Palette.Muted : Palette.Text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center } } };
         var leads = TeamViews.Leads(team);
-        var leadMenu = new ComboBox { ItemsSource = leads.Select(model => model.Label).ToList(), SelectedIndex = leads.FindIndex(model => model.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 220 };
+        var leadMenu = new ComboBox { ItemsSource = leads.Select(model => model.Label).ToList(), SelectedIndex = leads.FindIndex(model => model.Id == team.LeadId), PlaceholderText = Strings.T("Choose your lead\u2026"), MinWidth = 220 };
         leadMenu.SelectionChanged += async (_, _) =>
         {
             if (leadMenu.SelectedIndex < 0) return;
             var chosen = leads[leadMenu.SelectedIndex];
-            await DoAsync(() => api!.SetLeadAsync(projectId, chosen.Id, chosen.Lead), $"{chosen.Label} is now the lead.");
+            await DoAsync(() => api!.SetLeadAsync(projectId, chosen.Id, chosen.Lead), Strings.Format("{0} is now the lead.", chosen.Label));
         };
         var row = Row(leadMenu);
         if (!hasProject)
         {
-            var create = Look.Button("New project", "plus", Look.Kind.Primary);
+            var create = Look.Button(Strings.T("New project"), "plus", Look.Kind.Primary);
             create.Click += async (_, _) => await NewProjectAsync();
             row.Children.Add(create);
         }
@@ -465,11 +466,11 @@ public sealed partial class MainWindow
             Background = new LinearGradientBrush { StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
                 GradientStops = { new GradientStop(Palette.ColorOf(Palette.AccentSoft), 0), new GradientStop(Palette.ColorOf(Palette.Card), 0.55), new GradientStop(Palette.ColorOf(Palette.BuildSoft), 1) } },
             Child = new StackPanel { Spacing = 10, Children = {
-            Look.Head("rocket", Palette.Accent, Palette.AccentSoft, "Welcome aboard, captain", 19),
-            Line("Planwharf runs a team of AI models for you. You give the goal; a lead plans it, a builder writes the code and a verifier checks and fixes it.", Palette.Text, 14),
-            Step(1, team.LeadId != null, "Choose your lead."),
-            Step(2, hasProject, "Create a project: a name and a folder."),
-            Step(3, false, "Talk with the lead about what to build. When the plan is right, press Let the crew do it."),
+            Look.Head("rocket", Palette.Accent, Palette.AccentSoft, Strings.T("Welcome aboard, captain"), 19),
+            Line(Strings.T("Planwharf runs a team of AI models for you. You give the goal; a lead plans it, a builder writes the code and a verifier checks and fixes it."), Palette.Text, 14),
+            Step(1, team.LeadId != null, Strings.T("Choose your lead.")),
+            Step(2, hasProject, Strings.T("Create a project: a name and a folder.")),
+            Step(3, false, Strings.T("Talk with the lead about what to build. When the plan is right, press Let the crew do it.")),
             row } } };
     }
 
@@ -478,16 +479,16 @@ public sealed partial class MainWindow
         var missing = TeamViews.Missing(snapshot!, view.Id, goalReady);
         var panel = new StackPanel { Spacing = 8, Children = {
             Look.Head("folder", Palette.Accent, Palette.AccentSoft, view.Name, 17),
-            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : "Write below what you want built. When the lead suggests a goal, press Let the crew do it.", Palette.Text, 14),
-            Explain("Folder: " + (Str(row?["folder"]) is { Length: > 0 } folder ? folder : "not set")) } };
+            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : Strings.T("Write below what you want built. When the lead suggests a goal, press Let the crew do it."), Palette.Text, 14),
+            Explain(Strings.T("Folder: ") + (Str(row?["folder"]) is { Length: > 0 } folder ? folder : Strings.T("not set"))) } };
         if (missing.Count > 0)
         {
-            panel.Children.Add(Line("Before the crew can start:", Palette.Text, 13, FontWeight.SemiBold));
+            panel.Children.Add(Line(Strings.T("Before the crew can start:"), Palette.Text, 13, FontWeight.SemiBold));
             var fixes = new WrapPanel();
             foreach (var item in missing)
             {
-                var (label, open) = item.StartsWith("Choose a lead") ? ("Choose the lead", "team") : item.StartsWith("Give at least") ? ("Pick a builder", "team")
-                    : item.StartsWith("Set the project folder") ? ("Set the folder", "settings") : ("Write what to build", "");
+                var (label, open) = item == Strings.T("Choose a lead in Team.") ? (Strings.T("Choose the lead"), "team") : item == Strings.T("Give at least one model the Build role in Team.") ? (Strings.T("Pick a builder"), "team")
+                    : item == Strings.T("Set the project folder in Settings.") ? (Strings.T("Set the folder"), "settings") : (Strings.T("Write what to build"), "");
                 var fix = Small(label);
                 fix.Margin = new Thickness(0, 0, 8, 6);
                 fix.Click += (_, _) => { if (open.Length > 0) OpenSide(open); else input.Focus(); };
@@ -495,7 +496,7 @@ public sealed partial class MainWindow
             }
             panel.Children.Add(fixes);
         }
-        else panel.Children.Add(Line("Everything is ready. Press Let the crew do it below, or tell the lead more first.", Palette.Muted, 13));
+        else panel.Children.Add(Line(Strings.T("Everything is ready. Press Let the crew do it below, or tell the lead more first."), Palette.Muted, 13));
         return Look.Card(panel);
     }
 }

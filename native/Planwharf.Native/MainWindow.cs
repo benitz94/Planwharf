@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Text.Json.Nodes;
 using Avalonia;
 using Avalonia.Controls;
@@ -20,20 +21,20 @@ public sealed partial class MainWindow : Window
     readonly TextBlock badgeText = new() { FontSize = 12, Foreground = Palette.Muted };
     readonly StackPanel thread = new() { Spacing = 14, Margin = new Thickness(20, 20), MaxWidth = 780 };
     readonly ScrollViewer threadScroll;
-    readonly Button actionButton = Look.Button("Let the crew do it", "rocket", Look.Kind.Primary);
+    readonly Button actionButton = Look.Button(Strings.T("Let the crew do it"), "rocket", Look.Kind.Primary);
     // Next to Resume: close the stopped work to start something new.
-    readonly Button dropButton = Look.Button("Drop this work", "trash");
+    readonly Button dropButton = Look.Button(Strings.T("Drop this work"), "trash");
     readonly TextBlock hint = new() { Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
-    readonly TextBox input = Look.Field(new TextBox { Watermark = "Tell the lead what you want built…", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 46, MaxHeight = 220, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
-    readonly Button send = Look.Button("Send", "send", Look.Kind.Primary);
+    readonly TextBox input = Look.Field(new TextBox { Watermark = Strings.T("Tell the lead what you want built\u2026"), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 46, MaxHeight = 220, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
+    readonly Button send = Look.Button(Strings.T("Send"), "send", Look.Kind.Primary);
     readonly TextBlock now = new() { FontSize = 12, Foreground = Palette.Muted, Margin = new Thickness(0, 0, 0, 8) };
     readonly TextBlock sideTitle = new() { FontSize = 17, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
     // The panels on the right, as in the chat page.
-    static readonly (string Mode, string Label, string Icon)[] Panels = [("team", "Team", "team"), ("progress", "Progress", "progress"), ("usage", "Usage", "usage"), ("files", "Files", "file"), ("settings", "Settings", "settings")];
+    static (string Mode, string Label, string Icon)[] Panels => [("team", Strings.T("Team"), "team"), ("progress", Strings.T("Progress"), "progress"), ("usage", Strings.T("Usage"), "usage"), ("files", Strings.T("Files"), "file"), ("settings", Strings.T("Settings"), "settings")];
     readonly Dictionary<string, ToggleButton> sideButtons = Panels.ToDictionary(panel => panel.Mode, panel => { var tab = Look.Tab(panel.Label, panel.Icon); tab.Margin = new Thickness(6, 0, 0, 0); return tab; });
     readonly Dictionary<string, (JsonNode? Json, string? Error)> repoRaw = new();
     readonly StackPanel side = new() { Spacing = 10, Margin = new Thickness(16) };
-    readonly Dictionary<string, string> sideTitles = Panels.ToDictionary(panel => panel.Mode, panel => panel.Mode == "files" ? "Changed files" : panel.Label);
+    readonly Dictionary<string, string> sideTitles = Panels.ToDictionary(panel => panel.Mode, panel => panel.Mode == "files" ? Strings.T("Changed files") : panel.Label);
     readonly Border sidePanel;
     readonly string version;
 
@@ -55,14 +56,14 @@ public sealed partial class MainWindow : Window
     {
         this.version = version;
         Closed += (_, _) => closed = true;
-        Title = "Planwharf"; Width = 1360; Height = 860; MinWidth = 960; MinHeight = 560; Background = Palette.Background;
+        Title = Strings.T("Planwharf"); Width = 1360; Height = 860; MinWidth = 960; MinHeight = 560; Background = Palette.Background;
         threadScroll = new ScrollViewer { Content = thread, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
         var brand = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 9, Margin = new Thickness(0, 0, 0, 12), Children = {
             BrandMark(),
-            new TextBlock { Text = "Planwharf", FontSize = 18, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center },
+            new TextBlock { Text = Strings.T("Planwharf"), FontSize = 18, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center },
             new TextBlock { Text = version, FontSize = 12, Foreground = Palette.Muted, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 2, 0, 0) } } };
-        var newProject = Look.Button("New project", "plus", Look.Kind.Primary);
+        var newProject = Look.Button(Strings.T("New project"), "plus", Look.Kind.Primary);
         newProject.HorizontalAlignment = HorizontalAlignment.Stretch; newProject.HorizontalContentAlignment = HorizontalAlignment.Center; newProject.Margin = new Thickness(0, 0, 0, 12);
         newProject.Click += async (_, _) => await NewProjectAsync();
         projectList.SelectionChanged += (_, _) => { if (projectList.SelectedItem is ListBoxItem { Tag: string id } && id != projectId) { projectId = id; threadSig = sideSig = null; _ = RefreshAsync(readOnly: true); } };
@@ -73,7 +74,7 @@ public sealed partial class MainWindow : Window
             ("SystemControlHighlightListLowBrush", Palette.Surface2), ("SystemControlHighlightListMediumBrush", Palette.Surface2) })
             projectList.Resources[key] = value;
         var top = new StackPanel { Children = { brand, newProject } };
-        var settingsLink = Look.Button("Settings", "settings", Look.Kind.Link);
+        var settingsLink = Look.Button(Strings.T("Settings"), "settings", Look.Kind.Link);
         settingsLink.Click += (_, _) => OpenSide("settings");
         var foot = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 8, 0, 0), Child = new DockPanel { Children = { settingsLink } } };
         DockPanel.SetDock(settingsLink, Dock.Right); settingsLink.HorizontalAlignment = HorizontalAlignment.Right;
@@ -92,13 +93,13 @@ public sealed partial class MainWindow : Window
             button.Click += (_, _) => OpenSide(button.IsChecked == true ? mode : null);
         }
         // Quit, as the red tab of the chat page: unfinished work is saved.
-        var quit = Look.Tab("Quit", "power");
+        var quit = Look.Tab(Strings.T("Quit"), "power");
         quit.Foreground = Palette.Danger; quit.Margin = new Thickness(6, 0, 0, 0);
         quit.Resources["ToggleButtonForegroundPointerOver"] = Palette.Danger; quit.Resources["ToggleButtonForegroundPressed"] = Palette.Danger;
         quit.Click += async (_, _) =>
         {
             quit.IsChecked = false;
-            if (await Confirm("Quit Planwharf? Unfinished work is saved, and Resume continues it next time.", "Yes, quit"))
+            if (await Confirm(Strings.T("Quit Planwharf? Unfinished work is saved, and Resume continues it next time."), Strings.T("Yes, quit")))
                 (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         };
         tools.Children.Add(quit);
@@ -112,7 +113,7 @@ public sealed partial class MainWindow : Window
         var header = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(20, 12), Child = headerRow };
 
         dropButton.Margin = new Thickness(8, 0, 0, 0); dropButton.IsVisible = false;
-        ToolTip.SetTip(dropButton, "Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are.");
+        ToolTip.SetTip(dropButton, Strings.T("Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are."));
         dropButton.Click += async (_, _) => await DropWorkAsync();
         var actions = new DockPanel { Margin = new Thickness(0, 0, 0, 8), Children = { actionButton, dropButton, hint } };
         DockPanel.SetDock(actionButton, Dock.Left); DockPanel.SetDock(dropButton, Dock.Left);
@@ -122,13 +123,13 @@ public sealed partial class MainWindow : Window
         DockPanel.SetDock(send, Dock.Right);
         var footer = new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(20, 8, 20, 14), Child = new StackPanel { MaxWidth = 780, Children = { timedRow, actions, composer,
             new TextBlock { FontSize = 12, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Inlines = new Avalonia.Controls.Documents.InlineCollection {
-                new Avalonia.Controls.Documents.Run("Talk with the lead to shape the plan, then press "), new Avalonia.Controls.Documents.Run("Let the crew do it") { FontWeight = FontWeight.Bold, Foreground = Palette.Text },
-                new Avalonia.Controls.Documents.Run(". The crew builds, checks and stops when the goal is reached.") } } } } };
+                new Avalonia.Controls.Documents.Run(Strings.T("Talk with the lead to shape the plan, then press ")), new Avalonia.Controls.Documents.Run(Strings.T("Let the crew do it")) { FontWeight = FontWeight.Bold, Foreground = Palette.Text },
+                new Avalonia.Controls.Documents.Run(Strings.T(". The crew builds, checks and stops when the goal is reached.")) } } } } };
         var middle = new DockPanel { Children = { header, footer, threadScroll } };
         DockPanel.SetDock(header, Dock.Top); DockPanel.SetDock(footer, Dock.Bottom);
         var close = Look.Button("", "close", Look.Kind.Quiet);
         close.Content = Look.Icon("close", 18); close.Padding = new Thickness(6); close.Foreground = Palette.Text;
-        ToolTip.SetTip(close, "Close");
+        ToolTip.SetTip(close, Strings.T("Close"));
         close.Click += (_, _) => OpenSide(null);
         var sideHead = new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(16, 10, 10, 10), Child = new DockPanel { Children = { close, sideTitle } } };
         DockPanel.SetDock(close, Dock.Right);
@@ -151,11 +152,11 @@ public sealed partial class MainWindow : Window
             await SendAsync();
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         actionButton.Click += async (_, _) => await ActAsync();
-        title.Text = "Starting Planwharf…"; hint.Text = "Starting the local Planwharf server.";
+        title.Text = Strings.T("Starting Planwharf\u2026"); hint.Text = Strings.T("Starting the local Planwharf server.");
         actionButton.IsEnabled = send.IsEnabled = false;
     }
 
-    void ShowNow() => now.Text = DateTime.Now.ToString("ddd, MMM d · HH:mm", System.Globalization.CultureInfo.CurrentCulture);
+    void ShowNow() => now.Text = DateTime.Now.ToString("ddd, MMM d · HH:mm", Strings.Culture);
 
     // The logo's needle, turning while anything is being worked on.
     Canvas? needle;
@@ -214,7 +215,7 @@ public sealed partial class MainWindow : Window
         return fresh;
     }
 
-    public void ShowError(string message) { title.Text = "Planwharf could not start"; hint.Text = message; hint.Foreground = Palette.Danger; }
+    public void ShowError(string message) { title.Text = Strings.T("Planwharf could not start"); hint.Text = message; hint.Foreground = Palette.Danger; }
 
     // Shows a snapshot of the server's state; the window redraws only what changed.
     public void Show(JsonNode state)
@@ -251,7 +252,7 @@ public sealed partial class MainWindow : Window
         if (api == null || refreshing) return;
         refreshing = true;
         try { Show(await api.SnapshotAsync(readOnly, projectId)); }
-        catch (Exception error) { hint.Text = "Planwharf is not answering: " + error.Message; }
+        catch (Exception error) { hint.Text = Strings.T("Planwharf is not answering: ") + error.Message; }
         finally { refreshing = false; }
     }
 
@@ -266,8 +267,8 @@ public sealed partial class MainWindow : Window
         RenderFooter(view);
         if (view == null)
         {
-            title.Text = "Welcome"; badgeText.Text = "";
-            hint.Text = "Create a project to begin: + New project."; hint.Foreground = Palette.Muted; actionButton.IsEnabled = false;
+            title.Text = Strings.T("Welcome"); badgeText.Text = "";
+            hint.Text = Strings.T("Create a project to begin: \u002B New project."); hint.Foreground = Palette.Muted; actionButton.IsEnabled = false;
             RenderWelcome();
             RenderSide(null);
             if (badge != null) badge.IsVisible = false;
@@ -277,7 +278,7 @@ public sealed partial class MainWindow : Window
         var workingNow = WorkingNow(view.Id);
         badgeText.Text = workingNow is { } work ? ChatViews.WorkingText(work.Who, work.Since, DateTimeOffset.UtcNow) : view.Status;
         // Green while working or when the goal is reached, as the chat page's badge.
-        var good = workingNow != null || System.Text.RegularExpressions.Regex.IsMatch(view.Status, "^(Done|Goal reached)");
+        var good = workingNow != null || view.Status == Strings.T("Done") || view.Status == Strings.T("Goal reached");
         badgeText.Foreground = good ? Palette.Accent : Palette.Muted;
         if (badge != null) badge.Background = good ? Palette.AccentSoft : Palette.Surface2;
         RenderThread(view);
@@ -379,16 +380,16 @@ public sealed partial class MainWindow : Window
 
     Control AlertsCard(string projectId, IReadOnlyList<AlertView> alerts)
     {
-        var panel = new StackPanel { Spacing = 8, Children = { Look.Head("alert", Palette.Warn, Palette.WarnSoft, "Something needs a look", 17) } };
+        var panel = new StackPanel { Spacing = 8, Children = { Look.Head("alert", Palette.Warn, Palette.WarnSoft, Strings.T("Something needs a look"), 17) } };
         foreach (var alert in alerts)
         {
-            var ignore = Small("Ignore"); ignore.VerticalAlignment = VerticalAlignment.Top;
-            ignore.Click += async (_, _) => await DoAsync(() => api!.IgnoreAlertAsync(projectId, alert.Id), "Ignored.");
+            var ignore = Small(Strings.T("Ignore")); ignore.VerticalAlignment = VerticalAlignment.Top;
+            ignore.Click += async (_, _) => await DoAsync(() => api!.IgnoreAlertAsync(projectId, alert.Id), Strings.T("Ignored."));
             var row = new DockPanel { Children = { ignore, new StackPanel { Children = { Line(alert.Title, Palette.Text, 14, FontWeight.SemiBold), Line(alert.Message, Palette.Muted, 13) } } } };
             DockPanel.SetDock(ignore, Dock.Right);
             panel.Children.Add(row);
         }
-        panel.Children.Add(Line("Planwharf checks the work itself; this is a reason to look, not proof that something broke.", Palette.Muted, 12));
+        panel.Children.Add(Line(Strings.T("Planwharf checks the work itself; this is a reason to look, not proof that something broke."), Palette.Muted, 12));
         return new Border { BorderBrush = Palette.Warn, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
     }
 
@@ -397,38 +398,38 @@ public sealed partial class MainWindow : Window
         var done = work.Status == "COMPLETE";
         var stopped = !done && IsStopped(work);
         var proposal = work.Status == "READY_FOR_APPROVAL";
-        var heading = done ? "Work finished" : stopped ? "Work stopped" : proposal ? "The lead proposes this work" : "Crew at work" + (card.Since.Length > 0 ? " · " + card.Since : "");
+        var heading = done ? Strings.T("Work finished") : stopped ? Strings.T("Work stopped") : proposal ? Strings.T("The lead proposes this work") : Strings.T("Crew at work") + (card.Since.Length > 0 ? " · " + card.Since : "");
         var (icon, tone, soft) = done ? ("check", Palette.Accent, Palette.AccentSoft) : stopped ? ("alert", Palette.Warn, Palette.WarnSoft) : proposal ? ("lead", Palette.Lead, Palette.LeadSoft) : ("rocket", Palette.Accent, Palette.AccentSoft);
         var panel = new StackPanel { Spacing = 8, Children = { Look.Head(icon, tone, soft, heading, 17) } };
         panel.Children.Add(Line(stopped && work.NextAction.Length > 0 ? work.NextAction : work.Title));
         if (done)
         {
-            var changed = card.Repo is { Git: true } repo ? $"{repo.Uncommitted} files not yet committed" : card.Repo == null ? "Counting changed files…" : "Changed files: unknown";
-            panel.Children.Add(Line(string.Join("   ·   ", new[] { $"{work.Done}/{work.Total} steps done", card.Took, changed }.Where(part => part.Length > 0)), Palette.Muted, 13));
+            var changed = card.Repo is { Git: true } repo ? Strings.Format("{0} files not yet committed", repo.Uncommitted) : card.Repo == null ? Strings.T("Counting changed files\u2026") : Strings.T("Changed files: unknown");
+            panel.Children.Add(Line(string.Join("   ·   ", new[] { Strings.Format("{0}/{1} steps done", work.Done, work.Total), card.Took, changed }.Where(part => part.Length > 0)), Palette.Muted, 13));
         }
         if ((done || stopped) && ProjectViews.Decisions(work.Results) is { Count: > 0 } decisions)
         {
-            var asks = new StackPanel { Spacing = 3, Children = { Line("Needs your decision", Palette.Warn, 13, FontWeight.SemiBold) } };
+            var asks = new StackPanel { Spacing = 3, Children = { Line(Strings.T("Needs your decision"), Palette.Warn, 13, FontWeight.SemiBold) } };
             foreach (var decision in decisions) asks.Children.Add(Line("• " + decision, Palette.Text, 13));
             panel.Children.Add(new Border { Background = Palette.WarnSoft, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8), Child = asks });
         }
-        if (card.Summary.Count > 0) panel.Children.Add(List("Summary", card.Summary));
-        if (done && work.Results.Count > 0) panel.Children.Add(List("What was done", work.Results));
+        if (card.Summary.Count > 0) panel.Children.Add(List(Strings.T("Summary"), card.Summary));
+        if (done && work.Results.Count > 0) panel.Children.Add(List(Strings.T("What was done"), work.Results));
         if (!done && !proposal)
         {
             panel.Children.Add(Look.Bar(work.Total == 0 ? 0 : work.Done * 100 / work.Total));
-            panel.Children.Add(Line($"{work.Done} of {work.Total} steps done", Palette.Muted, 12));
+            panel.Children.Add(Line(Strings.Format("{0} of {1} steps done", work.Done, work.Total), Palette.Muted, 12));
             if (work.Waiting.Length > 0 && !stopped) panel.Children.Add(Line(work.Waiting, Palette.Warn, 13));
         }
         foreach (var step in work.Steps) panel.Children.Add(StepRow(step, team, editable: !done && step.Status != "done"));
-        if (proposal) panel.Children.Add(Line(card.AutoApprove ? "The crew approves this by itself." : "Press Approve and start below, or tell the lead what to change.", Palette.Muted, 13));
+        if (proposal) panel.Children.Add(Line(card.AutoApprove ? Strings.T("The crew approves this by itself.") : Strings.T("Press Approve and start below, or tell the lead what to change."), Palette.Muted, 13));
         if (!done && !stopped && !proposal && card.Activity.Text.Length > 0)
-            panel.Children.Add(Fold($"What {card.Activity.Who} is doing", new SelectableTextBlock { Text = card.Activity.Text, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 12, Foreground = Palette.Muted }));
+            panel.Children.Add(Fold(Strings.Format("What {0} is doing", card.Activity.Who), new SelectableTextBlock { Text = card.Activity.Text, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 12, Foreground = Palette.Muted }));
         if ((done || stopped) && card.Usage.Count > 0)
         {
             // As the chat page: a small heading, then each model with its provider's dot.
             var usage = new StackPanel { Spacing = 6, Margin = new Thickness(0, 4, 0, 0), Children = {
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { Look.Icon("usage", 16, Palette.Text), new TextBlock { Text = "What this work used", FontSize = 13, Foreground = Palette.Text } } } } };
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { Look.Icon("usage", 16, Palette.Text), new TextBlock { Text = Strings.T("What this work used"), FontSize = 13, Foreground = Palette.Text } } } } };
             foreach (var (model, text) in card.Usage)
             {
                 var provider = team.Models.FirstOrDefault(m => m.Label == model) is { } found ? (found.ProviderId.Length > 0 ? found.ProviderId : found.Provider) : "";
@@ -440,10 +441,10 @@ public sealed partial class MainWindow : Window
         }
         if (done)
         {
-            panel.Children.Add(Line("Try the result in the project folder. Nothing is published until you push it.", Palette.Muted, 13));
-            var seeFiles = Look.Button("See changed files", "file", Look.Kind.Small);
+            panel.Children.Add(Line(Strings.T("Try the result in the project folder. Nothing is published until you push it."), Palette.Muted, 13));
+            var seeFiles = Look.Button(Strings.T("See changed files"), "file", Look.Kind.Small);
             seeFiles.Click += (_, _) => OpenSide("files");
-            var seeUsage = Look.Button("See usage", "usage", Look.Kind.Small);
+            var seeUsage = Look.Button(Strings.T("See usage"), "usage", Look.Kind.Small);
             seeUsage.Click += (_, _) => OpenSide("usage");
             panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { seeFiles, seeUsage } });
             if (GitBox(projectId, work, card.Repo) is { } git) panel.Children.Add(git);
@@ -462,13 +463,13 @@ public sealed partial class MainWindow : Window
         var stepModel = team.Models.FirstOrDefault(m => m.Id == step.ModelId);
         Control model = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Children = {
             Look.Dot(Look.ProviderColour(stepModel is { } sm ? (sm.ProviderId.Length > 0 ? sm.ProviderId : sm.Provider) : "")).With(d => d.Margin = new Thickness(0, 0, 5, 0)),
-            new TextBlock { Text = step.Model.Length > 0 ? step.Model : "not assigned", Foreground = Palette.Text, FontSize = 15, VerticalAlignment = VerticalAlignment.Center } } };
+            new TextBlock { Text = step.Model.Length > 0 ? step.Model : Strings.T("not assigned"), Foreground = Palette.Text, FontSize = 15, VerticalAlignment = VerticalAlignment.Center } } };
         // Open work: the model of a step that is not done can be changed, among the team models with that role.
         if (editable)
         {
             var choices = TeamViews.ModelsFor(team, step.Role).ToList();
-            if (choices.All(m => m.Id != step.ModelId)) choices.Insert(0, new TeamModel(step.ModelId, step.Model.Length > 0 ? step.Model : "not assigned", "", null, true, null, false, false, false, false, false));
-            var menu = new ComboBox { ItemsSource = choices.Select(m => m.Label + (m.QuotaLeft is { } left ? $" · {left}% left" : "")).ToList(), SelectedIndex = choices.FindIndex(m => m.Id == step.ModelId), MinWidth = 220 };
+            if (choices.All(m => m.Id != step.ModelId)) choices.Insert(0, new TeamModel(step.ModelId, step.Model.Length > 0 ? step.Model : Strings.T("not assigned"), "", null, true, null, false, false, false, false, false));
+            var menu = new ComboBox { ItemsSource = choices.Select(m => m.Label + (m.QuotaLeft is { } left ? Strings.Format(" \u00B7 {0}% left", left) : "")).ToList(), SelectedIndex = choices.FindIndex(m => m.Id == step.ModelId), MinWidth = 220 };
             // While the menu is open the chat is not redrawn, or the menu and the choice would vanish under the pointer.
             menu.DropDownOpened += (_, _) => menuOpen = true;
             menu.DropDownClosed += (_, _) => { menuOpen = false; threadSig = null; };
@@ -477,11 +478,11 @@ public sealed partial class MainWindow : Window
         }
         var (roleColor, roleSoft, roleIcon) = Palette.Role(step.Role);
         var main = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center, Children = {
-            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new TextBlock { Text = step.Role, Foreground = roleColor, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center },
+            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { new TextBlock { Text = Strings.T(step.Role), Foreground = roleColor, FontWeight = FontWeight.Bold, VerticalAlignment = VerticalAlignment.Center },
                 new TextBlock { Text = "·", Foreground = Palette.Muted, VerticalAlignment = VerticalAlignment.Center }, model } } } };
         if (step.Title.Length > 0) main.Children.Add(Line(step.Title, Palette.Muted, 13));
         var good = step.Status == "done"; var bad = step.Status is "blocked" or "failed";
-        var status = Look.Badge((good ? "✓ " : "") + step.Status, good ? Palette.Accent : bad ? Palette.Danger : Palette.Warn, good ? Palette.AccentSoft : bad ? Palette.DangerSoft : Palette.WarnSoft);
+        var status = Look.Badge((good ? "✓ " : "") + Strings.T(step.Status), good ? Palette.Accent : bad ? Palette.Danger : Palette.Warn, good ? Palette.AccentSoft : bad ? Palette.DangerSoft : Palette.WarnSoft);
         status.VerticalAlignment = VerticalAlignment.Top; status.Margin = new Thickness(8, 2, 0, 0);
         var tile = Look.Tile(roleIcon, roleColor, roleSoft, 34, 18, 10);
         tile.VerticalAlignment = VerticalAlignment.Top; tile.Margin = new Thickness(0, 0, 10, 0);
@@ -514,14 +515,14 @@ public sealed partial class MainWindow : Window
         }
         if (changed > 0)
         {
-            panel.Children.Add(Line("Save it in git when you are happy with it", Palette.Text, 13));
+            panel.Children.Add(Line(Strings.T("Save it in git when you are happy with it"), Palette.Text, 13));
             panel.Children.Add(message);
-            buttons.Children.Add(Git("Commit", false, false)); buttons.Children.Add(Git("Commit and push", true, true));
+            buttons.Children.Add(Git(Strings.T("Commit"), false, false)); buttons.Children.Add(Git(Strings.T("Commit and push"), true, true));
         }
         else if (ahead > 0)
         {
-            panel.Children.Add(Line($"{ahead} commit{(ahead == 1 ? " is" : "s are")} not on GitHub yet.", Palette.Text, 13));
-            buttons.Children.Add(Git($"Push {ahead} commit{(ahead == 1 ? "" : "s")} to GitHub", true, true));
+            panel.Children.Add(Line(Strings.Format(ahead == 1 ? "{0} commit is not on GitHub yet." : "{0} commits are not on GitHub yet.", ahead), Palette.Text, 13));
+            buttons.Children.Add(Git(Strings.Format(ahead == 1 ? "Push {0} commit to GitHub" : "Push {0} commits to GitHub", ahead), true, true));
         }
         panel.Children.Add(buttons);
         if (busy != null) panel.Children.Add(Line(busy, Palette.Muted, 13));
@@ -532,11 +533,11 @@ public sealed partial class MainWindow : Window
     async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)
     {
         if (api == null) return;
-        if (changes && message.Length == 0) { hint.Text = "Write a commit message."; hint.Foreground = Palette.Warn; return; }
+        if (changes && message.Length == 0) { hint.Text = Strings.T("Write a commit message."); hint.Foreground = Palette.Warn; return; }
         // The user's own action: say exactly what will happen before doing it. Never a force push.
-        var what = changes ? $"Commit all changes in the project folder{(push ? " and push them to GitHub" : "")}, with the message \"{message}\"?" : $"Push {ahead} commit{(ahead == 1 ? "" : "s")} to GitHub?";
-        if (!await new ConfirmDialog(what, push ? "Push" : "Commit").ShowDialog<bool>(this)) return;
-        gitBusy[projectId] = push ? (changes ? "Committing, then pushing to GitHub. If GitHub asks you to sign in, a window opens." : "Pushing to GitHub. If GitHub asks you to sign in, a window opens.") : "Committing…";
+        var what = changes ? Strings.Format("Commit all changes in the project folder{0}, with the message \u0022{1}\u0022?", (push ? Strings.T(" and push them to GitHub") : ""), message) : Strings.Format(ahead == 1 ? "Push {0} commit to GitHub?" : "Push {0} commits to GitHub?", ahead);
+        if (!await new ConfirmDialog(what, push ? Strings.T("Push") : Strings.T("Commit")).ShowDialog<bool>(this)) return;
+        gitBusy[projectId] = push ? (changes ? Strings.T("Committing, then pushing to GitHub. If GitHub asks you to sign in, a window opens.") : Strings.T("Pushing to GitHub. If GitHub asks you to sign in, a window opens.")) : Strings.T("Committing\u2026");
         gitSaid.Remove(projectId); threadSig = null; Render();
         (bool, string) said;
         try
@@ -544,7 +545,7 @@ public sealed partial class MainWindow : Window
             var result = await api.CommitAsync(projectId, message, push);
             string Get(string key) => result?[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
             var pushed = result?["pushed"]?.GetValue<bool>() == true;
-            said = (true, pushed ? $"{(Get("commit").Length > 0 ? $"Committed {Get("commit")} and pushed" : "Pushed")} to {Get("branch")} on GitHub." : $"Committed {Get("commit")} on {Get("branch")}. Not pushed yet.");
+            said = (true, pushed ? Strings.Format("{0} to {1} on GitHub.", (Get("commit").Length > 0 ? Strings.Format("Committed {0} and pushed", Get("commit")) : Strings.T("Pushed")), Get("branch")) : Strings.Format("Committed {0} on {1}. Not pushed yet.", Get("commit"), Get("branch")));
         }
         catch (Exception error) { said = (false, error.Message); }
         gitBusy.Remove(projectId); gitSaid[projectId] = said; commitMessages.Remove(projectId);
@@ -620,13 +621,13 @@ public sealed partial class MainWindow : Window
 
     void ProgressSide(ProgressPanel panel)
     {
-        var nowSection = Look.Section("play", Palette.Accent, Palette.AccentSoft, "Now");
+        var nowSection = Look.Section("play", Palette.Accent, Palette.AccentSoft, Strings.T("Now"));
         nowSection.Children.Add(Look.Badge(panel.Status, Palette.Muted, Palette.Surface2).With(b => b.HorizontalAlignment = HorizontalAlignment.Left));
         if (panel.TimeLeft.Length > 0) nowSection.Children.Add(Line(panel.TimeLeft, Palette.Text, 13));
         if (panel.Next.Length > 0) nowSection.Children.Add(Line(panel.Next, Palette.Text, 13));
         if (panel.WorkPlan.Length > 0)
         {
-            var openPlan = Look.Button("Work plan", "file", Look.Kind.Small);
+            var openPlan = Look.Button(Strings.T("Work plan"), "file", Look.Kind.Small);
             openPlan.HorizontalAlignment = HorizontalAlignment.Left;
             openPlan.Click += (_, _) => OpenWorkPlan(panel.WorkPlan);
             nowSection.Children.Add(openPlan);
@@ -634,21 +635,21 @@ public sealed partial class MainWindow : Window
         side.Children.Add(nowSection);
         if (panel.Steps.Count > 0)
         {
-            var steps = Look.Section("progress", Palette.Build, Palette.BuildSoft, "Steps");
-            foreach (var step in panel.Steps) steps.Children.Add(Item(step.Status, step.Title, step.Model, step.Status == "complete" ? Palette.Accent : step.Status is "failed" or "blocked" ? Palette.Danger : null));
+            var steps = Look.Section("progress", Palette.Build, Palette.BuildSoft, Strings.T("Steps"));
+            foreach (var step in panel.Steps) steps.Children.Add(Item(Strings.T(step.Status), step.Title, step.Model, step.Status == "complete" ? Palette.Accent : step.Status is "failed" or "blocked" ? Palette.Danger : null));
             side.Children.Add(steps);
         }
-        var recent = Look.Section("clock", Palette.Lead, Palette.LeadSoft, "Recent activity");
-        if (panel.Recent.Count == 0) recent.Children.Add(Explain("Nothing yet."));
+        var recent = Look.Section("clock", Palette.Lead, Palette.LeadSoft, Strings.T("Recent activity"));
+        if (panel.Recent.Count == 0) recent.Children.Add(Explain(Strings.T("Nothing yet.")));
         foreach (var (at, text) in panel.Recent) recent.Children.Add(Timed(at, text));
         side.Children.Add(recent);
-        side.Children.Add(Explain("Folder: " + (panel.Folder.Length > 0 ? panel.Folder : "not set")));
+        side.Children.Add(Explain(Strings.T("Folder: ") + (panel.Folder.Length > 0 ? panel.Folder : Strings.T("not set"))));
     }
 
     void UsageSide(UsagePanel panel)
     {
-        var quota = Look.Section("usage", Palette.Accent, Palette.AccentSoft, "Quota left");
-        if (panel.Plans.Count == 0) quota.Children.Add(Explain("No provider reports quota."));
+        var quota = Look.Section("usage", Palette.Accent, Palette.AccentSoft, Strings.T("Quota left"));
+        if (panel.Plans.Count == 0) quota.Children.Add(Explain(Strings.T("No provider reports quota.")));
         foreach (var plan in panel.Plans)
         {
             var card = new StackPanel { Spacing = 2, Children = { Line(plan.Label, Palette.Text, 15, FontWeight.SemiBold) } };
@@ -657,16 +658,16 @@ public sealed partial class MainWindow : Window
             {
                 card.Children.Add(new TextBlock { FontSize = 12, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0), Inlines = new Avalonia.Controls.Documents.InlineCollection {
                     new Avalonia.Controls.Documents.Run(window.Name.Length > 0 ? window.Name + ": " : "") { FontWeight = FontWeight.Bold, Foreground = Palette.Text },
-                    new Avalonia.Controls.Documents.Run($"{window.LeftPct}% left" + (window.Resets.Length > 0 ? " · " + window.Resets : "")) } });
+                    new Avalonia.Controls.Documents.Run(Strings.Format("{0}% left", window.LeftPct) + (window.Resets.Length > 0 ? " · " + window.Resets : "")) } });
                 card.Children.Add(Look.Bar(window.LeftPct));
             }
             quota.Children.Add(new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(10), Child = card });
         }
         side.Children.Add(quota);
-        foreach (var (heading, icon, color, soft, rows) in new[] { ("Lead calls", "lead", Palette.Lead, Palette.LeadSoft, panel.Lead), ("Crew work", "build", Palette.Build, Palette.BuildSoft, panel.Crew) })
+        foreach (var (heading, icon, color, soft, rows) in new[] { (Strings.T("Lead calls"), "lead", Palette.Lead, Palette.LeadSoft, panel.Lead), (Strings.T("Crew work"), "build", Palette.Build, Palette.BuildSoft, panel.Crew) })
         {
             var section = Look.Section(icon, color, soft, heading);
-            if (rows.Count == 0) section.Children.Add(Explain("None yet."));
+            if (rows.Count == 0) section.Children.Add(Explain(Strings.T("None yet.")));
             // As .kv: the model on the left, the numbers on the right.
             foreach (var (model, text) in rows)
             {
@@ -676,12 +677,12 @@ public sealed partial class MainWindow : Window
             }
             side.Children.Add(section);
         }
-        side.Children.Add(Explain("Calls · time · output tokens. A provider that does not report tokens shows \"not reported\", never a guess."));
+        side.Children.Add(Explain(Strings.T("Calls \u00B7 time \u00B7 output tokens. A provider that does not report tokens shows \u0022not reported\u0022, never a guess.")));
     }
 
     void FilesSide(FilesPanel panel, string folder)
     {
-        var again = Look.Button("Check again", "refresh", Look.Kind.Small);
+        var again = Look.Button(Strings.T("Check again"), "refresh", Look.Kind.Small);
         again.HorizontalAlignment = HorizontalAlignment.Left;
         again.Click += async (_, _) => { if (projectId != null) await LoadRepoAsync(projectId, CurrentWorkId(), true); };
         if (panel.Message != null)
@@ -690,15 +691,15 @@ public sealed partial class MainWindow : Window
             if (folder.Length > 0) side.Children.Add(again);
             return;
         }
-        var section = Look.Section("file", Palette.Build, Palette.BuildSoft, "Not yet saved in Git");
+        var section = Look.Section("file", Palette.Build, Palette.BuildSoft, Strings.T("Not yet saved in Git"));
         section.Children.Add(new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
-            new Avalonia.Controls.Documents.Run("Files the crew or you changed since the last commit on "),
-            new Avalonia.Controls.Documents.Run(panel.Branch.Length > 0 ? panel.Branch : "the current branch") { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Avalonia.Controls.Documents.Run(".") } });
-        if (panel.Files.Count == 0) section.Children.Add(Line("Nothing changed. The folder matches the last commit.", Palette.Text, 13));
-        foreach (var file in panel.Files) section.Children.Add(Item(file.Kind, file.Path, null, file.Kind == "conflict" ? Palette.Danger : file.Kind is "new" or "added" ? Palette.Accent : null));
-        if (panel.Total > panel.Files.Count) section.Children.Add(Explain($"Showing {panel.Files.Count} of {panel.Total}."));
+            new Avalonia.Controls.Documents.Run(Strings.T("Files the crew or you changed since the last commit on ")),
+            new Avalonia.Controls.Documents.Run(panel.Branch.Length > 0 ? panel.Branch : Strings.T("the current branch")) { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Avalonia.Controls.Documents.Run(".") } });
+        if (panel.Files.Count == 0) section.Children.Add(Line(Strings.T("Nothing changed. The folder matches the last commit."), Palette.Text, 13));
+        foreach (var file in panel.Files) section.Children.Add(Item(Strings.T(file.Kind), file.Path, null, file.Kind == "conflict" ? Palette.Danger : file.Kind is "new" or "added" ? Palette.Accent : null));
+        if (panel.Total > panel.Files.Count) section.Children.Add(Explain(Strings.Format("Showing {0} of {1}.", panel.Files.Count, panel.Total)));
         side.Children.Add(section);
-        side.Children.Add(Explain(folder + (panel.CheckedAt.Length > 0 ? " · checked " + panel.CheckedAt : "")));
+        side.Children.Add(Explain(folder + (panel.CheckedAt.Length > 0 ? Strings.T(" \u00B7 checked ") + panel.CheckedAt : "")));
         side.Children.Add(again);
     }
 
@@ -717,9 +718,9 @@ public sealed partial class MainWindow : Window
 
     async Task ChangeStepAsync(WorkStep step, TeamModel model)
     {
-        if (step.Status == "working" && !await new ConfirmDialog($"Switch this step to {model.Label}? Its current worker stops and the step starts again with the new model. Files already written stay.", "Switch").ShowDialog<bool>(this))
+        if (step.Status == "working" && !await new ConfirmDialog(Strings.Format("Switch this step to {0}? Its current worker stops and the step starts again with the new model. Files already written stay.", model.Label), Strings.T("Switch")).ShowDialog<bool>(this))
         { threadSig = null; Render(); return; }
-        await DoAsync(() => api!.ChangeStepModelAsync(projectId!, step.Id, model.Id), $"{step.Role} now uses {model.Label}.");
+        await DoAsync(() => api!.ChangeStepModelAsync(projectId!, step.Id, model.Id), Strings.Format("{0} now uses {1}.", Strings.T(step.Role), model.Label));
     }
 
     async Task NewProjectAsync()
@@ -731,7 +732,7 @@ public sealed partial class MainWindow : Window
             var id = await api.CreateProjectAsync(created.Name, created.Folder);
             if (id != null) projectId = id;
             listSig = threadSig = sideSig = null;
-            hint.Text = "Project created. Choose its team, then tell the lead what to build."; hint.Foreground = Palette.Accent;
+            hint.Text = Strings.T("Project created. Choose its team, then tell the lead what to build."); hint.Foreground = Palette.Accent;
         }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
         await RefreshAsync(readOnly: false);
@@ -741,9 +742,9 @@ public sealed partial class MainWindow : Window
     async Task DropWorkAsync()
     {
         if (api == null || snapshot == null || projectId == null || ProjectViews.Project(snapshot, projectId) is not { } view) return;
-        var title = view.Work?.Title is { Length: > 0 } t ? t[..Math.Min(160, t.Length)] : "this work";
-        if (!await new ConfirmDialog($"Drop the stopped work \"{title}\"? It will not be resumed. Files in the project folder stay as they are, and you can then start a new goal.", "Drop it").ShowDialog<bool>(this)) return;
-        await DoAsync(() => api.DropWorkAsync(projectId), "Stopped work dropped. You can start a new goal.");
+        var title = view.Work?.Title is { Length: > 0 } t ? t[..Math.Min(160, t.Length)] : Strings.T("this work");
+        if (!await new ConfirmDialog(Strings.Format("Drop the stopped work \u0022{0}\u0022? It will not be resumed. Files in the project folder stay as they are, and you can then start a new goal.", title), Strings.T("Drop it")).ShowDialog<bool>(this)) return;
+        await DoAsync(() => api.DropWorkAsync(projectId), Strings.T("Stopped work dropped. You can start a new goal."));
     }
 
     async Task ActAsync()
@@ -758,7 +759,7 @@ public sealed partial class MainWindow : Window
                     if (view.NextGoal != null)
                     {
                         // The plan agreed in the chat becomes the goal, after the user sees it.
-                        if (!await new ConfirmDialog($"The crew will work on: {view.NextGoal}", "Start").ShowDialog<bool>(this)) break;
+                        if (!await new ConfirmDialog(Strings.Format("The crew will work on: {0}", view.NextGoal), Strings.T("Start")).ShowDialog<bool>(this)) break;
                         await api.SaveGoalAsync(projectId, view.NextGoal);
                     }
                     if (!await EnsureOkAsync()) break;

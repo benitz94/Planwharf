@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Text.RegularExpressions;
 
 namespace Planwharf.Native.Core;
@@ -18,7 +19,7 @@ public static class CommitMessages
         var lastCommit = -1;
         for (var i = 0; i < results.Count; i++) if (Committed.IsMatch(results[i].Summary)) lastCommit = i;
         var after = lastCommit >= 0 && lastCommit < results.Count - 1 ? results[^1] : null;
-        var subject = after != null ? Shorten($"{after.Role}: {FirstSentence(after.Summary)}") : goal.Length == 0 ? "Work by the crew" : Shorten(goal);
+        var subject = after != null ? Shorten($"{after.Role}: {FirstSentence(after.Summary)}") : goal.Length == 0 ? Strings.T("Work by the crew") : Shorten(goal);
         var body = new List<string>();
         if (goal.Length > 0 && goal != subject) body.Add(goal);
         if (crew.Length > 0) body.Add(crew);

@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -54,7 +55,7 @@ public sealed class ServerHost : IAsyncDisposable
     public async Task<string> StartAsync(string version, TimeSpan timeout, CancellationToken cancel = default)
     {
         var baseDir = AppContext.BaseDirectory;
-        var app = FindAppFolder(baseDir) ?? throw new InvalidOperationException("Planwharf's app files were not found next to the program.");
+        var app = FindAppFolder(baseDir) ?? throw new InvalidOperationException(Strings.T("Planwharf\u0027s app files were not found next to the program."));
         Directory.CreateDirectory(DataFolder);
         var plan = Path.Combine(DataFolder, "plan.json");
         // A first start gets the same starter notebook as the other versions.
@@ -75,12 +76,12 @@ public sealed class ServerHost : IAsyncDisposable
         process = new Process { StartInfo = info, EnableRaisingEvents = true };
         process.OutputDataReceived += (_, e) => { if (e.Data == null) return; lock (output) { writer.WriteLine(e.Data); output.AppendLine(e.Data); if (ReadAddress(output.ToString()) is { } address) found.TrySetResult(address); } };
         process.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) writer.WriteLine(e.Data); };
-        process.Exited += (_, _) => found.TrySetException(new InvalidOperationException($"Planwharf stopped while starting. See {LogFile}."));
+        process.Exited += (_, _) => found.TrySetException(new InvalidOperationException(Strings.Format("Planwharf stopped while starting. See {0}.", LogFile)));
         try { process.Start(); }
-        catch (Exception error) { throw new InvalidOperationException($"Node.js could not start ({error.Message}). Install Node.js 18 or newer.", error); }
+        catch (Exception error) { throw new InvalidOperationException(Strings.Format("Node.js could not start ({0}). Install Node.js 18 or newer.", error.Message), error); }
         process.BeginOutputReadLine(); process.BeginErrorReadLine();
         var finished = await Task.WhenAny(found.Task, Task.Delay(timeout, cancel));
-        if (finished != found.Task) throw new TimeoutException($"Planwharf did not start within {timeout.TotalSeconds:0} seconds. See {LogFile}.");
+        if (finished != found.Task) throw new TimeoutException(Strings.Format("Planwharf did not start within {0:0} seconds. See {1}.", timeout.TotalSeconds, LogFile));
         return Address = await found.Task;
     }
 
