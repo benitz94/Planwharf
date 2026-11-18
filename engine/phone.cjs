@@ -59,12 +59,54 @@ function formatDuration(minutes) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft }) {
+const ALERT_LABELS = {
+  done: 'Done',
+  failed: 'Failed',
+  needs_owner: 'Needs your attention',
+  stopped: 'Stopped',
+  started: 'Started',
+  resumed: 'Resumed',
+  blocked: 'Blocked',
+  verify: 'Verify started',
+  switched: 'Switched model',
+  restarted: 'Step restarted'
+};
+
+function alertForStatus(prev, curr) {
+  if (!prev || prev === curr) return null;
+  if (curr === 'complete') return 'done';
+  if (curr === 'failed') return 'failed';
+  if (curr === 'checkpointed') return 'stopped';
+  if (curr === 'watching') return prev === 'checkpointed' || prev === 'failed' ? 'resumed' : 'started';
+  if (curr === 'waiting_on_you') return 'needs_owner';
+  if (curr === 'blocked_no_worker' || curr === 'blocked_no_folder') return 'blocked';
+  return null;
+}
+
+function runningStep(project) {
+  const parts = Array.isArray(project?.dispatch) ? project.dispatch : [];
+  const part = parts.find(item => item && (item.recordedSubTaskStatus === 'RUNNING' || item.alive));
+  if (!part) return null;
+  const title = String(part.slice || part.title || '');
+  return {
+    role: /verify/i.test(title) ? 'Verify' : 'Build',
+    model: String(part.label || part.modelId || ''),
+    attempt: String(part.attemptId || '')
+  };
+}
+
+function alertForStep(prev, curr) {
+  if (!prev || !curr) return null;
+  if (prev.role !== 'Verify' && curr.role === 'Verify') return 'verify';
+  if (prev.model && curr.model && prev.model !== curr.model) return 'switched';
+  if (prev.attempt && curr.attempt && prev.attempt !== curr.attempt) return 'restarted';
+  return null;
+}
+
+function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail }) {
   const safeProject = sanitizeText(projectName) || 'Project';
   const safeGoal = sanitizeGoalTitle(goalTitle);
-  let statusLabel = 'Done';
-  if (type === 'failed') statusLabel = 'Failed';
-  else if (type === 'needs_owner') statusLabel = 'Needs your attention';
+  let statusLabel = ALERT_LABELS[type] || 'Updated';
 
   let msg = `Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`;
 
@@ -82,6 +124,7 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
     }
     if (timeText) msg += `\nEstimate: ${timeText}`;
   }
+  if (detail) msg += `\n${sanitizeText(detail)}`;
 
   return msg;
 }
@@ -323,7 +366,8 @@ function createPhoneNotifier({
   let settings = loadPhoneSettings(storeDir);
   let telegramOffset = Number(settings.telegram.updateOffset) || 0;
   let pendingConfirmation = null; // { action: 'stop', projectId, projectName, expiresAt }
-  const projectStates = new Map(); // projectId -> status
+  const projectStates = new Map();
+  const stepStates = new Map(); // projectId -> status
   const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
   const confirmWindowMs = Number.isFinite(confirmWindowMsOption) && confirmWindowMsOption > 0 ? confirmWindowMsOption : 60000;
 
@@ -371,9 +415,9 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail }) {
     const fresh = loadPhoneSettings(storeDir);
-    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft });
+    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail });
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
@@ -430,26 +474,20 @@ function createPhoneNotifier({
       projectStates.set(p.id, curr);
 
       if (!prev) continue; // First observation establishes baseline
-      if (prev === curr) continue;
-
-      let alertType = null;
-      if (curr === 'complete' && prev === 'watching') {
-        alertType = 'done';
-      } else if (curr === 'failed' && prev === 'watching') {
-        alertType = 'failed';
-      } else if (['waiting_on_you', 'blocked_no_worker', 'blocked_no_folder', 'checkpointed'].includes(curr) && prev === 'watching') {
-        alertType = 'needs_owner';
-      }
-
-      if (alertType) {
-        await sendAlert({
-          type: alertType,
-          projectId: p.id,
-          projectName: p.name,
-          goalTitle: p.goal || p.jobTitle,
-          timeLeft: p.timeLeft
-        });
-      }
+      const step = runningStep(p);
+      const prevStep = stepStates.get(p.id) || null;
+      stepStates.set(p.id, step);
+      const alertType = alertForStatus(prev, curr) || (curr === 'watching' ? alertForStep(prevStep, step) : null);
+      if (!alertType) continue;
+      const detail = alertType === 'switched' && step ? `Now: ${step.model}` : alertType === 'verify' ? 'A different model is checking the work.' : alertType === 'restarted' ? 'The same step started again.' : '';
+      await sendAlert({
+        type: alertType,
+        projectId: p.id,
+        projectName: p.name,
+        goalTitle: p.goal || p.jobTitle,
+        timeLeft: p.timeLeft,
+        detail
+      });
     }
   }
 
@@ -689,7 +727,7 @@ function createPhoneNotifier({
   };
 }
 
-module.exports = {
+module.exports = { alertForStatus, alertForStep,
   sanitizeText,
   sanitizeGoalTitle,
   formatDuration,

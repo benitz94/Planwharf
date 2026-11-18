@@ -461,9 +461,11 @@ test('alerts fire when work fails or stops for the owner, and stay quiet otherwi
     await notifier.checkTransitions();
     projects = [{ id: 'p1', name: 'Alpha', status: 'watching' }];
     await notifier.checkTransitions();
+    assert.ok(sent.some(item => String(item.body).includes('Status: Resumed')));
+    sent.length = 0;
     projects = [{ id: 'p1', name: 'Alpha', status: 'checkpointed' }];
     await notifier.checkTransitions();
-    assert.ok(sent.some(item => String(item.body).includes('Needs your attention')));
+    assert.ok(sent.some(item => String(item.body).includes('Status: Stopped')));
     const beforeQuiet = sent.length;
     notifier.updateSettings({ ntfy: { enabled: false }, telegram: { enabled: false } });
     projects = [{ id: 'p1', name: 'Alpha', status: 'watching' }];
