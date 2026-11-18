@@ -18,9 +18,9 @@ public static class Skills
         home ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         string Root(string name) => Path.Combine(home, name);
         return [
-            new("claude", "Claude Code", Root(".claude"), Path.Combine(Root(".claude"), "skills"), Path.Combine(Root(".claude"), "CLAUDE.md"), Path.Combine(Root(".claude"), "settings.json")),
-            new("codex", "Codex", Root(".codex"), Path.Combine(Root(".codex"), "skills"), Path.Combine(Root(".codex"), "AGENTS.md"), Path.Combine(Root(".codex"), "config.toml")),
-            new("grok", "Grok", Root(".grok"), null, null, Path.Combine(Root(".grok"), "config.toml"))
+            new("claude", Strings.T("Claude Code"), Root(".claude"), Path.Combine(Root(".claude"), "skills"), Path.Combine(Root(".claude"), "CLAUDE.md"), Path.Combine(Root(".claude"), "settings.json")),
+            new("codex", Strings.T("Codex"), Root(".codex"), Path.Combine(Root(".codex"), "skills"), Path.Combine(Root(".codex"), "AGENTS.md"), Path.Combine(Root(".codex"), "config.toml")),
+            new("grok", Strings.T("Grok"), Root(".grok"), null, null, Path.Combine(Root(".grok"), "config.toml"))
         ];
     }
 

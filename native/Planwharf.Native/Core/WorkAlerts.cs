@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Planwharf.Engine;
 
 namespace Planwharf.Native.Core;
 
@@ -11,7 +12,7 @@ public sealed record AlertOptions(bool Notification = true, bool Flash = true, b
 
 public sealed record WorkAlert(string Goal, bool Done, AlertOptions Options)
 {
-    public string Message => $"{Goal} {(Done ? "is done" : "needs you")}";
+    public string Message => $"{Goal} {(Done ? Strings.T("is done") : Strings.T("needs you"))}";
 }
 
 public static class WorkAlerts

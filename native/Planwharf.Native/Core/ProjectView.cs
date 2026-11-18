@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -33,23 +34,23 @@ public static class ProjectViews
     static readonly Regex Suggested = new(@"^\s*\**Suggested next goal:\**\s*(.+)$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
     const string VerifyPrefix = "Verify the work independently";
 
-    static readonly Dictionary<string, string> StopLabels = new()
+    static Dictionary<string, string> StopLabels => new()
     {
-        ["GOAL_REACHED"] = "Goal reached", ["LEAD_UNCONFIRMED"] = "Finished: check the result", ["UNREADABLE_LEAD_DECISION"] = "Finished: check the result",
-        ["MEGATASK_LIMIT"] = "Stopped: work limit reached", ["NO_LEAD_AVAILABLE"] = "Stopped: no lead available", ["LEAD_FAILED"] = "Stopped: the lead could not answer",
-        ["START_UNAVAILABLE"] = "Stopped: could not start", ["START_FAILED"] = "Stopped: could not start", ["NOTHING_STARTED"] = "Stopped: no work started",
-        ["APPROVAL_REFUSED"] = "Stopped: work not approved", ["AUTONOMY_ERROR"] = "Stopped: error", ["TIME_LIMIT"] = "Stopped: time limit reached"
+        ["GOAL_REACHED"] = Strings.T("Goal reached"), ["LEAD_UNCONFIRMED"] = Strings.T("Finished: check the result"), ["UNREADABLE_LEAD_DECISION"] = Strings.T("Finished: check the result"),
+        ["MEGATASK_LIMIT"] = Strings.T("Stopped: work limit reached"), ["NO_LEAD_AVAILABLE"] = Strings.T("Stopped: no lead available"), ["LEAD_FAILED"] = Strings.T("Stopped: the lead could not answer"),
+        ["START_UNAVAILABLE"] = Strings.T("Stopped: could not start"), ["START_FAILED"] = Strings.T("Stopped: could not start"), ["NOTHING_STARTED"] = Strings.T("Stopped: no work started"),
+        ["APPROVAL_REFUSED"] = Strings.T("Stopped: work not approved"), ["AUTONOMY_ERROR"] = Strings.T("Stopped: error"), ["TIME_LIMIT"] = Strings.T("Stopped: time limit reached")
     };
-    static readonly Dictionary<string, string> StopSentences = new()
+    static Dictionary<string, string> StopSentences => new()
     {
-        ["LEAD_UNCONFIRMED"] = "Work finished, but the lead did not confirm the goal. Check the result in the project folder.",
-        ["UNREADABLE_LEAD_DECISION"] = "Work finished, but the lead did not confirm the goal. Check the result in the project folder.",
-        ["MEGATASK_LIMIT"] = "The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on.",
-        ["NO_LEAD_AVAILABLE"] = "The crew stopped: no lead is available. Choose a lead with quota in Team.",
-        ["LEAD_FAILED"] = "The crew stopped: the lead could not answer", ["START_UNAVAILABLE"] = "The crew could not start the work.",
-        ["START_FAILED"] = "The crew could not start the work", ["NOTHING_STARTED"] = "The crew started no work",
-        ["APPROVAL_REFUSED"] = "The work could not be approved", ["AUTONOMY_ERROR"] = "The crew stopped on an error",
-        ["TIME_LIMIT"] = "The crew stopped: the time limit was reached."
+        ["LEAD_UNCONFIRMED"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
+        ["UNREADABLE_LEAD_DECISION"] = Strings.T("Work finished, but the lead did not confirm the goal. Check the result in the project folder."),
+        ["MEGATASK_LIMIT"] = Strings.T("The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on."),
+        ["NO_LEAD_AVAILABLE"] = Strings.T("The crew stopped: no lead is available. Choose a lead with quota in Team."),
+        ["LEAD_FAILED"] = Strings.T("The crew stopped: the lead could not answer"), ["START_UNAVAILABLE"] = Strings.T("The crew could not start the work."),
+        ["START_FAILED"] = Strings.T("The crew could not start the work"), ["NOTHING_STARTED"] = Strings.T("The crew started no work"),
+        ["APPROVAL_REFUSED"] = Strings.T("The work could not be approved"), ["AUTONOMY_ERROR"] = Strings.T("The crew stopped on an error"),
+        ["TIME_LIMIT"] = Strings.T("The crew stopped: the time limit was reached.")
     };
 
     static string S(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
@@ -59,7 +60,7 @@ public static class ProjectViews
     {
         var code = reason.Split(':')[0];
         var detail = reason.Length > code.Length ? reason[(code.Length + 1)..].Trim() : "";
-        var sentence = StopSentences.GetValueOrDefault(code, "The crew stopped");
+        var sentence = StopSentences.GetValueOrDefault(code, Strings.T("The crew stopped"));
         return detail.Length > 0 ? $"{sentence.TrimEnd('.')}: {detail}" : sentence.EndsWith('.') ? sentence : sentence + ".";
     }
 
@@ -105,8 +106,8 @@ public static class ProjectViews
         foreach (var ask in (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => S(ask["projectId"]) == id))
         {
             var at = DateTimeOffset.TryParse(S(ask["at"]), out var when) ? when : DateTimeOffset.MinValue;
-            messages.Add(new ChatMessage(true, "You", S(ask["question"]), at));
-            if (S(ask["answer"]).Length > 0) messages.Add(new ChatMessage(false, Label(S(ask["orchestratorId"])) is { Length: > 0 } lead ? lead : "Lead", S(ask["answer"]), at));
+            messages.Add(new ChatMessage(true, Strings.T("You"), S(ask["question"]), at));
+            if (S(ask["answer"]).Length > 0) messages.Add(new ChatMessage(false, Label(S(ask["orchestratorId"])) is { Length: > 0 } lead ? lead : Strings.T("Lead"), S(ask["answer"]), at));
         }
 
         WorkView? work = null;
@@ -118,7 +119,7 @@ public static class ProjectViews
                 Label(S(sub["assignedModelId"])),
                 S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() },
                 S(sub["assignedModelId"]),
-                S(sub["title"]).StartsWith(VerifyPrefix) ? "Check the work and fix what fails" : S(sub["title"]) is { Length: > 120 } long_ ? long_[..120] : S(sub["title"]))).ToList();
+                S(sub["title"]).StartsWith(VerifyPrefix) ? Strings.T("Check the work and fix what fails") : S(sub["title"]) is { Length: > 120 } long_ ? long_[..120] : S(sub["title"]))).ToList();
             var results = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"])).Select(result => S(result["summary"])).Where(text => text.Length > 0).ToList();
             work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results)
             {
@@ -149,16 +150,16 @@ public static class ProjectViews
 
         // Between two works the crew is still on: the lead checks the result and decides the next step.
         var running = work != null && work.Status is "RUNNING" or "READY_FOR_APPROVAL" || B(row["canStop"]);
-        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, "Stop the crew", running
-                ? "The crew is working. You can keep chatting with the lead and change models at any time."
-                : "The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on.")
-            : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, "Approve and start", "The lead proposed some work. Approve it, or tell the lead what to change.")
-            : B(row["canStop"]) ? (CrewAction.StopWork, "Stop work", "Work in progress. You can keep chatting with the lead.")
-            : B(row["canResume"]) ? (CrewAction.Resume, "Resume", "Work was stopped. Resume continues from the saved point, or drop it to start something new.")
-            : (CrewAction.LetTheCrewDoIt, "Let the crew do it",
+        (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, Strings.T("Stop the crew"), running
+                ? Strings.T("The crew is working. You can keep chatting with the lead and change models at any time.")
+                : Strings.T("The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on."))
+            : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, Strings.T("Approve and start"), Strings.T("The lead proposed some work. Approve it, or tell the lead what to change."))
+            : B(row["canStop"]) ? (CrewAction.StopWork, Strings.T("Stop work"), Strings.T("Work in progress. You can keep chatting with the lead."))
+            : B(row["canResume"]) ? (CrewAction.Resume, Strings.T("Resume"), Strings.T("Work was stopped. Resume continues from the saved point, or drop it to start something new."))
+            : (CrewAction.LetTheCrewDoIt, Strings.T("Let the crew do it"),
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
-                : goal.Length == 0 && nextGoal == null ? "Talk with the lead about what to build: it suggests a goal, then press Let the crew do it."
-                : "Ready. The crew will plan, build, check and stop when the goal is reached.");
+                : goal.Length == 0 && nextGoal == null ? Strings.T("Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.")
+                : Strings.T("Ready. The crew will plan, build, check and stop when the goal is reached."));
         var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
         return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft };
     }
