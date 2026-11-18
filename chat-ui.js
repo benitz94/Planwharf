@@ -135,14 +135,14 @@
   // Short labels for the project badge, and full sentences for the action bar: never a raw code.
   const STOP_REASONS = {
     GOAL_REACHED: 'Goal reached', LEAD_UNCONFIRMED: 'Finished: check the result', UNREADABLE_LEAD_DECISION: 'Finished: check the result',
-    MEGATASK_LIMIT: 'Stopped: work limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available', LEAD_FAILED: 'Stopped: the lead could not answer',
+    MEGATASK_LIMIT: 'Stopped: work limit reached', REPEATED_FAILURE: 'Stopped: the same work failed three times', NO_LEAD_AVAILABLE: 'Stopped: no lead available', LEAD_FAILED: 'Stopped: the lead could not answer',
     START_UNAVAILABLE: 'Stopped: could not start', START_FAILED: 'Stopped: could not start', NOTHING_STARTED: 'Stopped: no work started',
     APPROVAL_REFUSED: 'Stopped: work not approved', AUTONOMY_ERROR: 'Stopped: error', TIME_LIMIT: 'Stopped: time limit reached'
   };
   const STOP_SENTENCES = {
     LEAD_UNCONFIRMED: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
     UNREADABLE_LEAD_DECISION: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
-    MEGATASK_LIMIT: 'The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on.',
+    MEGATASK_LIMIT: 'The crew stopped after 5 pieces of work in a row. Check the result, then press Let the crew do it to go on.', REPEATED_FAILURE: 'The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it.',
     NO_LEAD_AVAILABLE: 'The crew stopped: no lead is available. Choose a lead with quota in Team.',
     LEAD_FAILED: 'The crew stopped: the lead could not answer',
     START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',

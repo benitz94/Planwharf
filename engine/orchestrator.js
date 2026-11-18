@@ -2833,7 +2833,19 @@ function createOrchestrator(options) {
       return;
     }
     if (step.type === 'approve') {
-      settings.approved.push(step.megaTaskId); persist();
+      // A failed or blocked attempt is not progress. It does not use up the session cap, and three
+      // in a row stop the session instead of burning it on the same closed gate.
+      const failed = ['worker failure', 'blocked worker'].includes(row.checkpoint?.reason);
+      if (failed) {
+        settings.failed = (settings.failed || 0) + 1;
+        if (settings.failed >= 3) {
+          persist();
+          note(projectId, 'Stopped. The same work failed three times. Planwharf will not keep retrying it.');
+          return stopAutonomy(projectId, settings, 'REPEATED_FAILURE');
+        }
+      } else settings.failed = 0;
+      if (!failed) settings.approved.push(step.megaTaskId);
+      persist();
       // The lead splits the work if that helps; otherwise it only picks the crew of the usual plan.
       if (!(await planByLead(projectId, item, step.megaTaskId))) await assignByLead(projectId, item, step.megaTaskId);
       const approved = await exclusive(() => approve(projectId, step.megaTaskId, { actor: 'autonomy-setting' }));
