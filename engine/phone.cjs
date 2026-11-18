@@ -302,7 +302,7 @@ async function sendTelegramMessage({ token, chatId, text, replyMarkup, apiBaseUr
     const res = await fetchImpl(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) })
+      body: JSON.stringify({ chat_id: chatId, text, reply_markup: replyMarkup || mainKeyboard() })
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || (data && !data.ok)) {
@@ -526,7 +526,15 @@ function createPhoneNotifier({
     const chatId = String(msg.chat.id);
     const rawText = String(msg.text || '').trim();
     const text = rawText === '📊 Status' ? '/status' : rawText === '⏹ Stop' ? '/stop' : rawText === '▶️ Resume' ? '/resume' : rawText;
-    if (!text) return;
+    if (!text) {
+      if (msg.document || msg.photo || msg.video || msg.voice || msg.audio || msg.sticker) {
+        const fresh = loadPhoneSettings(storeDir);
+        if (fresh.telegramToken && String(fresh.telegram.pairedChatId) === chatId) {
+          await sendTelegramMessage({ token: fresh.telegramToken, chatId, text: '📎 Attachments are not accepted. Use the buttons.', apiBaseUrl, fetchImpl });
+        }
+      }
+      return;
+    }
 
     const fresh = loadPhoneSettings(storeDir);
     const token = fresh.telegramToken;
