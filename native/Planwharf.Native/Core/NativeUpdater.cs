@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Compression;
@@ -19,13 +20,13 @@ public static class NativeUpdater
     public const string Repo = "benitz94/Planwharf";
     public const string FinishFlag = "--finish-update";
     public const string StagePrefix = ".planwharf-update-";
-    public const string BadDigestMessage = "The downloaded update does not match the release's checksum. Nothing was changed.";
-    public const string OfflineMessage = "Could not download the update (offline or the release page did not answer). Nothing was changed.";
-    public const string NoWriteMessage = "Planwharf could not write the update next to the installed folder. Nothing was changed.";
-    public const string UnpackMessage = "The update could not be unpacked. Nothing was changed.";
-    public const string NeedsConfirmMessage = "A step is still running. Planwharf will update only after you confirm, so the work can be saved first.";
-    public const string CheckpointMessage = "Could not save the running work, so the update stopped. Nothing was changed.";
-    public const string MissingAssetMessage = "This release has no Planwharf app for this computer. Nothing was changed.";
+    public static string BadDigestMessage => Strings.T("The downloaded update does not match the release\u0027s checksum. Nothing was changed.");
+    public static string OfflineMessage => Strings.T("Could not download the update (offline or the release page did not answer). Nothing was changed.");
+    public static string NoWriteMessage => Strings.T("Planwharf could not write the update next to the installed folder. Nothing was changed.");
+    public static string UnpackMessage => Strings.T("The update could not be unpacked. Nothing was changed.");
+    public static string NeedsConfirmMessage => Strings.T("A step is still running. Planwharf will update only after you confirm, so the work can be saved first.");
+    public static string CheckpointMessage => Strings.T("Could not save the running work, so the update stopped. Nothing was changed.");
+    public static string MissingAssetMessage => Strings.T("This release has no Planwharf app for this computer. Nothing was changed.");
 
     static readonly Regex TagPattern = new(@"^v\d+\.\d+\.\d+$", RegexOptions.CultureInvariant);
     static readonly Regex DigestPattern = new(@"^sha256:[a-f0-9]{64}$", RegexOptions.CultureInvariant);
@@ -135,7 +136,7 @@ public static class NativeUpdater
         try
         {
             if (Directory.Exists(stage)) Directory.Delete(stage, recursive: true);
-            if (File.Exists(stage)) throw new UnauthorizedAccessException("A file is using the update folder's name.");
+            if (File.Exists(stage)) throw new UnauthorizedAccessException(Strings.T("A file is using the update folder\u0027s name."));
             ZipFile.ExtractToDirectory(zip, stage);
         }
         catch (InvalidOperationException) { throw; }
@@ -150,7 +151,7 @@ public static class NativeUpdater
         if (!File.Exists(exe))
         {
             TryDeleteDirectory(stage);
-            throw new InvalidOperationException("The update does not contain the Planwharf program. Nothing was changed.");
+            throw new InvalidOperationException(Strings.T("The update does not contain the Planwharf program. Nothing was changed."));
         }
         return exe;
     }
@@ -264,7 +265,7 @@ public static class NativeUpdater
             throw new InvalidOperationException(OfflineMessage, ex);
         }
         if (release == null) throw new InvalidOperationException(MissingAssetMessage);
-        if (!Newer(release.Tag, currentVersion)) throw new InvalidOperationException("This release is not newer than the installed Planwharf. Nothing was changed.");
+        if (!Newer(release.Tag, currentVersion)) throw new InvalidOperationException(Strings.T("This release is not newer than the installed Planwharf. Nothing was changed."));
         var download = Path.Combine(Path.GetTempPath(), "planwharf-update-" + Guid.NewGuid().ToString("N"));
         var stage = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(installFolder)) ?? "", StagePrefix + release.Tag);
         try

@@ -102,7 +102,23 @@ function finish(info, status = 'COMPLETE') {
   assert.ok(after.since.details.some(text => text.includes('Completed Isolated MegaTask')));
   const mtAI = await propose('ai-companion-desktop', 1);
   await request('/api/orchestrator/approve', { projectId: 'ai-companion-desktop', megaTaskId: mtAI });
+  // A dead worker with no result retries once, then moves to the next model, then fails.
+  const dead = launches.at(-1);
+  live.delete(dead.pid);
+  const first = await request('/api/orchestrator?readOnly=1');
+  const firstAi = first.projects.find(row => row.id === 'ai-companion-desktop');
+  assert.equal(firstAi.megaTask.status, 'RUNNING', 'the first miss retries instead of failing the work');
+  const retried = (await request('/api/execution?projectId=ai-companion-desktop')).subTasks.find(sub => sub.id === dead.subTaskId);
+  assert.equal(retried.noVerdictTries, 1);
+  await request('/api/orchestrator');
+  assert.ok(launches.length > 0 && launches.at(-1).attemptId !== dead.attemptId, 'the same model is launched again');
   live.delete(launches.at(-1).pid);
+  await request('/api/orchestrator?readOnly=1');
+  await request('/api/orchestrator');
+  const switched = launches.at(-1);
+  assert.notEqual(switched.modelId || switched.worker?.id, dead.modelId || dead.worker?.id, 'the second miss moves to another model');
+  live.delete(switched.pid);
+  await request('/api/orchestrator?readOnly=1');
   const stale = await request('/api/orchestrator?readOnly=1');
   const ai = stale.projects.find(row => row.id === 'ai-companion-desktop');
   assert.equal(ai.workerAlive, false); assert.equal(ai.megaTask.status, 'FAILED');

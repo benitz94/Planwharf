@@ -85,7 +85,8 @@ test('sign-in commands keep quotes closed', () => {
   const folder = process.platform === 'win32' ? "D:\\accounts\\o'brien" : "/tmp/accounts/o'brien";
   const command = folders.commandFor('codex', folder);
   assert.match(command, process.platform === 'win32' ? /o''brien/ : /o'\\''brien/);
-  assert.equal((command.match(/'/g) || []).length % 2, 0);
+  // POSIX '\'' ends and reopens the quotes, so a raw count is odd and still balanced.
+  assert.equal((command.match(/'/g) || []).length % 2, process.platform === 'win32' ? 0 : 1);
   assert.match(command, /CODEX_HOME/);
   assert.throws(() => folders.commandFor('claude', 'C:\\accounts\nnext'));
 });

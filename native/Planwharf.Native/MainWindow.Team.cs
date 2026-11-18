@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -17,16 +18,16 @@ public sealed partial class MainWindow
         side.Children.Add(new Border { Background = Palette.AccentSoft, CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 8), Margin = new Thickness(0, 0, 0, 6),
             Child = new DockPanel { Children = { Look.Icon("folder", 16).With(i => { i.VerticalAlignment = VerticalAlignment.Top; i.Margin = new Thickness(0, 1, 8, 0); DockPanel.SetDock(i, Dock.Left); }),
                 new TextBlock { FontSize = 13, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
-                    new Avalonia.Controls.Documents.Run("Team for "), new Avalonia.Controls.Documents.Run(name) { FontWeight = FontWeight.Bold },
-                    new Avalonia.Controls.Documents.Run(". Each project has its own team; changes here apply only to this project.") } } } } });
+                    new Avalonia.Controls.Documents.Run(Strings.T("Team for ")), new Avalonia.Controls.Documents.Run(name) { FontWeight = FontWeight.Bold },
+                    new Avalonia.Controls.Documents.Run(Strings.T(". Each project has its own team; changes here apply only to this project.")) } } } } });
 
-        var lead = Look.Section("lead", Palette.Lead, Palette.LeadSoft, "Lead", "Talks with you, plans the work and picks who does what.");
+        var lead = Look.Section("lead", Palette.Lead, Palette.LeadSoft, Strings.T("Lead"), Strings.T("Talks with you, plans the work and picks who does what."));
         var leads = TeamViews.Leads(team);
-        var leadMenu = new ComboBox { ItemsSource = leads.Select(m => m.Label).ToList(), SelectedIndex = leads.FindIndex(m => m.Id == team.LeadId), PlaceholderText = "Choose your lead…", MinWidth = 180,
+        var leadMenu = new ComboBox { ItemsSource = leads.Select(m => m.Label).ToList(), SelectedIndex = leads.FindIndex(m => m.Id == team.LeadId), PlaceholderText = Strings.T("Choose your lead\u2026"), MinWidth = 180,
             Background = Palette.Background, BorderBrush = Palette.Line, CornerRadius = new CornerRadius(10), Padding = new Thickness(11, 8), FontSize = 15 };
-        leadMenu.SelectionChanged += async (_, _) => { if (leadMenu.SelectedIndex >= 0 && leads[leadMenu.SelectedIndex].Id != team.LeadId) await DoAsync(() => api!.SetLeadAsync(projectId!, leads[leadMenu.SelectedIndex].Id, leads[leadMenu.SelectedIndex].Lead), "Lead chosen."); };
+        leadMenu.SelectionChanged += async (_, _) => { if (leadMenu.SelectedIndex >= 0 && leads[leadMenu.SelectedIndex].Id != team.LeadId) await DoAsync(() => api!.SetLeadAsync(projectId!, leads[leadMenu.SelectedIndex].Id, leads[leadMenu.SelectedIndex].Lead), Strings.T("Lead chosen.")); };
         lead.Children.Add(leadMenu);
-        lead.Children.Add(Explain(team.LeadBackups.Count > 0 ? $"If the lead runs low on quota, Planwharf hands over to: {string.Join(", ", team.LeadBackups)}, in this order." : "No other model can take over as lead now."));
+        lead.Children.Add(Explain(team.LeadBackups.Count > 0 ? Strings.Format("If the lead runs low on quota, Planwharf hands over to: {0}, in this order.", string.Join(", ", team.LeadBackups)) : Strings.T("No other model can take over as lead now.")));
         side.Children.Add(lead);
 
         // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
@@ -36,75 +37,75 @@ public sealed partial class MainWindow
         side.Children.Add(FilterBar(team, offered, shown));
         var active = shown.Where(m => !m.Bench).ToList();
         var bench = shown.Where(m => m.Bench).ToList();
-        var onTeam = Look.Section("team", Palette.Accent, Palette.AccentSoft, $"On the team · {active.Count}");
+        var onTeam = Look.Section("team", Palette.Accent, Palette.AccentSoft, Strings.Format("On the team \u00B7 {0}", active.Count));
         onTeam.Children.Add(new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
-            new Avalonia.Controls.Documents.Run("Build") { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" writes code and tests. "),
-            new Avalonia.Controls.Documents.Run("Verify") { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(" checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.") } });
-        if (active.Count == 0) onTeam.Children.Add(Explain("Nobody yet. Bring models in from the bench."));
+            new Avalonia.Controls.Documents.Run(Strings.T("Build")) { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(Strings.T(" writes code and tests. ")),
+            new Avalonia.Controls.Documents.Run(Strings.T("Verify")) { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(Strings.T(" checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.")) } });
+        if (active.Count == 0) onTeam.Children.Add(Explain(Strings.T("Nobody yet. Bring models in from the bench.")));
         foreach (var model in active) onTeam.Children.Add(Member(model, team.LeadId));
         side.Children.Add(onTeam);
 
-        var benchSection = Look.Section("pause", Palette.Muted, Palette.Surface2, $"Bench · {bench.Count}", "Not working on this project. Press a role to bring a model in.");
-        if (bench.Count == 0) benchSection.Children.Add(Explain("The bench is empty."));
+        var benchSection = Look.Section("pause", Palette.Muted, Palette.Surface2, Strings.Format("Bench \u00B7 {0}", bench.Count), Strings.T("Not working on this project. Press a role to bring a model in."));
+        if (bench.Count == 0) benchSection.Children.Add(Explain(Strings.T("The bench is empty.")));
         else
         {
             var list = new StackPanel { Spacing = 8 };
             foreach (var model in bench) list.Children.Add(Member(model, team.LeadId));
-            var fold = Fold(bench.Count <= 4 ? "Models on the bench" : $"Show the {bench.Count} models on the bench", list);
+            var fold = Fold(bench.Count <= 4 ? Strings.T("Models on the bench") : Strings.Format("Show the {0} models on the bench", bench.Count), list);
             fold.IsExpanded = bench.Count <= 4 || teamFilter.Values.Any(value => value.Length > 0);
             benchSection.Children.Add(fold);
         }
-        if (hidden > 0) benchSection.Children.Add(Explain($"{hidden} model{(hidden == 1 ? " is" : "s are")} not shown: the AI tools on this computer no longer offer {(hidden == 1 ? "it" : "them")}, or Planwharf cannot run {(hidden == 1 ? "it" : "them")} (such as Codex's own review model)."));
+        if (hidden > 0) benchSection.Children.Add(Explain(Strings.Format(hidden == 1 ? "{0} model is not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model)." : "{0} models are not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model).", hidden, Strings.T(hidden == 1 ? "it" : "them"), Strings.T(hidden == 1 ? "it" : "them"))));
         foreach (var group in team.Models.Where(m => !m.NotOffered && m.PlanStatus is "expired" or "not signed in").GroupBy(m => (m.Adapter, m.PlanStatus)))
         {
             var company = group.Key.Adapter switch { "claude" => "Claude", "codex" => "ChatGPT", "grok" => "Grok", "antigravity" => "Gemini", _ => group.Key.Adapter };
             benchSection.Children.Add(Explain(group.Key.PlanStatus == "expired"
-                ? $"{group.Count()} models hidden: {company} plan expired. Renew it or sign in again, then look for models again."
-                : $"{group.Count()} models hidden: {company} is not signed in. Sign in, then look for models again."));
+                ? Strings.Format("{0} models hidden: {1} plan expired. Renew it or sign in again, then look for models again.", group.Count(), company)
+                : Strings.Format("{0} models hidden: {1} is not signed in. Sign in, then look for models again.", group.Count(), company)));
         }
         side.Children.Add(benchSection);
 
-        var tools = Look.Section("chip", Palette.Build, Palette.BuildSoft, "AI tools", "Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.");
+        var tools = Look.Section("chip", Palette.Build, Palette.BuildSoft, Strings.T("AI tools"), Strings.T("Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used."));
         foreach (var provider in team.Providers)
         {
             var label = new StackPanel { Orientation = Orientation.Horizontal, Children = { Look.Dot(Look.ProviderColour(provider.Id)), new TextBlock { Text = provider.Label, FontWeight = FontWeight.SemiBold, Foreground = Palette.Text } } };
             // Not installed: never shown as On; say how to install it (the command can be copied).
             if (!provider.Installed)
             {
-                label.Children.Add(Look.Badge("Not installed", Palette.Muted, Palette.Surface2).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
+                label.Children.Add(Look.Badge(Strings.T("Not installed"), Palette.Muted, Palette.Surface2).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
                 tools.Children.Add(MemberCard(new StackPanel { Spacing = 4, Children = { label,
-                    new SelectableTextBlock { Text = provider.InstallHint ?? "Install it and sign in, then look for models again.", Foreground = Palette.Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap } } }, false));
+                    new SelectableTextBlock { Text = provider.InstallHint ?? Strings.T("Install it and sign in, then look for models again."), Foreground = Palette.Muted, FontSize = 12, TextWrapping = TextWrapping.Wrap } } }, false));
                 continue;
             }
-            var onOff = Look.Chip(provider.Enabled ? "On" : "Off", null, Palette.Accent, Palette.AccentSoft, provider.Enabled);
-            onOff.Click += async (_, _) => await DoAsync(() => api!.SetProviderEnabledAsync(provider.Id, !provider.Enabled), $"{provider.Label} turned {(!provider.Enabled ? "on" : "off")}.");
+            var onOff = Look.Chip(provider.Enabled ? Strings.T("On") : Strings.T("Off"), null, Palette.Accent, Palette.AccentSoft, provider.Enabled);
+            onOff.Click += async (_, _) => await DoAsync(() => api!.SetProviderEnabledAsync(provider.Id, !provider.Enabled), Strings.Format("{0} turned {1}.", provider.Label, Strings.T(!provider.Enabled ? "on" : "off")));
             // The user's OK to edit files and run commands without asking each time; off until given.
-            var unasked = Look.Chip("Works without asking", null, Palette.Accent, Palette.AccentSoft, provider.WorksUnasked);
-            ToolTip.SetTip(unasked, "Edits files and runs commands in the project folder without asking each time");
-            unasked.Click += async (_, _) => await DoAsync(() => api!.SetWorksUnaskedAsync(provider.Id, !provider.WorksUnasked), !provider.WorksUnasked ? $"{provider.Label} works without asking now." : $"{provider.Label} asks again before it builds.");
+            var unasked = Look.Chip(Strings.T("Works without asking"), null, Palette.Accent, Palette.AccentSoft, provider.WorksUnasked);
+            ToolTip.SetTip(unasked, Strings.T("Edits files and runs commands in the project folder without asking each time"));
+            unasked.Click += async (_, _) => await DoAsync(() => api!.SetWorksUnaskedAsync(provider.Id, !provider.WorksUnasked), !provider.WorksUnasked ? Strings.Format("{0} works without asking now.", provider.Label) : Strings.Format("{0} asks again before it builds.", provider.Label));
             var actions = new WrapPanel { Children = { onOff, unasked } };
             if (provider.Id == provider.Adapter && provider.Adapter is "claude" or "codex")
             {
-                var add = Small("Add another account");
+                var add = Small(Strings.T("Add another account"));
                 add.Click += async (_, _) => await DoAsync(async () =>
                 {
                     var result = await api!.AddAccountAsync(provider.Id);
                     accountSignInCommand = Str(result?["signInCommand"]);
-                }, "Account folder ready. Run the sign-in command below, then look for models again.");
+                }, Strings.T("Account folder ready. Run the sign-in command below, then look for models again."));
                 actions.Children.Add(add);
             }
             tools.Children.Add(MemberCard(new StackPanel { Spacing = 6, Children = { new StackPanel { Children = { label,
-                new TextBlock { Text = $"{provider.Models} model{(provider.Models == 1 ? "" : "s")}", Foreground = Palette.Muted, FontSize = 12 } } }, actions } }, false));
+                new TextBlock { Text = Strings.Format(provider.Models == 1 ? "{0} model" : "{0} models", provider.Models), Foreground = Palette.Muted, FontSize = 12 } } }, actions } }, false));
         }
         if (accountSignInCommand.Length > 0) tools.Children.Add(new SelectableTextBlock { Text = accountSignInCommand, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Text });
-        var look = Look.Button("Look for models again", "refresh", Look.Kind.Small);
+        var look = Look.Button(Strings.T("Look for models again"), "refresh", Look.Kind.Small);
         look.HorizontalAlignment = HorizontalAlignment.Left;
-        look.Click += async (_, _) => await DoAsync(() => api!.RefreshModelsAsync(), "Model list updated.");
+        look.Click += async (_, _) => await DoAsync(() => api!.RefreshModelsAsync(), Strings.T("Model list updated."));
         tools.Children.Add(look);
         side.Children.Add(tools);
 
-        var connect = Look.Section("plug", Palette.Lead, Palette.LeadSoft, "Connect a model by API", "For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.");
-        var fold2 = Fold("Add an API connection", ConnectionForm());
+        var connect = Look.Section("plug", Palette.Lead, Palette.LeadSoft, Strings.T("Connect a model by API"), Strings.T("For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable\u0027s name."));
+        var fold2 = Fold(Strings.T("Add an API connection"), ConnectionForm());
         fold2.IsExpanded = false;
         connect.Children.Add(fold2);
         side.Children.Add(connect);
@@ -120,7 +121,7 @@ public sealed partial class MainWindow
 
     Control FilterBar(TeamView team, IReadOnlyList<TeamModel> offered, IReadOnlyList<TeamModel> shown)
     {
-        var section = Look.Section("research", Palette.Build, Palette.BuildSoft, "Find models");
+        var section = Look.Section("research", Palette.Build, Palette.BuildSoft, Strings.T("Find models"));
         WrapPanel Choices(string key, params (string Value, string Text)[] options)
         {
             var row = new WrapPanel();
@@ -134,22 +135,22 @@ public sealed partial class MainWindow
         }
         var companies = offered.Select(m => m.ProviderId).Where(id => id.Length > 0).Distinct()
             .Select(id => (id, team.Providers.FirstOrDefault(p => p.Id == id)?.Label ?? id)).ToArray();
-        section.Children.Add(Choices("company", [("", "All companies"), .. companies]));
-        section.Children.Add(Choices("weight", ("", "Any weight"), ("light", "Light"), ("default", "Default"), ("premium", "Premium")));
-        section.Children.Add(Choices("state", ("", "Anywhere"), ("team", "On the team"), ("bench", "On the bench"), ("low", "Under its limit")));
-        section.Children.Add(Explain($"For the {shown.Count} model{(shown.Count == 1 ? "" : "s")} shown:"));
+        section.Children.Add(Choices("company", [("", Strings.T("All companies")), .. companies]));
+        section.Children.Add(Choices("weight", ("", Strings.T("Any weight")), ("light", Strings.T("Light")), ("default", Strings.T("Default")), ("premium", Strings.T("Premium"))));
+        section.Children.Add(Choices("state", ("", Strings.T("Anywhere")), ("team", Strings.T("On the team")), ("bench", Strings.T("On the bench")), ("low", Strings.T("Under its limit"))));
+        section.Children.Add(Explain(Strings.Format(shown.Count == 1 ? "For the {0} model shown:" : "For the {0} models shown:", shown.Count)));
         var bulk = new WrapPanel();
-        foreach (var (role, label) in new[] { ("worker", "Build"), ("verifier", "Verify") })
+        foreach (var (role, label) in new[] { ("worker", Strings.T("Build")), ("verifier", Strings.T("Verify")) })
         {
             bulk.Children.Add(new TextBlock { Text = label, FontSize = 12, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 4) });
-            foreach (var (on, text) in new[] { (true, "All"), (false, "None") })
+            foreach (var (on, text) in new[] { (true, Strings.T("All")), (false, Strings.T("None")) })
             {
                 var chip = Look.Chip(text, null, Palette.Accent, Palette.AccentSoft, false);
                 chip.Click += async (_, _) =>
                 {
                     chip.IsChecked = false;
                     var ids = shown.Select(m => m.Id).ToList();
-                    if (ids.Count > 0) await DoAsync(() => api!.SetRolesForManyAsync(projectId, ids, role, on), $"{label} {(on ? "on" : "off")} for {ids.Count} model{(ids.Count == 1 ? "" : "s")}.");
+                    if (ids.Count > 0) await DoAsync(() => api!.SetRolesForManyAsync(projectId, ids, role, on), Strings.Format(ids.Count == 1 ? "{0} {1} for {2} model." : "{0} {1} for {2} models.", label, Strings.T(on ? "on" : "off"), ids.Count));
                 };
                 bulk.Children.Add(chip);
             }
@@ -178,52 +179,52 @@ public sealed partial class MainWindow
     {
         var label = Look.Field(new TextBox { Watermark = "DeepSeek", MaxLength = 100 });
         var url = Look.Field(new TextBox { Watermark = "https://api.deepseek.com/v1" });
-        var protocol = new ComboBox { ItemsSource = new[] { "OpenAI-compatible", "Anthropic Messages" }, SelectedIndex = 0, MinWidth = 220 };
+        var protocol = new ComboBox { ItemsSource = new[] { Strings.T("OpenAI-compatible"), Strings.T("Anthropic Messages") }, SelectedIndex = 0, MinWidth = 220 };
         var env = Look.Field(new TextBox { Watermark = "DEEPSEEK_API_KEY" });
         var ids = Look.Field(new TextBox { Watermark = "deepseek-chat" });
-        var tools = new CheckBox { Content = "These models can use tools (needed to build code)" };
+        var tools = new CheckBox { Content = Strings.T("These models can use tools (needed to build code)") };
         var error = new TextBlock { Foreground = Palette.Danger, TextWrapping = TextWrapping.Wrap, FontSize = 12 };
-        var connect = Small("Connect", primary: true);
+        var connect = Small(Strings.T("Connect"), primary: true);
         connect.Click += async (_, _) =>
         {
             error.Text = "";
             var name = label.Text?.Trim() ?? "";
             var models = (ids.Text ?? "").Split(',').Select(id => id.Trim()).Where(id => id.Length > 0).ToList();
-            if (name.Length == 0 || string.IsNullOrWhiteSpace(url.Text) || models.Count == 0) { error.Text = "Enter a name, the API address and at least one model ID."; return; }
+            if (name.Length == 0 || string.IsNullOrWhiteSpace(url.Text) || models.Count == 0) { error.Text = Strings.T("Enter a name, the API address and at least one model ID."); return; }
             try
             {
                 await api!.AddConnectionAsync(name, url.Text.Trim(), protocol.SelectedIndex == 1 ? "anthropic" : "openai", env.Text?.Trim(), models, tools.IsChecked == true);
-                hint.Text = $"{name} connected. Give its models a role to use them."; hint.Foreground = Palette.Accent;
+                hint.Text = Strings.Format("{0} connected. Give its models a role to use them.", name); hint.Foreground = Palette.Accent;
                 sideSig = null; await RefreshAsync(readOnly: false);
             }
             catch (Exception failure) { error.Text = failure.Message.Replace("API_CONFIGURATION_INVALID:", "").Trim(); }
         };
         return new StackPanel { Spacing = 6, Children = {
-            Explain("Name"), label, Explain("API address"), url, Explain("Type"), protocol, Explain("Environment variable with the key"), env,
-            Explain("Exact model IDs, separated by commas"), ids, tools, error, connect } };
+            Explain(Strings.T("Name")), label, Explain(Strings.T("API address")), url, Explain(Strings.T("Type")), protocol, Explain(Strings.T("Environment variable with the key")), env,
+            Explain(Strings.T("Exact model IDs, separated by commas")), ids, tools, error, connect } };
     }
 
     Control Member(TeamModel model, string? leadId)
     {
-        var status = !model.Available ? "not available now" + (model.UnavailableReason != null ? ": " + model.UnavailableReason[..Math.Min(140, model.UnavailableReason.Length)] : "") + (model.RetrySoon ? " (tried again in a few minutes)" : "")
+        var status = !model.Available ? Strings.T("not available now") + (model.UnavailableReason != null ? ": " + model.UnavailableReason[..Math.Min(140, model.UnavailableReason.Length)] : "") + (model.RetrySoon ? Strings.T(" (tried again in a few minutes)") : "")
             : model.FiveHourLeft != null || model.WeeklyLeft != null
-                ? string.Join(" · ", new[] { model.FiveHourLeft is { } f ? $"5h {f}%" : "", model.WeeklyLeft is { } w ? $"week {w}%" : "" }.Where(part => part.Length > 0)) + " left" + (model.LowQuota ? " · under its limit" : "")
-            : model.QuotaLeft is { } left ? $"{left}% quota left" + (model.LowQuota ? " · under its limit" : "") : "quota not reported";
+                ? string.Join(" · ", new[] { model.FiveHourLeft is { } f ? Strings.Format("5h {0}%", f) : "", model.WeeklyLeft is { } w ? Strings.Format("week {0}%", w) : "" }.Where(part => part.Length > 0)) + Strings.T(" left") + (model.LowQuota ? Strings.T(" \u00B7 under its limit") : "")
+            : model.QuotaLeft is { } left ? Strings.Format("{0}% quota left", left) + (model.LowQuota ? Strings.T(" \u00B7 under its limit") : "") : Strings.T("quota not reported");
         var chips = new WrapPanel();
-        if (model.Bench) chips.Children.Add(new TextBlock { Text = "Bring in as:", Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
-        chips.Children.Add(RoleChip(model, "Build", "worker", model.Build, model.CanBuild, "Writes the code and the tests"));
-        chips.Children.Add(RoleChip(model, "Verify", "verifier", model.Verify, model.CanVerify, "Checks the work and fixes what fails"));
+        if (model.Bench) chips.Children.Add(new TextBlock { Text = Strings.T("Bring in as:"), Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
+        chips.Children.Add(RoleChip(model, Strings.T("Build"), "worker", model.Build, model.CanBuild, Strings.T("Writes the code and the tests")));
+        chips.Children.Add(RoleChip(model, Strings.T("Verify"), "verifier", model.Verify, model.CanVerify, Strings.T("Checks the work and fixes what fails")));
         if (!model.Bench)
         {
-            var bench = Look.Chip("Bench", null, Palette.Muted, Palette.Surface2, false);
-            ToolTip.SetTip(bench, "Take this model out of the team");
-            bench.Click += async (_, _) => { bench.IsChecked = false; await DoAsync(() => api!.BenchAsync(projectId!, model.Id), $"{model.Label} is on the bench."); };
+            var bench = Look.Chip(Strings.T("Bench"), null, Palette.Muted, Palette.Surface2, false);
+            ToolTip.SetTip(bench, Strings.T("Take this model out of the team"));
+            bench.Click += async (_, _) => { bench.IsChecked = false; await DoAsync(() => api!.BenchAsync(projectId!, model.Id), Strings.Format("{0} is on the bench.", model.Label)); };
             chips.Children.Add(bench);
         }
         var name = new StackPanel { Orientation = Orientation.Horizontal, Children = {
             Look.Dot(Look.ProviderColour(model.ProviderId.Length > 0 ? model.ProviderId : model.Provider)),
             new TextBlock { Text = model.Label, Foreground = Palette.Text, FontWeight = FontWeight.SemiBold, FontSize = 15, VerticalAlignment = VerticalAlignment.Center } } };
-        if (model.Lead || model.Id == leadId) name.Children.Add(Look.Badge("Lead", Palette.Lead, Palette.LeadSoft).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
+        if (model.Lead || model.Id == leadId) name.Children.Add(Look.Badge(Strings.T("Lead"), Palette.Lead, Palette.LeadSoft).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
         var info = new StackPanel { Spacing = 2, Children = { name,
             new TextBlock { Text = string.Join(" · ", new[] { model.Provider, status }.Where(part => part.Length > 0)), Foreground = model.Available ? Palette.Muted : Palette.Warn, FontSize = 12, TextWrapping = TextWrapping.Wrap } } };
         if (model.QuotaLeft is { } quota && !model.Bench) info.Children.Add(Look.Bar(quota, model.LowQuota));
@@ -231,7 +232,7 @@ public sealed partial class MainWindow
         if (!model.Bench) card.Children.Add(LimitEditor(model));
         var toolsProject = projectId!;
         card.Children.Add(ModelToolsEditor.Create(ModelToolsView.Read(snapshot, toolsProject, model.Id),
-            tools => DoAsync(() => api!.SetToolsAsync(toolsProject, tools, model.Id), $"Tools for {model.Label} saved.")));
+            tools => DoAsync(() => api!.SetToolsAsync(toolsProject, tools, model.Id), Strings.Format("Tools for {0} saved.", model.Label))));
         return MemberCard(card, !model.Bench, model.Bench);
     }
 
@@ -240,9 +241,9 @@ public sealed partial class MainWindow
     Control LimitEditor(TeamModel model)
     {
         var company = model.Provider.Length > 0 ? model.Provider : model.Pool;
-        var whose = model.LimitSource switch { "model" => "Own limit", "company" => $"{company} limit", _ => "Limit" };
-        var said = model.LimitNone ? $"No limit{(model.LimitSource == "company" ? $" for {company}" : "")}"
-            : $"{whose}: " + (model.LimitFiveHour == model.LimitWeekly ? $"{model.LimitFiveHour}%" : $"5h {model.LimitFiveHour}% · week {model.LimitWeekly}%");
+        var whose = model.LimitSource switch { "model" => Strings.T("Own limit"), "company" => Strings.Format("{0} limit", company), _ => Strings.T("Limit") };
+        var said = model.LimitNone ? Strings.Format("No limit{0}", (model.LimitSource == "company" ? Strings.Format(" for {0}", company) : ""))
+            : $"{whose}: " + (model.LimitFiveHour == model.LimitWeekly ? $"{model.LimitFiveHour}%" : Strings.Format("5h {0}% \u00B7 week {1}%", model.LimitFiveHour, model.LimitWeekly));
         var five = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitFiveHour ?? 35, FormatString = "0", Width = 110 };
         var week = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = model.LimitWeekly ?? 35, FormatString = "0", Width = 110 };
         int Five() => (int)(five.Value ?? 35); int Week() => (int)(week.Value ?? 35);
@@ -250,33 +251,33 @@ public sealed partial class MainWindow
         void Add(Button button) { button.Margin = new Thickness(0, 0, 6, 4); buttons.Children.Add(button); }
         if (model.Pool.Length > 0)
         {
-            var forAll = Small($"Save for all {company}", primary: true);
-            ToolTip.SetTip(forAll, $"Every {company} model without a limit of its own");
-            forAll.Click += async (_, _) => await DoAsync(() => api!.SetCompanyLimitAsync(model.Pool, Five(), Week()), $"Quota limit of {company} saved.");
+            var forAll = Small(Strings.Format("Save for all {0}", company), primary: true);
+            ToolTip.SetTip(forAll, Strings.Format("Every {0} model without a limit of its own", company));
+            forAll.Click += async (_, _) => await DoAsync(() => api!.SetCompanyLimitAsync(model.Pool, Five(), Week()), Strings.Format("Quota limit of {0} saved.", company));
             Add(forAll);
         }
-        var save = Small("Only this model");
-        save.Click += async (_, _) => await DoAsync(() => api!.SetQuotaLimitAsync(model.Id, Five(), Week()), $"Quota limit of {model.Label} saved.");
+        var save = Small(Strings.T("Only this model"));
+        save.Click += async (_, _) => await DoAsync(() => api!.SetQuotaLimitAsync(model.Id, Five(), Week()), Strings.Format("Quota limit of {0} saved.", model.Label));
         Add(save);
-        var none = Small("No limit");
-        none.Click += async (_, _) => await DoAsync(() => api!.SetNoQuotaLimitAsync(model.Id), $"{model.Label} has no quota limit now.");
+        var none = Small(Strings.T("No limit"));
+        none.Click += async (_, _) => await DoAsync(() => api!.SetNoQuotaLimitAsync(model.Id), Strings.Format("{0} has no quota limit now.", model.Label));
         Add(none);
         if (model.LimitSource == "model")
         {
-            var reset = Small(model.Pool.Length > 0 ? $"Use the {company} limit" : "Use the general limit");
-            reset.Click += async (_, _) => await DoAsync(() => api!.ResetQuotaLimitAsync(model.Id), $"{model.Label} follows the {(model.Pool.Length > 0 ? company : "general")} limit.");
+            var reset = Small(model.Pool.Length > 0 ? Strings.Format("Use the {0} limit", company) : Strings.T("Use the general limit"));
+            reset.Click += async (_, _) => await DoAsync(() => api!.ResetQuotaLimitAsync(model.Id), Strings.Format("{0} follows the {1} limit.", model.Label, (model.Pool.Length > 0 ? company : Strings.T("general"))));
             Add(reset);
         }
         else if (model.LimitSource == "company")
         {
-            var reset = Small($"{company}: use the general limit");
-            reset.Click += async (_, _) => await DoAsync(() => api!.ResetCompanyLimitAsync(model.Pool), $"{company} follows the general limit.");
+            var reset = Small(Strings.Format("{0}: use the general limit", company));
+            reset.Click += async (_, _) => await DoAsync(() => api!.ResetCompanyLimitAsync(model.Pool), Strings.Format("{0} follows the general limit.", company));
             Add(reset);
         }
         var form = new StackPanel { Spacing = 6, Children = {
-            Row(new TextBlock { Text = "5 hours", Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, five),
-            Row(new TextBlock { Text = "Week", Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, week,
-                new TextBlock { Text = "% left", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Muted, FontSize = 13 }),
+            Row(new TextBlock { Text = Strings.T("5 hours"), Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, five),
+            Row(new TextBlock { Text = Strings.T("Week"), Width = 52, VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, FontSize = 13 }, week,
+                new TextBlock { Text = Strings.T("% left"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Muted, FontSize = 13 }),
             buttons } };
         var fold = Fold(said, form);
         fold.IsExpanded = false;
@@ -289,7 +290,7 @@ public sealed partial class MainWindow
         var chip = Look.Chip(label, icon, color, soft, on);
         chip.IsEnabled = model.Available && eligible;
         ToolTip.SetTip(chip, help);
-        chip.Click += async (_, _) => await DoAsync(() => api!.SetRolesAsync(projectId!, model.Id, new Dictionary<string, bool> { [role] = !on }), "Team updated.");
+        chip.Click += async (_, _) => await DoAsync(() => api!.SetRolesAsync(projectId!, model.Id, new Dictionary<string, bool> { [role] = !on }), Strings.T("Team updated."));
         return chip;
     }
 }

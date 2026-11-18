@@ -253,6 +253,43 @@ function createExecutionBridge(options) {
     persist();
     return true;
   }
+
+  // A dead worker with no result and no commit gets one more try on the same model, then one
+  // try on the next eligible model. A commit already on the branch is a delivery, not a retry.
+  // Two models in all: after the second miss the step fails and the owner decides.
+  function committedSince(mega, part) {
+    const folder = linkedWorkspace(part.folder);
+    const before = part.baseHead || mega.repoBefore?.repoHead;
+    if (!folder || !before || !safeGitWorkspace(part.projectFolder)) return null;
+    const after = spawnSync('git', ['--no-optional-locks', '-C', folder, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true }).stdout.trim();
+    if (!/^[a-f0-9]{40,64}$/.test(after) || after === before) return null;
+    const listed = spawnSync('git', ['--no-optional-locks', '-C', folder, 'diff', '--name-only', before + '..' + after], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true });
+    const names = listed.status === 0 ? listed.stdout.trim().split(/\r?\n/).filter(Boolean) : [];
+    if (!names.length) return null;
+    return { filesChanged: names.slice(0, 40), summary: 'Delivered on disk: the step committed before the process ended, with no result file.' };
+  }
+  function rerouteNoVerdict(mega, sub, part) {
+    const tries = sub.noVerdictTries || 0;
+    if (noVerdictPlan(tries) === 'stop') return false;
+    let text = ''; try { text = fs.readFileSync(part.logPath, 'utf8'); } catch {}
+    attempts.closeAttempt({ attemptId: part.attemptId, reason: 'no verdict' });
+    sub.takeover = { fromModelId: sub.assignedModelId, at: now(), filesChanged: [], tests: [], summary: 'The previous attempt ended without a result. Continue from the folder; do not start over.', logTail: text.slice(-1500) };
+    part.alive = false;
+    if (noVerdictPlan(tries) === 'retry-same') {
+      Object.assign(sub, { status: 'PENDING', noVerdictTries: 1, resultId: null });
+      event(mega.projectId, 'MODEL_NO_VERDICT_RETRY', sub.assignedModelId + ' ended without a result. Same model tries once more.', { megaTaskId: mega.id, subTaskId: sub.id, modelId: sub.assignedModelId });
+      persist();
+      return true;
+    }
+    if (typeof options.replacement !== 'function') return false;
+    const next = options.replacement(sub, [sub.assignedModelId, ...(sub.noVerdictFrom || [])]);
+    if (!next) return false;
+    const from = sub.assignedModelId;
+    Object.assign(sub, { status: 'PENDING', noVerdictTries: 2, noVerdictFrom: [...(sub.noVerdictFrom || []), from], fallbackFrom: from, assignedModelId: next.id, proposedProvider: next.provider, proposedCli: next.cli, resultId: null });
+    event(mega.projectId, 'MODEL_NO_VERDICT_SWITCH', from + ' ended without a result twice. Reassigned to ' + next.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: next.id });
+    persist();
+    return true;
+  }
   function deliveryOf(mega, sub, part) {
     const exit = readJSON(part.exitPath);
     if (!exit || exit.attemptId !== part.attemptId || !Number.isInteger(exit.exitCode)) return null;
@@ -278,10 +315,10 @@ function createExecutionBridge(options) {
       const valid = result && (sub.type !== 'RESEARCH' || result.status !== 'COMPLETE' || reportExists(result, part.folder));
       if (!valid && rerouteRefusal(mega, sub, part)) continue;
       if (!valid) {
-        const delivered = deliveryOf(mega, sub, part);
-        collect(mega, sub, part, delivered
-          ? technical(mega, sub, part, 'COMPLETE', delivered.summary, delivered)
-          : technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
+        const delivered = deliveryOf(mega, sub, part) || committedSince(mega, part);
+        if (delivered) { collect(mega, sub, part, technical(mega, sub, part, 'COMPLETE', delivered.summary, delivered)); continue; }
+        if (rerouteNoVerdict(mega, sub, part)) continue;
+        collect(mega, sub, part, technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
         continue;
       }
       collect(mega, sub, part, result);
@@ -737,4 +774,5 @@ function appendStepTime(dir, record) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
 }
-module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict };
+function noVerdictPlan(tries) { return tries >= 2 ? 'stop' : tries === 1 ? 'switch' : 'retry-same'; }
+module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };

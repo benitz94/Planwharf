@@ -45,6 +45,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 14 | #? | Reviewed the failing-test candidate; isolated Git line endings in the email rewrite fixture | Independent Grok 4.6 verification reproduced the origin/main CRLF failure, added error/recovery/concurrency coverage, and ran full engine CI |
 | 15 | #? | Parallel build parts run in isolated Git worktrees; part branches merge in order with conflict handoff and safe cleanup | Independent Grok 4.7 verification added edge, error, recovery and concurrency coverage. Drop now removes dirty and locked worktrees; a missing worktree pauses integration; completion still deletes part branches after the folder is gone |
 | 16 | #? | Multiple accounts per provider, subscription status (active, expired, not signed in), eligible account switching before provider switching, and hiding expired models | Independent Grok 4.7 verification added edge, error, recovery and concurrency coverage. A second account does not inherit this process's login. A live lock is not stolen, and a dead owner is cleared at once. An expired or signed-out plan stays in force when a later quota read is unknown, and the team does not treat those models as a ready lead or builder |
+| 17 | #132 | English and Italian in the native app, with a saved language picker, localized dates and a presentation-literal guard | Restored the completed job commit onto `feat/languages` from refreshed main; strengthened placeholder coverage |
 
 ## Improvements found while Planwharf worked on itself
 

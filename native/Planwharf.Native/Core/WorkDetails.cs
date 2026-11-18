@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using System.Globalization;
 using System.Text.Json.Nodes;
 
@@ -12,12 +13,12 @@ public static class WorkDetails
 {
     static string S(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
     static double? N(JsonNode? node) => node is JsonValue value && value.TryGetValue<double>(out var number) && double.IsFinite(number) ? number : null;
-    static string Plural(int count, string word) => $"{count} {word}{(count == 1 ? "" : "s")}";
-    static string RoleOf(JsonObject sub) => S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith("Verify the work independently") ? "Verify" : "Build";
+    static string Plural(int count, string word) => count.ToString(Strings.Culture) + " " + Strings.T(count == 1 ? word : word + "s");
+    static string RoleOf(JsonObject sub) => S(sub["type"]) == "AUDIT" ? Strings.T("Review") : S(sub["type"]) == "RESEARCH" ? Strings.T("Research") : S(sub["title"]).StartsWith("Verify the work independently") ? Strings.T("Verify") : Strings.T("Build");
 
     // As the chat page: 12 s, 4 min, 1.5 h.
     public static string Duration(double? ms) => ms is not { } value || !double.IsFinite(value) || value < 0 ? ""
-        : value < 60000 ? $"{Math.Max(1, Math.Round(value / 1000))} s" : value < 3600000 ? $"{Math.Round(value / 60000)} min" : (value / 3600000).ToString("0.0", CultureInfo.InvariantCulture) + " h";
+        : value < 60000 ? Strings.Format("{0} s", Math.Max(1, Math.Round(value / 1000))) : value < 3600000 ? Strings.Format("{0} min", Math.Round(value / 60000)) : (value / 3600000).ToString("0.0", Strings.Culture) + Strings.T(" h");
 
     public static double? Between(string from, string to) =>
         DateTimeOffset.TryParse(from, CultureInfo.InvariantCulture, DateTimeStyles.None, out var a) && DateTimeOffset.TryParse(to, CultureInfo.InvariantCulture, DateTimeStyles.None, out var b) ? (b - a).TotalMilliseconds : null;
@@ -31,16 +32,16 @@ public static class WorkDetails
         var all = subs.Count > 0 && done == subs.Count;
         var reason = (stopReason ?? "").Split(':')[0];
         var lines = new List<string>();
-        if (all && reason == "GOAL_REACHED") lines.Add($"All {Plural(subs.Count, "step")} finished and the lead confirmed the goal.");
-        else if (all && reason is "LEAD_UNCONFIRMED" or "UNREADABLE_LEAD_DECISION") lines.Add($"All {Plural(subs.Count, "step")} finished, but the lead did not confirm the goal: check the result before you rely on it.");
-        else if (all) lines.Add($"All {Plural(subs.Count, "step")} finished.");
-        else lines.Add($"{done} of {Plural(subs.Count, "step")} finished.");
+        if (all && reason == "GOAL_REACHED") lines.Add(Strings.Format("All {0} finished and the lead confirmed the goal.", Plural(subs.Count, "step")));
+        else if (all && reason is "LEAD_UNCONFIRMED" or "UNREADABLE_LEAD_DECISION") lines.Add(Strings.Format("All {0} finished, but the lead did not confirm the goal: check the result before you rely on it.", Plural(subs.Count, "step")));
+        else if (all) lines.Add(Strings.Format("All {0} finished.", Plural(subs.Count, "step")));
+        else lines.Add(Strings.Format("{0} of {1} finished.", done, Plural(subs.Count, "step")));
         foreach (var sub in subs)
         {
             var from = S(sub["takeover"]?["fromModelId"]) is { Length: > 0 } f ? f : S(sub["fallbackFrom"]);
             var assigned = S(sub["assignedModelId"]);
-            var who = (assigned.Length > 0 ? modelLabel(assigned) : "") is { Length: > 0 } label ? label : assigned.Length > 0 ? assigned : "not assigned";
-            lines.Add($"{RoleOf(sub)}: {who}{(from.Length > 0 && from != assigned ? $", taking over from {(modelLabel(from) is { Length: > 0 } fl ? fl : from)}" : "")}.");
+            var who = (assigned.Length > 0 ? modelLabel(assigned) : "") is { Length: > 0 } label ? label : assigned.Length > 0 ? assigned : Strings.T("not assigned");
+            lines.Add($"{RoleOf(sub)}: {who}{(from.Length > 0 && from != assigned ? Strings.Format(", taking over from {0}", modelLabel(from) is { Length: > 0 } fl ? fl : from) : "")}.");
         }
         var problems = results.Where(result => S(result["status"]) is "FAILED" or "BLOCKED" && result["modelChange"]?.GetValue<bool>() != true).ToList();
         if (problems.Count > 0)
@@ -48,13 +49,13 @@ public static class WorkDetails
             {
                 var sub = subs.FirstOrDefault(item => S(item["id"]) == S(result["subTaskId"]));
                 var said = S(result["summary"]).Trim();
-                lines.Add($"Problem in {(sub != null ? RoleOf(sub) : "a step")}: {(said.Length > 0 ? said : "no details recorded")}");
+                lines.Add(Strings.Format("Problem in {0}: {1}", (sub != null ? RoleOf(sub) : Strings.T("a step")), (said.Length > 0 ? said : Strings.T("no details recorded"))));
             }
-        else lines.Add("No problems were reported.");
+        else lines.Add(Strings.T("No problems were reported."));
         var tests = (int)results.Sum(result => N(result["testsReported"]) ?? 0);
-        if (tests != 0) lines.Add($"Workers reported {Plural(tests, "test run")}.");
-        if (changedFiles > 0) lines.Add($"{Plural(changedFiles.Value, "file")} changed and not yet committed: review them, then commit below.");
-        else if (changedFiles == 0) lines.Add("No files are left uncommitted.");
+        if (tests != 0) lines.Add(Strings.Format("Workers reported {0}.", Plural(tests, "test run")));
+        if (changedFiles > 0) lines.Add(Strings.Format("{0} changed and not yet committed: review them, then commit below.", Plural(changedFiles.Value, "file")));
+        else if (changedFiles == 0) lines.Add(Strings.T("No files are left uncommitted."));
         return lines;
     }
 
@@ -65,7 +66,7 @@ public static class WorkDetails
         var records = (snapshot["aiUsage"]?["recent"] as JsonArray ?? []).OfType<JsonObject>().Where(item => S(item["megaTaskId"]) == megaId).ToList();
         var ids = (row["subTasks"] as JsonArray ?? []).OfType<JsonObject>().Select(sub => S(sub["assignedModelId"]))
             .Concat(records.Select(item => S(item["modelId"]))).Where(id => id.Length > 0).Distinct().ToList();
-        string Num(double value) => value.ToString("#,0", CultureInfo.InvariantCulture);
+        string Num(double value) => value.ToString("#,0", Strings.Culture);
         return ids.Select(id =>
         {
             var mine = records.Where(item => S(item["modelId"]) == id).ToList();
@@ -75,11 +76,11 @@ public static class WorkDetails
             var (input, output, cached) = (Add("input"), Add("output"), Add("cachedInput"));
             var now = quotaLeft(id);
             var before = quotaAtStart.TryGetValue(id, out var start) ? start : null;
-            var quota = before != null && now != null ? $"{before}% → {now}%" : now != null ? $"now {now}% left" : "not reported";
-            var tokenText = input == null && output == null ? "tokens not reported"
-                : string.Join(" · ", new[] { input != null ? Num(input.Value) + " in" : null, output != null ? Num(output.Value) + " out" : null, cached != null ? Num(cached.Value) + " from cache" : null }.Where(part => part != null));
+            var quota = before != null && now != null ? $"{before}% → {now}%" : now != null ? Strings.Format("now {0}% left", now) : Strings.T("not reported");
+            var tokenText = input == null && output == null ? Strings.T("tokens not reported")
+                : string.Join(" · ", new[] { input != null ? Num(input.Value) + Strings.T(" in") : null, output != null ? Num(output.Value) + Strings.T(" out") : null, cached != null ? Num(cached.Value) + Strings.T(" from cache") : null }.Where(part => part != null));
             var label = modelLabel(id) is { Length: > 0 } l ? l : id;
-            return (label, $"{(ms > 0 ? Duration(ms) : "time not reported")} · {tokenText} · quota {quota}");
+            return (label, Strings.Format("{0} \u00B7 {1} \u00B7 quota {2}", (ms > 0 ? Duration(ms) : Strings.T("time not reported")), tokenText, quota));
         }).ToList();
     }
 
@@ -90,9 +91,9 @@ public static class WorkDetails
         var friendly = new List<(string Text, int Count)>();
         foreach (var text in (running?["activitySession"]?["events"] as JsonArray ?? []).OfType<JsonObject>().Select(e => S(e["friendly"])).Where(t => t.Length > 0 && !t.StartsWith("Unclassified worker activity")))
             if (friendly.Count > 0 && friendly[^1].Text == text) friendly[^1] = (text, friendly[^1].Count + 1); else friendly.Add((text, 1));
-        var lines = friendly.Select(item => item.Count > 1 ? $"{item.Text} (x{item.Count})" : item.Text).TakeLast(6).ToList();
+        var lines = friendly.Select(item => item.Count > 1 ? Strings.Format("{0} (x{1})", item.Text, item.Count) : item.Text).TakeLast(6).ToList();
         var text2 = lines.Count > 0 ? string.Join("\n", lines) : string.Join("\n", S(row["workerTail"]).Trim().Split('\n').TakeLast(6));
-        var who = modelLabel(S(running?["modelId"])) is { Length: > 0 } label ? label : S(row["workerLabel"]) is { Length: > 0 } worker ? worker : "the crew";
+        var who = modelLabel(S(running?["modelId"])) is { Length: > 0 } label ? label : S(row["workerLabel"]) is { Length: > 0 } worker ? worker : Strings.T("the crew");
         return (who, text2.Trim());
     }
 

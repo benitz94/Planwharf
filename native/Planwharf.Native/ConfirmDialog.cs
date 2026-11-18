@@ -1,3 +1,4 @@
+using Planwharf.Engine;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -8,12 +9,12 @@ namespace Planwharf.Native;
 // A plain question before an action the user should be sure about.
 public sealed class ConfirmDialog : Window
 {
-    public ConfirmDialog(string question, string yes, string? heading = null, string no = "No")
+    public ConfirmDialog(string question, string yes, string? heading = null, string? no = null)
     {
-        Title = "Planwharf"; Width = 460; SizeToContent = SizeToContent.Height; CanResize = false; Background = Palette.Card;
+        Title = Strings.T("Planwharf"); Width = 460; SizeToContent = SizeToContent.Height; CanResize = false; Background = Palette.Card;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var ok = Look.Button(yes, null, Look.Kind.Primary); ok.Margin = new Thickness(0, 0, 8, 0);
-        var cancel = Look.Button(no);
+        var cancel = Look.Button(no ?? Strings.T("No"));
         ok.Click += (_, _) => Close(true); cancel.Click += (_, _) => Close(false);
         var body = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
         if (heading != null) { Title = heading; body.Children.Add(new TextBlock { Text = heading, FontSize = 20, FontWeight = FontWeight.Bold, Foreground = Palette.Text }); }

@@ -85,15 +85,15 @@ public static class ModelPolicy
 
     public static JsonObject MigratePolicy(JsonNode? value)
     {
-        if (value is not JsonObject source) throw new InvalidOperationException("Invalid quota policy.");
+        if (value is not JsonObject source) throw new InvalidOperationException(Strings.T("Invalid quota policy."));
         var migrated = new JsonObject();
         foreach (var pair in source) migrated[pair.Key] = pair.Value?.DeepClone();
         foreach (var (oldKey, newKey) in LegacyKeys)
         {
             if (!migrated.ContainsKey(oldKey)) continue;
-            if (migrated.ContainsKey(newKey)) throw new InvalidOperationException("Do not mix consumed and remaining quota settings.");
+            if (migrated.ContainsKey(newKey)) throw new InvalidOperationException(Strings.T("Do not mix consumed and remaining quota settings."));
             var previous = migrated[oldKey];
-            if (previous is not null && !TryPercent(previous, out _)) throw new InvalidOperationException("Invalid legacy usage percentage.");
+            if (previous is not null && !TryPercent(previous, out _)) throw new InvalidOperationException(Strings.T("Invalid legacy usage percentage."));
             migrated[newKey] = previous is null ? null : JsonNumber(100 - Number(previous));
             migrated.Remove(oldKey);
         }
@@ -104,20 +104,20 @@ public static class ModelPolicy
     {
         var migrated = MigratePolicy(value);
         foreach (var key in migrated.Select(pair => pair.Key))
-            if (!PolicyKeys.Contains(key)) throw new InvalidOperationException("Invalid model policy fields.");
+            if (!PolicyKeys.Contains(key)) throw new InvalidOperationException(Strings.T("Invalid model policy fields."));
         var minNode = Field(migrated, "minRemainingPercent");
         var warningNode = Field(migrated, "warningRemainingPercent");
-        if (minNode is not null && !TryPercent(minNode, out _)) throw new InvalidOperationException("Remaining quota thresholds must be percentages from 0 to 100, or null.");
-        if (warningNode is not null && !TryPercent(warningNode, out _)) throw new InvalidOperationException("Remaining quota thresholds must be percentages from 0 to 100, or null.");
+        if (minNode is not null && !TryPercent(minNode, out _)) throw new InvalidOperationException(Strings.T("Remaining quota thresholds must be percentages from 0 to 100, or null."));
+        if (warningNode is not null && !TryPercent(warningNode, out _)) throw new InvalidOperationException(Strings.T("Remaining quota thresholds must be percentages from 0 to 100, or null."));
         double? min = minNode is null ? null : Number(minNode);
         double? warning = warningNode is null ? null : Number(warningNode);
-        if (warning is not null && (min is null || warning <= min)) throw new InvalidOperationException("Warning remaining quota must be higher than the stop threshold.");
+        if (warning is not null && (min is null || warning <= min)) throw new InvalidOperationException(Strings.T("Warning remaining quota must be higher than the stop threshold."));
         var always = migrated.ContainsKey("alwaysApprove") ? migrated["alwaysApprove"] : JsonValue.Create(false);
         if (always is not JsonValue kind || (kind.GetValueKind() is not JsonValueKind.True and not JsonValueKind.False))
-            throw new InvalidOperationException("Always approve must be a boolean.");
+            throw new InvalidOperationException(Strings.T("Always approve must be a boolean."));
         var fallback = Field(migrated, "fallbackModelId");
         if (fallback is not null && (AsString(fallback) is not string id || StructuredFinal.Trim(id).Length == 0))
-            throw new InvalidOperationException("Fallback must be an explicit model ID, or null.");
+            throw new InvalidOperationException(Strings.T("Fallback must be an explicit model ID, or null."));
         return new JsonObject
         {
             ["minRemainingPercent"] = minNode?.DeepClone(),
@@ -166,9 +166,9 @@ public static class ModelPolicy
         var reached = left is not null && min is not null && left <= min;
         var near = left is not null && warning is not null && left <= warning;
         var state = unread ? "unread" : reached ? "limit" : near ? "warning" : "ok";
-        string? reason = unread ? "Configured remaining quota threshold cannot be verified: provider quota is unread."
-            : reached ? $"Remaining quota stop threshold reached ({ToFixed1(left!.Value)}% remaining / stop at {JsNumber(min!.Value)}%)."
-            : near ? $"Low provider quota ({ToFixed1(left!.Value)}% remaining / warning at {JsNumber(warning!.Value)}%)." : null;
+        string? reason = unread ? Strings.T("Configured remaining quota threshold cannot be verified: provider quota is unread.")
+            : reached ? Strings.Format("Remaining quota stop threshold reached ({0}% remaining / stop at {1}%).", ToFixed1(left!.Value), JsNumber(min!.Value))
+            : near ? Strings.Format("Low provider quota ({0}% remaining / warning at {1}%).", ToFixed1(left!.Value), JsNumber(warning!.Value)) : null;
         return new JsonObject
         {
             ["minRemainingPercent"] = policy["minRemainingPercent"]?.DeepClone(),
@@ -215,7 +215,7 @@ public static class ModelPolicy
             if (item is null)
             {
                 if (skipFalsy) continue;
-                throw new InvalidOperationException("Invalid quota plan.");
+                throw new InvalidOperationException(Strings.T("Invalid quota plan."));
             }
             if (skipFalsy && !StructuredFinal.Truthy(item)) continue;
             if (item is JsonObject plan)
@@ -261,7 +261,7 @@ public static class ModelPolicy
 
     static double Number(JsonNode node)
     {
-        if (!TryFinite(node, out var value)) throw new InvalidOperationException("Remaining quota thresholds must be percentages from 0 to 100, or null.");
+        if (!TryFinite(node, out var value)) throw new InvalidOperationException(Strings.T("Remaining quota thresholds must be percentages from 0 to 100, or null."));
         return value;
     }
 
@@ -369,7 +369,7 @@ public static class ModelPolicy
         var pool = JsOr(model, "quotaPoolId", "plan");
         foreach (var item in plans)
         {
-            if (item is null) throw new InvalidOperationException("Invalid quota plan.");
+            if (item is null) throw new InvalidOperationException(Strings.T("Invalid quota plan."));
             if (item is not JsonObject plan || !IdEquals(plan, pool) || !StructuredFinal.Truthy(Field(plan, "readable"))) continue;
             if (StructuredFinal.Truthy(Field(plan, "exhausted"))) return true;
             if (TryFinite(plan["leftPct"], out var left) && left == 0) return true;
@@ -458,7 +458,7 @@ public static class ModelPolicy
         var switches = new JsonArray();
         foreach (var item in running)
         {
-            if (item is not JsonObject step) throw new InvalidOperationException("Invalid running step.");
+            if (item is not JsonObject step) throw new InvalidOperationException(Strings.T("Invalid running step."));
             var current = models.OfType<JsonObject>().FirstOrDefault(model => PropEquals(model, "id", step, "modelId"));
             if (current is null || !LowQuota(current, plans, limitFor)) continue;
             var currentCli = AsString(Field(current, "cli"));
@@ -504,7 +504,7 @@ public static class ModelPolicy
     static bool Avoids(JsonObject step, JsOrValue provider)
     {
         if (!step.TryGetPropertyValue("avoidProviders", out var list) || list is null) return false;
-        if (list is not JsonArray providers) throw new InvalidOperationException("avoidProviders must be an array.");
+        if (list is not JsonArray providers) throw new InvalidOperationException(Strings.T("avoidProviders must be an array."));
         // JSON has no undefined, so a missing provider is never listed. JSON null is.
         if (provider.IsUndefined) return false;
         return providers.Any(item => SameJson(item, provider.Node));

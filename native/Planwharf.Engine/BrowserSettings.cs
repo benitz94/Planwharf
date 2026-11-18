@@ -11,12 +11,12 @@ public static class BrowserSettings
     static readonly string[] NamesOrder = ["edge", "chrome", "brave", "opera", "firefox", "chromium"];
     static readonly Dictionary<string, string> Names = new()
     {
-        ["edge"] = "Microsoft Edge",
-        ["chrome"] = "Google Chrome",
-        ["brave"] = "Brave",
-        ["opera"] = "Opera",
-        ["firefox"] = "Mozilla Firefox",
-        ["chromium"] = "Chromium"
+        ["edge"] = Strings.T("Microsoft Edge"),
+        ["chrome"] = Strings.T("Google Chrome"),
+        ["brave"] = Strings.T("Brave"),
+        ["opera"] = Strings.T("Opera"),
+        ["firefox"] = Strings.T("Mozilla Firefox"),
+        ["chromium"] = Strings.T("Chromium")
     };
     static readonly Dictionary<string, string[]> WindowsRelative = new()
     {
@@ -59,7 +59,7 @@ public static class BrowserSettings
     public static JsonObject ValidateBrowser(JsonNode? value, Func<string, bool>? executable = null, IReadOnlyDictionary<string, string?>? env = null)
     {
         if (value is not JsonObject obj || obj.Any(pair => pair.Key is not ("id" or "path" or "family")) || Text(obj, "id") is not { } id || !AllowedIds.Contains(id))
-            throw new InvalidOperationException("Invalid browser selection.");
+            throw new InvalidOperationException(Strings.T("Invalid browser selection."));
         if (id == "custom")
         {
             if (obj["path"] is not JsonValue pathValue || !pathValue.TryGetValue<string>(out var path) ||
@@ -67,11 +67,11 @@ public static class BrowserSettings
                 (OperatingSystem.IsWindows() && !string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase)) ||
                 obj["family"] is not JsonValue familyValue || !familyValue.TryGetValue<string>(out var family) ||
                 family is not ("chromium" or "firefox"))
-                throw new InvalidOperationException("Choose an existing absolute browser executable path and its browser family.");
+                throw new InvalidOperationException(Strings.T("Choose an existing absolute browser executable path and its browser family."));
             return new JsonObject { ["id"] = "custom", ["path"] = path, ["family"] = family };
         }
         if (id is not ("auto" or "default") && string.IsNullOrEmpty(DetectBrowsers(executable, env).FirstOrDefault(b => b.Id == id)?.Path))
-            throw new InvalidOperationException("The selected browser is not installed. Choose a custom executable path.");
+            throw new InvalidOperationException(Strings.T("The selected browser is not installed. Choose a custom executable path."));
         return new JsonObject { ["id"] = id };
     }
 
@@ -94,7 +94,7 @@ public static class BrowserSettings
             ? catalog.FirstOrDefault(b => !string.IsNullOrEmpty(b.Path))
             : catalog.FirstOrDefault(b => b.Id == id && !string.IsNullOrEmpty(b.Path));
         if (browser is null && id != "auto")
-            throw new InvalidOperationException("Saved browser is unavailable. Use --browser default or choose another executable.");
+            throw new InvalidOperationException(Strings.T("Saved browser is unavailable. Use --browser default or choose another executable."));
         if (browser is null) return null;
         return new JsonObject
         {

@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Planwharf.Native.Core;
+using Planwharf.Engine;
 
 namespace Planwharf.Native;
 
@@ -16,12 +17,12 @@ public sealed partial class MainWindow
     readonly HashSet<string> githubDeclined = new();
 
     // Extra tools for one project's team, all off by default (same words as the chat page).
-    static readonly (string Name, string Label, string Explain)[] Tools =
+    static (string Name, string Label, string Explain)[] Tools =>
     [
-        ("mcp", "MCP servers", "Your own MCP servers, as set up in Claude Code and Codex. They can act outside the project folder, and a server that controls the computer can move your mouse and type."),
-        ("browser", "Browser", "Claude in Chrome: open and try web pages in a browser tab. It does not move your mouse."),
-        ("hooks", "Hooks", "Your Claude Code hooks: commands that run by themselves before or after the model acts."),
-        ("memory", "Memory", "Notes Claude keeps for itself from one session to the next.")
+        ("mcp", Strings.T("MCP servers"), Strings.T("Your own MCP servers, as set up in Claude Code and Codex. They can act outside the project folder, and a server that controls the computer can move your mouse and type.")),
+        ("browser", Strings.T("Browser"), Strings.T("Claude in Chrome: open and try web pages in a browser tab. It does not move your mouse.")),
+        ("hooks", Strings.T("Hooks"), Strings.T("Your Claude Code hooks: commands that run by themselves before or after the model acts.")),
+        ("memory", Strings.T("Memory"), Strings.T("Notes Claude keeps for itself from one session to the next."))
     ];
 
     static string Str(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
@@ -64,19 +65,19 @@ public sealed partial class MainWindow
     {
         var (icon, color, soft) = text switch
         {
-            "This project" => ("folder", Palette.Accent, Palette.AccentSoft),
-            "Tools" => ("box", Palette.Lead, Palette.LeadSoft),
-            "New projects" => ("plus", Palette.Build, Palette.BuildSoft),
-            "Approvals" => ("verify", Palette.Verify, Palette.VerifySoft),
-            "Model switch" => ("usage", Palette.Accent, Palette.AccentSoft),
-            "Skills and instructions" => ("file", Palette.Accent, Palette.AccentSoft),
-            "Move a project" => ("box", Palette.Build, Palette.BuildSoft),
-            "Start over" => ("refresh", Palette.Build, Palette.BuildSoft),
-            "Remove project" => ("trash", Palette.Danger, Palette.DangerSoft),
-            "Quit" => ("power", Palette.Muted, Palette.Surface2),
-            "Updates" => ("refresh", Palette.Accent, Palette.AccentSoft),
-            "Look" => ("sun", Palette.Lead, Palette.LeadSoft),
-            "Phone" => ("phone", Palette.Accent, Palette.AccentSoft),
+            var heading when heading == Strings.T("This project") => ("folder", Palette.Accent, Palette.AccentSoft),
+            var heading when heading == Strings.T("Tools") => ("box", Palette.Lead, Palette.LeadSoft),
+            var heading when heading == Strings.T("New projects") => ("plus", Palette.Build, Palette.BuildSoft),
+            var heading when heading == Strings.T("Approvals") => ("verify", Palette.Verify, Palette.VerifySoft),
+            var heading when heading == Strings.T("Model switch") => ("usage", Palette.Accent, Palette.AccentSoft),
+            var heading when heading == Strings.T("Skills and instructions") => ("file", Palette.Accent, Palette.AccentSoft),
+            var heading when heading == Strings.T("Move a project") => ("box", Palette.Build, Palette.BuildSoft),
+            var heading when heading == Strings.T("Start over") => ("refresh", Palette.Build, Palette.BuildSoft),
+            var heading when heading == Strings.T("Remove project") => ("trash", Palette.Danger, Palette.DangerSoft),
+            var heading when heading == Strings.T("Quit") => ("power", Palette.Muted, Palette.Surface2),
+            var heading when heading == Strings.T("Updates") => ("refresh", Palette.Accent, Palette.AccentSoft),
+            var heading when heading == Strings.T("Look") => ("sun", Palette.Lead, Palette.LeadSoft),
+            var heading when heading == Strings.T("Phone") => ("phone", Palette.Accent, Palette.AccentSoft),
             _ => ("settings", Palette.Muted, Palette.Surface2),
         };
         return Look.Head(icon, color, soft, text).With(head => head.Margin = new Thickness(0, 12, 0, 0));
@@ -109,40 +110,40 @@ public sealed partial class MainWindow
         var row = CurrentRow();
         if (row != null)
         {
-            side.Children.Add(SettingsHead("This project"));
-            side.Children.Add(Explain($"Folder on your computer for {name}."));
+            side.Children.Add(SettingsHead(Strings.T("This project")));
+            side.Children.Add(Explain(Strings.Format("Folder on your computer for {0}.", name)));
             var box = Look.Field(new TextBox { Text = folder, Watermark = OperatingSystem.IsWindows() ? @"C:\Projects\my-website" : "~/Projects/my-website" });
-            var browse = Small("Browse…");
+            var browse = Small(Strings.T("Browse\u2026"));
             browse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) box.Text = path; };
             side.Children.Add(box);
             side.Children.Add(browse);
-            side.Children.Add(Explain("GitHub repository (optional)"));
+            side.Children.Add(Explain(Strings.T("GitHub repository (optional)")));
             var offered = GithubOffer(row);
             var github = Look.Field(new TextBox { Text = Str(row["github"]) is { Length: > 0 } link ? link : offered, Watermark = "https://github.com/you/my-website" });
             side.Children.Add(github);
-            if (offered.Length > 0) side.Children.Add(Explain("Filled in from this folder's git settings. Save to link it, or empty the field and save if you do not want a link."));
-            var save = Small("Save", primary: true);
+            if (offered.Length > 0) side.Children.Add(Explain(Strings.T("Filled in from this folder\u0027s git settings. Save to link it, or empty the field and save if you do not want a link.")));
+            var save = Small(Strings.T("Save"), primary: true);
             save.Click += async (_, _) =>
             {
                 var place = box.Text?.Trim() ?? "";
-                if (place.Length == 0) { hint.Text = "Enter a folder."; hint.Foreground = Palette.Warn; return; }
+                if (place.Length == 0) { hint.Text = Strings.T("Enter a folder."); hint.Foreground = Palette.Warn; return; }
                 var link = (github.Text ?? "").Trim().TrimEnd('/');
                 if (link.EndsWith(".git")) link = link[..^4];
                 if (link.Length == 0) githubDeclined.Add(Str(row["id"]));
-                await DoAsync(() => api!.SetPlaceAsync(projectId!, place, link), "Saved.");
+                await DoAsync(() => api!.SetPlaceAsync(projectId!, place, link), Strings.T("Saved."));
                 if (projectId != null) repoRaw.Remove(projectId);
             };
             var buttons = Row(save);
             if (Str(row["github"]) is { Length: > 0 } saved)
             {
-                var open = Small("Open on GitHub");
+                var open = Small(Strings.T("Open on GitHub"));
                 open.Click += async (_, _) => await OpenLink(saved);
                 buttons.Children.Add(open);
             }
             side.Children.Add(buttons);
 
-            side.Children.Add(SettingsHead("Tools"));
-            side.Children.Add(Explain($"Project defaults for {name}. Models with their own tools use those instead. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work."));
+            side.Children.Add(SettingsHead(Strings.T("Tools")));
+            side.Children.Add(Explain(Strings.Format("Project defaults for {0}. Models with their own tools use those instead. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work.", name)));
             var on = snapshot?["projectTools"]?[Str(row["id"])];
             foreach (var (tool, label, explain) in Tools)
             {
@@ -153,36 +154,36 @@ public sealed partial class MainWindow
                     var wanted = toggle.IsChecked == true;
                     if (wanted == Flag(on?[tool])) return;
                     // MCP servers can act outside the project folder: the user says yes knowing that.
-                    if (wanted && tool == "mcp" && !await Confirm(explain + " Turn it on for this project?", "Yes, turn on MCP servers")) { sideSig = null; Render(); return; }
-                    await DoAsync(() => api!.SetToolsAsync(projectId!, new Dictionary<string, bool> { [tool] = wanted }), wanted ? $"{label} on for {name}." : "Turned off.");
+                    if (wanted && tool == "mcp" && !await Confirm(explain + Strings.T(" Turn it on for this project?"), Strings.T("Yes, turn on MCP servers"))) { sideSig = null; Render(); return; }
+                    await DoAsync(() => api!.SetToolsAsync(projectId!, new Dictionary<string, bool> { [tool] = wanted }), wanted ? Strings.Format("{0} on for {1}.", label, name) : Strings.T("Turned off."));
                 };
                 side.Children.Add(toggle);
             }
         }
 
-        side.Children.Add(SettingsHead("New projects"));
-        side.Children.Add(Explain("Default folder for new projects. When you leave the folder empty on a new project, Planwharf creates it here."));
+        side.Children.Add(SettingsHead(Strings.T("New projects")));
+        side.Children.Add(Explain(Strings.T("Default folder for new projects. When you leave the folder empty on a new project, Planwharf creates it here.")));
         var root = Look.Field(new TextBox { Text = projectsRoot ?? "", Watermark = OperatingSystem.IsWindows() ? @"C:\Projects" : "~/Projects" });
-        var rootBrowse = Small("Browse…");
+        var rootBrowse = Small(Strings.T("Browse\u2026"));
         rootBrowse.Click += async (_, _) => { if (await ProjectDialog.Pick(this) is { } path) root.Text = path; };
-        var rootSave = Small("Save", primary: true);
-        rootSave.Click += async (_, _) => await DoAsync(async () => { await api!.SetProjectsRootAsync(root.Text?.Trim() ?? ""); projectsRoot = await api.ProjectsRootAsync(); }, "Saved.");
+        var rootSave = Small(Strings.T("Save"), primary: true);
+        rootSave.Click += async (_, _) => await DoAsync(async () => { await api!.SetProjectsRootAsync(root.Text?.Trim() ?? ""); projectsRoot = await api.ProjectsRootAsync(); }, Strings.T("Saved."));
         side.Children.Add(root);
         side.Children.Add(Row(rootBrowse, rootSave));
 
-        var keepPlan = new ToggleSwitch { OnContent = "Keep the work plan in git", OffContent = "Keep the work plan in git", IsChecked = Flag(appSettings?["keepWorkPlan"]) };
+        var keepPlan = new ToggleSwitch { OnContent = Strings.T("Keep the work plan in git"), OffContent = Strings.T("Keep the work plan in git"), IsChecked = Flag(appSettings?["keepWorkPlan"]) };
         keepPlan.IsCheckedChanged += async (_, _) =>
         {
             if ((keepPlan.IsChecked == true) != Flag(appSettings?["keepWorkPlan"]))
-                await DoAsync(async () => appSettings = await api!.SetKeepWorkPlanAsync(keepPlan.IsChecked == true), "Work plan preference saved.");
+                await DoAsync(async () => appSettings = await api!.SetKeepWorkPlanAsync(keepPlan.IsChecked == true), Strings.T("Work plan preference saved."));
         };
         side.Children.Add(keepPlan);
 
-        side.Children.Add(SettingsHead("Approvals"));
+        side.Children.Add(SettingsHead(Strings.T("Approvals")));
         var auto = Str(snapshot?["mode"]) == "auto";
-        side.Children.Add(Explain(auto ? "The lead may start approved work without asking each time." : "The lead asks you before each piece of work starts."));
-        var mode = new ToggleSwitch { OnContent = "Let the lead start approved work by itself", OffContent = "Let the lead start approved work by itself", IsChecked = auto };
-        mode.IsCheckedChanged += async (_, _) => { if ((mode.IsChecked == true) != auto) await DoAsync(() => api!.SetModeAsync(mode.IsChecked == true ? "auto" : "manual"), "Saved."); };
+        side.Children.Add(Explain(auto ? Strings.T("The lead may start approved work without asking each time.") : Strings.T("The lead asks you before each piece of work starts.")));
+        var mode = new ToggleSwitch { OnContent = Strings.T("Let the lead start approved work by itself"), OffContent = Strings.T("Let the lead start approved work by itself"), IsChecked = auto };
+        mode.IsCheckedChanged += async (_, _) => { if ((mode.IsChecked == true) != auto) await DoAsync(() => api!.SetModeAsync(mode.IsChecked == true ? "auto" : "manual"), Strings.T("Saved.")); };
         side.Children.Add(mode);
 
         if (autoSwitch != null)
@@ -192,32 +193,49 @@ public sealed partial class MainWindow
             var both = Percent("thresholdPercent", 35);
             var five = Percent("fiveHourPercent", both);
             var week = Percent("weeklyPercent", both);
-            side.Children.Add(SettingsHead("Model switch"));
-            side.Children.Add(Explain(enabled ? $"A model is low when its 5-hour quota drops to {five}% left or its weekly quota to {week}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team."
-                : "Off: a model that runs out of quota stops its step, and you choose the next model."));
-            var toggle = new ToggleSwitch { OnContent = "Switch model automatically", OffContent = "Switch model automatically", IsChecked = enabled };
-            toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != enabled) await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(toggle.IsChecked == true), "Model switch saved."); };
+            side.Children.Add(SettingsHead(Strings.T("Model switch")));
+            side.Children.Add(Explain(enabled ? Strings.Format("A model is low when its 5-hour quota drops to {0}% left or its weekly quota to {1}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team.", five, week)
+                : Strings.T("Off: a model that runs out of quota stops its step, and you choose the next model.")));
+            var toggle = new ToggleSwitch { OnContent = Strings.T("Switch model automatically"), OffContent = Strings.T("Switch model automatically"), IsChecked = enabled };
+            toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != enabled) await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(toggle.IsChecked == true), Strings.T("Model switch saved.")); };
             side.Children.Add(toggle);
             if (enabled)
             {
                 var atFive = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = five, FormatString = "0", Width = 120 };
                 var atWeek = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = week, FormatString = "0", Width = 120 };
-                var saveAt = Small("Save");
-                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(atFive.Value ?? five), (int)(atWeek.Value ?? week)), "Model switch saved.");
-                side.Children.Add(Row(new TextBlock { Text = "5 hours", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, atFive));
-                side.Children.Add(Row(new TextBlock { Text = "Week", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
-                    new TextBlock { Text = "% left", VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
+                var saveAt = Small(Strings.T("Save"));
+                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(atFive.Value ?? five), (int)(atWeek.Value ?? week)), Strings.T("Model switch saved."));
+                side.Children.Add(Row(new TextBlock { Text = Strings.T("5 hours"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, atFive));
+                side.Children.Add(Row(new TextBlock { Text = Strings.T("Week"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
+                    new TextBlock { Text = Strings.T("% left"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
             }
         }
 
         // Light or dark, and in the dark theme the text colour, as in the chat page.
-        side.Children.Add(SettingsHead("Look"));
-        side.Children.Add(Explain("Alerts when work is done or needs you"));
-        foreach (var alertName in new[] { "Notification", "Flash", "Sound" })
+        side.Children.Add(SettingsHead(Strings.T("Look")));
+        side.Children.Add(Explain(Strings.T("Language")));
+        var language = new ComboBox
+        {
+            Name = "LanguagePicker",
+            ItemsSource = new[] { Strings.T("English"), Strings.T("Italian") },
+            SelectedIndex = Strings.CurrentLanguage == "it" ? 1 : 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        language.SelectionChanged += (_, _) =>
+        {
+            var selected = language.SelectedIndex == 1 ? "it" : "en";
+            if (selected == Strings.CurrentLanguage) return;
+            Strings.CurrentLanguage = selected;
+            Prefs.Save();
+            App.Restyle(this);
+        };
+        side.Children.Add(language);
+        side.Children.Add(Explain(Strings.T("Alerts when work is done or needs you")));
+        foreach (var alertName in new[] { nameof(AlertOptions.Notification), nameof(AlertOptions.Flash), nameof(AlertOptions.Sound) })
         {
             var enabled = alertName switch { "Notification" => Prefs.Alerts.Notification, "Flash" => Prefs.Alerts.Flash, _ => Prefs.Alerts.Sound };
-            var alertToggle = new ToggleSwitch { OnContent = alertName, OffContent = alertName, IsChecked = enabled };
-            Avalonia.Automation.AutomationProperties.SetName(alertToggle, $"Alerts: {alertName.ToLowerInvariant()}");
+            var alertToggle = new ToggleSwitch { OnContent = Strings.T(alertName), OffContent = Strings.T(alertName), IsChecked = enabled };
+            Avalonia.Automation.AutomationProperties.SetName(alertToggle, Strings.Format("Alerts: {0}", alertName.ToLowerInvariant()));
             alertToggle.IsCheckedChanged += (_, _) =>
             {
                 var on = alertToggle.IsChecked == true;
@@ -228,7 +246,7 @@ public sealed partial class MainWindow
             side.Children.Add(alertToggle);
         }
         var themes = new WrapPanel();
-        foreach (var (value, icon, label) in new[] { ("light", "sun", "Light"), ("dark", "moon", "Dark") })
+        foreach (var (value, icon, label) in new[] { ("light", "sun", Strings.T("Light")), ("dark", "moon", Strings.T("Dark")) })
         {
             var chip = Look.Chip(label, icon, Palette.Accent, Palette.AccentSoft, Prefs.Theme == value);
             chip.Click += (_, _) => { if (Prefs.Theme == value) { chip.IsChecked = true; return; } Prefs.Save(theme: value); App.Restyle(this); };
@@ -236,7 +254,7 @@ public sealed partial class MainWindow
         }
         side.Children.Add(themes);
         // The main colour of buttons, chips, the open project and links.
-        side.Children.Add(Explain("Main colour"));
+        side.Children.Add(Explain(Strings.T("Main colour")));
         var accents = new WrapPanel();
         foreach (var (key, label, darkShade, lightShade) in Palette.Accents)
         {
@@ -249,7 +267,7 @@ public sealed partial class MainWindow
         side.Children.Add(accents);
         if (Palette.Dark)
         {
-            side.Children.Add(Explain("Text colour"));
+            side.Children.Add(Explain(Strings.T("Text colour")));
             var inks = new WrapPanel();
             foreach (var (key, label, colour) in Palette.Inks)
             {
@@ -264,50 +282,50 @@ public sealed partial class MainWindow
 
         if (skills is JsonArray programs && programs.Count > 0)
         {
-            side.Children.Add(SettingsHead("Skills and instructions"));
-            side.Children.Add(Explain("Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them."));
+            side.Children.Add(SettingsHead(Strings.T("Skills and instructions")));
+            side.Children.Add(Explain(Strings.T("Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them.")));
             foreach (var program in programs.OfType<JsonObject>())
             {
                 var list = (program["skills"] as JsonArray ?? []).OfType<JsonObject>().ToList();
                 var content = new StackPanel { Spacing = 4 };
-                if (list.Count == 0) content.Children.Add(Explain(Str(program["skillsFolder"]).Length > 0 ? "No skills yet." : "No skills folder for this program."));
+                if (list.Count == 0) content.Children.Add(Explain(Str(program["skillsFolder"]).Length > 0 ? Strings.T("No skills yet.") : Strings.T("No skills folder for this program.")));
                 foreach (var skill in list)
                 {
                     var source = Str(skill["source"]);
-                    content.Children.Add(Line(Str(skill["name"]) + (source.Length > 0 && source != "yours" ? $" ({source})" : ""), Palette.Text, 13, FontWeight.SemiBold));
+                    content.Children.Add(Line(Str(skill["name"]) + (source.Length > 0 && source != "yours" ? $" ({Strings.T(source)})" : ""), Palette.Text, 13, FontWeight.SemiBold));
                     if (Str(skill["description"]).Length > 0) content.Children.Add(Explain(Str(skill["description"])));
                 }
                 var cli = Str(program["cli"]);
                 var open = new WrapPanel();
-                foreach (var (what, label, show) in new[] { ("skills", "Open skills folder", Str(program["skillsFolder"]).Length > 0), ("instructions", "Edit instructions", Str(program["instructions"]).Length > 0), ("settings", "Open settings file", Flag(program["settingsExist"])) })
+                foreach (var (what, label, show) in new[] { ("skills", Strings.T("Open skills folder"), Str(program["skillsFolder"]).Length > 0), ("instructions", Strings.T("Edit instructions"), Str(program["instructions"]).Length > 0), ("settings", Strings.T("Open settings file"), Flag(program["settingsExist"])) })
                 {
                     if (!show) continue;
                     var button = Small(label);
                     button.Margin = new Thickness(0, 4, 8, 0);
-                    button.Click += async (_, _) => await DoAsync(async () => { var result = await api!.OpenSkillsAsync(cli, what); hint.Text = "Opened " + Str(result?["path"]); }, "Opened.");
+                    button.Click += async (_, _) => await DoAsync(async () => { var result = await api!.OpenSkillsAsync(cli, what); hint.Text = Strings.T("Opened ") + Str(result?["path"]); }, Strings.T("Opened."));
                     open.Children.Add(button);
                 }
                 content.Children.Add(open);
-                var fold = Fold($"{Str(program["label"])} · {list.Count} skill{(list.Count == 1 ? "" : "s")}", content);
+                var fold = Fold(Strings.Format(list.Count == 1 ? "{0} · {1} skill" : "{0} · {1} skills", Str(program["label"]), list.Count), content);
                 fold.IsExpanded = false;
                 side.Children.Add(fold);
             }
-            var again = Small("Read again");
+            var again = Small(Strings.T("Read again"));
             again.Click += async (_, _) => await LoadSettingsAsync();
             side.Children.Add(again);
         }
 
-        side.Children.Add(SettingsHead("Move a project"));
-        side.Children.Add(Explain("Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points."));
+        side.Children.Add(SettingsHead(Strings.T("Move a project")));
+        side.Children.Add(Explain(Strings.T("Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.")));
         var move = new WrapPanel();
         if (row != null)
         {
-            var export = Small($"Save {name} to a file");
+            var export = Small(Strings.Format("Save {0} to a file", name));
             export.Margin = new Thickness(0, 0, 8, 6);
             export.Click += async (_, _) => await ExportAsync(Str(row["id"]), name);
             move.Children.Add(export);
         }
-        var import = Small("Open a project file");
+        var import = Small(Strings.T("Open a project file"));
         import.Margin = new Thickness(0, 0, 8, 6);
         import.Click += async (_, _) => await ImportAsync();
         move.Children.Add(import);
@@ -318,57 +336,57 @@ public sealed partial class MainWindow
 
         if (row != null)
         {
-            side.Children.Add(SettingsHead("Start over"));
-            side.Children.Add(Explain($"Clears the chat, plan and run history of {name} so you can begin again. The folder, its files, the GitHub link and the team stay. Nothing is deleted: the old history is kept in Planwharf's archive."));
-            var startOver = Small("Start over");
-            startOver.Click += async (_, _) => { if (await Confirm($"Start {name} over?", "Yes, start over")) await DoAsync(() => api!.StartOverAsync(projectId!), $"{name} starts over. Tell the lead what to build."); };
+            side.Children.Add(SettingsHead(Strings.T("Start over")));
+            side.Children.Add(Explain(Strings.Format("Clears the chat, plan and run history of {0} so you can begin again. The folder, its files, the GitHub link and the team stay. Nothing is deleted: the old history is kept in Planwharf\u0027s archive.", name)));
+            var startOver = Small(Strings.T("Start over"));
+            startOver.Click += async (_, _) => { if (await Confirm(Strings.Format("Start {0} over?", name), Strings.T("Yes, start over"))) await DoAsync(() => api!.StartOverAsync(projectId!), Strings.Format("{0} starts over. Tell the lead what to build.", name)); };
             side.Children.Add(startOver);
-            side.Children.Add(SettingsHead("Remove project"));
-            side.Children.Add(Explain($"Removes {name} from Planwharf. The folder and its files stay on your computer."));
-            var remove = Small("Remove project", danger: true);
+            side.Children.Add(SettingsHead(Strings.T("Remove project")));
+            side.Children.Add(Explain(Strings.Format("Removes {0} from Planwharf. The folder and its files stay on your computer.", name)));
+            var remove = Small(Strings.T("Remove project"), danger: true);
             remove.Click += async (_, _) =>
             {
-                if (!await Confirm($"Remove {name} from Planwharf? The folder and its files stay on your computer.", "Yes, remove it")) return;
-                await DoAsync(async () => { await api!.RemoveProjectAsync(projectId!); projectId = null; listSig = null; }, $"{name} removed. Its folder is untouched.");
+                if (!await Confirm(Strings.Format("Remove {0} from Planwharf? The folder and its files stay on your computer.", name), Strings.T("Yes, remove it"))) return;
+                await DoAsync(async () => { await api!.RemoveProjectAsync(projectId!); projectId = null; listSig = null; }, Strings.Format("{0} removed. Its folder is untouched.", name));
             };
             side.Children.Add(remove);
         }
 
-        side.Children.Add(SettingsHead("Quit"));
-        side.Children.Add(Explain("Unfinished work is saved and can be resumed next time."));
-        var quit = Small("Quit Planwharf");
-        quit.Click += async (_, _) => { if (await Confirm("Quit Planwharf now? Unfinished work is saved.", "Yes, quit now")) Close(); };
+        side.Children.Add(SettingsHead(Strings.T("Quit")));
+        side.Children.Add(Explain(Strings.T("Unfinished work is saved and can be resumed next time.")));
+        var quit = Small(Strings.T("Quit Planwharf"));
+        quit.Click += async (_, _) => { if (await Confirm(Strings.T("Quit Planwharf now? Unfinished work is saved."), Strings.T("Yes, quit now"))) Close(); };
         side.Children.Add(quit);
-        side.Children.Add(Explain($"Planwharf {version}, native app."));
+        side.Children.Add(Explain(Strings.Format("Planwharf {0}, native app.", version)));
     }
 
     void UpdatesSection()
     {
-        side.Children.Add(SettingsHead("Updates"));
-        var check = Small("Check again");
+        side.Children.Add(SettingsHead(Strings.T("Updates")));
+        var check = Small(Strings.T("Check again"));
         check.Click += async (_, _) => { updates = new JsonObject { ["state"] = "checking" }; sideSig = null; Render(); await LoadSettingsAsync(checkUpdates: true); };
         var state = Str(updates?["state"]);
         var busy = state is "downloading" or "checkpointing" or "restarting" or "checking";
-        var line = updates == null ? "" : busy ? state switch { "downloading" => "Downloading the update…", "checkpointing" => "Saving unfinished work…", "restarting" => "Restarting…", _ => "Checking…" }
+        var line = updates == null ? "" : busy ? state switch { "downloading" => Strings.T("Downloading the update\u2026"), "checkpointing" => Strings.T("Saving unfinished work\u2026"), "restarting" => Strings.T("Restarting\u2026"), _ => Strings.T("Checking\u2026") }
             : state == "error" ? Flag(updates["updateFailed"])
-                ? (Str(updates["reason"]) is { Length: > 0 } why ? why : "The update stopped. Nothing was changed.")
-                : "Could not check: " + (Str(updates["reason"]) is { Length: > 0 } reason ? reason : "unknown error")
-            : Flag(updates["available"]) ? $"Planwharf {Str(updates["latestVersion"])} is available{(Str(updates["currentVersion"]) is { Length: > 0 } current ? $" (you have {current})" : "")}."
-            : Str(updates["currentVersion"]) is { Length: > 0 } now && state != "unchecked" ? $"Planwharf {now} is up to date." : "";
+                ? (Str(updates["reason"]) is { Length: > 0 } why ? why : Strings.T("The update stopped. Nothing was changed."))
+                : Strings.T("Could not check: ") + (Str(updates["reason"]) is { Length: > 0 } reason ? reason : Strings.T("unknown error"))
+            : Flag(updates["available"]) ? Strings.Format("Planwharf {0} is available{1}.", Str(updates["latestVersion"]), (Str(updates["currentVersion"]) is { Length: > 0 } current ? Strings.Format(" (you have {0})", current) : ""))
+            : Str(updates["currentVersion"]) is { Length: > 0 } now && state != "unchecked" ? Strings.Format("Planwharf {0} is up to date.", now) : "";
         if (line.Length > 0) side.Children.Add(Explain(line));
         check.IsEnabled = !busy;
-        if (updates == null || state == "unchecked") check.Content = "Check for updates";
+        if (updates == null || state == "unchecked") check.Content = Strings.T("Check for updates");
         var buttons = Row(check);
         // A newer release is installed from its checked zip. The release page stays as a way to download it by hand.
         if (Flag(updates?["available"]))
         {
-            var update = Small("Update now", primary: true);
+            var update = Small(Strings.T("Update now"), primary: true);
             update.IsEnabled = api != null && !busy;
             update.Click += async (_, _) => await UpdateNowAsync();
             buttons.Children.Insert(0, update);
             if (Str(updates?["releaseUrl"]) is { Length: > 0 } url)
             {
-                var page = Small("Release page");
+                var page = Small(Strings.T("Release page"));
                 page.IsEnabled = !busy;
                 page.Click += async (_, _) => await OpenLink(url);
                 buttons.Children.Add(page);
@@ -379,35 +397,35 @@ public sealed partial class MainWindow
 
     void PhoneSection()
     {
-        side.Children.Add(SettingsHead("Phone"));
-        side.Children.Add(Explain("Alerts on your phone when work finishes or needs you, and short Telegram commands."));
+        side.Children.Add(SettingsHead(Strings.T("Phone")));
+        side.Children.Add(Explain(Strings.T("Alerts on your phone when work finishes or needs you, and short Telegram commands.")));
 
         var ntfyEnabled = Flag(phone?["ntfy"]?["enabled"]);
-        var ntfyToggle = new ToggleSwitch { OnContent = "ntfy alerts", OffContent = "ntfy alerts", IsChecked = ntfyEnabled };
-        var ntfyTopicBox = Look.Field(new TextBox { Text = Str(phone?["ntfy"]?["topic"]), Watermark = "Topic name, e.g. pw-my-alerts" });
+        var ntfyToggle = new ToggleSwitch { OnContent = Strings.T("ntfy alerts"), OffContent = Strings.T("ntfy alerts"), IsChecked = ntfyEnabled };
+        var ntfyTopicBox = Look.Field(new TextBox { Text = Str(phone?["ntfy"]?["topic"]), Watermark = Strings.T("Topic name, e.g. pw-my-alerts") });
         side.Children.Add(ntfyToggle);
-        side.Children.Add(Explain("ntfy (no account): pick a private topic name, then install the ntfy app and subscribe to it."));
+        side.Children.Add(Explain(Strings.T("ntfy (no account): pick a private topic name, then install the ntfy app and subscribe to it.")));
         side.Children.Add(ntfyTopicBox);
 
         var tgEnabled = Flag(phone?["telegram"]?["enabled"]);
-        var tgToggle = new ToggleSwitch { OnContent = "Telegram bot", OffContent = "Telegram bot", IsChecked = tgEnabled };
+        var tgToggle = new ToggleSwitch { OnContent = Strings.T("Telegram bot"), OffContent = Strings.T("Telegram bot"), IsChecked = tgEnabled };
         side.Children.Add(tgToggle);
-        side.Children.Add(Explain("Create a bot with @BotFather and paste its token here."));
-        var tokenBox = Look.Field(new TextBox { Watermark = Flag(phone?["telegram"]?["tokenConfigured"]) ? $"Token saved ({Str(phone?["telegram"]?["tokenPreview"])}). Paste new token to replace." : "Bot token from @BotFather" });
+        side.Children.Add(Explain(Strings.T("Create a bot with @BotFather and paste its token here.")));
+        var tokenBox = Look.Field(new TextBox { Watermark = Flag(phone?["telegram"]?["tokenConfigured"]) ? Strings.Format("Token saved ({0}). Paste new token to replace.", Str(phone?["telegram"]?["tokenPreview"])) : Strings.T("Bot token from @BotFather") });
         side.Children.Add(tokenBox);
 
         var paired = Flag(phone?["telegram"]?["paired"]);
         if (paired)
         {
             var who = Str(phone?["telegram"]?["pairedUsername"]) is { Length: > 0 } u ? $" (@{u})" : "";
-            side.Children.Add(Explain($"Connected to chat {Str(phone?["telegram"]?["pairedChatId"])}{who}. Responds to /status, /stop <project>, /resume <project>."));
-            var unpairBtn = Small("Unpair");
+            side.Children.Add(Explain(Strings.Format("Connected to chat {0}{1}. Responds to /status, /stop \u003Cproject\u003E, /resume \u003Cproject\u003E.", Str(phone?["telegram"]?["pairedChatId"]), who)));
+            var unpairBtn = Small(Strings.T("Unpair"));
             unpairBtn.Click += async (_, _) =>
             {
                 await DoAsync(async () => {
                     phone = await api!.SetPhoneSettingsAsync(new { telegram = new { unpair = true } });
                     sideSig = null; Render();
-                }, "Telegram unpaired.");
+                }, Strings.T("Telegram unpaired."));
             };
             side.Children.Add(unpairBtn);
         }
@@ -416,20 +434,20 @@ public sealed partial class MainWindow
             var code = Str(phone?["telegram"]?["startCode"]);
             if (code.Length > 0)
             {
-                side.Children.Add(Explain($"Open your bot in Telegram and send this code to connect:\n{code}"));
-                var newCodeBtn = Small("New code");
+                side.Children.Add(Explain(Strings.Format("Open your bot in Telegram and send this code to connect:\n{0}", code)));
+                var newCodeBtn = Small(Strings.T("New code"));
                 newCodeBtn.Click += async (_, _) =>
                 {
                     await DoAsync(async () => {
                         phone = await api!.SetPhoneSettingsAsync(new { telegram = new { resetStartCode = true } });
                         sideSig = null; Render();
-                    }, "New start code generated.");
+                    }, Strings.T("New start code generated."));
                 };
                 side.Children.Add(newCodeBtn);
             }
         }
 
-        var saveBtn = Small("Save Phone settings", primary: true);
+        var saveBtn = Small(Strings.T("Save Phone settings"), primary: true);
         saveBtn.Click += async (_, _) =>
         {
             var topic = ntfyTopicBox.Text?.Trim() ?? "";
@@ -453,19 +471,19 @@ public sealed partial class MainWindow
             await DoAsync(async () => {
                 phone = await api!.SetPhoneSettingsAsync(patch);
                 sideSig = null; Render();
-            }, "Phone settings saved.");
+            }, Strings.T("Phone settings saved."));
         };
 
-        var testBtn = Small("Send test alert");
+        var testBtn = Small(Strings.T("Send test alert"));
         testBtn.Click += async (_, _) =>
         {
             await DoAsync(async () => {
                 var sent = await api!.TestPhoneAlertAsync();
                 var ntfy = sent?["result"]?["ntfy"];
                 var telegram = sent?["result"]?["telegram"];
-                if (ntfy == null && telegram == null) throw new InvalidOperationException("Turn on a phone channel and save it before sending a test.");
-                if ((ntfy != null && !Flag(ntfy["ok"])) || (telegram != null && !Flag(telegram["ok"]))) throw new InvalidOperationException("The test alert could not be delivered.");
-            }, "Test alert sent.");
+                if (ntfy == null && telegram == null) throw new InvalidOperationException(Strings.T("Turn on a phone channel and save it before sending a test."));
+                if ((ntfy != null && !Flag(ntfy["ok"])) || (telegram != null && !Flag(telegram["ok"]))) throw new InvalidOperationException(Strings.T("The test alert could not be delivered."));
+            }, Strings.T("Test alert sent."));
         };
 
         side.Children.Add(Row(saveBtn, testBtn));
@@ -480,7 +498,7 @@ public sealed partial class MainWindow
         {
             if (!NativeUpdater.MayUpdate(NativeUpdater.StepIsRunning(snapshot), confirmed: false))
             {
-                if (!await Confirm("A step is still running. Planwharf will save that work, then update. After it restarts, press Resume.", "Save and update")) return;
+                if (!await Confirm(Strings.T("A step is still running. Planwharf will save that work, then update. After it restarts, press Resume."), Strings.T("Save and update"))) return;
             }
             ShowUpdate("downloading");
             await NativeUpdater.RunAsync(NativeUpdater.SharedHttp, NativeUpdater.InstallFolder, version, snapshot, confirmed: true, async ids =>
@@ -530,8 +548,8 @@ public sealed partial class MainWindow
         {
             var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                Title = $"Save {name}", SuggestedFileName = System.Text.RegularExpressions.Regex.Replace(name, @"[^\w.-]+", "-") + "-planwharf.json", DefaultExtension = "json",
-                FileTypeChoices = [new FilePickerFileType("Planwharf project") { Patterns = ["*.json"] }]
+                Title = Strings.Format("Save {0}", name), SuggestedFileName = System.Text.RegularExpressions.Regex.Replace(name, @"[^\w.-]+", "-") + "-planwharf.json", DefaultExtension = "json",
+                FileTypeChoices = [new FilePickerFileType(Strings.T("Planwharf project")) { Patterns = ["*.json"] }]
             });
             if (file == null) return;
             var json = await api.ExportProjectAsync(id);
@@ -539,7 +557,7 @@ public sealed partial class MainWindow
             stream.SetLength(0);
             await using var writer = new StreamWriter(stream);
             await writer.WriteAsync(json);
-            hint.Text = $"{name} saved to {file.Name}."; hint.Foreground = Palette.Accent;
+            hint.Text = Strings.Format("{0} saved to {1}.", name, file.Name); hint.Foreground = Palette.Accent;
         }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
     }
@@ -549,14 +567,14 @@ public sealed partial class MainWindow
         if (api == null) return;
         try
         {
-            var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Open a project file", AllowMultiple = false, FileTypeFilter = [new FilePickerFileType("Planwharf project") { Patterns = ["*.json"] }] });
+            var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions { Title = Strings.T("Open a project file"), AllowMultiple = false, FileTypeFilter = [new FilePickerFileType(Strings.T("Planwharf project")) { Patterns = ["*.json"] }] });
             if (picked.FirstOrDefault() is not { } file) return;
-            if ((await file.GetBasicPropertiesAsync()).Size > 4 * 1024 * 1024) throw new InvalidOperationException("This file is larger than 4 MB.");
+            if ((await file.GetBasicPropertiesAsync()).Size > 4 * 1024 * 1024) throw new InvalidOperationException(Strings.T("This file is larger than 4 MB."));
             await using var stream = await file.OpenReadAsync();
             var (id, resume) = await api.ImportProjectAsync(await new StreamReader(stream).ReadToEndAsync());
             if (id != null) projectId = id;
             listSig = threadSig = sideSig = null;
-            hint.Text = resume ? "Project opened. Check its folder in Settings, then press Resume." : "Project opened. Check its folder in Settings."; hint.Foreground = Palette.Accent;
+            hint.Text = resume ? Strings.T("Project opened. Check its folder in Settings, then press Resume.") : Strings.T("Project opened. Check its folder in Settings."); hint.Foreground = Palette.Accent;
             await RefreshAsync(readOnly: false);
         }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }

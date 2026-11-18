@@ -1818,7 +1818,9 @@ function createOrchestrator(options) {
           return next;
         }
       }
-      if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
+      // The chosen lead stays the lead. A signed-out or expired plan is said in Team; it does not
+      // erase the choice, or a machine with no login (the checks) would have no lead at all.
+      if (picked && canOrchestrate(picked)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
       // A lead whose provider just refused work (credits, quota) hands over to another provider.
@@ -3290,9 +3292,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         };
         try {
           invokedLead = lead;
-          const spoken = await opts.askModel({
+          const askThis = model => opts.askModel({
             question: q,
-            model: lead,
+            model,
             ...(grillKind ? { grillKind, allowActions: false } : {}),
             projectId: (row && row.id) || fallback.projectId,
             folder: linkedWorkspace(row && row.folder),
@@ -3312,6 +3314,22 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
               };
             }
           });
+          let spoken = await askThis(lead);
+          // Only a dead CLI retries. A protocol change or an unrecognized model is a real answer
+          // about the provider: it is classified and kept, never replaced.
+          const died = spoken => spoken?.failure === 'process';
+          if (died(spoken) && askCurrent(token)) {
+            note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
+            spoken = await askThis(lead);
+          }
+          if (died(spoken) && askCurrent(token)) {
+            const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+            if (next) {
+              switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
+              invokedLead = next;
+              spoken = await askThis(next);
+            }
+          }
           const unpacked = spoken && typeof spoken === 'object' && !Array.isArray(spoken)
             ? {
               answer: typeof spoken.answer === 'string' ? spoken.answer.trim() : '',

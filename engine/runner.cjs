@@ -495,20 +495,27 @@ function askOrchestrator(info) {
         });
       } catch (_) {}
     };
+    // A thinking lead is slow on a cold start. Kill it after silence, not after a fixed
+    // three minutes: the first Antigravity Opus turn was cut at 181s while still writing.
+    const silenceMs = cwd ? 180000 : 90000;
+    const hardMs = cwd ? 900000 : 300000;
+    const killLead = () => { try { child.kill(); } catch (_) {} };
+    const hardKill = setTimeout(killLead, hardMs);
+    let timer = setTimeout(killLead, silenceMs);
+    const bump = () => { clearTimeout(timer); timer = setTimeout(killLead, silenceMs); };
     child.stdout.on('data', chunk => {
       stream.push(chunk);
+      bump();
       tick();
     });
-    child.stderr.on('data', chunk => { stderr = (stderr + chunk).slice(-4000); });
-    const timer = setTimeout(() => {
-      try { child.kill(); } catch (_) {}
-    }, cwd ? 180000 : 90000);
+    child.stderr.on('data', chunk => { stderr = (stderr + chunk).slice(-4000); bump(); });
     const done = errorOrCode => {
       if (settled) return;
       settled = true;
       if (askChildren.get(askKeyOf(info)) === child) askChildren.delete(askKeyOf(info));
       if (supervisorChild === child) supervisorChild = null;
       clearTimeout(timer);
+      clearTimeout(hardKill);
       const out = stream.finish();
       if (out.failure) out.answer = `${spec.provider} CLI failed (${out.failure}): ${out.error}${out.answer ? '\n\nPartial response:\n' + out.answer : ''}`;
       if (!out.answer && (errorOrCode || stderr)) out.answer = `${spec.provider} CLI failed: ${stderr.trim() || String(errorOrCode)}`;

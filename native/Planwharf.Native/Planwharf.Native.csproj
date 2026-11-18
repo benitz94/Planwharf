@@ -10,8 +10,11 @@
     <Version>0.0.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Planwharf.Engine/Planwharf.Engine.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Planwharf.Native.Tests" />
   </ItemGroup>

@@ -59,12 +59,80 @@ function formatDuration(minutes) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft }) {
+const ALERT_LABELS = {
+  done: 'Done ✅',
+  failed: 'Failed ❌',
+  needs_owner: 'Needs your attention 🔔',
+  stopped: 'Stopped ⏹',
+  started: 'Started ▶️',
+  resumed: 'Resumed ▶️',
+  blocked: 'Blocked ⚠️',
+  verify: 'Verify started 🔎',
+  switched: 'Switched model 🔁',
+  restarted: 'Step restarted 🔁'
+};
+
+const STATE_EMOJI = {
+  Working: '🟢', Done: '✅', Failed: '❌', Stopped: '⏹', 'Waiting on you': '🔔', 'Blocked (no usage)': '⚠️', Idle: '⚪'
+};
+
+function statusEmoji(state) {
+  return STATE_EMOJI[state] || '•';
+}
+
+function mainKeyboard() {
+  return { keyboard: [[{ text: '📊 Status' }, { text: '⏹ Stop' }, { text: '▶️ Resume' }]], resize_keyboard: true, is_persistent: true };
+}
+
+function statusKeyboard(projects = []) {
+  const rows = [];
+  for (const p of projects) {
+    if (!p || p.id == null || p.id === '') continue;
+    const name = sanitizeText(p.name || p.id).slice(0, 24);
+    const id = String(p.id);
+    if (id.length > 48) continue;
+    if (p.status === 'watching') rows.push([{ text: `⏹ Stop ${name}`, callback_data: `stop:${id}` }]);
+    else if (p.status === 'checkpointed' || p.status === 'failed') rows.push([{ text: `▶️ Resume ${name}`, callback_data: `resume:${id}` }]);
+  }
+  rows.push([{ text: '🔄 Refresh', callback_data: 'status' }]);
+  return { inline_keyboard: rows };
+}
+
+function alertForStatus(prev, curr) {
+  if (!prev || prev === curr) return null;
+  if (curr === 'complete') return 'done';
+  if (curr === 'failed') return 'failed';
+  if (curr === 'checkpointed') return 'stopped';
+  if (curr === 'watching') return prev === 'checkpointed' || prev === 'failed' ? 'resumed' : 'started';
+  if (curr === 'waiting_on_you') return 'needs_owner';
+  if (curr === 'blocked_no_worker' || curr === 'blocked_no_folder') return 'blocked';
+  return null;
+}
+
+function runningStep(project) {
+  const parts = Array.isArray(project?.dispatch) ? project.dispatch : [];
+  const part = parts.find(item => item && (item.recordedSubTaskStatus === 'RUNNING' || item.alive));
+  if (!part) return null;
+  const title = String(part.slice || part.title || '');
+  return {
+    role: /verify/i.test(title) ? 'Verify' : 'Build',
+    model: String(part.label || part.modelId || ''),
+    attempt: String(part.attemptId || '')
+  };
+}
+
+function alertForStep(prev, curr) {
+  if (!prev || !curr) return null;
+  if (prev.role !== 'Verify' && curr.role === 'Verify') return 'verify';
+  if (prev.model && curr.model && prev.model !== curr.model) return 'switched';
+  if (prev.attempt && curr.attempt && prev.attempt !== curr.attempt) return 'restarted';
+  return null;
+}
+
+function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail }) {
   const safeProject = sanitizeText(projectName) || 'Project';
   const safeGoal = sanitizeGoalTitle(goalTitle);
-  let statusLabel = 'Done';
-  if (type === 'failed') statusLabel = 'Failed';
-  else if (type === 'needs_owner') statusLabel = 'Needs your attention';
+  let statusLabel = ALERT_LABELS[type] || 'Updated';
 
   let msg = `Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`;
 
@@ -82,6 +150,7 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
     }
     if (timeText) msg += `\nEstimate: ${timeText}`;
   }
+  if (detail) msg += `\n${sanitizeText(detail)}`;
 
   return msg;
 }
@@ -224,7 +293,7 @@ async function sendNtfyAlert({ topic, serverUrl = 'https://ntfy.sh', message, ti
   }
 }
 
-async function sendTelegramMessage({ token, chatId, text, apiBaseUrl = 'https://api.telegram.org', fetchImpl = globalThis.fetch }) {
+async function sendTelegramMessage({ token, chatId, text, replyMarkup, apiBaseUrl = 'https://api.telegram.org', fetchImpl = globalThis.fetch }) {
   if (!token) return { ok: false, reason: 'Bot token is missing.' };
   if (!chatId) return { ok: false, reason: 'Chat ID is missing.' };
 
@@ -233,7 +302,7 @@ async function sendTelegramMessage({ token, chatId, text, apiBaseUrl = 'https://
     const res = await fetchImpl(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text })
+      body: JSON.stringify({ chat_id: chatId, text, reply_markup: replyMarkup || mainKeyboard() })
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || (data && !data.ok)) {
@@ -265,7 +334,7 @@ function formatStatusMessage(projects = []) {
   if (!projects || projects.length === 0) {
     return 'Planwharf: No projects.';
   }
-  const lines = ['Planwharf Projects:'];
+  const lines = ['📋 Planwharf Projects:'];
   for (const p of projects) {
     const name = sanitizeText(p.name || p.id || 'Project');
     let state = 'Idle';
@@ -286,7 +355,7 @@ function formatStatusMessage(projects = []) {
         details += ` · ~${p.timeLeft.minutes}m left`;
       }
     }
-    lines.push(`• ${name}: ${state}${details}`);
+    lines.push(`${statusEmoji(state)} ${name}: ${state}${details}`);
   }
   return lines.join('\n');
 }
@@ -323,7 +392,8 @@ function createPhoneNotifier({
   let settings = loadPhoneSettings(storeDir);
   let telegramOffset = Number(settings.telegram.updateOffset) || 0;
   let pendingConfirmation = null; // { action: 'stop', projectId, projectName, expiresAt }
-  const projectStates = new Map(); // projectId -> status
+  const projectStates = new Map();
+  const stepStates = new Map(); // projectId -> status
   const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
   const confirmWindowMs = Number.isFinite(confirmWindowMsOption) && confirmWindowMsOption > 0 ? confirmWindowMsOption : 60000;
 
@@ -371,9 +441,9 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail }) {
     const fresh = loadPhoneSettings(storeDir);
-    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft });
+    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail });
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
@@ -430,26 +500,20 @@ function createPhoneNotifier({
       projectStates.set(p.id, curr);
 
       if (!prev) continue; // First observation establishes baseline
-      if (prev === curr) continue;
-
-      let alertType = null;
-      if (curr === 'complete' && prev === 'watching') {
-        alertType = 'done';
-      } else if (curr === 'failed' && prev === 'watching') {
-        alertType = 'failed';
-      } else if (['waiting_on_you', 'blocked_no_worker', 'blocked_no_folder', 'checkpointed'].includes(curr) && prev === 'watching') {
-        alertType = 'needs_owner';
-      }
-
-      if (alertType) {
-        await sendAlert({
-          type: alertType,
-          projectId: p.id,
-          projectName: p.name,
-          goalTitle: p.goal || p.jobTitle,
-          timeLeft: p.timeLeft
-        });
-      }
+      const step = runningStep(p);
+      const prevStep = stepStates.get(p.id) || null;
+      stepStates.set(p.id, step);
+      const alertType = alertForStatus(prev, curr) || (curr === 'watching' ? alertForStep(prevStep, step) : null);
+      if (!alertType) continue;
+      const detail = alertType === 'switched' && step ? `Now: ${step.model}` : alertType === 'verify' ? 'A different model is checking the work.' : alertType === 'restarted' ? 'The same step started again.' : '';
+      await sendAlert({
+        type: alertType,
+        projectId: p.id,
+        projectName: p.name,
+        goalTitle: p.goal || p.jobTitle,
+        timeLeft: p.timeLeft,
+        detail
+      });
     }
   }
 
@@ -460,8 +524,17 @@ function createPhoneNotifier({
   async function handleTelegramMessage(msg) {
     if (!msg || !msg.chat || !msg.chat.id) return;
     const chatId = String(msg.chat.id);
-    const text = String(msg.text || '').trim();
-    if (!text) return;
+    const rawText = String(msg.text || '').trim();
+    const text = rawText === '📊 Status' ? '/status' : rawText === '⏹ Stop' ? '/stop' : rawText === '▶️ Resume' ? '/resume' : rawText;
+    if (!text) {
+      if (msg.document || msg.photo || msg.video || msg.voice || msg.audio || msg.sticker) {
+        const fresh = loadPhoneSettings(storeDir);
+        if (fresh.telegramToken && String(fresh.telegram.pairedChatId) === chatId) {
+          await sendTelegramMessage({ token: fresh.telegramToken, chatId, text: '📎 Attachments are not accepted. Use the buttons.', apiBaseUrl, fetchImpl });
+        }
+      }
+      return;
+    }
 
     const fresh = loadPhoneSettings(storeDir);
     const token = fresh.telegramToken;
@@ -564,7 +637,7 @@ function createPhoneNotifier({
 
     if (command === '/status' || command.startsWith('/status ')) {
       const statusText = formatStatusMessage(projects);
-      await sendTelegramMessage({ token, chatId, text: statusText, apiBaseUrl, fetchImpl });
+      await sendTelegramMessage({ token, chatId, text: statusText, replyMarkup: statusKeyboard(projects), apiBaseUrl, fetchImpl });
       return;
     }
 
@@ -589,7 +662,8 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: `Stop the crew for "${sanitizeText(matched.name || matched.id)}"? Reply "yes" to confirm.`,
+        text: `⏹ Stop the crew for "${sanitizeText(matched.name || matched.id)}"? Reply "yes" to confirm.`,
+        replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${matched.id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
         apiBaseUrl,
         fetchImpl
       });
@@ -635,7 +709,8 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: 'Planwharf Commands:\n/status - View projects and progress\n/stop <project> - Stop crew (asks confirmation)\n/resume <project> - Resume crew',
+        text: '📋 Planwharf\nUse the buttons, or:\n/status — projects\n/stop <project> — stop (asks confirmation)\n/resume <project> — resume',
+        replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
       });
@@ -650,6 +725,51 @@ function createPhoneNotifier({
       apiBaseUrl,
       fetchImpl
     });
+  }
+
+  async function answerCallback(token, id, text) {
+    try {
+      await fetchImpl(`${apiBaseUrl.replace(/\/+$/, '')}/bot${token}/answerCallbackQuery`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: id, text: text || '' })
+      });
+    } catch { /* a missed acknowledgement only leaves the button spinning */ }
+  }
+
+  async function handleCallback(query) {
+    if (!query || !query.message || !query.message.chat) return;
+    const chatId = String(query.message.chat.id);
+    const fresh = loadPhoneSettings(storeDir);
+    if (!fresh.telegramToken || chatId !== String(fresh.telegram.pairedChatId)) {
+      if (fresh.telegramToken && query.id) await answerCallback(fresh.telegramToken, query.id, '');
+      return;
+    }
+    const data = String(query.data || '');
+    const token = fresh.telegramToken;
+    if (query.id) await answerCallback(token, query.id, '');
+    if (data === 'status' || data === 'cancel') {
+      if (data === 'cancel') pendingConfirmation = null;
+      await handleTelegramMessage({ chat: { id: chatId }, text: '/status' });
+      return;
+    }
+    const [verb, id] = data.split(':');
+    if (!id) return;
+    if (verb === 'stop') {
+      pendingConfirmation = { action: 'stop', projectId: id, projectName: id, expiresAt: Date.now() + confirmWindowMs };
+      await sendTelegramMessage({
+        token, chatId, text: '⏹ Stop this crew?',
+        replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
+        apiBaseUrl, fetchImpl
+      });
+      return;
+    }
+    if (verb === 'yes' && pendingConfirmation && pendingConfirmation.projectId === id) {
+      await handleTelegramMessage({ chat: { id: chatId }, text: 'yes' });
+      return;
+    }
+    if (verb === 'resume') {
+      await handleTelegramMessage({ chat: { id: chatId }, text: `/resume ${id}` });
+    }
   }
 
   async function pollUpdates() {
@@ -674,7 +794,8 @@ function createPhoneNotifier({
         const id = Number(u.update_id);
         if (!Number.isInteger(id) || id < telegramOffset) continue;
         rememberOffset(id + 1);
-        if (u.message) await handleTelegramMessage(u.message);
+        if (u.callback_query) await handleCallback(u.callback_query);
+        else if (u.message) await handleTelegramMessage(u.message);
       }
     }
   }
@@ -689,7 +810,7 @@ function createPhoneNotifier({
   };
 }
 
-module.exports = {
+module.exports = { alertForStatus, alertForStep,
   sanitizeText,
   sanitizeGoalTitle,
   formatDuration,

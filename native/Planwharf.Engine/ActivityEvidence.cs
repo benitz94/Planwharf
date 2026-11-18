@@ -172,7 +172,7 @@ public static class ActivityEvidence
         var adapter = TruthyNode(chosen) ? TryString(chosen) ?? "\0" : null;
         string[] knownAdapters = ["codex", "api", "antigravity", "grok", "claude"];
         var known = adapter is not null && knownAdapters.Contains(adapter);
-        if (!known) Warn("Adapter identity is unknown; protocol excerpts are not verified provider evidence.");
+        if (!known) Warn(Strings.T("Adapter identity is unknown; protocol excerpts are not verified provider evidence."));
 
         var rawBytes = Encoding.UTF8.GetBytes(tail ?? "");
         if (rawBytes.Length > LIMITS.TailBytes)
@@ -223,7 +223,7 @@ public static class ActivityEvidence
             {
                 FlushPlain();
                 truncated = true;
-                Warn("An oversized source record was omitted.");
+                Warn(Strings.T("An oversized source record was omitted."));
                 continue;
             }
 
@@ -244,12 +244,12 @@ public static class ActivityEvidence
                 if (parsedOk)
                 {
                     FlushPlain();
-                    Warn("Unknown structured evidence was omitted.");
+                    Warn(Strings.T("Unknown structured evidence was omitted."));
                 }
                 else if (StructuredHint.IsMatch(line))
                 {
                     FlushPlain();
-                    Warn("Malformed structured evidence was omitted.");
+                    Warn(Strings.T("Malformed structured evidence was omitted."));
                 }
                 else plain.Add(line);
                 continue;
@@ -271,7 +271,7 @@ public static class ActivityEvidence
             {
                 if (known && adapter != "codex" && adapter != "api")
                 {
-                    Warn("Evidence protocol does not match the configured adapter; record omitted.");
+                    Warn(Strings.T("Evidence protocol does not match the configured adapter; record omitted."));
                     continue;
                 }
 
@@ -299,7 +299,7 @@ public static class ActivityEvidence
 
                 if (adapter == "api")
                 {
-                    Warn("API bridge command field may contain only a tool name; arguments and output may be unavailable.");
+                    Warn(Strings.T("API bridge command field may contain only a tool name; arguments and output may be unavailable."));
                 }
             }
             else if (step is not null && step.TryGetPropertyValue("step_type", out var stNode) &&
@@ -308,7 +308,7 @@ public static class ActivityEvidence
             {
                 if (known && adapter != "antigravity")
                 {
-                    Warn("Evidence protocol does not match the configured adapter; record omitted.");
+                    Warn(Strings.T("Evidence protocol does not match the configured adapter; record omitted."));
                     continue;
                 }
 
@@ -335,7 +335,7 @@ public static class ActivityEvidence
                     if (command is not null) entry["command"] = Field(command, LIMITS.CommandBytes);
                 }
 
-                Warn("Antigravity excerpts contain retained tool command/state metadata only; detailed output is not verified.");
+                Warn(Strings.T("Antigravity excerpts contain retained tool command/state metadata only; detailed output is not verified."));
             }
             else if (adapter == "claude")
             {
@@ -360,7 +360,7 @@ public static class ActivityEvidence
                 var toolName = TryString(tool?["name"]);
                 if (tool is null || string.IsNullOrEmpty(toolName))
                 {
-                    Warn("Unsupported structured payload omitted; raw source content is not displayed.");
+                    Warn(Strings.T("Unsupported structured payload omitted; raw source content is not displayed."));
                     continue;
                 }
 
@@ -378,11 +378,11 @@ public static class ActivityEvidence
                     entry["command"] = Field(cmd, LIMITS.CommandBytes);
                 }
 
-                Warn("Claude Code excerpts contain retained tool metadata only; detailed output is not verified.");
+                Warn(Strings.T("Claude Code excerpts contain retained tool metadata only; detailed output is not verified."));
             }
             else
             {
-                Warn("Unsupported structured payload omitted; raw source content is not displayed.");
+                Warn(Strings.T("Unsupported structured payload omitted; raw source content is not displayed."));
                 continue;
             }
 
@@ -398,10 +398,10 @@ public static class ActivityEvidence
 
         FlushPlain();
 
-        if (truncated) Warn("Technical evidence is a bounded truncated excerpt, not the full source log.");
-        if (entries.Count == 0) Warn("No supported original technical evidence is retained for this assignment.");
-        Warn("Only the supplied retained assignment tail is available; earlier source records may be absent.");
-        Warn("Reported output and zero exit codes do not establish validated success.");
+        if (truncated) Warn(Strings.T("Technical evidence is a bounded truncated excerpt, not the full source log."));
+        if (entries.Count == 0) Warn(Strings.T("No supported original technical evidence is retained for this assignment."));
+        Warn(Strings.T("Only the supplied retained assignment tail is available; earlier source records may be absent."));
+        Warn(Strings.T("Reported output and zero exit codes do not establish validated success."));
 
         var entriesArr = new JsonArray();
         foreach (var e in entries) entriesArr.Add((JsonNode)e);
