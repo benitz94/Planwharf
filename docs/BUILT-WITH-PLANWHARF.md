@@ -43,6 +43,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 12 | #118 | Alerts and commands on the phone: ntfy, and a Telegram bot with /status, /stop, /resume | — |
 | 13 | #121 | The native logo follows the main colour; optionally keep the work plan in git | Existing unmarked ignore rules remain under the user's control |
 | 14 | #? | Reviewed the failing-test candidate; isolated Git line endings in the email rewrite fixture | Independent Grok 4.6 verification reproduced the origin/main CRLF failure, added error/recovery/concurrency coverage, and ran full engine CI |
+| 15 | #? | Parallel build parts run in isolated Git worktrees; part branches merge in order with conflict handoff and safe cleanup | Independent Grok Build verification pending |
 
 ## Improvements found while Planwharf worked on itself
 

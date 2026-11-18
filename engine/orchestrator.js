@@ -10,6 +10,7 @@ const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
 const { modelRouteError } = require('./model-routing.cjs');
 const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
+const worktrees = require('./worktrees.cjs');
 const { estimate: estimateTimeLeft } = require('./time-left.cjs');
 const { renameWithRetry } = require('./atomic-rename.cjs');
 const refusals = require('./provider-refusal.cjs');
@@ -1378,6 +1379,10 @@ function createOrchestrator(options) {
       note(projectId, prepared.reason);
       try { bridge.event(projectId, 'AUTONOMY', prepared.reason); } catch { /* the reason is returned to the chat */ }
       return prepared;
+    }
+    if (safeGitWorkspace(folder)) {
+      try { worktrees.git(folder, ['worktree', 'prune']); }
+      catch (error) { return { ok: false, reason: `Git worktree cleanup failed: ${error.message}` }; }
     }
     if (prepared.chat) {
       note(projectId, prepared.chat);
@@ -3859,7 +3864,13 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (!(item.tasks || []).some(task => task.status === 'running')) return { ok: false, reason: 'Nothing to reset on this project.' };
     if (store.autonomy[projectId]?.enabled) store.autonomy[projectId] = { enabled: false };
     const row = entry(projectId);
-    killDispatch(row);
+    try {
+      const mega = row.megaTaskId ? bridge.target(projectId, row.megaTaskId) : null;
+      if (mega?.status === 'RUNNING') bridge.stop(item, item.tasks.find(task => task.id === mega.taskId), mega.id);
+      else killDispatch(row);
+      if (mega) bridge.dropWork(item, mega.id);
+    }
+    catch (error) { return { ok: false, reason: error.message }; }
     const facts = item.project.folder ? inspect(item.project.folder) : null;
     try { releaseRunningJob(projectId, item, facts && !facts.error ? facts : row.facts); }
     catch (error) { return { ok: false, reason: error.message }; }

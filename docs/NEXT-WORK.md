@@ -53,7 +53,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 12 | Before the porting goes on | Alerts and commands on the phone (sheet below) | `feat/phone` | Done (#118) |
 | 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | Done, waiting for review |
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | Done, waiting for review |
-| 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | To do |
+| 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | Done, waiting for review |
 | 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
 | 17 | Before the porting goes on | The native app in English and Italian, with the language chosen in Settings (sheet below) | `feat/languages` | To do |
 | 18 | Protocol and pipeline | Planwharf's own MCP tools for workers: `ask`, `progress`, `finish` (checked at once), `decision`, `handoff`; the JSON file stays for programs without MCP. Write the sheet first, from [the design](DESIGN-PIPELINE.md), then stop for review | `feat/mcp-protocol` | To do |
