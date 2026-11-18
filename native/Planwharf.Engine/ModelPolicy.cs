@@ -127,6 +127,12 @@ public static class ModelPolicy
         };
     }
 
+    public static bool BlockedPlanStatus(JsonObject? plan)
+    {
+        var status = AsString(plan?["planStatus"]);
+        return status is "expired" or "not signed in";
+    }
+
     public static JsonObject UsagePolicy(JsonObject model, JsonArray? plans = null)
     {
         var policyNode = model.TryGetPropertyValue("policy", out var configured) && configured is not null ? configured : new JsonObject();
@@ -138,6 +144,24 @@ public static class ModelPolicy
         double? min = policy["minRemainingPercent"] is null ? null : Number(policy["minRemainingPercent"]!);
         double? warning = policy["warningRemainingPercent"] is null ? null : Number(policy["warningRemainingPercent"]!);
         if (policy["warningRemainingPercent"] is null && min is not null && min < 100) warning = Math.Min(100, min.Value + 10);
+        if (BlockedPlanStatus(plan))
+        {
+            var planStatus = AsString(plan!["planStatus"])!;
+            var poolName = AsString(JsOr(model, "quotaPoolId", "plan").Node) ?? "";
+            var planReason = AsString(plan["reason"]);
+            return new JsonObject
+            {
+                ["minRemainingPercent"] = policy["minRemainingPercent"]?.DeepClone(),
+                ["warningRemainingPercent"] = warning is null ? null : JsonNumber(warning.Value),
+                ["fallbackModelId"] = policy["fallbackModelId"]?.DeepClone(),
+                ["alwaysApprove"] = policy["alwaysApprove"]?.DeepClone(),
+                ["remainingPercent"] = left is null ? null : JsonNumber(left.Value),
+                ["usedPercent"] = usedPercent is null ? null : JsonNumber(usedPercent.Value),
+                ["blocked"] = true,
+                ["state"] = planStatus,
+                ["reason"] = planReason ?? $"{poolName} plan {planStatus}."
+            };
+        }
         var unread = left is null && min is not null;
         var reached = left is not null && min is not null && left <= min;
         var near = left is not null && warning is not null && left <= warning;
@@ -174,6 +198,13 @@ public static class ModelPolicy
         if (!obj.TryGetPropertyValue(second, out var secondary))
             return new JsOrValue { IsUndefined = true };
         return new JsOrValue { Node = secondary };
+    }
+
+    static JsOrValue JsOr(JsonObject obj, string first, string second, string third)
+    {
+        if (obj.TryGetPropertyValue(first, out var primary) && StructuredFinal.Truthy(primary))
+            return new JsOrValue { Node = primary };
+        return JsOr(obj, second, third);
     }
 
     static JsonObject? FindPlan(JsonArray? plans, JsOrValue pool, bool skipFalsy)
@@ -256,10 +287,38 @@ public static class ModelPolicy
             var exhausted = IsExhausted(current, plans);
             if (AsString(status["state"]) == "unread") return null;
             if (!Blocked(status) && !exhausted) return eligible(current) ? current : null;
+            var sameAccount = FindSameModelAnotherAccount(current, models, plans, eligible, seen);
+            if (sameAccount is not null) { current = sameAccount; continue; }
             var fallbackProvider = Field(current, "fallbackProviderId");
             if (AsString(fallbackProvider) == "@automatic") current = FindAutomatic(current, models, plans, eligible, seen);
             else if (StructuredFinal.Truthy(fallbackProvider)) current = FindProviderFallback(models, plans, eligible, seen, fallbackProvider!);
             else current = FindById(models, status["fallbackModelId"]);
+        }
+        return null;
+    }
+
+    static JsonObject? FindSameModelAnotherAccount(JsonObject current, JsonArray models, JsonArray plans, Func<JsonObject, bool> eligible, HashSet<string> seen)
+    {
+        var currentId = AsString(Field(current, "id"));
+        var currentCli = AsString(Field(current, "cli"));
+        var currentAccount = AsString(JsOr(current, "accountScope", "providerId", "provider").Node);
+        var currentCompany = AsString(JsOr(current, "companyId", "providerId", "provider").Node);
+        if (string.IsNullOrEmpty(currentCli) || string.IsNullOrEmpty(currentCompany)) return null;
+
+        foreach (var item in models)
+        {
+            if (item is not JsonObject other || seen.Contains(SeenKey(other)) || !EligibleModel(other, eligible)) continue;
+            var otherId = AsString(Field(other, "id"));
+            if (string.Equals(otherId, currentId, StringComparison.Ordinal)) continue;
+            var otherCli = AsString(Field(other, "cli"));
+            if (!string.Equals(otherCli, currentCli, StringComparison.Ordinal)) continue;
+            var otherCompany = AsString(JsOr(other, "companyId", "providerId", "provider").Node);
+            if (!string.Equals(otherCompany, currentCompany, StringComparison.Ordinal)) continue;
+            var otherAccount = AsString(JsOr(other, "accountScope", "providerId", "provider").Node);
+            if (string.IsNullOrEmpty(currentAccount) || string.IsNullOrEmpty(otherAccount) || string.Equals(otherAccount, currentAccount, StringComparison.Ordinal)) continue;
+            var otherPlan = FindPlan(plans, JsOr(other, "quotaPoolId", "plan"), skipFalsy: false);
+            if (Blocked(UsagePolicy(other, plans)) || BlockedPlanStatus(otherPlan) || IsExhausted(other, plans)) continue;
+            return other;
         }
         return null;
     }
@@ -367,6 +426,7 @@ public static class ModelPolicy
     {
         plans ??= new JsonArray();
         var plan = FindPlan(plans, JsOr(model, "quotaPoolId", "plan"), skipFalsy: true);
+        if (BlockedPlanStatus(plan)) return true;
         if (plan is not null && IsTrue(plan, "readable") && StructuredFinal.Truthy(Field(plan, "exhausted"))) return true;
         if (AsString(UsagePolicy(model, plans)["state"]) == "limit") return true;
         var own = QuotaLimit(limitFor(model));
@@ -401,14 +461,30 @@ public static class ModelPolicy
             if (item is not JsonObject step) throw new InvalidOperationException("Invalid running step.");
             var current = models.OfType<JsonObject>().FirstOrDefault(model => PropEquals(model, "id", step, "modelId"));
             if (current is null || !LowQuota(current, plans, limitFor)) continue;
+            var currentCli = AsString(Field(current, "cli"));
+            var currentAccount = AsString(JsOr(current, "accountScope", "providerId", "provider").Node);
+            var currentCompany = AsString(JsOr(current, "companyId", "providerId", "provider").Node);
+
+            bool IsSameModelAccount(JsonObject candidate)
+            {
+                if (string.IsNullOrEmpty(currentCli) || string.IsNullOrEmpty(currentCompany)) return false;
+                var candCli = AsString(Field(candidate, "cli"));
+                if (!string.Equals(candCli, currentCli, StringComparison.Ordinal)) return false;
+                var candCompany = AsString(JsOr(candidate, "companyId", "providerId", "provider").Node);
+                if (!string.Equals(candCompany, currentCompany, StringComparison.Ordinal)) return false;
+                var candAccount = AsString(JsOr(candidate, "accountScope", "providerId", "provider").Node);
+                return !string.IsNullOrEmpty(currentAccount) && !string.IsNullOrEmpty(candAccount) && !string.Equals(candAccount, currentAccount, StringComparison.Ordinal);
+            }
+
             // A company the other steps of the work do not use comes first, so build and check stay independent;
             // then quota that is read before quota that is not, then the most quota left.
             var ranked = models.OfType<JsonObject>()
                 .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)))
                 .Select(model => (Model: model, Left: QuotaLeft(model, plans)))
-                .Where(row => !LowQuota(row.Model, plans, limitFor))
-                .Select(row => (row.Model, row.Left, Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
-                .OrderBy(row => row.Shared)
+                .Where(row => !LowQuota(row.Model, plans, limitFor) && !Blocked(UsagePolicy(row.Model, plans)))
+                .Select(row => (row.Model, row.Left, SameAccount: IsSameModelAccount(row.Model), Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
+                .OrderByDescending(row => row.SameAccount)
+                .ThenBy(row => row.Shared)
                 .ThenBy(row => row.Left is null)
                 .ThenByDescending(row => row.Left ?? 0)
                 .ToList();

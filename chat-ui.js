@@ -40,7 +40,7 @@
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
     pending: {}, repo: {}, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
-    updates: null, windowTitle: null, armed: null
+    updates: null, windowTitle: null, armed: null, accountSignInCommand: ''
   };
 
   // ---------- backend ----------
@@ -647,8 +647,9 @@
     const current = lead();
     const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false));
     // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
-    const offered = all.filter(model => !model.catalogExcluded);
-    const hidden = all.length - offered.length;
+    const offered = all.filter(model => !model.catalogExcluded && !['expired', 'not signed in'].includes(model.planStatus));
+    const hidden = all.filter(model => model.catalogExcluded).length;
+    const statusHidden = Object.entries(Object.groupBy(all.filter(model => !model.catalogExcluded && ['expired', 'not signed in'].includes(model.planStatus)), model => `${model.adapter}|${model.planStatus}`));
     const shown = offered.filter(matchesFilter);
     const active = shown.filter(model => !onBench(model));
     const bench = shown.filter(onBench);
@@ -662,12 +663,14 @@
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 || filterActive() ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}
         ${hidden ? `<p class="explain">${hidden} model${hidden === 1 ? ' is' : 's are'} not shown: the AI tools on this computer do not offer ${hidden === 1 ? 'it' : 'them'} any more.</p>` : ''}</div>
+        ${statusHidden.map(([key, rows]) => { const [adapter, status] = key.split('|'); const company = { claude: 'Claude', codex: 'ChatGPT', grok: 'Grok', antigravity: 'Gemini' }[adapter] || adapter; return `<p class="explain">${rows.length} models hidden: ${escape(company)} ${status === 'expired' ? 'plan expired. Renew it or sign in again' : 'is not signed in. Sign in'}, then look for models again.</p>`; }).join('')}
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => provider.installed === false
           // Not installed: never shown as On; say how to install it.
           ? `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)} <span class="badge">Not installed</span></div><div class="meta">${escape(provider.installHint || 'Install it and sign in, then look for models again.')}</div></div></div>`
           : `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
-          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button></div></div>`).join('')}
+          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button>${provider.id === provider.adapter && ['claude', 'codex'].includes(provider.adapter) ? `<button type="button" class="chip" data-add-account="${escape(provider.id)}">Add another account</button>` : ''}</div></div>`).join('')}
+        ${state.accountSignInCommand ? `<p class="explain">Run this sign-in command, then look for models again:</p><pre>${escape(state.accountSignInCommand)}</pre>` : ''}
         <button type="button" class="btn btn-small" data-action="refresh-models">${ic('refresh')}Look for models again</button></div>
       <div class="section">${head('plug', 't-violet', 'Connect a model by API')}<p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
         <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
@@ -1156,6 +1159,7 @@
     }
     else if (action === 'resume') withOk(() => act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.'));
     else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
+    else if (target.dataset.addAccount) act(async () => { const result = await post('/api/accounts', { providerId: target.dataset.addAccount }); state.accountSignInCommand = result.signInCommand; return result.snapshot; }, 'Account folder ready. Run the sign-in command shown in AI tools.');
     else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }

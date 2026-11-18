@@ -76,6 +76,7 @@ public sealed class PlanwharfApi(string address)
     // The user's OK for one AI tool to edit files and run commands without asking each time.
     public Task<JsonNode?> SetWorksUnaskedAsync(string providerId, bool on) => PostAsync("/api/providers/policy", new { id = providerId, policy = new { alwaysApprove = on } });
     public Task<JsonNode?> RefreshModelsAsync() => PostAsync("/api/models/refresh", new { });
+    public Task<JsonNode?> AddAccountAsync(string providerId) => PostAsync("/api/accounts", new { providerId });
 
     // A model reached through an API. The key stays in an environment variable; only its name is stored.
     public Task<JsonNode?> AddConnectionAsync(string label, string baseUrl, string apiProtocol, string? authEnv, IReadOnlyList<string> modelIds, bool toolsEnabled)

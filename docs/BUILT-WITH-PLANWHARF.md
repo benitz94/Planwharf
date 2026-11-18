@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **15 of 55** | 55 |
 | JavaScript engine lines ported | **about 1,040 of 10,300** (10%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), part of 2 | 0 to 8 |
-| C# engine tests | 459, plus 149 comparison cases with the JavaScript | |
+| C# engine tests | 462, plus 149 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
 `browser-settings`, `model-policy`, `model-roles`, `project-history`, `provider-accounts`,
@@ -44,6 +44,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 13 | #121 | The native logo follows the main colour; optionally keep the work plan in git | Existing unmarked ignore rules remain under the user's control |
 | 14 | #? | Reviewed the failing-test candidate; isolated Git line endings in the email rewrite fixture | Independent Grok 4.6 verification reproduced the origin/main CRLF failure, added error/recovery/concurrency coverage, and ran full engine CI |
 | 15 | #? | Parallel build parts run in isolated Git worktrees; part branches merge in order with conflict handoff and safe cleanup | Independent Grok 4.7 verification added edge, error, recovery and concurrency coverage. Drop now removes dirty and locked worktrees; a missing worktree pauses integration; completion still deletes part branches after the folder is gone |
+| 16 | #? | Multiple accounts per provider, subscription status (active, expired, not signed in), eligible account switching before provider switching, and hiding expired models | — |
 
 ## Improvements found while Planwharf worked on itself
 

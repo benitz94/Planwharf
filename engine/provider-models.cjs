@@ -105,7 +105,9 @@ function createCatalogDiscovery(models, providers, { discover, now, ttl, cacheFi
       model.unavailableReason = model.available ? null : `The ${provider.label || provider.id} catalog does not list exact model ${model.cli}. Configuration retained; no substitute selected.`;
     }
     for (const entry of entries) if (!models.some(m => m.providerId === provider.id && m.cli === entry.cli)) {
-      models.push({ ...entry, id: provider.id + ':' + entry.cli, providerId: provider.id, provider: provider.id, adapter: provider.adapter, ...((pool => ({ quotaPoolId: pool, plan: pool }))(provider.adapter === 'antigravity' ? require('./antigravity.cjs').poolOf(entry.cli, provider.quotaPoolId) : provider.quotaPoolId)),
+      models.push({ ...entry, id: provider.id + ':' + entry.cli, providerId: provider.id, provider: provider.id, adapter: provider.adapter,
+        ...(provider.settingsFolder ? { settingsFolder: provider.settingsFolder, companyId: provider.companyId, companyPoolId: provider.quotaPoolId.split('@')[0] } : {}),
+        ...((pool => ({ quotaPoolId: pool, plan: pool }))(provider.adapter === 'antigravity' ? require('./antigravity.cjs').poolOf(entry.cli, provider.quotaPoolId) : provider.quotaPoolId)),
         label: entry.label || entry.cli, enabled: false, available: true, catalogExcluded: false, availabilityVerified: verified, availabilityCheckedAt: checkedAt, availabilityWarning: null, providerCatalog: true, orchestratorEligible: entry.orchestratorEligible ?? entry.capabilities?.canOrchestrate ?? true,
         workerEligible: entry.workerEligible ?? entry.capabilities?.canCode ?? true, capabilities: { ...entry.capabilities }, providerConfig: require('./provider-catalog.cjs').providerConfiguration(provider) });
     }

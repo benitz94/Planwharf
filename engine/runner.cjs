@@ -478,7 +478,7 @@ function askOrchestrator(info) {
     if (info.purpose === 'supervisor') {
       if (supervisorChild) { resolve({ failure: 'busy', answer: 'A Supervisor response is already in progress.' }); return; }
     } else abortAsk(askKeyOf(info));
-    const child = spawn(spec.command, spec.args, { cwd: work, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+    const child = spawn(spec.command, spec.args, { cwd: work, env: accountEnvironment(info.model, spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     child.stdout.setEncoding('utf8');
     if (info.purpose === 'supervisor') supervisorChild = child; else askChildren.set(askKeyOf(info), child);
     const stream = createAskStream(spec.adapter === 'claude' ? spec.model : undefined);
@@ -581,6 +581,13 @@ function spawnWorker(info) {
   }
 }
 
+function accountEnvironment(model, adapter) {
+  const env = providerEnvironment(adapter);
+  if (model?.settingsFolder && adapter === 'claude') env.CLAUDE_CONFIG_DIR = model.settingsFolder;
+  if (model?.settingsFolder && adapter === 'codex') env.CODEX_HOME = model.settingsFolder;
+  return env;
+}
+
 function run(argv = process.argv) {
   const opts = parseArgs(argv);
   if (!opts.folder || !opts.result) {
@@ -618,7 +625,7 @@ function run(argv = process.argv) {
     fs.writeFileSync(opts.result + '.diagnostic.json', JSON.stringify(diagnostic, null, 2));
     return diagnostic.message;
   };
-  const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+  const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: accountEnvironment(opts.model, spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
   child.stdout.setEncoding('utf8');
   child.stderr.on('data', chunk => { process.stderr.write(chunk); providerStderr = (providerStderr + chunk).slice(-4000); });
   const finalAdapter = opts.structuredResultPath && supportsFinalResult({ adapter: spec.adapter || spec.provider }) ? spec.adapter || spec.provider : null;

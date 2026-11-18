@@ -1298,7 +1298,17 @@ function createOrchestrator(options) {
       return picked ? roster().find(model => model.id === picked.id) || null : null;
     },
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
-    onRefusal: (modelId, reason) => { refusals.recordRefusal(store, modelId, reason, now()); persist(); },
+    onRefusal: (modelId, reason) => {
+      const model = roster().find(item => item.id === modelId);
+      const status = require('./plan-status.cjs').statusFrom(model?.adapter, { reason });
+      if (model && (status === 'expired' || status === 'not signed in')) {
+        const pool = model.quotaPoolId || model.plan;
+        plansLive = plansLive.map(plan => plan.id === pool ? { ...plan, planStatus: status, readable: false, exhausted: false,
+          leftPct: null, pct: null, windows: [], reason: `${model.companyId || model.providerId || model.provider} plan ${status}.` } : plan);
+        refusals.recordRefusal(store, modelId, `Plan ${status}.`, now());
+      } else refusals.recordRefusal(store, modelId, reason, now());
+      persist();
+    },
     replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive }),
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
@@ -1829,7 +1839,7 @@ function createOrchestrator(options) {
       const legacyEnabled = store.enabled[item.id] ?? item.enabled;
       const provider = providerDefinitions.find(p => p.id === (item.providerId || item.provider));
       const account = provider?.account;
-      const scope = account?.key ? provider.id + ':' + account.key : null;
+      const scope = provider?.settingsFolder ? provider.id : account?.key ? provider.id + ':' + account.key : null;
       const emptyRoles = () => Object.fromEntries(ROLE_IDS.map(role => [role, false]));
       const legacy = store.modelRoles[item.id] || item.roles || (legacyEnabled ? {} : emptyRoles());
       if (scope && !store.accountModelRoles[scope]) {
@@ -1845,6 +1855,8 @@ function createOrchestrator(options) {
       item.accountKey = account?.key || null;
       item.accountType = account?.type || 'unread';
       item.accountScope = scope;
+      item.settingsFolder = provider?.settingsFolder || null;
+      item.planStatus = plansLive.find(plan => plan.id === (item.quotaPoolId || item.plan))?.planStatus || 'unknown';
       item.label = require('./provider-accounts.cjs').accountLabel(item.label, account);
       item.providerEnabled = provider ? (store.providerEnabled[provider.id] ?? provider.enabled) : true;
       item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? false, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
@@ -2913,7 +2925,8 @@ function createOrchestrator(options) {
   function limitFor(model) {
     const own = store.quotaLimits && model ? store.quotaLimits[model.id] : null;
     const pool = model ? model.quotaPoolId || model.plan : null;
-    const company = store.poolLimits && pool ? store.poolLimits[pool] : null;
+    const companyPool = model?.companyPoolId || pool;
+    const company = store.poolLimits && companyPool ? store.poolLimits[companyPool] : null;
     const general = autoSwitch();
     if (own?.none === true || !own && company?.none === true) return quotaLimit({ none: true });
     const pick = key => Number.isFinite(own?.[key]) ? own[key] : Number.isFinite(company?.[key]) ? company[key] : general[key];
@@ -2921,7 +2934,7 @@ function createOrchestrator(options) {
   }
   function limitSource(model) {
     if (store.quotaLimits && store.quotaLimits[model.id]) return 'model';
-    const pool = model.quotaPoolId || model.plan;
+    const pool = model.companyPoolId || model.quotaPoolId || model.plan;
     return store.poolLimits && pool && store.poolLimits[pool] ? 'company' : 'general';
   }
   function limitText(model) {

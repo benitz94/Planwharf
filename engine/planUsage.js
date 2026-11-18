@@ -18,7 +18,8 @@ function clipPct(value) {
 }
 
 function unreadPlan(id, reason) {
-  return {
+  const provider = id === 'ChatGPT' ? 'codex' : id === 'Grok' ? 'grok' : 'antigravity';
+  return require('./plan-status.cjs').withStatus(provider, {
     id,
     label: id,
     readable: false,
@@ -28,7 +29,7 @@ function unreadPlan(id, reason) {
     source: null,
     reason: reason || 'Not readable',
     windows: []
-  };
+  });
 }
 
 function windowOf(raw, name) {
@@ -70,6 +71,7 @@ function parseGrokCredits(body) {
     pct,
     leftPct: 100 - pct,
     source: 'grok',
+    planStatus: 'active',
     reason: null,
     windows: [weekly],
     products
@@ -93,6 +95,7 @@ function parseChatGptUsage(body) {
     pct,
     leftPct: 100 - pct,
     source: 'chatgpt',
+    planStatus: 'active',
     reason: null,
     planType: body && body.plan_type ? String(body.plan_type) : null,
     windows
@@ -101,7 +104,7 @@ function parseChatGptUsage(body) {
 
 function planExhausted(plans, name) {
   const row = (Array.isArray(plans) ? plans : []).find(item => item && item.id === name);
-  return Boolean(row && row.readable && (row.exhausted || row.leftPct === 0 || row.pct === 100));
+  return Boolean(row && (require('./plan-status.cjs').blockedStatus(row) || row.readable && (row.exhausted || row.leftPct === 0 || row.pct === 100)));
 }
 
 function readJson(file) {
@@ -128,8 +131,8 @@ function grokAuth(home) {
   };
 }
 
-function codexAuth(home) {
-  const raw = readJson(path.join((home === os.homedir() && process.env.CODEX_HOME) || path.join(home, '.codex'), 'auth.json'));
+function codexAuth(home, authHome) {
+  const raw = readJson(path.join(authHome || (home === os.homedir() && process.env.CODEX_HOME) || path.join(home, '.codex'), 'auth.json'));
   if (!raw || typeof raw !== 'object') return null;
   const tokens = raw.tokens && typeof raw.tokens === 'object' ? raw.tokens : {};
   return {
@@ -222,14 +225,16 @@ async function readGrok(home, fetchImpl, now) {
       'x-grok-client-version': auth.version
     });
     if (res.status === 200 && res.json) return parseGrokCredits(res.json);
+    const planError = require('./plan-status.cjs').providerError('grok', res.json, 'Grok');
+    if (planError) return { ...unreadPlan('Grok', planError.reason), planStatus: planError.planStatus };
     return unreadPlan('Grok', res.status === 401 ? 'Grok login expired.' : `Grok usage HTTP ${res.status}.`);
   } catch (err) {
     return unreadPlan('Grok', err && err.name === 'AbortError' ? 'Grok quota check timed out. CLI model access is checked separately.' : 'Grok quota service could not be reached. This does not mean the Grok CLI is unavailable.');
   }
 }
 
-async function readChatGpt(home, fetchImpl) {
-  const auth = codexAuth(home);
+async function readChatGpt(home, fetchImpl, authHome) {
+  const auth = codexAuth(home, authHome);
   if (!auth || (!auth.access && !auth.refresh)) return unreadPlan('ChatGPT', 'Sign in with Codex / ChatGPT to read 5-hour and weekly usage.');
   try {
     let token = await chatgptAccess(auth, fetchImpl);
@@ -251,6 +256,8 @@ async function readChatGpt(home, fetchImpl) {
       }
     }
     if (res.status === 200 && res.json) return parseChatGptUsage(res.json);
+    const planError = require('./plan-status.cjs').providerError('codex', res.json, 'ChatGPT');
+    if (planError) return { ...unreadPlan('ChatGPT', planError.reason), planStatus: planError.planStatus };
     return unreadPlan('ChatGPT', res.status === 401 ? 'ChatGPT login expired.' : `ChatGPT usage HTTP ${res.status}.`);
   } catch (err) {
     return unreadPlan('ChatGPT', err && err.name === 'AbortError' ? 'ChatGPT usage timed out.' : 'ChatGPT usage unreachable.');

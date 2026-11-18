@@ -31,9 +31,11 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     // Light, default or premium; and whether the AI tools on this computer no longer offer the model.
     public string Weight { get; init; } = "default";
     public bool NotOffered { get; init; }
+    public string PlanStatus { get; init; } = "unknown";
 }
 public sealed record ProviderView(string Id, string Label, bool Enabled, int Models)
 {
+    public string Adapter { get; init; } = "";
     public bool WorksUnasked { get; init; }
     // False when the last check found no program for this AI tool on this computer.
     public bool Installed { get; init; } = true;
@@ -91,6 +93,7 @@ public static class TeamViews
                 LimitFiveHour = Pct(model["quotaLimit"]?["fiveHourPercent"]), LimitWeekly = Pct(model["quotaLimit"]?["weeklyPercent"]),
                 Weight = S(model["weight"]) is { Length: > 0 } weight ? weight : "default",
                 NotOffered = B(model["catalogExcluded"]) || B(model["neverUsable"])
+                , PlanStatus = S(model["planStatus"]) is { Length: > 0 } status ? status : "unknown"
             };
         }).ToList();
         var providers = (snapshot["providers"] as JsonArray ?? []).OfType<JsonObject>().Select(provider => new ProviderView(S(provider["id"]),
@@ -98,6 +101,7 @@ public static class TeamViews
             (provider["models"] as JsonArray)?.Count ?? 0)
             {
                 WorksUnasked = B(provider["policy"]?["alwaysApprove"]),
+                Adapter = S(provider["adapter"]),
                 Installed = provider["installed"] is not JsonValue installed || !installed.TryGetValue<bool>(out var found) || found,
                 InstallHint = S(provider["installHint"]) is { Length: > 0 } hint ? hint : null
             }).ToList();
@@ -112,13 +116,13 @@ public static class TeamViews
     public static List<TeamModel> Leads(TeamView team)
     {
         int Rank(TeamModel model) { var at = team.LeadOrder.ToList().IndexOf(model.Id); return at < 0 ? int.MaxValue : at; }
-        return team.Models.Where(model => model.CanLead && model.Available).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
+        return team.Models.Where(model => model.CanLead && model.Available && model.PlanStatus is not ("expired" or "not signed in")).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
     }
 
     static int? Pct(JsonNode? node) => node is JsonValue value && value.TryGetValue<double>(out var number) ? (int)Math.Round(number) : null;
 
     // The role a step needs, and the models of the team that have it (as the web step menu).
-    public static IReadOnlyList<TeamModel> ModelsFor(TeamView team, string role) => team.Models.Where(model => model.Available && model.Enabled && role switch
+    public static IReadOnlyList<TeamModel> ModelsFor(TeamView team, string role) => team.Models.Where(model => model.Available && model.Enabled && model.PlanStatus is not ("expired" or "not signed in") && role switch
     {
         "Verify" => model.Verify || model.Build,
         _ => model.Build

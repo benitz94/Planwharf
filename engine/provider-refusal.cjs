@@ -3,6 +3,8 @@
 // can route around that model instead of stopping. Only the end of an output is read:
 // a refusal is the last thing a provider prints, and earlier text may quote these words.
 const PATTERNS = [
+  /(?:subscription|plan) (?:is |has )?(?:expired|inactive|not active)/i,
+  /(?:not logged in|login expired|sign in to (?:claude|agy))/i,
   /requires usage credits/i,
   /you(?:'|’)ve hit your [^.\n]*limit/i,
   /usage limit (?:reached|exceeded)/i,

@@ -124,6 +124,23 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     const extra = loadCatalog({ schema: 3, providers: [provider] });
     providers.push(...extra.providers); models.push(...extra.models);
   }
+  const accountFolders = require('./engine/account-folders.cjs');
+  const accountsFile = path.join(storeDir, 'accounts.json');
+  const accountsRoot = path.join(storeDir, 'accounts');
+  const addedAccounts = accountFolders.readAccounts(accountsFile, accountsRoot);
+  function attachAccount(row) {
+    const base = providers.find(provider => provider.id === row.providerId && provider.adapter === row.adapter);
+    if (!base) throw new Error('Account has no configured AI tool.');
+    const id = row.providerId + '@' + row.id;
+    const provider = { ...base, id, companyId: base.id, label: base.label + ' account ' + (addedAccounts.filter(item => item.providerId === row.providerId).indexOf(row) + 2),
+      quotaPoolId: base.quotaPoolId + '@' + row.id, settingsFolder: row.folder, account: require('./engine/provider-accounts.cjs').unknownAccount(), models: [] };
+    const clones = models.filter(model => (model.providerId || model.provider) === base.id).map(model => ({ ...model, id: model.id + '@' + row.id,
+      providerId: id, provider: id, companyId: base.id, companyPoolId: base.quotaPoolId, quotaPoolId: provider.quotaPoolId, plan: provider.quotaPoolId,
+      settingsFolder: row.folder, enabled: false, roles: {}, label: model.label + ' (account ' + (addedAccounts.filter(item => item.providerId === row.providerId).indexOf(row) + 2) + ')' }));
+    provider.models = clones;
+    providers.push(provider); models.push(...clones);
+  }
+  for (const row of addedAccounts) attachAccount(row);
   const providerModels = createProviderModels(models, { providers, cacheFile: path.join(storeDir, 'provider-model-catalogs.json'), ...(discoverModels ? { discover: discoverModels } : {}) });
   const accountStates = new Map();
   let accountSync;
@@ -692,9 +709,22 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         return json(200, await orchestra.activitySessionPage(projectId, offset, limit));
       }
       if (request.method === 'POST' && pathname === '/api/models/refresh') {
+        await syncAccounts();
         await providerModels.refresh(true);
+        await orchestra.tick();
         const snapshot = await orchestra.snapshot();
         return json(200, { ...snapshot, providerModels: providerModels.snapshot() });
+      }
+      if (request.method === 'POST' && pathname === '/api/accounts') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON.');
+        const input = await body(request);
+        if (!input || Object.keys(input).some(key => key !== 'providerId') || typeof input.providerId !== 'string') throw new RequestError(400, 'Invalid account request.');
+        const base = providers.find(provider => provider.id === input.providerId);
+        if (!base || !accountFolders.supported.has(base.adapter) || base.id !== base.adapter) throw new RequestError(400, 'This AI tool does not support another account.');
+        const row = accountFolders.addAccount(accountsFile, accountsRoot, base.adapter, base.id, addedAccounts);
+        addedAccounts.push({ id: row.id, adapter: row.adapter, providerId: row.providerId, folder: row.folder });
+        attachAccount(addedAccounts.at(-1));
+        return json(200, { providerId: row.providerId, folder: row.folder, signInCommand: row.signInCommand, snapshot: await orchestra.snapshot() });
       }
       if (request.method === 'GET' && pathname === '/api/models/status') return json(200, providerModels.snapshot());
       if (request.method === 'POST' && pathname === '/api/catalog/settings') {
