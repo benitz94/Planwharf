@@ -5,9 +5,9 @@ const adapters = {
   claude: { nativeModel: /^claude-[a-zA-Z0-9][a-zA-Z0-9._-]*$/, sourceProtectedResearch: false,
     account: () => require('./provider-accounts.cjs').unknownAccount(),
     quota: provider => provider.settingsFolder
-      ? require('./claude-usage.cjs').createClaudeUsageReader({ readAuth: () => require('./claude-usage.cjs').readClaudeAuth({ env: { ...process.env, CLAUDE_CONFIG_DIR: provider.settingsFolder } }) })()
+      ? require('./claude-usage.cjs').createClaudeUsageReader({ readAuth: () => require('./claude-usage.cjs').readClaudeAuth({ env: require('./provider-runtime.cjs').accountEnvironment('claude', provider) }) })()
       : require('./claude-usage.cjs').readClaudeUsage(),
-    discover: provider => require('./claude.cjs').listClaude(provider.settingsFolder ? { env: { ...process.env, CLAUDE_CONFIG_DIR: provider.settingsFolder } } : {}) },
+    discover: provider => require('./claude.cjs').listClaude(provider.settingsFolder ? { env: require('./provider-runtime.cjs').accountEnvironment('claude', provider) } : {}) },
   codex: { nativeModel: /^gpt-/, sourceProtectedResearch: true,
     account: provider => require('./provider-accounts.cjs').codexAccount(provider, provider.settingsFolder ? { home: provider.settingsFolder } : {}),
     quota: provider => require('./planUsage.js').readChatGpt(require('node:os').homedir(), fetch, provider.settingsFolder),

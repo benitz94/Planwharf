@@ -6,6 +6,22 @@ const { modelRouteError } = require('./model-routing.cjs');
 let codexCertificateBundle;
 const storeShellAccess = new Map();
 
+const CLAUDE_LOGIN_OVERRIDES = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY', 'ANTHROPIC_BASE_URL'];
+const CODEX_LOGIN_OVERRIDES = ['OPENAI_API_KEY'];
+function deleteEnv(env, names) {
+  const wanted = new Set(names.map(name => name.toUpperCase()));
+  for (const key of Object.keys(env)) if (wanted.has(key.toUpperCase())) delete env[key];
+}
+// A second account has its own settings folder. Login variables from this process belong to the
+// first account and would make the folder's sign-in be ignored.
+function accountEnvironment(adapter, model, inherited = process.env, platform = process.platform) {
+  const env = providerEnvironment(adapter, inherited, platform);
+  const folder = model?.settingsFolder;
+  if (typeof folder !== 'string' || !folder || /[\r\n\0]/.test(folder)) return env;
+  if (adapter === 'claude') { env.CLAUDE_CONFIG_DIR = folder; deleteEnv(env, CLAUDE_LOGIN_OVERRIDES); }
+  else if (adapter === 'codex') { env.CODEX_HOME = folder; deleteEnv(env, CODEX_LOGIN_OVERRIDES); }
+  return env;
+}
 function providerEnvironment(provider, inherited = process.env, platform = process.platform) {
   const env = { ...inherited };
   if (provider !== 'codex' || platform !== 'win32') return env;
@@ -144,4 +160,4 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   return { command, args, cwd: folder, provider, adapter, model: cli, ...(stdin !== undefined ? { stdin } : {}), ...(promptFile ? { promptFile } : {}) };
 }
 
-module.exports = { executable, launchSpec, providerEnvironment };
+module.exports = { executable, launchSpec, providerEnvironment, accountEnvironment };

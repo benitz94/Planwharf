@@ -6,7 +6,8 @@ const { requireWorkerWorkspace, linkedWorkspace } = require('./project-workspace
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
-const { launchSpec, providerEnvironment } = require('./providers.cjs');
+const { launchSpec } = require('./providers.cjs');
+const { accountEnvironment: isolatedAccountEnvironment } = require('./provider-runtime.cjs');
 const { resolveCliModel } = require('./model-routing.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { readJSON, validateResult, rejectMissingClaims, resultContract, reportExists } = require('./worker-result.cjs');
@@ -582,10 +583,7 @@ function spawnWorker(info) {
 }
 
 function accountEnvironment(model, adapter) {
-  const env = providerEnvironment(adapter);
-  if (model?.settingsFolder && adapter === 'claude') env.CLAUDE_CONFIG_DIR = model.settingsFolder;
-  if (model?.settingsFolder && adapter === 'codex') env.CODEX_HOME = model.settingsFolder;
-  return env;
+  return isolatedAccountEnvironment(adapter, model);
 }
 
 function run(argv = process.argv) {

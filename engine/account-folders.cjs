@@ -38,20 +38,37 @@ function readAccounts(file, root) {
   }
   return saved.map(row => ({ id: row.id, adapter: row.adapter, providerId: row.providerId, folder: row.folder }));
 }
+function pidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
+}
+function reclaimLock(lock) {
+  let text = '';
+  try { text = fs.readFileSync(lock, 'utf8'); }
+  catch (error) { if (error.code === 'ENOENT') return; throw error; }
+  const pid = Number(String(text).split(':')[0]);
+  const identified = Number.isInteger(pid) && pid > 0 && String(text).includes(':');
+  // A live process still owns the lock, even if the file is old. A dead owner, or an
+  // empty lock left behind for more than 10 seconds, can be cleared.
+  if (identified) { if (!pidAlive(pid)) fs.rmSync(lock, { force: true }); return; }
+  if (Date.now() - fs.statSync(lock).mtimeMs > 10000) fs.rmSync(lock, { force: true });
+}
 function withLock(file, fn) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const lock = file + '.lock';
+  const owner = process.pid + ':' + randomUUID();
   const started = Date.now();
   for (;;) {
     try {
       const fd = fs.openSync(lock, 'wx');
-      try { return fn(); }
-      finally { fs.closeSync(fd); try { fs.rmSync(lock, { force: true }); } catch { /* the next add recovers a stale lock */ } }
+      try { fs.writeSync(fd, owner); return fn(); }
+      finally {
+        fs.closeSync(fd);
+        try { if (fs.readFileSync(lock, 'utf8') === owner) fs.rmSync(lock, { force: true }); } catch { /* the next add recovers a stale lock */ }
+      }
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
-      try {
-        if (Date.now() - fs.statSync(lock).mtimeMs > 10000) fs.rmSync(lock, { force: true });
-      } catch (statError) { if (statError.code !== 'ENOENT') throw statError; }
+      try { reclaimLock(lock); } catch (statError) { if (statError.code !== 'ENOENT') throw statError; }
       if (Date.now() - started > 5000) throw new Error('Account folders file is busy.');
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
     }

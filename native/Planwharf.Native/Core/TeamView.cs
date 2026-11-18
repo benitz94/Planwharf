@@ -158,8 +158,9 @@ public static class TeamViews
         var missing = new List<string>();
         var team = Team(snapshot);
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => S(item["id"]) == projectId);
-        if (team.LeadId == null) missing.Add("Choose a lead in Team.");
-        if (!team.Models.Any(model => model.Build && model.Available && model.Enabled)) missing.Add("Give at least one model the Build role in Team.");
+        var lead = team.Models.FirstOrDefault(model => model.Id == team.LeadId);
+        if (team.LeadId == null || lead?.PlanStatus is "expired" or "not signed in") missing.Add("Choose a lead in Team.");
+        if (!team.Models.Any(model => model.Build && model.Available && model.Enabled && model.PlanStatus is not ("expired" or "not signed in"))) missing.Add("Give at least one model the Build role in Team.");
         if (row != null && S(row["folder"]).Length == 0) missing.Add("Set the project folder in Settings.");
         if (row != null && !goalReady) missing.Add(GoalStarted(row) ? NextGoalText : NoGoalText);
         return missing;

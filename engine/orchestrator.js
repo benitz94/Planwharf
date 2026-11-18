@@ -1300,12 +1300,10 @@ function createOrchestrator(options) {
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
     onRefusal: (modelId, reason) => {
       const model = roster().find(item => item.id === modelId);
-      const status = require('./plan-status.cjs').statusFrom(model?.adapter, { reason });
-      if (model && (status === 'expired' || status === 'not signed in')) {
-        const pool = model.quotaPoolId || model.plan;
-        plansLive = plansLive.map(plan => plan.id === pool ? { ...plan, planStatus: status, readable: false, exhausted: false,
-          leftPct: null, pct: null, windows: [], reason: `${model.companyId || model.providerId || model.provider} plan ${status}.` } : plan);
-        refusals.recordRefusal(store, modelId, `Plan ${status}.`, now());
+      const noted = require('./plan-status.cjs').notePlanRefusal(plansLive, model, reason);
+      if (noted.status) {
+        plansLive = noted.plans;
+        refusals.recordRefusal(store, modelId, `Plan ${noted.status}.`, now());
       } else refusals.recordRefusal(store, modelId, reason, now());
       persist();
     },
@@ -2349,7 +2347,7 @@ function createOrchestrator(options) {
       .then(() => loadPlans())
       .then(list => {
         if (!Array.isArray(list) || !list.length) throw new Error('Provider usage response is unreadable.');
-        plansLive = list;
+        plansLive = require('./plan-status.cjs').mergePlans(plansLive, list);
         plansAt = Date.now();
         plansInflight = null;
         return plansLive;

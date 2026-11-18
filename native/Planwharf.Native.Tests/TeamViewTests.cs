@@ -87,6 +87,13 @@ public class TeamViewTests
         var leads = TeamViews.Leads(team);
         Assert.Equal(["c"], leads.Select(m => m.Id));
 
+        var onlyExpired = JsonNode.Parse("""
+        { "orchestratorId": "a",
+          "models": [ { "id": "a", "label": "Model A", "enabled": true, "available": true, "planStatus": "expired", "roles": { "orchestrator": true, "worker": true }, "roleEligibility": { "orchestrator": true, "worker": true } } ],
+          "projects": [ { "id": "p1", "folder": "D:\\\\work", "goal": "Build the fixture" } ] }
+        """)!;
+        Assert.Equal(["Choose a lead in Team.", "Give at least one model the Build role in Team."], TeamViews.Missing(onlyExpired, "p1"));
+
         var builders = TeamViews.ModelsFor(team, "Build");
         Assert.Equal(["c"], builders.Select(m => m.Id));
 
