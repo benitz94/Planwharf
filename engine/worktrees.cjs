@@ -52,8 +52,19 @@ function create({ folder, dir, projectId, megaId, subId, index, workBranch }) {
 }
 
 function integrate({ folder, parts }) {
-  if (git(folder, ['status', '--porcelain'])) return { ok: false, reason: 'Work branch has uncommitted changes; integration is paused.', conflicts: [] };
-  for (const part of parts) if (git(part.folder, ['status', '--porcelain'])) return { ok: false, branch: part.branch, reason: 'Part has uncommitted changes; integration is paused.', conflicts: [] };
+  try {
+    if (git(folder, ['status', '--porcelain'])) return { ok: false, reason: 'Work branch has uncommitted changes; integration is paused.', conflicts: [] };
+  } catch (error) {
+    return { ok: false, reason: error.message, conflicts: [] };
+  }
+  for (const part of parts) {
+    let dirty = '';
+    try { dirty = git(part.folder, ['status', '--porcelain']); }
+    catch (error) {
+      return { ok: false, branch: part.branch, conflicts: [], reason: fs.existsSync(part.folder) ? error.message : `Part worktree is unavailable: ${part.folder}` };
+    }
+    if (dirty) return { ok: false, branch: part.branch, reason: 'Part has uncommitted changes; integration is paused.', conflicts: [] };
+  }
   const conflicts = [];
   for (const part of parts) {
     try { git(folder, ['merge', '--no-ff', '--no-edit', part.branch]); }
@@ -76,9 +87,11 @@ function cleanup({ folder, dir, projectId, megaId, parts, discardBranches = fals
     gitBranchName(part.branch);
     if (!within(root, destination) || destination !== worktreePath(dir, projectId, megaId, part.subId)) throw new Error('Worktree cleanup path escaped its work');
     if (fs.existsSync(destination)) {
-      if (git(destination, ['status', '--porcelain'])) throw new Error(`Worktree has recoverable changes: ${destination}`);
-      git(folder, ['worktree', 'remove', destination]);
-    }
+      const dirty = git(destination, ['status', '--porcelain']);
+      // Completion keeps uncommitted work for the owner. Drop this work removes it.
+      if (dirty && !discardBranches) throw new Error(`Worktree has recoverable changes: ${destination}`);
+      git(folder, discardBranches ? ['worktree', 'remove', '--force', '--force', destination] : ['worktree', 'remove', destination]);
+    } else git(folder, ['worktree', 'prune']);
     git(folder, ['branch', discardBranches ? '-D' : '-d', part.branch]);
   }
 }
