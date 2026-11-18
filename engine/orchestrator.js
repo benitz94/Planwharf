@@ -3334,16 +3334,26 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // Only a dead CLI retries. A protocol change or an unrecognized model is a real answer
           // about the provider: it is classified and kept, never replaced.
           const died = spoken => spoken?.failure === 'process';
-          if (died(spoken) && askCurrent(token)) {
-            note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
-            spoken = await askThis(lead);
-          }
-          if (died(spoken) && askCurrent(token)) {
-            const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+          const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
+          // A quota error will not clear by asking again: hand over at once, to another company.
+          if (outOfQuota(spoken) && askCurrent(token)) {
+            const company = lead.providerId || lead.provider;
+            const next = leadRanking(roster().filter(model => model.id !== lead.id && (model.providerId || model.provider) !== company && leadUsable(model)), plansLive)[0];
             if (next) {
-              switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
+              switchLead(lead, next, (lead.label || lead.id) + ' is out of quota.');
               invokedLead = next;
               spoken = await askThis(next);
+            }
+          } else if (died(spoken) && askCurrent(token)) {
+            note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
+            spoken = await askThis(lead);
+            if (died(spoken) && askCurrent(token)) {
+              const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+              if (next) {
+                switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
+                invokedLead = next;
+                spoken = await askThis(next);
+              }
             }
           }
           const unpacked = spoken && typeof spoken === 'object' && !Array.isArray(spoken)
