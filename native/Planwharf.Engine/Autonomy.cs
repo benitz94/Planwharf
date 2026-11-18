@@ -11,11 +11,11 @@ public static class Autonomy
 {
     public static class LIMITS
     {
-        public const int MaxMegaTasks = 5;
+        public const int MaxMegaTasks = 20;
         public const int MaxNudgesPerHour = 3;
         public const int MaxObjectiveChars = 4000;
 
-        public const int maxMegaTasks = 5;
+        public const int maxMegaTasks = 20;
         public const int maxNudgesPerHour = 3;
         public const int maxObjectiveChars = 4000;
     }

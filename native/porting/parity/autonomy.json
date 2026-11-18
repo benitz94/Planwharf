@@ -230,8 +230,8 @@
       }
     ],
     "result": {
-      "type": "limit",
-      "reason": "MEGATASK_LIMIT"
+      "type": "approve",
+      "megaTaskId": "m6"
     }
   },
   {
