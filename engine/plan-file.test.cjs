@@ -74,6 +74,10 @@ assert.equal(fs.readFileSync(path.join(folder, 'notes.txt'), 'utf8'), 'dirty\n',
 const blocked = planFile.prepare(folder, { goal: 'Another goal on `fix/other-work`', steps });
 assert.equal(blocked.ok, false);
 assert.equal(blocked.reason, 'Commit or stash the changes in the folder first: notes.txt, then press Let the crew do it again.');
+// A Python cache is not the user's work and does not block a new start.
+assert.equal(planFile.isNoise('?? .agents/__pycache__/'), true);
+assert.equal(planFile.isNoise('?? .agents/__pycache__/mod.pyc'), true);
+assert.equal(planFile.isNoise('?? notes.txt'), false);
 assert.equal(git(folder, ['branch', '--show-current']), 'fix/plan-file', 'a blocked start does not change branch');
 fs.unlinkSync(path.join(folder, 'notes.txt'));
 
