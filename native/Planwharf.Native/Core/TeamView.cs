@@ -67,7 +67,7 @@ public static class TeamViews
 
     public static TeamView Team(JsonNode snapshot)
     {
-        var lead = S(snapshot["orchestratorId"]) is { Length: > 0 } id ? id : null;
+        var lead = S(snapshot["selectedOrchestratorId"]) is { Length: > 0 } id ? id : S(snapshot["orchestratorId"]) is { Length: > 0 } current ? current : null;
         // Every model, as the chat page lists them: on the team, or on the bench.
         bool Eligible(JsonObject model, string role) => model["roleEligibility"]?[role] is not JsonValue value || !value.TryGetValue<bool>(out var ok) || ok;
         var models = (snapshot["models"] as JsonArray ?? []).OfType<JsonObject>().Select(model =>
