@@ -2141,7 +2141,7 @@ function createOrchestrator(options) {
       projectTools: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolsFor(id)])),
       projectToolSettings: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolSettings(store.projectTools?.[id])])),
       asking: Object.keys(thinkingByKey).length > 0,
-      orchestratorId: lead ? lead.id : null,
+      orchestratorId: lead ? lead.id : leadId(),
       selectedOrchestratorId: leadId(),
       teamProjectId: teamScope.getStore() || null,
       ownTeam: Boolean(teamFor()),
