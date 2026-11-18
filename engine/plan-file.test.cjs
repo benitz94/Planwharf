@@ -70,16 +70,19 @@ fs.writeFileSync(path.join(folder, 'notes.txt'), 'dirty\n');
 const resumed = planFile.prepare(folder, { goal, steps });
 assert.equal(resumed.ok, true, resumed.reason);
 assert.equal(fs.readFileSync(path.join(folder, 'notes.txt'), 'utf8'), 'dirty\n', 'the changes stay');
-// A new work, from another branch, is blocked by them.
-const blocked = planFile.prepare(folder, { goal: 'Another goal on `fix/other-work`', steps });
-assert.equal(blocked.ok, false);
-assert.equal(blocked.reason, 'Commit or stash the changes in the folder first: notes.txt, then press Let the crew do it again.');
+// A new work sets the uncommitted files aside and starts, instead of stopping for the user.
+const started = planFile.prepare(folder, { goal: 'Another goal on `fix/other-work`', steps });
+assert.equal(started.ok, true, started.reason);
+assert.match(started.chat, /Set aside uncommitted changes/);
+assert.equal(fs.existsSync(path.join(folder, 'notes.txt')), false, 'the file was set aside');
+assert.match(git(folder, ['stash', 'list']), /Planwharf set these aside/);
+planFile.prepare(folder, { goal, steps });
+fs.rmSync(path.join(folder, '.planwharf', 'done'), { recursive: true, force: true });
 // A Python cache is not the user's work and does not block a new start.
 assert.equal(planFile.isNoise('?? .agents/__pycache__/'), true);
 assert.equal(planFile.isNoise('?? .agents/__pycache__/mod.pyc'), true);
 assert.equal(planFile.isNoise('?? notes.txt'), false);
-assert.equal(git(folder, ['branch', '--show-current']), 'fix/plan-file', 'a blocked start does not change branch');
-fs.unlinkSync(path.join(folder, 'notes.txt'));
+git(folder, ['checkout', '-q', 'fix/plan-file']);
 
 fs.writeFileSync(path.join(folder, 'work.txt'), 'work\n');
 git(folder, ['add', 'work.txt']);
@@ -371,12 +374,10 @@ console.log('plan-file second verification tests passed');
     inspectFolder: () => ({ git: true, dirty: ['dirty.txt'], names: ['readme.txt'], fileCount: 1, head: 'x', lastCommit: 'x' }),
     askModel: async info => { asked = info; return { answer: 'Noted.' }; }
   });
-  const blockedStart = await orchestra.startAutoTask('demo');
-  assert.equal(blockedStart.ok, false);
-  assert.equal(blockedStart.reason, 'Commit or stash the changes in the folder first: dirty.txt, then press Let the crew do it again.');
-  assert.equal(git(project, ['branch', '--show-current']), 'job-04', 'a dirty folder does not change branch');
-  fs.unlinkSync(path.join(project, 'dirty.txt'));
   const started = await orchestra.startAutoTask('demo');
+  assert.equal(started.ok, true, started.reason);
+  assert.equal(fs.existsSync(path.join(project, 'dirty.txt')), false, 'the dirty file was set aside');
+  assert.match(git(project, ['stash', 'list']), /Planwharf set these aside/);
   assert.equal(started.ok, true, started.reason);
   assert.doesNotMatch(fs.readFileSync(path.join(project, '.git', 'info', 'exclude'), 'utf8'), /# Planwharf managed work plan/);
   assert.match(git(project, ['status', '--porcelain']), /\.planwharf/);

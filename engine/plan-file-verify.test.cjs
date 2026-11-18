@@ -337,12 +337,10 @@ console.log('verify-2: pushed detection, finish auto, edge cases passed');
   git(work, ['add', 'a.txt']); // staged
   // b.txt is untracked
   const r = planFile.prepare(work, { goal: 'dirty', steps: [] });
-  assert.equal(r.ok, false);
-  assert.match(r.reason, /a\.txt/);
-  assert.match(r.reason, /b\.txt/);
-  fs.unlinkSync(path.join(work, 'a.txt'));
-  fs.unlinkSync(path.join(work, 'b.txt'));
-  git(work, ['reset', '-q', 'HEAD']);
+  assert.equal(r.ok, true, r.reason);
+  assert.match(r.chat, /a\.txt/);
+  assert.match(r.chat, /b\.txt/);
+  assert.match(git(work, ['stash', 'list']), /Planwharf set these aside/);
 }
 
 console.log('verify-3: recovery, fallback and idempotence paths passed');
