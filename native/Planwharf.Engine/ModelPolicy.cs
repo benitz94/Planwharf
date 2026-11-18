@@ -317,7 +317,7 @@ public static class ModelPolicy
             var otherAccount = AsString(JsOr(other, "accountScope", "providerId", "provider").Node);
             if (string.IsNullOrEmpty(currentAccount) || string.IsNullOrEmpty(otherAccount) || string.Equals(otherAccount, currentAccount, StringComparison.Ordinal)) continue;
             var otherPlan = FindPlan(plans, JsOr(other, "quotaPoolId", "plan"), skipFalsy: false);
-            if (Blocked(UsagePolicy(other, plans)) || BlockedPlanStatus(otherPlan) || IsExhausted(other, plans)) continue;
+            if (QuotaLeft(other, plans) is null || Blocked(UsagePolicy(other, plans)) || BlockedPlanStatus(otherPlan) || IsExhausted(other, plans)) continue;
             return other;
         }
         return null;
@@ -332,7 +332,7 @@ public static class ModelPolicy
             if (item is not JsonObject other || seen.Contains(SeenKey(other)) || !EligibleModel(other, eligible)) continue;
             if (!JsDifferent(JsOr(other, "providerId", "provider"), sourceProvider)) continue;
             if (sourcePool.IsTruthy && !JsDifferent(JsOr(other, "quotaPoolId", "plan"), sourcePool)) continue;
-            if (Blocked(UsagePolicy(other, plans)) || IsExhausted(other, plans)) continue;
+            if (QuotaLeft(other, plans) is null || Blocked(UsagePolicy(other, plans)) || IsExhausted(other, plans)) continue;
             return other;
         }
         return null;
@@ -482,7 +482,7 @@ public static class ModelPolicy
                 .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)))
                 .Select(model => (Model: model, Left: QuotaLeft(model, plans)))
                 .Where(row => !LowQuota(row.Model, plans, limitFor) && !Blocked(UsagePolicy(row.Model, plans)))
-                .Select(row => (row.Model, row.Left, SameAccount: IsSameModelAccount(row.Model), Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
+                .Select(row => (row.Model, row.Left, SameAccount: row.Left is not null && IsSameModelAccount(row.Model), Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))
                 .OrderByDescending(row => row.SameAccount)
                 .ThenBy(row => row.Shared)
                 .ThenBy(row => row.Left is null)

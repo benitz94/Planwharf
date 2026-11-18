@@ -57,6 +57,7 @@ function resolveUsageFallback(model, models, plans, eligible) {
       return other.id !== current.id && other.cli === current.cli
         && currentCompany === otherCompany
         && currentAccount && otherAccount && currentAccount !== otherAccount
+        && quotaLeft(other, plans) !== null
         && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other)
         && !usagePolicy(other, plans).blocked && !require('./plan-status.cjs').blockedStatus(plans.find(plan => plan.id === (other.quotaPoolId || other.plan)));
     });
@@ -65,6 +66,7 @@ function resolveUsageFallback(model, models, plans, eligible) {
       const sourceProvider = current.providerId || current.provider;
       const sourcePool = current.quotaPoolId || current.plan;
       current = models.find(other => (other.providerId || other.provider) !== sourceProvider && (!sourcePool || (other.quotaPoolId || other.plan) !== sourcePool) && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other)
+        && quotaLeft(other, plans) !== null
         && !usagePolicy(other, plans).blocked && !plans.some(plan => plan.id === (other.quotaPoolId || other.plan) && plan.readable && (plan.exhausted || plan.leftPct === 0)));
     } else if (current.fallbackProviderId) {
       const candidates = models.filter(other => (other.providerId || other.provider) === current.fallbackProviderId && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other));
@@ -154,7 +156,7 @@ function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent
         const candAccount = item.model.accountScope || item.model.providerId || item.model.provider;
         const currentCompany = current.companyId || current.providerId || current.provider;
         const candCompany = item.model.companyId || item.model.providerId || item.model.provider;
-        const sameModelAccount = Boolean(currentAccount && candAccount && currentAccount !== candAccount
+        const sameModelAccount = Boolean(item.left !== null && currentAccount && candAccount && currentAccount !== candAccount
           && item.model.cli === current.cli && currentCompany === candCompany);
         return { ...item, sameModelAccount, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) };
       })

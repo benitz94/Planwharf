@@ -480,6 +480,25 @@ public sealed class ModelPolicyTests
     }
 
     [Fact]
+    public void Unread_sibling_account_does_not_beat_another_company_with_room()
+    {
+        var modelA = Parse("""{"id":"a","cli":"claude-sonnet-5","provider":"claude","providerId":"claude","accountScope":"a","companyId":"claude","plan":"claude","enabled":true,"available":true,"fallbackProviderId":"@automatic"}""");
+        var modelB = Parse("""{"id":"b","cli":"claude-sonnet-5","provider":"claude@b","providerId":"claude@b","accountScope":"b","companyId":"claude","plan":"claude@b","enabled":true,"available":true}""");
+        var codex = Parse("""{"id":"c","cli":"gpt-6-sol","provider":"codex","providerId":"codex","accountScope":"c","companyId":"codex","plan":"chatgpt","enabled":true,"available":true}""");
+        var models = Models(modelA, modelB, codex);
+        var exhausted = Arr("""[{"id":"claude","readable":true,"leftPct":0,"exhausted":true},{"id":"claude@b","readable":false,"planStatus":"unknown"},{"id":"chatgpt","readable":true,"leftPct":80}]""");
+        Assert.Equal("c", Id(ModelPolicy.ResolveUsageFallback(modelA, models, exhausted, _ => true)));
+
+        var running = Arr("""[{"subTaskId":"s","modelId":"a"}]""");
+        var low = Arr("""[{"id":"claude","readable":true,"leftPct":10},{"id":"claude@b","readable":false,"planStatus":"unknown"},{"id":"chatgpt","readable":true,"leftPct":90}]""");
+        var switches = ModelPolicy.QuotaSwitches(running, models, low, 35);
+        Assert.Equal("c", switches[0]!["toModelId"]!.GetValue<string>());
+
+        var room = Arr("""[{"id":"claude","readable":true,"leftPct":0,"exhausted":true},{"id":"claude@b","readable":true,"leftPct":44},{"id":"chatgpt","readable":true,"leftPct":90}]""");
+        Assert.Equal("b", Id(ModelPolicy.ResolveUsageFallback(modelA, models, room, _ => true)));
+    }
+
+    [Fact]
     public void Fallback_prefers_same_model_on_another_account_when_quota_exhausted()
     {
         var modelA = Parse("""{"id":"claude-a","cli":"claude-sonnet-5","provider":"claude","plan":"claude","enabled":true,"available":true,"fallbackProviderId":"@automatic"}""");
