@@ -682,7 +682,22 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             const first = `${pushed.stderr}\n${pushed.stdout}`.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.includes('HEAD:'));
             throw new RequestError(400, (first ? first + '\n' : '') + 'Push failed. The commit is saved; nothing was sent.');
           }
-          return { ok: true, commit, branch, pushed: true };
+          // The push opens the pull request too, so the user does not have to make it by hand.
+          const gh = args => new Promise(resolve => {
+            const child = spawn('gh', args, { cwd: folder, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+            let stdout = '', stderr = '';
+            child.stdout.on('data', chunk => { stdout += chunk; }); child.stderr.on('data', chunk => { stderr += chunk; });
+            child.on('error', error => resolve({ status: 1, stdout, stderr: error.message }));
+            child.on('close', code => resolve({ status: code, stdout, stderr }));
+          });
+          let prUrl = '';
+          const existing = await gh(['pr', 'view', '--json', 'url', '--jq', '.url']);
+          if (existing.status === 0 && existing.stdout.trim()) prUrl = existing.stdout.trim();
+          else {
+            const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', message, '--body', 'Opened by Planwharf from the push button.']);
+            if (created.status === 0) prUrl = created.stdout.trim();
+          }
+          return { ok: true, commit, branch, pushed: true, prUrl };
         })();
         return json(200, result);
       }

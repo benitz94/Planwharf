@@ -289,7 +289,15 @@ function prepare(folder, options = {}) {
     if (previous.goal && previous.goal === block(options.goal) && previous.branch === currentBranch(folder) && !previous.done)
       dirty = dirty.filter(line => line !== '?? .planwharf/plan.md');
   }
-  if (dirty.length && currentBranch(folder) !== name) return { ok: false, reason: dirtyMessage(dirty) };
+  // A new work starts clean. Uncommitted files are set aside, not left for the user: they are
+  // usually this crew's own leftovers, and they stay in the stash if they were wanted.
+  let setAside = '';
+  if (dirty.length && currentBranch(folder) !== name) {
+    const names = dirty.map(dirtyName).filter(Boolean);
+    const stashed = git(folder, ['stash', 'push', '-u', '-m', 'Planwharf set these aside to start ' + name]);
+    if (!stashed.ok) return { ok: false, reason: dirtyMessage(dirty) };
+    setAside = `Set aside uncommitted changes so the crew could start: ${names.slice(0, 8).join(', ')}. They are in the git stash.`;
+  }
   if (options.keepWorkPlan === true) ensureExclude(folder, true);
   const fetched = git(folder, ['fetch', 'origin'], 30000);
   let base = '';
@@ -327,6 +335,7 @@ function prepare(folder, options = {}) {
   }
   const current = git(folder, ['branch', '--show-current']).stdout.trim() || name;
   writePlan(folder, { goal, base, branch: current, steps: options.steps || [] });
+  if (setAside) chat = chat ? setAside + ' ' + chat : setAside;
   return { ok: true, git: true, branch: current, base, offline: Boolean(chat), chat };
 }
 

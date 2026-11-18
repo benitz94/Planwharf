@@ -545,7 +545,9 @@ public sealed partial class MainWindow : Window
             var result = await api.CommitAsync(projectId, message, push);
             string Get(string key) => result?[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
             var pushed = result?["pushed"]?.GetValue<bool>() == true;
-            said = (true, pushed ? Strings.Format("{0} to {1} on GitHub.", (Get("commit").Length > 0 ? Strings.Format("Committed {0} and pushed", Get("commit")) : Strings.T("Pushed")), Get("branch")) : Strings.Format("Committed {0} on {1}. Not pushed yet.", Get("commit"), Get("branch")));
+            var text = pushed ? Strings.Format("{0} to {1} on GitHub.", (Get("commit").Length > 0 ? Strings.Format("Committed {0} and pushed", Get("commit")) : Strings.T("Pushed")), Get("branch")) : Strings.Format("Committed {0} on {1}. Not pushed yet.", Get("commit"), Get("branch"));
+            if (pushed && Get("prUrl").Length > 0) text += " " + Get("prUrl");
+            said = (true, text);
         }
         catch (Exception error) { said = (false, error.Message); }
         gitBusy.Remove(projectId); gitSaid[projectId] = said; commitMessages.Remove(projectId);

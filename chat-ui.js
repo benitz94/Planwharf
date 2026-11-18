@@ -1224,7 +1224,7 @@
         let said;
         try {
           const result = await post('/api/repository/commit', { projectId, message: message || 'push', push });
-          said = { ok: true, text: result.pushed ? `${result.commit ? `Committed ${result.commit} and pushed` : 'Pushed'} to ${result.branch} on GitHub.` : `Committed ${result.commit} on ${result.branch}. Not pushed yet.` };
+          said = { ok: true, text: result.pushed ? `${result.commit ? `Committed ${result.commit} and pushed` : 'Pushed'} to ${result.branch} on GitHub.${result.prUrl ? ' Pull request: ' + result.prUrl : ''}` : `Committed ${result.commit} on ${result.branch}. Not pushed yet.` };
         } catch (error) { said = { ok: false, text: error.message }; }
         state.gitBusy[projectId] = null; state.gitSaid[projectId] = said; toast(said.text);
         delete state.repo[projectId]; state.threadSig = ''; render();
