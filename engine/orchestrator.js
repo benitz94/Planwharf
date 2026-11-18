@@ -3302,13 +3302,14 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             }
           });
           let spoken = await askThis(lead);
-          // A lead whose CLI dies mid-answer gets one more try, then the next lead. The red box
-          // is the last resort, after both miss.
-          if (spoken?.failure && askCurrent(token)) {
+          // Only a dead CLI retries. A protocol change or an unrecognized model is a real answer
+          // about the provider: it is classified and kept, never replaced.
+          const died = spoken => spoken?.failure === 'process';
+          if (died(spoken) && askCurrent(token)) {
             note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
             spoken = await askThis(lead);
           }
-          if (spoken?.failure && askCurrent(token)) {
+          if (died(spoken) && askCurrent(token)) {
             const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
             if (next) {
               switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
