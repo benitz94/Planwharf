@@ -436,6 +436,82 @@ public sealed class ModelPolicyTests
         Assert.Empty(failures);
     }
 
+    [Fact]
+    public void Expired_and_signed_out_plans_block_model_usage_policy_and_trigger_low_quota()
+    {
+        var model = Parse("""{"id":"m1","cli":"sonnet","provider":"claude","plan":"claude","enabled":true}""");
+        foreach (var status in new[] { "expired", "not signed in" })
+        {
+            var plans = Arr($$"""[{"id":"claude","readable":false,"planStatus":"{{status}}","reason":"Claude plan {{status}}."}]""");
+            var policy = ModelPolicy.UsagePolicy(model, plans);
+            Assert.True(policy["blocked"]!.GetValue<bool>());
+            Assert.Equal(status, policy["state"]!.GetValue<string>());
+            Assert.True(ModelPolicy.LowQuota(model, plans, 35));
+        }
+        var active = Arr("""[{"id":"claude","readable":true,"leftPct":80,"planStatus":"active"}]""");
+        var activePolicy = ModelPolicy.UsagePolicy(model, active);
+        Assert.False(activePolicy["blocked"]!.GetValue<bool>());
+        Assert.Equal("ok", activePolicy["state"]!.GetValue<string>());
+        Assert.False(ModelPolicy.LowQuota(model, active, 35));
+    }
+
+    [Fact]
+    public void Same_exact_model_on_another_account_wins_before_a_different_company()
+    {
+        var models = Arr("""
+        [
+            { "id": "claude-a", "cli": "claude-sonnet-5", "provider": "claude", "accountScope": "claude:a", "plan": "claude", "enabled": true, "available": true },
+            { "id": "claude-b", "cli": "claude-sonnet-5", "provider": "claude@b", "companyId": "claude", "accountScope": "claude@b", "plan": "claude@b", "enabled": true, "available": true },
+            { "id": "codex", "cli": "gpt-6-sol", "provider": "codex", "plan": "chatgpt", "enabled": true, "available": true }
+        ]
+        """);
+        var plans = Arr("""[{"id":"claude","readable":true,"leftPct":10},{"id":"claude@b","readable":true,"leftPct":55},{"id":"chatgpt","readable":true,"leftPct":95}]""");
+        var running = Arr("""[{"subTaskId":"s1","modelId":"claude-a"}]""");
+
+        var switches = ModelPolicy.QuotaSwitches(running, models, plans, 35);
+        Assert.Single(switches);
+        Assert.Equal("claude-b", switches[0]!["toModelId"]!.GetValue<string>());
+
+        // When claude-b expires, codex takes over
+        plans[1] = Parse("""{"id":"claude@b","readable":false,"planStatus":"expired"}""");
+        var fallbackSwitches = ModelPolicy.QuotaSwitches(running, models, plans, 35);
+        Assert.Single(fallbackSwitches);
+        Assert.Equal("codex", fallbackSwitches[0]!["toModelId"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Unread_sibling_account_does_not_beat_another_company_with_room()
+    {
+        var modelA = Parse("""{"id":"a","cli":"claude-sonnet-5","provider":"claude","providerId":"claude","accountScope":"a","companyId":"claude","plan":"claude","enabled":true,"available":true,"fallbackProviderId":"@automatic"}""");
+        var modelB = Parse("""{"id":"b","cli":"claude-sonnet-5","provider":"claude@b","providerId":"claude@b","accountScope":"b","companyId":"claude","plan":"claude@b","enabled":true,"available":true}""");
+        var codex = Parse("""{"id":"c","cli":"gpt-6-sol","provider":"codex","providerId":"codex","accountScope":"c","companyId":"codex","plan":"chatgpt","enabled":true,"available":true}""");
+        var models = Models(modelA, modelB, codex);
+        var exhausted = Arr("""[{"id":"claude","readable":true,"leftPct":0,"exhausted":true},{"id":"claude@b","readable":false,"planStatus":"unknown"},{"id":"chatgpt","readable":true,"leftPct":80}]""");
+        Assert.Equal("c", Id(ModelPolicy.ResolveUsageFallback(modelA, models, exhausted, _ => true)));
+
+        var running = Arr("""[{"subTaskId":"s","modelId":"a"}]""");
+        var low = Arr("""[{"id":"claude","readable":true,"leftPct":10},{"id":"claude@b","readable":false,"planStatus":"unknown"},{"id":"chatgpt","readable":true,"leftPct":90}]""");
+        var switches = ModelPolicy.QuotaSwitches(running, models, low, 35);
+        Assert.Equal("c", switches[0]!["toModelId"]!.GetValue<string>());
+
+        var room = Arr("""[{"id":"claude","readable":true,"leftPct":0,"exhausted":true},{"id":"claude@b","readable":true,"leftPct":44},{"id":"chatgpt","readable":true,"leftPct":90}]""");
+        Assert.Equal("b", Id(ModelPolicy.ResolveUsageFallback(modelA, models, room, _ => true)));
+    }
+
+    [Fact]
+    public void Fallback_prefers_same_model_on_another_account_when_quota_exhausted()
+    {
+        var modelA = Parse("""{"id":"claude-a","cli":"claude-sonnet-5","provider":"claude","plan":"claude","enabled":true,"available":true,"fallbackProviderId":"@automatic"}""");
+        var modelB = Parse("""{"id":"claude-b","cli":"claude-sonnet-5","provider":"claude@b","companyId":"claude","plan":"claude@b","enabled":true,"available":true}""");
+        var codex = Parse("""{"id":"codex","cli":"gpt-6-sol","provider":"codex","plan":"chatgpt","enabled":true,"available":true}""");
+        var models = Models(modelA, modelB, codex);
+        var plans = Arr("""[{"id":"claude","readable":true,"leftPct":0,"exhausted":true},{"id":"claude@b","readable":true,"leftPct":50},{"id":"chatgpt","readable":true,"leftPct":90}]""");
+
+        var resolved = ModelPolicy.ResolveUsageFallback(modelA, models, plans, _ => true);
+        Assert.NotNull(resolved);
+        Assert.Equal("claude-b", resolved!["id"]!.GetValue<string>());
+    }
+
     static JsonObject WithPolicy(JsonObject model, string policy)
     {
         var copy = Copy(model);

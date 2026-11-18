@@ -11,6 +11,7 @@ namespace Planwharf.Native;
 // The project's team, as in the chat page: lead, models on the team and on the bench, AI tools, API connections.
 public sealed partial class MainWindow
 {
+    string accountSignInCommand = "";
     void TeamPanel(TeamView team, string name)
     {
         // Which project this team is for, in a soft green box.
@@ -30,8 +31,8 @@ public sealed partial class MainWindow
         side.Children.Add(lead);
 
         // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
-        var offered = team.Models.Where(m => !m.NotOffered).ToList();
-        var hidden = team.Models.Count - offered.Count;
+        var offered = team.Models.Where(m => !m.NotOffered && m.PlanStatus is not ("expired" or "not signed in")).ToList();
+        var hidden = team.Models.Count(m => m.NotOffered);
         var shown = offered.Where(Matches).ToList();
         side.Children.Add(FilterBar(team, offered, shown));
         var active = shown.Where(m => !m.Bench).ToList();
@@ -55,6 +56,13 @@ public sealed partial class MainWindow
             benchSection.Children.Add(fold);
         }
         if (hidden > 0) benchSection.Children.Add(Explain(Strings.Format(hidden == 1 ? "{0} model is not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model)." : "{0} models are not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model).", hidden, Strings.T(hidden == 1 ? "it" : "them"), Strings.T(hidden == 1 ? "it" : "them"))));
+        foreach (var group in team.Models.Where(m => !m.NotOffered && m.PlanStatus is "expired" or "not signed in").GroupBy(m => (m.Adapter, m.PlanStatus)))
+        {
+            var company = group.Key.Adapter switch { "claude" => "Claude", "codex" => "ChatGPT", "grok" => "Grok", "antigravity" => "Gemini", _ => group.Key.Adapter };
+            benchSection.Children.Add(Explain(group.Key.PlanStatus == "expired"
+                ? Strings.Format("{0} models hidden: {1} plan expired. Renew it or sign in again, then look for models again.", group.Count(), company)
+                : Strings.Format("{0} models hidden: {1} is not signed in. Sign in, then look for models again.", group.Count(), company)));
+        }
         side.Children.Add(benchSection);
 
         var tools = Look.Section("chip", Palette.Build, Palette.BuildSoft, Strings.T("AI tools"), Strings.T("Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used."));
@@ -75,9 +83,21 @@ public sealed partial class MainWindow
             var unasked = Look.Chip(Strings.T("Works without asking"), null, Palette.Accent, Palette.AccentSoft, provider.WorksUnasked);
             ToolTip.SetTip(unasked, Strings.T("Edits files and runs commands in the project folder without asking each time"));
             unasked.Click += async (_, _) => await DoAsync(() => api!.SetWorksUnaskedAsync(provider.Id, !provider.WorksUnasked), !provider.WorksUnasked ? Strings.Format("{0} works without asking now.", provider.Label) : Strings.Format("{0} asks again before it builds.", provider.Label));
+            var actions = new WrapPanel { Children = { onOff, unasked } };
+            if (provider.Id == provider.Adapter && provider.Adapter is "claude" or "codex")
+            {
+                var add = Small(Strings.T("Add another account"));
+                add.Click += async (_, _) => await DoAsync(async () =>
+                {
+                    var result = await api!.AddAccountAsync(provider.Id);
+                    accountSignInCommand = Str(result?["signInCommand"]);
+                }, Strings.T("Account folder ready. Run the sign-in command below, then look for models again."));
+                actions.Children.Add(add);
+            }
             tools.Children.Add(MemberCard(new StackPanel { Spacing = 6, Children = { new StackPanel { Children = { label,
-                new TextBlock { Text = Strings.Format(provider.Models == 1 ? "{0} model" : "{0} models", provider.Models), Foreground = Palette.Muted, FontSize = 12 } } }, new WrapPanel { Children = { onOff, unasked } } } }, false));
+                new TextBlock { Text = Strings.Format(provider.Models == 1 ? "{0} model" : "{0} models", provider.Models), Foreground = Palette.Muted, FontSize = 12 } } }, actions } }, false));
         }
+        if (accountSignInCommand.Length > 0) tools.Children.Add(new SelectableTextBlock { Text = accountSignInCommand, TextWrapping = TextWrapping.Wrap, Foreground = Palette.Text });
         var look = Look.Button(Strings.T("Look for models again"), "refresh", Look.Kind.Small);
         look.HorizontalAlignment = HorizontalAlignment.Left;
         look.Click += async (_, _) => await DoAsync(() => api!.RefreshModelsAsync(), Strings.T("Model list updated."));

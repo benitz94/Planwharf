@@ -66,6 +66,42 @@ public class TeamViewTests
     }
 
     [Fact]
+    public void Expired_and_signed_out_models_are_excluded_from_leads_and_step_menus()
+    {
+        var state = JsonNode.Parse("""
+        {
+          "orchestratorId": "a",
+          "leadOrder": ["a", "b", "c"],
+          "models": [
+            { "id": "a", "label": "Model A", "plan": "pro", "planStatus": "expired", "enabled": true, "available": true, "roles": { "worker": true, "verifier": true }, "roleEligibility": { "orchestrator": true, "worker": true, "verifier": true } },
+            { "id": "b", "label": "Model B", "plan": "plus", "planStatus": "not signed in", "enabled": true, "available": true, "roles": { "worker": true, "verifier": true }, "roleEligibility": { "orchestrator": true, "worker": true, "verifier": true } },
+            { "id": "c", "label": "Model C", "plan": "max", "planStatus": "active", "enabled": true, "available": true, "roles": { "worker": true, "verifier": true }, "roleEligibility": { "orchestrator": true, "worker": true, "verifier": true } }
+          ]
+        }
+        """)!;
+        var team = TeamViews.Team(state);
+        Assert.Equal("expired", team.Models.Single(m => m.Id == "a").PlanStatus);
+        Assert.Equal("not signed in", team.Models.Single(m => m.Id == "b").PlanStatus);
+        Assert.Equal("active", team.Models.Single(m => m.Id == "c").PlanStatus);
+
+        var leads = TeamViews.Leads(team);
+        Assert.Equal(["c"], leads.Select(m => m.Id));
+
+        var onlyExpired = JsonNode.Parse("""
+        { "orchestratorId": "a",
+          "models": [ { "id": "a", "label": "Model A", "enabled": true, "available": true, "planStatus": "expired", "roles": { "orchestrator": true, "worker": true }, "roleEligibility": { "orchestrator": true, "worker": true } } ],
+          "projects": [ { "id": "p1", "folder": "D:\\\\work", "goal": "Build the fixture" } ] }
+        """)!;
+        Assert.Equal(["Choose a lead in Team.", "Give at least one model the Build role in Team."], TeamViews.Missing(onlyExpired, "p1"));
+
+        var builders = TeamViews.ModelsFor(team, "Build");
+        Assert.Equal(["c"], builders.Select(m => m.Id));
+
+        var verifiers = TeamViews.ModelsFor(team, "Verify");
+        Assert.Equal(["c"], verifiers.Select(m => m.Id));
+    }
+
+    [Fact]
     public void A_model_with_only_the_reviewer_role_is_on_the_bench_with_no_review_chip()
     {
         var team = TeamViews.Team(JsonNode.Parse("""

@@ -54,8 +54,8 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 13 | Before the porting goes on | The logo follows the main colour; the work plan file can be kept in git (sheet below) | `fix/logo-plan-option` | Done, waiting for review |
 | 14 | Before the porting goes on | Review the commit "16 failing test files" (sheet below) | `fix/failing-tests` | Done, waiting for review |
 | 15 | Before the porting goes on | Each parallel worker in its own copy of the folder (git worktree) (sheet below) | `feat/worktrees` | Done, waiting for review |
-| 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | To do |
-| 17 | Before the porting goes on | The native app in English and Italian, with the language chosen in Settings (sheet below) | `feat/languages` | Done, waiting for review |
+| 16 | Before the porting goes on | More than one account per company, and plans that expired or are signed out (sheet below) | `feat/accounts` | Done, waiting for review |
+| 17 | Before the porting goes on | The native app in English and Italian, with the language chosen in Settings (sheet below) | `feat/languages` | Done (#132) |
 | 18 | Protocol and pipeline | Planwharf's own MCP tools for workers: `ask`, `progress`, `finish` (checked at once), `decision`, `handoff`; the JSON file stays for programs without MCP. Write the sheet first, from [the design](DESIGN-PIPELINE.md), then stop for review | `feat/mcp-protocol` | To do |
 | 19 | Protocol and pipeline | Acceptance tests and the gate: the engine runs the checks itself, before review and before a work counts as done; a branch cannot change its own checks. Sheet first, then stop | `feat/gate` | To do |
 | 20 | Protocol and pipeline | Pipeline, part 1: the queue (GitHub issues labelled `planwharf` and a local list, each an option), intake with questions, spec with acceptance tests, job state in files. Sheet first, then stop | `feat/pipeline-intake` | To do |

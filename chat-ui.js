@@ -40,7 +40,7 @@
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
     pending: {}, repo: {}, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
-    updates: null, windowTitle: null, armed: null
+    updates: null, windowTitle: null, armed: null, accountSignInCommand: ''
   };
 
   // ---------- backend ----------
@@ -76,12 +76,13 @@
   const project = () => (state.orchestra?.projects || []).find(row => row.id === state.projectId) || null;
   const models = () => state.orchestra?.models || [];
   const lead = () => models().find(model => model.id === state.orchestra?.orchestratorId) || null;
+  const planOpen = model => model?.planStatus !== 'expired' && model?.planStatus !== 'not signed in';
   const autonomyOf = id => state.orchestra?.autonomy?.[id] || null;
   const quotaLeft = model => {
     const pool = (state.orchestra?.plans || []).find(plan => plan.id === (model.quotaPoolId || model.plan));
     return pool && pool.readable && Number.isFinite(pool.leftPct) ? pool.leftPct : null;
   };
-  const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false);
+  const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false && planOpen(model));
   const verifiers = () => models().filter(model => model.roles?.verifier && model.enabled && model.available !== false);
   const ROLE_KEYS = ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor'];
   // On the bench with none of lead, Build and Verify. Review is not a role.
@@ -251,7 +252,7 @@
   // The ship from ship.svg, drawn with the page colours so it fits the light and the dark theme.
   const SHIP = '<svg class="ship" viewBox="0 0 240 170" aria-hidden="true"><rect class="mast" x="117" y="8" width="7" height="112" rx="3"/><path class="flag" d="M124 10c8-3 14 4 22 1 3-1 6-3 8-5-2 6-5 10-10 12-7 3-13-3-20 0Z"/><path class="sail-back" d="M113 30c-16 18-29 38-38 60 12-3 25-4 38-4-4-18-5-37 0-56Z"/><path class="sail" d="M128 26c26 17 43 42 50 70-15-4-31-5-48-4 5-22 4-44-2-66Z"/><path class="hull" d="M66 104h22l9-12h20l9 12h70c-6 10-13 22-21 30H76c-5-8-9-18-10-30Z"/><path class="keel" d="M76 134h109c-3 5-7 9-11 12H86c-4-3-7-7-10-12Z"/><circle class="port" cx="112" cy="118" r="5"/><circle class="port" cx="132" cy="118" r="5"/><circle class="port" cx="152" cy="118" r="5"/><path class="wave-far" d="M14 136c16-9 34-11 52-4-17-3-35-1-52 4Z M180 132c16-8 32-8 48 0-16-3-32-3-48 0Z"/><path class="wave-near" d="M42 152c30-10 58-10 86-2s58 8 86-2c-26 16-58 18-86 10s-58-9-86-6Z"/></svg>';
   function welcomeCard() {
-    const leads = byLeadOrder(models().filter(model => model.roleEligibility?.orchestrator && model.available !== false));
+    const leads = byLeadOrder(models().filter(model => model.roleEligibility?.orchestrator && model.available !== false && planOpen(model)));
     const current = lead();
     const hasProject = (state.orchestra?.projects || []).length > 0;
     const step = (n, done, text) => `<li class="${done ? 'done' : ''}"><span class="num" aria-hidden="true">${done ? ic('check') : n}</span><span>${text}</span></li>`;
@@ -273,7 +274,7 @@
   }
   function readiness(row) {
     const missing = [];
-    if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
+    if (!lead() || !planOpen(lead())) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
     // Only a plan ready and not yet worked on starts the crew: never the goal it already reached.
@@ -645,10 +646,11 @@
   function teamPanel() {
     const all = models();
     const current = lead();
-    const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false));
+    const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false && planOpen(model)));
     // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
-    const offered = all.filter(model => !model.catalogExcluded);
-    const hidden = all.length - offered.length;
+    const offered = all.filter(model => !model.catalogExcluded && !['expired', 'not signed in'].includes(model.planStatus));
+    const hidden = all.filter(model => model.catalogExcluded).length;
+    const statusHidden = Object.entries(Object.groupBy(all.filter(model => !model.catalogExcluded && ['expired', 'not signed in'].includes(model.planStatus)), model => `${model.adapter}|${model.planStatus}`));
     const shown = offered.filter(matchesFilter);
     const active = shown.filter(model => !onBench(model));
     const bench = shown.filter(onBench);
@@ -662,12 +664,14 @@
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
         ${bench.length ? `<details class="bench-list" ${bench.length <= 4 || filterActive() ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}
         ${hidden ? `<p class="explain">${hidden} model${hidden === 1 ? ' is' : 's are'} not shown: the AI tools on this computer do not offer ${hidden === 1 ? 'it' : 'them'} any more.</p>` : ''}</div>
+        ${statusHidden.map(([key, rows]) => { const [adapter, status] = key.split('|'); const company = { claude: 'Claude', codex: 'ChatGPT', grok: 'Grok', antigravity: 'Gemini' }[adapter] || adapter; return `<p class="explain">${rows.length} models hidden: ${escape(company)} ${status === 'expired' ? 'plan expired. Renew it or sign in again' : 'is not signed in. Sign in'}, then look for models again.</p>`; }).join('')}
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
         ${(state.orchestra?.providers || []).map(provider => provider.installed === false
           // Not installed: never shown as On; say how to install it.
           ? `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)} <span class="badge">Not installed</span></div><div class="meta">${escape(provider.installHint || 'Install it and sign in, then look for models again.')}</div></div></div>`
           : `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
-          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button></div></div>`).join('')}
+          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button>${provider.id === provider.adapter && ['claude', 'codex'].includes(provider.adapter) ? `<button type="button" class="chip" data-add-account="${escape(provider.id)}">Add another account</button>` : ''}</div></div>`).join('')}
+        ${state.accountSignInCommand ? `<p class="explain">Run this sign-in command, then look for models again:</p><pre>${escape(state.accountSignInCommand)}</pre>` : ''}
         <button type="button" class="btn btn-small" data-action="refresh-models">${ic('refresh')}Look for models again</button></div>
       <div class="section">${head('plug', 't-violet', 'Connect a model by API')}<p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
         <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
@@ -1156,6 +1160,7 @@
     }
     else if (action === 'resume') withOk(() => act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.'));
     else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
+    else if (target.dataset.addAccount) act(async () => { const result = await post('/api/accounts', { providerId: target.dataset.addAccount }); state.accountSignInCommand = result.signInCommand; return result.snapshot; }, 'Account folder ready. Run the sign-in command shown in AI tools.');
     else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }

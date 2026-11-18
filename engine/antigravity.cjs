@@ -18,10 +18,14 @@ function groupPlan(groups, pattern, id, label) {
   if (!windows.length) return unreadPlan(id, `Antigravity returned no numeric ${label} quota.`);
   const tight = windows.reduce((a, b) => a.remainingFraction < b.remainingFraction ? a : b);
   return { id, label, readable: true, exhausted: windows.some(w => w.remainingFraction === 0),
-    pct: tight.pct, leftPct: tight.leftPct, source: 'agy /usage JSON', reason: null, windows };
+    pct: tight.pct, leftPct: tight.leftPct, source: 'agy /usage JSON', planStatus: 'active', reason: null, windows };
 }
 // The Gemini plan, as before, with the Claude and GPT plan alongside in extraPlans.
 function parseUsage(body) {
+  if (body?.status === 'ERROR') {
+    const planError = require('./plan-status.cjs').providerError('antigravity', body?.result?.error || body?.error, 'Gemini');
+    if (planError) return { ...unreadPlan('Gemini', planError.reason), planStatus: planError.planStatus };
+  }
   const groups = body && body.status === 'SUCCESS' && body.command && body.command.name === 'usage' && body.command.data && body.command.data.groups;
   const gemini = groupPlan(groups, /^Gemini Models$/i, 'Gemini', 'Gemini');
   const other = groupPlan(groups, /^Claude and GPT models$/i, CLAUDE_GPT_POOL, CLAUDE_GPT_POOL);

@@ -7,7 +7,7 @@ const { createHash } = require('node:crypto');
 const { unreadPlan } = require('./planUsage.js');
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 const MAX_BYTES = 65536;
-const unread = reason => unreadPlan('Claude', reason);
+const unread = reason => require('./plan-status.cjs').withStatus('claude', unreadPlan('Claude', reason));
 
 function parseClaudeUsage(body) {
   const windows = [];
@@ -21,12 +21,12 @@ function parseClaudeUsage(body) {
   if (!windows.length) return unread('Claude usage response contains no numeric subscription quota windows.');
   const tight = windows.reduce((a, b) => a.leftPct <= b.leftPct ? a : b);
   return { id: 'Claude', label: 'Claude', readable: true, exhausted: windows.some(w => w.pct === 100), pct: tight.pct,
-    leftPct: tight.leftPct, resetAt: tight.resetAt, source: 'Claude subscription OAuth usage', reason: null, windows };
+    leftPct: tight.leftPct, resetAt: tight.resetAt, source: 'Claude subscription OAuth usage', planStatus: 'active', reason: null, windows };
 }
 
 async function readClaudeAuth({ env = process.env, home = os.homedir(), command = require('./providers.cjs').executable('claude'), run = execFile, now = Date.now } = {}) {
   if (!command) return null;
-  const status = await new Promise(resolve => run(command, ['auth', 'status'], { windowsHide: true, timeout: 10000, maxBuffer: MAX_BYTES }, (error, stdout) => {
+  const status = await new Promise(resolve => run(command, ['auth', 'status'], { env, windowsHide: true, timeout: 10000, maxBuffer: MAX_BYTES }, (error, stdout) => {
     try { resolve(error ? null : JSON.parse(stdout)); } catch { resolve(null); }
   }));
   // Do not attribute a stored subscription to a CLI currently using an API/gateway.
@@ -64,8 +64,17 @@ function createClaudeUsageReader({ readAuth = readClaudeAuth, fetchImpl = fetch,
         if (response.status !== 200) {
           const seconds = Number(response.headers.get('retry-after'));
           if (response.status === 429 && Number.isFinite(seconds) && seconds > 0) retryMs = Math.max(ttlMs, Math.min(seconds * 1000, 3600000));
-          await response.body?.cancel();
-          result = unread(response.status === 401 ? 'Claude subscription login expired. Open Claude Code to refresh it.'
+          let failureText = '';
+          if (response.body && response.status !== 429) {
+            let size = 0;
+            for await (const chunk of response.body) {
+              size += chunk.length;
+              if (size > MAX_BYTES) { failureText = ''; break; }
+              failureText += chunk.toString('utf8');
+            }
+          } else await response.body?.cancel();
+          const planError = require('./plan-status.cjs').providerError('claude', failureText, 'Claude');
+          result = planError ? { ...unread(planError.reason), planStatus: planError.planStatus } : unread(response.status === 401 ? 'Claude subscription login expired. Open Claude Code to refresh it.'
             : response.status === 429 ? 'Claude usage endpoint is rate limited. A later refresh will retry; previous quota is not treated as current.'
             : 'Claude usage HTTP ' + response.status + '.');
         } else {

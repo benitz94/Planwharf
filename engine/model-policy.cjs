@@ -28,6 +28,7 @@ function validatePolicy(value) {
 function usagePolicy(model, plans = []) {
   const policy = validatePolicy(model.policy || {});
   const plan = plans.find(plan => plan.id === (model.quotaPoolId || model.plan));
+  if (require('./plan-status.cjs').blockedStatus(plan)) return { ...policy, blocked: true, state: plan.planStatus, reason: plan.reason || `${plan.id} plan ${plan.planStatus}.` };
   const percent = value => Number.isFinite(value) && value >= 0 && value <= 100;
   const left = plan?.readable === true && percent(plan.leftPct) ? plan.leftPct : plan?.readable === true && percent(plan.pct) ? 100 - plan.pct : null;
   const usedPercent = left === null ? null : Math.max(0, Math.min(100, 100 - left));
@@ -48,10 +49,24 @@ function resolveUsageFallback(model, models, plans, eligible) {
     const exhausted = plans.some(plan => plan.id === (current.quotaPoolId || current.plan) && plan.readable && (plan.exhausted || plan.leftPct === 0));
     if (status.state === 'unread') return null;
     if (!status.blocked && !exhausted) return eligible(current) ? current : null;
+    const currentAccount = current.accountScope || current.providerId || current.provider;
+    const currentCompany = current.companyId || current.providerId || current.provider;
+    const sameAccountModel = models.find(other => {
+      const otherAccount = other.accountScope || other.providerId || other.provider;
+      const otherCompany = other.companyId || other.providerId || other.provider;
+      return other.id !== current.id && other.cli === current.cli
+        && currentCompany === otherCompany
+        && currentAccount && otherAccount && currentAccount !== otherAccount
+        && quotaLeft(other, plans) !== null
+        && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other)
+        && !usagePolicy(other, plans).blocked && !require('./plan-status.cjs').blockedStatus(plans.find(plan => plan.id === (other.quotaPoolId || other.plan)));
+    });
+    if (sameAccountModel) { current = sameAccountModel; continue; }
     if (current.fallbackProviderId === '@automatic') {
       const sourceProvider = current.providerId || current.provider;
       const sourcePool = current.quotaPoolId || current.plan;
       current = models.find(other => (other.providerId || other.provider) !== sourceProvider && (!sourcePool || (other.quotaPoolId || other.plan) !== sourcePool) && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other)
+        && quotaLeft(other, plans) !== null
         && !usagePolicy(other, plans).blocked && !plans.some(plan => plan.id === (other.quotaPoolId || other.plan) && plan.readable && (plan.exhausted || plan.leftPct === 0)));
     } else if (current.fallbackProviderId) {
       const candidates = models.filter(other => (other.providerId || other.provider) === current.fallbackProviderId && !seen.has(other.id) && other.enabled && other.available !== false && other.providerEnabled !== false && eligible(other));
@@ -108,6 +123,7 @@ function quotaWindows(model, plans = []) {
 // with no limit is low only when its quota is really exhausted.
 function lowQuota(model, plans = [], limit = AUTO_SWITCH_DEFAULT) {
   const plan = plans.find(item => item && item.id === (model.quotaPoolId || model.plan));
+  if (require('./plan-status.cjs').blockedStatus(plan)) return true;
   if (plan?.readable === true && plan.exhausted) return true;
   if (usagePolicy(model, plans).state === 'limit') return true;
   const own = quotaLimit(limit, model);
@@ -132,10 +148,19 @@ function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent
       // A model whose quota is not reported (Grok Business bills in dollars) can take over too, after
       // the ones with quota read above their threshold.
       .filter(item => !lowQuota(item.model, plans, thresholdPercent))
+      .filter(item => !usagePolicy(item.model, plans).blocked)
       // A company the other steps of the work do not use comes first, so build and check stay independent;
       // then quota that is read before quota that is not, then the most quota left.
-      .map(item => ({ ...item, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) }))
-      .sort((a, b) => (a.shared - b.shared) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))[0];
+      .map(item => {
+        const currentAccount = current.accountScope || current.providerId || current.provider;
+        const candAccount = item.model.accountScope || item.model.providerId || item.model.provider;
+        const currentCompany = current.companyId || current.providerId || current.provider;
+        const candCompany = item.model.companyId || item.model.providerId || item.model.provider;
+        const sameModelAccount = Boolean(item.left !== null && currentAccount && candAccount && currentAccount !== candAccount
+          && item.model.cli === current.cli && currentCompany === candCompany);
+        return { ...item, sameModelAccount, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) };
+      })
+      .sort((a, b) => (b.sameModelAccount - a.sameModelAccount) || (a.shared - b.shared) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))[0];
     if (best) out.push({ subTaskId: step.subTaskId, fromModelId: current.id, toModelId: best.model.id, leftPercent: quotaLeft(current, plans) });
   }
   return out;

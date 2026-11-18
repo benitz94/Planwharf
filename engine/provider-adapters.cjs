@@ -4,14 +4,16 @@
 const adapters = {
   claude: { nativeModel: /^claude-[a-zA-Z0-9][a-zA-Z0-9._-]*$/, sourceProtectedResearch: false,
     account: () => require('./provider-accounts.cjs').unknownAccount(),
-    quota: () => require('./claude-usage.cjs').readClaudeUsage(),
-    discover: () => require('./claude.cjs').listClaude() },
+    quota: provider => provider.settingsFolder
+      ? require('./claude-usage.cjs').createClaudeUsageReader({ readAuth: () => require('./claude-usage.cjs').readClaudeAuth({ env: require('./provider-runtime.cjs').accountEnvironment('claude', provider) }) })()
+      : require('./claude-usage.cjs').readClaudeUsage(),
+    discover: provider => require('./claude.cjs').listClaude(provider.settingsFolder ? { env: require('./provider-runtime.cjs').accountEnvironment('claude', provider) } : {}) },
   codex: { nativeModel: /^gpt-/, sourceProtectedResearch: true,
-    account: provider => require('./provider-accounts.cjs').codexAccount(provider),
-    quota: () => require('./planUsage.js').readChatGpt(require('node:os').homedir(), fetch),
-    discover: async () => {
+    account: provider => require('./provider-accounts.cjs').codexAccount(provider, provider.settingsFolder ? { home: provider.settingsFolder } : {}),
+    quota: provider => require('./planUsage.js').readChatGpt(require('node:os').homedir(), fetch, provider.settingsFolder),
+    discover: async provider => {
       const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
-      const home = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
+      const home = provider?.settingsFolder || process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
       let auth; try { auth = JSON.parse(fs.readFileSync(path.join(home, 'auth.json'), 'utf8')); } catch { return { ok: false, reason: 'Codex authentication unavailable.' }; }
       const token = auth.tokens?.access_token;
       if (!token) return { ok: false, reason: 'Codex authentication unavailable.' };

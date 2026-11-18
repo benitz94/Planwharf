@@ -1298,7 +1298,15 @@ function createOrchestrator(options) {
       return picked ? roster().find(model => model.id === picked.id) || null : null;
     },
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
-    onRefusal: (modelId, reason) => { refusals.recordRefusal(store, modelId, reason, now()); persist(); },
+    onRefusal: (modelId, reason) => {
+      const model = roster().find(item => item.id === modelId);
+      const noted = require('./plan-status.cjs').notePlanRefusal(plansLive, model, reason);
+      if (noted.status) {
+        plansLive = noted.plans;
+        refusals.recordRefusal(store, modelId, `Plan ${noted.status}.`, now());
+      } else refusals.recordRefusal(store, modelId, reason, now());
+      persist();
+    },
     replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive }),
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
@@ -1810,7 +1818,11 @@ function createOrchestrator(options) {
           return next;
         }
       }
-      if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
+      // A signed-out plan is said in Team and does not erase the choice: a machine with no login
+      // (the checks) would otherwise have no lead. A quota block still drops it.
+      const policy = picked ? usagePolicy(picked, plansLive) : null;
+      const signedOut = policy && (policy.state === 'expired' || policy.state === 'not signed in');
+      if (picked && canOrchestrate(picked) && (signedOut || !policy.blocked) && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
       // A lead whose provider just refused work (credits, quota) hands over to another provider.
@@ -1829,7 +1841,7 @@ function createOrchestrator(options) {
       const legacyEnabled = store.enabled[item.id] ?? item.enabled;
       const provider = providerDefinitions.find(p => p.id === (item.providerId || item.provider));
       const account = provider?.account;
-      const scope = account?.key ? provider.id + ':' + account.key : null;
+      const scope = provider?.settingsFolder ? provider.id : account?.key ? provider.id + ':' + account.key : null;
       const emptyRoles = () => Object.fromEntries(ROLE_IDS.map(role => [role, false]));
       const legacy = store.modelRoles[item.id] || item.roles || (legacyEnabled ? {} : emptyRoles());
       if (scope && !store.accountModelRoles[scope]) {
@@ -1845,6 +1857,8 @@ function createOrchestrator(options) {
       item.accountKey = account?.key || null;
       item.accountType = account?.type || 'unread';
       item.accountScope = scope;
+      item.settingsFolder = provider?.settingsFolder || null;
+      item.planStatus = plansLive.find(plan => plan.id === (item.quotaPoolId || item.plan))?.planStatus || 'unknown';
       item.label = require('./provider-accounts.cjs').accountLabel(item.label, account);
       item.providerEnabled = provider ? (store.providerEnabled[provider.id] ?? provider.enabled) : true;
       item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? false, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
@@ -2337,7 +2351,7 @@ function createOrchestrator(options) {
       .then(() => loadPlans())
       .then(list => {
         if (!Array.isArray(list) || !list.length) throw new Error('Provider usage response is unreadable.');
-        plansLive = list;
+        plansLive = require('./plan-status.cjs').mergePlans(plansLive, list);
         plansAt = Date.now();
         plansInflight = null;
         return plansLive;
@@ -2913,7 +2927,8 @@ function createOrchestrator(options) {
   function limitFor(model) {
     const own = store.quotaLimits && model ? store.quotaLimits[model.id] : null;
     const pool = model ? model.quotaPoolId || model.plan : null;
-    const company = store.poolLimits && pool ? store.poolLimits[pool] : null;
+    const companyPool = model?.companyPoolId || pool;
+    const company = store.poolLimits && companyPool ? store.poolLimits[companyPool] : null;
     const general = autoSwitch();
     if (own?.none === true || !own && company?.none === true) return quotaLimit({ none: true });
     const pick = key => Number.isFinite(own?.[key]) ? own[key] : Number.isFinite(company?.[key]) ? company[key] : general[key];
@@ -2921,7 +2936,7 @@ function createOrchestrator(options) {
   }
   function limitSource(model) {
     if (store.quotaLimits && store.quotaLimits[model.id]) return 'model';
-    const pool = model.quotaPoolId || model.plan;
+    const pool = model.companyPoolId || model.quotaPoolId || model.plan;
     return store.poolLimits && pool && store.poolLimits[pool] ? 'company' : 'general';
   }
   function limitText(model) {

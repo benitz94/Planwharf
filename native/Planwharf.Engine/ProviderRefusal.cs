@@ -21,6 +21,8 @@ public static class ProviderRefusal
     const RegexOptions Js = RegexOptions.ECMAScript | RegexOptions.CultureInvariant;
     static readonly Regex[] Patterns =
     [
+        new("(?:subscription|plan) (?:is |has )?(?:expired|inactive|not active)", Js),
+        new("(?:not logged in|login expired|sign in to (?:claude|agy))", Js),
         new("requires usage credits", Js),
         new("you(?:'|\u2019)ve hit your [^.\\n]*limit", Js),
         new("usage limit (?:reached|exceeded)", Js),
