@@ -41,6 +41,15 @@ function dirtyName(line) {
   return (body.split(' -> ').at(-1) || body).trim() || String(line).trim();
 }
 
+// Cache and editor junk are not the user's work: they must not block a start.
+function isNoise(line) {
+  const name = dirtyName(line).replace(/\\/g, '/');
+  return /(^|\/)__pycache__(\/|$)/.test(name)
+    || /(^|\/)\.(pytest_cache|mypy_cache|ruff_cache)(\/|$)/.test(name)
+    || /\.(pyc|pyo)$/.test(name)
+    || /(^|\/)\.DS_Store$/.test(name);
+}
+
 function dirtyMessage(lines) {
   const names = lines.map(dirtyName).filter(Boolean).slice(0, 8);
   const more = lines.length > names.length ? `, and ${lines.length - names.length} more` : '';
@@ -274,7 +283,7 @@ function prepare(folder, options = {}) {
   const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
   // Uncommitted changes block a new work, not the same work going on: on its own branch they are the
   // crew's unfinished changes, and the next step starts from them.
-  let dirty = dirtyLines(folder, options.keepWorkPlan === true);
+  let dirty = dirtyLines(folder, options.keepWorkPlan === true).filter(line => !isNoise(line));
   if (options.keepWorkPlan === true) {
     const previous = parse(read(folder));
     if (previous.goal && previous.goal === block(options.goal) && previous.branch === currentBranch(folder) && !previous.done)
@@ -385,7 +394,7 @@ function finish(folder, spec = {}) {
   return true;
 }
 
-module.exports = {
+module.exports = { isNoise,
   EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, shortGoal,
   prepare, read, parse, tickStep, finish, commitNote, currentBranch, pushed, planPath
 };
