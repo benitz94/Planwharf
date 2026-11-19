@@ -382,7 +382,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     if (!projects.some(item => (item.tasks || []).some(task => close(task) !== task))) return;
     const next = current.schema === 2 ? { ...current, projects: current.projects.map(item => ({ ...item, tasks: (item.tasks || []).map(close) })) } : { ...current, tasks: (current.tasks || []).map(close) };
     await save(planFile, next);
-  }).catch(error => console.error('Closing old work failed:', error.message));
+  }).catch(error => {
+    // A missing notebook is expected on a fresh folder. Any other close failure still has to be visible,
+    // including one whose message happens to mention ENOENT.
+    const code = error && error.code;
+    const message = String(error && error.message || '');
+    if (code === 'ENOENT' || (!code && message.includes('ENOENT'))) return;
+    console.error('Closing old work failed:', error && error.message);
+  });
   const staticFiles = { '/': ['chat.html', 'text/html'], '/chat.css': ['chat.css', 'text/css'], '/chat-ui.js': ['chat-ui.js', 'text/javascript'], '/work-summary.js': ['work-summary.js', 'text/javascript'], '/icon.svg': ['icon.svg', 'image/svg+xml'], '/ship.svg': ['ship.svg', 'image/svg+xml'] };
   const server = http.createServer(async (request, response) => {
     const json = (status, value) => {

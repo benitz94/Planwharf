@@ -9,6 +9,7 @@ const { EventEmitter } = require('node:events');
 const { spawn } = require('node:child_process');
 const { createAppWindows } = require('./app-windows.cjs');
 const { acquireApp, parseArgs, listen, openWindow } = require('../planwharf.cjs');
+const { createServer } = require('../server.cjs');
 
 function windowFixture(focus = () => true) {
   const opened = [];
@@ -237,18 +238,159 @@ test('an occupied default port selects the next port without touching the notebo
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-startup-port-'));
   const planFile = path.join(dir, 'notebook.json');
   fs.copyFileSync(path.join(__dirname, '../fixtures/notebook.json'), planFile);
+  // The fixture's running task is pre-phase-2. Startup close supersedes that task and rewrites the file.
+  // Mark it current first so this check is the port fallback itself, including after that close settles.
+  const notebook = JSON.parse(fs.readFileSync(planFile, 'utf8'));
+  for (const project of notebook.projects || []) {
+    for (const task of project.tasks || []) {
+      if (task.status === 'running') task.executionVersion = 2;
+    }
+  }
+  fs.writeFileSync(planFile, JSON.stringify(notebook));
   const before = fs.readFileSync(planFile);
   const blocker = http.createServer();
   await new Promise(resolve => blocker.listen(0, '127.0.0.1', resolve));
   let app;
+  const logged = [];
+  const originalError = console.error;
+  console.error = (...args) => {
+    logged.push(args.join(' '));
+    originalError.apply(console, args);
+  };
   try {
     app = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: blocker.address().port, models: [],fetchPlans: async () => [] });
     assert.ok(app.port > blocker.address().port);
     assert.equal((await fetch(app.url + '/')).status, 200);
+    await app.server.settled;
     assert.deepEqual(fs.readFileSync(planFile), before);
   } finally {
+    if (app?.server?.settled) await app.server.settled.catch(() => {});
     if (app) await new Promise(resolve => app.server.close(resolve));
     await new Promise(resolve => blocker.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });
+    console.error = originalError;
+    assert.equal(logged.some(msg => msg.includes('Closing old work failed: ENOENT')), false);
   }
+});
+
+test('startup close failures other than missing notebook log to console.error', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-startup-err-'));
+  const planFile = path.join(dir, 'notebook.json');
+  fs.writeFileSync(planFile, '{ invalid json');
+  const logged = [];
+  const originalError = console.error;
+  console.error = (...args) => {
+    logged.push(args.join(' '));
+  };
+  let app;
+  try {
+    app = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: 0, models: [], fetchPlans: async () => [] });
+    await app.server.settled.catch(() => {});
+    assert.ok(logged.some(msg => msg.includes('Closing old work failed:')));
+    assert.equal(logged.some(msg => msg.includes('Closing old work failed: ENOENT')), false);
+  } finally {
+    console.error = originalError;
+    if (app) await new Promise(resolve => app.server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function captureConsoleError() {
+  const logged = [];
+  const originalError = console.error;
+  console.error = (...args) => { logged.push(args.join(' ')); };
+  return { logged, restore: () => { console.error = originalError; } };
+}
+
+test('a missing notebook on startup close stays quiet and the server still answers', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-startup-missing-'));
+  const planFile = path.join(dir, 'notebook.json');
+  const { logged, restore } = captureConsoleError();
+  let app;
+  try {
+    app = await listen({ planFile, attemptsDir: path.join(dir, 'attempts'), port: 0, models: [], fetchPlans: async () => [] });
+    await app.server.settled;
+    assert.equal(fs.existsSync(planFile), false);
+    assert.equal((await fetch(app.url + '/')).status, 200);
+    const planResponse = await fetch(app.url + '/api/plan', { signal: AbortSignal.timeout(2000) });
+    assert.equal(planResponse.status, 500);
+    assert.equal(logged.some(msg => msg.includes('Closing old work failed')), false);
+  } finally {
+    restore();
+    if (app) await new Promise(resolve => app.server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('parallel startups with a missing notebook do not log ENOENT', async () => {
+  const dirs = [0, 1].map(() => fs.mkdtempSync(path.join(os.tmpdir(), 'pw-startup-parallel-')));
+  const { logged, restore } = captureConsoleError();
+  let apps = [];
+  try {
+    apps = await Promise.all(dirs.map(dir => listen({
+      planFile: path.join(dir, 'notebook.json'),
+      attemptsDir: path.join(dir, 'attempts'),
+      port: 0,
+      models: [],
+      fetchPlans: async () => []
+    })));
+    await Promise.all(apps.map(app => app.server.settled));
+    assert.equal(logged.some(msg => msg.includes('Closing old work failed')), false);
+    const pages = await Promise.all(apps.map(app => fetch(app.url + '/')));
+    assert.deepEqual(pages.map(response => response.status), [200, 200]);
+  } finally {
+    restore();
+    await Promise.all(apps.map(app => new Promise(resolve => app.server.close(resolve))));
+    for (const dir of dirs) fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('startup close silences a missing notebook code and still logs any other failure', async () => {
+  const fixture = path.join(__dirname, '../fixtures/notebook.json');
+  async function boot(save) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-startup-close-'));
+    const planFile = path.join(dir, 'notebook.json');
+    fs.copyFileSync(fixture, planFile);
+    const before = fs.readFileSync(planFile);
+    const { logged, restore } = captureConsoleError();
+    const server = createServer({
+      planFile,
+      attemptsDir: path.join(dir, 'attempts'),
+      models: [],
+      fetchPlans: async () => [],
+      refreshModels: false,
+      monitorIntervalMs: 600000,
+      save
+    });
+    try {
+      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await server.settled;
+      const status = (await fetch(`http://127.0.0.1:${server.address().port}/`)).status;
+      return { logged, status, unchanged: fs.readFileSync(planFile).equals(before) };
+    } finally {
+      restore();
+      await new Promise(resolve => server.close(resolve));
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const missing = await boot(async () => {
+    const error = new Error('notebook is gone');
+    error.code = 'ENOENT';
+    throw error;
+  });
+  assert.equal(missing.logged.some(msg => msg.includes('Closing old work failed')), false);
+  assert.equal(missing.status, 200);
+  assert.equal(missing.unchanged, true);
+
+  const namedOnly = await boot(async () => { throw new Error('ENOENT'); });
+  assert.equal(namedOnly.logged.some(msg => msg.includes('Closing old work failed')), false);
+
+  const locked = await boot(async () => {
+    const error = new Error('EACCES: locked after ENOENT on the temp name');
+    error.code = 'EACCES';
+    throw error;
+  });
+  assert.ok(locked.logged.some(msg => msg.includes('Closing old work failed:')));
+  assert.ok(locked.logged.some(msg => msg.includes('EACCES')));
+  assert.equal(locked.status, 200);
 });
