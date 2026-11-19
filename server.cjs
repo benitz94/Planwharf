@@ -704,6 +704,12 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         })();
         return json(200, result);
       }
+      if (request.method === 'POST' && pathname === '/api/decisions/answer') {
+        const input = await body(request);
+        const result = orchestra.answerDecision(input && input.projectId, input && input.decisionId, input && input.answer);
+        if (!result.ok) throw new RequestError(400, result.reason);
+        return json(200, result);
+      }
       if (request.method === 'GET' && pathname === '/api/prs') {
         const projectId = loc.searchParams.get('projectId');
         const notebook = await readPlan(planFile);
