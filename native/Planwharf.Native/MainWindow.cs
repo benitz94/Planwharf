@@ -561,6 +561,8 @@ public sealed partial class MainWindow : Window
             Line(text, Palette.Text, 13),
             new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, box, send } }
         } };
+    }
+
     async Task CheckPrsAsync()
     {
         if (api == null || projectId == null) return;
