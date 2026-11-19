@@ -556,7 +556,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           goalTitle: 'Test Phone Alert',
           durationMinutes: 1
         });
-        return json(200, { ok: true, result: res });
+        return json(res && res.ok === false ? 502 : 200, { ok: !(res && res.ok === false), result: res });
       }
       if (request.method === 'GET' && pathname === '/api/attempts') {
         return json(200, { attempts: attempts.getAttempts() });
@@ -1304,6 +1304,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
   server.shutdown = () => { clearInterval(monitorTimer); return closing || (closing = orchestra.shutdown()); };
   const close = server.close.bind(server);
   server.close = callback => { server.shutdown().then(() => close(callback), error => { console.error('Checkpoint shutdown failed:', error.message); close(callback); }); return server; };
+  server.settled = legacyClosed;
   return server;
 }
 if (require.main === module) {

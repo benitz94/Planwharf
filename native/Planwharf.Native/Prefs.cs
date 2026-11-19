@@ -17,7 +17,12 @@ static class Prefs
 
     public static void Load()
     {
+        // A bad file restores every preference, not only the language.
         Strings.CurrentLanguage = "en";
+        Theme = "dark";
+        Ink = "white";
+        Accent = "green";
+        Alerts = new();
         try
         {
             var saved = JsonNode.Parse(System.IO.File.ReadAllText(File));

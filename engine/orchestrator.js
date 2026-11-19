@@ -1318,6 +1318,7 @@ function createOrchestrator(options) {
   // Tools checkboxes for one project. Only the known names are kept; anything else is refused.
   async function setProjectTools(projectId, tools, modelId) {
     if (typeof projectId !== 'string' || !projectId || ['__proto__', 'constructor', 'prototype'].includes(projectId)) return { ok: false, reason: 'Project not found.' };
+    if (!notebookProjects(await opts.readPlan()).some(item => item.project.id === projectId)) return { ok: false, reason: 'Project not found.' };
     if (modelId !== undefined && (typeof modelId !== 'string' || !modelId || !roster().some(model => model.id === modelId))) return { ok: false, reason: 'Model not found.' };
     // null removes an override; omitted modelId still edits the project default.
     if (!(modelId !== undefined && tools === null) && (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean'))) return { ok: false, reason: 'Invalid tools.' };
@@ -1390,6 +1391,8 @@ function createOrchestrator(options) {
     }
     if (safeGitWorkspace(folder)) {
       try { worktrees.git(folder, ['worktree', 'prune']); }
+      catch (error) { return { ok: false, reason: `Git worktree cleanup failed: ${error.message}` }; }
+      try { worktrees.sweepOrphans({ dir, liveMegaIds: (store.execution.megaTasks || []).map(mega => mega.id) }); }
       catch (error) { return { ok: false, reason: `Git worktree cleanup failed: ${error.message}` }; }
     }
     if (prepared.chat) {

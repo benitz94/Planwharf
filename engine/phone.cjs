@@ -364,11 +364,8 @@ function matchProject(projects = [], query = '') {
   if (!projects.length) return null;
   const q = String(query || '').trim().toLowerCase();
   if (!q) {
-    // If only one project exists, default to it
+    // Only one project at all: it is the obvious target. Several projects: ask, even if only one is working.
     if (projects.length === 1) return projects[0];
-    // If only one project is currently working, pick that
-    const working = projects.filter(p => p.status === 'watching');
-    if (working.length === 1) return working[0];
     return null;
   }
   const named = value => (value && value.toLowerCase() === q);
