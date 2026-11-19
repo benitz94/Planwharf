@@ -422,6 +422,13 @@ public sealed partial class MainWindow : Window
             if (work.Waiting.Length > 0 && !stopped) panel.Children.Add(Line(work.Waiting, Palette.Warn, 13));
         }
         foreach (var step in work.Steps) panel.Children.Add(StepRow(step, team, editable: !done && step.Status != "done"));
+        if (proposal && work.OpenDecisions.Count > 0)
+        {
+            var asks = new StackPanel { Spacing = 3, Children = { Line(Strings.T("Needs your decision"), Palette.Warn, 13, FontWeight.SemiBold) } };
+            foreach (var decision in work.OpenDecisions) asks.Children.Add(Line("• " + decision, Palette.Text, 13));
+            asks.Children.Add(Line(Strings.T("Answer these before you approve, so the crew knows what to do."), Palette.Muted, 12));
+            panel.Children.Add(new Border { Background = Palette.WarnSoft, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8), Child = asks });
+        }
         if (proposal) panel.Children.Add(Line(card.AutoApprove ? Strings.T("The crew approves this by itself.") : Strings.T("Press Approve and start below, or tell the lead what to change."), Palette.Muted, 13));
         if (!done && !stopped && !proposal && card.Activity.Text.Length > 0)
             panel.Children.Add(Fold(Strings.Format("What {0} is doing", card.Activity.Who), new SelectableTextBlock { Text = card.Activity.Text, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 12, Foreground = Palette.Muted }));

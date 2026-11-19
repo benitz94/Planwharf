@@ -299,6 +299,7 @@ public static class Strings
         ["Changed files: unknown"] = "File modificati: sconosciuti",
         ["{0}/{1} steps done"] = "{0}/{1} passaggi completati",
         ["Needs your decision"] = "Serve una tua decisione",
+        ["Answer these before you approve, so the crew knows what to do."] = "Rispondi prima di approvare, così la squadra sa cosa fare.",
         ["What was done"] = "Lavoro svolto",
         ["{0} of {1} steps done"] = "{0} di {1} passaggi completati",
         ["The crew approves this by itself."] = "La squadra lo approva autonomamente.",

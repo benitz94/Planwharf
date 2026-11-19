@@ -94,7 +94,7 @@ function createExecutionBridge(options) {
   const { store, attempts, dir, rowFor, inspect, spawnWorker, isProcessAlive, killWorker, models, now, persist, leadId } = options;
   store.execution ||= { megaTasks: [], subTasks: [], results: [], checkpoints: [], timeline: [], observations: {} };
   const data = store.execution;
-  for (const key of ['megaTasks', 'subTasks', 'results', 'checkpoints', 'timeline']) if (!Array.isArray(data[key])) data[key] = [];
+  for (const key of ['megaTasks', 'subTasks', 'results', 'checkpoints', 'timeline', 'decisions']) if (!Array.isArray(data[key])) data[key] = [];
   data.observations ||= {};
   const subtasks = mega => data.subTasks.filter(sub => sub.megaTaskId === mega.id);
   const inspectProject = item => { const folder = linkedWorkspace(item.project.folder); return folder ? inspect(folder) : { error: 'Relink a real local project folder before implementation.', git: false, dirty: [], names: [], fileCount: 0 }; };
@@ -216,6 +216,14 @@ function createExecutionBridge(options) {
     sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
+    // A decision the worker could not make is kept, so it can be asked before the next plan is approved.
+    for (const line of String(result.summary || '').split(/\r?\n/)) {
+      const at = line.toLowerCase().indexOf('needs your decision:');
+      if (at < 0) continue;
+      const text = line.slice(at + 'needs your decision:'.length).trim();
+      if (!text || data.decisions.some(item => item.projectId === mega.projectId && item.text === text)) continue;
+      data.decisions.push({ id: result.resultId + ':' + data.decisions.length, projectId: mega.projectId, megaTaskId: mega.id, text, at: now(), answer: '' });
+    }
     part.validatedResultStatus = result.status; part.recordedSubTaskStatus = sub.status;
     sub.completedAt = result.status === 'COMPLETE' ? now() : null;
     attempts.attachResult({ attemptId: part.attemptId, resultPath: part.structuredResultPath, status: result.status, exitCode: result.exitCode });
