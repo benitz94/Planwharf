@@ -60,8 +60,8 @@ public sealed partial class MainWindow
         {
             var company = group.Key.Adapter switch { "claude" => "Claude", "codex" => "ChatGPT", "grok" => "Grok", "antigravity" => "Gemini", _ => group.Key.Adapter };
             benchSection.Children.Add(Explain(group.Key.PlanStatus == "expired"
-                ? Strings.Format("{0} models hidden: {1} plan expired. Renew it or sign in again, then look for models again.", group.Count(), company)
-                : Strings.Format("{0} models hidden: {1} is not signed in. Sign in, then look for models again.", group.Count(), company)));
+                ? Strings.Format(group.Count() == 1 ? "{0} model hidden: {1} plan expired. Renew it or sign in again, then look for models again." : "{0} models hidden: {1} plan expired. Renew it or sign in again, then look for models again.", group.Count(), company)
+                : Strings.Format(group.Count() == 1 ? "{0} model hidden: {1} is not signed in. Sign in, then look for models again." : "{0} models hidden: {1} is not signed in. Sign in, then look for models again.", group.Count(), company)));
         }
         side.Children.Add(benchSection);
 

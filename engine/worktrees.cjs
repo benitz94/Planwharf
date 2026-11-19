@@ -96,4 +96,22 @@ function cleanup({ folder, dir, projectId, megaId, parts, discardBranches = fals
   }
 }
 
-module.exports = { repository, branchFor, worktreePath, create, integrate, cleanup, git };
+// A worktree whose work is gone stays on disk after a plain prune. Remove those directories.
+function sweepOrphans({ dir, liveMegaIds }) {
+  const root = path.join(dir, 'worktrees');
+  if (!fs.existsSync(root)) return [];
+  const live = new Set(liveMegaIds || []);
+  const removed = [];
+  for (const project of fs.readdirSync(root)) {
+    const projectDir = path.join(root, project);
+    if (!fs.statSync(projectDir).isDirectory()) continue;
+    for (const mega of fs.readdirSync(projectDir)) {
+      if (live.has(mega)) continue;
+      fs.rmSync(path.join(projectDir, mega), { recursive: true, force: true });
+      removed.push(path.join(project, mega));
+    }
+    if (!fs.readdirSync(projectDir).length) fs.rmdirSync(projectDir);
+  }
+  return removed;
+}
+module.exports = { repository, branchFor, worktreePath, create, integrate, cleanup, git, sweepOrphans };

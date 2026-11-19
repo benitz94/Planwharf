@@ -227,14 +227,16 @@ public sealed class LocalizationTests : IDisposable
     }
 
     [Fact]
-    public void A_broken_reread_keeps_the_theme_already_in_memory()
+    public void A_broken_reread_restores_every_preference()
     {
         Strings.CurrentLanguage = "it";
         Prefs.Save(theme: "light");
         File.WriteAllText(Prefs.File, "{broken");
         Prefs.Load();
         Assert.Equal("en", Strings.CurrentLanguage);
-        Assert.Equal("light", Prefs.Theme);
+        Assert.Equal("dark", Prefs.Theme);
+        Assert.Equal("white", Prefs.Ink);
+        Assert.Equal("green", Prefs.Accent);
     }
 
     [Fact]

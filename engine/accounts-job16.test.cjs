@@ -143,6 +143,7 @@ test('server /api/accounts creates account folder and returns sign-in command wi
     assert.ok(addedModel);
     assert.equal(addedModel.companyId, 'claude');
   } finally {
+    if (server.settled) await server.settled.catch(() => {});
     if (typeof server.shutdown === 'function') await server.shutdown();
     server.closeAllConnections?.();
     await new Promise(resolve => server.close(resolve));
