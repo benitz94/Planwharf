@@ -20,7 +20,7 @@ public sealed class LiteralStringTests
         "URI malformed", "Invalid time value", "store.refusals is not an object",
         "C:\\Projects\\my-website", "~/Projects/my-website", "C:\\Projects", "~/Projects",
         "https://github.com/you/my-website", "https://api.deepseek.com/v1", "DeepSeek",
-        "DEEPSEEK_API_KEY", "deepseek-chat"
+        "DEEPSEEK_API_KEY", "deepseek-chat", "qwen2.5:3b"
     };
 
     internal static IEnumerable<string> FindUnlocalized(string source)
