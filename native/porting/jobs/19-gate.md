@@ -85,8 +85,11 @@ not a claim that a subprocess sandbox makes hostile repository code safe.
 Where isolation cannot enforce the declared boundary, require owner review
 before running that check.
 
-Gate evidence is an engine record, not text from stdout, an MCP `finish`, a
-JSON result file, a modified CI workflow, or an artifact placed in the branch.
+The gate run is initiated by the Planwharf engine on its own authority; a CI
+workflow, webhook, or other process originating from the candidate branch
+cannot trigger, substitute for, or satisfy it. Gate evidence is an engine
+record, not text from stdout, an MCP `finish`, a JSON result file, a modified
+CI workflow, or an artifact placed in the branch.
 The engine saves each command's observed exit or execution error and verifies
 the required assertion. The pass record references only successful, complete
 command records with matching snapshot, manifest and stage IDs. Preserve
