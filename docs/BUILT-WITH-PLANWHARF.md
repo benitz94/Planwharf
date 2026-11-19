@@ -47,6 +47,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 16 | #? | Multiple accounts per provider, subscription status (active, expired, not signed in), eligible account switching before provider switching, and hiding expired models | Independent Grok 4.7 verification added edge, error, recovery and concurrency coverage. A second account does not inherit this process's login. A live lock is not stolen, and a dead owner is cleared at once. An expired or signed-out plan stays in force when a later quota read is unknown, and the team does not treat those models as a ready lead or builder |
 | 17 | #132 | English and Italian in the native app, with a saved language picker, localized dates and a presentation-literal guard | Restored the completed job commit onto `feat/languages` from refreshed main; strengthened placeholder coverage |
 | 18 | #? | Wrote the worker MCP protocol sheet for `ask`, `progress`, `finish`, `decision`, `handoff` and JSON fallback; implementation awaits review | Independent verification named the design limits the sheet left implicit: ask stays in the same session without rereading the project, progress is not guessed from program output, finish fields are checked at once, and a decision is shown highlighted and never cut |
+| 19 | #? | Wrote the engine-run acceptance gate sheet, including pinned checks outside the candidate branch and evidence bound to the exact worktree snapshot; implementation awaits review | Independent verification pending |
 
 ## Improvements found while Planwharf worked on itself
 
