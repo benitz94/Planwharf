@@ -447,6 +447,14 @@ public sealed partial class MainWindow
             }
         }
 
+        var repliesOn = phone?["ollama"]?["enabled"] == null || Flag(phone?["ollama"]?["enabled"]);
+        var repliesToggle = new ToggleSwitch { OnContent = Strings.T("Local replies"), OffContent = Strings.T("Local replies"), IsChecked = repliesOn };
+        var savedModel = Str(phone?["ollama"]?["model"]);
+        var modelBox = Look.Field(new TextBox { Text = savedModel.Length > 0 ? savedModel : "qwen2.5:3b", Watermark = "qwen2.5:3b" });
+        side.Children.Add(repliesToggle);
+        side.Children.Add(Explain(Strings.T("Local replies use Ollama on this computer. The default model is qwen2.5:3b. Planwharf does not restart Ollama or change other programs' models.")));
+        side.Children.Add(modelBox);
+
         var saveBtn = Small(Strings.T("Save Phone settings"), primary: true);
         saveBtn.Click += async (_, _) =>
         {
@@ -462,6 +470,11 @@ public sealed partial class MainWindow
                 ["telegram"] = new Dictionary<string, object>
                 {
                     ["enabled"] = tgToggle.IsChecked == true
+                },
+                ["ollama"] = new Dictionary<string, object>
+                {
+                    ["enabled"] = repliesToggle.IsChecked == true,
+                    ["model"] = string.IsNullOrWhiteSpace(modelBox.Text) ? "qwen2.5:3b" : modelBox.Text.Trim()
                 }
             };
             if (!string.IsNullOrEmpty(token))
@@ -472,6 +485,16 @@ public sealed partial class MainWindow
                 phone = await api!.SetPhoneSettingsAsync(patch);
                 sideSig = null; Render();
             }, Strings.T("Phone settings saved."));
+        };
+
+        var modelBtn = Small(Strings.T("Test local model"));
+        modelBtn.Click += async (_, _) =>
+        {
+            await DoAsync(async () =>
+            {
+                var probed = await api!.ProbeOllamaAsync();
+                if (!Flag(probed?["ok"]) || !Flag(probed?["installed"])) throw new InvalidOperationException(Strings.T("The local model did not answer. Commands on Telegram still work."));
+            }, Strings.Format("Local model {0} is ready.", Str(phone?["ollama"]?["model"]) is { Length: > 0 } ready ? ready : "qwen2.5:3b"));
         };
 
         var testBtn = Small(Strings.T("Send test alert"));
@@ -486,7 +509,7 @@ public sealed partial class MainWindow
             }, Strings.T("Test alert sent."));
         };
 
-        side.Children.Add(Row(saveBtn, testBtn));
+        side.Children.Add(Row(saveBtn, testBtn, modelBtn));
     }
 
     // Downloads the checked native zip, saves running work the same way as Stop the crew, then quits so the new copy can replace this folder.

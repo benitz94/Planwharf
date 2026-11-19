@@ -29,3 +29,26 @@ public class ServerHostTests
         finally { if (Directory.Exists(data.FullName)) try { data.Delete(true); } catch { } }
     }
 }
+
+public class IsolatedDataFolderTests
+{
+    [Fact]
+    public void Planwharf_data_points_the_server_at_the_isolated_notebook()
+    {
+        var saved = Environment.GetEnvironmentVariable("PLANWHARF_DATA");
+        var isolated = Path.Combine(Path.GetTempPath(), "pw-isolated-" + Guid.NewGuid().ToString("N"));
+        var pinned = Path.Combine(Path.GetTempPath(), "pw-pinned-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Environment.SetEnvironmentVariable("PLANWHARF_DATA", "  " + isolated + "  ");
+            var host = new ServerHost();
+            Assert.Equal(Path.GetFullPath(isolated), host.DataFolder);
+            Assert.NotEqual(ServerHost.DefaultDataFolder(), host.DataFolder);
+            var explicitHost = new ServerHost(pinned);
+            Assert.Equal(Path.GetFullPath(pinned), explicitHost.DataFolder);
+            Environment.SetEnvironmentVariable("PLANWHARF_DATA", "   ");
+            Assert.Equal(ServerHost.DefaultDataFolder(), new ServerHost().DataFolder);
+        }
+        finally { Environment.SetEnvironmentVariable("PLANWHARF_DATA", saved); }
+    }
+}

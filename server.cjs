@@ -549,6 +549,9 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const updated = phoneNotifier.updateSettings(input, input?.telegramToken);
         return json(200, updated);
       }
+      if (request.method === 'POST' && pathname === '/api/settings/phone/ollama') {
+        return json(200, await phoneNotifier.probeOllama());
+      }
       if (request.method === 'POST' && pathname === '/api/settings/phone/test') {
         const res = await phoneNotifier.sendAlert({
           type: 'done',

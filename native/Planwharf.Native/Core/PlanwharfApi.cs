@@ -100,6 +100,7 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode> PhoneSettingsAsync() => GetAsync("/api/settings/phone");
     public Task<JsonNode?> SetPhoneSettingsAsync(object body) => PostAsync("/api/settings/phone", body);
     public Task<JsonNode?> TestPhoneAlertAsync() => PostAsync("/api/settings/phone/test", new { });
+    public Task<JsonNode?> ProbeOllamaAsync() => PostAsync("/api/settings/phone/ollama", new { });
 
     public Task<JsonNode> AutoSwitchAsync() => GetAsync("/api/orchestrator/auto-switch");
     public Task<JsonNode?> SetAutoSwitchAsync(bool enabled, int? fiveHourPercent = null, int? weeklyPercent = null) =>

@@ -4,6 +4,18 @@ const fs = require('node:fs');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const {
+  defaultOllamaSettings,
+  normalizeOllamaSettings,
+  withCaptain,
+  isClearMemory,
+  isBareConfirmation,
+  loadChatMemory,
+  saveChatMemory,
+  buildReplyMessages,
+  askOllama,
+  listInstalledModels
+} = require('./phone-ollama.cjs');
 
 function restrictToOwner(file) {
   try { fs.chmodSync(file, 0o600); } catch { /* Some systems ignore Unix modes. */ }
@@ -134,7 +146,7 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
   const safeGoal = sanitizeGoalTitle(goalTitle);
   let statusLabel = ALERT_LABELS[type] || 'Updated';
 
-  let msg = `Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`;
+  let msg = withCaptain(`Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`);
 
   if (type === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
@@ -184,7 +196,8 @@ function loadPhoneSettings(storeDir) {
       pairedChatId: null,
       pairedUsername: null,
       updateOffset: 0
-    }
+    },
+    ollama: defaultOllamaSettings()
   };
 
   try {
@@ -206,6 +219,7 @@ function loadPhoneSettings(storeDir) {
           const offset = Number(raw.telegram.updateOffset);
           config.telegram.updateOffset = Number.isInteger(offset) && offset >= 0 ? offset : 0;
         }
+        if (raw.ollama && typeof raw.ollama === 'object') config.ollama = normalizeOllamaSettings(raw.ollama);
       }
     }
   } catch (err) {
@@ -250,7 +264,12 @@ function savePhoneSettings(storeDir, settings, newToken) {
       updateOffset: settings.telegram?.updateOffset !== undefined && Number.isInteger(Number(settings.telegram.updateOffset))
         ? Math.max(0, Number(settings.telegram.updateOffset))
         : (Number(current.telegram.updateOffset) || 0)
-    }
+    },
+    ollama: normalizeOllamaSettings(settings.ollama === undefined ? current.ollama : {
+      enabled: settings.ollama.enabled !== undefined ? settings.ollama.enabled : current.ollama.enabled,
+      baseUrl: settings.ollama.baseUrl !== undefined ? settings.ollama.baseUrl : current.ollama.baseUrl,
+      model: settings.ollama.model !== undefined ? settings.ollama.model : current.ollama.model
+    })
   };
 
   writePrivate(settingsPath, JSON.stringify(updated, null, 2) + '\n');
@@ -357,7 +376,7 @@ function formatStatusMessage(projects = []) {
     }
     lines.push(`${statusEmoji(state)} ${name}: ${state}${details}`);
   }
-  return lines.join('\n');
+  return withCaptain(lines.join('\n'));
 }
 
 function matchProject(projects = [], query = '') {
@@ -392,6 +411,7 @@ function createPhoneNotifier({
   const projectStates = new Map();
   const stepStates = new Map(); // projectId -> status
   const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
+  const chatMemory = loadChatMemory(storeDir);
   const confirmWindowMs = Number.isFinite(confirmWindowMsOption) && confirmWindowMsOption > 0 ? confirmWindowMsOption : 60000;
 
   function enqueue(lane, fn) {
@@ -422,6 +442,11 @@ function createPhoneNotifier({
         pairedUsername: settings.telegram.pairedUsername,
         tokenConfigured: Boolean(settings.telegramToken),
         tokenPreview: maskToken(settings.telegramToken)
+      },
+      ollama: {
+        enabled: settings.ollama.enabled,
+        baseUrl: settings.ollama.baseUrl,
+        model: settings.ollama.model
       }
     };
   }
@@ -433,7 +458,12 @@ function createPhoneNotifier({
       if (patch.telegram.unpair) telegram.unpair = true;
       if (patch.telegram.resetStartCode) telegram.resetStartCode = true;
     }
-    settings = savePhoneSettings(storeDir, { ntfy: patch.ntfy, telegram }, newToken);
+    const ollama = patch.ollama && typeof patch.ollama === 'object' ? {
+      enabled: patch.ollama.enabled,
+      baseUrl: patch.ollama.baseUrl,
+      model: patch.ollama.model
+    } : undefined;
+    settings = savePhoneSettings(storeDir, { ntfy: patch.ntfy, telegram, ollama }, newToken);
     if (telegram.unpair) pendingConfirmation = null;
     return getPublicSettings();
   }
@@ -554,7 +584,8 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: 'Planwharf connected!\nYou can now use:\n/status - projects and progress\n/stop <project> - stop the crew (requires confirmation)\n/resume <project> - resume work',
+          text: withCaptain('Planwharf connected!\nYou can now use:\n/status - projects and progress\n/stop <project> - stop the crew (requires confirmation)\n/resume <project> - resume work'),
+          replyMarkup: mainKeyboard(),
           apiBaseUrl,
           fetchImpl
         });
@@ -714,11 +745,55 @@ function createPhoneNotifier({
       return;
     }
 
-    // Default response for unrecognized text
+    if (isClearMemory(text) || isClearMemory(command)) {
+      chatMemory.clear(chatId);
+      try { saveChatMemory(storeDir, chatMemory); } catch { /* A full disk must not block the reply. */ }
+      await sendTelegramMessage({
+        token,
+        chatId,
+        text: withCaptain('This chat memory is clear. Commands are unchanged.'),
+        replyMarkup: mainKeyboard(),
+        apiBaseUrl,
+        fetchImpl
+      });
+      return;
+    }
+
+    const ollama = normalizeOllamaSettings(fresh.ollama);
+    if (!ollama.enabled || isBareConfirmation(text)) {
+      await sendTelegramMessage({
+        token,
+        chatId,
+        text: 'Unrecognized command. Use /status, /stop <project>, or /resume <project>.',
+        replyMarkup: mainKeyboard(),
+        apiBaseUrl,
+        fetchImpl
+      });
+      return;
+    }
+
+    const messages = buildReplyMessages({
+      question: text,
+      projects,
+      history: chatMemory.history(chatId),
+      sanitize: sanitizeText,
+      model: ollama.model
+    });
+    chatMemory.remember(chatId, 'user', sanitizeText(text));
+    const reply = await askOllama({
+      baseUrl: ollama.baseUrl,
+      model: ollama.model,
+      messages,
+      fetchImpl,
+      timeoutMs: 45000
+    });
+    if (reply.ok) chatMemory.remember(chatId, 'assistant', sanitizeText(reply.text));
+    try { saveChatMemory(storeDir, chatMemory); } catch { /* Keep the answer even if memory cannot be stored. */ }
     await sendTelegramMessage({
       token,
       chatId,
-      text: 'Unrecognized command. Use /status, /stop <project>, or /resume <project>.',
+      text: reply.text,
+      replyMarkup: mainKeyboard(),
       apiBaseUrl,
       fetchImpl
     });
@@ -797,13 +872,27 @@ function createPhoneNotifier({
     }
   }
 
+  async function probeOllama() {
+    const fresh = loadPhoneSettings(storeDir);
+    const listed = await listInstalledModels({ baseUrl: fresh.ollama.baseUrl, fetchImpl, timeoutMs: 4000 });
+    return {
+      ok: listed.ok,
+      enabled: fresh.ollama.enabled,
+      baseUrl: fresh.ollama.baseUrl,
+      model: fresh.ollama.model,
+      models: listed.models,
+      installed: listed.models.includes(fresh.ollama.model)
+    };
+  }
+
   return {
     getSettings: getPublicSettings,
     updateSettings,
     sendAlert,
     checkTransitions,
     pollUpdates,
-    processTelegramMessage
+    processTelegramMessage,
+    probeOllama
   };
 }
 

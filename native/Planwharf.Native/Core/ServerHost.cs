@@ -16,7 +16,17 @@ public sealed class ServerHost : IAsyncDisposable
     public string DataFolder { get; }
     public string LogFile => Path.Combine(DataFolder, "native.log");
 
-    public ServerHost(string? dataFolder = null) => DataFolder = dataFolder ?? DefaultDataFolder();
+    // An explicit folder wins. PLANWHARF_DATA is the isolated notebook for a validation launch,
+    // so that launch does not open the installed app's data folder or its Telegram listener.
+    public static string ResolveDataFolder(string? dataFolder = null)
+    {
+        if (!string.IsNullOrWhiteSpace(dataFolder)) return Path.GetFullPath(dataFolder);
+        var isolated = Environment.GetEnvironmentVariable("PLANWHARF_DATA");
+        if (!string.IsNullOrWhiteSpace(isolated)) return Path.GetFullPath(isolated.Trim());
+        return DefaultDataFolder();
+    }
+
+    public ServerHost(string? dataFolder = null) => DataFolder = ResolveDataFolder(dataFolder);
 
     // The server prints its address on a line of its own once it listens.
     public static string? ReadAddress(string output) => AddressLine.Match(output) is { Success: true } match ? match.Groups[1].Value : null;
