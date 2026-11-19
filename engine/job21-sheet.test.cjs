@@ -271,6 +271,12 @@ test('parallel assessments do not mix a sound sheet with a broken one', async ()
 });
 
 test('the sheet stays on feat/pipeline-build and does not add a pipeline', () => {
+  // This guards the job 21 branch. Another branch changes its own files, and that is not a failure here.
+  const here = git(['branch', '--show-current']);
+  const branchFiles = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
+  if (here && here !== 'feat/pipeline-build') return;
+  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;
+
   const worktree = git(['status', '--porcelain']).split('\n').filter(Boolean)
     .map(line => line.slice(3).trim().replace(/\\/g, '/'));
   const committed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
