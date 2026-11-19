@@ -9,7 +9,9 @@ const Plan = require('../plan.js');
 const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
 const { modelRouteError } = require('./model-routing.cjs');
-const { createExecutionBridge } = require('./execution.cjs');
+const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
+const worktrees = require('./worktrees.cjs');
+const { estimate: estimateTimeLeft } = require('./time-left.cjs');
 const { renameWithRetry } = require('./atomic-rename.cjs');
 const refusals = require('./provider-refusal.cjs');
 const projectChecks = require('./project-checks.cjs');
@@ -20,8 +22,9 @@ const { adapterFor } = require('./provider-adapters.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { createInvocationLedger } = require('./invocations.cjs');
 const { compactState, recentContext } = require('./briefing.cjs');
+const planFile = require('./plan-file.cjs');
 const Quota = require('../quota.js');
-const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback } = require('./model-policy.cjs');
+const { validatePolicy, migratePolicy, usagePolicy, resolveUsageFallback, AUTO_SWITCH_DEFAULT, lowQuota, quotaLeft, quotaLimit, quotaWindows, quotaSwitches, availableAgain } = require('./model-policy.cjs');
 const { validateProviderPolicy, providerPolicyFor } = require('./provider-policy.cjs');
 const { TOOL_NAMES } = require('./claude.cjs');
 const { TOOL_REQUEST } = require('./runner.cjs');
@@ -185,6 +188,9 @@ function normalizeModels(models) {
       enabled: item.enabled === true && (item.providerCatalog || item.available !== false && !routeError),
       available: item.available !== false && !routeError,
       unavailableReason: item.unavailableReason || routeError || null,
+      // Listed by the AI tool but impossible to run this way (Codex's internal review model): never usable,
+      // unlike a model that is out of quota or failed a moment ago.
+      neverUsable: item.catalogExcluded === true || (item.available !== false && Boolean(routeError)),
       availabilityVerified: item.availabilityVerified,
       availabilityWarning: item.availabilityWarning || null,
       provider: item.provider,
@@ -212,6 +218,57 @@ function usageOf(item) {
   return { used, limit, remaining, pct, leftPct };
 }
 
+// The order in which models take over as lead: a stronger tier first, then more quota left; a model
+// whose quota is not reported comes after those with known quota in its tier. The catalog gives the tier
+// (premium, default, local); Claude Code lists no tier, so a Claude model's tier comes from its family.
+const LEAD_TIERS = { premium: 0, default: 1, local: 2 };
+// Claude's families are known by name, whatever category the catalog gives them; other models by their category.
+const CLAUDE_FAMILIES = [[/fable/i, 0, 0], [/opus/i, 0, 1], [/sonnet/i, 1, 2], [/haiku/i, 2, 3]];
+const modelName = model => String(model?.label || model?.cli || model?.id || '');
+// Small fast models are light whatever category the catalog gives them (Gemini Flash, GPT mini or Luna…).
+const LIGHT_NAMES = /\b(?:flash|mini|lite|nano|luna)\b/i;
+function leadTier(model) {
+  const known = CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)));
+  if (known) return known[1];
+  if (model && LEAD_TIERS[model.kind] !== undefined && model.kind !== 'default') return LEAD_TIERS[model.kind];
+  if (LIGHT_NAMES.test(modelName(model))) return 2;
+  return 1;
+}
+// Verify checks the whole work and fixes it: a light model is given it only when no stronger one can.
+const ableToVerify = list => { const strong = list.filter(model => leadTier(model) < 2); return strong.length ? strong : list; };
+// "claude-opus-4-6-thinking" is Opus 4.6: dashes between digits are a version, and a Claude family is
+// known by its name whatever else the catalog writes around it.
+const plainName = model => modelName(model).replace(/(\d)-(\d)/g, '$1.$2');
+// "Grok 4.7 Business" and "Grok 4.6 Business" are one family; the newer version leads it.
+function familyOf(model) {
+  const claude = CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)));
+  if (claude) return 'claude ' + claude[0].source;
+  return plainName(model).toLowerCase().replace(/\d+(\.\d+)*/g, ' ').replace(/[\s-]+/g, ' ').trim();
+}
+const versionOf = model => (plainName(model).match(/\d+(?:\.\d+)*/) || ['0'])[0].split('.').map(Number);
+function newer(a, b) {
+  const x = versionOf(a), y = versionOf(b);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (y[i] || 0) - (x[i] || 0);
+  return 0;
+}
+const claudeOrder = model => CLAUDE_FAMILIES.find(([pattern]) => pattern.test(modelName(model)))?.[2] ?? 9;
+// Best lead first, for the hand-over: stronger kind; within one family the newer version; then known
+// quota before unknown, more quota first; at equal quota Fable before Opus.
+function leadRanking(list, plans = []) {
+  return [...(list || [])].map(model => ({ model, tier: leadTier(model), left: quotaLeft(model, plans), family: familyOf(model) }))
+    .sort((a, b) => (a.tier - b.tier) || (a.family === b.family ? newer(a.model, b.model) : 0)
+      || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)) || (claudeOrder(a.model) - claudeOrder(b.model)))
+    .map(item => item.model);
+}
+// The lead menu: by quality only, whatever the quota today. Stronger kind; Fable, Opus, Sonnet, Haiku in
+// that order; within a family the newer version; otherwise the catalog's order.
+function leadQuality(list) {
+  return [...(list || [])].map((model, index) => ({ model, index, tier: leadTier(model), family: familyOf(model) }))
+    .sort((a, b) => (a.tier - b.tier) || (claudeOrder(a.model) - claudeOrder(b.model))
+      || (a.family === b.family ? newer(a.model, b.model) : 0) || (a.index - b.index))
+    .map(item => item.model);
+}
+
 function canOrchestrate(item) {
   return Boolean(item && item.roles?.orchestrator !== false && item.enabled && item.available !== false && item.providerEnabled !== false && item.capabilities?.canUseTools !== false && item.capabilities?.canInspectFilesystem !== false && (item.orchestratorEligible ?? (item.kind === 'premium' || item.kind === 'default')));
 }
@@ -233,7 +290,10 @@ function pickWorker(models, options) {
     .map((item, index) => ({ ...item, index }))
     .filter(item => item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, plans).blocked && (item.providerCatalog || usedOf(usage, item.id) + item.cost <= item.limit) && !planExhausted(plans, item.quotaPoolId || item.plan));
   if (!pool.length) return null;
-  const chosen = pool[0];
+  // A model under its quota limit is taken only when no other one can do the job.
+  const roomy = typeof opts.low === 'function' ? pool.filter(item => !opts.low(item)) : pool;
+  const fit = roomy.length ? roomy : pool;
+  const chosen = (assignmentRole(opts.job) === 'verifier' ? ableToVerify(fit) : fit)[0];
   chosen.why = `${kind} job · ${chosen.label} on ${chosen.plan}; user catalog order`;
   return chosen;
 }
@@ -291,7 +351,7 @@ function dispatchPlan(workers, job, facts) {
     : [
       dirty ? 'Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.'
         : 'Implement the whole job in the project folder, with automated tests. Run the tests before you finish.',
-      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works.'
+      VERIFY_SLICE + ': read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself (a design choice, a change outside the files you may touch, a failure that was there before this work), write it in your summary on its own line starting with "Needs your decision:".'
     ];
   return list.map((worker, index) => ({
     modelId: worker.id,
@@ -785,6 +845,7 @@ function fleetOf(models, projects, leadId, plans) {
       available: item.available !== false,
       unavailableReason: item.unavailableReason || null,
       catalogExcluded: item.catalogExcluded === true,
+      neverUsable: item.neverUsable === true || item.catalogExcluded === true,
       availabilityVerified: item.availabilityVerified === true,
       availabilityCheckedAt: item.availabilityCheckedAt || null,
       availabilityWarning: item.availabilityWarning || null,
@@ -922,15 +983,13 @@ function defaultInspect(folder) {
 
 function jobFromFacts(revision, facts) {
   const goal = revision && typeof revision.direction === 'string' ? revision.direction.trim() : '';
-  const git = Boolean(facts && facts.git);
   const subject = (facts && facts.lastSubject) || 'latest repo changes';
-  const title = git
-    ? (clip(`Continue: ${subject}`, 120) || 'Continue from the repo')
-    : (clip(goal, 120) || clip(`Continue: ${subject}`, 120) || 'Continue from the repo');
+  // The work is named after the goal agreed with the user; only without a goal does it continue from the repo.
+  const title = clip(goal, 120) || clip(`Continue: ${subject}`, 120) || 'Continue from the repo';
   const dirty = facts && Array.isArray(facts.dirty) ? facts.dirty.slice(0, 12) : [];
   const recent = facts && Array.isArray(facts.recent) ? facts.recent.slice(0, 5) : [];
   const detail = [
-    goal ? `Goal: ${clip(goal, 400)}` : '',
+    goal ? `Goal: ${clip(goal, 4000)}` : '',
     facts && facts.lastCommit ? `Latest commit: ${facts.lastCommit}` : (facts && facts.git ? 'Git present.' : 'No git history.'),
     recent.length ? `Recent:\n${recent.join('\n')}` : '',
     dirty.length ? `Uncommitted:\n${dirty.join('\n')}` : 'Working tree clean.',
@@ -1023,6 +1082,27 @@ function checkpointMatches(checkpoint, job) {
   return true;
 }
 
+// A refusal for quota, said as a person would: what happened and when the model is tried again, in local
+// time, instead of the program's raw error (AGY_ERROR: {"short_error":...}).
+function refusalSentence(refused, today = new Date()) {
+  const raw = String(refused?.reason || '');
+  const short = /"short_error"\s*:\s*"([^"]+)"/.exec(raw)?.[1] || raw.replace(/^[A-Z_]+_ERROR:\s*/, '');
+  const detail = short.replace(/\s+/g, ' ').trim().slice(0, 100);
+  const until = new Date(refused?.until || '');
+  const pad = value => String(value).padStart(2, '0');
+  const when = Number.isNaN(until.getTime()) ? '' : until.toDateString() === today.toDateString()
+    ? ` Tried again at ${pad(until.getHours())}:${pad(until.getMinutes())}.` : ` Tried again on ${until.getFullYear()}-${pad(until.getMonth() + 1)}-${pad(until.getDate())} at ${pad(until.getHours())}:${pad(until.getMinutes())}.`;
+  return `Quota used up${detail ? ` (${detail})` : ''}.${when}`;
+}
+// A step's summary as the chat shows it: at most 600 characters, but the lines that ask the owner to
+// decide ("Needs your decision: …") are always kept whole, even past the cut.
+function clipSummary(value) {
+  const full = String(value || '');
+  if (full.length <= 600) return full;
+  const decisions = full.split(/\r?\n/).filter(line => /needs your decision:/i.test(line)).map(line => line.trim());
+  const body = full.slice(0, 600).replace(/\s*\S*$/, '').replace(/\n[^\n]*needs your deci[^\n]*$/i, '') + '…';
+  return [body, ...decisions.filter(line => !body.includes(line))].join('\n');
+}
 function createOrchestrator(options) {
   const opts = options && typeof options === 'object' ? { ...options } : {};
   if (typeof opts.readPlan !== 'function') throw new Error('orchestrator requires readPlan');
@@ -1064,13 +1144,21 @@ function createOrchestrator(options) {
     } catch (error) { ledger.finish(id, 'FAILED'); throw error; }
     finally { if (activeLeadInvocations.get(key) === id) activeLeadInvocations.delete(key); }
   };
-  // The project's Tools checkboxes travel with every lead and worker call of that project.
-  const toolsFor = projectId => { const chosen = (projectId && store.projectTools?.[projectId]) || {}; return Object.fromEntries(TOOL_NAMES.map(name => [name, chosen[name] === true])); };
-  if (typeof opts.askModel === 'function') { const withLedger = opts.askModel; opts.askModel = info => withLedger(info?.model ? { ...info, model: { ...info.model, tools: toolsFor(info.projectId) } } : info); }
+  // Resolve a complete model override, otherwise the project's default.
+  const toolFlags = chosen => Object.fromEntries(TOOL_NAMES.map(name => [name, chosen?.[name] === true]));
+  const plainTools = value => value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  const toolSettings = value => ({ default: toolFlags(plainTools(value?.default) || value),
+    models: Object.fromEntries(Object.entries(plainTools(value?.models) || {}).filter(([, tools]) => plainTools(tools)).map(([id, tools]) => [id, toolFlags(tools)])) });
+  const toolsFor = (projectId, modelId) => {
+    const settings = toolSettings(store.projectTools?.[projectId]);
+    return Object.hasOwn(settings.models, modelId) ? settings.models[modelId] : settings.default;
+  };
+  if (typeof opts.askModel === 'function') { const withLedger = opts.askModel; opts.askModel = info => withLedger(info?.model ? { ...info, model: { ...info.model, tools: toolsFor(info.projectId, info.model.id) } } : info); }
   if (typeof launchWorker === 'function') opts.spawnWorker = info => {
     info = { ...info, ...requireWorkerWorkspace(info) };
-    info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId) } };
-    if (autonomyActive(info.projectId)) info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
+    info = { ...info, worker: { ...info.worker, tools: toolsFor(info.projectId, info.worker.id) } };
+    // Workers never push, with or without autonomy: the owner pushes with the Push button.
+    info = { ...info, env: { ...info.env, ...autonomy.pushGuardEnvironment() } };
     if (!ledger) return launchWorker(info);
     const id = ledger.start({ role: 'worker', projectId: info.projectId, megaTaskId: info.megaTaskId, subTaskId: info.subTaskId, attemptId: info.attemptId,
       provider: info.worker.providerId || info.worker.provider, model: info.worker.cli, modelId: info.worker.id, accountKey: info.worker.accountKey, accountType: info.worker.accountType, reason: info.job?.kind === 'research' ? 'approved research' : 'approved work' });
@@ -1100,6 +1188,9 @@ function createOrchestrator(options) {
       if (parsed && typeof parsed === 'object') {
         store = {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
+          autoSwitch: parsed.autoSwitch && typeof parsed.autoSwitch === 'object' ? parsed.autoSwitch : undefined,
+          quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
+          poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -1140,6 +1231,7 @@ function createOrchestrator(options) {
       }
     } catch (_) {}
   }
+  store.projectTools = Object.fromEntries(Object.entries(store.projectTools || {}).map(([id, tools]) => [id, toolSettings(tools)]));
   store.providerPolicies ||= {};
   store.modelPolicies ||= {};
   store.modelRoles ||= {};
@@ -1186,9 +1278,35 @@ function createOrchestrator(options) {
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
-    resolveWorker: (worker, sub) => sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker' ? worker : resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)),
+    explainNoWorker: (worker, sub) => explainNoWorker(worker, sub),
+    resolveWorker: (worker, sub) => {
+      if (sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker') return worker;
+      const resolved = worker ? resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
+      if (resolved) {
+        // Starting a step on a model already under the switch threshold: take one with more quota when there is one.
+        const settings = autoSwitch();
+        if (!settings.enabled || !lowQuota(resolved, plansLive, limitFor)) return resolved;
+        const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: limitFor,
+          eligible: candidate => permitsAssignment(candidate, sub) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked })[0];
+        return better ? roster().find(model => model.id === better.toModelId) || resolved : resolved;
+      }
+      // Quota not read yet: wait for it rather than switch model on a guess.
+      if (worker && usagePolicy(worker, plansLive).state === 'unread') return null;
+      // The assigned model is disabled, no longer has this role, or ran out of quota with no fallback set:
+      // take another eligible model that still has quota, as a normal assignment would.
+      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive });
+      return picked ? roster().find(model => model.id === picked.id) || null : null;
+    },
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
-    onRefusal: (modelId, reason) => { refusals.recordRefusal(store, modelId, reason, now()); persist(); },
+    onRefusal: (modelId, reason) => {
+      const model = roster().find(item => item.id === modelId);
+      const noted = require('./plan-status.cjs').notePlanRefusal(plansLive, model, reason);
+      if (noted.status) {
+        plansLive = noted.plans;
+        refusals.recordRefusal(store, modelId, `Plan ${noted.status}.`, now());
+      } else refusals.recordRefusal(store, modelId, reason, now());
+      persist();
+    },
     replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive }),
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
@@ -1198,14 +1316,21 @@ function createOrchestrator(options) {
   }
 
   // Tools checkboxes for one project. Only the known names are kept; anything else is refused.
-  async function setProjectTools(projectId, tools) {
-    if (typeof projectId !== 'string' || !projectId) return { ok: false, reason: 'Project not found.' };
-    if (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean')) return { ok: false, reason: 'Invalid tools.' };
-    store.projectTools = store.projectTools || {};
-    store.projectTools[projectId] = { ...toolsFor(projectId), ...tools };
-    note(projectId, 'Tools: ' + (TOOL_NAMES.filter(name => store.projectTools[projectId][name]).join(', ') || 'none') + '.');
+  async function setProjectTools(projectId, tools, modelId) {
+    if (typeof projectId !== 'string' || !projectId || ['__proto__', 'constructor', 'prototype'].includes(projectId)) return { ok: false, reason: 'Project not found.' };
+    if (!notebookProjects(await opts.readPlan()).some(item => item.project.id === projectId)) return { ok: false, reason: 'Project not found.' };
+    if (modelId !== undefined && (typeof modelId !== 'string' || !modelId || !roster().some(model => model.id === modelId))) return { ok: false, reason: 'Model not found.' };
+    // null removes an override; omitted modelId still edits the project default.
+    if (!(modelId !== undefined && tools === null) && (!tools || typeof tools !== 'object' || Array.isArray(tools) || Object.entries(tools).some(([name, value]) => !TOOL_NAMES.includes(name) || typeof value !== 'boolean'))) return { ok: false, reason: 'Invalid tools.' };
+    store.projectTools ||= {};
+    const settings = toolSettings(store.projectTools[projectId]);
+    if (modelId === undefined) settings.default = { ...settings.default, ...tools };
+    else if (tools === null) delete settings.models[modelId];
+    else Object.defineProperty(settings.models, modelId, { value: { ...toolsFor(projectId, modelId), ...tools }, enumerable: true, configurable: true, writable: true });
+    store.projectTools[projectId] = settings;
+    note(projectId, 'Tools' + (modelId ? ' for ' + modelId : '') + ': ' + (TOOL_NAMES.filter(name => toolsFor(projectId, modelId)[name]).join(', ') || 'none') + '.');
     persist();
-    return { ok: true, tools: toolsFor(projectId), snapshot: await tick() };
+    return { ok: true, tools: toolsFor(projectId, modelId), snapshot: await tick() };
   }
 
   // Start over and Remove leave nothing of a project live, and lose nothing: its chat, lead state,
@@ -1241,6 +1366,45 @@ function createOrchestrator(options) {
     const row = entry(id);
     const line = { at: now(), text };
     row.log = [line, ...(Array.isArray(row.log) ? row.log : [])].slice(0, 12);
+  }
+
+  // The goal the user approved, plus the crew steps, written before anyone starts.
+  function planSteps(subs) {
+    const models = roster();
+    return (subs || []).filter(Boolean).map(sub => ({
+      role: sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || sub.slice || '')) ? 'Verify' : 'Build',
+      model: models.find(model => model.id === (sub.assignedModelId || sub.modelId))?.label || sub.label || sub.assignedModelId || sub.modelId || 'unassigned',
+      title: sub.title || sub.slice || ''
+    }));
+  }
+  function openWorkPlan(projectId, item, steps) {
+    const folder = linkedWorkspace(item?.project?.folder);
+    if (!folder) return { ok: true };
+    const goal = String(item.revisions?.at(-1)?.direction || '').trim();
+    let prepared;
+    try { prepared = planFile.prepare(folder, { goal, steps: steps || [], keepWorkPlan: opts.keepWorkPlan?.() === true }); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    if (!prepared.ok) {
+      note(projectId, prepared.reason);
+      try { bridge.event(projectId, 'AUTONOMY', prepared.reason); } catch { /* the reason is returned to the chat */ }
+      return prepared;
+    }
+    if (safeGitWorkspace(folder)) {
+      try { worktrees.git(folder, ['worktree', 'prune']); }
+      catch (error) { return { ok: false, reason: `Git worktree cleanup failed: ${error.message}` }; }
+      try { worktrees.sweepOrphans({ dir, liveMegaIds: (store.execution.megaTasks || []).map(mega => mega.id) }); }
+      catch (error) { return { ok: false, reason: `Git worktree cleanup failed: ${error.message}` }; }
+    }
+    if (prepared.chat) {
+      note(projectId, prepared.chat);
+      try { bridge.event(projectId, 'AUTONOMY', prepared.chat); } catch { /* the note stays on the project */ }
+    }
+    return prepared;
+  }
+  function attachWorkPlan(folder, state) {
+    const text = folder ? planFile.read(folder) : '';
+    if (!text) return state || {};
+    return Object.assign({}, state, { workPlanPath: '.planwharf/plan.md', workPlan: text.slice(0, 12000) });
   }
 
   function resultPathFor(attemptId) {
@@ -1614,11 +1778,54 @@ function createOrchestrator(options) {
     return ok;
   }
 
+  // A lead whose quota reaches the switch threshold, or runs out, hands over for real to the next lead in
+  // the ranking, and the chat says so: a crew is never left without a lead. With no better candidate the
+  // lead keeps working rather than stop.
+  // Any model able to lead counts, not only one with the lead role (in a team only the chosen lead has it);
+  // a model on the bench (no role at all) is left out, as the user chose.
+  function leadUsable(model) {
+    return Boolean(model) && roleEligibility(model).orchestrator !== false && canOrchestrate({ ...model, roles: { ...model.roles, orchestrator: true } })
+      && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)
+      && !refusals.activeRefusal(store, model.id, Date.parse(now()));
+  }
+  function switchLead(from, to, why) {
+    // The new lead gets the lead role in this team, as choosing it in Team would do.
+    const team = teamFor(), roles = { ...to.roles, orchestrator: true };
+    if (team) { team.roles[teamKey(to.accountScope, to.id)] = roles; team.orchestratorId = to.id; }
+    else { store.modelRoles[to.id] = roles; if (to.accountScope && store.accountModelRoles[to.accountScope]) store.accountModelRoles[to.accountScope][to.id] = { ...roles }; store.orchestratorId = to.id; }
+    // The chat of every project led by this lead says so: this project, or all those on the shared team.
+    const scoped = teamScope.getStore();
+    const projects = team || scoped ? [scoped].filter(Boolean) : Object.keys(store.projects || {}).filter(id => !Object.hasOwn(store.projectTeams, id));
+    const text = `Planwharf switched the lead: ${from.label || from.id} → ${to.label || to.id}. Why: ${why}`;
+    for (const projectId of projects) { note(projectId, text); try { bridge.event(projectId, 'LEAD_SWITCHED', text); } catch { /* the note keeps it */ } }
+    persist();
+  }
   function leadModel() {
     const list = roster();
     if (leadId()) {
       const picked = list.find(item => item.id === leadId());
-      if (picked && canOrchestrate(picked) && !usagePolicy(picked, plansLive).blocked && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
+      const settings = autoSwitch();
+      const low = isLow;
+      // Only quota decides: a lead at the threshold or out of quota (read for sure), or refused for credits
+      // or quota. A lead that is unavailable or misnamed is never replaced silently, and an unreadable
+      // quota decides nothing (both have their own tests).
+      const outOfQuota = picked && picked.available !== false && (low(picked) || planExhausted(plansLive, picked.quotaPoolId || picked.plan)
+        || usagePolicy(picked, plansLive).state === 'limit' || refusals.activeRefusal(store, picked.id, Date.parse(now())));
+      if (outOfQuota) {
+        const next = leadRanking(list.filter(item => item.id !== picked.id && leadUsable(item) && !low(item)), plansLive)[0];
+        if (next) {
+          const left = quotaLeft(picked, plansLive);
+          const why = refusals.activeRefusal(store, picked.id, Date.parse(now())) ? `${picked.label || picked.id} refused the work (credits or quota).`
+            : left !== null ? `quota of ${picked.label || picked.id} is at ${left}% (switch at ${limitText(picked)}).` : `${picked.label || picked.id} cannot lead now.`;
+          switchLead(picked, next, why);
+          return next;
+        }
+      }
+      // A signed-out plan is said in Team and does not erase the choice: a machine with no login
+      // (the checks) would otherwise have no lead. A quota block still drops it.
+      const policy = picked ? usagePolicy(picked, plansLive) : null;
+      const signedOut = policy && (policy.state === 'expired' || policy.state === 'not signed in');
+      if (picked && canOrchestrate(picked) && (signedOut || !policy.blocked) && !planExhausted(plansLive, picked.quotaPoolId || picked.plan)) return picked;
       const fallback = resolveUsageFallback(picked, list, plansLive, canOrchestrate);
       if (fallback && fallback.id !== picked.id) return { ...fallback, fallbackFrom: picked.id };
       // A lead whose provider just refused work (credits, quota) hands over to another provider.
@@ -1637,7 +1844,7 @@ function createOrchestrator(options) {
       const legacyEnabled = store.enabled[item.id] ?? item.enabled;
       const provider = providerDefinitions.find(p => p.id === (item.providerId || item.provider));
       const account = provider?.account;
-      const scope = account?.key ? provider.id + ':' + account.key : null;
+      const scope = provider?.settingsFolder ? provider.id : account?.key ? provider.id + ':' + account.key : null;
       const emptyRoles = () => Object.fromEntries(ROLE_IDS.map(role => [role, false]));
       const legacy = store.modelRoles[item.id] || item.roles || (legacyEnabled ? {} : emptyRoles());
       if (scope && !store.accountModelRoles[scope]) {
@@ -1653,9 +1860,11 @@ function createOrchestrator(options) {
       item.accountKey = account?.key || null;
       item.accountType = account?.type || 'unread';
       item.accountScope = scope;
+      item.settingsFolder = provider?.settingsFolder || null;
+      item.planStatus = plansLive.find(plan => plan.id === (item.quotaPoolId || item.plan))?.planStatus || 'unknown';
       item.label = require('./provider-accounts.cjs').accountLabel(item.label, account);
       item.providerEnabled = provider ? (store.providerEnabled[provider.id] ?? provider.enabled) : true;
-      item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? true, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
+      item.policy = validatePolicy({ alwaysApprove: item.alwaysApprove ?? false, ...migratePolicy(item.policy || {}), ...migratePolicy(store.modelPolicies[item.id] || {}) });
       if (provider) {
         const shared = providerPolicyFor(provider, models, store).policy;
         item.policy = { minRemainingPercent: shared.minRemainingPercent, warningRemainingPercent: shared.warningRemainingPercent, fallbackModelId: null, alwaysApprove: shared.alwaysApprove };
@@ -1664,11 +1873,17 @@ function createOrchestrator(options) {
       }
       item.alwaysApprove = item.policy.alwaysApprove;
       item.usagePolicy = usagePolicy(item, plansLive);
+      // What is left on each window, the model's limit (its own or the general one), and whether it is under it.
+      item.quotaWindows = quotaWindows(item, plansLive);
+      item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]), source: limitSource(item), pool: item.quotaPoolId || item.plan || null };
+      item.lowQuota = isLow(item);
+      // Light, default or premium: what Team filters by and what the lead's parts are matched against.
+      item.weight = ['premium', 'default', 'light'][leadTier(item)] || 'default';
       const used = usedOf(store.usage, item.id);
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
       const refused = refusals.activeRefusal(store, item.id, Date.parse(now()));
-      if (refused) Object.assign(resolved, { available: false, unavailableReason: 'Provider refused work until ' + refused.until + ': ' + refused.reason });
+      if (refused) Object.assign(resolved, { available: false, unavailableReason: refusalSentence(refused) });
       return resolved;
     });
   }
@@ -1760,6 +1975,31 @@ function createOrchestrator(options) {
       if (!store.usage[worker.id]) store.usage[worker.id] = { used: 0 };
       store.usage[worker.id].used += worker.cost;
     } catch (error) { finishResearch(record, 'failed', error.message); throw error; }
+  }
+
+  // Lead action from the chat: change the models of remaining steps; Planwharf checks every choice.
+  async function reassignCrew(action, row, by = 'lead') {
+    try {
+      if (!action || typeof action !== 'object' || Object.keys(action).some(key => !['type', 'projectId', 'assignments', 'why'].includes(key))) throw new Error('Invalid crew change.');
+      if (!row || action.projectId !== row.id) throw new Error('The crew change targets a different project from the selected one.');
+      const megaTaskId = row.megaTaskId || row.megaTask?.id;
+      if (!megaTaskId) throw new Error('This project has no proposed or stopped work.');
+      await refreshPlans(false);
+      const mega = bridge.reassignRemaining(row.id, megaTaskId, action.assignments, typeof action.why === 'string' ? action.why.slice(0, 300) : '', by);
+      if (mega.status === 'READY_FOR_APPROVAL') return { ok: true, text: 'Crew changed. Approve the work to start it.' };
+      // Work that still reads RUNNING launches its pending steps on the next pass.
+      if (mega.status === 'RUNNING') { await tick(row.id); return { ok: true, text: 'Crew changed; the remaining steps start with the new models.' }; }
+      const resumed = await resume(row.id, { megaTaskId });
+      if (resumed?.ok) return { ok: true, text: 'Crew changed and the work resumed.' };
+      return { ok: true, text: 'Crew changed. Press Resume to continue' + (resumed?.requiresConfirmation ? ' and confirm the changes made since the checkpoint.' : resumed?.reason ? ': ' + resumed.reason : '.') };
+    } catch (error) { return { ok: false, reason: error.message }; }
+  }
+
+  // The user's own crew change from a work card: the same checks as the lead's.
+  async function changeCrew(projectId, assignments) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => changeCrew(projectId, assignments));
+    const row = entry(projectId);
+    return reassignCrew({ type: 'reassign_crew', projectId, assignments }, { id: projectId, megaTaskId: row.megaTaskId }, 'user');
   }
 
   async function dispatchResearch(action, stillAuthorized = () => true, goldModel = null) {
@@ -1902,6 +2142,7 @@ function createOrchestrator(options) {
       thinking: clone(liveThinking(projectId)),
       thinkingByProject: clone(thinkingByKey),
       projectTools: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolsFor(id)])),
+      projectToolSettings: Object.fromEntries((projectId ? [projectId] : Object.keys(store.projectTools || {})).map(id => [id, toolSettings(store.projectTools?.[id])])),
       asking: Object.keys(thinkingByKey).length > 0,
       orchestratorId: lead ? lead.id : null,
       selectedOrchestratorId: leadId(),
@@ -1949,6 +2190,8 @@ function createOrchestrator(options) {
           github: item.project.github || null,
           repository: row.repository && row.repository.folder === (item.project.folder || null) && row.repository.github === (item.project.github || null) ? clone(row.repository) : null,
           goal: latest && latest.direction ? latest.direction : '',
+          // The crew already worked on this goal (a job was made from it): it is not a plan ready to start.
+          goalStarted: Boolean(latest && (item.tasks || []).some(task => task && task.revision_id === latest.id)),
           notes: clone(item.home?.notes || []),
           stateArt: latest && latest.state ? latest.state : '',
           open: clone((latest && latest.open) || []),
@@ -1964,11 +2207,13 @@ function createOrchestrator(options) {
           megaTaskId: row.megaTaskId || null,
           megaTask: row.megaTask || null,
           subTasks: row.subTasks || [],
+          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: clipSummary(result.summary), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
           modelId: row.modelId,
           workerLabel: row.workerLabel || null,
           waitingFor: row.waitingFor || '',
+          openDecisions: (store.execution.decisions || []).filter(decision => decision.projectId === item.project.id && !decision.answer),
           next: homeNext(item, row, store.execution),
           step: stepOf(row),
           pipeline: pipelineOf(row),
@@ -1978,7 +2223,9 @@ function createOrchestrator(options) {
           approved: Boolean(row.approved),
           sessionId: row.authorizedSessionId || null,
           canStart: true,
-          canResume: Boolean(row.status !== 'complete' && row.checkpoint && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
+          // Work running again after Resume is not "stopped": its checkpoint stays on disk, but there is nothing to resume.
+          canResume: Boolean(row.status !== 'complete' && row.checkpoint && String(row.megaTask?.status || '').toUpperCase() !== 'RUNNING' && !(row.dispatch || []).some(part => part && part.alive)
+            && (item.tasks || []).some(task => task.status === 'running' && checkpointMatches(row.checkpoint, task))),
           canStop: Boolean(
             row.status === 'watching'
             && (item.tasks || []).some(task => task.status === 'running')
@@ -2011,8 +2258,22 @@ function createOrchestrator(options) {
         };
       })
     };
+    const stepHistory = readStepTimes(dir);
     view.projects.forEach(row => {
       row.analysis = analysisOf(row);
+      const started = new Map((row.dispatch || []).filter(Boolean).map(part => [part.subTaskId, part.startedAt]));
+      row.timeLeft = estimateTimeLeft({
+        history: stepHistory, now: now(),
+        steps: (row.subTasks || []).map(sub => ({
+          id: sub.id,
+          role: sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || '')) ? 'Verify' : 'Build',
+          model: sub.assignedModelId || sub.modelId || '',
+          status: sub.status,
+          startedAt: started.get(sub.id) || null,
+          dependencies: sub.dependencies || [],
+          size: sub.size
+        }))
+      });
     });
     view.orchestratorFallbackFrom = lead?.fallbackFrom || null;
     for (const research of view.researches) {
@@ -2027,6 +2288,12 @@ function createOrchestrator(options) {
       const effective = { minRemainingPercent: configured.policy.minRemainingPercent, warningRemainingPercent: configured.policy.warningRemainingPercent, fallbackModelId: null, alwaysApprove: configured.policy.alwaysApprove };
       return { ...provider, policy: configured.policy, policySource: configured.source, usagePolicy: usagePolicy({ policy: effective, quotaPoolId: provider.quotaPoolId }, plansLive) };
     });
+    // Who takes over as lead if the current one runs low, in order (Team shows it).
+    // Every model that can lead now, best first: the lead menu follows this order.
+    // The menu is by importance, not by today's quota. A model that is out of quota stays in its
+    // place; Planwharf picks the first one that can actually lead when the work starts.
+    view.leadOrder = leadQuality(roster().filter(item => canOrchestrate({ ...item, roles: { ...item.roles, orchestrator: true } }))).map(item => item.id);
+    view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !isLow(item)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
       dispatch: [{ modelId: record.modelId, pid: record.pid, alive: record.alive, slice: 'Research: ' + record.title, activity: record.activity }] }));
@@ -2090,7 +2357,7 @@ function createOrchestrator(options) {
       .then(() => loadPlans())
       .then(list => {
         if (!Array.isArray(list) || !list.length) throw new Error('Provider usage response is unreadable.');
-        plansLive = list;
+        plansLive = require('./plan-status.cjs').mergePlans(plansLive, list);
         plansAt = Date.now();
         plansInflight = null;
         return plansLive;
@@ -2116,7 +2383,7 @@ function createOrchestrator(options) {
         // Unapproved or paused work has no reason to inspect its source on every poll.
         const facts = existing && existing.status !== 'RUNNING' && row.facts?.folder === linkedWorkspace(item.project.folder) ? row.facts : inspect(item.project.folder); row.facts = facts;
         const parts = job.proposedSubTasks?.length ? job.proposedSubTasks.map(sub => ({ ...sub, modelId: job.goldModel && assignmentRole(sub) === 'worker' ? job.goldModel.id : sub.assignedModelId, slice: sub.title }))
-          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive }), job, facts);
+          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive, low: isLow }), job, facts);
         return bridge.advance(item, job, parts);
       } catch (error) { row.status = 'blocked_no_worker'; row.doing = error.message; row.next = error.message; return row; }
     }
@@ -2407,6 +2674,8 @@ function createOrchestrator(options) {
   }
 
   async function tick(projectId) {
+    // A model left out after a failed call is tried again after a few minutes.
+    for (const model of models) if (availableAgain(model, Date.parse(now()))) Object.assign(model, { available: true, unavailableReason: null, unavailableAt: null });
     await refreshPlans(false);
     let plan = await opts.readPlan();
     rememberStartup(plan);
@@ -2456,11 +2725,14 @@ function createOrchestrator(options) {
     if (typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
     // One retry with a lead from another provider: a refusal, a timeout or an unreadable reply
     // from one model must not end autonomy while another eligible lead exists.
-    let decision = null, failure = null;
+    let decision = null, failure = null, strictAgain = null;
     const tried = new Set();
-    for (let round = 0; round < 2 && !decision; round += 1) {
-      let lead = leadModel();
-      if (lead && tried.has(lead.id)) {
+    for (let round = 0; round < 3 && !decision; round += 1) {
+      // An unreadable reply is asked again once, of the same lead, asking for the JSON object alone.
+      let lead = strictAgain || leadModel();
+      const ask = strictAgain ? autonomy.strictDecisionPrompt(question) : question;
+      strictAgain = null;
+      if (lead && tried.has(lead.id) && ask === question) {
         const used = new Set([...tried].map(id => roster().find(model => model.id === id)).filter(Boolean).map(model => model.providerId || model.provider));
         lead = roster().find(model => !tried.has(model.id) && !used.has(model.providerId || model.provider) && canOrchestrate(model) && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)) || null;
       }
@@ -2468,13 +2740,17 @@ function createOrchestrator(options) {
       tried.add(lead.id);
       let spoken;
       try {
-        spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder } });
+        spoken = await opts.askModel({ question: ask, model: lead, projectId, askKey: 'auto:' + projectId, folder: linkedWorkspace(item.project.folder), allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name, goal: item.revisions.at(-1)?.direction, folder: item.project.folder }) });
       } catch (error) { failure = 'LEAD_FAILED: ' + error.message; continue; }
       const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
       const refused = spoken?.failure ? refusals.refusalReason(text) : null;
       if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, `Lead ${lead.label || lead.id} refused work: ${refused}`); }
       decision = spoken?.failure ? null : autonomy.parseDecision(text);
-      if (!decision) { failure = 'UNREADABLE_LEAD_DECISION'; note(projectId, `Lead ${lead.label || lead.id} gave no readable decision${spoken?.failure ? ' (' + spoken.failure + ')' : ''}.`); }
+      if (!decision) {
+        failure = 'LEAD_UNCONFIRMED';
+        note(projectId, `Lead ${lead.label || lead.id} gave no readable decision${spoken?.failure ? ' (' + spoken.failure + ')' : ''}.`);
+        if (!spoken?.failure && ask === question) strictAgain = lead;
+      }
     }
     if (!decision) { stopAutonomy(projectId, settings, failure || 'NO_LEAD_AVAILABLE'); return; }
     if (decision.assumptions.length) { settings.assumptions = [...settings.assumptions, ...decision.assumptions].slice(-50); note(projectId, 'Lead assumptions: ' + decision.assumptions.join('; ')); }
@@ -2486,18 +2762,74 @@ function createOrchestrator(options) {
     persist();
   }
   // The lead chooses the crew for a multi-slice MegaTask. Any failure keeps the proposal as it is.
+  // The files of a project, for the lead to split the work by: git's list, or the top-level names.
+  function projectFiles(folder) {
+    const where = linkedWorkspace(folder);
+    if (!where) return [];
+    try {
+      const listed = require('node:child_process').spawnSync('git', ['ls-files', '-z'], { cwd: where, encoding: 'utf8', windowsHide: true, timeout: 10000, maxBuffer: 16 * 1024 * 1024 });
+      if (listed.status === 0) return listed.stdout.split('\0').filter(Boolean);
+    } catch { /* not a git folder */ }
+    try { return fs.readdirSync(where).filter(name => !name.startsWith('.')); } catch { return []; }
+  }
+  // Before the work starts, the lead may split it into parts that run at the same time, each limited to
+  // its files and given a model by its weight, then one check of the whole. A reply that breaks a rule
+  // keeps the usual plan, and the lead then only picks the crew.
+  async function planByLead(projectId, item, megaTaskId) {
+    let mega;
+    try { mega = bridge.paint(bridge.target(projectId, megaTaskId)); } catch { return false; }
+    const lead = leadModel();
+    const subs = mega.subTasks || [];
+    if (!lead || typeof opts.askModel !== 'function' || !subs.length || subs.some(sub => sub.type !== 'IMPLEMENTATION' || sub.goldModel)) return false;
+    const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
+    const tierName = model => ['premium', 'default', 'light'][leadTier(model)] || 'default';
+    const describe = model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider, tier: tierName(model), left: quotaLeft(model, plansLive) ?? undefined });
+    // A model at or under the switch threshold would be moved off its part right away: the lead is not
+    // offered it, unless no other model has the role.
+    const settings = autoSwitch();
+    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list; return ok.length ? ok : list; };
+    const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
+    const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }))));
+    // With a single model that can build there is no crew to split the work among: no lead call.
+    if (builders.length < 2 || !verifiers.length) return false;
+    const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
+    const question = autonomy.splitPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction || mega.goal, builders: builders.map(describe), verifiers: verifiers.map(describe), files: projectFiles(item.project.folder), said });
+    let spoken;
+    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return false; }
+    const split = autonomy.parseSplit(spoken && typeof spoken === 'object' ? spoken.answer : spoken, { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) });
+    if (!split) { note(projectId, 'The lead did not split the work in a usable way; it keeps the usual plan.'); return false; }
+    // Light parts on light models: the strong ones and their quota stay for the heavy work.
+    const fitted = autonomy.fitWeights(split.parts, builders.map(describe));
+    split.parts = fitted.parts;
+    const label = id => roster().find(model => model.id === id)?.label || id;
+    for (const move of fitted.moved) note(projectId, `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.`);
+    // The chat says it too, in the line that announces the split.
+    if (fitted.moved.length) split.why = `${split.why || ''} Planwharf gave lighter models the lighter parts: ${fitted.moved.map(move => `"${move.title}" to ${label(move.to)}`).join(', ')}.`.trim();
+    // The check of the whole uses the same instructions as the usual verify step.
+    const check = dispatchPlan([{ id: 'build' }, { id: 'check' }], { title: mega.title }, {})[1].slice;
+    const several = split.parts.length > 1;
+    const parts = [...split.parts.map(part => ({ modelId: part.model, slice: part.title, detail: part.detail, dependsOn: part.dependsOn, size: part.size, ...(several ? { scope: part.files } : {}) })),
+      { modelId: split.verify, slice: check, detail: check, dependsOn: split.parts.map((_, index) => index) }];
+    try { bridge.replan(projectId, megaTaskId, parts, split.why); return true; }
+    catch (error) { note(projectId, 'The lead split was refused: ' + error.message); return false; }
+  }
+
   async function assignByLead(projectId, item, megaTaskId) {
     let subs;
     try { subs = bridge.paint(bridge.target(projectId, megaTaskId)).subTasks || []; } catch { return; }
     const lead = leadModel();
     if (subs.length < 2 || !lead || typeof opts.askModel !== 'function') return;
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
-    const candidates = subs.map(sub => roster().filter(model => usable(model) && permitsAssignment(model, sub)));
+    // A model under its quota limit would be moved off at once: it is offered only when no other model can take the step.
+    const roomy = list => { const ok = list.filter(model => !isLow(model)); return ok.length ? ok : list; };
+    const candidates = subs.map(sub => { const list = roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))); return assignmentRole(sub) === 'verifier' ? ableToVerify(list) : list; });
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
-    const question = autonomy.assignmentPrompt({ name: item.project.name, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
+    // The lead's last answer in this project's chat, where it may have proposed the crew.
+    const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
+    const question = autonomy.assignmentPrompt({ name: item.project.name, said, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
     let spoken;
-    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: { name: item.project.name } }); } catch { return; }
+    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return; }
     if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
     const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, candidates.map(list => list.map(model => model.id)));
     if (!choice) { note(projectId, 'Lead crew choice was unreadable; keeping the proposed crew.'); return; }
@@ -2521,8 +2853,21 @@ function createOrchestrator(options) {
       return;
     }
     if (step.type === 'approve') {
-      settings.approved.push(step.megaTaskId); persist();
-      await assignByLead(projectId, item, step.megaTaskId);
+      // A failed or blocked attempt is not progress. It does not use up the session cap, and three
+      // in a row stop the session instead of burning it on the same closed gate.
+      const failed = ['worker failure', 'blocked worker'].includes(row.checkpoint?.reason);
+      if (failed) {
+        settings.failed = (settings.failed || 0) + 1;
+        if (settings.failed >= 3) {
+          persist();
+          note(projectId, 'Stopped. The same work failed three times. Planwharf will not keep retrying it.');
+          return stopAutonomy(projectId, settings, 'REPEATED_FAILURE');
+        }
+      } else settings.failed = 0;
+      if (!failed) settings.approved.push(step.megaTaskId);
+      persist();
+      // The lead splits the work if that helps; otherwise it only picks the crew of the usual plan.
+      if (!(await planByLead(projectId, item, step.megaTaskId))) await assignByLead(projectId, item, step.megaTaskId);
       const approved = await exclusive(() => approve(projectId, step.megaTaskId, { actor: 'autonomy-setting' }));
       if (!approved?.ok) stopAutonomy(projectId, settings, 'APPROVAL_REFUSED: ' + (approved?.reason || 'unknown reason'));
       return;
@@ -2550,6 +2895,159 @@ function createOrchestrator(options) {
   // Each project takes its own steps: a lead decision for one project (which can outlast several
   // monitoring intervals) never holds up another. A project still busy with its last step is skipped.
   const autonomyBusy = new Set();
+  // Why a step has no model to start on: waiting for quota (it starts by itself later) or a problem the user must fix.
+  function explainNoWorker(worker, sub) {
+    const title = sub?.title ? `"${String(sub.title).slice(0, 80)}"` : 'this step';
+    const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(sub)] || 'Build';
+    // A Gold step uses exactly the model the user chose: it never waits for, or switches to, another one.
+    if (sub?.goldModel && assignmentRole(sub) === 'worker') return { waiting: false, message: `The Gold model ${worker?.label || sub.goldModel.id || sub.assignedModelId} cannot take ${title}: it is disabled or under its quota threshold, and a Gold step never switches model. Wait for its quota, or turn Gold off.` };
+    const crew = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, sub) && (sub?.type === 'AUDIT' || model.capabilities?.canCode !== false));
+    if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
+    const settings = autoSwitch();
+    const unread = crew.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
+    const low = crew.filter(model => lowQuota(model, plansLive, limitFor) || usagePolicy(model, plansLive).blocked);
+    if (low.length + unread.length < crew.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
+    const resetOf = model => {
+      const plan = plansLive.find(item => item && item.id === (model.quotaPoolId || model.plan));
+      const times = [plan?.resetAt, ...(plan?.windows || []).map(window => window?.resetAt)].map(value => Date.parse(value)).filter(value => Number.isFinite(value) && value > Date.now());
+      if (!times.length) return '';
+      const at = new Date(Math.min(...times));
+      return at - Date.now() < 86400000 ? `, back at ${at.toISOString().slice(11, 16)} UTC` : `, back on ${at.toISOString().slice(0, 10)}`;
+    };
+    const parts = crew.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
+    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota above its limit, or when you add one in Team.` };
+  }
+
+  // The general quota limit: 35% left on the 5-hour window and on the weekly one, unless the user set
+  // other values. An old saved single threshold (other than the former 20% default) applies to both.
+  function autoSwitch() {
+    const saved = store.autoSwitch && typeof store.autoSwitch === 'object' ? store.autoSwitch : {};
+    const legacy = Number.isFinite(saved.thresholdPercent) && saved.thresholdPercent !== 20 && !Number.isFinite(saved.fiveHourPercent) ? saved.thresholdPercent : null;
+    const fiveHourPercent = Number.isFinite(saved.fiveHourPercent) ? saved.fiveHourPercent : legacy ?? AUTO_SWITCH_DEFAULT.fiveHourPercent;
+    const weeklyPercent = Number.isFinite(saved.weeklyPercent) ? saved.weeklyPercent : legacy ?? AUTO_SWITCH_DEFAULT.weeklyPercent;
+    return { enabled: saved.enabled !== false, fiveHourPercent, weeklyPercent, thresholdPercent: Math.max(fiveHourPercent, weeklyPercent) };
+  }
+  function setAutoSwitch(input = {}) {
+    const current = autoSwitch();
+    const next = { enabled: current.enabled, fiveHourPercent: current.fiveHourPercent, weeklyPercent: current.weeklyPercent };
+    if (typeof input.enabled === 'boolean') next.enabled = input.enabled;
+    for (const [key, targets] of [['thresholdPercent', ['fiveHourPercent', 'weeklyPercent']], ['fiveHourPercent', ['fiveHourPercent']], ['weeklyPercent', ['weeklyPercent']]]) {
+      if (input[key] === undefined) continue;
+      const value = Number(input[key]);
+      if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
+      for (const target of targets) next[target] = Math.round(value);
+    }
+    store.autoSwitch = next; persist();
+    return { ok: true, autoSwitch: autoSwitch() };
+  }
+  // Each model follows the general limit unless the user gave it its own, or no limit at all.
+  // A model's limit: its own, else its company's (its quota pool, such as claude or chatgpt), else the general one.
+  function limitFor(model) {
+    const own = store.quotaLimits && model ? store.quotaLimits[model.id] : null;
+    const pool = model ? model.quotaPoolId || model.plan : null;
+    const companyPool = model?.companyPoolId || pool;
+    const company = store.poolLimits && companyPool ? store.poolLimits[companyPool] : null;
+    const general = autoSwitch();
+    if (own?.none === true || !own && company?.none === true) return quotaLimit({ none: true });
+    const pick = key => Number.isFinite(own?.[key]) ? own[key] : Number.isFinite(company?.[key]) ? company[key] : general[key];
+    return quotaLimit({ fiveHourPercent: pick('fiveHourPercent'), weeklyPercent: pick('weeklyPercent') });
+  }
+  function limitSource(model) {
+    if (store.quotaLimits && store.quotaLimits[model.id]) return 'model';
+    const pool = model.companyPoolId || model.quotaPoolId || model.plan;
+    return store.poolLimits && pool && store.poolLimits[pool] ? 'company' : 'general';
+  }
+  function limitText(model) {
+    const limit = limitFor(model);
+    return limit.none ? 'no limit' : limit.fiveHourPercent === limit.weeklyPercent ? `${limit.fiveHourPercent}%` : `${limit.fiveHourPercent}% on 5 hours, ${limit.weeklyPercent}% on the week`;
+  }
+  function isLow(model) { return autoSwitch().enabled && lowQuota(model, plansLive, limitFor); }
+  // input.pool sets the limit of a whole company (every model of that quota pool); otherwise of model id.
+  function setQuotaLimit(id, input = {}) {
+    const pool = typeof input.pool === 'string' ? input.pool : null;
+    if (pool ? !roster().some(model => (model.quotaPoolId || model.plan) === pool) : !roster().some(model => model.id === id)) return { ok: false, reason: pool ? 'Unknown company.' : 'Unknown model.' };
+    const key = pool ? 'poolLimits' : 'quotaLimits', name = pool || id;
+    store[key] = store[key] && typeof store[key] === 'object' ? store[key] : {};
+    if (input.reset === true) delete store[key][name];
+    else if (input.none === true) store[key][name] = { none: true };
+    else {
+      const own = {};
+      for (const field of ['fiveHourPercent', 'weeklyPercent']) {
+        if (input[field] === undefined) continue;
+        const value = Number(input[field]);
+        if (!Number.isFinite(value) || value < 0 || value > 90) return { ok: false, reason: 'The threshold must be between 0 and 90.' };
+        own[field] = Math.round(value);
+      }
+      if (!Object.keys(own).length) return { ok: false, reason: 'Give a threshold, no limit, or reset.' };
+      store[key][name] = own;
+    }
+    persist();
+    return { ok: true };
+  }
+  // While steps work, a model whose quota runs low hands its step to another model with the same role.
+  let quotaWatchRunning = false;
+  const quotaSwitchedAt = new Map();
+  // Same order as a quota switch: another company first, quota that is read before quota that is not, then the most left above the limit.
+  function bestAboveQuota(step, models) {
+    const fits = candidate => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+    return models
+      .filter(model => model.id !== step.modelId && model.enabled && model.available !== false && model.providerEnabled !== false && fits(model))
+      .map(model => ({ model, left: quotaLeft(model, plansLive) }))
+      .filter(item => !lowQuota(item.model, plansLive, limitFor))
+      .map(item => ({ ...item, shared: (step.avoidProviders || []).includes(item.model.providerId || item.model.provider) }))
+      .sort((a, b) => (a.shared - b.shared) || ((a.left === null) - (b.left === null)) || ((b.left ?? 0) - (a.left ?? 0)))[0]?.model || null;
+  }
+  async function quotaWatchTick() {
+    const settings = autoSwitch();
+    if (!settings.enabled || quotaWatchRunning || shuttingDown) return;
+    quotaWatchRunning = true;
+    try {
+      const view = snapshot(await opts.readPlan());
+      const busy = view.projects.filter(row => String(row.megaTask?.status || '').toUpperCase() === 'RUNNING' && (row.subTasks || []).some(sub => sub.status === 'RUNNING'));
+      if (!busy.length) return;
+      await refreshPlans(false);
+      for (const row of busy) {
+        // Roles belong to this project's team. The shared team is a different crew.
+        await inTeam(row.id, async () => {
+          const models = roster();
+          const running = (row.subTasks || []).filter(sub => sub.status === 'RUNNING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
+            .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
+              // The companies of the work's other steps: the switch avoids them when it can.
+              avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = models.find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
+          const eligible = (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+          const switches = quotaSwitches({ running, models, plans: plansLive, thresholdPercent: limitFor, eligible });
+          const switched = new Set(switches.map(change => change.subTaskId));
+          // The user removed this model from the step's role in Team. Quota can still be fine; the step still moves.
+          const lostRole = [];
+          for (const step of running) {
+            if (switched.has(step.subTaskId)) continue;
+            const current = models.find(model => model.id === step.modelId);
+            if (current && permitsAssignment(current, step.sub)) continue;
+            const best = bestAboveQuota(step, models);
+            if (best) lostRole.push({ subTaskId: step.subTaskId, fromModelId: step.modelId, toModelId: best.id, sub: step.sub });
+          }
+          const apply = (change, why) => {
+            quotaSwitchedAt.set(change.subTaskId, Date.now());
+            const from = models.find(model => model.id === change.fromModelId), to = models.find(model => model.id === change.toModelId);
+            try {
+              bridge.reassignRemaining(row.id, row.megaTaskId, { [change.subTaskId]: change.toModelId }, why, 'auto');
+              note(row.id, `Switched ${from?.label || change.fromModelId} to ${to?.label || change.toModelId}: ${why}`);
+            } catch (error) { note(row.id, 'Automatic model switch failed: ' + error.message); }
+          };
+          for (const change of switches) {
+            const from = models.find(model => model.id === change.fromModelId);
+            apply(change, `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}).`);
+          }
+          for (const change of lostRole) {
+            const from = models.find(model => model.id === change.fromModelId);
+            apply(change, `${from?.label || change.fromModelId} no longer has the ${{ worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(change.sub)] || 'Build'} role in this project's team.`);
+          }
+        });
+      }
+      persist();
+    } finally { quotaWatchRunning = false; }
+  }
+
   async function autonomyTick() {
     if (shuttingDown || !Object.values(store.autonomy).some(settings => settings?.enabled)) return;
     const view = snapshot(await opts.readPlan());
@@ -2814,14 +3312,14 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         };
         try {
           invokedLead = lead;
-          const spoken = await opts.askModel({
+          const askThis = model => opts.askModel({
             question: q,
-            model: lead,
+            model,
             ...(grillKind ? { grillKind, allowActions: false } : {}),
             projectId: (row && row.id) || fallback.projectId,
             folder: linkedWorkspace(row && row.folder),
             github: row && row.github || null,
-            state: Object.assign({}, compactState(packState(snap, row), store.briefingBaselines[row?.id]), { history, contextArchive: contextProjectId ? null : stateFile, earlierTurns: Math.max(0, (conversation || []).length - history.length), currentRequest: { projectId: row?.id || null, text: q, taskId: currentTask?.id || null, requestMode, goldModel, grillKind } }),
+            state: attachWorkPlan(linkedWorkspace(row && row.folder), Object.assign({}, compactState(packState(snap, row), store.briefingBaselines[row?.id]), { history, contextArchive: contextProjectId ? null : stateFile, earlierTurns: Math.max(0, (conversation || []).length - history.length), currentRequest: { projectId: row?.id || null, text: q, taskId: currentTask?.id || null, requestMode, goldModel, grillKind } })),
             onProgress: part => {
               if (!part || typeof part !== 'object') return;
               thinkingByKey[chatKey] = {
@@ -2836,6 +3334,33 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
               };
             }
           });
+          let spoken = await askThis(lead);
+          // Only a dead CLI retries. A protocol change or an unrecognized model is a real answer
+          // about the provider: it is classified and kept, never replaced.
+          // A provider that closes the turn as failed is the same miss as a dead CLI: retry once, then hand over.
+          const died = spoken => spoken?.failure === 'process' || (spoken?.failure === 'provider' && spoken?.diagnostic?.code === 'PROVIDER_EXECUTION_FAILED');
+          const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
+          // A quota error will not clear by asking again: hand over at once, to another company.
+          if (outOfQuota(spoken) && askCurrent(token)) {
+            const company = lead.providerId || lead.provider;
+            const next = leadRanking(roster().filter(model => model.id !== lead.id && (model.providerId || model.provider) !== company && leadUsable(model)), plansLive)[0];
+            if (next) {
+              switchLead(lead, next, (lead.label || lead.id) + ' is out of quota.');
+              invokedLead = next;
+              spoken = await askThis(next);
+            }
+          } else if (died(spoken) && askCurrent(token)) {
+            note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
+            spoken = await askThis(lead);
+            if (died(spoken) && askCurrent(token)) {
+              const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+              if (next) {
+                switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
+                invokedLead = next;
+                spoken = await askThis(next);
+              }
+            }
+          }
           const unpacked = spoken && typeof spoken === 'object' && !Array.isArray(spoken)
             ? {
               answer: typeof spoken.answer === 'string' ? spoken.answer.trim() : '',
@@ -2853,12 +3378,21 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           diagnostic = spoken?.diagnostic || null;
           if (diagnostic?.code === 'PROVIDER_MODEL_UNAVAILABLE') {
             const rejected = models.find(model => model.id === lead.id);
-            if (rejected) { rejected.available = false; rejected.unavailableReason = diagnostic.message; }
+            if (rejected) { rejected.available = false; rejected.unavailableReason = diagnostic.message; rejected.unavailableAt = now(); }
           }
           const envelope = spoken?.failure ? { answer: unpacked.answer, actions: [] } : leadEnvelope(unpacked.answer, spoken && typeof spoken === 'object' ? spoken.actions : undefined);
           if (envelope.answer) answer = envelope.answer;
           else answer = `${lead.label} returned no answer. The provider CLI in the project folder produced nothing.`;
           if (envelope.error) answer += '\n\n' + envelope.error;
+          // Crew changes are allowed in any message; research still needs the user's explicit request.
+          if (Array.isArray(envelope.actions) && envelope.actions.length <= 3) {
+            for (const action of envelope.actions.filter(item => item?.type === 'reassign_crew')) {
+              const receipt = await reassignCrew(action, row);
+              actionResults.push(receipt);
+              answer += receipt.ok ? '\n\n' + receipt.text : '\n\nCrew not changed: ' + receipt.reason;
+            }
+            envelope.actions = envelope.actions.filter(item => item?.type !== 'reassign_crew');
+          }
           if (!Array.isArray(envelope.actions) || envelope.actions.length > 3) {
             answer += '\n\nInvalid lead actions; no workers were dispatched.';
           } else if (envelope.actions.length && !researchRequested) {
@@ -2918,7 +3452,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const toolAsked = typeof item.answer === 'string' && item.projectId ? item.answer.match(TOOL_REQUEST) : null;
     if (toolAsked) {
       item.answer = item.answer.replace(TOOL_REQUEST, '').trim();
-      if (!toolsFor(item.projectId)[toolAsked[1].toLowerCase()]) item.toolRequest = toolAsked[1].toLowerCase();
+      if (!toolsFor(item.projectId, lead?.id)[toolAsked[1].toLowerCase()]) item.toolRequest = toolAsked[1].toLowerCase();
     }
     store.asks = [item, ...(Array.isArray(store.asks) ? store.asks : [])];
     persist();
@@ -2997,6 +3531,24 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (role === 'orchestrator' && !enabled) store.orchestratorId = null;
     persist();
     return { ok: true, snapshot: snapshot(await opts.readPlan()) };
+  }
+
+  // The same roles for several models at once (Team's "all" and "none" on the models shown). A role a
+  // model cannot take is skipped for that model, not refused for all.
+  async function setRolesForMany(ids, roles, projectId) {
+    if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string')) return { ok: false, reason: 'Choose at least one model.' };
+    if (!roles || typeof roles !== 'object' || Array.isArray(roles) || !Object.keys(roles).length || Object.entries(roles).some(([role, enabled]) => !ROLE_IDS.includes(role) || typeof enabled !== 'boolean')) return { ok: false, reason: 'Invalid role settings.' };
+    let changed = 0, last = null;
+    for (const id of ids) {
+      const model = roster().find(item => item.id === id);
+      if (!model) continue;
+      const eligibility = roleEligibility(model);
+      const fit = Object.fromEntries(Object.entries(roles).filter(([role, enabled]) => !enabled || eligibility[role]));
+      if (!Object.keys(fit).length) continue;
+      last = await setModelRoles(id, fit, projectId);
+      if (last?.ok) changed += 1;
+    }
+    return { ok: true, changed, snapshot: last?.snapshot || snapshot(await opts.readPlan()) };
   }
 
   async function setModelRoles(id, roles, projectId) {
@@ -3079,6 +3631,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const job = item.tasks.find(task => task.status === 'running');
     if (job.kind !== 'research' && !linkedWorkspace(item.project.folder)) return { ok: false, reason: 'Relink a real local project folder before approval.' };
     const row = entry(projectId);
+    if (opts.phase2 && job.executionVersion !== 2) return { ok: false, reason: 'This work was saved by an older version of Planwharf and cannot continue. Start it again with Let the crew do it.' };
     if (megaTaskId && job.executionVersion !== 2) return { ok: false, reason: 'The legacy job has no matching MegaTask approval target.' };
     if (job.executionVersion === 2) {
       decide(item);
@@ -3086,9 +3639,17 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       if (!mega) return { ok: false, reason: 'No MegaTask proposal is available.' };
       if (typeof megaTaskId !== 'string') return { ok: false, reason: 'Approve requires the explicit proposed MegaTask ID.' };
       if (megaTaskId && megaTaskId !== mega.id) return { ok: false, reason: 'Approval targets a different MegaTask from the current proposal.' };
+      if (job.kind !== 'research' && !mega.detached) {
+        const opened = openWorkPlan(projectId, item, planSteps(entry(projectId).subTasks));
+        if (!opened.ok) { persist(); return { ok: false, reason: opened.reason }; }
+      }
       try { bridge.approve(projectId, megaTaskId, policy); } catch (error) { return { ok: false, reason: error.message }; }
       row.authorizedSessionId = sessionId;
       return { ok: true, megaTaskId: mega.id, snapshot: await tick(projectId) };
+    }
+    if (job.kind !== 'research') {
+      const opened = openWorkPlan(projectId, item, planSteps(row.dispatch));
+      if (!opened.ok) { persist(); return { ok: false, reason: opened.reason }; }
     }
     row.approved = true;
     row.authorizedSessionId = sessionId;
@@ -3122,7 +3683,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           clarificationKind: kind,
           projectId: item.project.id,
           folder: item.project.folder || null,
-          state: { name: item.project.name, goal: latest && latest.direction, folder: item.project.folder, docs },
+          state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name, goal: latest && latest.direction, folder: item.project.folder, docs }),
           allowActions: false
         });
         const text = spoken && typeof spoken === 'object' && !Array.isArray(spoken) ? spoken.answer : spoken;
@@ -3230,6 +3791,12 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         replace: genericOpen,
         clearJob
       };
+    }
+    const opened = openWorkPlan(projectId, item, []);
+    if (!opened.ok) {
+      row.pendingAutoStart = null;
+      persist();
+      return { ok: false, reason: opened.reason };
     }
     const job = jobFromFacts(latest, facts);
     row.jobId = null;
@@ -3344,6 +3911,33 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     applyCheckpoint(projectId, item, job, facts && !facts.error ? facts : row.facts, 'stop');
     persist();
     return { ok: true, snapshot: await tick(projectId) };
+  }
+
+  // The user's way out of stuck work: stop its workers, cancel it and free the project for a new start.
+  // Files changed in the project folder stay as they are.
+  async function resetWork(projectId) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => resetWork(projectId));
+    if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
+    const plan = await opts.readPlan();
+    const item = notebookProjects(plan).find(row => row.project.id === projectId);
+    if (!item) return { ok: false, reason: 'project not found' };
+    if (!(item.tasks || []).some(task => task.status === 'running')) return { ok: false, reason: 'Nothing to reset on this project.' };
+    if (store.autonomy[projectId]?.enabled) store.autonomy[projectId] = { enabled: false };
+    const row = entry(projectId);
+    try {
+      const mega = row.megaTaskId ? bridge.target(projectId, row.megaTaskId) : null;
+      if (mega?.status === 'RUNNING') bridge.stop(item, item.tasks.find(task => task.id === mega.taskId), mega.id);
+      else killDispatch(row);
+      if (mega) bridge.dropWork(item, mega.id);
+    }
+    catch (error) { return { ok: false, reason: error.message }; }
+    const facts = item.project.folder ? inspect(item.project.folder) : null;
+    try { releaseRunningJob(projectId, item, facts && !facts.error ? facts : row.facts); }
+    catch (error) { return { ok: false, reason: error.message }; }
+    Object.assign(row, { checkpoint: null, pendingAutoStart: null, resumeRequested: false, holdApproval: false });
+    note(projectId, 'Work reset by the user. Files in the project folder were left as they are.');
+    persist();
+    return { ok: true };
   }
 
   async function checkpointForUpdate() {
@@ -3472,7 +4066,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
-  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { clipSummary, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

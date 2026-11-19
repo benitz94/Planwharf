@@ -55,6 +55,8 @@ async function main() {
   fs.writeFileSync(bootstrap, `
 const opts = require('./worker-input.json');
 const args = ['node', 'runner'];
+// A worker only starts inside its linked project folder.
+args.push('--linked-folder', opts.folder);
 for (const key of ['folder', 'result', 'title', 'detail', 'worker', 'attempt']) args.push('--' + key, opts[key]);
 args.push('--model-json', JSON.stringify(opts.model));
 require(${JSON.stringify(path.join(__dirname, 'runner.cjs'))}).run(args);

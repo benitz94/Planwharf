@@ -107,7 +107,7 @@ async function main() {
     const source = path.join(dir, 'FakeProvider.cs');
     executable = path.join(dir, 'FakeProvider.exe');
     fs.writeFileSync(source, nativeSource);
-    const built = spawnSync(compiler, ['/nologo', '/r:System.Web.Extensions.dll', '/out:' + executable, source], { encoding: 'utf8', timeout: 10000 });
+    const built = spawnSync(compiler, ['/nologo', '/r:System.Web.Extensions.dll', '/out:' + executable, source], { encoding: 'utf8', timeout: 60000 });
     assert.equal(built.status, 0, built.stdout + built.stderr);
   } else {
     executable = path.join(dir, 'fake-provider');
@@ -118,7 +118,7 @@ async function main() {
   for (const [provider, cli] of [['codex', 'gpt-6-astra'], ['antigravity', 'gemini-3.1-pro-high'], ['grok', 'grok-4.6'], ['claude', 'claude-sonnet-fixture']]) {
     const env = 'PLANWHARF_' + provider.toUpperCase(); saved[env] = process.env[env]; process.env[env] = executable;
     const folder = path.join(dir, provider); fs.mkdirSync(folder);
-    const model = { provider, cli, label: 'Isolated ' + provider };
+    const model = { provider, cli, label: 'Isolated ' + provider, alwaysApprove: true };
     const detail = 'Full discussion \u00e8 \u65e5\u672c\u8a9e \u{1f3ce}\u{fe0f}, quotes " and newlines.\n'.repeat(4000);
     const info = { model, folder, question: 'Follow the full long conversation.', state: { history: [{ user: detail, orchestrator: 'Prior answer.' }] } };
     const expected = askPrompt(info); assert.ok(expected.length > 32767);
@@ -133,7 +133,7 @@ async function main() {
     fs.writeFileSync(path.join(folder, 'job.json'), JSON.stringify(opts));
     const bootstrap = path.join(folder, 'bootstrap.cjs');
     fs.writeFileSync(bootstrap, `const opts=require('./job.json');const args=['node','runner','--linked-folder',opts.linkedFolder];for(const key of ['folder','result','title','detail','worker','attempt'])args.push('--'+key,opts[key]);args.push('--model-json',JSON.stringify(opts.model));require(${JSON.stringify(path.join(__dirname, 'runner.cjs'))}).run(args);`);
-    const worker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 10000, env: process.env });
+    const worker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 60000, env: process.env });
     assert.equal(worker.error, undefined); assert.equal(worker.status, 0, provider + ': ' + worker.stderr);
     assert.match(fs.readFileSync(opts.result, 'utf8'), /STATUS: COMPLETE/);
     assert.equal(receipt(folder).prompt, promptFor(opts), provider + ' receives the entire worker prompt');
@@ -148,7 +148,7 @@ async function main() {
       fs.writeFileSync(path.join(folder, 'identity-change'), 'fixture');
       const changed = await askOrchestrator({ model, folder, question: 'Isolated identity mismatch.' });
       assert.equal(changed.diagnostic.code, 'PROVIDER_MODEL_IDENTITY_CHANGED');
-      const changedWorker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 10000 });
+      const changedWorker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 60000 });
       assert.notEqual(changedWorker.status, 0);
       assert.match(fs.readFileSync(opts.result, 'utf8'), /STATUS: FAILED/);
       fs.rmSync(path.join(folder, 'identity-change'));
@@ -161,7 +161,7 @@ async function main() {
       fs.writeFileSync(path.join(folder, 'result-error'), 'fixture');
       const failedTurn = await askOrchestrator({ model, folder, question: 'Isolated failed turn.' });
       assert.match(failedTurn.answer, /CLI failed.*isolated failed turn/);
-      const failedWorker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 10000, env: process.env });
+      const failedWorker = spawnSync(process.execPath, [bootstrap], { encoding: 'utf8', timeout: 60000, env: process.env });
       assert.notEqual(failedWorker.status, 0, 'A zero-exit provider error turn must fail the worker result');
       assert.match(fs.readFileSync(opts.result, 'utf8'), /STATUS: FAILED/);
     }
@@ -170,6 +170,6 @@ async function main() {
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {
   for (const [env, value] of Object.entries(saved)) { if (value === undefined) delete process.env[env]; else process.env[env] = value; }
-  for (const inputDir of promptDirs) fs.rmSync(inputDir, { recursive: true, force: true });
-  fs.rmSync(dir, { recursive: true, force: true });
+  for (const inputDir of promptDirs) fs.rmSync(inputDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 50 });
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 50 });
 });

@@ -1,0 +1,246 @@
+[
+  {
+    "fn": "isVerifySlice",
+    "args": [
+      "Verify the work independently against the job."
+    ],
+    "result": true
+  },
+  {
+    "fn": "isVerifySlice",
+    "args": [
+      "Implement the whole job."
+    ],
+    "result": false
+  },
+  {
+    "fn": "supportsSupervisor",
+    "args": [
+      {
+        "provider": "claude",
+        "capabilities": {
+          "canUseTools": true
+        }
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "supportsSupervisor",
+    "args": [
+      {
+        "provider": "grok"
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "roleEligibility",
+    "args": [
+      {
+        "id": "m",
+        "kind": "premium",
+        "capabilities": {
+          "canUseTools": true
+        }
+      }
+    ],
+    "result": {
+      "orchestrator": true,
+      "worker": true,
+      "verifier": true,
+      "reviewer": true,
+      "supervisor": false
+    }
+  },
+  {
+    "fn": "roleEligibility",
+    "args": [
+      {
+        "id": "m",
+        "kind": "local",
+        "workerEligible": false
+      }
+    ],
+    "result": {
+      "orchestrator": false,
+      "worker": false,
+      "verifier": false,
+      "reviewer": false,
+      "supervisor": false
+    }
+  },
+  {
+    "fn": "roleEligibility",
+    "args": [
+      {
+        "id": "m",
+        "capabilities": {
+          "canUseTools": false
+        }
+      }
+    ],
+    "result": {
+      "orchestrator": false,
+      "worker": true,
+      "verifier": true,
+      "reviewer": false,
+      "supervisor": false
+    }
+  },
+  {
+    "fn": "withModelRoles",
+    "args": [
+      {
+        "id": "m",
+        "kind": "premium",
+        "capabilities": {
+          "canUseTools": true
+        }
+      },
+      {
+        "worker": true,
+        "verifier": false
+      }
+    ],
+    "result": {
+      "id": "m",
+      "kind": "premium",
+      "capabilities": {
+        "canUseTools": true
+      },
+      "roleEligibility": {
+        "orchestrator": true,
+        "worker": true,
+        "verifier": true,
+        "reviewer": true,
+        "supervisor": false
+      },
+      "roles": {
+        "orchestrator": true,
+        "worker": true,
+        "verifier": false,
+        "reviewer": true,
+        "supervisor": false
+      }
+    }
+  },
+  {
+    "fn": "withModelRoles",
+    "args": [
+      {
+        "id": "m",
+        "kind": "local",
+        "workerEligible": false,
+        "extra": 1
+      },
+      {
+        "worker": true,
+        "orchestrator": true
+      }
+    ],
+    "result": {
+      "id": "m",
+      "kind": "local",
+      "workerEligible": false,
+      "extra": 1,
+      "roleEligibility": {
+        "orchestrator": false,
+        "worker": false,
+        "verifier": false,
+        "reviewer": false,
+        "supervisor": false
+      },
+      "roles": {
+        "orchestrator": false,
+        "worker": false,
+        "verifier": false,
+        "reviewer": false,
+        "supervisor": false
+      }
+    }
+  },
+  {
+    "fn": "assignmentRole",
+    "args": [
+      {
+        "title": "Verify the work independently against the job: check it."
+      }
+    ],
+    "result": "verifier"
+  },
+  {
+    "fn": "assignmentRole",
+    "args": [
+      {
+        "type": "AUDIT",
+        "title": "Review"
+      }
+    ],
+    "result": "reviewer"
+  },
+  {
+    "fn": "assignmentRole",
+    "args": [
+      {
+        "title": "Build it"
+      }
+    ],
+    "result": "worker"
+  },
+  {
+    "fn": "assignmentRole",
+    "args": [
+      null
+    ],
+    "result": "worker"
+  },
+  {
+    "fn": "permitsAssignment",
+    "args": [
+      {
+        "id": "m",
+        "roles": {
+          "worker": true,
+          "verifier": false
+        }
+      },
+      {
+        "title": "Build it"
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "permitsAssignment",
+    "args": [
+      {
+        "id": "m",
+        "roles": {
+          "worker": true,
+          "verifier": false
+        }
+      },
+      {
+        "title": "Verify the work independently against the job."
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "permitsAssignment",
+    "args": [
+      {
+        "id": "m",
+        "roles": {
+          "reviewer": true
+        }
+      },
+      {
+        "type": "AUDIT",
+        "title": "Review"
+      }
+    ],
+    "result": true
+  }
+]

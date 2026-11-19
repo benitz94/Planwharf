@@ -6,6 +6,22 @@ const { modelRouteError } = require('./model-routing.cjs');
 let codexCertificateBundle;
 const storeShellAccess = new Map();
 
+const CLAUDE_LOGIN_OVERRIDES = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY', 'ANTHROPIC_BASE_URL'];
+const CODEX_LOGIN_OVERRIDES = ['OPENAI_API_KEY'];
+function deleteEnv(env, names) {
+  const wanted = new Set(names.map(name => name.toUpperCase()));
+  for (const key of Object.keys(env)) if (wanted.has(key.toUpperCase())) delete env[key];
+}
+// A second account has its own settings folder. Login variables from this process belong to the
+// first account and would make the folder's sign-in be ignored.
+function accountEnvironment(adapter, model, inherited = process.env, platform = process.platform) {
+  const env = providerEnvironment(adapter, inherited, platform);
+  const folder = model?.settingsFolder;
+  if (typeof folder !== 'string' || !folder || /[\r\n\0]/.test(folder)) return env;
+  if (adapter === 'claude') { env.CLAUDE_CONFIG_DIR = folder; deleteEnv(env, CLAUDE_LOGIN_OVERRIDES); }
+  else if (adapter === 'codex') { env.CODEX_HOME = folder; deleteEnv(env, CODEX_LOGIN_OVERRIDES); }
+  return env;
+}
 function providerEnvironment(provider, inherited = process.env, platform = process.platform) {
   const env = { ...inherited };
   if (provider !== 'codex' || platform !== 'win32') return env;
@@ -90,9 +106,12 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   }
   if (research && !require('./provider-adapters.cjs').adapterFor(model)?.sourceProtectedResearch) throw new Error('Research source protection is not supported by the requested adapter: ' + adapter);
   const cli = model.cli;
-  const alwaysApprove = model.policy?.alwaysApprove ?? model.alwaysApprove ?? true;
+  // Off unless the user said yes for this AI tool (Team, or the question before the crew starts).
+  const alwaysApprove = model.policy?.alwaysApprove ?? model.alwaysApprove ?? false;
   if (typeof alwaysApprove !== 'boolean') throw new Error('Invalid alwaysApprove model policy.');
   if (!alwaysApprove && adapter === 'antigravity') throw new Error('PERMISSION_MODE_UNSUPPORTED: Antigravity has no verified unattended approval bridge. Enable Always approve / YOLO explicitly or select another adapter.');
+  // Claude Code and Grok workers cannot edit files or run commands without it: say so instead of failing halfway.
+  if (!alwaysApprove && !lead && !research && ['claude', 'grok'].includes(adapter)) throw new Error(`PERMISSION_NEEDED: ${provider} needs your OK to work in the project folder without asking each time. Allow it in Team > AI tools, or choose another model for this step.`);
   const command = executable(adapter);
   if (!command) throw new Error(provider + ' executable not found (native executable required)');
   let args;
@@ -127,7 +146,12 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
     if (model.tools?.mcp !== true) args.push('-c', 'mcp_servers={}');
     if (research) args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=true', '-c', 'sandbox_workspace_write.writable_roots=[]');
     else if (alwaysApprove) args.push('--dangerously-bypass-approvals-and-sandbox');
-    else args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=false', '-c', 'sandbox_workspace_write.writable_roots=[]');
+    else {
+      // In its sandbox Codex writes only in the project folder. Its result file lives in Planwharf's data
+      // folder: that one folder is added, or the worker's whole work is lost for want of a result.
+      const resultFolder = typeof model.apiResultOutputPath === 'string' && model.apiResultOutputPath ? [path.dirname(model.apiResultOutputPath)] : [];
+      args.push('--sandbox', 'workspace-write', '-c', 'approval_policy="never"', '-c', 'sandbox_workspace_write.network_access=false', '-c', 'sandbox_workspace_write.writable_roots=' + JSON.stringify(resultFolder));
+    }
     if (lead) args.push('--json');
     // Keep conversation text off the OS command line (Windows has a 32K limit).
     args.push('-');
@@ -136,4 +160,4 @@ function launchSpec(model, folder, prompt, lead = false, research = false) {
   return { command, args, cwd: folder, provider, adapter, model: cli, ...(stdin !== undefined ? { stdin } : {}), ...(promptFile ? { promptFile } : {}) };
 }
 
-module.exports = { executable, launchSpec, providerEnvironment };
+module.exports = { executable, launchSpec, providerEnvironment, accountEnvironment };

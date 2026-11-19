@@ -4,6 +4,35 @@
 (() => {
   const $ = id => document.getElementById(id);
   const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  // The lead writes Markdown; the chat shows headings, lists, rules and code instead of the marks.
+  // The same rules as the native window (Markdown.cs): # headings, - and 1. lists, ---, ``` code, > quotes, **bold**, `code`.
+  const inline = text => escape(text).replace(/\*\*(.+?)\*\*/gs, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  function markdown(text) {
+    const out = [], para = [];
+    const flush = () => { if (para.length) { out.push(`<p>${para.map(inline).join('<br>')}</p>`); para.length = 0; } };
+    const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n');
+    let list = null;
+    const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      let m;
+      if (/^\s*```/.test(line)) {
+        flush(); closeList();
+        const code = [];
+        for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
+        out.push(`<pre class="md-code">${escape(code.join('\n'))}</pre>`); continue;
+      }
+      if (!line.trim()) { flush(); closeList(); continue; }
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); closeList(); out.push('<hr>'); continue; }
+      if ((m = /^(#{1,6})\s+(.*)$/.exec(line))) { flush(); closeList(); const level = Math.min(6, m[1].length + 2); out.push(`<h${level} class="md-h">${inline(m[2].replace(/[#\s]+$/, ''))}</h${level}>`); continue; }
+      if ((m = /^\s*[-*•]\s+(.*)$/.exec(line))) { flush(); if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inline(m[1])}</li>`); continue; }
+      if ((m = /^\s*(\d{1,3})[.)]\s+(.*)$/.exec(line))) { flush(); if (list !== 'ol') { closeList(); out.push(`<ol start="${m[1]}">`); list = 'ol'; } out.push(`<li>${inline(m[2])}</li>`); continue; }
+      if ((m = /^>\s?(.*)$/.exec(line))) { flush(); closeList(); out.push(`<blockquote>${inline(m[1])}</blockquote>`); continue; }
+      closeList(); para.push(line);
+    }
+    flush(); closeList();
+    return out.join('');
+  }
   const store = {
     get(key, fallback) { try { const value = localStorage.getItem('planwharf_chat_' + key); return value == null ? fallback : JSON.parse(value); } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem('planwharf_chat_' + key, JSON.stringify(value)); } catch {} }
@@ -11,7 +40,7 @@
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
     pending: {}, repo: {}, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
-    updates: null, windowTitle: null, armed: null
+    updates: null, windowTitle: null, armed: null, accountSignInCommand: ''
   };
 
   // ---------- backend ----------
@@ -26,6 +55,10 @@
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error || body.reason || `Request failed (${response.status}).`);
     return body;
+  }
+  // The installed version, next to the name. A source checkout shows nothing.
+  async function showVersion() {
+    try { const app = await getJson('/api/app'); const el = $('app-version'); if (el) el.textContent = app.version ? app.version : ''; } catch { /* keep it empty */ }
   }
   async function refresh({ tick = true } = {}) {
     try {
@@ -43,15 +76,17 @@
   const project = () => (state.orchestra?.projects || []).find(row => row.id === state.projectId) || null;
   const models = () => state.orchestra?.models || [];
   const lead = () => models().find(model => model.id === state.orchestra?.orchestratorId) || null;
+  const planOpen = model => model?.planStatus !== 'expired' && model?.planStatus !== 'not signed in';
   const autonomyOf = id => state.orchestra?.autonomy?.[id] || null;
   const quotaLeft = model => {
     const pool = (state.orchestra?.plans || []).find(plan => plan.id === (model.quotaPoolId || model.plan));
     return pool && pool.readable && Number.isFinite(pool.leftPct) ? pool.leftPct : null;
   };
-  const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false);
+  const builders = () => models().filter(model => model.roles?.worker && model.enabled && model.available !== false && planOpen(model));
   const verifiers = () => models().filter(model => model.roles?.verifier && model.enabled && model.available !== false);
   const ROLE_KEYS = ['orchestrator', 'worker', 'verifier', 'reviewer', 'supervisor'];
-  const onBench = model => !ROLE_KEYS.some(role => model.roles?.[role]);
+  // On the bench with none of lead, Build and Verify. Review is not a role.
+  const onBench = model => !['orchestrator', 'worker', 'verifier'].some(role => model.roles?.[role]);
   const NO_ROLES = Object.fromEntries(ROLE_KEYS.map(role => [role, false]));
   // One colour per provider, so the same company is recognisable everywhere.
   const PROVIDER_COLOURS = { codex: '#10a37f', openai: '#10a37f', claude: '#d97757', anthropic: '#d97757', grok: '#6b7280', xai: '#6b7280', antigravity: '#4285f4', gemini: '#4285f4', google: '#4285f4', api: '#8b5cf6' };
@@ -98,10 +133,28 @@
   const ROLE_LOOK = { Build: ['build', 'r-build'], Verify: ['verify', 'r-verify'], Review: ['review', 'r-review'], Research: ['research', 'r-review'], Watch: ['watch', 'r-watch'], Lead: ['lead', 'r-lead'] };
   const VERIFY_PREFIX = 'Verify the work independently';
   const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 60000 ? Math.max(1, Math.round(ms / 1000)) + ' s' : ms < 3600000 ? Math.round(ms / 60000) + ' min' : (ms / 3600000).toFixed(1) + ' h';
+  // Short labels for the project badge, and full sentences for the action bar: never a raw code.
   const STOP_REASONS = {
-    GOAL_REACHED: 'Goal reached', MEGATASK_LIMIT: 'Stopped: step limit reached', NO_LEAD_AVAILABLE: 'Stopped: no lead available',
-    START_UNAVAILABLE: 'Stopped: could not start', TIME_LIMIT: 'Stopped: time limit reached'
+    GOAL_REACHED: 'Goal reached', LEAD_UNCONFIRMED: 'Finished: check the result', UNREADABLE_LEAD_DECISION: 'Finished: check the result',
+    MEGATASK_LIMIT: 'Stopped: work limit reached', REPEATED_FAILURE: 'Stopped: the same work failed three times', NO_LEAD_AVAILABLE: 'Stopped: no lead available', LEAD_FAILED: 'Stopped: the lead could not answer',
+    START_UNAVAILABLE: 'Stopped: could not start', START_FAILED: 'Stopped: could not start', NOTHING_STARTED: 'Stopped: no work started',
+    APPROVAL_REFUSED: 'Stopped: work not approved', AUTONOMY_ERROR: 'Stopped: error', TIME_LIMIT: 'Stopped: time limit reached'
   };
+  const STOP_SENTENCES = {
+    LEAD_UNCONFIRMED: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
+    UNREADABLE_LEAD_DECISION: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
+    MEGATASK_LIMIT: 'The crew stopped after 20 pieces of work in a row. Check the result, then press Let the crew do it to go on.', REPEATED_FAILURE: 'The same work failed three times. Planwharf stopped instead of retrying it. Fix the cause, then press Let the crew do it.',
+    NO_LEAD_AVAILABLE: 'The crew stopped: no lead is available. Choose a lead with quota in Team.',
+    LEAD_FAILED: 'The crew stopped: the lead could not answer',
+    START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',
+    NOTHING_STARTED: 'The crew started no work', APPROVAL_REFUSED: 'The work could not be approved',
+    AUTONOMY_ERROR: 'The crew stopped on an error', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
+  };
+  function stopSentence(reason) {
+    const code = String(reason || '').split(':')[0], detail = String(reason || '').slice(code.length + 1).trim();
+    const sentence = STOP_SENTENCES[code] || 'The crew stopped';
+    return detail ? `${sentence.replace(/\.$/, '')}: ${detail}` : /[.!]$/.test(sentence) ? sentence : sentence + '.';
+  }
   function projectStatus(row) {
     if (!row) return { text: '', kind: '' };
     const auto = autonomyOf(row.id);
@@ -136,7 +189,7 @@
   }
   // A dot on a project you are not looking at, when something happened there since you last opened it:
   // a step finished, failed or blocked, the goal was reached, autonomy stopped, or the lead answered.
-  const NEWS_EVENTS = /SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY/;
+  const NEWS_EVENTS = /LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY/;
   function lastNews(row) {
     let latest = 0;
     for (const event of state.orchestra?.execution?.timeline || []) if (event.projectId === row.id && NEWS_EVENTS.test(event.type || '')) latest = Math.max(latest, Date.parse(event.createdAt || '') || 0);
@@ -190,16 +243,16 @@
     if (/FAILED|BLOCKED|STOPPED|REFUS/.test(type)) return { icon: 'alert', kind: 'bad', text: short };
     if (/STARTED/.test(type)) return { icon: 'play', kind: 'start', text: short };
     if (/PLAN_REVISION/.test(type)) return { icon: 'pencil', kind: 'plan', text: 'Plan updated: ' + short.replace(/^Living Plan R\d+:\s*/, '') };
-    if (/PROPOSED|ASSIGNED|PLAN/.test(type)) return { icon: 'pencil', kind: 'plan', text: short };
+    if (/PROPOSED|ASSIGNED|PLAN|SWITCHED/.test(type)) return { icon: 'pencil', kind: 'plan', text: short };
     return { icon: 'clock', kind: '', text: short };
   }
-  const SHOWN_EVENTS = /PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED)|CHECKPOINT|GOAL|AUTONOMY/;
+  const SHOWN_EVENTS = /LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY/;
   const clock = at => { const date = new Date(at); return Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; };
 
   // The ship from ship.svg, drawn with the page colours so it fits the light and the dark theme.
   const SHIP = '<svg class="ship" viewBox="0 0 240 170" aria-hidden="true"><rect class="mast" x="117" y="8" width="7" height="112" rx="3"/><path class="flag" d="M124 10c8-3 14 4 22 1 3-1 6-3 8-5-2 6-5 10-10 12-7 3-13-3-20 0Z"/><path class="sail-back" d="M113 30c-16 18-29 38-38 60 12-3 25-4 38-4-4-18-5-37 0-56Z"/><path class="sail" d="M128 26c26 17 43 42 50 70-15-4-31-5-48-4 5-22 4-44-2-66Z"/><path class="hull" d="M66 104h22l9-12h20l9 12h70c-6 10-13 22-21 30H76c-5-8-9-18-10-30Z"/><path class="keel" d="M76 134h109c-3 5-7 9-11 12H86c-4-3-7-7-10-12Z"/><circle class="port" cx="112" cy="118" r="5"/><circle class="port" cx="132" cy="118" r="5"/><circle class="port" cx="152" cy="118" r="5"/><path class="wave-far" d="M14 136c16-9 34-11 52-4-17-3-35-1-52 4Z M180 132c16-8 32-8 48 0-16-3-32-3-48 0Z"/><path class="wave-near" d="M42 152c30-10 58-10 86-2s58 8 86-2c-26 16-58 18-86 10s-58-9-86-6Z"/></svg>';
   function welcomeCard() {
-    const leads = models().filter(model => model.roleEligibility?.orchestrator && model.available !== false);
+    const leads = byLeadOrder(models().filter(model => model.roleEligibility?.orchestrator && model.available !== false && planOpen(model)));
     const current = lead();
     const hasProject = (state.orchestra?.projects || []).length > 0;
     const step = (n, done, text) => `<li class="${done ? 'done' : ''}"><span class="num" aria-hidden="true">${done ? ic('check') : n}</span><span>${text}</span></li>`;
@@ -208,7 +261,7 @@
       <ol class="steps numbered">
         ${step(1, Boolean(current), 'Choose your lead.')}
         ${step(2, hasProject, 'Create a project: a name and a folder.')}
-        ${step(3, false, 'Tell the lead what to build, press <b>Use as the goal</b>, then <b>Let the crew do it</b>.')}
+        ${step(3, false, 'Talk with the lead about what to build. When the plan is right, press <b>Let the crew do it</b>.')}
       </ol>
       <div class="row"><label class="sr-only" for="welcome-lead">Lead</label><select id="welcome-lead" data-lead-select><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>
       ${hasProject ? '' : `<button type="button" class="btn btn-primary" data-action="new-project">${ic('plus')}New project</button>`}</div></div>`;
@@ -221,10 +274,11 @@
   }
   function readiness(row) {
     const missing = [];
-    if (!lead()) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
+    if (!lead() || !planOpen(lead())) missing.push({ text: 'Choose a lead in Team.', fix: 'Choose the lead', panel: 'team' });
     if (!builders().length) missing.push({ text: 'Give at least one model the Build role in Team.', fix: 'Pick a builder', panel: 'team' });
     if (!row?.folder) missing.push({ text: 'Set the project folder in Settings.', fix: 'Set the folder', panel: 'settings' });
-    if (row && !hasGoal(row)) missing.push({ text: 'Tell the lead what to build, then press “Use as the goal” under your message.', fix: 'Write what to build', action: 'focus-input' });
+    // Only a plan ready and not yet worked on starts the crew: never the goal it already reached.
+    if (row && !(hasGoal(row) && !row.goalStarted) && !state.goalCandidate) missing.push({ text: row.goalStarted ? 'Tell the lead what to build next: when it suggests a goal, Let the crew do it turns on.' : 'Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.', fix: 'Write what to build', action: 'focus-input' });
     return missing;
   }
   // A project created with only a name and a folder has no goal until the user gives one in the chat.
@@ -236,6 +290,17 @@
       const { version } = await getJson('/api/plan');
       return post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal from the chat', direction: text, state: 'Not started.', closed: [], open: [] } });
     }, 'Goal saved. Press “Let the crew do it” to start.');
+  }
+
+  // The lead's suggestion becomes the goal and, at once, a work proposal with the crew: one approval starts it.
+  async function proposeSuggestion(text) {
+    const row = project(); if (!row || !text) return;
+    await act(async () => {
+      const { version } = await getJson('/api/plan');
+      await post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal suggested by the lead', direction: text, state: 'Not started.', closed: [], open: [] } });
+      const fresh = await getJson('/api/plan');
+      return post('/api/orchestrator/start', { version: fresh.version, projectId: row.id, timing: 'discretion' });
+    }, 'The lead is preparing the work and the crew. Approve it when it appears.');
   }
 
   // The current piece of work: proposal, live crew, or the result.
@@ -278,22 +343,59 @@
     });
     return `<details class="usage-summary" open><summary class="small">${ic('usage')}What this work used</summary><ul class="plain">${rows.join('')}</ul></details>`;
   }
+  // What each step reported, in its own words: the explanation of the finished work.
+  // In plain English: how the work ended, who did what, what went wrong, what is left to do.
+  function summaryBox(row, changedFiles) {
+    const build = globalThis.PlanwharfWorkSummary?.workSummary;
+    if (!build) return '';
+    const lines = build(row, { stopReason: autonomyOf(row.id)?.stopReason || null, changedFiles, modelLabel });
+    return `<div class="work-summary"><h4 class="small">Summary</h4><ul class="plain small">${lines.map(line => `<li>${escape(line)}</li>`).join('')}</ul></div>`;
+  }
+  function doneList(row) {
+    const said = (row.results || []).filter(result => result.summary && result.summary.trim() && !result.modelChange);
+    return said.length ? `<h4 class="small">What was done</h4><ul class="plain small">${said.map(result => `<li>${escape(result.summary)}</li>`).join('')}</ul>` : '';
+  }
+  const ROLE_FOR_STEP = { Build: ['worker'], Verify: ['verifier', 'worker'], Review: ['worker'], Research: ['worker'] };
+  function crewPicker(sub, role) {
+    const keys = ROLE_FOR_STEP[role] || ['worker'];
+    const list = models().filter(model => model.enabled && model.available !== false && keys.some(key => model.roles?.[key]));
+    if (!list.some(model => model.id === sub.assignedModelId)) list.unshift(models().find(model => model.id === sub.assignedModelId) || { id: sub.assignedModelId, label: sub.assignedModelId || 'not assigned' });
+    const option = model => { const left = quotaLeft(model); return `<option value="${escape(model.id)}" ${model.id === sub.assignedModelId ? 'selected' : ''}>${escape(model.label || model.id)}${left != null ? ` · ${left}% left` : ''}</option>`; };
+    return `<select class="crew-pick" data-crew-step="${escape(sub.id)}" data-running="${String(sub.status).toUpperCase() === 'RUNNING'}" aria-label="Model for ${escape(role)}">${list.map(option).join('')}</select>`;
+  }
+  // Commit and push the finished work, or push commits already made. What git does, and what it said, stays in view.
+  function gitBox(row, repo, changed, mega) {
+    const ahead = Number(repo?.comparison?.ahead) || 0, busy = state.gitBusy?.[row.id], said = state.gitSaid?.[row.id];
+    if (!repo?.local?.git || (!changed && !ahead && !busy && !said)) return '';
+    const status = busy ? `<p class="small">${ic('clock')}${escape(busy)}</p>` : said ? `<p class="small ${said.ok ? '' : 'error'}">${escape(said.text)}</p>` : '';
+    const buttons = changed
+      ? `<button type="submit" class="btn btn-small" data-push="false" ${busy ? 'disabled' : ''}>${ic('check')}Commit</button><button type="submit" class="btn btn-small btn-primary" data-push="true" ${busy ? 'disabled' : ''}>${ic('rocket')}Commit and push</button>`
+      : ahead ? `<button type="submit" class="btn btn-small btn-primary" data-push="true" ${busy ? 'disabled' : ''}>${ic('rocket')}Push ${ahead} commit${ahead === 1 ? '' : 's'} to GitHub</button>` : '';
+    return `<form class="commit-form stack" data-commit-project="${escape(row.id)}" data-changed="${changed ? 'true' : 'false'}" data-ahead="${ahead}">
+      ${changed ? `<label class="small" for="commit-message-${escape(row.id)}">Save it in git when you are happy with it</label><input id="commit-message-${escape(row.id)}" name="message" maxlength="500" value="${escape(String(mega.title || 'Work by the crew').slice(0, 200))}">` : ahead ? `<p class="small">${ahead} commit${ahead === 1 ? ' is' : 's are'} not on GitHub yet.</p><input type="hidden" name="message" value="push">` : ''}
+      <div class="row">${buttons}</div>${status}</form>`;
+  }
   function crewCard(row) {
     const mega = row.megaTask;
     const subs = row.subTasks || [];
     if (!mega || !subs.length) return '';
     const status = String(mega.status || '').toUpperCase();
+    // Cancelled work is not current work: show nothing rather than a crew that looks busy.
+    if (status === 'CANCELLED') return '';
     if (subs.some(sub => String(sub.status).toUpperCase() === 'RUNNING')) rememberQuota(mega, subs);
     const done = subs.filter(sub => sub.status === 'COMPLETE').length;
     const pct = Math.round(done / subs.length * 100);
+    // Open work can change the model of a step that is not done or working: pick from the models with that role.
+    const editable = !['COMPLETE', 'CANCELLED'].includes(status);
     const step = sub => {
       const verify = String(sub.title || '').startsWith(VERIFY_PREFIX);
       const role = sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : verify ? 'Verify' : 'Build';
       const s = String(sub.status || 'PENDING').toUpperCase();
       const label = { PENDING: 'waiting', RUNNING: 'working', COMPLETE: 'done', FAILED: 'failed', BLOCKED: 'blocked', PAUSED: 'paused' }[s] || s.toLowerCase();
+      const waitingQuota = s === 'PENDING' && sub.waitingFor;
       const title = verify ? 'Check the work and fix what fails' : String(sub.title || '').slice(0, 120);
       const [roleIcon, roleTone] = ROLE_LOOK[role] || ROLE_LOOK.Build;
-      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(label)}</span></li>`;
+      return `<li class="step ${s.toLowerCase()} ${roleTone}">${tile(roleIcon, roleTone)}<span class="step-main"><b class="role-name">${escape(role)}</b> · ${editable && s !== 'COMPLETE' ? crewPicker(sub, role) : `${providerDot(providerOf(sub.assignedModelId))}${escape(modelLabel(sub.assignedModelId) || sub.assignedModelId || 'not assigned')}`}<br><span class="muted small">${escape(title)}</span></span><span class="badge ${s.toLowerCase()}">${s === 'COMPLETE' ? ic('check') : ''}${escape(waitingQuota ? 'waiting for quota' : label)}</span></li>`;
     };
     const steps = `<ol class="crew-steps">${subs.map(step).join('')}</ol>`;
     const bar = `<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Steps done"><span style="width:${pct}%"></span></div><p class="small muted">${done} of ${subs.length} steps done</p>`;
@@ -309,12 +411,13 @@
       const changed = repo?.local?.git ? (Number.isFinite(repo.local.uncommitted) ? repo.local.uncommitted : (repo.local.changes || []).length) : null;
       return `<div class="card crew done"><h3 class="head">${tile('check', 't-good')}<span>Work finished</span></h3><p>${escape(mega.title || '')}</p>
         <div class="facts"><span class="fact">${ic('check')}<span><b>${done}/${subs.length}</b> steps done</span></span>${took ? `<span class="fact">${ic('clock')}<b>${took}</b></span>` : ''}<span class="fact">${ic('file')}<span>${changed == null ? (repo && !repo.loading && !repo.local ? 'Changed files: unknown' : 'Counting changed files…') : `<b>${changed}</b> files not yet committed`}</span></span></div>
-        ${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing was committed or published.</p>
-        <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div></div>`;
+        ${summaryBox(row, changed)}${doneList(row)}${steps}${usageSummary(mega, subs)}<p class="small">Try the result in the project folder. Nothing is published until you push it.</p>
+        <div class="row"><button type="button" class="btn btn-small" data-panel="files">${ic('file')}See changed files</button><button type="button" class="btn btn-small" data-panel="usage">${ic('usage')}See usage</button></div>
+        ${gitBox(row, repo, changed, mega)}</div>`;
     }
     if (['FAILED', 'BLOCKED', 'PAUSED', 'STOPPED', 'CHECKPOINTED'].includes(status) || row.canResume) {
-      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(row.next || row.label || mega.nextAction || '')}</p>${bar}${steps}${usageSummary(mega, subs)}
-        ${row.canResume ? `<div class="row"><button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button></div>` : ''}</div>`;
+      return `<div class="card crew attention"><h3 class="head">${tile('pause', 't-warn')}<span>Work stopped</span></h3><p>${escape(mega.nextAction || row.next || row.label || '')}</p>${summaryBox(row, null)}${bar}${steps}${usageSummary(mega, subs)}
+        <div class="row">${row.canResume ? `<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button>` : ''}</div></div>`;
     }
     const since = duration(Date.now() - Date.parse(mega.approvedAt || mega.createdAt));
     // Plain-language activity of the model working now; the raw log only when nothing else is readable.
@@ -322,7 +425,8 @@
     const friendly = foldRepeats((running?.activitySession?.events || []).map(event => event.friendly).filter(text => text && !/^Unclassified worker activity/.test(text))).slice(-6);
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
-    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${steps}
+    const waiting = subs.find(sub => String(sub.status).toUpperCase() === 'PENDING' && sub.waitingFor)?.waitingFor || '';
+    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${waiting ? `<p class="small">${ic('clock')}${escape(waiting)}</p>` : ''}${steps}
       ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
   }
 
@@ -346,34 +450,63 @@
     $('send').disabled = Boolean(pendingHere);
     const sig = JSON.stringify([state.projectId, asks.map(item => [item.at, item.answer?.length, item.ms]), events.map(event => event.id || event.createdAt), pendingHere, pendingHere && [live?.thinking?.length, live?.draft?.length], state.confirm, Boolean(lead()), row?.megaTask?.status, (row?.subTasks || []).map(sub => sub.status + sub.assignedModelId).join(), row?.workerTail?.length, (row?.dispatch || []).map(part => part?.activitySession?.events?.length).join(), row?.canResume, Math.floor(Date.now() / 60000), row && state.repo[row.id]?.local?.uncommitted, row && alertsFor(row.id).map(alert => alert.id).join(), models().map(model => model.roles?.worker).join(), row?.folder, row?.goal, (state.orchestra?.aiUsage?.recent || []).length, timedStop()?.at, row && autonomyOf(row.id)?.enabled, row?.canStop, (state.orchestra?.projects || []).length, projectStatus(row).text, state.orchestra?.projectTools?.[state.projectId]]);
     if (sig === state.threadSig) return;
+    // A model menu the user has open is not redrawn away under the pointer: the chat catches up once it closes.
+    if (document.activeElement?.matches?.('select.crew-pick')) return;
     state.threadSig = sig;
     const nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 120;
+    // The live notes are redrawn about every second: keep where the user was reading them.
+    const notes = thread.querySelector('details[data-live-thinking] pre');
+    const notesAt = notes ? { top: notes.scrollTop, end: notes.scrollHeight - notes.scrollTop - notes.clientHeight < 24 } : null;
+    // The chat follows a new message once; after that it moves only if the user is at the bottom.
+    const justSent = Boolean(pendingHere) && state.followedPending !== pendingHere;
+    state.followedPending = pendingHere;
     const items = [
       ...asks.map(item => ({ at: Date.parse(item.at) || 0, html: askHtml(item) })),
       ...events.map(event => ({ at: Date.parse(event.createdAt) || 0, html: eventHtml(event) }))
-    ].sort((a, b) => a.at - b.at);
+    ];
+    // Finished work is history: it takes its place in the conversation instead of staying at the bottom.
+    const finished = row && String(row.megaTask?.status || '').toUpperCase() === 'COMPLETE' ? crewCard(row) : '';
+    if (finished) items.push({ at: Date.parse(row.megaTask.completedAt) || 0, html: finished });
+    items.sort((a, b) => a.at - b.at);
     let html = '';
     if (!row) html = welcomeCard();
     else if (!asks.length) html = (lead() ? '' : welcomeCard()) + startCard(row);
     html += items.map(item => item.html).join('');
     // A chat message never starts work by itself; say so under the last one and offer the next step.
-    const lastAsk = asks.at(-1);
+    // Planwharf keeps the chat newest first: the lead's latest reply is the one with the latest time, not the last in the list.
+    const lastAsk = asks.reduce((latest, item) => !latest || (Date.parse(item.at) || 0) >= (Date.parse(latest.at) || 0) ? item : latest, null);
     const busy = row && (row.canStop || autonomyOf(row.id)?.enabled && !autonomyOf(row.id)?.stopReason || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL');
-    if (row && lastAsk && !busy && !pendingHere && lastAsk.question?.trim() !== row.goal?.trim()) {
-      state.goalCandidate = lastAsk.question;
-      html += `<div class="card hint"><p class="small">${ic('alert')}This was a conversation: nothing has started yet.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-goal">${ic('check')}Use as the goal</button><span class="small muted">Your last message becomes the project goal. Then press <b>Let the crew do it</b>.</span></div></div>`;
+    // The plan agreed in the chat is what "Let the crew do it" starts: the lead's suggested goal, or else the last message.
+    state.goalCandidate = null; state.suggestedGoal = null;
+    const suggested = String(lastAsk?.answer || '').match(/^\s*\**Suggested next goal:\**\s*(.+)$/im)?.[1]?.trim() || null;
+    // A suggestion from before the last work started is not offered again.
+    const startedAt = Date.parse(row?.megaTask?.approvedAt || '');
+    const askedAt = Date.parse(lastAsk?.at || '');
+    const staleSuggestion = Number.isFinite(startedAt) && Number.isFinite(askedAt) && askedAt <= startedAt;
+    // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
+    const nextGoal = !staleSuggestion && suggested || '';
+    if (row && lastAsk && !busy && !pendingHere && nextGoal && nextGoal !== row.goal?.trim() && lastAsk.question?.trim() !== row.goal?.trim()) {
+      state.goalCandidate = suggested; state.suggestedGoal = suggested;
+      html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
     }
-    if (row) html += crewCard(row) + alertsCard(row);
-    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking"><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
+    // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
+    else if (row && lastAsk && !busy && !pendingHere && !nextGoal && !(hasGoal(row) && !row.goalStarted) && lastAsk.question?.trim() && lastAsk.question.trim() !== row.goal?.trim()) {
+      state.myGoal = lastAsk.question.trim();
+      html += `<div class="card hint"><p class="small">${ic('alert')}No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-my-goal">${ic('check')}Use my message as the goal</button></div></div>`;
+    }
+    if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
+    if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking" data-live-thinking${state.thinkingOpen ? ' open' : ''}><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
     if (state.confirm) html += `<div class="card"><p>${escape(state.confirm.text)}</p><div class="row"><button type="button" class="btn btn-primary" data-action="confirm-yes">Yes, do it</button><button type="button" class="btn" data-action="confirm-no">No</button></div></div>`;
     thread.innerHTML = html;
-    if (nearBottom || pendingHere) thread.scrollTop = thread.scrollHeight;
+    const notesNow = thread.querySelector('details[data-live-thinking] pre');
+    if (notesNow) notesNow.scrollTop = !notesAt || notesAt.end ? notesNow.scrollHeight : notesAt.top;
+    if (nearBottom || justSent) thread.scrollTop = thread.scrollHeight;
   }
   function askHtml(item) {
     const failed = Boolean(item.diagnostic);
     const elapsed = Number.isFinite(item.ms) ? ` · ${Math.max(1, Math.round(item.ms / 1000))} s` : '';
     return `<div class="msg you"><div class="bubble">${escape(item.question)}</div></div>
-      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble">${escape(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${toolAsk(item)}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
+      <div class="msg lead${failed ? ' error' : ''}"><span class="who">${escape(modelLabel(item.orchestratorId) || 'Lead')} · ${escape(clock(item.at))}${elapsed}</span><div class="bubble md">${markdown(item.answer || '')}</div>${item.answer ? `<button type="button" class="copy-msg" data-action="copy-msg" title="Copy this reply" aria-label="Copy this reply">${ic('copy')}<span>Copy</span></button>` : ''}${toolAsk(item)}${item.thinking ? `<details class="thinking"><summary>How the lead got there</summary><pre>${escape(String(item.thinking).slice(-4000))}</pre></details>` : ''}</div>`;
   }
   function eventHtml(event) {
     const view = eventView(event);
@@ -388,18 +521,24 @@
     const working = auto?.enabled && !auto.stopReason;
     const missing = readiness(row);
     const parts = [];
+    // After finished work the box asks for what comes next.
+    const input = $('composer-input');
+    if (input) input.placeholder = row.goalStarted ? 'Tell the lead what you want built next…' : 'Tell the lead what you want built…';
     const timed = timedStop();
     if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
-    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">The crew is working. You can keep chatting with the lead.</span>`);
+    if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">${escape((row.subTasks || []).some(sub => sub.status === 'PENDING' && sub.waitingFor) ? 'Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\'s menu at any time.' : 'The crew is working. You can keep chatting with the lead and change models at any time.')}</span>`);
     // One clear next action at a time.
     else if (row.status === 'needs_approval') parts.push(`<button type="button" class="btn btn-primary" data-action="approve">${ic('check')}Approve and start</button><span class="status-text">The lead proposed some work. Approve it, or tell the lead what to change.</span>`);
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
-    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><span class="status-text">Work was stopped. Resume continues from the saved point.</span>`);
+    // Stopped work can be resumed, or dropped to start something new: the files in the folder stay.
+    else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><button type="button" class="btn" data-action="drop-work" title="Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are.">${ic('trash')}Drop this work</button><span class="status-text">Work was stopped. Resume continues from the saved point, or drop it to start something new.</span>`);
     else {
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
       parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length || checking ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
-      parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
+      // Why the last crew start stopped, in full, so it is never silent.
+      const whyText = auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? stopSentence(auto.stopReason) : '';
+      parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : whyText || 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
     }
     bar.innerHTML = parts.join('');
   }
@@ -422,6 +561,61 @@
     $('side-body').innerHTML = body;
     $('side-body').scrollTop = scroll;
   }
+  // Both windows when the provider reports them; the lower one is what counts.
+  function quotaText(model, left) {
+    const w = model.quotaWindows || {};
+    if (w.fiveHour != null || w.weekly != null) return ` · ${[w.fiveHour != null ? `5h ${w.fiveHour}%` : '', w.weekly != null ? `week ${w.weekly}%` : ''].filter(Boolean).join(' · ')} left${model.lowQuota ? ' · <b class="c-warn">under its limit</b>' : ''}`;
+    return left != null ? ` · ${left}% quota left${model.lowQuota ? ' · <b class="c-warn">under its limit</b>' : ''}` : ' · quota not reported';
+  }
+  // The model's quota limit: the general one, its own two thresholds, or no limit at all.
+  function limitEditor(model) {
+    const limit = model.quotaLimit;
+    if (!limit) return '';
+    const said = limit.none ? 'No limit' : `${limit.custom ? 'Own limit' : 'Limit'}: ${limit.fiveHourPercent === limit.weeklyPercent ? limit.fiveHourPercent + '%' : `5h ${limit.fiveHourPercent}% · week ${limit.weeklyPercent}%`}`;
+    return `<details class="limit"><summary class="small">${escape(said)}</summary><form class="row limit-form" data-limit-model="${escape(model.id)}">
+      <label class="small">5h <input name="five" type="number" min="0" max="90" step="5" value="${escape(String(limit.fiveHourPercent ?? state.autoSwitch?.fiveHourPercent ?? 35))}" style="width:4.5em"></label>
+      <label class="small">Week <input name="week" type="number" min="0" max="90" step="5" value="${escape(String(limit.weeklyPercent ?? state.autoSwitch?.weeklyPercent ?? 35))}" style="width:4.5em"></label>
+      <button type="submit" class="btn btn-small">Save</button>
+      <button type="button" class="btn btn-small" data-limit-none="${escape(model.id)}">No limit</button>
+      ${limit.custom ? `<button type="button" class="btn btn-small" data-limit-reset="${escape(model.id)}">Use the general limit</button>` : ''}</form></details>`;
+  }
+  async function saveLimit(change) {
+    try { await post('/api/models/quota-limit', change); toast('Quota limit saved.'); await refresh({ tick: false }); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
+  // Team filters: by company, by weight and by state. "All" and "None" act on the models shown only.
+  const FILTER_KEYS = ['company', 'weight', 'state'];
+  const filterActive = () => FILTER_KEYS.some(key => state.teamFilter?.[key]);
+  function matchesFilter(model) {
+    const f = state.teamFilter || {};
+    if (f.company && (model.providerId || model.provider) !== f.company) return false;
+    if (f.weight && (model.weight || 'default') !== f.weight) return false;
+    if (f.state === 'team' && onBench(model)) return false;
+    if (f.state === 'bench' && !onBench(model)) return false;
+    if (f.state === 'low' && !model.lowQuota) return false;
+    return true;
+  }
+  function filterBar(offered, shown) {
+    const f = state.teamFilter || {};
+    const companies = [...new Set(offered.map(model => model.providerId || model.provider).filter(Boolean))];
+    const label = id => (state.orchestra?.providers || []).find(provider => provider.id === id)?.label || id;
+    const chip = (key, value, text) => `<button type="button" class="chip" data-filter-key="${key}" data-filter-value="${escape(value)}" aria-pressed="${(f[key] || '') === value}">${escape(text)}</button>`;
+    const ids = escape(shown.map(model => model.id).join(','));
+    const bulk = (role, text) => `<span class="bulk"><b class="small">${text}</b><button type="button" class="chip" data-bulk-role="${role}" data-bulk-on="true" data-bulk-ids="${ids}">All</button><button type="button" class="chip" data-bulk-role="${role}" data-bulk-on="false" data-bulk-ids="${ids}">None</button></span>`;
+    return `<div class="section filters">${head('research', 't-blue', 'Find models')}
+      <div class="chips">${chip('company', '', 'All companies')}${companies.map(id => chip('company', id, label(id))).join('')}</div>
+      <div class="chips">${chip('weight', '', 'Any weight')}${chip('weight', 'light', 'Light')}${chip('weight', 'default', 'Default')}${chip('weight', 'premium', 'Premium')}</div>
+      <div class="chips">${chip('state', '', 'Anywhere')}${chip('state', 'team', 'On the team')}${chip('state', 'bench', 'On the bench')}${chip('state', 'low', 'Under its limit')}</div>
+      <p class="explain">For the ${shown.length} model${shown.length === 1 ? '' : 's'} shown:</p>
+      <div class="chips">${bulk('worker', 'Build')}${bulk('verifier', 'Verify')}</div></div>`;
+  }
+  async function setRolesForShown(ids, role, enabled) {
+    if (!ids.length) return;
+    try { await post('/api/models/roles/many', { ids, roles: { [role]: enabled }, projectId: state.projectId }); await refresh({ tick: false }); toast(`${{ worker: 'Build', verifier: 'Verify' }[role]} ${enabled ? 'on' : 'off'} for ${ids.length} model${ids.length === 1 ? '' : 's'}.`); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
   function memberHtml(model) {
     const left = quotaLeft(model);
     const unavailable = model.available === false;
@@ -430,32 +624,54 @@
       const [icon, tone] = ROLE_LOOK[label] || ROLE_LOOK.Build;
       return `<button type="button" class="chip ${tone}" data-role-toggle="${escape(model.id)}" data-role="${role}" aria-pressed="${model.roles?.[role] === true}" ${eligible ? '' : 'disabled'} title="${escape(help)}">${ic(icon)}${label}</button>`;
     };
-    const optional = ['reviewer'].filter(role => model.roleEligibility?.[role] !== false);
     const benched = onBench(model);
     // Name and details on their own full-width line, role buttons on the line below.
     return `<div class="member ${benched ? 'benched' : 'on-team'}"><div class="info"><div class="label">${providerDot(model.provider)}<span class="name">${escape(model.label)}</span>${model.id === state.orchestra?.orchestratorId ? ' <span class="badge lead-badge">Lead</span>' : ''}</div>
-      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ' · not available now' : ''}${left != null ? ` · ${left}% quota left` : ''}</div>
-      ${left != null && !benched ? `<div class="bar${left < 20 ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}</div>
-      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}${optional.includes('reviewer') ? chip('reviewer', 'Review', 'Optional: reads the work and reports problems, without changing files') : ''}
+      <div class="meta">${escape(model.plan || model.provider || '')}${unavailable ? ` · <span title="${escape(model.unavailableReason || '')}">not available now${model.unavailableReason ? ': ' + escape(String(model.unavailableReason).slice(0, 140)) : ''}${model.unavailableAt ? ' (tried again in a few minutes)' : ''}</span>` : ''}${quotaText(model, left)}</div>
+      ${left != null && !benched ? `<div class="bar${model.lowQuota ? ' low' : ''}"><span style="width:${Math.max(0, Math.min(100, left))}%"></span></div>` : ''}${benched ? '' : limitEditor(model)}</div>
+      <div class="chips">${benched ? '<span class="small muted bring">Bring in as:</span>' : ''}${chip('worker', 'Build', 'Writes the code and the tests')}${chip('verifier', 'Verify', 'Checks the work and fixes what fails')}
       ${onBench(model) ? '' : `<button type="button" class="chip" data-bench="${escape(model.id)}" title="Take this model out of the team">Bench</button>`}</div></div>`;
+  }
+  // Who takes over as lead when the lead's quota reaches the switch threshold or runs out, in order.
+  // The lead menu lists the best lead first, as the ranking Planwharf uses to hand over.
+  function byLeadOrder(list) {
+    const order = state.orchestra?.leadOrder || [];
+    const rank = model => { const at = order.indexOf(model.id); return at < 0 ? order.length : at; };
+    return [...list].sort((a, b) => rank(a) - rank(b));
+  }
+  function leadBackupsLine() {
+    const names = (state.orchestra?.leadBackups || []).map(id => modelLabel(id) || id);
+    return names.length ? `<p class="explain">If the lead runs low on quota, Planwharf hands over to: ${escape(names.join(', '))}, in this order.</p>` : '<p class="explain">No other model can take over as lead now.</p>';
   }
   function teamPanel() {
     const all = models();
     const current = lead();
-    const leads = all.filter(model => model.roleEligibility?.orchestrator && model.available !== false);
-    const active = all.filter(model => !onBench(model));
-    const bench = all.filter(onBench);
+    const leads = byLeadOrder(all.filter(model => model.roleEligibility?.orchestrator && model.available !== false && planOpen(model)));
+    // Models the AI tools on this computer no longer offer are hidden: they could not work anyway.
+    const offered = all.filter(model => !model.catalogExcluded && !['expired', 'not signed in'].includes(model.planStatus));
+    const hidden = all.filter(model => model.catalogExcluded).length;
+    const statusHidden = Object.entries(Object.groupBy(all.filter(model => !model.catalogExcluded && ['expired', 'not signed in'].includes(model.planStatus)), model => `${model.adapter}|${model.planStatus}`));
+    const shown = offered.filter(matchesFilter);
+    const active = shown.filter(model => !onBench(model));
+    const bench = shown.filter(onBench);
     const row = project();
     return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
-        <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select></div>
-      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. <b class="c-review">Review</b> is optional. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
+        <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>${leadBackupsLine()}</div>
+      ${filterBar(offered, shown)}
+      <div class="section team-box">${head('team', 't-accent', `On the team · ${active.length}`)}<p class="explain"><b class="c-build">Build</b> writes code and tests. <b class="c-verify">Verify</b> checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.</p>
         ${active.length ? active.map(memberHtml).join('') : '<p class="muted small">Nobody yet. Bring models in from the bench.</p>'}</div>
       <div class="section bench-box">${head('pause', 't-muted', `Bench · ${bench.length}`)}<p class="explain">Not working on this project. Press a role to bring a model in.</p>
-        ${bench.length ? `<details class="bench-list" ${bench.length <= 4 ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}</div>
+        ${bench.length ? `<details class="bench-list" ${bench.length <= 4 || filterActive() ? 'open' : ''}><summary class="small">${bench.length <= 4 ? 'Models on the bench' : `Show the ${bench.length} models on the bench`}</summary>${bench.map(memberHtml).join('')}</details>` : '<p class="muted small">The bench is empty.</p>'}
+        ${hidden ? `<p class="explain">${hidden} model${hidden === 1 ? ' is' : 's are'} not shown: the AI tools on this computer do not offer ${hidden === 1 ? 'it' : 'them'} any more.</p>` : ''}</div>
+        ${statusHidden.map(([key, rows]) => { const [adapter, status] = key.split('|'); const company = { claude: 'Claude', codex: 'ChatGPT', grok: 'Grok', antigravity: 'Gemini' }[adapter] || adapter; return `<p class="explain">${rows.length} models hidden: ${escape(company)} ${status === 'expired' ? 'plan expired. Renew it or sign in again' : 'is not signed in. Sign in'}, then look for models again.</p>`; }).join('')}
       <div class="section">${head('chip', 't-blue', 'AI tools')}<p class="explain">Planwharf finds the models of the AI tools signed in on this computer. A tool that is off is never used.</p>
-        ${(state.orchestra?.providers || []).map(provider => `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
-          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button></div></div>`).join('')}
+        ${(state.orchestra?.providers || []).map(provider => provider.installed === false
+          // Not installed: never shown as On; say how to install it.
+          ? `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)} <span class="badge">Not installed</span></div><div class="meta">${escape(provider.installHint || 'Install it and sign in, then look for models again.')}</div></div></div>`
+          : `<div class="member"><div class="info"><div class="label">${providerDot(provider.id)}${escape(provider.label || provider.id)}</div><div class="meta">${(provider.models || []).length} models</div></div>
+          <div class="chips"><button type="button" class="chip onoff" data-provider-toggle="${escape(provider.id)}" aria-pressed="${provider.enabled !== false}">${provider.enabled !== false ? 'On' : 'Off'}</button><button type="button" class="chip" data-unasked="${escape(provider.id)}" aria-pressed="${provider.policy?.alwaysApprove === true}" title="Edits files and runs commands in the project folder without asking each time">Works without asking</button>${provider.id === provider.adapter && ['claude', 'codex'].includes(provider.adapter) ? `<button type="button" class="chip" data-add-account="${escape(provider.id)}">Add another account</button>` : ''}</div></div>`).join('')}
+        ${state.accountSignInCommand ? `<p class="explain">Run this sign-in command, then look for models again:</p><pre>${escape(state.accountSignInCommand)}</pre>` : ''}
         <button type="button" class="btn btn-small" data-action="refresh-models">${ic('refresh')}Look for models again</button></div>
       <div class="section">${head('plug', 't-violet', 'Connect a model by API')}<p class="explain">For a model you reach through an API, such as DeepSeek or Kimi. The key stays in an environment variable on this computer; Planwharf stores only the variable's name.</p>
         <details><summary class="small">Add an API connection</summary><form id="api-form" class="stack">
@@ -604,6 +820,7 @@
         <button type="button" class="switch" role="switch" data-action="toggle-mode" aria-checked="${mode === 'auto'}"><span class="knob" aria-hidden="true"></span><span>Let the lead start approved work by itself</span></button></div>
       <div class="section">${head('sun', 't-violet', 'Look')}<div class="segmented" role="group" aria-label="Theme">${[['light', 'sun', 'Light'], ['dark', 'moon', 'Dark']].map(([value, icon, label]) => (value === 'dark') === dark ? `<span class="seg on" aria-current="true">${ic(icon)}${label}</span>` : `<button type="button" class="seg" data-action="theme">${ic(icon)}${label}</button>`).join('')}</div>
         ${dark ? `<p class="explain ink-title">Text colour</p><div class="inks" role="group" aria-label="Text colour">${Object.entries(INKS).map(([key, [label, colour]]) => `<button type="button" class="ink" data-ink="${key}" aria-pressed="${currentInk() === key}" title="${label}"><span class="swatch" style="background:${colour}" aria-hidden="true"></span>${label}</button>`).join('')}<label class="ink custom" title="Any colour"><input type="color" data-ink-custom value="${escape(inkColour(currentInk()))}" aria-label="Any colour">${HEX.test(currentInk()) ? 'Your colour' : 'Any colour…'}</label></div>` : ''}</div>
+      ${autoSwitchSection()}
       ${skillsSection()}
       <div class="section">${head('box', 't-blue', 'Move a project')}<p class="explain">Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.</p>
         <div class="row">${row ? `<a class="btn btn-small" href="/api/project-export?projectId=${encodeURIComponent(row.id)}" download="${escape(row.name.replace(/[^\w.-]+/g, '-'))}-planwharf.json">${ic('file')}Save ${escape(row.name)} to a file</a>` : ''}
@@ -618,6 +835,20 @@
   const armedButton = (action, label, confirmLabel) => state.armed === action
     ? `<div class="row"><button type="button" class="btn btn-danger btn-small" data-action="${action}">${confirmLabel}</button><button type="button" class="btn btn-small" data-action="disarm">Cancel</button></div>`
     : `<button type="button" class="btn btn-small" data-arm="${action}">${label}</button>`;
+  // Automatic model switch: on by default at 20% quota left.
+  function autoSwitchSection() {
+    if (!state.autoSwitch) { if (!state.autoSwitchLoading) { state.autoSwitchLoading = true; getJson('/api/orchestrator/auto-switch').then(value => { state.autoSwitch = value; state.sideSig = ''; renderSide(); }).catch(() => {}).finally(() => { state.autoSwitchLoading = false; }); } return ''; }
+    const on = state.autoSwitch.enabled !== false;
+    const five = state.autoSwitch.fiveHourPercent ?? state.autoSwitch.thresholdPercent, week = state.autoSwitch.weeklyPercent ?? state.autoSwitch.thresholdPercent;
+    return `<div class="section">${head('usage', 't-accent', 'Model switch')}<p class="explain">${on ? `A model is low when its 5-hour quota drops to ${five}% left or its weekly quota to ${week}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team.` : 'Off: a model that runs out of quota stops its step, and you choose the next model.'}</p>
+      <button type="button" class="switch" role="switch" data-action="toggle-auto-switch" aria-checked="${on}"><span class="knob" aria-hidden="true"></span><span>Switch model automatically</span></button>
+      ${on ? `<form id="auto-switch-form" class="row"><label class="small" for="auto-switch-five">5 hours</label><input id="auto-switch-five" name="five" type="number" min="0" max="90" step="5" value="${escape(String(five))}" style="width:5em"><label class="small" for="auto-switch-week">Week</label><input id="auto-switch-week" name="week" type="number" min="0" max="90" step="5" value="${escape(String(week))}" style="width:5em"><span class="small">% left</span><button type="submit" class="btn btn-small">Save</button></form>` : ''}</div>`;
+  }
+  async function saveAutoSwitch(change) {
+    try { state.autoSwitch = await post('/api/orchestrator/auto-switch', change); toast('Model switch saved.'); }
+    catch (error) { toast(error.message); }
+    state.sideSig = ''; renderSide();
+  }
   function updatesSection() {
     const u = state.updates;
     if (!u) return `<div class="section">${head('refresh', 't-accent', 'Updates')}<button type="button" class="btn btn-small" data-action="check-updates">${ic('refresh')}Check for updates</button></div>`;
@@ -719,6 +950,8 @@
     const row = project();
     if (!row) { toast('Create or select a project first.'); return; }
     if (!lead()) { toast('Choose a lead first (Team panel).'); openPanel('team'); return; }
+    // Antigravity cannot even answer without the OK.
+    if (toolsNeedingOk(true).length) { await withOk(() => send(text, extra), true); return; }
     state.pending[row.id] = { text, since: Date.now() }; state.threadSig = '';
     render();
     const poll = setInterval(async () => { try { const snap = await getJson('/api/orchestrator?readOnly=1'); state.orchestra = { ...state.orchestra, thinkingByProject: snap.thinkingByProject || {} }; renderThread(); } catch {} }, 900);
@@ -733,6 +966,55 @@
     const row = project(); if (!row) return;
     const missing = readiness(row);
     if (missing.length) { toast(missing[0].text); return; }
+    const nextGoal = state.suggestedGoal || state.goalCandidate;
+    if (nextGoal) {
+      state.confirm = { text: `The crew will work on: ${nextGoal}`, run: async () => {
+        try { const { version } = await getJson('/api/plan'); await post('/api/revisions', { version, projectId: row.id, draft: { title: 'Goal from the chat', direction: nextGoal, state: 'Not started.', closed: [], open: [] } }); }
+        catch (error) { toast(error.message); return; }
+        state.goalCandidate = null; state.suggestedGoal = null;
+        await startCrew(row);
+      } };
+      state.threadSig = ''; render(); return;
+    }
+    await startCrew(row);
+  }
+  // Claude Code, Grok and Antigravity cannot build without working unasked; Codex works inside its sandbox.
+  // "Always approve" is off until the user says yes, so the question comes before the work, never halfway.
+  const NEEDS_OK = ['claude', 'grok', 'antigravity'];
+  function toolsNeedingOk(forLead = false) {
+    const list = forLead ? [lead()].filter(Boolean)
+      : models().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && (model.roles?.worker || model.roles?.verifier));
+    const ids = [...new Set(list.filter(model => model.alwaysApprove !== true && (forLead ? model.adapter === 'antigravity' : NEEDS_OK.includes(model.adapter))).map(model => model.providerId || model.provider))];
+    return ids.map(id => (state.orchestra?.providers || []).find(provider => provider.id === id) || { id, label: id });
+  }
+  const listOf = names => names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1);
+  function askForOk(tools) {
+    const dialog = $('ok-dialog');
+    const names = listOf(tools.map(tool => tool.label || tool.id));
+    $('ok-text').textContent = `${names} will work in the project folder without asking each time: ${tools.length === 1 ? 'it edits' : 'they edit'} files and ${tools.length === 1 ? 'runs' : 'run'} commands, such as tests and installs, with network access. Without this ${tools.length === 1 ? 'it' : 'they'} cannot build.`;
+    $('ok-allow').textContent = 'Allow ' + names;
+    return new Promise(resolve => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'allow'), { once: true });
+      dialog.returnValue = ''; dialog.showModal();
+    });
+  }
+  // Runs work only after the user's OK for every AI tool that needs it; the OK is saved per tool.
+  async function withOk(run, forLead = false) {
+    const tools = toolsNeedingOk(forLead);
+    if (tools.length) {
+      if (!await askForOk(tools)) { toast('Nothing started.'); return false; }
+      try { for (const tool of tools) await post('/api/providers/policy', { id: tool.id, policy: { alwaysApprove: true } }); }
+      catch (error) { toast(error.message); return false; }
+      await refresh({ tick: false });
+    }
+    await run();
+    return true;
+  }
+  async function setWorksUnasked(providerId, on) {
+    await act(() => post('/api/providers/policy', { id: providerId, policy: { alwaysApprove: on } }), on ? 'It works without asking now.' : 'It asks again before it builds.');
+  }
+  async function startCrew(row) {
+    if (toolsNeedingOk().length) { await withOk(() => startCrew(row)); return; }
     await act(async () => {
       if (state.orchestra.mode !== 'auto') await post('/api/orchestrator/mode', { mode: 'auto' });
       return post('/api/orchestrator/autonomy', { projectId: row.id, enabled: true });
@@ -854,6 +1136,11 @@
     if (target.dataset.ignoreAlert) { act(() => post('/api/supervisor/ignore', { projectId: state.projectId, alertId: target.dataset.ignoreAlert }), 'Warning ignored.'); return; }
     if (target.dataset.arm) { state.armed = target.dataset.arm; state.sideSig = ''; renderSide(); return; }
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
+    if (target.dataset.unasked) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.unasked); if (provider) setWorksUnasked(provider.id, provider.policy?.alwaysApprove !== true); return; }
+    if (target.dataset.filterKey) { state.teamFilter = { ...(state.teamFilter || {}), [target.dataset.filterKey]: target.dataset.filterValue || '' }; state.sideSig = ''; renderSide(); return; }
+    if (target.dataset.bulkRole) { setRolesForShown((target.dataset.bulkIds || '').split(',').filter(Boolean), target.dataset.bulkRole, target.dataset.bulkOn === 'true'); return; }
+    if (target.dataset.limitNone) { saveLimit({ id: target.dataset.limitNone, none: true }); return; }
+    if (target.dataset.limitReset) { saveLimit({ id: target.dataset.limitReset, reset: true }); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
     if (action === 'copy-msg') { copyReply(target); return; }
@@ -864,9 +1151,16 @@
     else if (action === 'theme') { document.documentElement.dataset.theme = currentTheme() === 'dark' ? 'light' : 'dark'; store.set('theme', document.documentElement.dataset.theme); state.sideSig = ''; renderSide(); }
     else if (action === 'toggle-mode') act(() => post('/api/orchestrator/mode', { mode: state.orchestra?.mode === 'auto' ? 'manual' : 'auto' }), 'Saved.');
     else if (action === 'repo-refresh') loadRepo(state.projectId, true);
-    else if (action === 'approve') act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.');
-    else if (action === 'resume') act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.');
+    else if (action === 'approve') withOk(() => act(() => post('/api/orchestrator/approve', { projectId: state.projectId, ...(project()?.megaTaskId ? { megaTaskId: project().megaTaskId } : {}) }), 'Approved. The crew is starting.'));
+    else if (action === 'drop-work') {
+      const row = project();
+      state.confirm = { text: `Drop the stopped work "${String(row?.megaTask?.title || row?.jobTitle || 'this work').slice(0, 160)}"? It will not be resumed. Files in the project folder stay as they are, and you can then start a new goal.`,
+        run: () => act(() => post('/api/orchestrator/reset', { projectId: state.projectId }), 'Stopped work dropped. You can start a new goal.') };
+      state.threadSig = ''; render();
+    }
+    else if (action === 'resume') withOk(() => act(() => post('/api/orchestrator/resume', { projectId: state.projectId }), 'Resumed.'));
     else if (target.dataset.providerToggle) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.providerToggle); if (provider) act(() => post('/api/catalog/settings', { providerId: provider.id, enabled: provider.enabled === false }), `${provider.label || provider.id} turned ${provider.enabled === false ? 'on' : 'off'}.`); }
+    else if (target.dataset.addAccount) act(async () => { const result = await post('/api/accounts', { providerId: target.dataset.addAccount }); state.accountSignInCommand = result.signInCommand; return result.snapshot; }, 'Account folder ready. Run the sign-in command shown in AI tools.');
     else if (action === 'refresh-models') act(() => post('/api/models/refresh', {}), 'Model list updated.');
     else if (action === 'check-updates') loadUpdates(true);
     else if (action === 'disarm') { state.armed = null; state.sideSig = ''; renderSide(); }
@@ -881,13 +1175,25 @@
     else if (action === 'quit-ask') { state.confirm = { text: 'Quit Planwharf? Unfinished work is saved, and Resume continues it next time.', run: quitApp }; state.threadSig = ''; render(); }
     else if (action === 'install-update') installUpdate();
     else if (action === 'use-goal') useAsGoal(state.goalCandidate);
+    else if (action === 'use-my-goal') useAsGoal(state.myGoal);
+    else if (action === 'use-suggested-goal') proposeSuggestion(state.suggestedGoal);
     else if (action === 'focus-input') $('composer-input').focus();
     else if (action === 'cancel-timed-stop') { setTimedStop(null); toast('Timed stop cancelled.'); }
+    else if (action === 'toggle-auto-switch') saveAutoSwitch({ enabled: !(state.autoSwitch?.enabled !== false) });
     else if (action === 'confirm-yes') { const run = state.confirm?.run; state.confirm = null; state.threadSig = ''; if (run) run(); else render(); }
     else if (action === 'confirm-no') { state.confirm = null; state.threadSig = ''; render(); }
   });
+  // The chat redraws while the lead works: remember whether its activity box is open.
+  document.addEventListener('toggle', event => { if (event.target.matches?.('details[data-live-thinking]')) state.thinkingOpen = event.target.open; }, true);
   document.addEventListener('change', event => {
     if (event.target.matches('[data-lead-select]')) chooseLead(event.target.value);
+    else if (event.target.matches('[data-crew-step]')) {
+      const row = project(), select = event.target, change = () => act(async () => { const result = await post('/api/orchestrator/crew', { projectId: row.id, assignments: { [select.dataset.crewStep]: select.value } }); if (result?.message) toast(result.message); return result; });
+      if (!row) return;
+      // A working step restarts with the new model: say so before doing it.
+      if (select.dataset.running === 'true') { state.confirm = { text: `Switch this step to ${select.options[select.selectedIndex]?.text || select.value}? Its current worker stops and the step starts again with the new model. Files already written stay.`, run: change }; state.threadSig = ''; render(); }
+      else change();
+    }
     else if (event.target.matches('[data-ink-custom]')) { setInk(event.target.value.toLowerCase()); state.sideSig = ''; renderSide(); }
     else if (event.target.id === 'import-file' && event.target.files?.[0]) importProject(event.target.files[0]);
   });
@@ -905,6 +1211,30 @@
   document.addEventListener('submit', event => {
     if (event.target.id === 'folder-form') { event.preventDefault(); saveFolder(event.target); }
     else if (event.target.id === 'root-form') { event.preventDefault(); saveRoot(event.target); }
+    else if (event.target.matches('form[data-commit-project]')) {
+      event.preventDefault();
+      const form = event.target, push = event.submitter?.dataset.push === 'true', message = form.message.value.trim(), projectId = form.dataset.commitProject;
+      const changes = form.dataset.changed === 'true', ahead = Number(form.dataset.ahead) || 0;
+      if (changes && !message) { toast('Write a commit message.'); return; }
+      // The user's own action: say exactly what will happen before doing it. Never a force push.
+      const what = changes ? `Commit all changes in the project folder${push ? ' and push them to GitHub' : ''}, with the message "${message}"?` : `Push ${ahead} commit${ahead === 1 ? '' : 's'} to GitHub?`;
+      state.confirm = { text: what, run: async () => {
+        state.gitBusy = { ...(state.gitBusy || {}), [projectId]: push ? (changes ? 'Committing, then pushing to GitHub. If GitHub asks you to sign in, a window opens.' : 'Pushing to GitHub. If GitHub asks you to sign in, a window opens.') : 'Committing…' };
+        state.gitSaid = { ...(state.gitSaid || {}), [projectId]: null }; state.threadSig = ''; render();
+        let said;
+        try {
+          const result = await post('/api/repository/commit', { projectId, message: message || 'push', push });
+          said = { ok: true, text: result.pushed ? `${result.commit ? `Committed ${result.commit} and pushed` : 'Pushed'} to ${result.branch} on GitHub.${result.prUrl ? ' Pull request: ' + result.prUrl : ''}` : `Committed ${result.commit} on ${result.branch}. Not pushed yet.` };
+        } catch (error) { said = { ok: false, text: error.message }; }
+        state.gitBusy[projectId] = null; state.gitSaid[projectId] = said; toast(said.text);
+        delete state.repo[projectId]; state.threadSig = ''; render();
+      } };
+      state.threadSig = ''; render();
+      // The question shows next to where the user clicked.
+      document.querySelector('[data-action="confirm-yes"]')?.scrollIntoView({ block: 'center' });
+    }
+    else if (event.target.matches?.('.limit-form')) { event.preventDefault(); saveLimit({ id: event.target.dataset.limitModel, fiveHourPercent: Number(event.target.five.value), weeklyPercent: Number(event.target.week.value) }); }
+    else if (event.target.id === 'auto-switch-form') { event.preventDefault(); saveAutoSwitch({ fiveHourPercent: Number(event.target.five.value), weeklyPercent: Number(event.target.week.value) }); }
     else if (event.target.id === 'api-form') { event.preventDefault(); addConnection(event.target); }
   });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && state.panel && !$('project-dialog').open) { state.panel = null; store.set('panel', null); render(); } });
@@ -922,6 +1252,7 @@
   window.addEventListener('pagehide', () => { try { navigator.sendBeacon('/api/app/heartbeat', new Blob([JSON.stringify({ id: windowId, view: 'planwharf', closed: true })], { type: 'application/json' })); } catch {} });
   window.addEventListener('pageshow', pulse);
   pulse(); setInterval(pulse, 3000);
+  showVersion();
   // Day and time, always visible at the bottom of the project list.
   function showNow() { const d = new Date(); const day = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }); const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); $('now').textContent = day + ' · ' + time; $('now').title = d.toLocaleString(); }
   showNow(); setInterval(showNow, 15000);

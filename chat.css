@@ -335,3 +335,34 @@ details.skills summary { cursor: pointer; }
 .ship .wave-far, .ship .keel, .ship .port { fill: #1f7a52; }
 [data-theme="dark"] .ship .mast, [data-theme="dark"] .ship .hull { fill: #eef3ef; stroke: none; }
 [data-theme="dark"] .ship .sail-back { fill: #eef3ef; } [data-theme="dark"] .ship .sail { fill: #5fcf98; }
+
+/* Model picker on a work step */
+.crew-pick { font: inherit; font-size: .9em; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line, #444); background: var(--panel, transparent); color: inherit; max-width: 100%; }
+
+/* Plain-English summary of finished work */
+.work-summary { border-left: 3px solid var(--accent, #3ba776); padding: 4px 0 4px 10px; margin: 8px 0; }
+
+/* Installed version next to the name */
+.brand-version { margin-left: .45em; font-size: .62em; font-weight: 500; opacity: .65; letter-spacing: .02em; }
+/* The lead's Markdown, shown as text with headings, lists and rules (the same in the native window). */
+.bubble.md { white-space: normal; }
+.bubble.md > :first-child { margin-top: 0; }
+.bubble.md > :last-child { margin-bottom: 0; }
+.bubble.md p { margin: 0 0 8px; }
+.bubble.md .md-h { margin: 12px 0 6px; line-height: 1.3; }
+.bubble.md h3.md-h { font-size: 19px; } .bubble.md h4.md-h { font-size: 17px; } .bubble.md h5.md-h, .bubble.md h6.md-h { font-size: 16px; }
+.bubble.md ul, .bubble.md ol { margin: 0 0 8px; padding-left: 24px; }
+.bubble.md li { margin: 2px 0; }
+.bubble.md hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+.bubble.md code { font: 13.5px ui-monospace, Consolas, monospace; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.bubble.md .md-code { white-space: pre-wrap; font: 13px/1.45 ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; }
+.bubble.md blockquote { margin: 0 0 8px; padding-left: 10px; border-left: 3px solid var(--line); color: var(--muted); }
+/* A model's quota limit, under its card: closed it says the limit, open it can be changed. */
+.member .limit { margin-top: 6px; }
+.member .limit summary { cursor: pointer; color: var(--muted); }
+.member .limit .row { margin-top: 6px; gap: 6px; flex-wrap: wrap; align-items: center; }
+.member .limit input { padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.c-warn { color: var(--warn); }
+/* Team filters and "All / None" for the models shown. */
+.filters .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.filters .bulk { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }

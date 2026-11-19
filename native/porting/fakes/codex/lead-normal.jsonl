@@ -1,0 +1,2 @@
+{"type":"item.completed","item":{"type":"agent_message","text":"Coordinating project tasks across available workers."}}
+{"type":"turn.completed","usage":{"input_tokens":1200,"output_tokens":80,"cached_input_tokens":3000}}

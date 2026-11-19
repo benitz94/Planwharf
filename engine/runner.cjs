@@ -6,7 +6,8 @@ const { requireWorkerWorkspace, linkedWorkspace } = require('./project-workspace
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
-const { launchSpec, providerEnvironment } = require('./providers.cjs');
+const { launchSpec } = require('./providers.cjs');
+const { accountEnvironment: isolatedAccountEnvironment } = require('./provider-runtime.cjs');
 const { resolveCliModel } = require('./model-routing.cjs');
 const { diagnoseProvider } = require('./provider-diagnostics.cjs');
 const { readJSON, validateResult, rejectMissingClaims, resultContract, reportExists } = require('./worker-result.cjs');
@@ -140,10 +141,11 @@ function isProcessAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process.kill(pid, 0);
-    return true;
   } catch (_) {
     return false;
   }
+  // On Linux a zombie still answers the signal check, but it has exited and only waits to be collected.
+  try { return !/^\d+ \(.*\) Z/s.test(fs.readFileSync(`/proc/${pid}/stat`, 'utf8')); } catch (_) { return true; }
 }
 
 function killWorker(pid) {
@@ -158,10 +160,25 @@ function killWorker(pid) {
     }
     return !isProcessAlive(pid);
   }
-  try { process.kill(-pid, 'SIGTERM'); } catch (_) {
-    try { process.kill(pid, 'SIGTERM'); } catch (_) {}
-  }
-  return !isProcessAlive(pid);
+  // POSIX: signal the worker's process group, then wait until the worker and its children have exited.
+  // A signal is only a request, so answering at once would report a failure for a worker that is still closing.
+  const signal = name => { try { process.kill(-pid, name); } catch (_) { try { process.kill(pid, name); } catch (_) {} } };
+  const waitGone = ms => { const until = Date.now() + ms; while (livingTree(pid).length && Date.now() < until) sleepSync(50); return !livingTree(pid).length; };
+  signal('SIGTERM');
+  if (waitGone(2000)) return true;
+  signal('SIGKILL');
+  return waitGone(1000);
+}
+
+function sleepSync(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
+
+// The root process and the members of its process group that are still running. A zombie has exited
+// and only waits to be collected, so it does not count. Without ps, only the root process is checked.
+function livingTree(pid) {
+  const { spawnSync } = require('node:child_process');
+  const listed = spawnSync('ps', ['-A', '-o', 'pid=,pgid=,stat='], { encoding: 'utf8', timeout: 3000 });
+  if (listed.status !== 0 || typeof listed.stdout !== 'string') return isProcessAlive(pid) ? [pid] : [];
+  return listed.stdout.split('\n').map(line => line.trim().split(/\s+/)).filter(([id, group, stat]) => stat && !stat.startsWith('Z') && (Number(id) === pid || Number(group) === pid)).map(([id]) => Number(id));
 }
 
 function cliModelOf(model) {
@@ -185,7 +202,7 @@ function askPrompt(info) {
   return [
     `You are ${model}, the Planwharf orchestrator lead.`,
     'You coordinate. You do not implement. Workers write code, tests, and files. You never edit the project, never apply patches, never run the job yourself, never spawn subagents that change the repo.',
-    (info.model?.policy?.alwaysApprove ?? info.model?.alwaysApprove) === false ? 'Your tool access is restricted by the configured model permission policy. Inspect only with permitted tools; report denied actions without bypassing restrictions.' : 'You have full local tool access, network access and noninteractive CLI permissions. Use them to inspect the linked project files, git history, diffs, worker logs and linked repository. The coordinator role is a responsibility, not a filesystem or network restriction.',
+    (info.model?.policy?.alwaysApprove ?? info.model?.alwaysApprove) !== true ? 'Your tool access is restricted by the configured model permission policy. Inspect only with permitted tools; report denied actions without bypassing restrictions.' : 'You have full local tool access, network access and noninteractive CLI permissions. Use them to inspect the linked project files, git history, diffs, worker logs and linked repository. The coordinator role is a responsibility, not a filesystem or network restriction.',
     'Use the existing gh login for private GitHub repositories (gh api / gh repo view / gh api contents). Git can use it with -c credential.helper= -c "credential.helper=!gh auth git-credential". Never print tokens or copy credentials into prompts, files or logs.',
     'Fetching git objects and updating inspection refs is allowed. Do not implement the job yourself. Do not push, merge, reset, checkout or overwrite work unless that specific action is requested. Report authentication or access failures precisely; do not claim a linked repo is unreadable without checking.',
     folder ? `Project folder: ${folder}. Inspect the complete project, including nested files and git worktrees.` : 'No accessible local folder is linked. GitHub inspection can still use the linked repository.',
@@ -200,6 +217,9 @@ function askPrompt(info) {
     'For discussion or questions that do not authorize research work, return your normal answer or {"answer":"your answer","actions":[]}. Do not infer dispatch authorization from old history alone. Do not emit actions for implementation, approvals, or shell commands. If asked about prior research, read the research briefing and existing reports rather than launching another job.',
     info && info.allowActions === false ? 'This request is an internal planning query: actions are disabled. Follow the requested answer format exactly; do not wrap it in a dispatch envelope.' : '',
     info && info.extraPrompt ? info.extraPrompt : '',
+    'When the user talks about work to build, change or do next, help shape the plan, then end with one line that starts exactly with "Suggested next goal:" followed by the agreed goal in one or two sentences. After finished work, say briefly what it did when it helps. The user starts the goal with the Let the crew do it button; never claim it has started, and never say you created a task.',
+    'Read the work plan at .planwharf/plan.md when the briefing includes it. Never suggest again a goal that is in its Done section. After a stop, continue from the first step that is not ticked.',
+    'To change the models of proposed or stopped work (for example a step blocked because its model is out of quota or lost its role), return a JSON object {"answer":"...","actions":[{"type":"reassign_crew","projectId":"exact project id","assignments":{"exact remaining SubTask id":"exact roster model id"},"why":"short reason"}]}. Use only enabled models that have that role in the briefing and quota left. Planwharf checks the change, applies it and resumes stopped work; a step that is working is stopped and restarts with the new model. It reports the outcome under your answer, so never claim the crew changed before that.',
     'Do not invent workers that are not in the briefing.',
     info && info.allowActions !== false && info.model?.tools ? toolRequestRule(info.model.tools) : '',
     'When CURRENT REQUEST includes goldModel, every implementation or research worker must use that exact model ID, provider and CLI model. Never substitute another worker. Reviewers keep their configured roles. Gold is a request exception, not a change to the orchestrator.',
@@ -304,8 +324,18 @@ function parseAskLine(acc, row) {
     if (block.type === 'thinking' && typeof block.thinking === 'string') acc.thinking += block.thinking;
     if (block.type === 'tool_use') {
       const name = block.name || 'tool';
-      acc.thinking += `${acc.thinking ? '\n' : ''}tool: ${name}`;
+      // Its input arrives in pieces: the step is written when the block ends, with what it did.
+      if (Number.isInteger(event.index)) (acc.tools ||= {})[event.index] = { id: block.id, name, json: '' };
+      else noteTool(acc, block.id, name, block.input);
     }
+  }
+  const pending = Number.isInteger(event.index) && acc.tools ? acc.tools[event.index] : null;
+  if (pending && delta && delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') pending.json += delta.partial_json;
+  if (pending && event.type === 'content_block_stop') {
+    let input = null;
+    try { input = JSON.parse(pending.json || '{}'); } catch { /* an unreadable input still names the tool */ }
+    noteTool(acc, pending.id, pending.name, input);
+    delete acc.tools[event.index];
   }
   if (row.type === 'assistant' && row.message && Array.isArray(row.message.content)) {
     const texts = [];
@@ -313,10 +343,38 @@ function parseAskLine(acc, row) {
       if (!part || typeof part !== 'object') return;
       if (part.type === 'thinking' && typeof part.thinking === 'string') acc.thinking += part.thinking;
       if (part.type === 'text' && typeof part.text === 'string') texts.push(part.text);
+      if (part.type === 'tool_use') noteTool(acc, part.id, part.name || 'tool', part.input);
     });
     if (texts.length) acc.answer = texts.join('');
   }
+  // A tool the lead may not use, or one that failed, says so under the step.
+  if (row.type === 'user' && row.message && Array.isArray(row.message.content)) {
+    for (const part of row.message.content) {
+      if (!part || part.type !== 'tool_result' || part.is_error !== true) continue;
+      const said = (typeof part.content === 'string' ? part.content : Array.isArray(part.content) ? part.content.map(item => item && typeof item.text === 'string' ? item.text : '').join(' ') : '').replace(/\s+/g, ' ').trim();
+      acc.thinking += `${acc.thinking ? '\n' : ''}  ↳ ${/denied|permission|not allowed/i.test(said) ? 'refused' : 'error'}: ${clipText(said || 'no details', 160)}`;
+    }
+  }
   return acc;
+}
+
+function clipText(text, max) { return text.length > max ? text.slice(0, max - 1) + '…' : text; }
+
+// One line per tool the lead used, with what it touched: a file, a search, a command.
+function toolDetail(input) {
+  if (!input || typeof input !== 'object') return '';
+  const place = [input.file_path, input.path, input.notebook_path, input.url].find(value => typeof value === 'string' && value);
+  const shortPlace = place && place.length > 100 ? '…' + place.slice(-99) : place;
+  const text = typeof input.command === 'string' ? input.command
+    : typeof input.pattern === 'string' ? JSON.stringify(input.pattern) + (shortPlace ? ' in ' + shortPlace : '')
+    : shortPlace || (typeof input.description === 'string' ? input.description : '');
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  return flat ? ' ' + clipText(flat, 160) : '';
+}
+
+function noteTool(acc, id, name, input) {
+  if (id) { acc.toolIds ||= new Set(); if (acc.toolIds.has(id)) return; acc.toolIds.add(id); }
+  acc.thinking += `${acc.thinking ? '\n' : ''}tool: ${name}${toolDetail(input)}`;
 }
 
 function createAskStream(expectedModel) {
@@ -338,6 +396,9 @@ function createAskStream(expectedModel) {
       }
       acc.rest = '';
     }
+    // A tool still being written when the stream ended is listed by name.
+    for (const pending of Object.values(acc.tools || {})) noteTool(acc, pending.id, pending.name, null);
+    acc.tools = {};
     const thinking = String(acc.thinking || '').trim();
     if (acc.expectedModel && (!acc.resultSeen || !acc.modelSeen) && !acc.failure) {
       acc.failure = 'PROVIDER_PROTOCOL_CHANGED'; acc.error = 'PROVIDER_PROTOCOL_CHANGED: Claude Code returned no final result or exact model identity.';
@@ -418,7 +479,7 @@ function askOrchestrator(info) {
     if (info.purpose === 'supervisor') {
       if (supervisorChild) { resolve({ failure: 'busy', answer: 'A Supervisor response is already in progress.' }); return; }
     } else abortAsk(askKeyOf(info));
-    const child = spawn(spec.command, spec.args, { cwd: work, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+    const child = spawn(spec.command, spec.args, { cwd: work, env: accountEnvironment(info.model, spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
     child.stdout.setEncoding('utf8');
     if (info.purpose === 'supervisor') supervisorChild = child; else askChildren.set(askKeyOf(info), child);
     const stream = createAskStream(spec.adapter === 'claude' ? spec.model : undefined);
@@ -434,20 +495,27 @@ function askOrchestrator(info) {
         });
       } catch (_) {}
     };
+    // A thinking lead is slow on a cold start. Kill it after silence, not after a fixed
+    // three minutes: the first Antigravity Opus turn was cut at 181s while still writing.
+    const silenceMs = cwd ? 180000 : 90000;
+    const hardMs = cwd ? 900000 : 300000;
+    const killLead = () => { try { child.kill(); } catch (_) {} };
+    const hardKill = setTimeout(killLead, hardMs);
+    let timer = setTimeout(killLead, silenceMs);
+    const bump = () => { clearTimeout(timer); timer = setTimeout(killLead, silenceMs); };
     child.stdout.on('data', chunk => {
       stream.push(chunk);
+      bump();
       tick();
     });
-    child.stderr.on('data', chunk => { stderr = (stderr + chunk).slice(-4000); });
-    const timer = setTimeout(() => {
-      try { child.kill(); } catch (_) {}
-    }, cwd ? 180000 : 90000);
+    child.stderr.on('data', chunk => { stderr = (stderr + chunk).slice(-4000); bump(); });
     const done = errorOrCode => {
       if (settled) return;
       settled = true;
       if (askChildren.get(askKeyOf(info)) === child) askChildren.delete(askKeyOf(info));
       if (supervisorChild === child) supervisorChild = null;
       clearTimeout(timer);
+      clearTimeout(hardKill);
       const out = stream.finish();
       if (out.failure) out.answer = `${spec.provider} CLI failed (${out.failure}): ${out.error}${out.answer ? '\n\nPartial response:\n' + out.answer : ''}`;
       if (!out.answer && (errorOrCode || stderr)) out.answer = `${spec.provider} CLI failed: ${stderr.trim() || String(errorOrCode)}`;
@@ -486,8 +554,8 @@ function whenFinished(child, finish) {
 const TOOL_REQUEST = /^\s*TOOL REQUEST:\s*(mcp|browser|hooks|memory)\s*$/im;
 function toolRequestRule(tools) {
   const off = ['mcp', 'browser', 'hooks', 'memory'].filter(name => tools[name] !== true);
-  if (!off.length) return 'Project tools on for the team: MCP servers, browser, hooks and memory.';
-  return `Project tools that are off for the team: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
+  if (!off.length) return 'Project tools on for your model: MCP servers, browser, hooks and memory.';
+  return `Project tools that are off for your model: ${off.join(', ')} (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). `
     + 'Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly "TOOL REQUEST: <name>" for one of these names. '
     + 'Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents.';
 }
@@ -519,6 +587,10 @@ function spawnWorker(info) {
   } finally {
     try { fs.closeSync(logFd); } catch (_) {}
   }
+}
+
+function accountEnvironment(model, adapter) {
+  return isolatedAccountEnvironment(adapter, model);
 }
 
 function run(argv = process.argv) {
@@ -558,7 +630,7 @@ function run(argv = process.argv) {
     fs.writeFileSync(opts.result + '.diagnostic.json', JSON.stringify(diagnostic, null, 2));
     return diagnostic.message;
   };
-  const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: providerEnvironment(spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
+  const child = spawn(spec.command, spec.args, { cwd: spec.cwd, env: accountEnvironment(opts.model, spec.adapter || spec.provider), windowsHide: true, stdio: [typeof spec.stdin === 'string' ? 'pipe' : 'ignore', 'pipe', 'pipe'] });
   child.stdout.setEncoding('utf8');
   child.stderr.on('data', chunk => { process.stderr.write(chunk); providerStderr = (providerStderr + chunk).slice(-4000); });
   const finalAdapter = opts.structuredResultPath && supportsFinalResult({ adapter: spec.adapter || spec.provider }) ? spec.adapter || spec.provider : null;

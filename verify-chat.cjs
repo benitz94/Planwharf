@@ -28,7 +28,7 @@ const server = createServer({ planFile, refreshModels: false, fetchPlans: null,
   ],
   inspectFolder: () => ({ git: true, names: ['index.html'], dirty: [] }),
   readRepository: () => ({ local: { exists: true, readable: true, writable: true, git: true, branch: 'main', changes: [' M index.html', '?? notes.txt'], uncommitted: 2 }, remote: {}, comparison: {} }),
-  askModel: async info => { calls.push(info); await pause(1500); return { answer: 'Fine: a recipe site with a list page and a detail page.' }; },
+  askModel: async info => { calls.push(info); await pause(1500); return { answer: 'Fine: a recipe site with a list page and a detail page.\n\nSuggested next goal: A recipe site with a list and a detail page.' }; },
   monitorIntervalMs: 300,
   // Fake crew: a worker is a pid that stays alive until the check writes its result.
   spawnWorker: info => { const processId = ++pid; launches.push({ ...info, pid: processId }); live.add(processId); if (info.logPath) { try { fs.mkdirSync(path.dirname(info.logPath), { recursive: true }); fs.writeFileSync(info.logPath, 'Writing index.html\nAdding the recipe list\n'); } catch {} } return { pid: processId }; },
@@ -141,11 +141,8 @@ const errors = [];
   // Each lead reply has a copy button; one click copies the reply and says so.
   await click('#thread .msg.lead [data-action="copy-msg"]');
   await until(`/Copied|Copy failed/.test(document.querySelector('#thread .msg.lead [data-action="copy-msg"]').innerText)`, 'copy feedback');
-  // A chat message starts nothing; the page says so and offers to make it the goal.
-  await until(`document.querySelector('[data-action="use-goal"]') && document.getElementById('thread').innerText.includes('nothing has started yet')`, 'goal hint');
-  await click('[data-action="use-goal"]');
-  await until(`!document.querySelector('[data-action="use-goal"]')`, 'goal saved');
-  assert.equal((await (await fetch(appUrl + '/api/orchestrator?readOnly=1')).json()).projects.find(row => row.id === projectId).goal, 'A recipe site with a list and a detail page.');
+  // A chat message starts nothing; the page says so and names the goal the lead suggested.
+  await until(`document.getElementById('thread').innerText.includes('Nothing has started yet') && document.getElementById('thread').innerText.includes('A recipe site with a list and a detail page.')`, 'goal hint');
   assert.match(await evaluate(`document.getElementById('now').textContent`), /\d{1,2}[:.]\d{2}/, 'Day and time are shown');
 
   // Crew: proposal, approval, live work with progress, then the result.
@@ -154,8 +151,22 @@ const errors = [];
   assert.equal(proposed.status, 201, await proposed.clone().text());
   await until(`document.getElementById('thread').innerText.includes('The lead proposes this work')`, 'proposal card', 10000);
   assert.match(await evaluate(`document.querySelector('.card.crew').innerText`), /Build[\s\S]*Lead A[\s\S]*Verify[\s\S]*Checker B/);
+  // Claude Code cannot build without working unasked: the page asks first, and Cancel starts nothing.
+  const claudeOk = async () => (await (await fetch(appUrl + '/api/orchestrator?readOnly=1')).json()).providers.find(provider => provider.id === 'claude').policy.alwaysApprove;
+  assert.equal(await claudeOk(), false, 'Nothing works without asking on a fresh install');
   await click('[data-action="approve"]');
+  await until(`document.getElementById('ok-dialog').open && /Claude/.test(document.getElementById('ok-text').innerText)`, 'OK question');
+  await command('Page.captureScreenshot', { format: 'png' }).then(shot => fs.writeFileSync(path.join(output, 'chat-ok-question.png'), Buffer.from(shot.data, 'base64')));
+  await click('#ok-dialog button[value="cancel"]');
+  await until(`!document.getElementById('ok-dialog').open`, 'OK question closed');
+  await pause(500);
+  assert.equal(launches.length, 0, 'Cancel starts nothing');
+  assert.equal(await claudeOk(), false);
+  await click('[data-action="approve"]');
+  await until(`document.getElementById('ok-dialog').open`, 'OK question again');
+  await click('#ok-allow');
   await until(`document.querySelector('.card.crew.live')?.innerText.includes('0 of 2 steps done')`, 'live crew card', 15000);
+  assert.equal(await claudeOk(), true, 'The OK is saved for Claude Code');
   await until(`document.querySelector('.card.crew.live .preview pre')?.innerText.includes('recipe list')`, 'builder preview', 15000);
   // A timed stop shows a countdown and can be cancelled, without a model call.
   await say('fermati tra 5 minuti');

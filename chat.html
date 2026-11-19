@@ -6,6 +6,7 @@
   <title>Planwharf</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="chat.css">
+  <script src="work-summary.js" defer></script>
   <script src="chat-ui.js" defer></script>
 </head>
 <body>
@@ -13,7 +14,7 @@
   <div class="shell" id="shell">
     <aside class="side side-left" id="projects-panel" aria-label="Projects">
       <div class="side-head">
-        <strong class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><g class="bezel"><circle cx="32" cy="32" r="20.5"/><path d="M32 12v5.5M32 46.5V52M12 32h5.5M46.5 32H52"/></g><g class="needle"><g transform="rotate(40 32 32)"><path class="north" d="M32 16 36 32H28Z"/><path class="south" d="M32 48 36 32H28Z"/></g></g></svg></span>Planwharf</strong>
+        <strong class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><g class="bezel"><circle cx="32" cy="32" r="20.5"/><path d="M32 12v5.5M32 46.5V52M12 32h5.5M46.5 32H52"/></g><g class="needle"><g transform="rotate(40 32 32)"><path class="north" d="M32 16 36 32H28Z"/><path class="south" d="M32 48 36 32H28Z"/></g></g></svg></span>Planwharf<span class="brand-version" id="app-version" title="Installed version"></span></strong>
         <button type="button" class="icon-btn only-narrow" data-close-side="projects-panel" aria-label="Close projects">✕</button>
       </div>
       <button type="button" class="btn btn-primary full" id="new-project" data-icon="plus">New project</button>
@@ -52,7 +53,7 @@
           <textarea id="composer-input" rows="1" placeholder="Tell the lead what you want built…"></textarea>
           <button type="submit" class="btn btn-primary" id="send" data-icon="send">Send</button>
         </form>
-        <p class="hint">You are the captain: you set the goal and the team, the crew does the work. Try “open team” or “show usage”.</p>
+        <p class="hint">Talk with the lead to shape the plan, then press <b>Let the crew do it</b>. The crew builds, checks and stops when the goal is reached.</p>
       </footer>
     </main>
 
@@ -65,6 +66,17 @@
     </aside>
   </div>
 
+  <dialog id="ok-dialog" aria-labelledby="ok-dialog-title">
+    <form method="dialog">
+      <h2 id="ok-dialog-title">Planwharf needs your OK</h2>
+      <p id="ok-text"></p>
+      <p class="muted small">You can change this at any time in Team, under AI tools.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn" value="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" value="allow" id="ok-allow">Allow</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="project-dialog" aria-labelledby="project-dialog-title">
     <form id="project-form" method="dialog">
       <h2 id="project-dialog-title">New project</h2>

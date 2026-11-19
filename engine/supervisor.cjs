@@ -44,7 +44,8 @@ function projectFacts(snapshot, projectId, now = Date.now()) {
   if (row.status === 'complete' && active) add('conflicting-completion', 'critical', 'Completion conflicts with active work', 'The backend reports completion but workers are still active. Do not rely on this completion yet.', workers.filter(w => w.alive).map(w => w.id));
   if (row.status === 'failed' || row.status?.startsWith('blocked_')) add('execution-blocked', 'warning', 'Work needs attention', row.next || row.waitingFor || 'The execution is blocked or failed. Review its evidence before resuming.', [row.status, row.attemptId, row.megaTaskId]);
   const relevantResults = results.filter(result => result.megaTaskId === row.megaTaskId);
-  for (const result of relevantResults.filter(result => ['FAILED', 'BLOCKED'].includes(result.status))) add('result-' + result.resultId, 'warning', 'An assignment did not finish successfully', result.summary || 'A worker or reviewer reported a blocker.', [result.resultId, result.subTaskId, result.status]);
+  // A step stopped because its model was changed on purpose is not a failure.
+  for (const result of relevantResults.filter(result => ['FAILED', 'BLOCKED'].includes(result.status) && !result.modelChange)) add('result-' + result.resultId, 'warning', 'An assignment did not finish successfully', result.summary || 'A worker or reviewer reported a blocker.', [result.resultId, result.subTaskId, result.status]);
   for (const worker of workers.filter(w => !w.alive && !w.resultId && w.status === 'RUNNING')) add('missing-result-' + worker.id, 'warning', 'Worker stopped without a validated result', `${worker.task} has no live process and no validated result.`, [worker.id, worker.subTaskId]);
   const projectMegas = new Set((snapshot.execution?.megaTasks || []).filter(m => m.projectId === projectId).map(m => m.id));
   const recent = results.filter(result => projectMegas.has(result.megaTaskId)).slice(-3);

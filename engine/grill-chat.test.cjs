@@ -65,6 +65,9 @@ test('unrecognized Antigravity model is classified precisely and never replaced 
 });
 test('Antigravity discovery only accepts exact listed IDs and keeps auth failures unread', async () => {
   assert.deepEqual(parseModels('gemini-3.1-pro\nclaude-sonnet-4.6\ngemini-3.1-pro\n').ids, ['gemini-3.1-pro', 'claude-sonnet-4.6']);
+  // agy writes the readable name next to each id: Planwharf keeps it for the menus.
+  const named = parseModels('gemini-3.8-flash-high     Gemini 3.8 Flash (High)\nclaude-opus-4-6-thinking  Claude Opus 4.6 (Thinking)\ngpt-oss-120b-medium\n');
+  assert.deepEqual(named.models, [{ cli: 'gemini-3.8-flash-high', label: 'Gemini 3.8 Flash (High)' }, { cli: 'claude-opus-4-6-thinking', label: 'Claude Opus 4.6 (Thinking)' }, { cli: 'gpt-oss-120b-medium' }]);
   assert.equal(parseModels('Gemini Pro - high effort').ok, false);
   const calls = [];
   const result = await listAntigravity({ command: 'isolated-agy', run: (command, args, opts, callback) => { calls.push(args); callback(new Error('failed'), '', 'Please sign in to view available models.'); } });

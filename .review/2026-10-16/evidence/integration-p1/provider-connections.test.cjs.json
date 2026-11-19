@@ -1,8 +1,0 @@
-{
-  "file": "engine/provider-connections.test.cjs",
-  "command": "node engine/provider-connections.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "✔ connection validation rejects secrets, ambiguous IDs and unsupported CLI contracts (0.9238ms)\n✔ connections and provider policies persist without provider calls and future siblings inherit settings (104.8905ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 108.5091\n",
-  "stderr": ""
-}

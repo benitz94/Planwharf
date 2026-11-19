@@ -1,5 +1,0 @@
-{
-  "error": "Error: {\"exceptionId\":1,\"text\":\"Uncaught\",\"lineNumber\":0,\"columnNumber\":36,\"scriptId\":\"58\",\"stackTrace\":{\"callFrames\":[{\"functionName\":\"\",\"scriptId\":\"58\",\"url\":\"\",\"lineNumber\":0,\"columnNumber\":36}]},\"exception\":{\"type\":\"object\",\"subtype\":\"error\",\"className\":\"TypeError\",\"description\":\"TypeError: Cannot read properties of null (reading 'checkVisibility')\\n    at <anonymous>:1:37\",\"objectId\":\"-470017641245384369.3.2\"}}\n    at evaluate (C:\\Users\\stefa\\.codex\\.chatgpt-projects\\g-p-6a7d949db320819184084609732f4805\\planwharf-coordination\\worktrees\\p1-workspace\\verify-workspace-browser.cjs:71:178)\n    at async C:\\Users\\stefa\\.codex\\.chatgpt-projects\\g-p-6a7d949db320819184084609732f4805\\planwharf-coordination\\worktrees\\p1-workspace\\verify-workspace-browser.cjs:102:55",
-  "errors": [],
-  "networkErrors": []
-}

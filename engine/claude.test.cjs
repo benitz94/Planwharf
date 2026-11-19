@@ -110,3 +110,39 @@ test('isolated notebook exposes Claude catalog and persists explicit roles witho
   assert.equal(enabled.enabled, true); assert.deepEqual(enabled.roles, { ...roles, verifier: false });
   assert.ok(fs.readFileSync(planFile).equals(before), 'Catalog and role changes leave the isolated notebook untouched');
 });
+test("the lead's steps say what each tool did, and when it was refused", () => {
+  const stream = createAskStream(cli);
+  const rows = [
+    { type: 'system', subtype: 'init', model: cli },
+    // A read whose input arrives in pieces while the model writes it.
+    { type: 'stream_event', event: { type: 'content_block_start', index: 1, content_block: { type: 'tool_use', id: 't1', name: 'Read', input: {} } } },
+    { type: 'stream_event', event: { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"file_path":"native/por' } } },
+    { type: 'stream_event', event: { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: 'ting/README.md"}' } } },
+    { type: 'stream_event', event: { type: 'content_block_stop', index: 1 } },
+    // The full message repeats the same call: it is not listed twice.
+    { type: 'assistant', message: { model: cli, content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: 'native/porting/README.md' } }] } },
+    // A command the lead may not run.
+    { type: 'assistant', message: { model: cli, content: [{ type: 'tool_use', id: 't2', name: 'Bash', input: { command: 'dotnet --list-sdks', description: 'Check SDK' } }] } },
+    { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't2', is_error: true, content: 'Permission to use Bash has been denied.' }] } },
+    { type: 'assistant', message: { model: cli, content: [{ type: 'tool_use', id: 't3', name: 'Grep', input: { pattern: 'readValidatedResult', path: 'engine' } }] } },
+    { type: 'result', subtype: 'success', is_error: false, result: 'Plan ready.' }
+  ].map(row => JSON.stringify(row)).join('\n');
+  for (const chunk of rows.match(/.{1,41}/gs)) stream.push(chunk);
+  const out = stream.finish();
+  assert.equal(out.answer, 'Plan ready.');
+  assert.deepEqual(out.thinking.split('\n'), [
+    'tool: Read native/porting/README.md',
+    'tool: Bash dotnet --list-sdks',
+    '  ↳ refused: Permission to use Bash has been denied.',
+    'tool: Grep "readValidatedResult" in engine'
+  ]);
+});
+
+test('a tool cut off by the end of the stream is still listed', () => {
+  const stream = createAskStream(cli);
+  for (const row of [{ type: 'system', subtype: 'init', model: cli },
+    { type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'x', name: 'Glob', input: {} } } },
+    { type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"pat' } } },
+    { type: 'result', subtype: 'success', is_error: false, result: 'done' }]) stream.push(JSON.stringify(row) + '\n');
+  assert.equal(stream.finish().thinking, 'tool: Glob');
+});

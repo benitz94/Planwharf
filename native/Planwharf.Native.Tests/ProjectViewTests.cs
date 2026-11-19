@@ -1,0 +1,228 @@
+using System.Text.Json.Nodes;
+using Planwharf.Native.Core;
+using Xunit;
+
+namespace Planwharf.Native.Tests;
+
+public class ProjectViewTests
+{
+    [Fact]
+    public void Reads_the_server_address_line() =>
+        Assert.Equal("http://127.0.0.1:4173", ServerHost.ReadAddress("Planwharf starting\nhttp://127.0.0.1:4173\n"));
+
+    [Fact]
+    public void Lists_the_project_used_last_first()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "projects": [ { "id": "old", "name": "Old" }, { "id": "new", "name": "New" }, { "id": "never", "name": "Never" }, { "id": "work", "name": "Work" } ],
+          "asks": [ { "projectId": "old", "at": "2026-11-01T10:00:00Z" }, { "projectId": "new", "at": "2026-11-15T09:00:00Z" } ],
+          "execution": { "megaTasks": [ { "projectId": "work", "createdAt": "2026-11-10T08:00:00Z", "completedAt": "2026-11-15T10:00:00Z" } ] } }
+        """)!;
+        Assert.Equal(["work", "new", "old", "never"], ProjectViews.Projects(snapshot).Select(project => project.Id));
+    }
+
+    [Fact]
+    public void Picks_out_what_needs_the_owner_decision()
+    {
+        var results = new[] { "Verified job 05. Added 34 tests.\nNeeds your decision: test X fails already on main.", "Built it.", "- needs your decision: keep the plan file in git?" };
+        Assert.Equal(["test X fails already on main.", "keep the plan file in git?"], ProjectViews.Decisions(results));
+        Assert.Empty(ProjectViews.Decisions(["All good."]));
+    }
+
+    [Fact]
+    public void Lists_projects_with_the_crew_status()
+    {
+        var projects = ProjectViews.Projects(SampleState.Finished());
+        Assert.Equal(["Weather dashboard", "Recipe notes app"], projects.Select(p => p.Name));
+        Assert.Equal("Goal reached", projects[0].Status);
+        Assert.Equal("Ready", projects[1].Status);
+    }
+
+    [Fact]
+    public void Shows_the_chat_and_the_finished_work_without_model_changes()
+    {
+        var view = ProjectViews.Project(SampleState.Finished(), "weather")!;
+        Assert.Equal(2, view.Messages.Count);
+        Assert.Equal("Grok 4.7", view.Messages[1].Who);
+        Assert.Equal(["Build · Opus 5.5", "Verify · GPT-6 Astra"], view.Work!.Steps.Select(s => $"{s.Role} · {s.Model}"));
+        Assert.Equal(2, view.Work.Done);
+        Assert.DoesNotContain("Model changed.", view.Work.Results);
+    }
+
+    [Fact]
+    public void An_old_audit_step_still_shows_the_review_role()
+    {
+        var snapshot = JsonNode.Parse("""
+        { "projects": [
+            { "id": "audit-proj", "name": "Audit Sample",
+              "megaTask": { "id": "mt-audit", "title": "Audit dependencies", "status": "COMPLETE" },
+              "subTasks": [
+                { "id": "st-audit", "type": "AUDIT", "title": "Check package integrity", "status": "COMPLETE", "assignedModelId": "opus" }
+              ],
+              "results": [ { "subTaskId": "st-audit", "status": "COMPLETE", "summary": "Audit passed" } ] }
+          ] }
+        """)!;
+        var view = ProjectViews.Project(snapshot, "audit-proj")!;
+        Assert.NotNull(view.Work);
+        Assert.Single(view.Work.Steps);
+        Assert.Equal("Review", view.Work.Steps[0].Role);
+        Assert.Equal("Check package integrity", view.Work.Steps[0].Title);
+        Assert.Equal("done", view.Work.Steps[0].Status);
+    }
+
+    [Fact]
+    public void Offers_one_clear_next_action()
+    {
+        Assert.Equal(CrewAction.LetTheCrewDoIt, ProjectViews.Project(SampleState.Finished(), "weather")!.Action);
+        Assert.Equal(CrewAction.StopTheCrew, ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Action);
+        Assert.StartsWith("The work is done. The lead is checking", ProjectViews.Project(SampleState.Finished(stopReason: null), "weather")!.Hint);
+        Assert.StartsWith("The crew is working", ProjectViews.Project(SampleState.Working(), "weather")!.Hint);
+        Assert.Equal("", ProjectViews.Project(SampleState.Working(), "weather")!.TimeLeft);
+        var idle = ProjectViews.Project(SampleState.Finished(), "notes")!;
+        Assert.StartsWith("Talk with the lead about what to build", idle.Hint);
+    }
+
+    [Fact]
+    public void Shows_the_time_left_under_the_crew_and_hides_it_when_nothing_is_open()
+    {
+        var working = SampleState.Working();
+        working["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough", "longerThanUsual": false }""");
+        var view = ProjectViews.Project(working, "weather", TimeZoneInfo.Utc)!;
+        Assert.StartsWith("The crew is working", view.Hint);
+        Assert.Equal("About 25 minutes left (ends around 17:40) · rough", view.TimeLeft);
+
+        working["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 2, "endsAt": "2026-11-12T17:40:00Z", "sure": "based on 6 past steps", "longerThanUsual": true }""");
+        Assert.Equal("Longer than usual · about 2 minutes left (ends around 17:40) · based on 6 past steps", ProjectViews.Project(working, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var finished = SampleState.Finished();
+        finished["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("", ProjectViews.Project(finished, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var quotaState = SampleState.Working();
+        quotaState["projects"]![0]!["subTasks"]![1]!["status"] = "PENDING";
+        quotaState["projects"]![0]!["subTasks"]![1]!["waitingFor"] = "Waiting for quota: Opus 0%";
+        quotaState["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 15, "endsAt": "2026-11-12T17:30:00Z", "sure": "rough" }""");
+        Assert.Equal("About 15 minutes left (ends around 17:30) · rough", ProjectViews.Project(quotaState, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+
+        var cancelledState = SampleState.Working();
+        cancelledState["projects"]![0]!["megaTask"]!["status"] = "CANCELLED";
+        cancelledState["projects"]![0]!["timeLeft"] = JsonNode.Parse("""{ "minutes": 25, "endsAt": "2026-11-12T17:40:00Z", "sure": "rough" }""");
+        Assert.Equal("", ProjectViews.Project(cancelledState, "weather", TimeZoneInfo.Utc)!.TimeLeft);
+    }
+
+    [Fact]
+    public void Says_why_the_crew_stopped_in_plain_English()
+    {
+        var view = ProjectViews.Project(SampleState.Finished("LEAD_UNCONFIRMED"), "weather")!;
+        Assert.Equal("Work finished, but the lead did not confirm the goal. Check the result in the project folder.", view.Hint);
+        Assert.Equal("The crew could not start the work: no folder", ProjectViews.StopSentence("START_FAILED: no folder"));
+    }
+
+    [Fact]
+    public void The_goal_agreed_in_the_chat_is_offered_only_when_it_is_new()
+    {
+        var state = SampleState.Finished();
+        Assert.Null(ProjectViews.Project(state, "weather")!.NextGoal);
+        state["projects"]![0]!["goal"] = "Something older";
+        // That reply is older than the work that already started, so it is not offered again.
+        Assert.Null(ProjectViews.Project(state, "weather")!.NextGoal);
+        var fresh = state["asks"]![0]!.DeepClone();
+        fresh["at"] = "2026-11-13T12:00:00Z";
+        fresh["answer"] = "Next.\n\nSuggested next goal: Port the five modules of job 02.";
+        state["asks"] = new JsonArray(fresh);
+        Assert.Equal("Port the five modules of job 02.", ProjectViews.Project(state, "weather")!.NextGoal);
+    }
+
+    // Planwharf keeps the chat newest first: the goal offered is the one from the lead's latest reply,
+    // never an old one from the start of the project (it once restarted a finished job).
+    [Fact]
+    public void The_goal_offered_comes_from_the_latest_reply_not_the_first()
+    {
+        var state = SampleState.Finished();
+        state["projects"]![0]!["goal"] = "Fix the build errors of the pilot.";
+        var older = state["asks"]![0]!.DeepClone();
+        var newer = state["asks"]![0]!.DeepClone();
+        newer["at"] = "2026-11-13T12:00:00Z";
+        newer["answer"] = "Job 02 is ready.\n\nSuggested next goal: Port the five modules of job 02.";
+        state["asks"] = new System.Text.Json.Nodes.JsonArray(newer, older);
+        Assert.Equal("Port the five modules of job 02.", ProjectViews.Project(state, "weather")!.NextGoal);
+    }
+}
+
+public class AppLayoutTests
+{
+    // A published app carries Planwharf in "app" and Node.js in "node" next to the program.
+    [Fact]
+    public void Finds_the_bundled_app_files_and_node()
+    {
+        var root = Directory.CreateTempSubdirectory("pw-native-layout-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root.FullName, "app"));
+            File.WriteAllText(Path.Combine(root.FullName, "app", "planwharf.cjs"), "");
+            Directory.CreateDirectory(Path.Combine(root.FullName, "node"));
+            var node = Path.Combine(root.FullName, "node", OperatingSystem.IsWindows() ? "node.exe" : "node");
+            File.WriteAllText(node, "");
+            Assert.Equal(Path.Combine(root.FullName, "app"), ServerHost.FindAppFolder(root.FullName));
+            Assert.Equal(node, ServerHost.FindNode(root.FullName));
+        }
+        finally { root.Delete(true); }
+    }
+}
+
+public class DataFolderTests
+{
+    // A new Linux user has no ~/.config yet: the data folder must still be a real, absolute folder.
+    [Fact]
+    public void The_data_folder_is_absolute_even_before_the_config_folder_exists()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var saved = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        var missing = Path.Combine(Path.GetTempPath(), "pw-native-config-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", missing);
+            var folder = ServerHost.DefaultDataFolder();
+            Assert.True(Path.IsPathRooted(folder), folder);
+            Assert.Equal(Path.Combine(missing, "Planwharf", "data"), folder);
+        }
+        finally { Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", saved); if (Directory.Exists(missing)) Directory.Delete(missing, true); }
+    }
+}
+
+public class MacDataFolderTests
+{
+    // On a Mac the native app uses the desktop app's folder, so both see the same projects.
+    [Fact]
+    public void On_a_Mac_the_data_folder_is_the_desktop_apps()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        Assert.EndsWith(Path.Combine("Library", "Application Support", "Planwharf", "data"), ServerHost.DefaultDataFolder());
+    }
+}
+
+public class GoalFromChatTests
+{
+    // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
+    [Fact]
+    public void A_question_without_a_suggested_goal_is_not_offered_as_the_goal()
+    {
+        var state = SampleState.Finished();
+        state["projects"]![0]!["goal"] = "Something older";
+        state["asks"]![0]!["question"] = "Why two workers on this project?";
+        state["asks"]![0]!["answer"] = "Because the work has a build step and a check step.";
+        var view = ProjectViews.Project(state, "weather")!;
+        Assert.Null(view.NextGoal);
+    }
+}
+
+public class TextRunsTests
+{
+    [Fact]
+    public void Bold_and_code_are_shown_as_such_not_as_asterisks()
+    {
+        var runs = Planwharf.Native.Core.TextRuns.Parse("Found **24 files** in `tools/check.py`, done.");
+        Assert.Equal(["Found ", "24 files", " in ", "tools/check.py", ", done."], runs.Select(run => run.Text));
+        Assert.True(runs[1].Bold); Assert.True(runs[3].Code); Assert.False(runs[0].Bold || runs[0].Code);
+    }
+}

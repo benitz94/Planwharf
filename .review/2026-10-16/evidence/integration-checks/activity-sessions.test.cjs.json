@@ -1,8 +1,0 @@
-{
-  "file": "engine/activity-sessions.test.cjs",
-  "command": "node engine/activity-sessions.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: real snapshot wiring, stored assignment identity/roles, retained history, project boundaries, restart, bounded log reading, redaction and completion validation. Fixtures only.\n",
-  "stderr": ""
-}

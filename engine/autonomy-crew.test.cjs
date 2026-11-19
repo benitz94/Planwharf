@@ -45,6 +45,14 @@ test('the crew reply must name one allowed worker per slice', () => {
   assert.equal(autonomy.parseAssignment('{"assign":["z","a"]}', 2, ['a', 'b']), null);
   const prompt = autonomy.assignmentPrompt({ name: 'P', goal: 'G', slices: ['one', 'two'], candidates: [[{ id: 'a', label: 'A', provider: 'x' }], [{ id: 'b', label: 'B', provider: 'y' }]] });
   assert.match(prompt, /different provider/);
+  assert.doesNotMatch(prompt, /You told the user/, 'no chat, nothing quoted');
+  // What the lead said in the chat comes with the choice: it keeps its own plan, or says why it changes it.
+  const remembered = autonomy.assignmentPrompt({ name: 'P', goal: 'G', slices: ['one', 'two'], candidates: [[{ id: 'a', label: 'A', provider: 'x' }], [{ id: 'b', label: 'B', provider: 'y' }]], said: 'Crew: I suggest A as worker and B as reviewer.' });
+  assert.match(remembered, /You told the user in the chat[\s\S]*I suggest A as worker and B as reviewer/);
+  assert.match(remembered, /keep that crew.*say why in "why"/);
+  const long = autonomy.assignmentPrompt({ name: 'P', goal: 'G', slices: ['one', 'two'], candidates: [[{ id: 'a', label: 'A', provider: 'x' }], [{ id: 'b', label: 'B', provider: 'y' }]], said: 'x'.repeat(5000) + ' END' });
+  assert.match(long, /END/, 'the end of a long answer, where the crew is proposed, is kept');
+  assert.ok(long.length < 4000);
   assert.match(prompt, /Allowed: a \(A, provider x\)/);
   assert.doesNotMatch(prompt, /fastest/, 'speed cannot be judged from a model name');
   assert.equal(autonomy.parseAssignment('{"assign":["a","a"]}', 2, [['a'], ['b']]), null, 'each slice has its own allowed list');
@@ -154,7 +162,8 @@ test('full loop: the lead picks the crew, a refusal reroutes, checks feed the ve
     const settings = view.autonomy[projectId];
     const timeline = view.execution.timeline.filter(event => event.projectId === projectId);
     assert.equal(settings.stopReason, 'GOAL_REACHED', JSON.stringify(timeline.map(event => event.type + ' ' + event.summary)));
-    assert.ok(timeline.some(event => event.type === 'MEGATASK_ASSIGNED'), 'the lead chose the crew');
+    // Short and readable: role and model, then the lead's reason in full.
+    assert.ok(timeline.some(event => event.type === 'MEGATASK_ASSIGNED' && event.summary === 'Lead assigned Build: C · Verify: B. Why: c builds, b checks'), JSON.stringify(timeline.filter(event => event.type === 'MEGATASK_ASSIGNED')));
     assert.deepEqual(launches.map(launch => launch.worker.id).slice(0, 1), ['c'], 'first slice went to the chosen implementer');
     assert.ok(timeline.some(event => event.type === 'MODEL_REFUSAL_FALLBACK' && /hit your 5-hour limit/.test(event.summary)));
     assert.ok(launches.length >= 3 && launches[1].worker.id !== 'c', 'the refused slice went to another model');

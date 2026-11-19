@@ -1,8 +1,0 @@
-{
-  "file": "engine/skills.test.cjs",
-  "command": "node engine/skills.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: complete Matt skill catalog, same-SHA repair, legacy cache migration and honest offline status.\n",
-  "stderr": ""
-}

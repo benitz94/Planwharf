@@ -1,8 +1,0 @@
-{
-  "file": "engine/project-context.test.cjs",
-  "command": "node engine/project-context.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: project history/context isolation with absent/shared/new chat IDs, inferred recipients, preserved global history, restart, scoped cancellation and no worker dispatch. Mock providers only.\n",
-  "stderr": ""
-}

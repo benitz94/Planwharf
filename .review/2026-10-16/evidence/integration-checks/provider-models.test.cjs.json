@@ -1,8 +1,0 @@
-{
-  "file": "engine/provider-models.test.cjs",
-  "command": "node engine/provider-models.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: exact Grok model discovery, preserved access on failed checks and no invented provider/model substitutions.\n",
-  "stderr": ""
-}

@@ -1,1 +1,0 @@
-PASS: real Edge opens localhost; four areas; first access nessuna novità; manual R3; jump R3->R5; reload nessuna novità; grill R6; mobile layout; orto isolated.

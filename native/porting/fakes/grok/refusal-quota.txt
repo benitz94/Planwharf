@@ -1,0 +1,1 @@
+Error: Monthly credit spending limit reached. Rate limit or quota exhausted for model grok-4.7.

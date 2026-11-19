@@ -1,0 +1,2661 @@
+[
+  {
+    "fn": "migratePolicy",
+    "args": [
+      {
+        "maxUsedPercent": 80,
+        "warningUsedPercent": 70
+      }
+    ],
+    "result": {
+      "minRemainingPercent": 20,
+      "warningRemainingPercent": 30
+    }
+  },
+  {
+    "fn": "migratePolicy",
+    "args": [
+      {
+        "maxUsedPercent": null
+      }
+    ],
+    "result": {
+      "minRemainingPercent": null
+    }
+  },
+  {
+    "fn": "migratePolicy",
+    "args": [
+      {
+        "maxUsedPercent": 80,
+        "minRemainingPercent": 20
+      }
+    ],
+    "error": "Do not mix consumed and remaining quota settings."
+  },
+  {
+    "fn": "migratePolicy",
+    "args": [
+      {
+        "maxUsedPercent": 120
+      }
+    ],
+    "error": "Invalid legacy usage percentage."
+  },
+  {
+    "fn": "migratePolicy",
+    "args": [
+      "not a policy"
+    ],
+    "error": "Invalid quota policy."
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {}
+    ],
+    "result": {
+      "minRemainingPercent": null,
+      "warningRemainingPercent": null,
+      "fallbackModelId": null,
+      "alwaysApprove": false
+    }
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "minRemainingPercent": 10,
+        "warningRemainingPercent": 25,
+        "fallbackModelId": "sonnet",
+        "alwaysApprove": true
+      }
+    ],
+    "result": {
+      "minRemainingPercent": 10,
+      "warningRemainingPercent": 25,
+      "fallbackModelId": "sonnet",
+      "alwaysApprove": true
+    }
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "minRemainingPercent": 30,
+        "warningRemainingPercent": 20
+      }
+    ],
+    "error": "Warning remaining quota must be higher than the stop threshold."
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "minRemainingPercent": 101
+      }
+    ],
+    "error": "Remaining quota thresholds must be percentages from 0 to 100, or null."
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "fallbackModelId": "   "
+      }
+    ],
+    "error": "Fallback must be an explicit model ID, or null."
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "alwaysApprove": "yes"
+      }
+    ],
+    "error": "Always approve must be a boolean."
+  },
+  {
+    "fn": "validatePolicy",
+    "args": [
+      {
+        "unknown": 1
+      }
+    ],
+    "error": "Invalid model policy fields."
+  },
+  {
+    "fn": "usagePolicy",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "minRemainingPercent": null,
+      "warningRemainingPercent": null,
+      "fallbackModelId": null,
+      "alwaysApprove": false,
+      "remainingPercent": 12,
+      "usedPercent": 88,
+      "blocked": false,
+      "state": "ok",
+      "reason": null
+    }
+  },
+  {
+    "fn": "usagePolicy",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex",
+        "policy": {
+          "minRemainingPercent": 20
+        }
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "minRemainingPercent": 20,
+      "warningRemainingPercent": 30,
+      "fallbackModelId": null,
+      "alwaysApprove": false,
+      "remainingPercent": 12,
+      "usedPercent": 88,
+      "blocked": true,
+      "state": "limit",
+      "reason": "Remaining quota stop threshold reached (12.0% remaining / stop at 20%)."
+    }
+  },
+  {
+    "fn": "usagePolicy",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex",
+        "policy": {
+          "minRemainingPercent": 5
+        }
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "minRemainingPercent": 5,
+      "warningRemainingPercent": 15,
+      "fallbackModelId": null,
+      "alwaysApprove": false,
+      "remainingPercent": 12,
+      "usedPercent": 88,
+      "blocked": false,
+      "state": "warning",
+      "reason": "Low provider quota (12.0% remaining / warning at 15%)."
+    }
+  },
+  {
+    "fn": "usagePolicy",
+    "args": [
+      {
+        "id": "grok",
+        "label": "grok",
+        "plan": "grok",
+        "enabled": true,
+        "available": true,
+        "provider": "grok",
+        "policy": {
+          "minRemainingPercent": 10
+        }
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "minRemainingPercent": 10,
+      "warningRemainingPercent": 20,
+      "fallbackModelId": null,
+      "alwaysApprove": false,
+      "remainingPercent": null,
+      "usedPercent": null,
+      "blocked": true,
+      "state": "unread",
+      "reason": "Configured remaining quota threshold cannot be verified: provider quota is unread."
+    }
+  },
+  {
+    "fn": "usagePolicy",
+    "args": [
+      {
+        "id": "sonnet",
+        "label": "sonnet",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "provider": "claude",
+        "policy": {
+          "minRemainingPercent": 50,
+          "warningRemainingPercent": 70
+        }
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "minRemainingPercent": 50,
+      "warningRemainingPercent": 70,
+      "fallbackModelId": null,
+      "alwaysApprove": false,
+      "remainingPercent": 60,
+      "usedPercent": 40,
+      "blocked": false,
+      "state": "warning",
+      "reason": "Low provider quota (60.0% remaining / warning at 70%)."
+    }
+  },
+  {
+    "fn": "quotaLeft",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": 12
+  },
+  {
+    "fn": "quotaLeft",
+    "args": [
+      {
+        "id": "grok",
+        "label": "grok",
+        "plan": "grok",
+        "enabled": true,
+        "available": true,
+        "provider": "grok"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": null
+  },
+  {
+    "fn": "quotaLeft",
+    "args": [
+      {
+        "id": "none",
+        "label": "none",
+        "plan": "missing",
+        "enabled": true,
+        "available": true
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": null
+  },
+  {
+    "fn": "quotaLeft",
+    "args": [
+      {
+        "id": "used",
+        "label": "used",
+        "plan": "used",
+        "enabled": true,
+        "available": true
+      },
+      [
+        {
+          "id": "used",
+          "readable": true,
+          "pct": 30
+        }
+      ]
+    ],
+    "result": 70
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      20
+    ],
+    "result": {
+      "none": false,
+      "fiveHourPercent": 20,
+      "weeklyPercent": 20
+    }
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      {
+        "fiveHourPercent": 40,
+        "weeklyPercent": 25
+      }
+    ],
+    "result": {
+      "none": false,
+      "fiveHourPercent": 40,
+      "weeklyPercent": 25
+    }
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      {
+        "thresholdPercent": 30
+      }
+    ],
+    "result": {
+      "none": false,
+      "fiveHourPercent": 30,
+      "weeklyPercent": 30
+    }
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      {
+        "none": true
+      }
+    ],
+    "result": {
+      "none": true,
+      "fiveHourPercent": null,
+      "weeklyPercent": null
+    }
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      {
+        "fiveHourPercent": 150
+      }
+    ],
+    "result": {
+      "none": false,
+      "fiveHourPercent": 35,
+      "weeklyPercent": 35
+    }
+  },
+  {
+    "fn": "quotaLimit",
+    "args": [
+      null
+    ],
+    "result": {
+      "none": false,
+      "fiveHourPercent": 35,
+      "weeklyPercent": 35
+    }
+  },
+  {
+    "fn": "quotaWindows",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "fiveHour": 69,
+      "weekly": 12
+    }
+  },
+  {
+    "fn": "quotaWindows",
+    "args": [
+      {
+        "id": "gemini-pro",
+        "label": "gemini-pro",
+        "plan": "gemini",
+        "enabled": true,
+        "available": true,
+        "provider": "antigravity"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "fiveHour": null,
+      "weekly": null
+    }
+  },
+  {
+    "fn": "quotaWindows",
+    "args": [
+      {
+        "id": "grok",
+        "label": "grok",
+        "plan": "grok",
+        "enabled": true,
+        "available": true,
+        "provider": "grok"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "fiveHour": null,
+      "weekly": null
+    }
+  },
+  {
+    "fn": "quotaWindows",
+    "args": [
+      {
+        "id": "sonnet",
+        "label": "sonnet",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "provider": "claude"
+      },
+      [
+        {
+          "id": "claude",
+          "readable": true,
+          "windows": [
+            {
+              "name": "five_hour",
+              "leftPct": 61
+            },
+            {
+              "name": "seven_day",
+              "leftPct": 44
+            },
+            {
+              "name": "Weekly Opus",
+              "leftPct": 30
+            }
+          ]
+        }
+      ]
+    ],
+    "result": {
+      "fiveHour": 61,
+      "weekly": 30
+    }
+  },
+  {
+    "fn": "windowKind",
+    "args": [
+      "5-hour"
+    ],
+    "result": "fiveHour"
+  },
+  {
+    "fn": "windowKind",
+    "args": [
+      "weekly"
+    ],
+    "result": "weekly"
+  },
+  {
+    "fn": "windowKind",
+    "args": [
+      "seven_day"
+    ],
+    "result": "weekly"
+  },
+  {
+    "fn": "windowKind",
+    "args": [
+      "Daily"
+    ],
+    "result": "other"
+  },
+  {
+    "fn": "windowKind",
+    "args": [
+      ""
+    ],
+    "result": "other"
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": true
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      10
+    ],
+    "result": false
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      {
+        "fiveHourPercent": 35,
+        "weeklyPercent": 10
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "sonnet",
+        "label": "sonnet",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "provider": "claude"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      {
+        "fiveHourPercent": 65,
+        "weeklyPercent": 35
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "sonnet",
+        "label": "sonnet",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "provider": "claude"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      {
+        "none": true
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "spent",
+        "label": "spent",
+        "plan": "empty",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      {
+        "none": true
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "grok",
+        "label": "grok",
+        "plan": "grok",
+        "enabled": true,
+        "available": true,
+        "provider": "grok"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      90
+    ],
+    "result": false
+  },
+  {
+    "fn": "lowQuota",
+    "args": [
+      {
+        "id": "gemini-pro",
+        "label": "gemini-pro",
+        "plan": "gemini",
+        "enabled": true,
+        "available": true,
+        "provider": "antigravity"
+      },
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ],
+      99
+    ],
+    "result": true
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "terra"
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "sonnet",
+            "label": "sonnet",
+            "plan": "claude",
+            "enabled": true,
+            "available": true,
+            "provider": "claude"
+          },
+          {
+            "id": "gemini-pro",
+            "label": "gemini-pro",
+            "plan": "gemini",
+            "enabled": true,
+            "available": true,
+            "provider": "antigravity"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          },
+          {
+            "id": "spent",
+            "label": "spent",
+            "plan": "empty",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "subTaskId": "s1",
+        "fromModelId": "terra",
+        "toModelId": "gemini-pro",
+        "leftPercent": 12
+      }
+    ]
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "terra"
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "sonnet",
+            "label": "sonnet",
+            "plan": "claude",
+            "enabled": true,
+            "available": true,
+            "provider": "claude"
+          },
+          {
+            "id": "gemini-pro",
+            "label": "gemini-pro",
+            "plan": "gemini",
+            "enabled": true,
+            "available": true,
+            "provider": "antigravity"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          },
+          {
+            "id": "spent",
+            "label": "spent",
+            "plan": "empty",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ],
+        "thresholdPercent": 10
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "terra",
+            "avoidProviders": [
+              "claude"
+            ]
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "sonnet",
+            "label": "sonnet",
+            "plan": "claude",
+            "enabled": true,
+            "available": true,
+            "provider": "claude"
+          },
+          {
+            "id": "gemini-pro",
+            "label": "gemini-pro",
+            "plan": "gemini",
+            "enabled": true,
+            "available": true,
+            "provider": "antigravity"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          },
+          {
+            "id": "spent",
+            "label": "spent",
+            "plan": "empty",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "subTaskId": "s1",
+        "fromModelId": "terra",
+        "toModelId": "gemini-pro",
+        "leftPercent": 12
+      }
+    ]
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "terra"
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "subTaskId": "s1",
+        "fromModelId": "terra",
+        "toModelId": "grok",
+        "leftPercent": 12
+      }
+    ]
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "terra"
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "sonnet",
+            "label": "sonnet",
+            "plan": "claude",
+            "enabled": true,
+            "available": true,
+            "provider": "claude"
+          },
+          {
+            "id": "gemini-pro",
+            "label": "gemini-pro",
+            "plan": "gemini",
+            "enabled": true,
+            "available": true,
+            "provider": "antigravity"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          },
+          {
+            "id": "spent",
+            "label": "spent",
+            "plan": "empty",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ],
+        "enabled": false
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "quotaSwitches",
+    "args": [
+      {
+        "running": [
+          {
+            "subTaskId": "s1",
+            "modelId": "sonnet"
+          },
+          {
+            "subTaskId": "s2",
+            "modelId": "spent"
+          }
+        ],
+        "models": [
+          {
+            "id": "terra",
+            "label": "terra",
+            "plan": "chatgpt",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          },
+          {
+            "id": "sonnet",
+            "label": "sonnet",
+            "plan": "claude",
+            "enabled": true,
+            "available": true,
+            "provider": "claude"
+          },
+          {
+            "id": "gemini-pro",
+            "label": "gemini-pro",
+            "plan": "gemini",
+            "enabled": true,
+            "available": true,
+            "provider": "antigravity"
+          },
+          {
+            "id": "grok",
+            "label": "grok",
+            "plan": "grok",
+            "enabled": true,
+            "available": true,
+            "provider": "grok"
+          },
+          {
+            "id": "spent",
+            "label": "spent",
+            "plan": "empty",
+            "enabled": true,
+            "available": true,
+            "provider": "codex"
+          }
+        ],
+        "plans": [
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 69
+              },
+              {
+                "name": "weekly",
+                "leftPct": 12
+              }
+            ]
+          },
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 60,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 60
+              },
+              {
+                "name": "weekly",
+                "leftPct": 81
+              }
+            ]
+          },
+          {
+            "id": "gemini",
+            "readable": true,
+            "leftPct": 98
+          },
+          {
+            "id": "grok",
+            "readable": false
+          },
+          {
+            "id": "empty",
+            "readable": true,
+            "exhausted": true,
+            "leftPct": 0
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "subTaskId": "s2",
+        "fromModelId": "spent",
+        "toModelId": "gemini-pro",
+        "leftPercent": 0
+      }
+    ]
+  },
+  {
+    "fn": "availableAgain",
+    "args": [
+      {
+        "available": false,
+        "unavailableAt": "2026-11-13T10:00:00.000Z"
+      },
+      1794564360000
+    ],
+    "result": true
+  },
+  {
+    "fn": "availableAgain",
+    "args": [
+      {
+        "available": false,
+        "unavailableAt": "2026-11-13T10:00:00.000Z"
+      },
+      1794564120000
+    ],
+    "result": false
+  },
+  {
+    "fn": "availableAgain",
+    "args": [
+      {
+        "available": false,
+        "unavailableAt": "2026-11-13T10:00:00.000Z"
+      },
+      1794564120000,
+      60000
+    ],
+    "result": true
+  },
+  {
+    "fn": "availableAgain",
+    "args": [
+      {
+        "available": true,
+        "unavailableAt": "2026-11-13T10:00:00.000Z"
+      },
+      1794564360000
+    ],
+    "result": false
+  },
+  {
+    "fn": "resolveUsageFallback",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex"
+      },
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "id": "terra",
+      "label": "terra",
+      "plan": "chatgpt",
+      "enabled": true,
+      "available": true,
+      "provider": "codex"
+    }
+  },
+  {
+    "fn": "resolveUsageFallback",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex",
+        "policy": {
+          "minRemainingPercent": 20,
+          "fallbackModelId": "sonnet"
+        }
+      },
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "id": "sonnet",
+      "label": "sonnet",
+      "plan": "claude",
+      "enabled": true,
+      "available": true,
+      "provider": "claude"
+    }
+  },
+  {
+    "fn": "resolveUsageFallback",
+    "args": [
+      {
+        "id": "terra",
+        "label": "terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex",
+        "policy": {
+          "minRemainingPercent": 20
+        },
+        "fallbackProviderId": "@automatic"
+      },
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": {
+      "id": "sonnet",
+      "label": "sonnet",
+      "plan": "claude",
+      "enabled": true,
+      "available": true,
+      "provider": "claude"
+    }
+  },
+  {
+    "fn": "resolveUsageFallback",
+    "args": [
+      {
+        "id": "grok",
+        "label": "grok",
+        "plan": "grok",
+        "enabled": true,
+        "available": true,
+        "provider": "grok",
+        "policy": {
+          "minRemainingPercent": 20
+        }
+      },
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": null
+  }
+]

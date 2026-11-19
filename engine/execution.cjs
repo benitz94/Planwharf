@@ -1,7 +1,34 @@
 'use strict';
+// The role a step plays, as the chat shows it.
+const stepRole = sub => sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH' ? 'Research' : /^Verify the work independently/.test(String(sub.title || '')) ? 'Verify' : 'Build';
+// Up to this many steps of one work run at the same time; the lead decides how many it needs.
+const MAX_PARALLEL = 10;
+// A step limited to some files is told so, and why: other workers change the rest at the same time.
+const scopeText = (sub, isolated = false) => Array.isArray(sub.scope) && sub.scope.length
+  ? `\n\nYour scope: change only these files or folders, relative to ${isolated ? 'this worker folder' : 'the project folder'}: ${sub.scope.join(', ')}. ${isolated ? 'Other workers have their own folders.' : 'Other workers are changing other files in this folder at the same time.'} A change outside your scope stops your part.`
+    + (Array.isArray(sub.scopeViolation) && sub.scopeViolation.length ? `\nLast time this part was stopped for changing files outside its scope: ${sub.scopeViolation.join(', ')}. Do not touch them: if the work needs them, say so in your result and stop.` : '')
+  : '';
+const slash = file => String(file).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+const inScope = (file, scope) => scope.some(entry => file === entry || file.startsWith(entry + '/'));
+// Files that differ from the last commit, as git lists them (renames count by their new name).
+function changedFiles(folder) {
+  const root = linkedWorkspace(folder);
+  if (!root) return null;
+  const listed = spawnSync('git', ['status', '--porcelain', '-z', '--untracked-files=all'], { cwd: root, encoding: 'utf8', windowsHide: true, timeout: 15000, maxBuffer: 16 * 1024 * 1024 });
+  if (listed.status !== 0) return null;
+  const out = [], rows = listed.stdout.split('\0');
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (row.length < 4) continue;
+    out.push(slash(row.slice(3)));
+    if (/^[RC]/.test(row)) index += 1; // the old name of a rename follows
+  }
+  return out;
+}
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const planFile = require('./plan-file.cjs');
 const { spawnSync } = require('node:child_process');
 const { readJSON, readValidatedResult, validateResult, reportExists } = require('./worker-result.cjs');
 const { linkedWorkspace, within, safeGitWorkspace, gitEnvironment } = require('./project-workspace.cjs');
@@ -9,6 +36,8 @@ const { executionNext } = require('./execution-next.cjs');
 const { adapterFor } = require('./provider-adapters.cjs');
 const { checkpointDiff } = require('./project-history.cjs');
 const { refusalReason } = require('./provider-refusal.cjs');
+const timeLeft = require('./time-left.cjs');
+const worktrees = require('./worktrees.cjs');
 const clone = value => structuredClone(value);
 const fingerprint = job => crypto.createHash('sha256').update(JSON.stringify([job.id, job.title, job.detail, job.revision_id || null, ...(job.goldModel ? [job.goldModel] : [])])).digest('hex');
 
@@ -44,11 +73,28 @@ function repoState(folder, facts = {}) {
     disposition: !facts.git ? 'NOT APPLICABLE' : dirtyFiles.length ? 'UNCOMMITTED' : 'COMMITTED' };
 }
 
+
+// A dead worker with no structured result still delivered when it left a new commit
+// on the branch, exit 0, and (when the step has a scope) only those files. Exit 0
+// alone is not enough: there must be a commit after the step started.
+function deliveredWithoutVerdict({ folder, before, after, exitCode, scope, names }) {
+  if (exitCode !== 0) return null;
+  if (!folder || !before || !after || before === after) return null;
+  if (!/^[a-f0-9]{40,64}$/.test(before) || !/^[a-f0-9]{40,64}$/.test(after)) return null;
+  const files = (names || []).map(slash).filter(Boolean);
+  if (!files.length) return null;
+  if (Array.isArray(scope) && scope.length) {
+    const owned = scope.map(slash);
+    if (files.some(file => !inScope(file, owned))) return null;
+  }
+  return { filesChanged: files.slice(0, 40), summary: `Delivered on disk without a structured result: ${files.length} file(s) committed after the step started.` };
+}
+
 function createExecutionBridge(options) {
   const { store, attempts, dir, rowFor, inspect, spawnWorker, isProcessAlive, killWorker, models, now, persist, leadId } = options;
   store.execution ||= { megaTasks: [], subTasks: [], results: [], checkpoints: [], timeline: [], observations: {} };
   const data = store.execution;
-  for (const key of ['megaTasks', 'subTasks', 'results', 'checkpoints', 'timeline']) if (!Array.isArray(data[key])) data[key] = [];
+  for (const key of ['megaTasks', 'subTasks', 'results', 'checkpoints', 'timeline', 'decisions']) if (!Array.isArray(data[key])) data[key] = [];
   data.observations ||= {};
   const subtasks = mega => data.subTasks.filter(sub => sub.megaTaskId === mega.id);
   const inspectProject = item => { const folder = linkedWorkspace(item.project.folder); return folder ? inspect(folder) : { error: 'Relink a real local project folder before implementation.', git: false, dirty: [], names: [], fileCount: 0 }; };
@@ -87,7 +133,8 @@ function createExecutionBridge(options) {
       ...(job.goldModel ? { goldModel: { ...job.goldModel } } : {}),
       attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: part.type || (job.kind === 'research' ? 'RESEARCH' : job.kind === 'audit' ? 'AUDIT' : 'IMPLEMENTATION'),
       dependencies: part.dependsOn ? part.dependsOn.map(index => ids[index]) : part.dependencies || (index ? [ids[index - 1]] : []),
-      proposedProvider: models().find(model => model.id === part.modelId)?.provider || null, proposedCli: models().find(model => model.id === part.modelId)?.cli || null, provider: null, cli: null }));
+      proposedProvider: models().find(model => model.id === part.modelId)?.provider || null, proposedCli: models().find(model => model.id === part.modelId)?.cli || null, provider: null, cli: null,
+      ...(Array.isArray(part.scope) && part.scope.length ? { scope: [...part.scope] } : {}), ...(part.size ? { size: part.size } : {}) }));
     for (const sub of subs) for (const dependency of sub.dependencies) if (!ids.includes(dependency) || ids.indexOf(dependency) >= ids.indexOf(sub.id)) throw new Error('Dependencies must reference an earlier SubTask in the same MegaTask.');
     data.megaTasks.push(mega); data.subTasks.push(...subs);
     mega.blockers = proposalBlockers(mega);
@@ -112,8 +159,15 @@ function createExecutionBridge(options) {
     return subtasks(mega).flatMap(sub => {
       const worker = models().find(model => model.id === sub.assignedModelId);
       const candidate = options.resolveWorker ? options.resolveWorker(worker, sub) : worker;
-      if (!candidate?.enabled || candidate.available === false || options.workerEligible && !options.workerEligible(candidate, sub)) return [`Worker ${sub.assignedModelId} is unavailable or has insufficient remaining quota.`];
-      if (!worker || worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
+      if (!candidate?.enabled || candidate.available === false || options.workerEligible && !options.workerEligible(candidate, sub)) {
+        // Waiting for quota does not hold the approval: the step starts by itself when a model of the crew has quota.
+        const why = options.explainNoWorker ? options.explainNoWorker(worker, sub) : null;
+        if (why?.waiting) return [];
+        return [why?.message || `Worker ${sub.assignedModelId} is unavailable or has insufficient remaining quota.`];
+      }
+      // A step switched to another model of the crew is fine; only a changed configuration of the same model needs a new proposal.
+      if (candidate.id === worker?.id && (worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli)) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
+      if (!worker && candidate.id === sub.assignedModelId) return [`Provider/model configuration changed for ${sub.assignedModelId}; review a new proposal.`];
       if (sub.type === 'RESEARCH' && !adapterFor(candidate)?.sourceProtectedResearch) return [`Source-protected research is not supported by ${worker.provider}.`];
       return [];
     });
@@ -124,15 +178,70 @@ function createExecutionBridge(options) {
     return { ...identity(mega, sub, part.attemptId), status, summary, filesChanged: partial?.filesChanged || [], tests: partial?.tests || [], blockers: [summary, ...(partial?.blockers || [])],
       nextAction: 'Review the evidence and resume the remaining work from an explicit checkpoint.', createdAt: now(), exitCode, evidenceKind: 'TECHNICAL', evidencePath: part.logPath || null };
   }
+  // A part limited to some files that changed others is stopped, and told why when it runs again.
+  // Its own report is always checked. An isolated worktree can also be checked against its base
+  // while other parts run; the shared folder is checked only when no other part worked concurrently.
+  function scopeCheck(mega, sub, part, result) {
+    if (result.status !== 'COMPLETE' || !Array.isArray(sub.scope) || !sub.scope.length) return result;
+    const scope = sub.scope.map(slash);
+    const outside = new Set((result.filesChanged || []).map(slash).filter(file => file && !inScope(file, scope)));
+    const others = subtasks(mega).filter(other => other.id !== sub.id);
+    // Only when no other part worked while this one did can a changed file be put down to this part.
+    const alone = !others.some(other => other.status === 'RUNNING' || (other.finishedAt && part.startedAt && other.finishedAt > part.startedAt));
+    if (alone || part.branch) {
+      const before = new Set((mega.repoBefore?.dirtyFiles || []).map(record => slash(record.slice(/^[MADRCU?!] \S/.test(record) ? 2 : 3).split(' -> ').at(-1).replace(/^"|"$/g, ''))));
+      const owned = others.filter(other => other.status === 'COMPLETE').flatMap(other => (other.scope || []).map(slash));
+      for (const file of changedFiles(part.folder) || []) if (!before.has(file) && !inScope(file, scope) && !inScope(file, owned)) outside.add(file);
+      if (part.branch && part.baseHead) {
+        try { for (const file of worktrees.git(part.folder, ['diff', '--name-only', `${part.baseHead}..HEAD`]).split(/\r?\n/).filter(Boolean)) if (!inScope(file, scope)) outside.add(file); }
+        catch { outside.add('(commit inspection unavailable)'); }
+      }
+    }
+    if (!outside.size) { delete sub.scopeViolation; return result; }
+    sub.scopeViolation = [...outside].slice(0, 20);
+    return { ...result, status: 'BLOCKED', blockers: [...(result.blockers || []), `Changed files outside its scope: ${sub.scopeViolation.join(', ')}.`],
+      summary: `Stopped: changed files outside its scope (${sub.scopeViolation.join(', ')}). ${result.summary}` };
+  }
   function collect(mega, sub, part, result) {
     if (data.results.some(item => item.resultId === result.resultId)) return;
+    result = scopeCheck(mega, sub, part, result);
+    if (sub.type === 'INTEGRATION' && result.status === 'COMPLETE') {
+      try {
+        for (const branch of (mega.worktreeParts || []).filter(branch => mega.activeGroup?.includes(branch.subId))) worktrees.git(part.projectFolder, ['merge-base', '--is-ancestor', branch.branch, 'HEAD']);
+        if (worktrees.git(part.projectFolder, ['status', '--porcelain'])) throw new Error('Work branch has uncommitted changes');
+        mega.integratedSubIds = [...new Set([...(mega.integratedSubIds || []), ...(mega.activeGroup || [])])];
+        mega.activeGroup = null; mega.awaitingIntegration = false;
+      } catch (error) { result = { ...result, status: 'BLOCKED', summary: `Integration is unfinished: ${error.message}`, blockers: [...(result.blockers || []), error.message] }; }
+    }
+    sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
+    // A decision the worker could not make is kept, so it can be asked before the next plan is approved.
+    for (const line of String(result.summary || '').split(/\r?\n/)) {
+      const at = line.toLowerCase().indexOf('needs your decision:');
+      if (at < 0) continue;
+      const text = line.slice(at + 'needs your decision:'.length).trim();
+      if (!text || data.decisions.some(item => item.projectId === mega.projectId && item.text === text)) continue;
+      data.decisions.push({ id: result.resultId + ':' + data.decisions.length, projectId: mega.projectId, megaTaskId: mega.id, text, at: now(), answer: '' });
+    }
     part.validatedResultStatus = result.status; part.recordedSubTaskStatus = sub.status;
     sub.completedAt = result.status === 'COMPLETE' ? now() : null;
     attempts.attachResult({ attemptId: part.attemptId, resultPath: part.structuredResultPath, status: result.status, exitCode: result.exitCode });
     attempts.closeAttempt({ attemptId: part.attemptId, reason: result.status.toLowerCase() });
-    event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
+    // A step stopped to change its model did not fail: it is shown as a change, not as an error.
+    event(mega.projectId, result.status === 'COMPLETE' ? 'SUBTASK_COMPLETED' : result.modelChange ? 'SUBTASK_REASSIGNED' : 'SUBTASK_FAILED', `${sub.title}: ${result.summary}`, { megaTaskId: mega.id, subTaskId: sub.id, resultId: result.resultId });
+    if (result.status === 'COMPLETE' && sub.type !== 'RESEARCH') {
+      try { planFile.tickStep(part.projectFolder, { title: sub.title, role: stepRole(sub), model: part.label, commit: part.branch ? `${part.branch} ${worktrees.git(part.folder, ['rev-parse', '--short', 'HEAD'])}` : planFile.commitNote(part.projectFolder) }); }
+      catch { /* the step result is already saved */ }
+    }
+    // How long this step took, for the time-left estimate. No prompt, path or project name.
+    try {
+      appendStepTime(dir, timeLeft.stepRecord({
+        role: stepRole(sub), model: sub.assignedModelId, size: sub.size,
+        files: Array.isArray(result.filesChanged) ? result.filesChanged.length : 0,
+        startedAt: part.startedAt, endedAt: sub.finishedAt, status: result.status, modelChange: Boolean(result.modelChange)
+      }));
+    } catch { /* the step result is already saved */ }
   }
   // A provider that refused the slice for credits or quota did no work: close that attempt,
   // put the model on cooldown, and give the slice to another eligible model.
@@ -152,6 +261,56 @@ function createExecutionBridge(options) {
     persist();
     return true;
   }
+
+  // A dead worker with no result and no commit gets one more try on the same model, then one
+  // try on the next eligible model. A commit already on the branch is a delivery, not a retry.
+  // Two models in all: after the second miss the step fails and the owner decides.
+  function committedSince(mega, part) {
+    const folder = linkedWorkspace(part.folder);
+    const before = part.baseHead || mega.repoBefore?.repoHead;
+    if (!folder || !before || !safeGitWorkspace(part.projectFolder)) return null;
+    const after = spawnSync('git', ['--no-optional-locks', '-C', folder, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true }).stdout.trim();
+    if (!/^[a-f0-9]{40,64}$/.test(after) || after === before) return null;
+    const listed = spawnSync('git', ['--no-optional-locks', '-C', folder, 'diff', '--name-only', before + '..' + after], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true });
+    const names = listed.status === 0 ? listed.stdout.trim().split(/\r?\n/).filter(Boolean) : [];
+    if (!names.length) return null;
+    return { filesChanged: names.slice(0, 40), summary: 'Delivered on disk: the step committed before the process ended, with no result file.' };
+  }
+  function rerouteNoVerdict(mega, sub, part) {
+    const tries = sub.noVerdictTries || 0;
+    if (noVerdictPlan(tries) === 'stop') return false;
+    let text = ''; try { text = fs.readFileSync(part.logPath, 'utf8'); } catch {}
+    attempts.closeAttempt({ attemptId: part.attemptId, reason: 'no verdict' });
+    sub.takeover = { fromModelId: sub.assignedModelId, at: now(), filesChanged: [], tests: [], summary: 'The previous attempt ended without a result. Continue from the folder; do not start over.', logTail: text.slice(-1500) };
+    part.alive = false;
+    if (noVerdictPlan(tries) === 'retry-same') {
+      Object.assign(sub, { status: 'PENDING', noVerdictTries: 1, resultId: null });
+      event(mega.projectId, 'MODEL_NO_VERDICT_RETRY', sub.assignedModelId + ' ended without a result. Same model tries once more.', { megaTaskId: mega.id, subTaskId: sub.id, modelId: sub.assignedModelId });
+      persist();
+      return true;
+    }
+    if (typeof options.replacement !== 'function') return false;
+    const next = options.replacement(sub, [sub.assignedModelId, ...(sub.noVerdictFrom || [])]);
+    if (!next) return false;
+    const from = sub.assignedModelId;
+    Object.assign(sub, { status: 'PENDING', noVerdictTries: 2, noVerdictFrom: [...(sub.noVerdictFrom || []), from], fallbackFrom: from, assignedModelId: next.id, proposedProvider: next.provider, proposedCli: next.cli, resultId: null });
+    event(mega.projectId, 'MODEL_NO_VERDICT_SWITCH', from + ' ended without a result twice. Reassigned to ' + next.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: next.id });
+    persist();
+    return true;
+  }
+  function deliveryOf(mega, sub, part) {
+    const exit = readJSON(part.exitPath);
+    if (!exit || exit.attemptId !== part.attemptId || !Number.isInteger(exit.exitCode)) return null;
+    if (exit.provider && exit.provider !== sub.provider) return null;
+    if (exit.model && exit.model !== sub.cli) return null;
+    const folder = linkedWorkspace(part.folder);
+    if (!folder || !safeGitWorkspace(part.projectFolder)) return null;
+    const before = part.baseHead || mega.repoBefore?.repoHead;
+    const after = spawnSync('git', ['--no-optional-locks', '-C', folder, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true }).stdout.trim();
+    const listed = spawnSync('git', ['--no-optional-locks', '-C', folder, 'diff', '--name-only', before + '..' + after], { encoding: 'utf8', env: gitEnvironment(), timeout: 4000, windowsHide: true });
+    const names = listed.status === 0 ? listed.stdout.trim().split(/\r?\n/).filter(Boolean) : [];
+    return deliveredWithoutVerdict({ folder, before, after, exitCode: exit.exitCode, scope: sub.scope, names });
+  }
   function reconcile(mega) {
     const row = rowFor(mega.projectId, mega.id);
     for (const sub of subtasks(mega).filter(sub => sub.status === 'RUNNING')) {
@@ -163,11 +322,63 @@ function createExecutionBridge(options) {
       const result = readValidatedResult(part.structuredResultPath, identity(mega, sub, part.attemptId), part.exitPath);
       const valid = result && (sub.type !== 'RESEARCH' || result.status !== 'COMPLETE' || reportExists(result, part.folder));
       if (!valid && rerouteRefusal(mega, sub, part)) continue;
-      collect(mega, sub, part, valid ? result : technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
+      if (!valid) {
+        const delivered = deliveryOf(mega, sub, part) || committedSince(mega, part);
+        if (delivered) { collect(mega, sub, part, technical(mega, sub, part, 'COMPLETE', delivered.summary, delivered)); continue; }
+        if (rerouteNoVerdict(mega, sub, part)) continue;
+        collect(mega, sub, part, technical(mega, sub, part, 'FAILED', 'Worker process ended without a valid structured result and exit evidence.'));
+        continue;
+      }
+      collect(mega, sub, part, result);
     }
     row.workerAlive = (row.dispatch || []).some(part => part.alive);
     row.monitoring = { ...row.monitoring, workers: (row.dispatch || []).filter(part => part.pid).length, alive: (row.dispatch || []).filter(part => part.alive).length };
     return subtasks(mega);
+  }
+  function takeoverText(sub) {
+    const note = sub.takeover;
+    if (!note) return '';
+    const lines = [`HANDOFF: you take over this step from ${note.fromModelId}, which was stopped before finishing.`,
+      'Continue from the current state of the project folder. Do not start over: first look at what is already there (git status and the files below), keep what works, then finish the step.'];
+    if (note.filesChanged.length) lines.push('Files it changed: ' + note.filesChanged.join(', '));
+    if (note.tests.length) lines.push('Tests it reported: ' + note.tests.map(test => typeof test === 'string' ? test : [test.command, test.status].filter(Boolean).join(' ')).join('; '));
+    if (note.summary) lines.push('Its last report: ' + note.summary);
+    if (note.logTail) lines.push('Its last activity (log tail):\n' + note.logTail);
+    return lines.join('\n') + '\n\n';
+  }
+  function parallelBuilds(mega) {
+    if (mega.activeGroup?.length) return subtasks(mega).filter(sub => mega.activeGroup.includes(sub.id));
+    const ready = subtasks(mega).filter(sub => sub.status === 'PENDING' && sub.type === 'IMPLEMENTATION' && stepRole(sub) === 'Build'
+      && sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE' && (!(mega.worktreeParts || []).some(part => part.subId === id) || mega.integratedSubIds?.includes(id))));
+    return ready.length > 1 ? ready : [];
+  }
+  function allIntegrated(mega) { return !mega.activeGroup?.length && (mega.worktreeParts || []).every(part => mega.integratedSubIds?.includes(part.subId)); }
+  function integrateParts(item, mega) {
+    const group = mega.activeGroup || [];
+    if (!group.length || mega.awaitingIntegration) return;
+    if (!group.every(id => subtasks(mega).find(sub => sub.id === id)?.status === 'COMPLETE')) return;
+    const parts = (mega.worktreeParts || []).filter(part => group.includes(part.subId));
+    if (!parts.length) { mega.activeGroup = null; return; }
+    if (parts.length !== group.length) return;
+    const result = worktrees.integrate({ folder: item.project.folder, parts });
+    if (result.ok) { mega.integratedSubIds = [...new Set([...(mega.integratedSubIds || []), ...group])]; mega.activeGroup = null;
+      event(mega.projectId, 'PARTS_INTEGRATED', `Integrated ${parts.length} part branches.`, { megaTaskId: mega.id }); return; }
+    const subs = subtasks(mega);
+    const existing = subs.find(sub => sub.type === 'INTEGRATION');
+    const id = existing?.id || `${mega.id}-ST-${String(subs.length + 1).padStart(2, '0')}`;
+    const detail = `Integrate the part branches into the work branch in order: ${parts.map(part => part.branch).join(', ')}. `
+      + `The merge of ${result.branch || 'the parts'} stopped. Conflicting files: ${(result.conflicts || []).join(', ') || 'none reported'}. ${result.reason} `
+      + 'Resolve the conflict in the project folder, commit the integration, and report the result. Keep every part branch until integration succeeds.';
+    if (existing) Object.assign(existing, { detail, status: 'PENDING' });
+    else {
+      const source = parts.map(part => subs.find(sub => sub.id === part.subId)).at(-1);
+      data.subTasks.push({ id, megaTaskId: mega.id, title: 'Integrate parallel parts', detail, status: 'PENDING', assignedModelId: source.assignedModelId,
+        attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: 'INTEGRATION', dependencies: parts.map(part => part.subId),
+        proposedProvider: source.proposedProvider, proposedCli: source.proposedCli, provider: null, cli: null });
+    }
+    for (const sub of subs) if (sub.status === 'PENDING' && sub.id !== id && !sub.dependencies.includes(id)) sub.dependencies.push(id);
+    mega.awaitingIntegration = true;
+    event(mega.projectId, 'PARTS_CONFLICT', detail, { megaTaskId: mega.id, subTaskId: id });
   }
   function launch(item, job, mega, sub) {
     const row = rowFor(mega.projectId, mega.id);
@@ -177,20 +388,45 @@ function createExecutionBridge(options) {
     if (worker && worker.id !== sub.assignedModelId) {
       const from = sub.assignedModelId;
       sub.fallbackFrom = from; sub.assignedModelId = worker.id; sub.proposedProvider = worker.provider; sub.proposedCli = worker.cli;
-      event(mega.projectId, 'MODEL_USAGE_FALLBACK', 'Usage limit: switched from ' + from + ' to ' + worker.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: worker.id });
+      event(mega.projectId, 'MODEL_USAGE_FALLBACK', 'Switched from ' + from + ' to ' + worker.id + ': the assigned model is out of quota, disabled or no longer has this role.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: worker.id });
       persist();
     }
-    if (!worker || typeof spawnWorker !== 'function' || options.workerEligible && !options.workerEligible(worker, sub)) { sub.status = 'BLOCKED'; mega.nextAction = `Enable the exact worker ${sub.assignedModelId}, verify its remaining quota, and resume.`; return; }
+    if (!worker || typeof spawnWorker !== 'function' || options.workerEligible && !options.workerEligible(worker, sub)) {
+      // No model of the crew has quota: the step waits and starts by itself when one has. Anything else blocks it with the reason.
+      const why = typeof spawnWorker === 'function' && options.explainNoWorker ? options.explainNoWorker(requested, sub) : null;
+      if (why?.waiting) { sub.status = 'PENDING'; sub.waitingFor = why.message; mega.nextAction = why.message; return; }
+      sub.status = 'BLOCKED'; sub.waitingFor = null;
+      mega.nextAction = why?.message || `Enable the exact worker ${sub.assignedModelId}, verify its remaining quota, and resume.`;
+      return;
+    }
+    sub.waitingFor = null;
     if (worker.provider !== sub.proposedProvider || worker.cli !== sub.proposedCli) { sub.status = 'BLOCKED'; mega.nextAction = 'Review changed provider/model configuration and explicitly reassign this slice on Resume.'; return; }
     if (sub.type === 'RESEARCH' && !adapterFor(worker)?.sourceProtectedResearch) { sub.status = 'BLOCKED'; mega.nextAction = 'Source-protected research is not supported by this adapter.'; return; }
     const claim = attempts.claim({ taskId: sub.id, projectId: mega.detached ? 'research:' + mega.id : mega.projectId, modelId: worker.id, candidates: models(), megaTaskId: mega.id, subTaskId: sub.id, research: Boolean(mega.detached) });
     if (!claim.ok) { sub.status = 'BLOCKED'; mega.nextAction = claim.reason; return; }
     const attemptId = claim.attempt.id;
-    const folder = sub.type === 'RESEARCH' ? path.join(dir, 'research', mega.id, attemptId) : item.project.folder;
+    let folder = sub.type === 'RESEARCH' ? path.join(dir, 'research', mega.id, attemptId) : item.project.folder;
+    let worktree = null;
+    if (sub.type === 'IMPLEMENTATION' && parallelBuilds(mega).includes(sub) && worktrees.repository(item.project.folder)) {
+      try {
+        const workBranch = worktrees.git(item.project.folder, ['branch', '--show-current']);
+        worktree = worktrees.create({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, subId: sub.id,
+          index: subtasks(mega).indexOf(sub) + 1, workBranch });
+        if (worktree) {
+          folder = worktree.folder;
+          mega.worktreeParts ||= [];
+          if (!mega.worktreeParts.some(part => part.subId === sub.id)) mega.worktreeParts.push({ subId: sub.id, ...worktree });
+        }
+      } catch (error) {
+        const part = { attemptId, exitPath: '', logPath: '', structuredResultPath: '', projectFolder: item.project.folder, folder: item.project.folder };
+        collect(mega, sub, part, technical(mega, sub, part, 'FAILED', 'Worktree creation failed: ' + error.message));
+        return;
+      }
+    }
     if (sub.type === 'RESEARCH') fs.mkdirSync(folder, { recursive: true });
-    const part = { modelId: worker.id, label: worker.label, provider: worker.provider, cli: worker.cli, subTaskId: sub.id, megaTaskId: mega.id, attemptId, slice: sub.title,
+    const part = { projectFolder: item.project.folder, modelId: worker.id, label: worker.label, provider: worker.provider, cli: worker.cli, subTaskId: sub.id, megaTaskId: mega.id, attemptId, slice: sub.title,
       resultPath: path.join(dir, 'results', attemptId + '.txt'), structuredResultPath: path.join(dir, 'results', attemptId + '.json'), exitPath: path.join(dir, 'results', attemptId + '.exit.json'),
-      logPath: path.join(dir, 'logs', attemptId + '.log'), folder, pid: null, alive: false, startedAt: now(), sessionId: options.sessionId };
+      logPath: path.join(dir, 'logs', attemptId + '.log'), folder, ...(worktree ? { branch: worktree.branch, baseHead: worktrees.git(folder, ['rev-parse', 'HEAD']) } : {}), pid: null, alive: false, startedAt: now(), sessionId: options.sessionId };
     if (sub.type === 'RESEARCH') Object.assign(part, { resultPath: path.join(folder, 'result.txt'), structuredResultPath: path.join(folder, 'result.json'), exitPath: path.join(folder, 'exit.json') });
     fs.mkdirSync(path.dirname(part.resultPath), { recursive: true }); fs.writeFileSync(part.resultPath, 'STATUS: WATCHING\n');
     attempts.attachResult({ attemptId, resultPath: part.structuredResultPath });
@@ -202,7 +438,7 @@ function createExecutionBridge(options) {
     try {
       const handoff = { megaTask: mega, subTasks: subtasks(mega), results: data.results.filter(result => result.megaTaskId === mega.id), checkpoint: data.checkpoints.find(cp => cp.id === mega.currentCheckpointId), notes: (item.home?.notes || []).filter(note => note.aiRelevant === true) };
       const launched = spawnWorker({ ...part, linkedFolder: item.project.folder, projectId: mega.projectId, worker, ...identity(mega, sub, attemptId), job: { title: sub.title, kind: sub.type === 'RESEARCH' ? 'research' : sub.type === 'AUDIT' ? 'audit' : job.kind,
-        detail: `${job.detail}\n\nSubTask: ${sub.detail}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${item.project.folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
+        detail: `${takeoverText(sub)}${job.detail}\n\nSubTask: ${sub.detail}${scopeText(sub, Boolean(worktree))}\n\n${sub.type === 'RESEARCH' ? `Source project (read only for research): ${item.project.folder}` : `Project folder (work here): ${folder}`}\n\nDurable handoff:\n${JSON.stringify(handoff)}` } });
       if (!Number.isInteger(launched?.pid) || launched.pid <= 0) throw new Error('Worker did not start.');
       Object.assign(part, { pid: launched.pid, alive: true, observedAlive: true, logPath: launched.logPath || part.logPath });
       row.workerPid = part.pid; row.workerLog = part.logPath;
@@ -226,6 +462,11 @@ function createExecutionBridge(options) {
   }
   function paint(mega) {
     const row = rowFor(mega.projectId, mega.id), subs = subtasks(mega);
+    // Cancelled work is history: it never becomes, or stays, the project's current work.
+    if (mega.status === 'CANCELLED') {
+      if (!row.megaTaskId || row.megaTaskId === mega.id) Object.assign(row, { jobId: null, megaTaskId: null, megaTask: null, subTasks: [], dispatch: [], status: 'idle' });
+      return;
+    }
     row.jobId = mega.taskId; row.jobTitle = mega.title; row.jobFingerprint = mega.jobFingerprint; row.jobRevisionId = mega.planRevisionId;
     row.megaTaskId = mega.id; row.megaTask = clone(mega); row.subTasks = clone(subs);
     row.status = { READY_FOR_APPROVAL: 'needs_approval', RUNNING: 'watching', PAUSED: 'checkpointed', COMPLETE: 'complete', FAILED: 'failed', CANCELLED: 'idle' }[mega.status] || 'idle';
@@ -247,7 +488,15 @@ function createExecutionBridge(options) {
     mega.repoAfter.commitIds = observedCommits(item.project.folder, mega.repoBefore.repoHead, mega.repoAfter.repoHead);
     mega.repoAfter.sourceChangesObserved = mega.repoAfter.gitReadable && mega.repoAfter.fingerprint && mega.repoBefore.fingerprint ? mega.repoAfter.fingerprint !== mega.repoBefore.fingerprint : null;
     mega.nextAction = data.results.filter(result => result.megaTaskId === mega.id).at(-1)?.nextAction || 'Review the completed results.';
+    if (mega.worktreeParts?.length) {
+      try { worktrees.cleanup({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, parts: mega.worktreeParts }); }
+      catch (error) { mega.nextAction = `Completed; worktree cleanup needs attention: ${error.message}`; }
+    }
     event(mega.projectId, 'MEGATASK_COMPLETED', `Completed ${mega.title}. ${mega.repoAfter.disposition}.`, { megaTaskId: mega.id });
+    try {
+      const summary = data.results.filter(result => result.megaTaskId === mega.id && result.status === 'COMPLETE').map(result => result.summary).filter(Boolean).slice(-3).join(' ') || mega.title;
+      planFile.finish(item.project.folder, { summary, pushed: planFile.pushed(item.project.folder) });
+    } catch { /* the mega task is already complete */ }
     if (mega.repoAfter.repoHead && mega.repoAfter.repoHead !== mega.repoBefore.repoHead) event(mega.projectId, 'GIT_COMMIT_OBSERVED', `Repository HEAD changed: ${mega.repoAfter.repoHead}`, { megaTaskId: mega.id, repoHead: mega.repoAfter.repoHead }, `commit:${mega.projectId}:${mega.repoAfter.repoHead}`);
   }
   function enforceDeadline(item, job, mega) {
@@ -269,30 +518,40 @@ function createExecutionBridge(options) {
   }
   function advance(item, job, parts, schedule = true) {
     observe(item);
-    const mega = propose(item, job, parts), subs = reconcile(mega);
+    const mega = propose(item, job, parts);
+    let subs = reconcile(mega);
     if (mega.status === 'RUNNING') {
       if (deadlineDue(mega)) {
-        if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+        if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
         // Read-only projections reconcile evidence but never terminate processes.
         else if (schedule) enforceDeadline(item, job, mega);
       } else if (subs.some(sub => sub.status === 'FAILED')) {
         mega.pauseRequested = true; mega.nextAction = 'Review failed results and resume only the remaining work.';
         if (!subs.some(sub => sub.status === 'RUNNING')) { checkpoint(item, job, mega, 'worker failure'); mega.status = 'FAILED'; }
       } else if (mega.pauseRequested) {
-        if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+        if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
         else if (!subs.some(sub => sub.status === 'RUNNING')) checkpoint(item, job, mega, 'pause after current tasks');
       } else if (mega.authorizedSessionId !== options.sessionId && !subs.some(sub => sub.status === 'RUNNING') && subs.some(sub => sub.status !== 'COMPLETE')) {
         mega.nextAction = 'Resume the remaining work explicitly after backend restart.';
         checkpoint(item, job, mega, 'backend restarted');
       } else {
+        if (schedule && !subs.some(sub => sub.status === 'FAILED')) integrateParts(item, mega);
+        subs = subtasks(mega);
+        if (schedule && !mega.activeGroup?.length) {
+          const group = parallelBuilds(mega);
+          if (group.length) mega.activeGroup = group.map(sub => sub.id);
+        }
         for (const sub of schedule ? subs.filter(sub => sub.status === 'PENDING') : []) {
+          if (mega.activeGroup?.length && !mega.activeGroup.includes(sub.id) && sub.type !== 'INTEGRATION') continue;
+          if (sub.type !== 'INTEGRATION' && sub.dependencies.some(id => (mega.worktreeParts || []).some(part => part.subId === id) && !mega.integratedSubIds?.includes(id))) continue;
+          if (stepRole(sub) === 'Verify' && subs.some(other => other.id !== sub.id && stepRole(other) === 'Build' && other.status !== 'COMPLETE')) continue;
           if (deadlineDue(mega)) { enforceDeadline(item, job, mega); break; }
-          if (subs.filter(sub => sub.status === 'RUNNING').length >= 3) break;
+          if (subs.filter(sub => sub.status === 'RUNNING').length >= MAX_PARALLEL) break;
           if (sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE')) launch(item, job, mega, sub);
         }
         reconcile(mega);
         if (mega.status === 'RUNNING' && !deadlineDue(mega)) {
-          if (subs.every(sub => sub.status === 'COMPLETE')) complete(item, mega);
+          if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
           else if (subs.some(sub => sub.status === 'BLOCKED') && !subs.some(sub => sub.status === 'RUNNING')) checkpoint(item, job, mega, 'blocked worker');
         }
       }
@@ -383,6 +642,12 @@ function createExecutionBridge(options) {
     mega.nextAction = 'Finish other active slices, then resume remaining work from the checkpoint.';
     persist(); return mega;
   }
+  function dropWork(item, megaTaskId) {
+    const mega = target(item.project.id, megaTaskId);
+    if (subtasks(mega).some(sub => sub.status === 'RUNNING')) throw new Error('Stop every worker before dropping its worktrees.');
+    if (mega.worktreeParts?.length) worktrees.cleanup({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, parts: mega.worktreeParts, discardBranches: true });
+    return mega;
+  }
   function view(projectId) {
     const megas = data.megaTasks.filter(mega => mega.projectId === projectId);
     const ids = new Set(megas.map(mega => mega.id));
@@ -417,6 +682,32 @@ function createExecutionBridge(options) {
     paint(mega); persist(); return mega;
   }
   // The lead may reassign the slices of a proposed MegaTask before approval.
+  // The lead's own split replaces the proposed steps, before anything has started: the parts it named,
+  // each with the files it may change, then one check of the whole work.
+  function replan(projectId, megaTaskId, parts, why = '') {
+    const mega = target(projectId, megaTaskId);
+    if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposal that has not started can be split again.');
+    const old = data.subTasks.filter(sub => sub.megaTaskId === mega.id);
+    if (old.some(sub => sub.status !== 'PENDING' || sub.attemptIds?.length)) throw new Error('A step of this proposal already ran.');
+    const ids = parts.map((_, index) => `${mega.id}-ST-${String(index + 1).padStart(2, '0')}`);
+    const type = old[0]?.type || 'IMPLEMENTATION';
+    const subs = parts.map((part, index) => {
+      const model = models().find(item => item.id === part.modelId);
+      if (!model) throw new Error('Model not present: ' + part.modelId);
+      return { id: ids[index], megaTaskId: mega.id, title: part.slice, detail: part.detail || part.slice, status: 'PENDING', assignedModelId: model.id,
+        attemptIds: [], resultId: null, createdAt: now(), completedAt: null, type: part.type || type,
+        dependencies: (part.dependsOn || []).map(parent => { if (!Number.isInteger(parent) || parent < 0 || parent >= index) throw new Error('Dependencies must reference an earlier SubTask in the same MegaTask.'); return ids[parent]; }),
+        proposedProvider: model.provider || null, proposedCli: model.cli || null, provider: null, cli: null,
+        ...(Array.isArray(part.scope) && part.scope.length ? { scope: [...part.scope] } : {}), ...(part.size ? { size: part.size } : {}) };
+    });
+    data.subTasks = data.subTasks.filter(sub => sub.megaTaskId !== mega.id).concat(subs);
+    mega.blockers = proposalBlockers(mega);
+    const built = subs.filter(sub => sub.scope);
+    event(projectId, 'MEGATASK_PROPOSED', `Lead split the work into ${built.length} part${built.length === 1 ? '' : 's'}${subs.length > built.length ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${models().find(item => item.id === sub.assignedModelId)?.label || sub.assignedModelId})`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId: mega.id });
+    persist();
+    return paint(mega);
+  }
+
   function reassign(projectId, megaTaskId, modelIds, why = '') {
     const mega = target(projectId, megaTaskId);
     if (mega.status !== 'READY_FOR_APPROVAL') throw new Error('Only a proposed MegaTask can be reassigned.');
@@ -430,10 +721,66 @@ function createExecutionBridge(options) {
     if (subs.every((sub, index) => sub.assignedModelId === chosen[index].id)) return mega;
     subs.forEach((sub, index) => Object.assign(sub, { assignedModelId: chosen[index].id, proposedProvider: chosen[index].provider, proposedCli: chosen[index].cli }));
     mega.blockers = proposalBlockers(mega);
-    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${subs.map((sub, index) => `${sub.title} to ${chosen[index].label || chosen[index].id}`).join('; ')}.${why ? ' ' + why : ''}`, { megaTaskId });
+    // Short and readable: the role of each step and its model, then the lead's reason in full.
+    event(projectId, 'MEGATASK_ASSIGNED', `Lead assigned ${subs.map((sub, index) => `${stepRole(sub)}: ${chosen[index].label || chosen[index].id}`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId });
     paint(mega); persist();
     return mega;
   }
-  return { propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign };
+  // The lead may change the models of slices not yet done, in proposed or stopped work, within the user's roles.
+  // The last lines of a worker log, small enough to hand to the next model.
+  function logTail(file, max = 3000) {
+    try { const text = fs.readFileSync(file, 'utf8'); return text.slice(-max).split('\n').slice(1).join('\n').trim(); } catch { return ''; }
+  }
+  // by: who changed the crew, as the chat says it: the lead, the user, or Planwharf's automatic switch.
+  function reassignRemaining(projectId, megaTaskId, assignments, why = '', by = 'lead') {
+    const mega = target(projectId, megaTaskId);
+    reconcile(mega);
+    if (['COMPLETE', 'CANCELLED'].includes(mega.status)) throw new Error(`This work is ${mega.status.toLowerCase()}: start new work instead.`);
+    if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments) || !Object.keys(assignments).length) throw new Error('Name at least one step and its model.');
+    const changes = Object.entries(assignments).map(([id, modelId]) => {
+      const sub = subtasks(mega).find(item => item.id === id && item.status !== 'COMPLETE');
+      if (!sub) throw new Error(`Step ${id} is not a remaining step of this work.`);
+      const model = models().find(item => item.id === modelId && item.enabled && item.available !== false);
+      if (!model || options.workerEligible && !options.workerEligible(model, sub)) throw new Error(`Model ${modelId} cannot take "${sub.title}": it must be enabled, have this role in Team and have quota.`);
+      return [sub, model];
+    });
+    // A step that is working stops its worker first; it then restarts with the new model. Files it wrote stay.
+    for (const [sub, model] of changes.filter(([sub]) => sub.status === 'RUNNING')) {
+      const part = rowFor(mega.projectId, mega.id).dispatch.find(item => item.subTaskId === sub.id && item.alive);
+      if (!part) continue;
+      if (!killWorker?.(part.pid) || isProcessAlive?.(part.pid)) throw new Error(`Could not stop the worker of "${sub.title}"; its model was not changed.`);
+      part.alive = false; part.observedAlive = false;
+      const partial = readJSON(part.structuredResultPath);
+      collect(mega, sub, part, { ...technical(mega, sub, part, 'BLOCKED', `Model changed to ${model.label || model.id}; the step restarts with it.`, validateResult(partial, identity(mega, sub, part.attemptId)) ? partial : null), modelChange: true });
+      mega.interruptedAttemptIds = [...(mega.interruptedAttemptIds || []), part.attemptId];
+    }
+    for (const [sub, model] of changes) {
+      // A step that already worked hands over to the new model: who worked on it, what it changed, its last activity.
+      const last = (rowFor(mega.projectId, mega.id).dispatch || []).find(item => item.subTaskId === sub.id);
+      if (sub.attemptIds?.length && sub.assignedModelId !== model.id) {
+        const result = data.results.filter(item => item.subTaskId === sub.id).at(-1);
+        sub.takeover = { fromModelId: sub.assignedModelId, at: now(), filesChanged: result?.filesChanged || [], tests: result?.tests || [], summary: result?.summary || '', logTail: last?.logPath ? logTail(last.logPath) : '' };
+      }
+      Object.assign(sub, { assignedModelId: model.id, proposedProvider: model.provider, proposedCli: model.cli, ...(['BLOCKED', 'RUNNING'].includes(sub.status) ? { status: 'PENDING', resultId: null } : {}) });
+    }
+    if (mega.status === 'READY_FOR_APPROVAL') mega.blockers = proposalBlockers(mega);
+    const who = by === 'user' ? 'You assigned' : by === 'auto' ? 'Planwharf switched' : 'Lead assigned';
+    event(projectId, 'MEGATASK_ASSIGNED', `${who} ${changes.map(([sub, model]) => `${stepRole(sub)}: ${model.label || model.id}`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId });
+    paint(mega); persist();
+    return mega;
+  }
+  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork };
 }
-module.exports = { createExecutionBridge, repoState };
+function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
+function readStepTimes(dir) {
+  if (!dir) return [];
+  try { return timeLeft.parseHistory(fs.readFileSync(stepTimesFile(dir), 'utf8')); }
+  catch { return []; }
+}
+function appendStepTime(dir, record) {
+  if (!dir || !record) return;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
+}
+function noVerdictPlan(tries) { return tries >= 2 ? 'stop' : tries === 1 ? 'switch' : 'retry-same'; }
+module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };

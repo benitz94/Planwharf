@@ -1,8 +1,0 @@
-{
-  "file": "engine/conversation-history.test.cjs",
-  "command": "node engine/conversation-history.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "OK: all 45+ conversation exchanges preserved, with six recent turns sent chronologically across answer, cancellation, and reload.\n",
-  "stderr": ""
-}

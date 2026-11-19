@@ -1,8 +1,0 @@
-{
-  "file": "engine/model-roles.test.cjs",
-  "command": "node engine/model-roles.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "✔ user role permissions constrain routing independently of model capability (1.0075ms)\n✔ role settings persist, incompatible roles are rejected, exact audit/implementation assignments honor flags (236.2345ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 239.8799\n",
-  "stderr": ""
-}

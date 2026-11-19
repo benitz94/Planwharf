@@ -1,0 +1,47 @@
+[
+  {
+    "fakeAs": "grok",
+    "argContains": "models",
+    "stdout": [
+      "Available Grok models for active session:",
+      "  - grok-4.7 (default, code & reasoning)",
+      "  - grok-beta (preview)",
+      "  - grok-code-fast"
+    ]
+  },
+  {
+    "fakeAs": "grok",
+    "argContains": "fail",
+    "stderr": "Error: Compilation failed with 3 errors in project files. Aborting worker task.",
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "grok",
+    "argContains": "quota",
+    "stderr": "Error: Monthly credit spending limit reached. Rate limit or quota exhausted for model grok-4.7.",
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "grok",
+    "argContains": "--result",
+    "files": [
+      {
+        "pathAfterArg": "--result",
+        "content": "{\"resultId\":\"R-attempt-3\",\"attemptId\":\"attempt-3\",\"subTaskId\":\"MT-03-ST-01\",\"megaTaskId\":\"MT-03\",\"status\":\"COMPLETE\",\"summary\":\"Grok worker finished the requested implementation and passed all tests.\",\"filesChanged\":[\"src/Core.cs\",\"tests/CoreTests.cs\"],\"tests\":[{\"command\":\"dotnet test\",\"status\":\"PASSED\",\"evidence\":\"Total tests: 12. Passed: 12. Failed: 0.\"}],\"blockers\":[],\"nextAction\":\"Ready for integration.\"}"
+      }
+    ],
+    "stdout": "Completed task. All tests passed."
+  },
+  {
+    "fakeAs": "grok",
+    "argContains": "streaming-messages-json",
+    "stdout": [
+      "{\"type\":\"stream_event\",\"event\":{\"delta\":{\"type\":\"text_delta\",\"text\":\"Assessed repository state. Task assignments are ready.\\n\"}}}",
+      "{\"type\":\"result\",\"duration_ms\":1450,\"result\":\"Assessed repository state. Task assignments are ready.\\n\"}"
+    ]
+  },
+  {
+    "fakeAs": "grok",
+    "stdout": "Completed task."
+  }
+]

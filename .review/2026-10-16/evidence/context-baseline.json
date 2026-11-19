@@ -1,8 +1,0 @@
-{
-  "command": "node evidence/check-context-baseline.cjs",
-  "firstOk": true,
-  "secondOk": true,
-  "projectAlphaHistoryReachedBeta": true,
-  "fixtureOnly": true,
-  "liveProviderCalls": 0
-}

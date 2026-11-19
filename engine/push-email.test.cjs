@@ -1,0 +1,195 @@
+'use strict';
+// A push refused for a private email (GH007) is not a dead end: the commits not yet on GitHub take the
+// owner's noreply address and the push goes through. A local remote plays GitHub with a pre-receive hook.
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const { privateEmailRefused, githubNoreply, useNoreply, HOW_TO } = require('./push-email.cjs');
+
+const NOREPLY = '123+owner@users.noreply.github.com';
+const env = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))), GIT_AUTHOR_NAME: 'Owner', GIT_COMMITTER_NAME: 'Owner' };
+const git = (cwd, args) => spawnSync('git', args, { cwd, encoding: 'utf8', env, windowsHide: true });
+const run = cwd => async args => { const r = git(cwd, args); return { status: r.status, stdout: r.stdout || '', stderr: r.stderr || '' }; };
+
+function fixture(t) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-email-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const remote = path.join(dir, 'remote.git'), work = path.join(dir, 'work');
+  git(dir, ['init', '--bare', '-q', '-b', 'main', remote]);
+  // Like GitHub: refuse any pushed commit whose author or committer is not the noreply address.
+  const hook = path.join(remote, 'hooks', 'pre-receive');
+  fs.writeFileSync(hook, `#!/bin/sh
+while read old new ref; do
+  for c in $(git rev-list "$new" --not --all); do
+    a=$(git log -1 --format=%ae "$c"); m=$(git log -1 --format=%ce "$c")
+    if [ "$a" != "${NOREPLY}" ] || [ "$m" != "${NOREPLY}" ]; then echo "remote: error: GH007: Your push would publish a private email address." >&2; exit 1; fi
+  done
+done
+`);
+  fs.chmodSync(hook, 0o755);
+  git(dir, ['clone', '-q', remote, work]);
+  git(work, ['config', 'core.autocrlf', 'false']);
+  git(work, ['config', 'user.email', NOREPLY]);
+  fs.writeFileSync(path.join(work, 'a.txt'), 'a\n');
+  git(work, ['add', '-A']); git(work, ['commit', '-q', '-m', 'first']);
+  assert.equal(git(work, ['push', '-q', 'origin', 'HEAD:main']).status, 0, 'the first commit has the noreply address');
+  git(work, ['switch', '-q', '-c', 'feature']);
+  git(work, ['config', 'user.email', 'owner@private.example']);
+  for (const name of ['b', 'c']) { fs.writeFileSync(path.join(work, name + '.txt'), name + '\n'); git(work, ['add', '-A']); git(work, ['commit', '-q', '-m', name]); }
+  fs.writeFileSync(path.join(work, 'windows.txt'), 'windows\r\n');
+  git(work, ['add', '-A']); git(work, ['commit', '--amend', '--no-edit', '-q']);
+  return { remote, work };
+}
+
+test('a push refused for a private email goes through once the new commits use the noreply address', async t => {
+  const { work } = fixture(t);
+  const refused = git(work, ['push', '-u', 'origin', 'HEAD']);
+  assert.notEqual(refused.status, 0);
+  assert.equal(privateEmailRefused(refused.stderr), true);
+  const before = git(work, ['rev-parse', 'origin/main']).stdout.trim();
+  const fixed = await useNoreply(run(work), NOREPLY);
+  assert.deepEqual(fixed, { ok: true, rewritten: 2 });
+  assert.deepEqual(git(work, ['log', '-3', '--format=%ae %ce %s']).stdout.trim().split('\n'), [`${NOREPLY} ${NOREPLY} c`, `${NOREPLY} ${NOREPLY} b`, `${NOREPLY} ${NOREPLY} first`]);
+  assert.equal(git(work, ['rev-parse', 'HEAD~2']).stdout.trim(), before, 'the commit already on the remote is not rewritten');
+  assert.equal(fs.readFileSync(path.join(work, 'c.txt'), 'utf8'), 'c\n', 'the files are unchanged');
+  assert.equal(fs.readFileSync(path.join(work, 'windows.txt'), 'utf8'), 'windows\r\n', 'CRLF files are unchanged');
+  assert.equal(git(work, ['config', 'user.email']).stdout.trim(), NOREPLY, 'later commits use it too');
+  assert.equal(git(work, ['push', '-u', 'origin', 'HEAD']).status, 0);
+});
+
+test('the noreply address is read from the GitHub CLI, and nothing else is accepted', async () => {
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: NOREPLY + '\n' })), NOREPLY);
+  assert.equal(await githubNoreply(async () => ({ status: 1, stdout: '' })), null, 'not signed in');
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: 'owner@private.example' })), null);
+  assert.equal(privateEmailRefused('rejected: non-fast-forward'), false);
+});
+
+test('a refused rewrite preserves dirty bytes and can be retried after the edit is saved', async t => {
+  const { work } = fixture(t);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  const file = path.join(work, 'windows.txt');
+  fs.writeFileSync(file, 'unsaved\r\n');
+  assert.equal((await useNoreply(run(work), NOREPLY)).ok, false);
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'unsaved\r\n');
+  assert.equal(git(work, ['config', 'user.email']).stdout.trim(), NOREPLY);
+  assert.equal(git(work, ['add', 'windows.txt']).status, 0);
+  assert.equal(git(work, ['commit', '-q', '-m', 'save edit']).status, 0);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 3 });
+  assert.equal(fs.readFileSync(file, 'utf8'), 'unsaved\r\n');
+});
+
+test('an amend hook failure aborts the rewrite and a later retry succeeds', async t => {
+  const { work } = fixture(t);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  const tree = git(work, ['rev-parse', 'HEAD^{tree}']).stdout.trim();
+  const hook = path.join(work, '.git', 'hooks', 'pre-commit');
+  fs.writeFileSync(hook, '#!/bin/sh\nexit 1\n');
+  fs.chmodSync(hook, 0o755);
+  assert.equal((await useNoreply(run(work), NOREPLY)).ok, false);
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+  assert.equal(git(work, ['status', '--porcelain']).stdout, '');
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-merge')), false);
+  fs.unlinkSync(hook);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(git(work, ['rev-parse', 'HEAD^{tree}']).stdout.trim(), tree);
+  assert.equal(fs.readFileSync(path.join(work, 'windows.txt'), 'utf8'), 'windows\r\n');
+});
+
+test('already published commits are unchanged on a repeated email repair', async t => {
+  const { work } = fixture(t);
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(git(work, ['push', '-u', 'origin', 'HEAD']).status, 0);
+  const before = git(work, ['rev-parse', 'HEAD']).stdout.trim();
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 0 });
+  assert.equal(git(work, ['rev-parse', 'HEAD']).stdout.trim(), before);
+});
+
+test('GH007 detection and noreply parsing cover empty, CRLF, quotes and non-word matches', async () => {
+  assert.equal(privateEmailRefused(), false);
+  assert.equal(privateEmailRefused(''), false);
+  assert.equal(privateEmailRefused('remote: error: GH007: Your push would publish a private email address.'), true);
+  assert.equal(privateEmailRefused('stdout only\nGH007\n'), true);
+  assert.equal(privateEmailRefused('xGH007'), false);
+  assert.equal(privateEmailRefused('gh007'), false);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: NOREPLY + '\r\n' })), NOREPLY);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '  ' + NOREPLY + '  ' })), NOREPLY);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '"' + NOREPLY + '"' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0 })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: NOREPLY + ' extra' })), null);
+  assert.equal(await githubNoreply(async () => ({ status: 0, stdout: '012+user_name@users.noreply.github.com' })), null);
+  assert.match(HOW_TO, /noreply\.github\.com/);
+});
+
+test('useNoreply reports config and rev-list failures without rewriting', async () => {
+  const calls = [];
+  assert.deepEqual(await useNoreply(async args => {
+    calls.push(args);
+    return { status: 1, stdout: '', stderr: 'config denied' };
+  }, NOREPLY), { ok: false, reason: 'Could not set the GitHub noreply email for this project.' });
+  assert.deepEqual(calls, [['config', 'user.email', NOREPLY]]);
+  assert.deepEqual(await useNoreply(async args => {
+    if (args[0] === 'config') return { status: 0, stdout: '', stderr: '' };
+    if (args[0] === 'rev-list') return { status: 1, stdout: '', stderr: 'rev-list failed' };
+    throw new Error('unexpected ' + args.join(' '));
+  }, NOREPLY), { ok: false, reason: 'Could not list the commits not yet on GitHub.' });
+});
+
+test('the first unpublished commit is rewritten from the root', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-email-root-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  git(dir, ['init', '-q', '-b', 'main']);
+  git(dir, ['config', 'core.autocrlf', 'false']);
+  git(dir, ['config', 'user.email', 'owner@private.example']);
+  git(dir, ['config', 'user.name', 'Owner']);
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');
+  git(dir, ['add', '-A']); git(dir, ['commit', '-q', '-m', 'first']);
+  assert.deepEqual(await useNoreply(run(dir), NOREPLY), { ok: true, rewritten: 1 });
+  assert.equal(git(dir, ['log', '-1', '--format=%ae %ce %s']).stdout.trim(), `${NOREPLY} ${NOREPLY} first`);
+  assert.equal(fs.readFileSync(path.join(dir, 'a.txt'), 'utf8'), 'a\n');
+});
+
+test('untracked files survive a successful rewrite', async t => {
+  const { work } = fixture(t);
+  const stray = path.join(work, 'stray.txt');
+  fs.writeFileSync(stray, 'keep me\n');
+  assert.deepEqual(await useNoreply(run(work), NOREPLY), { ok: true, rewritten: 2 });
+  assert.equal(fs.readFileSync(stray, 'utf8'), 'keep me\n');
+});
+
+test('concurrent rewrites leave the repository usable for a retry', async t => {
+  const { work } = fixture(t);
+  await Promise.all([useNoreply(run(work), NOREPLY), useNoreply(run(work), NOREPLY)]);
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-merge')), false);
+  assert.equal(fs.existsSync(path.join(work, '.git', 'rebase-apply')), false);
+  const retry = await useNoreply(run(work), NOREPLY);
+  assert.equal(retry.ok, true);
+  assert.equal(git(work, ['log', '-1', '--format=%ae']).stdout.trim(), NOREPLY);
+  assert.equal(fs.readFileSync(path.join(work, 'c.txt'), 'utf8'), 'c\n');
+});
+
+test('a folder with spaces and a non-ASCII name still rewrites unpublished commits', async t => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-email-'));
+  t.after(() => fs.rmSync(parent, { recursive: true, force: true }));
+  const dir = path.join(parent, 'città work');
+  fs.mkdirSync(dir);
+  git(dir, ['init', '-q', '-b', 'main']);
+  git(dir, ['config', 'core.autocrlf', 'false']);
+  git(dir, ['config', 'user.email', 'owner@private.example']);
+  git(dir, ['config', 'user.name', 'Owner']);
+  fs.writeFileSync(path.join(dir, 'a.txt'), 'a\n');
+  git(dir, ['add', '-A']); git(dir, ['commit', '-q', '-m', 'first']);
+  assert.deepEqual(await useNoreply(run(dir), NOREPLY), { ok: true, rewritten: 1 });
+  assert.equal(git(dir, ['log', '-1', '--format=%ae']).stdout.trim(), NOREPLY);
+});
+
+test('a long summary keeps its "Needs your decision" line whole', () => {
+  const { clipSummary } = require('./orchestrator.js');
+  const long = 'Verified the work. ' + 'Added tests for edge cases. '.repeat(30) + '\nNeeds your decision: keep the snapshot test pinned to 16/11?';
+  const clipped = clipSummary(long);
+  assert.ok(clipped.length < long.length);
+  assert.match(clipped, /\nNeeds your decision: keep the snapshot test pinned to 16\/11\?$/);
+  assert.equal(clipSummary('Short.'), 'Short.');
+});

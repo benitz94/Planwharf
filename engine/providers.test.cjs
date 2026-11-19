@@ -53,13 +53,13 @@ if (process.platform === 'win32') {
   fs.rmSync(dir, { recursive: true, force: true });
 }
 for (const provider of ['grok', 'codex', 'antigravity']) process.env['PLANWHARF_' + provider.toUpperCase()] = process.execPath;
-const grok = launchSpec({ provider: 'grok', cli: 'grok-4.6' }, 'D:/demo folder', 'job');
+const grok = launchSpec({ provider: 'grok', cli: 'grok-4.6', alwaysApprove: true }, 'D:/demo folder', 'job');
 assert.equal(grok.args[grok.args.indexOf('-m') + 1], 'grok-4.6');
 assert.ok(!grok.args.includes('-p'));
 assert.equal(fs.readFileSync(grok.promptFile, 'utf8'), 'job');
 assert.ok(grok.args.includes('--always-approve'));
 assert.ok(grok.args.includes('--no-subagents'));
-const agy = launchSpec({ provider: 'antigravity', cli: 'gemini-3.1-pro-high' }, 'D:/demo', 'job');
+const agy = launchSpec({ provider: 'antigravity', cli: 'gemini-3.1-pro-high', alwaysApprove: true }, 'D:/demo', 'job');
 assert.ok(agy.args.includes('--dangerously-skip-permissions'));
 assert.equal(agy.cwd, 'D:/demo');
 assert.ok(!agy.args.includes('--cwd'));
@@ -67,7 +67,7 @@ assert.ok(!agy.args.includes('-p'));
 assert.equal(agy.args[agy.args.indexOf('--input-format') + 1], 'stream-json');
 assert.equal(JSON.parse(agy.stdin).message.content, 'job');
 assert.equal(JSON.parse(agy.stdin).event, 'user');
-const codex = launchSpec({ provider: 'codex', cli: 'gpt-6-astra' }, 'D:/demo', 'job');
+const codex = launchSpec({ provider: 'codex', cli: 'gpt-6-astra', alwaysApprove: true }, 'D:/demo', 'job');
 assert.equal(codex.args[0], 'exec');
 assert.ok(codex.args.includes('--dangerously-bypass-approvals-and-sandbox'));
 assert.equal(codex.args.at(-1), '-');
@@ -78,7 +78,10 @@ assert.ok(agy.stdin.endsWith('\n'));
 for (const model of [{ provider: 'codex', cli: 'grok-4.7' }, { provider: 'grok', cli: 'gemini-pro' }, { provider: 'antigravity', cli: 'grok-4.6' }, { provider: 'bogus', cli: 'gpt-5' }]) assert.throws(() => launchSpec(model, '.', 'job'), /mismatch/);
 assert.throws(() => launchSpec({ available: false, unavailableReason: 'Account unavailable' }, '.', 'job'), /Account unavailable/);
 for (const [provider, cli] of [['grok', 'grok-4.6'], ['codex', 'gpt-6-astra'], ['antigravity', 'gemini-3.1-pro-high']]) {
-  const lead = launchSpec({ provider, cli }, '.', 'Coordinate only', true);
+  // An approved lead runs as approved; without the OK it is restricted (Antigravity cannot run at all).
+  const lead = launchSpec({ provider, cli, alwaysApprove: true }, '.', 'Coordinate only', true);
+  if (provider === 'antigravity') assert.throws(() => launchSpec({ provider, cli }, '.', 'Coordinate only', true), /PERMISSION_MODE_UNSUPPORTED/);
+  else assert.ok(!launchSpec({ provider, cli }, '.', 'Coordinate only', true).args.includes(provider === 'grok' ? '--always-approve' : '--dangerously-bypass-approvals-and-sandbox'));
   assert.ok(lead.args.includes(provider === 'grok' ? '--always-approve' : provider === 'codex' ? '--dangerously-bypass-approvals-and-sandbox' : '--dangerously-skip-permissions'));
   assert.ok(!lead.args.includes('read-only'));
   assert.ok(!lead.args.includes('plan'));
@@ -97,6 +100,20 @@ zero.command.data.groups[0].buckets[1].remaining_fraction = 0;
 assert.equal(parseUsage(zero).exhausted, true);
 zero.command.data.groups[0].buckets[1].remaining_fraction = 0.0001;
 assert.equal(parseUsage(zero).exhausted, false);
+// The Claude and GPT models of Antigravity have their own quota: a pool apart from Gemini's.
+{
+  const { CLAUDE_GPT_POOL, poolOf } = require('./antigravity.cjs');
+  const other = parseUsage(fixture).extraPlans.find(plan => plan.id === CLAUDE_GPT_POOL);
+  assert.equal(other.readable, true);
+  assert.equal(other.windows.length, 2);
+  const spent = structuredClone(fixture);
+  for (const bucket of spent.command.data.groups.find(group => /Claude and GPT/.test(group.name)).buckets) bucket.remaining_fraction = 0;
+  assert.equal(parseUsage(spent).exhausted, false, 'Gemini keeps its own quota');
+  assert.equal(parseUsage(spent).extraPlans[0].exhausted, true, 'the Claude and GPT quota is spent');
+  assert.equal(poolOf('claude-opus-4-6-thinking', 'Gemini'), CLAUDE_GPT_POOL);
+  assert.equal(poolOf('gpt-oss-120b-medium', 'Gemini'), CLAUDE_GPT_POOL);
+  assert.equal(poolOf('gemini-3-flash', 'Gemini'), 'Gemini');
+}
 (async () => {
   const failed = await readAntigravity({ command: 'fake', run: (_exe, args, _opts, done) => { assert.deepEqual(args.slice(0, 4), ['-p', '/usage', '--output-format', 'json']); done(new Error('No login'), ''); } });
   assert.equal(failed.pct, null);
@@ -110,3 +127,14 @@ assert.equal(parseUsage(zero).exhausted, false);
   assert.equal(agyStream.finish().answer, 'coordination only.');
   console.log('OK: explicit provider routing, noninteractive workers and leads, verified agy quota schema and failures.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// A quota refusal reads as a sentence with the local time it is tried again, not as the raw program error.
+{
+  const { refusalSentence } = require('./orchestrator.js');
+  const until = new Date(2026, 10, 16, 18, 51, 38);
+  const raw = 'AGY_ERROR: {"short_error":"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please wait"}';
+  assert.equal(refusalSentence({ reason: raw, until: until.toISOString() }, new Date(2026, 10, 16, 9, 0)),
+    'Quota used up (RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please wait). Tried again at 18:51.');
+  assert.equal(refusalSentence({ reason: 'You have hit your usage limit', until: until.toISOString() }, new Date(2026, 10, 15, 9, 0)),
+    'Quota used up (You have hit your usage limit). Tried again on 2026-11-16 at 18:51.');
+}

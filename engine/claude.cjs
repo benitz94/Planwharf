@@ -26,16 +26,16 @@ function parseModels(rows) {
   }
   return models.length ? { ok: true, models } : { ok: false, reason: 'Claude Code returned no exact model IDs. Aliases were not guessed.' };
 }
-async function listClaude({ command = require('./providers.cjs').executable('claude'), run = execFile } = {}) {
+async function listClaude({ command = require('./providers.cjs').executable('claude'), run = execFile, env = process.env } = {}) {
   if (!command) return { ok: false, reason: 'Claude Code executable not found. Install Claude Code and run claude auth login.' };
-  const authenticated = await new Promise(resolve => run(command, ['auth', 'status'], { windowsHide: true, timeout: 10000, maxBuffer: 65536 }, (error, stdout) => {
+  const authenticated = await new Promise(resolve => run(command, ['auth', 'status'], { env, windowsHide: true, timeout: 10000, maxBuffer: 65536 }, (error, stdout) => {
     try { resolve(!error && JSON.parse(stdout).loggedIn === true); } catch { resolve(false); }
   }));
   if (!authenticated) return { ok: false, reason: 'Claude Code authentication unavailable. Run claude auth login, then refresh models.' };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-claude-models-'));
   try {
     return await new Promise(resolve => {
-      const child = spawn(command, ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', ...isolatedArgs], { cwd: dir, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+      const child = spawn(command, ['-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', ...isolatedArgs], { cwd: dir, env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
       child.stdout.setEncoding('utf8');
       let output = '', result, overflow = false;
       const timer = setTimeout(() => { child.kill(); }, 20000);

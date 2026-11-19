@@ -1,8 +1,0 @@
-{
-  "file": "engine/supervisor.test.cjs",
-  "command": "node engine/supervisor.test.cjs",
-  "exitCode": 0,
-  "signal": null,
-  "stdout": "✔ facts separate worker/reviewer evidence, projects, liveness and repeated failures (1.6995ms)\n✔ alerts acknowledge without changing work; recurrence, persistence, names and automatic review budgets (17.3536ms)\n✔ backend restart marks unfinished advisory evidence as interrupted (3.9944ms)\n✔ real Supervisor HTTP: independent questions, strict roles, scoped ignore, no command dispatch (148.5088ms)\n✔ Supervisor API transport has no tools, uses exact identity, and does not cancel a live Orchestrator request (242.3493ms)\nℹ tests 5\nℹ suites 0\nℹ pass 5\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 416.4387\n",
-  "stderr": ""
-}

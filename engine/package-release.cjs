@@ -7,6 +7,8 @@ const { appFile, digest } = require('./app-updates.cjs');
 function packageRelease(root, version, output) {
   if (!/^v\d+\.\d+\.\d+$/.test(version)) throw new Error('An exact release version is required.');
   const names = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(name => appFile(name));
+  // Planwharf.exe is built from launch/Planwharf.cs by the release workflow (node launch/build-exe.cjs), not kept in git.
+  if (!names.includes('Planwharf.exe') && fs.existsSync(path.join(root, 'Planwharf.exe'))) names.push('Planwharf.exe');
   const files = names.map(name => ({ path: name, sha256: digest(fs.readFileSync(path.join(root, name))), data: fs.readFileSync(path.join(root, name)).toString('base64') }));
   const manifest = { schema: 1, version, files: Object.fromEntries(files.map(file => [file.path, file.sha256])) };
   const portable = path.join(output, 'Planwharf'); fs.mkdirSync(portable, { recursive: true });

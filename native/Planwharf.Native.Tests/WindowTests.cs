@@ -1,0 +1,194 @@
+using Avalonia;
+using Avalonia.Headless;
+using Avalonia.Headless.XUnit;
+using Avalonia.Styling;
+using Avalonia.Themes.Fluent;
+using Xunit;
+
+[assembly: AvaloniaTestApplication(typeof(Planwharf.Native.Tests.TestApp))]
+
+namespace Planwharf.Native.Tests;
+
+public sealed class TestApp : Application
+{
+    public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<TestApp>().UseSkia().WithInterFont().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
+    public override void Initialize() { Styles.Add(new FluentTheme()); RequestedThemeVariant = ThemeVariant.Dark; Resources["SystemAccentColor"] = Avalonia.Media.Color.Parse("#2f8f62"); }
+}
+
+public class WindowTests
+{
+    [AvaloniaFact]
+    public void Work_plan_switch_reads_the_saved_preference()
+    {
+        var window = new MainWindow("test");
+        window.Show();
+        try
+        {
+            window.Show(SampleState.Working());
+            window.OpenSide("settings");
+            void ShowSettings(string json) => window.ShowSettings(new System.Text.Json.Nodes.JsonObject(), new System.Text.Json.Nodes.JsonArray(), new System.Text.Json.Nodes.JsonObject(), null, System.Text.Json.Nodes.JsonNode.Parse(json));
+            bool? Value()
+            {
+                window.UpdateLayout();
+                return Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.ToggleSwitch>()
+                    .Single(toggle => Equals(toggle.OnContent, "Keep the work plan in git")).IsChecked;
+            }
+            ShowSettings("{}");
+            Assert.False(Value());
+            ShowSettings("{\"keepWorkPlan\":true}");
+            Assert.True(Value());
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void Logo_follows_the_selected_main_colour()
+    {
+        try
+        {
+            foreach (var colour in new[] { "green", "blue" })
+            {
+                Palette.Apply(true, null, colour);
+                var window = new MainWindow("test");
+                var mark = (Avalonia.Controls.Border)typeof(MainWindow).GetMethod("BrandMark", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(window, null)!;
+                var canvas = (Avalonia.Controls.Canvas)((Avalonia.Controls.Viewbox)mark.Child!).Child!;
+                var bezel = (Avalonia.Controls.Shapes.Path)canvas.Children[0];
+                var needle = (Avalonia.Controls.Canvas)canvas.Children[1];
+                Assert.Equal(Palette.ColorOf(Palette.Accent), Palette.ColorOf(bezel.Stroke!));
+                Assert.Equal(Palette.ColorOf(Palette.Accent), Palette.ColorOf(((Avalonia.Controls.Shapes.Path)needle.Children[0]).Fill!));
+            }
+        }
+        finally { Palette.Apply(true, null); }
+    }
+    // Draws the window with sample data and saves the picture next to the test results.
+    [AvaloniaFact]
+    public void Draws_the_chat_and_the_finished_work()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 1700 };
+        window.Show();
+        window.Show(SampleState.Finished());
+        window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "checkedAt": "2026-11-11T15:56:00Z", "local": { "exists": true, "git": true, "branch": "main", "uncommitted": 6, "changes": [" M src/forecast.js", " M src/chart.js", "?? src/forecast.test.js", " M index.html", "?? docs/forecast.md", "D  src/old-chart.js"] } }""")!);
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        var output = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT") ?? Path.Combine(AppContext.BaseDirectory, "native-window.png");
+        frame!.Save(output);
+        Assert.True(new FileInfo(output).Length > 10_000);
+    }
+
+    // The crew at work, a step's model menu, and the Team panel on the right.
+    [AvaloniaFact]
+    public void Draws_the_team_panel_and_the_step_menus()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 1500 };
+        window.Show();
+        window.Show(SampleState.Working());
+        window.OpenSide("team");
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        var output = shot != null ? Path.ChangeExtension(shot, null) + "-team.png" : Path.Combine(AppContext.BaseDirectory, "native-team.png");
+        frame!.Save(output);
+        Assert.True(new FileInfo(output).Length > 10_000);
+    }
+
+    [AvaloniaFact]
+    public void Draws_the_settings_panel_and_the_new_project_dialog()
+    {
+        // Tall enough to show every section of Settings in one picture.
+        var window = new MainWindow("v0.2.24") { Height = 2300 };
+        window.Show();
+        window.Show(SampleState.Working());
+        window.OpenSide("settings");
+        window.ShowSettings(System.Text.Json.Nodes.JsonNode.Parse("""{ "enabled": true, "thresholdPercent": 20 }""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""[ { "cli": "claude", "label": "Claude Code", "skillsFolder": "/home/sample/.claude/skills", "instructions": "/home/sample/.claude/CLAUDE.md", "settingsExist": true, "skills": [ { "name": "release-notes", "description": "Writes release notes from the git log.", "source": "yours" } ] } ]""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "ntfy": { "enabled": true, "topic": "my-alerts" }, "telegram": { "enabled": true, "tokenConfigured": true, "tokenPreview": "123...456", "paired": false, "startCode": "pw-481920" } }""")!);
+        var dialog = new ProjectDialog();
+        dialog.Show();
+        var ok = new ConfirmDialog(Planwharf.Native.Core.TeamViews.OkQuestion([new Planwharf.Native.Core.ProviderView("claude", "Claude Code", true, 2)]), "Allow Claude Code", "Planwharf needs your OK", "Cancel");
+        ok.Show();
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        foreach (var (name, frame) in new[] { ("settings", window.CaptureRenderedFrame()), ("new-project", dialog.CaptureRenderedFrame()), ("ok-question", ok.CaptureRenderedFrame()) })
+        {
+            Assert.NotNull(frame);
+            var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
+            frame!.Save(output);
+            Assert.True(new FileInfo(output).Length > 3_000);
+        }
+    }
+
+    // Progress, Usage and Changed files, each drawn on the finished sample.
+    [AvaloniaFact]
+    public void Draws_the_progress_usage_and_files_panels()
+    {
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        var state = SampleState.Finished();
+        state["plans"] = System.Text.Json.Nodes.JsonNode.Parse("""[ { "id": "max", "label": "Claude Max", "readable": true, "leftPct": 71, "windows": [ { "name": "5-hour", "leftPct": 71 }, { "name": "weekly", "leftPct": 18 } ] }, { "id": "grok", "label": "SuperGrok", "readable": false, "reason": "Grok does not report quota." } ]""");
+        state["aiUsage"]!["workers"] = System.Text.Json.Nodes.JsonNode.Parse("""[ { "model": "Opus 5.5", "calls": 2, "durationMs": 540000, "outputTokens": 21400 } ]""");
+        state["execution"] = System.Text.Json.Nodes.JsonNode.Parse("""{ "timeline": [ { "projectId": "weather", "createdAt": "2026-11-11T15:41:00Z", "summary": "Work approved: Add a 7-day forecast page." }, { "projectId": "weather", "createdAt": "2026-11-11T15:55:00Z", "summary": "The lead confirmed the goal." } ] }""");
+        state["projects"]![0]!["folder"] = "/home/sample/weather";
+        window.Show(state);
+        window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "local": { "exists": true, "git": true, "branch": "main", "changes": [" M src/forecast.js", "?? src/forecast.test.js"] } }""")!);
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        foreach (var mode in new[] { "progress", "usage", "files" })
+        {
+            window.OpenSide(mode);
+            var frame = window.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            var output = shot != null ? Path.ChangeExtension(shot, null) + $"-{mode}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{mode}.png");
+            frame!.Save(output);
+            Assert.True(new FileInfo(output).Length > 10_000);
+        }
+    }
+
+    // First start: no lead and no project, then a new project with nothing said yet.
+    [AvaloniaFact]
+    public void Draws_the_welcome_and_the_start_card()
+    {
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        string Output(string name) => shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
+        var window = new MainWindow("v0.2.24");
+        window.Show();
+        var models = """[ { "id": "opus", "label": "Opus 5.5", "enabled": true, "roles": {} }, { "id": "grok", "label": "Grok 4.7", "enabled": true, "roles": {} } ]""";
+        window.Show(System.Text.Json.Nodes.JsonNode.Parse($$"""{ "projects": [], "models": {{models}} }""")!);
+        window.CaptureRenderedFrame()!.Save(Output("welcome"));
+        window.Show(System.Text.Json.Nodes.JsonNode.Parse($$"""{ "projects": [ { "id": "site", "name": "My website", "status": "idle", "goal": "Not set yet: tell the lead in the chat what to build." } ], "models": {{models}} }""")!);
+        window.CaptureRenderedFrame()!.Save(Output("start"));
+        Assert.True(new FileInfo(Output("start")).Length > 10_000);
+    }
+}
+
+public class ChatBoxTests
+{
+    // A message pasted on several lines keeps every line; Shift+Enter adds a line, Enter does not.
+    [AvaloniaFact]
+    public void The_chat_box_keeps_every_line_of_a_message()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 900 };
+        window.Show();
+        window.Show(SampleState.Working());
+        var box = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.TextBox>()
+            .First(item => (item.Watermark ?? "").StartsWith("Tell the lead"));
+        box.Focus();
+        window.KeyTextInput("Fix two bugs:\n1. the first\n2. the second");
+        Assert.Equal("Fix two bugs:\n1. the first\n2. the second", box.Text?.Replace("\r\n", "\n"));
+        window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter, Avalonia.Input.RawInputModifiers.Shift);
+        Assert.Equal(3, box.Text!.Split('\n').Length - 1);
+    }
+
+    // Under each of the user's messages, "Use again" puts it back in the box, ready to send again.
+    [AvaloniaFact]
+    public void A_message_of_mine_can_be_used_again()
+    {
+        var window = new MainWindow("v0.2.24") { Height = 1700 };
+        window.Show();
+        window.Show(SampleState.Finished());
+        var again = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.Button>()
+            .FirstOrDefault(button => Avalonia.Controls.ToolTip.GetTip(button) is string tip && tip.StartsWith("Put this message in the box"));
+        Assert.NotNull(again);
+        again!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+        var box = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.TextBox>().First(item => (item.Watermark ?? "").StartsWith("Tell the lead"));
+        Assert.False(string.IsNullOrWhiteSpace(box.Text));
+    }
+}

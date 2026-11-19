@@ -43,3 +43,12 @@ validation/update-browser-*/
 
 validation/grill-browser-*/
 validation/harbor-*/
+
+# Isolated phone validation: notebook, backup and native build. Secrets stay out of git.
+validation/phone-activation-*/
+
+# CI output: the workflow keeps it as an artifact.
+engineering-logs/
+
+# Built from launch/Planwharf.cs (node launch/build-exe.cjs); the release adds it to the ZIP.
+/Planwharf.exe

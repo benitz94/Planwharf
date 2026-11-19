@@ -1,0 +1,1 @@
+Error: Compilation failed with 3 errors in project files. Aborting worker task.

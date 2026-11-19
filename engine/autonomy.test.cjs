@@ -42,6 +42,14 @@ test('a completed MegaTask is evaluated once', () => {
   assert.equal(step(on({ evaluated: ['m1'] }), row).type, 'none');
 });
 
+test('turning the crew on after finished work starts new work instead of re-judging the old one', () => {
+  const fresh = createSettings('s1', '2026-11-03T10:00:00Z');
+  assert.equal(step(fresh, { status: 'complete', megaTaskId: 'm1' }).type, 'start');
+  assert.equal(step(fresh, { status: 'idle' }).type, 'start');
+  assert.equal(step(fresh, { status: 'needs_approval', megaTaskId: 'm2' }).type, 'approve');
+  assert.equal(step(fresh, { status: 'idle', megaTaskId: 'm3', megaTask: { status: 'CANCELLED' } }).type, 'start');
+});
+
 test('each alert nudges once, ignored alerts never, and the hourly cap holds', () => {
   const row = { status: 'watching', megaTaskId: 'm1' }, now = Date.parse('2026-11-03T12:00:00Z');
   const alert = { key: 'quiet', title: 't', message: 'm' };
@@ -70,7 +78,9 @@ test('the guard stops real pushes for URL and local remotes and keeps prior Git 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-push-guard-'));
   try {
     const repo = path.join(dir, 'repo'), bare = path.join(dir, 'bare.git');
-    const git = (args, env = {}) => spawnSync('git', args, { cwd: repo, env: { ...process.env, ...env }, encoding: 'utf8' });
+    // The worker that runs this file already carries the push guard. Start clean, then add the guard only when the case asks for it.
+    const cleanGit = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_CONFIG_')));
+    const git = (args, env = {}) => spawnSync('git', args, { cwd: repo, env: { ...cleanGit, ...env }, encoding: 'utf8' });
     fs.mkdirSync(repo); git(['init', '-q']); git(['init', '-q', '--bare', bare]);
     git(['-c', 'user.email=t@e', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x']);
     git(['remote', 'add', 'local', bare]); git(['remote', 'add', 'web', 'https://example.invalid/x.git']);
@@ -126,12 +136,12 @@ test('enabled: the policy approves, records itself, guards the worker, and disab
   } finally { await f.orchestra.shutdown(); fs.rmSync(f.dir, { recursive: true, force: true }); }
 });
 
-test('a manual approval carries no autonomy claim and no push guard', async () => {
+test('a manual approval carries no autonomy claim, and its worker is still guarded against pushing', async () => {
   const f = fixture(() => '{"done":true}');
   try {
     const first = await f.orchestra.tick();
     await f.orchestra.approve('demo', first.projects[0].megaTaskId);
-    assert.equal(f.launches[0].env, undefined);
+    assert.ok(Object.values(f.launches[0].env || {}).includes('url.planwharf-push-blocked://.pushInsteadOf'), 'workers never push, with or without autonomy');
     assert.ok(!f.orchestra.executionView('demo').timeline.some(event => /autonomy setting/.test(event.summary)));
   } finally { await f.orchestra.shutdown(); fs.rmSync(f.dir, { recursive: true, force: true }); }
 });

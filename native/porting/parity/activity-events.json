@@ -1,0 +1,45 @@
+[
+  {
+    "fn": "sanitize",
+    "args": [
+      "Plain text"
+    ],
+    "result": "Plain text"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "token sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789 end"
+    ],
+    "result": "token [REDACTED] end"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "Authorization: Bearer abc.def.ghi and password=hunter2"
+    ],
+    "result": "Authorization: [REDACTED] [REDACTED] and password=[REDACTED]"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "  many    spaces\n\nand lines  "
+    ],
+    "result": "many spaces and lines"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    ],
+    "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "abcdefghij",
+      5
+    ],
+    "result": "abcde"
+  }
+]

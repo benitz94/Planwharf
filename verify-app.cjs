@@ -67,7 +67,7 @@ function runCli(args) {
 
   await new Promise(resolve => opened.server.close(resolve));
   const exe = path.join(__dirname, 'Planwharf.exe');
-  assert.equal(fs.existsSync(exe), true);
+  assert.equal(fs.existsSync(exe), true, 'Build the Windows launcher first: node launch/build-exe.cjs');
   assert.equal(fs.readFileSync(exe).subarray(0, 2).toString('ascii'), 'MZ');
   // The chat page itself is checked in a real browser by verify-chat.cjs.
 

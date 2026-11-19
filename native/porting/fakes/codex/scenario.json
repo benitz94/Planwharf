@@ -1,0 +1,37 @@
+[
+  {
+    "fakeAs": "codex",
+    "argContains": "fail",
+    "stdout": "{\"type\":\"turn.failed\",\"error\":{\"message\":\"Build failed: compilation errors in source code.\"}}",
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "codex",
+    "argContains": "quota",
+    "stdout": "{\"type\":\"turn.failed\",\"error\":{\"message\":\"Rate limit reached (HTTP 429): You have exceeded your quota or spending limit.\"}}",
+    "exitCode": 1
+  },
+  {
+    "fakeAs": "codex",
+    "argContains": "--result",
+    "files": [
+      {
+        "pathAfterArg": "--result",
+        "content": "{\"resultId\":\"R-attempt-2\",\"attemptId\":\"attempt-2\",\"subTaskId\":\"MT-02-ST-01\",\"megaTaskId\":\"MT-02\",\"status\":\"COMPLETE\",\"summary\":\"Codex worker completed implementation and passed all automated tests.\",\"filesChanged\":[\"src/Service.cs\",\"tests/ServiceTests.cs\"],\"tests\":[{\"command\":\"dotnet test\",\"status\":\"PASSED\",\"evidence\":\"Total tests: 8. Passed: 8. Failed: 0.\"}],\"blockers\":[],\"nextAction\":\"Ready for verification.\"}"
+      }
+    ],
+    "stdout": "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1800,\"output_tokens\":250}}"
+  },
+  {
+    "fakeAs": "codex",
+    "argContains": "--json",
+    "stdout": [
+      "{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"Coordinating project tasks across available workers.\"}}",
+      "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1200,\"output_tokens\":80,\"cached_input_tokens\":3000}}"
+    ]
+  },
+  {
+    "fakeAs": "codex",
+    "stdout": "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":1000,\"output_tokens\":100}}"
+  }
+]
