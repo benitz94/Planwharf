@@ -769,7 +769,15 @@ function createExecutionBridge(options) {
     paint(mega); persist();
     return mega;
   }
-  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork };
+  function answerDecision(projectId, decisionId, answer) {
+    const decision = data.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+    if (!decision) return { ok: false, reason: 'Decision not found.' };
+    decision.answer = String(answer || '').trim();
+    decision.answeredAt = now();
+    persist();
+    return { ok: true };
+  }
+  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision };
 }
 function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
 function readStepTimes(dir) {
