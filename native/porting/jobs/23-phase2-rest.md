@@ -383,4 +383,3 @@ the deferred cases and why, the number of comparison cases per module, and
 any difference from the JavaScript found on the way. The `home` drop is one
 of those differences. A model from another company reviews the port before
 merge, as it reviews this sheet before the port starts.
-
