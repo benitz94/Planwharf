@@ -3338,7 +3338,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // Only a dead CLI retries. A protocol change or an unrecognized model is a real answer
           // about the provider: it is classified and kept, never replaced.
           // A provider that closes the turn as failed is the same miss as a dead CLI: retry once, then hand over.
-          const died = spoken => spoken?.failure === 'process' || spoken?.failure === 'provider';
+          const died = spoken => spoken?.failure === 'process' || (spoken?.failure === 'provider' && spoken?.diagnostic?.code === 'PROVIDER_EXECUTION_FAILED');
           const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
           // A quota error will not clear by asking again: hand over at once, to another company.
           if (outOfQuota(spoken) && askCurrent(token)) {
