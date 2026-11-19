@@ -231,8 +231,10 @@ function pidIsPlanwharf(pid) {
       const out = execFileSync('tasklist', ['/FI', 'PID eq ' + pid, '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true });
       return /node\.exe|Planwharf/i.test(out);
     }
-    const comm = require('fs').readFileSync('/proc/' + pid + '/comm', 'utf8');
-    return /node|Planwharf/i.test(comm);
+    const fs = require('fs');
+    const cmdline = fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8');
+    const exe = fs.readlinkSync('/proc/' + pid + '/exe');
+    return /node|Planwharf/i.test(cmdline + ' ' + exe);
   } catch { return true; }
 }
 async function acquireApp(opts) {
