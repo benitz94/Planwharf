@@ -270,7 +270,9 @@ test('commands recover from expiry, snapshot failure, bot suffix, and a bad sett
 
     sent.length = 0;
     await notifier.processTelegramMessage({ chat: { id: 42 }, text: '/status@PlanwharfBot' });
-    assert.match(sent.at(-1).text, /Alpha: Working \(Step 1\/2\)/);
+    assert.match(sent.at(-1).text, /<b>Alpha<\/b>/);
+    assert.match(sent.at(-1).text, /<b>Status:<\/b> Working/);
+    assert.match(sent.at(-1).text, /■□ 1\/2/);
 
     const broken = notifierWith(dir, {
       getSnapshot: async () => { throw new Error('cannot read C:\\secret\\plan.json'); },
@@ -473,6 +475,125 @@ test('alerts fire when work fails or stops for the owner, and stay quiet otherwi
     projects = [{ id: 'p1', name: 'Alpha', status: 'complete' }];
     await notifier.checkTransitions();
     assert.equal(sent.length, beforeQuiet);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('live commands escape hostile names, show a zero step, and recover after a failed send', async () => {
+  const dir = tempDir();
+  const sent = [];
+  let failSend = true;
+  let ollamaDown = true;
+  const projects = [
+    { id: 'dock<1>&2', name: 'North <dock> & pier', status: 'watching', step: { step: 0, total: 4 }, timeLeft: { minutes: '2 <i>hr</i>' } },
+    { id: 'pier', name: 'South & quay', status: 'checkpointed' }
+  ];
+  try {
+    pair(dir);
+    const notifier = createPhoneNotifier({
+      storeDir: dir,
+      getSnapshot: async () => ({ projects }),
+      onStopProject: async () => {},
+      onResumeProject: async () => {},
+      fetchImpl: async (url, options = {}) => {
+        if (String(url).includes('/api/chat')) {
+          if (ollamaDown) return { ok: false, status: 503, json: async () => ({ message: { content: '<down>' } }) };
+          return { ok: true, json: async () => ({ message: { content: 'Wind <gale> & rain' } }) };
+        }
+        if (failSend && String(url).includes('/sendMessage')) throw new Error('network down');
+        const body = options.body ? JSON.parse(options.body) : {};
+        sent.push(body);
+        return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) };
+      },
+      apiBaseUrl: 'http://fake.telegram.invalid'
+    });
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: '/status' });
+    assert.equal(sent.length, 0);
+    failSend = false;
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: '/status' });
+    assert.equal(sent.at(-1).parse_mode, 'HTML');
+    assert.match(sent.at(-1).text, /<b>North &lt;dock&gt; &amp; pier<\/b>/);
+    assert.match(sent.at(-1).text, /□□□□ 0\/4/);
+    assert.match(sent.at(-1).text, /~2 &lt;i&gt;hr&lt;\/i&gt;m left/);
+    assert.equal(sent.at(-1).text.includes('<dock>'), false);
+    assert.equal(sent.at(-1).text.includes('<i>hr</i>'), false);
+
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: '/stop North' });
+    assert.match(sent.at(-1).text, /Stop the crew for "North &lt;dock&gt; &amp; pier"\?/);
+    assert.equal(sent.at(-1).text.includes('<dock>'), false);
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: 'yes' });
+    assert.match(sent.at(-1).text, /<b>Crew Stopped<\/b>/);
+    assert.match(sent.at(-1).text, /North &lt;dock&gt; &amp; pier/);
+
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: '/resume South' });
+    assert.match(sent.at(-1).text, /<b>Crew Resumed<\/b>/);
+    assert.match(sent.at(-1).text, /South &amp; quay/);
+
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: 'how is the tide?' });
+    assert.match(sent.at(-1).text, /<b>Harbor Companion Offline<\/b>/);
+    assert.equal(sent.at(-1).text.includes('<down>'), false);
+    ollamaDown = false;
+    await notifier.processTelegramMessage({ chat: { id: 42 }, text: 'and the wind?' });
+    assert.match(sent.at(-1).text, /^⚓ Captain\n\nWind &lt;gale&gt; &amp; rain$/);
+    assert.equal(sent.at(-1).parse_mode, 'HTML');
+    assert.equal(sent.at(-1).text.includes('<gale>'), false);
+
+    const replies = [];
+    await Promise.all([
+      notifier.processTelegramMessage({ chat: { id: 42 }, text: 'slow <one>' }),
+      notifier.processTelegramMessage({ chat: { id: 42 }, text: 'fast <two>' })
+    ]);
+    replies.push(...sent.slice(-2).map(item => item.text));
+    assert.equal(replies.length, 2);
+    assert.ok(replies.every(text => text.startsWith('⚓ Captain')));
+    assert.equal(replies.some(text => text.includes('<one>')), false);
+    assert.equal(replies.some(text => text.includes('<two>')), false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('overlapping alerts keep ntfy plain and telegram HTML separate', async () => {
+  const dir = tempDir();
+  const sent = [];
+  try {
+    pair(dir);
+    const notifier = createPhoneNotifier({
+      storeDir: dir,
+      getSnapshot: async () => ({ projects: [] }),
+      fetchImpl: async (url, options = {}) => {
+        sent.push({ url: String(url), body: options.body, headers: options.headers || {} });
+        return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) };
+      },
+      apiBaseUrl: 'http://fake.telegram.invalid',
+      ntfyServerUrl: 'http://fake.ntfy.invalid'
+    });
+    await Promise.all([
+      notifier.sendAlert({ type: 'started', projectId: 'a', projectName: 'A <1>', goalTitle: 'Raise <sail>', step: { step: 1, total: 2 } }),
+      notifier.sendAlert({ type: 'failed', projectId: 'b', projectName: 'B & 2', goalTitle: 'Hold', step: { step: 0, total: 3 }, detail: 'token=secret <bad>' })
+    ]);
+    const ntfy = sent.filter(item => item.url.includes('engine-alerts'));
+    const telegram = sent.filter(item => item.url.includes('/sendMessage')).map(item => JSON.parse(item.body));
+    assert.equal(ntfy.length, 2);
+    assert.equal(telegram.length, 2);
+    for (const item of ntfy) {
+      assert.equal(String(item.body).includes('<b>'), false);
+      assert.equal(String(item.body).includes('⚓'), false);
+      assert.equal(String(item.body).includes('■'), false);
+      assert.equal(String(item.body).includes('secret'), false);
+      assert.equal(item.headers['Content-Type'], undefined);
+    }
+    const joined = telegram.map(item => item.text).join('\n');
+    assert.equal(telegram.every(item => item.parse_mode === 'HTML'), true);
+    assert.match(joined, /Harbor Alert: A &lt;1&gt;/);
+    assert.match(joined, /Raise &lt;sail&gt;/);
+    assert.match(joined, /■□ 1\/2/);
+    assert.match(joined, /Harbor Alert: B &amp; 2/);
+    assert.match(joined, /□□□ 0\/3/);
+    assert.equal(joined.includes('<1>'), false);
+    assert.equal(joined.includes('<sail>'), false);
+    assert.equal(joined.includes('secret'), false);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

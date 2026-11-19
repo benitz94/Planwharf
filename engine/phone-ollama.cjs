@@ -36,11 +36,19 @@ function normalizeOllamaSettings(raw) {
   };
 }
 
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function withCaptain(body) {
   const text = String(body || '').trim();
   if (!text) return '⚓ Captain';
   if (text.startsWith('⚓ Captain')) return text;
-  return `⚓ Captain\n${text}`;
+  return `⚓ Captain\n\n${text}`;
 }
 
 function isClearMemory(text) {
@@ -128,8 +136,9 @@ function buildReplyMessages({ question, projects, history, sanitize, model } = {
     return bits.join('; ');
   });
   const system = [
-    "You are Captain, Planwharf's phone mate.",
+    "You are Captain, Planwharf's harbor companion.",
     "Reply in the user's language, in at most 4 short sentences.",
+    'Speak as a Captain-facing harbor companion.',
     'Use only the project facts below. Do not invent files, paths, commands, or actions.',
     'You cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.',
     'If the facts do not answer the question, say so.',
@@ -148,7 +157,15 @@ function buildReplyMessages({ question, projects, history, sanitize, model } = {
 }
 
 function unavailableReply() {
-  return '⚓ Captain\nThe local model is not answering right now. Commands still work:\n/status\n/stop <project>\n/resume <project>';
+  return [
+    '⚓ Captain',
+    '',
+    '<b>Harbor Companion Offline</b>',
+    '⚠️ The local model is not answering right now. Deck commands still work:',
+    '• /status',
+    '• /stop &lt;project&gt;',
+    '• /resume &lt;project&gt;'
+  ].join('\n');
 }
 
 async function askOllamaOnce({ baseUrl, model, messages, fetchImpl, timeoutMs }) {
@@ -173,7 +190,7 @@ async function askOllamaOnce({ baseUrl, model, messages, fetchImpl, timeoutMs })
     if (!response?.ok || !String(text).trim()) {
       return { ok: false, model: settings.model, text: unavailableReply(), reason: response?.ok ? 'empty' : `HTTP ${response?.status || 0}` };
     }
-    return { ok: true, model: settings.model, text: withCaptain(String(text).trim()) };
+    return { ok: true, model: settings.model, text: withCaptain(escapeHtml(String(text).trim())) };
   } catch (error) {
     return { ok: false, model: settings.model, text: unavailableReply(), reason: error?.name === 'AbortError' ? 'timeout' : 'unreachable' };
   } finally {
@@ -210,6 +227,7 @@ module.exports = {
   MEMORY_FILE,
   defaultOllamaSettings,
   normalizeOllamaSettings,
+  escapeHtml,
   withCaptain,
   isClearMemory,
   isBareConfirmation,

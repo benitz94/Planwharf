@@ -141,12 +141,44 @@ function alertForStep(prev, curr) {
   return null;
 }
 
+function escapeHtml(text) {
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function formatProgressBar(step, total) {
+  let s, t;
+  if (typeof step === 'object' && step !== null) {
+    s = Number(step.step);
+    t = Number(step.total);
+  } else if (typeof step === 'string' && step.includes('/')) {
+    const parts = step.split('/');
+    s = Number(parts[0]);
+    t = Number(parts[1]);
+  } else {
+    s = Number(step);
+    t = Number(total);
+  }
+  if (!Number.isFinite(s) || !Number.isFinite(t) || t <= 0 || s < 0) return '';
+  const current = Math.min(s, t);
+  const maxBlocks = t <= 10 ? t : 10;
+  const filledExact = t <= 10 ? current : (current / t) * maxBlocks;
+  const width = Math.floor(maxBlocks);
+  const filled = Math.max(0, Math.min(width, Math.round(filledExact)));
+  const empty = Math.max(0, width - filled);
+  if (filled + empty <= 0) return '';
+  return `${'■'.repeat(filled)}${'□'.repeat(empty)} ${s}/${t}`;
+}
+
 function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail }) {
   const safeProject = sanitizeText(projectName) || 'Project';
   const safeGoal = sanitizeGoalTitle(goalTitle);
   let statusLabel = ALERT_LABELS[type] || 'Updated';
 
-  let msg = withCaptain(`Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`);
+  let msg = `Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`;
 
   if (type === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
@@ -165,6 +197,46 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
   if (detail) msg += `\n${sanitizeText(detail)}`;
 
   return msg;
+}
+
+function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step }) {
+  const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
+  const safeGoal = escapeHtml(sanitizeGoalTitle(goalTitle));
+  const statusLabel = ALERT_LABELS[type] || 'Updated •';
+
+  const lines = [
+    '⚓ Captain',
+    '',
+    `<b>Harbor Alert: ${safeProject}</b>`,
+    `<b>Goal:</b> ${safeGoal}`,
+    `<b>Status:</b> ${statusLabel}`
+  ];
+
+  if (type === 'done' && durationMinutes != null) {
+    const dur = formatDuration(durationMinutes);
+    if (dur) lines.push(`<b>Duration:</b> ${dur}`);
+  }
+
+  if (timeLeft && (timeLeft.minutes != null || timeLeft.endsAt)) {
+    let timeText = '';
+    if (timeLeft.minutes != null) {
+      timeText = `About ${timeLeft.minutes}m left`;
+      if (timeLeft.longerThanUsual) timeText += ' (longer than usual)';
+      if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
+    }
+    if (timeText) lines.push(`<b>Estimate:</b> ${escapeHtml(timeText)}`);
+  }
+
+  if (detail) {
+    lines.push(escapeHtml(sanitizeText(detail)));
+  }
+
+  const bar = formatProgressBar(step);
+  if (bar) {
+    lines.push(bar);
+  }
+
+  return lines.join('\n');
 }
 
 function generateStartCode() {
@@ -312,16 +384,18 @@ async function sendNtfyAlert({ topic, serverUrl = 'https://ntfy.sh', message, ti
   }
 }
 
-async function sendTelegramMessage({ token, chatId, text, replyMarkup, apiBaseUrl = 'https://api.telegram.org', fetchImpl = globalThis.fetch }) {
+async function sendTelegramMessage({ token, chatId, text, parseMode = 'HTML', replyMarkup, apiBaseUrl = 'https://api.telegram.org', fetchImpl = globalThis.fetch }) {
   if (!token) return { ok: false, reason: 'Bot token is missing.' };
   if (!chatId) return { ok: false, reason: 'Chat ID is missing.' };
 
   const url = `${apiBaseUrl.replace(/\/+$/, '')}/bot${token}/sendMessage`;
+  const payload = { chat_id: chatId, text, reply_markup: replyMarkup || mainKeyboard() };
+  if (parseMode) payload.parse_mode = parseMode;
   try {
     const res = await fetchImpl(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, reply_markup: replyMarkup || mainKeyboard() })
+      body: JSON.stringify(payload)
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || (data && !data.ok)) {
@@ -351,11 +425,11 @@ async function pollTelegramUpdates({ token, offset = 0, timeout = 0, apiBaseUrl 
 
 function formatStatusMessage(projects = []) {
   if (!projects || projects.length === 0) {
-    return 'Planwharf: No projects.';
+    return '⚓ Captain\n\n<b>Harbor Status</b>\nNo projects in port.';
   }
-  const lines = ['📋 Planwharf Projects:'];
+  const sections = ['⚓ Captain\n\n<b>Harbor Status</b>'];
   for (const p of projects) {
-    const name = sanitizeText(p.name || p.id || 'Project');
+    const name = escapeHtml(sanitizeText(p.name || p.id || 'Project'));
     let state = 'Idle';
     if (p.status === 'watching') state = 'Working';
     else if (p.status === 'complete') state = 'Done';
@@ -365,18 +439,17 @@ function formatStatusMessage(projects = []) {
     else if (p.status === 'blocked_no_worker') state = 'Blocked (no usage)';
     else if (p.status) state = sanitizeText(p.status);
 
+    const icon = statusEmoji(state);
     let details = '';
-    if (p.status === 'watching') {
-      if (p.step?.step && p.step?.total) {
-        details += ` (Step ${p.step.step}/${p.step.total})`;
-      }
-      if (p.timeLeft?.minutes != null) {
-        details += ` · ~${p.timeLeft.minutes}m left`;
-      }
+    if (p.status === 'watching' && p.timeLeft?.minutes != null) {
+      details = ` · ~${escapeHtml(p.timeLeft.minutes)}m left`;
     }
-    lines.push(`${statusEmoji(state)} ${name}: ${state}${details}`);
+    const bar = formatProgressBar(p.step);
+    let item = `<b>${name}</b>\n${icon} <b>Status:</b> ${escapeHtml(state)}${details}`;
+    if (bar) item += `\n${bar}`;
+    sections.push(item);
   }
-  return withCaptain(lines.join('\n'));
+  return sections.join('\n\n');
 }
 
 function matchProject(projects = [], query = '') {
@@ -468,18 +541,18 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step }) {
     const fresh = loadPhoneSettings(storeDir);
-    const msg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail });
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
         const priority = type === 'failed' ? 'high' : type === 'needs_owner' ? 'urgent' : 'default';
         const tags = type === 'failed' ? ['warning'] : type === 'needs_owner' ? ['bell'] : ['white_check_mark'];
+        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail });
         return await sendNtfyAlert({
           topic: fresh.ntfy.topic,
           serverUrl: fresh.ntfy.serverUrl || ntfyServerUrl,
-          message: msg,
+          message: plainMsg,
           title: safeTitle,
           priority,
           tags,
@@ -491,10 +564,12 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
+        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step });
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
-          text: msg,
+          text: tgMsg,
+          parseMode: 'HTML',
           apiBaseUrl,
           fetchImpl
         });
@@ -539,7 +614,8 @@ function createPhoneNotifier({
         projectName: p.name,
         goalTitle: p.goal || p.jobTitle,
         timeLeft: p.timeLeft,
-        detail
+        detail,
+        step: p.step
       });
     }
   }
@@ -557,7 +633,13 @@ function createPhoneNotifier({
       if (msg.document || msg.photo || msg.video || msg.voice || msg.audio || msg.sticker) {
         const fresh = loadPhoneSettings(storeDir);
         if (fresh.telegramToken && String(fresh.telegram.pairedChatId) === chatId) {
-          await sendTelegramMessage({ token: fresh.telegramToken, chatId, text: '📎 Attachments are not accepted. Use the buttons.', apiBaseUrl, fetchImpl });
+          await sendTelegramMessage({
+            token: fresh.telegramToken,
+            chatId,
+            text: '⚓ Captain\n\n<b>Harbor Notice</b>\n📎 Attachments are not accepted. Use the deck buttons.',
+            apiBaseUrl,
+            fetchImpl
+          });
         }
       }
       return;
@@ -584,7 +666,16 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: withCaptain('Planwharf connected!\nYou can now use:\n/status - projects and progress\n/stop <project> - stop the crew (requires confirmation)\n/resume <project> - resume work'),
+          text: [
+            '⚓ Captain',
+            '',
+            '<b>Harbor Connected</b>',
+            'Planwharf connected and standing by.',
+            'You can now use the deck buttons or commands:',
+            '• /status — projects and progress',
+            '• /stop &lt;project&gt; — stop the crew (requires confirmation)',
+            '• /resume &lt;project&gt; — resume work'
+          ].join('\n'),
           replyMarkup: mainKeyboard(),
           apiBaseUrl,
           fetchImpl
@@ -612,7 +703,12 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token,
             chatId,
-            text: `The crew for "${sanitizeText(target.projectName)}" has been stopped.`,
+            text: [
+              '⚓ Captain',
+              '',
+              '<b>Crew Stopped</b>',
+              `⏹ The crew for "${escapeHtml(sanitizeText(target.projectName))}" has been stopped.`
+            ].join('\n'),
             apiBaseUrl,
             fetchImpl
           });
@@ -620,7 +716,7 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token,
             chatId,
-            text: 'Planwharf could not complete that.',
+            text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not complete that.',
             apiBaseUrl,
             fetchImpl
           });
@@ -632,7 +728,7 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: 'Stop cancelled.',
+          text: '⚓ Captain\n\n<b>Stop Cancelled</b>\nStop cancelled. Crew will continue work.',
           apiBaseUrl,
           fetchImpl
         });
@@ -654,7 +750,7 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: 'Planwharf could not read the projects. Try again.',
+        text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not read the projects. Try again.',
         apiBaseUrl,
         fetchImpl
       });
@@ -674,10 +770,28 @@ function createPhoneNotifier({
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
-          await sendTelegramMessage({ token, chatId, text: 'No projects available to stop.', apiBaseUrl, fetchImpl });
+          await sendTelegramMessage({
+            token,
+            chatId,
+            text: '⚓ Captain\n\n<b>Stop Order</b>\nNo projects available to stop.',
+            apiBaseUrl,
+            fetchImpl
+          });
         } else {
-          const names = projects.map(p => sanitizeText(p.name || p.id)).join(', ');
-          await sendTelegramMessage({ token, chatId, text: `Please specify a project: /stop <name>\nProjects: ${names}`, apiBaseUrl, fetchImpl });
+          const names = projects.map(p => escapeHtml(sanitizeText(p.name || p.id))).join(', ');
+          await sendTelegramMessage({
+            token,
+            chatId,
+            text: [
+              '⚓ Captain',
+              '',
+              '<b>Stop Order</b>',
+              'Please specify a project: /stop &lt;name&gt;',
+              `<b>Projects in port:</b> ${names}`
+            ].join('\n'),
+            apiBaseUrl,
+            fetchImpl
+          });
         }
         return;
       }
@@ -690,7 +804,12 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: `⏹ Stop the crew for "${sanitizeText(matched.name || matched.id)}"? Reply "yes" to confirm.`,
+        text: [
+          '⚓ Captain',
+          '',
+          '<b>Confirm Stop Order</b>',
+          `⏹ Stop the crew for "${escapeHtml(sanitizeText(matched.name || matched.id))}"? Reply "yes" to confirm.`
+        ].join('\n'),
         replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${matched.id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
         apiBaseUrl,
         fetchImpl
@@ -703,10 +822,28 @@ function createPhoneNotifier({
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
-          await sendTelegramMessage({ token, chatId, text: 'No projects available to resume.', apiBaseUrl, fetchImpl });
+          await sendTelegramMessage({
+            token,
+            chatId,
+            text: '⚓ Captain\n\n<b>Resume Order</b>\nNo projects available to resume.',
+            apiBaseUrl,
+            fetchImpl
+          });
         } else {
-          const names = projects.map(p => sanitizeText(p.name || p.id)).join(', ');
-          await sendTelegramMessage({ token, chatId, text: `Please specify a project: /resume <name>\nProjects: ${names}`, apiBaseUrl, fetchImpl });
+          const names = projects.map(p => escapeHtml(sanitizeText(p.name || p.id))).join(', ');
+          await sendTelegramMessage({
+            token,
+            chatId,
+            text: [
+              '⚓ Captain',
+              '',
+              '<b>Resume Order</b>',
+              'Please specify a project: /resume &lt;name&gt;',
+              `<b>Projects in port:</b> ${names}`
+            ].join('\n'),
+            apiBaseUrl,
+            fetchImpl
+          });
         }
         return;
       }
@@ -717,7 +854,12 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: `The crew for "${sanitizeText(matched.name || matched.id)}" has resumed.`,
+          text: [
+            '⚓ Captain',
+            '',
+            '<b>Crew Resumed</b>',
+            `▶️ The crew for "${escapeHtml(sanitizeText(matched.name || matched.id))}" has resumed.`
+          ].join('\n'),
           apiBaseUrl,
           fetchImpl
         });
@@ -725,7 +867,7 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: 'Planwharf could not complete that.',
+          text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not complete that.',
           apiBaseUrl,
           fetchImpl
         });
@@ -737,7 +879,15 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: '📋 Planwharf\nUse the buttons, or:\n/status — projects\n/stop <project> — stop (asks confirmation)\n/resume <project> — resume',
+        text: [
+          '⚓ Captain',
+          '',
+          '<b>Harbor Guide</b>',
+          'Use the deck buttons, or:',
+          '• /status — projects and progress',
+          '• /stop &lt;project&gt; — stop the crew (requires confirmation)',
+          '• /resume &lt;project&gt; — resume work'
+        ].join('\n'),
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -751,7 +901,7 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: withCaptain('This chat memory is clear. Commands are unchanged.'),
+        text: '⚓ Captain\n\n<b>Logbook Cleared</b>\nThis chat memory is clear. Commands are unchanged.',
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -764,7 +914,7 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: 'Unrecognized command. Use /status, /stop <project>, or /resume <project>.',
+        text: '⚓ Captain\n\n<b>Unrecognized Command</b>\nUnrecognized command. Use /status, /stop &lt;project&gt;, or /resume &lt;project&gt;.',
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -829,7 +979,7 @@ function createPhoneNotifier({
     if (verb === 'stop') {
       pendingConfirmation = { action: 'stop', projectId: id, projectName: id, expiresAt: Date.now() + confirmWindowMs };
       await sendTelegramMessage({
-        token, chatId, text: '⏹ Stop this crew?',
+        token, chatId, text: '⚓ Captain\n\n<b>Confirm Stop Order</b>\n⏹ Stop this crew? Reply "yes" to confirm or tap below.',
         replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
         apiBaseUrl, fetchImpl
       });
@@ -897,10 +1047,13 @@ function createPhoneNotifier({
 }
 
 module.exports = { alertForStatus, alertForStep,
+  escapeHtml,
+  formatProgressBar,
   sanitizeText,
   sanitizeGoalTitle,
   formatDuration,
   formatAlertMessage,
+  formatTelegramAlertMessage,
   generateStartCode,
   maskToken,
   loadPhoneSettings,
