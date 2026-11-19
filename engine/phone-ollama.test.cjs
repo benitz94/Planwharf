@@ -18,6 +18,7 @@ const {
   buildReplyMessages,
   askOllama,
   listInstalledModels,
+  unavailableReply,
   withCaptain
 } = require('./phone-ollama.cjs');
 const { sanitizeText } = require('./phone.cjs');
@@ -203,4 +204,72 @@ test('a paired chat gets a natural reply from fresh facts and does not run a com
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('ollama escapes model HTML, retries once, and hides error bodies', async () => {
+  const down = unavailableReply();
+  assert.match(down, /^⚓ Captain\n\n<b>Harbor Companion Offline<\/b>/);
+  assert.match(down, /⚠️/);
+  const stripped = down.replace(/<\/?b>/g, '');
+  assert.equal(stripped.includes('<'), false);
+  assert.equal(stripped.includes('>'), false);
+
+  let calls = 0;
+  const recovered = await askOllama({
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) return { ok: false, status: 503, json: async () => ({ message: { content: '<leak>' } }) };
+      return { ok: true, json: async () => ({ message: { content: 'Tide <high> & rising' } }) };
+    }
+  });
+  assert.equal(calls, 2);
+  assert.equal(recovered.ok, true);
+  assert.equal(recovered.text.startsWith('⚓ Captain\n\nTide &lt;high&gt; &amp; rising'), true);
+  assert.equal(recovered.text.includes('<high>'), false);
+  assert.equal(recovered.text.includes('<leak>'), false);
+
+  let failures = 0;
+  const failed = await askOllama({
+    fetchImpl: async () => {
+      failures += 1;
+      return { ok: false, status: 500, json: async () => ({ message: { content: 'D:\\secret\\plan.js <no>' } }) };
+    }
+  });
+  assert.equal(failures, 2);
+  assert.equal(failed.ok, false);
+  assert.equal(failed.text, down);
+  assert.equal(failed.text.includes('plan.js'), false);
+  assert.equal(failed.text.includes('<no>'), false);
+
+  const prefixed = await askOllama({
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ message: { content: '⚓ Captain\n\nAlready <b>on</b> watch' } })
+    })
+  });
+  assert.equal(prefixed.text.startsWith('⚓ Captain\n\n⚓ Captain'), false);
+  assert.equal(prefixed.text.includes('<b>'), false);
+  assert.equal(prefixed.text.includes('&lt;b&gt;on&lt;/b&gt;'), true);
+  assert.equal(withCaptain('⚓ Captain\n\nkept'), '⚓ Captain\n\nkept');
+  assert.equal(withCaptain(''), '⚓ Captain');
+});
+
+test('concurrent ollama calls keep their own reply when one is down', async () => {
+  const results = await Promise.all([
+    askOllama({
+      fetchImpl: async () => {
+        await new Promise(resolve => setTimeout(resolve, 30));
+        return { ok: false, status: 500, json: async () => ({}) };
+      }
+    }),
+    askOllama({
+      fetchImpl: async () => ({ ok: true, json: async () => ({ message: { content: 'Clear water <ok>' } }) })
+    })
+  ]);
+  assert.equal(results[0].ok, false);
+  assert.match(results[0].text, /<b>Harbor Companion Offline<\/b>/);
+  assert.equal(results[1].ok, true);
+  assert.equal(results[1].text.includes('Clear water &lt;ok&gt;'), true);
+  assert.equal(results[1].text.includes('<ok>'), false);
+  assert.equal(results[1].text.includes('Harbor Companion Offline'), false);
 });

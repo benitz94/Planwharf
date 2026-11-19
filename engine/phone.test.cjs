@@ -5,6 +5,9 @@ const {
   sanitizeText,
   sanitizeGoalTitle,
   formatAlertMessage,
+  formatTelegramAlertMessage,
+  formatProgressBar,
+  escapeHtml,
   maskToken,
   loadPhoneSettings,
   savePhoneSettings,
@@ -231,6 +234,7 @@ test('HTTP isolation: sendTelegramMessage and pollTelegramUpdates with fake Tele
     const sent = JSON.parse(requests[0].body);
     assert.equal(sent.chat_id, '98765');
     assert.equal(sent.text, 'Hello from Planwharf');
+    assert.equal(sent.parse_mode, 'HTML');
 
     const failRes = await sendTelegramMessage({
       token: 'fake-token-123',
@@ -271,8 +275,13 @@ test('formatStatusMessage lists projects without exposing files, paths or prompt
   ];
 
   const statusText = formatStatusMessage(projects);
-  assert.ok(statusText.includes('Harbor App in [path]: Working (Step 2/4) · ~25m left'));
-  assert.ok(statusText.includes('Website [path]: Done'));
+  assert.ok(statusText.startsWith('⚓ Captain'));
+  assert.ok(statusText.includes('<b>Harbor Status</b>'));
+  assert.ok(statusText.includes('<b>Harbor App in [path]</b>'));
+  assert.ok(statusText.includes('🟢 <b>Status:</b> Working · ~25m left'));
+  assert.ok(statusText.includes('■■□□ 2/4'));
+  assert.ok(statusText.includes('<b>Website [path]</b>'));
+  assert.ok(statusText.includes('✅ <b>Status:</b> Done'));
   assert.ok(!statusText.includes('C:\\Source\\Secret'));
   assert.ok(!statusText.includes('/var/www/site/index.html'));
 });
@@ -381,8 +390,12 @@ test('Telegram bot lifecycle: pairing with start code, ignoring foreign chats, a
       text: '/status'
     });
     assert.equal(sentMessages.length, 1);
-    assert.ok(sentMessages[0].text.includes('Alpha Project: Working (Step 1/3) · ~12m left'));
-    assert.ok(sentMessages[0].text.includes('Beta Project: Stopped'));
+    assert.equal(sentMessages[0].parse_mode, 'HTML');
+    assert.ok(sentMessages[0].text.includes('<b>Alpha Project</b>'));
+    assert.ok(sentMessages[0].text.includes('🟢 <b>Status:</b> Working · ~12m left'));
+    assert.ok(sentMessages[0].text.includes('■□□ 1/3'));
+    assert.ok(sentMessages[0].text.includes('<b>Beta Project</b>'));
+    assert.ok(sentMessages[0].text.includes('⏹ <b>Status:</b> Stopped'));
 
     // 6. /stop command asks for "yes" confirmation!
     sentMessages.length = 0;
@@ -493,7 +506,10 @@ test('checkTransitions detects work ending, failing, or needing owner and alerts
     assert.ok(tgAlert);
     const tgBody = JSON.parse(tgAlert.options.body);
     assert.equal(tgBody.chat_id, '12345');
-    assert.ok(tgBody.text.includes('Status: Done'));
+    assert.equal(tgBody.parse_mode, 'HTML');
+    assert.ok(tgBody.text.includes('<b>Status:</b> Done ✅'));
+    assert.ok(tgBody.text.includes('⚓ Captain'));
+    assert.ok(tgBody.text.includes('<b>Harbor Alert: Engine Project</b>'));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -562,4 +578,131 @@ test('server.cjs HTTP endpoints for phone settings and test alert', async () => 
     await new Promise(resolve => server.close(resolve));
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test('formatTelegramAlertMessage and formatProgressBar render harbor companion voice with HTML, headings, and progress bar', () => {
+  // 1. Escaping dynamic text (including project names with < and &)
+  const escapedAlert = formatTelegramAlertMessage({
+    type: 'started',
+    projectName: 'Dock <North> & South',
+    goalTitle: 'Inspect <engine> & pipes\nsecond line',
+    step: { step: 2, total: 5 }
+  });
+  assert.ok(escapedAlert.startsWith('⚓ Captain'));
+  assert.ok(escapedAlert.includes('<b>Harbor Alert: Dock &lt;North&gt; &amp; South</b>'));
+  assert.ok(escapedAlert.includes('<b>Goal:</b> Inspect &lt;engine&gt; &amp; pipes'));
+  assert.ok(escapedAlert.includes('<b>Status:</b> Started ▶️'));
+  assert.ok(escapedAlert.includes('■■□□□ 2/5'));
+  assert.ok(!escapedAlert.includes('<North>'));
+  assert.ok(!escapedAlert.includes('<engine>'));
+
+  // 2. Alert without step count omits progress bar
+  const alertNoStep = formatTelegramAlertMessage({
+    type: 'done',
+    projectName: 'Simple Project',
+    goalTitle: 'Finished task',
+    durationMinutes: 30
+  });
+  assert.ok(alertNoStep.includes('<b>Status:</b> Done ✅'));
+  assert.ok(alertNoStep.includes('<b>Duration:</b> 30m'));
+  assert.ok(!alertNoStep.includes('■'));
+  assert.ok(!alertNoStep.includes('□'));
+
+  // 3. formatProgressBar helper behavior
+  assert.equal(formatProgressBar(2, 4), '■■□□ 2/4');
+  assert.equal(formatProgressBar({ step: 1, total: 3 }), '■□□ 1/3');
+  assert.equal(formatProgressBar(null), '');
+  assert.equal(formatProgressBar(undefined), '');
+  assert.equal(formatProgressBar(0, 0), '');
+
+  // 4. Status message escaping dynamic text
+  const statusEscaped = formatStatusMessage([
+    { id: 'p1', name: 'Crew <Alpha> & Beta', status: 'watching', step: { step: 3, total: 3 } }
+  ]);
+  assert.ok(statusEscaped.includes('<b>Crew &lt;Alpha&gt; &amp; Beta</b>'));
+  assert.ok(statusEscaped.includes('■■■ 3/3'));
+  assert.ok(!statusEscaped.includes('<Alpha>'));
+});
+
+test('harbor alerts and status cover step zero, hostile HTML, and progress edges', () => {
+  assert.equal(formatProgressBar(0, 5), '□□□□□ 0/5');
+  assert.equal(formatProgressBar({ step: 0, total: 4 }), '□□□□ 0/4');
+  assert.equal(formatProgressBar('0/5'), '□□□□□ 0/5');
+  assert.equal(formatProgressBar('3/12'), '■■■□□□□□□□ 3/12');
+  assert.equal(formatProgressBar(15, 10), '■■■■■■■■■■ 15/10');
+  assert.equal(formatProgressBar(-1, 5), '');
+  assert.equal(formatProgressBar(1, -3), '');
+  assert.equal(formatProgressBar('nope'), '');
+  assert.equal(formatProgressBar(Number.NaN, 4), '');
+  assert.equal(formatProgressBar(1, 0), '');
+  assert.equal(formatProgressBar(0.2, 0.4), '');
+
+  const fractional = formatProgressBar(2.4, 5);
+  const blocks = (fractional.match(/■/g) || []).length + (fractional.match(/□/g) || []).length;
+  assert.equal(blocks, 5);
+  assert.match(fractional, /2\.4\/5$/);
+
+  const zeroStep = formatStatusMessage([
+    { id: 'p', name: 'Dock', status: 'watching', step: { step: 0, total: 4 }, timeLeft: { minutes: 8 } }
+  ]);
+  assert.ok(zeroStep.includes('□□□□ 0/4'));
+  assert.ok(zeroStep.includes('🟢 <b>Status:</b> Working · ~8m left'));
+
+  const noStep = formatStatusMessage([{ id: 'p', name: 'Dock', status: 'idle' }]);
+  assert.ok(!noStep.includes('■'));
+  assert.ok(!noStep.includes('□'));
+
+  const hostile = formatStatusMessage([
+    { id: 'p', name: 'North <dock> & pier', status: 'stuck <hard>', timeLeft: { minutes: '5 <b>now</b> & soon' } },
+    { id: 'q', name: 'Quiet', status: 'watching', timeLeft: { minutes: '2 <i>hr</i>' } }
+  ]);
+  assert.ok(hostile.includes('<b>North &lt;dock&gt; &amp; pier</b>'));
+  assert.ok(hostile.includes('• <b>Status:</b> stuck &lt;hard&gt;'));
+  assert.ok(hostile.includes('· ~2 &lt;i&gt;hr&lt;/i&gt;m left'));
+  assert.ok(!hostile.includes('<dock>'));
+  assert.ok(!hostile.includes('<hard>'));
+  assert.ok(!hostile.includes('<b>now</b>'));
+  assert.ok(!hostile.includes('<i>hr</i>'));
+
+  const alert = formatTelegramAlertMessage({
+    type: 'needs_owner',
+    projectName: 'A & B',
+    goalTitle: 'Hold <fast>\nsecond line',
+    timeLeft: { minutes: 0, longerThanUsual: true, sure: 'rough <guess> & co' },
+    detail: 'See C:\\secret\\note.js and <tag> & more',
+    step: { step: 0, total: 4 },
+    durationMinutes: -1
+  });
+  assert.ok(alert.startsWith('⚓ Captain'));
+  assert.ok(alert.includes('<b>Harbor Alert: A &amp; B</b>'));
+  assert.ok(alert.includes('<b>Goal:</b> Hold &lt;fast&gt;'));
+  assert.ok(alert.includes('<b>Status:</b> Needs your attention 🔔'));
+  assert.ok(alert.includes('<b>Estimate:</b> About 0m left (longer than usual) · rough &lt;guess&gt; &amp; co'));
+  assert.ok(alert.includes('&lt;tag&gt; &amp; more'));
+  assert.ok(alert.includes('□□□□ 0/4'));
+  assert.ok(!alert.includes('Duration'));
+  assert.ok(!alert.includes('<fast>'));
+  assert.ok(!alert.includes('<guess>'));
+  assert.ok(!alert.includes('<tag>'));
+  assert.ok(!alert.includes('note.js'));
+  assert.ok(!alert.includes('C:\\secret'));
+
+  const plain = formatAlertMessage({
+    type: 'needs_owner',
+    projectName: 'A & B',
+    goalTitle: 'Hold',
+    detail: 'See the note',
+    step: { step: 1, total: 2 }
+  });
+  assert.match(plain, /^Planwharf: /);
+  assert.ok(!plain.includes('<b>'));
+  assert.ok(!plain.includes('⚓'));
+  assert.ok(!plain.includes('■'));
+  assert.ok(!plain.includes('□'));
+
+  const unknown = formatTelegramAlertMessage({ type: 'mystery', projectName: 'P <x>', goalTitle: 'G & H' });
+  assert.ok(unknown.includes('<b>Harbor Alert: P &lt;x&gt;</b>'));
+  assert.ok(unknown.includes('<b>Status:</b> Updated •'));
+  assert.ok(!unknown.includes('■'));
+  assert.ok(!unknown.includes('<x>'));
 });
