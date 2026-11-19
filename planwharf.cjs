@@ -222,6 +222,21 @@ async function runCli(opts) {
 }
 
 // One launcher owner per notebook. Reopening either view talks to that owner.
+// A reboot reuses the old process number for something else. A pid that exists but is not
+// Planwharf is a dead lock, not a running instance.
+function pidIsPlanwharf(pid) {
+  try {
+    const { execFileSync } = require('child_process');
+    if (process.platform === 'win32') {
+      const out = execFileSync('tasklist', ['/FI', 'PID eq ' + pid, '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true });
+      return /node\.exe|Planwharf/i.test(out);
+    }
+    const fs = require('fs');
+    const cmdline = fs.readFileSync('/proc/' + pid + '/cmdline', 'utf8');
+    const exe = fs.readlinkSync('/proc/' + pid + '/exe');
+    return /node|Planwharf/i.test(cmdline + ' ' + exe);
+  } catch { return true; }
+}
 async function acquireApp(opts) {
   fs.mkdirSync(opts.attemptsDir, { recursive: true });
   const lockFile = path.join(opts.attemptsDir, 'app-instance.json');
@@ -260,6 +275,7 @@ async function acquireApp(opts) {
     }
     let alive = true;
     try { process.kill(existing.pid, 0); } catch (error) { alive = error.code !== 'ESRCH'; }
+    if (alive && !pidIsPlanwharf(existing.pid)) alive = false;
     if (!alive) { removeUnchanged(raw); continue; }
     if (existing.planFile !== path.resolve(opts.planFile)) throw new Error('This attempts directory belongs to another running notebook.');
     if (existing.url) {
