@@ -543,11 +543,11 @@ public sealed partial class MainWindow : Window
 
     async Task CheckPrsAsync()
     {
-        if (api == null || focus == null) return;
+        if (api == null || projectId == null) return;
         hint.Text = Strings.T("Checking pull requests…"); hint.Foreground = Palette.Muted;
         try
         {
-            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(focus));
+            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId));
             var prs = listed["prs"] as JsonArray ?? new JsonArray();
             if (prs.Count == 0) { hint.Text = Strings.T("No open pull requests."); hint.Foreground = Palette.Text; return; }
             var lines = new List<string>();
@@ -568,10 +568,10 @@ public sealed partial class MainWindow : Window
             {
                 var number = pr?["number"]?.GetValue<int>() ?? 0;
                 if (pr?["conflicts"]?.GetValue<bool>() == true)
-                    await api.PostAsync("/api/prs/resolve", new { projectId = focus, number });
+                    await api.PostAsync("/api/prs/resolve", new { projectId = projectId, number });
                 var failing = pr?["failing"] as JsonArray;
                 if (failing is { Count: > 0 })
-                    await api.AskAsync(focus, Strings.Format("Fix the failing checks on pull request #{0}: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
+                    await api.AskAsync(projectId, Strings.Format("Fix the failing checks on pull request #{0}: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
             }
             hint.Text = Strings.T("Pull requests checked. Conflicts merged where clean; failures handed to the crew."); hint.Foreground = Palette.Accent;
         }
