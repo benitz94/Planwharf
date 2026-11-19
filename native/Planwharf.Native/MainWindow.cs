@@ -93,6 +93,9 @@ public sealed partial class MainWindow : Window
             button.Click += (_, _) => OpenSide(button.IsChecked == true ? mode : null);
         }
         // Quit, as the red tab of the chat page: unfinished work is saved.
+        var checkPrs = Look.Tab(Strings.T("Check PRs"), "git");
+        checkPrs.Click += async (_, _) => { checkPrs.IsChecked = false; await CheckPrsAsync(); };
+        tools.Children.Add(checkPrs);
         var quit = Look.Tab(Strings.T("Quit"), "power");
         quit.Foreground = Palette.Danger; quit.Margin = new Thickness(6, 0, 0, 0);
         quit.Resources["ToggleButtonForegroundPointerOver"] = Palette.Danger; quit.Resources["ToggleButtonForegroundPressed"] = Palette.Danger;
@@ -535,6 +538,44 @@ public sealed partial class MainWindow : Window
         if (busy != null) panel.Children.Add(Line(busy, Palette.Muted, 13));
         else if (said != default) panel.Children.Add(Line(said.Text, said.Ok ? Palette.Accent : Palette.Danger, 13));
         return panel;
+    }
+
+
+    async Task CheckPrsAsync()
+    {
+        if (api == null || focus == null) return;
+        hint.Text = Strings.T("Checking pull requests…"); hint.Foreground = Palette.Muted;
+        try
+        {
+            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(focus));
+            var prs = listed["prs"] as JsonArray ?? new JsonArray();
+            if (prs.Count == 0) { hint.Text = Strings.T("No open pull requests."); hint.Foreground = Palette.Text; return; }
+            var lines = new List<string>();
+            foreach (var pr in prs)
+            {
+                var number = pr?["number"]?.GetValue<int>() ?? 0;
+                var conflicts = pr?["conflicts"]?.GetValue<bool>() == true;
+                var failing = pr?["failing"] as JsonArray;
+                if (conflicts) lines.Add(Strings.Format("#{0} has conflicts.", number));
+                else if (failing is { Count: > 0 }) lines.Add(Strings.Format("#{0} fails: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
+                else lines.Add(Strings.Format("#{0} is green.", number));
+            }
+            var broken = prs.Where(pr => pr?["conflicts"]?.GetValue<bool>() == true || pr?["failing"] is JsonArray { Count: > 0 }).ToList();
+            if (broken.Count == 0) { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Accent; return; }
+            if (!await Confirm(string.Join("\n", lines) + "\n\n" + Strings.T("Fix the conflicts and hand the failures to the crew?"), Strings.T("Fix them")))
+            { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Warn; return; }
+            foreach (var pr in broken)
+            {
+                var number = pr?["number"]?.GetValue<int>() ?? 0;
+                if (pr?["conflicts"]?.GetValue<bool>() == true)
+                    await api.PostAsync("/api/prs/resolve", new { projectId = focus, number });
+                var failing = pr?["failing"] as JsonArray;
+                if (failing is { Count: > 0 })
+                    await api.AskAsync(focus, Strings.Format("Fix the failing checks on pull request #{0}: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
+            }
+            hint.Text = Strings.T("Pull requests checked. Conflicts merged where clean; failures handed to the crew."); hint.Foreground = Palette.Accent;
+        }
+        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
     }
 
     async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)

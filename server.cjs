@@ -704,6 +704,27 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         })();
         return json(200, result);
       }
+      if (request.method === 'GET' && pathname === '/api/prs') {
+        const projectId = loc.searchParams.get('projectId');
+        const notebook = await readPlan(planFile);
+        const item = (notebook.schema === 2 ? notebook.projects : [notebook]).find(entry => entry.project.id === projectId);
+        const folder = item && item.project.folder;
+        if (!folder) throw new RequestError(404, 'Project not found.');
+        const result = await require('./engine/pr-check.cjs').listPrs(folder);
+        if (!result.ok) throw new RequestError(400, result.reason);
+        return json(200, result);
+      }
+      if (request.method === 'POST' && pathname === '/api/prs/resolve') {
+        const input = await body(request);
+        const projectId = input && input.projectId;
+        const number = input && input.number;
+        const notebook = await readPlan(planFile);
+        const item = (notebook.schema === 2 ? notebook.projects : [notebook]).find(entry => entry.project.id === projectId);
+        const folder = item && item.project.folder;
+        if (!folder || !Number.isInteger(number)) throw new RequestError(400, 'Project and pull request number required.');
+        const result = await require('./engine/pr-check.cjs').resolveConflicts(folder, number);
+        return json(result.ok ? 200 : 409, result);
+      }
       if (request.method === 'GET' && pathname === '/api/repository') {
         const result = await orchestra.inspectRepository(loc.searchParams.get('projectId'), { force: loc.searchParams.get('refresh') === '1' });
         if (!result.ok) throw new RequestError(400, result.reason);
