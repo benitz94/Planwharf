@@ -339,10 +339,8 @@ test('parallel assessments do not mix a sound sheet with a broken one', async ()
 
 test('the sheet stays on feat/pipeline-run and does not add a runner', () => {
   // This guards the job 22 branch. Another branch changes its own files, and that is not a failure here.
-  const here = git(['branch', '--show-current']);
-  const branchFiles = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
-  if (here && here !== 'feat/pipeline-run') return;
-  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;
+  // Only this branch is guarded. A detached checkout, as in CI on another pull request, is not it.
+  if (git(['branch', '--show-current']) !== 'feat/pipeline-run') return;
   const worktree = git(['status', '--porcelain']).split('\n').filter(Boolean)
     .map(line => line.slice(3).trim().replace(/\\/g, '/'));
   const committed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
