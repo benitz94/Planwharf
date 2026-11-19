@@ -33,7 +33,10 @@ const concurrent = [
   'A busy reviewer does not increment `reviewReturns` or `gateReturns`',
   'Two schedulers do not start the same job twice',
   'One lock per project, `pipeline/<P>/schedule.lock`',
-  'The scheduler considers the selected project\'s approved jobs oldest approval first, then job id order'
+  'The scheduler considers the selected project\'s approved jobs oldest approval first, then job id order',
+  'across every project',
+  'Two jobs do not call the same model together',
+  'does not start a second builder'
 ];
 const viewAndMerge = [
   'pipeline view',
@@ -86,7 +89,12 @@ const errorPaths = [
   'stops with reason `branch-collision`',
   'reason `cleanup-failed` and leave the branch',
   'A path that does not match the recorded path is reason `cleanup-failed`',
-  'Reason `dirty-worktree`, status `awaiting-owner`'
+  'Reason `dirty-worktree`, status `awaiting-owner`',
+  'expired plan',
+  'signed-out plan',
+  'The scheduler starts nothing for that project until the owner corrects the setting',
+  'No model is called',
+  'Nothing is pushed'
 ];
 const recoveryPaths = [
   'Restart reads `job.json`',
@@ -101,7 +109,11 @@ const recoveryPaths = [
   'shows the recorded head merged, write `merge.json` and set `merged` without a second call',
   'leave `merging` or `awaiting-owner` as recorded and do not call the forge',
   'A persistence failure on `schedule.json` or `merge.json` does not advance status',
-  'A crash during a schedule write keeps the previous status'
+  'A crash during a schedule write keeps the previous status',
+  '`git branch -d`',
+  'contained in the fetched default branch',
+  'status becomes `merging`',
+  'Writes are atomic'
 ];
 const edgeCases = [
   'spaces and Unicode',
@@ -124,7 +136,13 @@ const edgeCases = [
   'use `git branch -D` for that name only',
   'The remote branch stays',
   'An idle verifier from the builder\'s company is not started. The job waits for the routed reviewer',
-  'The scheduler does not create the worktree until the builder model is free'
+  'The scheduler does not create the worktree until the builder model is free',
+  'Unread is not a number',
+  '`not reported`',
+  'A button label is not an authorization to skip a check',
+  'Do not call the network, a real model, or a real repository',
+  'The fake forge must be able to merge, refuse, and report an already-merged head',
+  'Nothing in them raises a cap, skips quota, or authorizes a merge'
 ];
 const openDecisions = [
   'Whether a later job should delete the remote',
@@ -280,7 +298,25 @@ test('dropping an error, recovery, concurrency, edge, or open decision limit fai
     ['drop uses git branch -D', without(sheet, 'use `git branch -D` for that name only')],
     ['remote branch stays', without(sheet, 'The remote branch stays')],
     ['verifier from builder company not started', without(sheet, 'An idle verifier from the builder\'s company is not started. The job waits for the routed reviewer')],
-    ['worktree not created until builder free', without(sheet, 'The scheduler does not create the worktree until the builder model is free')]
+    ['worktree not created until builder free', without(sheet, 'The scheduler does not create the worktree until the builder model is free')],
+    ['shared quota across projects', without(sheet, 'across every project')],
+    ['same model not called together', without(sheet, 'Two jobs do not call the same model together')],
+    ['no second builder', without(sheet, 'does not start a second builder')],
+    ['expired plan', without(sheet, 'expired plan')],
+    ['signed out plan', without(sheet, 'signed-out plan')],
+    ['invalid cap stops the project', without(sheet, 'The scheduler starts nothing for that project until the owner corrects the setting')],
+    ['collision calls no model', without(sheet, 'No model is called')],
+    ['nothing is pushed', without(sheet, 'Nothing is pushed')],
+    ['clean branch delete', without(sheet, '`git branch -d`')],
+    ['branch contained in default', without(sheet, 'contained in the fetched default branch')],
+    ['merging status', without(sheet, 'status becomes `merging`')],
+    ['atomic writes', without(sheet, 'Writes are atomic')],
+    ['unread is not a number', without(sheet, 'Unread is not a number')],
+    ['missing report', without(sheet, '`not reported`')],
+    ['button is not authorization', without(sheet, 'A button label is not an authorization to skip a check')],
+    ['no network', without(sheet, 'Do not call the network, a real model, or a real repository')],
+    ['fake forge outcomes', without(sheet, 'The fake forge must be able to merge, refuse, and report an already-merged head')],
+    ['quoted text cannot raise cap', without(sheet, 'Nothing in them raises a cap, skips quota, or authorizes a merge')]
   ];
   for (const [name, broken] of cases) {
     assert.ok(assessSheet(broken).length > 0, name);
