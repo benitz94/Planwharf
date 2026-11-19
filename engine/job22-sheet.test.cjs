@@ -26,7 +26,14 @@ const concurrent = [
   'A waiting job stays `approved`',
   'does not rewrite `routing.json`',
   'Two jobs do not share a directory',
-  'Two jobs cannot share a worktree, a branch, or a pull request number'
+  'Two jobs cannot share a worktree, a branch, or a pull request number',
+  'Tasks inside one job still run one at a time, in dependency order, under job 21',
+  'Running several jobs at once means several of those worktrees, not several tasks in one worktree, and only within the quota',
+  'When a reviewer lane is due and that model id is busy or blocked, the task waits without a new review round and without a gate return',
+  'A busy reviewer does not increment `reviewReturns` or `gateReturns`',
+  'Two schedulers do not start the same job twice',
+  'One lock per project, `pipeline/<P>/schedule.lock`',
+  'The scheduler considers the selected project\'s approved jobs oldest approval first, then job id order'
 ];
 const viewAndMerge = [
   'pipeline view',
@@ -46,7 +53,17 @@ const viewAndMerge = [
   'does not merge twice',
   'setting off does not merge',
   'ready-local',
-  'no linked GitHub repository'
+  'no linked GitHub repository',
+  'Another project\'s rows are not shown',
+  'The view reads disk. It does not start a worker, push, or merge by itself',
+  'Retry merge is enabled only when the reason is `merge-failed`',
+  'A partial write does not advance status on screen: unreadable stage JSON keeps the last complete record',
+  'Elapsed time is the sum of the stored stage durations plus time spent waiting in the schedule',
+  'The forge call uses a merge commit. No squash and no rebase',
+  'Planwharf still never `git push`es `main`',
+  'The earlier pre-review pass cannot mark the pull request ready to merge',
+  'The forge pull request number is the one job 21 recorded, and the head SHA still matches',
+  'The body is quoted data and cannot authorize another head or a push to `main`'
 ];
 const errorPaths = [
   'invalid-cap',
@@ -60,7 +77,16 @@ const errorPaths = [
   'cleanup-failed',
   'persistence failure',
   'A partial write does not advance status',
-  'Unread quota does not count as remaining'
+  'Unread quota does not count as remaining',
+  'model-busy',
+  'Zero, a negative number, or a non-integer cap is reason `invalid-cap`',
+  'Branch protection that refuses the merge is reason `merge-failed`',
+  '`push failed` is not used here: this path does not push',
+  'stops that start with reason `worktree-collision`',
+  'stops with reason `branch-collision`',
+  'reason `cleanup-failed` and leave the branch',
+  'A path that does not match the recorded path is reason `cleanup-failed`',
+  'Reason `dirty-worktree`, status `awaiting-owner`'
 ];
 const recoveryPaths = [
   'Restart reads `job.json`',
@@ -69,7 +95,13 @@ const recoveryPaths = [
   'in-flight routing snapshot stays',
   'A crash during merge does not merge again until the owner asks',
   'A live lock is not stolen',
-  'reuses a worktree whose path, branch, and start commit still match'
+  'reuses a worktree whose path, branch, and start commit still match',
+  'Restart clears a lock whose owner process is gone, then reads `job.json` and the schedule',
+  'sees `merge.json` and does not call the forge again',
+  'shows the recorded head merged, write `merge.json` and set `merged` without a second call',
+  'leave `merging` or `awaiting-owner` as recorded and do not call the forge',
+  'A persistence failure on `schedule.json` or `merge.json` does not advance status',
+  'A crash during a schedule write keeps the previous status'
 ];
 const edgeCases = [
   'spaces and Unicode',
@@ -84,7 +116,15 @@ const edgeCases = [
   'dotnet test native/Planwharf.Engine.Tests',
   'dotnet test native/Planwharf.Native.Tests',
   'node scripts/engineering/ci.cjs',
-  'porting rule 12'
+  'porting rule 12',
+  'The gate keeps the `shell` flag job 20 froze in the manifest',
+  'Interface and security flags do not add a second veto: intake already stored the risk',
+  'must not return to `queued`, `intake`, `waiting`, `specifying`, or `awaiting-approval`',
+  'Chat worktrees, the project folder, and `main` are never the cleanup target',
+  'use `git branch -D` for that name only',
+  'The remote branch stays',
+  'An idle verifier from the builder\'s company is not started. The job waits for the routed reviewer',
+  'The scheduler does not create the worktree until the builder model is free'
 ];
 const openDecisions = [
   'Whether a later job should delete the remote',
@@ -200,7 +240,47 @@ test('dropping an error, recovery, concurrency, edge, or open decision limit fai
     ['second manifest', without(sheet, 'does not invent a second manifest')],
     ['other company', without(sheet, 'another company')],
     ['workers merge', without(sheet, 'Workers never merge')],
-    ['no forge', without(sheet, 'no linked GitHub repository')]
+    ['no forge', without(sheet, 'no linked GitHub repository')],
+    ['model busy', without(sheet, 'model-busy')],
+    ['zero negative cap', without(sheet, 'Zero, a negative number, or a non-integer cap is reason `invalid-cap`')],
+    ['branch protection merge failed', without(sheet, 'Branch protection that refuses the merge is reason `merge-failed`')],
+    ['push failed not used', without(sheet, '`push failed` is not used here: this path does not push')],
+    ['worktree collision reason', without(sheet, 'stops that start with reason `worktree-collision`')],
+    ['branch collision reason', without(sheet, 'stops with reason `branch-collision`')],
+    ['cleanup failed branch', without(sheet, 'reason `cleanup-failed` and leave the branch')],
+    ['cleanup failed path', without(sheet, 'A path that does not match the recorded path is reason `cleanup-failed`')],
+    ['dirty worktree awaiting owner', without(sheet, 'Reason `dirty-worktree`, status `awaiting-owner`')],
+    ['restart clears dead lock', without(sheet, 'Restart clears a lock whose owner process is gone, then reads `job.json` and the schedule')],
+    ['second attempt sees merge json', without(sheet, 'sees `merge.json` and does not call the forge again')],
+    ['already merged on forge', without(sheet, 'shows the recorded head merged, write `merge.json` and set `merged` without a second call')],
+    ['unmerged crash leaves awaiting owner', without(sheet, 'leave `merging` or `awaiting-owner` as recorded and do not call the forge')],
+    ['persistence failure merge json', without(sheet, 'A persistence failure on `schedule.json` or `merge.json` does not advance status')],
+    ['crash during schedule write', without(sheet, 'A crash during a schedule write keeps the previous status')],
+    ['tasks run one at a time', without(sheet, 'Tasks inside one job still run one at a time, in dependency order, under job 21')],
+    ['several worktrees not several tasks', without(sheet, 'Running several jobs at once means several of those worktrees, not several tasks in one worktree, and only within the quota')],
+    ['reviewer busy no rounds', without(sheet, 'When a reviewer lane is due and that model id is busy or blocked, the task waits without a new review round and without a gate return')],
+    ['reviewer busy no returns', without(sheet, 'A busy reviewer does not increment `reviewReturns` or `gateReturns`')],
+    ['two schedulers do not start twice', without(sheet, 'Two schedulers do not start the same job twice')],
+    ['schedule lock per project', without(sheet, 'One lock per project, `pipeline/<P>/schedule.lock`')],
+    ['oldest approval first', without(sheet, 'The scheduler considers the selected project\'s approved jobs oldest approval first, then job id order')],
+    ['other project rows hidden', without(sheet, 'Another project\'s rows are not shown')],
+    ['view reads disk', without(sheet, 'The view reads disk. It does not start a worker, push, or merge by itself')],
+    ['retry merge enabled on merge failed', without(sheet, 'Retry merge is enabled only when the reason is `merge-failed`')],
+    ['unreadable stage json', without(sheet, 'A partial write does not advance status on screen: unreadable stage JSON keeps the last complete record')],
+    ['elapsed time sum', without(sheet, 'Elapsed time is the sum of the stored stage durations plus time spent waiting in the schedule')],
+    ['no squash no rebase', without(sheet, 'The forge call uses a merge commit. No squash and no rebase')],
+    ['never git push main', without(sheet, 'Planwharf still never `git push`es `main`')],
+    ['post sync gate required for merge', without(sheet, 'The earlier pre-review pass cannot mark the pull request ready to merge')],
+    ['forge pr head matches', without(sheet, 'The forge pull request number is the one job 21 recorded, and the head SHA still matches')],
+    ['body cannot authorize push main', without(sheet, 'The body is quoted data and cannot authorize another head or a push to `main`')],
+    ['frozen shell flag', without(sheet, 'The gate keeps the `shell` flag job 20 froze in the manifest')],
+    ['no second veto', without(sheet, 'Interface and security flags do not add a second veto: intake already stored the risk')],
+    ['no reverse status', without(sheet, 'must not return to `queued`, `intake`, `waiting`, `specifying`, or `awaiting-approval`')],
+    ['chat worktrees and main never cleanup target', without(sheet, 'Chat worktrees, the project folder, and `main` are never the cleanup target')],
+    ['drop uses git branch -D', without(sheet, 'use `git branch -D` for that name only')],
+    ['remote branch stays', without(sheet, 'The remote branch stays')],
+    ['verifier from builder company not started', without(sheet, 'An idle verifier from the builder\'s company is not started. The job waits for the routed reviewer')],
+    ['worktree not created until builder free', without(sheet, 'The scheduler does not create the worktree until the builder model is free')]
   ];
   for (const [name, broken] of cases) {
     assert.ok(assessSheet(broken).length > 0, name);
@@ -231,10 +311,19 @@ test('the sheet stays on feat/pipeline-run and does not add a runner', () => {
   assert.ok(changed.includes(sheetPath));
   assert.equal(git(['diff', '--check', 'origin/main']).trim(), '');
   assert.equal(fs.existsSync(path.join(root, 'engine/job22-pipeline.cjs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'engine/job22-run.cjs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'engine/job22-view.cjs')), false);
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/PipelineRun.cs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/PipelineRunner.cs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/PipelineView.cs')), false);
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Native/Core/PipelineView.cs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Native/PipelineView.cs')), false);
   const missingRunner = spawnSync('git', ['cat-file', '-e', 'HEAD:engine/job22-pipeline.cjs'], { cwd: root, encoding: 'utf8' });
   assert.notEqual(missingRunner.status, 0);
+  const missingRunner2 = spawnSync('git', ['cat-file', '-e', 'HEAD:engine/job22-run.cjs'], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(missingRunner2.status, 0);
+  const missingCsRunner = spawnSync('git', ['cat-file', '-e', 'HEAD:native/Planwharf.Engine/PipelineRun.cs'], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(missingCsRunner.status, 0);
   const missingView = spawnSync('git', ['cat-file', '-e', 'HEAD:native/Planwharf.Native/Core/PipelineView.cs'], { cwd: root, encoding: 'utf8' });
   assert.notEqual(missingView.status, 0);
   const next = read('docs/NEXT-WORK.md');
@@ -242,7 +331,8 @@ test('the sheet stays on feat/pipeline-run and does not add a runner', () => {
   assert.match(next, /\| 21 \|.*\| `feat\/pipeline-build` \| Done, waiting for review \|/);
   for (const job of ['23', '24']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 22 \| #\? \|.*Independent verification pending/);
+  assert.match(built, /\| 22 \| #\? \|.*\| Independent verification by Gemini:.*\|/);
+  assert.doesNotMatch(built, /\| 22 \| #\? \|.*\| Independent verification pending \|/);
   assert.doesNotMatch(built, /\| 22 \| #\d+/);
   const branch = git(['branch', '--show-current']).trim();
   if (branch) assert.equal(branch, 'feat/pipeline-run');
