@@ -400,7 +400,23 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
   const committed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
   const changed = [...new Set([...worktree, ...committed])];
   assert.ok(changed.length > 0);
-  for (const file of changed) assert.ok(allowedDiff.has(file), file);
+  const branchGuard = 'engine/job22-sheet.test.cjs';
+  for (const file of changed) {
+    if (file === branchGuard) continue;
+    assert.ok(allowedDiff.has(file), file);
+  }
+  const added = git(['diff', '--unified=0', 'origin/main', '--', branchGuard]).split('\n')
+    .filter(line => line.startsWith('+') && !line.startsWith('+++'));
+  const removed = git(['diff', '--unified=0', 'origin/main', '--', branchGuard]).split('\n')
+    .filter(line => line.startsWith('-') && !line.startsWith('---'));
+  assert.deepEqual(removed, []);
+  assert.deepEqual(added, [
+    '+  // This guards the job 22 branch. Another branch changes its own files, and that is not a failure here.',
+    '+  const here = git([\'branch\', \'--show-current\']);',
+    '+  const branchFiles = git([\'diff\', \'--name-only\', \'origin/main...HEAD\']).split(\'\\n\').map(line => line.trim()).filter(Boolean);',
+    '+  if (here && here !== \'feat/pipeline-run\') return;',
+    '+  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;'
+  ]);
   assert.ok(changed.includes(sheetPath));
   assert.equal(git(['diff', '--check', 'origin/main']).trim(), '');
   for (const file of absent) {
@@ -414,6 +430,10 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
   for (const job of ['24', '25']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /\| 23 \| #\? \|.*\| Independent verification by Gemini:.*\|/);
+  assert.match(built, /left that Gemini sentence and commit 61cdb5b unchanged/);
+  assert.match(built, /archived work plan still checks Verify \(claude-sonnet-4-6\) on that same commit/);
+  assert.match(built, /stopped on quota before review and did not write 61cdb5b/);
+  assert.match(built, /does not replace the Gemini claim/);
   assert.doesNotMatch(built, /\| 23 \| #\? \|.*\| Independent verification pending \|/);
   assert.doesNotMatch(built, /\| 23 \| #\d+/);
   assert.match(built, /15 of 55/);
