@@ -152,7 +152,9 @@ function liveSheetSnapshot() {
   };
 }
 function isJob18SheetCheckout(snapshot) {
-  const onlySheetFiles = snapshot.changed.length > 0 && snapshot.changed.every(file => allowedDiff.has(file));
+  // The sheet itself has to be in the diff. A branch that only touches the test is not this branch.
+  const hasSheet = snapshot.changed.includes(sheetPath);
+  const onlySheetFiles = hasSheet && snapshot.changed.every(file => allowedDiff.has(file));
   return snapshot.branch === 'feat/mcp-protocol' || onlySheetFiles;
 }
 test('the branch is only the sheet and its required docs on refreshed origin/main', () => {
