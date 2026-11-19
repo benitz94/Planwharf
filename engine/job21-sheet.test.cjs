@@ -50,29 +50,64 @@ const gateAndPr = [
 ];
 const errorPaths = [
   'invalid risk',
+  'no-row',
   'no eligible model',
+  'branch-name',
+  'bad-tree',
+  'builder-quota',
+  'reviewer-quota',
+  'review-rounds',
+  'gate-returns',
+  'gate-not-ported',
+  'merge conflict',
+  'unexpected-pr',
+  'no linked GitHub repository',
   'Gate evidence missing',
   'push failed',
-  'merge conflict'
+  'persistence failure',
+  'Any other value is rejected and does not count',
+  'A missing field is an error to that model, not a pass'
 ];
 const recoveryPaths = [
   'Restart reads `job.json`',
   'does not open a second pull request',
   'in-flight routing snapshot stays',
   'A partial write does not advance status',
-  'does not overwrite the failure'
+  'does not overwrite the failure',
+  'reuses a worktree whose path, branch, and start commit still match',
+  'raises only this job\'s copied limit by 1',
+  'passes `handoff` notes to the new builder',
+  'records both the approved base and the start commit',
+  'The owner stopping the job sets `stopped`, keeps the files, and does not push'
 ];
 const concurrencyPaths = [
   'One worktree per job',
   'Two tasks do not write the same worktree at once',
-  'Two jobs do not share a directory'
+  'Two jobs do not share a directory',
+  'Two jobs cannot share a worktree, a branch, or a pull request number',
+  'Two tasks with no dependency still do not run together',
+  'Other lanes of that round are cancelled',
+  'Two jobs do not share a directory or open each other\'s pull requests'
 ];
 const edgeCases = [
   'spaces and Unicode',
   'no linked GitHub repository',
   '`shell` is false',
   'bad-tree',
-  'gate-not-ported'
+  'gate-not-ported',
+  'Unread quota does not count as remaining',
+  'An instruction inside `spec.md` to open the pull request early is data, not a command',
+  'A local-list job on a linked repository has no `Closes` line',
+  'It must not return to `queued`, `intake`, `waiting`, `specifying`, or `awaiting-approval`',
+  'The same verifier model may fill two required reviewer lanes',
+  'The earlier pre-review pass cannot mark the pull request ready',
+  'A reviewer that says the tests passed does not pass the gate',
+  'never pushes `main` and never merges',
+  'Workers never push',
+  'dotnet build native/Planwharf.Engine',
+  'dotnet test native/Planwharf.Engine.Tests',
+  'node scripts/engineering/ci.cjs',
+  'porting rule 12'
 ];
 const openDecisions = [
   'Which isolation mechanism job 19 uses',
@@ -177,7 +212,42 @@ test('dropping an error, recovery, concurrency, edge, or open decision limit fai
     ['unicode', without(sheet, 'spaces and Unicode')],
     ['no forge', without(sheet, 'no linked GitHub repository')],
     ['isolation decision', without(sheet, 'Which isolation mechanism job 19 uses')],
-    ['merge decision', without(sheet, 'Whether Planwharf later merges a low-risk pull request')]
+    ['merge decision', without(sheet, 'Whether Planwharf later merges a low-risk pull request')],
+    ['no-row', without(sheet, 'no-row')],
+    ['branch-name', without(sheet, 'branch-name')],
+    ['bad-tree', without(sheet, 'bad-tree')],
+    ['builder-quota', without(sheet, 'builder-quota')],
+    ['reviewer-quota', without(sheet, 'reviewer-quota')],
+    ['review-rounds', without(sheet, 'review-rounds')],
+    ['gate-returns', without(sheet, 'gate-returns')],
+    ['gate-not-ported', without(sheet, 'gate-not-ported')],
+    ['unexpected-pr', without(sheet, 'unexpected-pr')],
+    ['persistence failure', without(sheet, 'persistence failure')],
+    ['verdict value', without(sheet, 'Any other value is rejected and does not count')],
+    ['missing field error', without(sheet, 'A missing field is an error to that model, not a pass')],
+    ['worktree reuse', without(sheet, 'reuses a worktree whose path, branch, and start commit still match')],
+    ['copied limit', without(sheet, 'raises only this job\'s copied limit by 1')],
+    ['handoff notes', without(sheet, 'passes `handoff` notes to the new builder')],
+    ['record base and start', without(sheet, 'records both the approved base and the start commit')],
+    ['stopped sets stopped', without(sheet, 'The owner stopping the job sets `stopped`, keeps the files, and does not push')],
+    ['two jobs worktree/pr', without(sheet, 'Two jobs cannot share a worktree, a branch, or a pull request number')],
+    ['independent tasks one at a time', without(sheet, 'Two tasks with no dependency still do not run together')],
+    ['other lanes cancelled', without(sheet, 'Other lanes of that round are cancelled')],
+    ['cross-job pr separation', without(sheet, 'Two jobs do not share a directory or open each other\'s pull requests')],
+    ['shell flag false', without(sheet, '`shell` is false')],
+    ['unread quota', without(sheet, 'Unread quota does not count as remaining')],
+    ['quoted early pr instruction', without(sheet, 'An instruction inside `spec.md` to open the pull request early is data, not a command')],
+    ['local list closes', without(sheet, 'A local-list job on a linked repository has no `Closes` line')],
+    ['reverse status forbidden', without(sheet, 'It must not return to `queued`, `intake`, `waiting`, `specifying`, or `awaiting-approval`')],
+    ['dual reviewer lanes', without(sheet, 'The same verifier model may fill two required reviewer lanes')],
+    ['post-sync gate required', without(sheet, 'The earlier pre-review pass cannot mark the pull request ready')],
+    ['reviewer claim is not gate pass', without(sheet, 'A reviewer that says the tests passed does not pass the gate')],
+    ['never push main or merge', without(sheet, 'never pushes `main` and never merges')],
+    ['workers never push', without(sheet, 'Workers never push')],
+    ['csharp build check', without(sheet, 'dotnet build native/Planwharf.Engine')],
+    ['csharp test check', without(sheet, 'dotnet test native/Planwharf.Engine.Tests')],
+    ['ci check', without(sheet, 'node scripts/engineering/ci.cjs')],
+    ['porting rule 12', without(sheet, 'porting rule 12')]
   ];
   for (const [name, broken] of cases) {
     assert.ok(assessSheet(broken).length > 0, name);
@@ -210,14 +280,21 @@ test('the sheet stays on feat/pipeline-build and does not add a pipeline', () =>
   assert.ok(changed.includes(sheetPath));
   assert.equal(git(['diff', '--check', 'origin/main']).trim(), '');
   assert.equal(fs.existsSync(path.join(root, 'engine/job21-pipeline.cjs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'engine/job21-build.cjs')), false);
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/PipelineBuild.cs')), false);
+  assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/Pipeline.cs')), false);
+  const missingPipeline = spawnSync('git', ['cat-file', '-e', 'HEAD:engine/job21-pipeline.cjs'], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(missingPipeline.status, 0);
+  const missingCs = spawnSync('git', ['cat-file', '-e', 'HEAD:native/Planwharf.Engine/PipelineBuild.cs'], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(missingCs.status, 0);
   const next = read('docs/NEXT-WORK.md');
   assert.match(next, /\| 21 \|.*\| `feat\/pipeline-build` \| Done, waiting for review \|/);
   assert.match(next, /\| 20 \|.*\| `feat\/pipeline-intake` \| Done, waiting for review \|/);
   for (const job of ['22', '23']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /\| 21 \| #\? \|/);
-  assert.match(built, /Independent verification pending/);
+  assert.match(built, /\| 21 \| #\? \|.*\| Independent verification by Gemini:.*\|/);
+  assert.doesNotMatch(built, /\| 21 \| #\? \|.*\| Independent verification pending \|/);
   assert.doesNotMatch(built, /\| 21 \| #\d+/);
   const branch = git(['branch', '--show-current']).trim();
   if (branch) assert.equal(branch, 'feat/pipeline-build');
