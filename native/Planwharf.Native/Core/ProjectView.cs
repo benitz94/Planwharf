@@ -10,6 +10,7 @@ public sealed record StepResult(string Role, string Model, string Summary);
 public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "");
 public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results)
 {
+    public IReadOnlyList<string> OpenDecisions { get; init; } = [];
     // The project row as the server sent it, for the summary, usage and activity.
     public JsonObject? Row { get; init; }
     public string NextAction { get; init; } = "";
@@ -123,6 +124,7 @@ public static class ProjectViews
             var results = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"])).Select(result => S(result["summary"])).Where(text => text.Length > 0).ToList();
             work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results)
             {
+                OpenDecisions = (row["openDecisions"] as JsonArray ?? []).OfType<JsonObject>().Select(item => S(item["text"])).Where(text => text.Length > 0).ToList(),
                 Row = row, Id = S(mega["id"]), CanResume = B(row["canResume"]),
                 NextAction = new[] { S(mega["nextAction"]), S(row["next"]), S(row["label"]) }.FirstOrDefault(text => text.Length > 0) ?? "",
                 StartedAt = S(mega["approvedAt"]) is { Length: > 0 } approved ? approved : S(mega["createdAt"]), CompletedAt = S(mega["completedAt"]),

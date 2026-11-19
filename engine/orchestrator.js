@@ -2210,6 +2210,7 @@ function createOrchestrator(options) {
           modelId: row.modelId,
           workerLabel: row.workerLabel || null,
           waitingFor: row.waitingFor || '',
+          openDecisions: (store.execution.decisions || []).filter(decision => decision.projectId === item.project.id && !decision.answer),
           next: homeNext(item, row, store.execution),
           step: stepOf(row),
           pipeline: pipelineOf(row),
