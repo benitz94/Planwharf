@@ -394,30 +394,108 @@ test('parallel assessments do not mix a sound sheet with a broken one', async ()
   assert.ok(brokenRecover.some(error => error.includes('Reload skips it')));
 });
 
+function assessProvenance(built) {
+  const errors = [];
+  if (!/\| 23 \| #\? \|.*\| Independent verification by Gemini:.*\|/.test(built)) errors.push('missing Gemini verification entry');
+  if (!/left that Gemini sentence and commit 61cdb5b unchanged/.test(built)) errors.push('missing unchanged Gemini attribution');
+  if (!/archived work plan still checks Verify \(claude-sonnet-4-6\) on that same commit/.test(built)) errors.push('missing archived work plan note');
+  if (!/stopped on quota before review and did not write 61cdb5b/.test(built)) errors.push('missing Claude quota stop note');
+  if (!/does not replace the Gemini claim/.test(built)) errors.push('missing non-replacement assertion');
+  if (/\| 23 \| #\? \|.*\| Independent verification pending \|/.test(built)) errors.push('verification still marked pending');
+  if (/\| 23 \| #\d+/.test(built)) errors.push('premature pull request number assigned');
+  if (!/15 of 55/.test(built)) errors.push('built-with progress count changed');
+  return errors;
+}
+
+function assessDiffFiles(changedFiles, guardDiff) {
+  const errors = [];
+  const branchGuard = 'engine/job22-sheet.test.cjs';
+  for (const file of changedFiles) {
+    if (file === branchGuard) continue;
+    if (!allowedDiff.has(file)) errors.push('disallowed file in diff: ' + file);
+  }
+  if (!changedFiles.includes(sheetPath)) errors.push('sheetPath missing from diff');
+  if (guardDiff) {
+    if (guardDiff.removed && guardDiff.removed.length > 0) errors.push('unexpected lines removed from branchGuard');
+    const expectedAdded = [
+      '+  // This guards the job 22 branch. Another branch changes its own files, and that is not a failure here.',
+      '+  const here = git([\'branch\', \'--show-current\']);',
+      '+  const branchFiles = git([\'diff\', \'--name-only\', \'origin/main...HEAD\']).split(\'\\n\').map(line => line.trim()).filter(Boolean);',
+      '+  if (here && here !== \'feat/pipeline-run\') return;',
+      '+  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;'
+    ];
+    if (JSON.stringify(guardDiff.added) !== JSON.stringify(expectedAdded)) errors.push('branchGuard additions mismatch');
+  }
+  return errors;
+}
+
+test('reviewer provenance checks reject fabricated or conflicting attributions', () => {
+  const valid = read('docs/BUILT-WITH-PLANWHARF.md');
+  assert.deepEqual(assessProvenance(valid), []);
+
+  const cases = [
+    ['missing gemini', valid.replace(/(\| 23 \| #\? \|.*\| Independent verification by )Gemini(:.*\|)/, '$1Claude$2')],
+    ['dropped unchanged sentence', valid.replace('left that Gemini sentence and commit 61cdb5b unchanged', '')],
+    ['dropped archived work plan note', valid.replace('That Claude run stopped on quota before review and did not write 61cdb5b.', '')
+      .replace(/The archived work plan still checks Verify \(claude-sonnet-4-6\) on that same commit\./g, '')],
+    ['falsely claims claude completed', valid.replace('That Claude run stopped on quota before review and did not write 61cdb5b.', 'That Claude run completed review.')],
+    ['claims replacement', valid.replace('This review does not replace the Gemini claim', 'This review replaces the Gemini claim')],
+    ['still pending', valid.replace(/\| 23 \| #\? \| Wrote the phase 2 rest sheet.*\|/s, '| 23 | #? | Wrote the phase 2 rest sheet | Independent verification pending |')],
+    ['premature PR number', valid.replace('| 23 | #? |', '| 23 | #148 |')]
+  ];
+  for (const [name, broken] of cases) {
+    assert.ok(assessProvenance(broken).length > 0, name);
+  }
+});
+
+test('branch guard and diff isolation reject unauthorized changes or modified guard lines', () => {
+  const currentDiff = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
+  const guardAdded = git(['diff', '--unified=0', 'origin/main', '--', 'engine/job22-sheet.test.cjs']).split('\n')
+    .filter(line => line.startsWith('+') && !line.startsWith('+++'));
+  const guardRemoved = git(['diff', '--unified=0', 'origin/main', '--', 'engine/job22-sheet.test.cjs']).split('\n')
+    .filter(line => line.startsWith('-') && !line.startsWith('---'));
+
+  assert.deepEqual(assessDiffFiles(currentDiff, { added: guardAdded, removed: guardRemoved }), []);
+
+  assert.ok(assessDiffFiles([...currentDiff, 'engine/unauthorized.js'], { added: guardAdded, removed: guardRemoved }).some(e => e.includes('disallowed file')));
+  assert.ok(assessDiffFiles(currentDiff.filter(f => f !== sheetPath), { added: guardAdded, removed: guardRemoved }).some(e => e.includes('sheetPath missing')));
+  assert.ok(assessDiffFiles(currentDiff, { added: guardAdded, removed: ['- some line'] }).some(e => e.includes('unexpected lines removed')));
+  assert.ok(assessDiffFiles(currentDiff, { added: [...guardAdded, '+ extra line'], removed: guardRemoved }).some(e => e.includes('branchGuard additions mismatch')));
+});
+
+test('branch guard skips verification cleanly on other branches or detached heads with separate diffs', () => {
+  function shouldSkip(here, branchFiles) {
+    if (here && here !== 'port/23-sheet') return true;
+    if (!here && branchFiles.some(file => !allowedDiff.has(file))) return true;
+    return false;
+  }
+  assert.equal(shouldSkip('port/23-sheet', ['native/porting/jobs/23-phase2-rest.md']), false);
+  assert.equal(shouldSkip('feat/pipeline-run', ['engine/job22-sheet.test.cjs']), true);
+  assert.equal(shouldSkip('main', ['any.file']), true);
+  assert.equal(shouldSkip('', ['engine/other.js']), true);
+  assert.equal(shouldSkip('', ['native/porting/jobs/23-phase2-rest.md']), false);
+});
+
 test('the sheet stays on port/23-sheet and does not add a C# port', () => {
+  // This guards the job 23 branch. Another branch changes its own files, and that is not a failure here.
+  const here = git(['branch', '--show-current']);
+  const branchFiles = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
+  if (here && here !== 'port/23-sheet') return;
+  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;
+
   const worktree = git(['status', '--porcelain']).split('\n').filter(Boolean)
     .map(line => line.slice(3).trim().replace(/\\/g, '/'));
   const committed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
   const changed = [...new Set([...worktree, ...committed])];
   assert.ok(changed.length > 0);
+
   const branchGuard = 'engine/job22-sheet.test.cjs';
-  for (const file of changed) {
-    if (file === branchGuard) continue;
-    assert.ok(allowedDiff.has(file), file);
-  }
   const added = git(['diff', '--unified=0', 'origin/main', '--', branchGuard]).split('\n')
     .filter(line => line.startsWith('+') && !line.startsWith('+++'));
   const removed = git(['diff', '--unified=0', 'origin/main', '--', branchGuard]).split('\n')
     .filter(line => line.startsWith('-') && !line.startsWith('---'));
-  assert.deepEqual(removed, []);
-  assert.deepEqual(added, [
-    '+  // This guards the job 22 branch. Another branch changes its own files, and that is not a failure here.',
-    '+  const here = git([\'branch\', \'--show-current\']);',
-    '+  const branchFiles = git([\'diff\', \'--name-only\', \'origin/main...HEAD\']).split(\'\\n\').map(line => line.trim()).filter(Boolean);',
-    '+  if (here && here !== \'feat/pipeline-run\') return;',
-    '+  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;'
-  ]);
-  assert.ok(changed.includes(sheetPath));
+
+  assert.deepEqual(assessDiffFiles(changed, { added, removed }), []);
   assert.equal(git(['diff', '--check', 'origin/main']).trim(), '');
   for (const file of absent) {
     assert.equal(fs.existsSync(path.join(root, file)), false, file);
@@ -429,14 +507,7 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
   assert.match(next, /23-phase2-rest\.md/);
   for (const job of ['24', '25']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 23 \| #\? \|.*\| Independent verification by Gemini:.*\|/);
-  assert.match(built, /left that Gemini sentence and commit 61cdb5b unchanged/);
-  assert.match(built, /archived work plan still checks Verify \(claude-sonnet-4-6\) on that same commit/);
-  assert.match(built, /stopped on quota before review and did not write 61cdb5b/);
-  assert.match(built, /does not replace the Gemini claim/);
-  assert.doesNotMatch(built, /\| 23 \| #\? \|.*\| Independent verification pending \|/);
-  assert.doesNotMatch(built, /\| 23 \| #\d+/);
-  assert.match(built, /15 of 55/);
+  assert.deepEqual(assessProvenance(built), []);
   const branch = git(['branch', '--show-current']).trim();
   if (branch) assert.equal(branch, 'port/23-sheet');
   assert.equal(git(['merge-base', 'HEAD', 'origin/main']).trim(), git(['rev-parse', 'origin/main']).trim());
