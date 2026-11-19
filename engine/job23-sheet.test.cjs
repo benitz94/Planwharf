@@ -74,7 +74,24 @@ const errorPaths = [
   'safeGitWorkspace` returns null',
   'Unsafe token integers are omitted',
   'CHECKPOINTED` is stored as `BLOCKED`',
-  'exitCode` null'
+  'exitCode` null',
+  'The updated notebook is invalid.',
+  'Export is missing a project name.',
+  'Import is not a valid Planwharf project.',
+  'Job not found.',
+  'Set the task deadline.',
+  'Choose a deadline or leave timing to the worker.',
+  'Each answer must indicate the current question and a valid choice.',
+  'Answer the open questions of the current revision.',
+  'Import an object with title, goal, where it stands, decided decisions, and open questions.',
+  'Fill in title, goal, and where it stands.',
+  'commondir',
+  'objects/info/alternates',
+  'objects/info/http-alternates',
+  'worktree=',
+  'fsmonitor=',
+  'validateProject` rejects unknown keys on `data.project`',
+  'Revision modes are strictly `manual`, `grill`, or `import`'
 ];
 const recoveryPaths = [
   'a second call leaves personal notebook bytes',
@@ -87,7 +104,12 @@ const recoveryPaths = [
   'COMPLETE wins if both lines exist',
   'startGrill` keeps the notebook',
   'must stay JSON-identical',
-  'finishes every still-RUNNING `orchestrator`, `reviewer`, and `supervisor`'
+  'finishes every still-RUNNING `orchestrator`, `reviewer`, and `supervisor`',
+  'A matching `snapshot.execution.results` row finishes with that status and `exitCode`',
+  'A dead worker reads `exitPath` and the first 8192 characters of `resultPath`',
+  'No status becomes `BLOCKED`',
+  'The attempt is not closed',
+  'If the file does not end in a newline, append one before new records'
 ];
 const concurrent = [
   'Two projects may each have a running task',
@@ -99,7 +121,13 @@ const concurrent = [
   'one ledger file per directory',
   'does not open a second attempt while the first is active',
   'claim still valid',
-  'at most one task with status `running` per project'
+  'at most one task with status `running` per project',
+  'A second running task makes `validate` false',
+  'A concurrent test in one process appends two lines and reloads both',
+  'There is one ledger file per directory',
+  'The JavaScript does not lock two processes',
+  'External worktrees and shared object stores stay out',
+  'A directory symlink or junction that leaves the root is rejected'
 ];
 const edgeCases = [
   'spaces and Unicode',
@@ -136,7 +164,21 @@ const edgeCases = [
   'Do not call the network, a real model, or a real repository',
   'role `reviewer` stay',
   'model not eligible',
-  'does not create directories'
+  'does not create directories',
+  'at most 1000 notes',
+  'text up to 10000 characters',
+  'safe integer `revisionIds`',
+  'Non-array inputs to `getEnabledModels` or `setModelEnabled` return an empty array',
+  '100000 entries',
+  'middle dot, spaces',
+  'cachedInput` is added only when it is a safe integer',
+  'durationMs` is `max(0, end - start)`',
+  'recent` is the last 20 rows, newest first',
+  'TIMEOUT_MS` is 10 minutes',
+  '20000 characters',
+  '3000 characters, with a leading `...` when cut',
+  'taskkill` with `/PID`, `/T`, `/F`',
+  'SIGKILL'
 ];
 const openDecisions = [
   'Whether `setPlace` should keep `home`',
@@ -291,7 +333,49 @@ test('dropping an error, recovery, concurrency, edge, or open decision limit fai
     ['research', without(sheet, 'kind `research`')],
     ['paused', without(sheet, 'running task as `paused`')],
     ['eligible', without(sheet, 'model not eligible')],
-    ['directories', without(sheet, 'does not create directories')]
+    ['directories', without(sheet, 'does not create directories')],
+    ['updated notebook invalid', without(sheet, 'The updated notebook is invalid.')],
+    ['export missing name', without(sheet, 'Export is missing a project name.')],
+    ['import invalid project', without(sheet, 'Import is not a valid Planwharf project.')],
+    ['job not found', without(sheet, 'Job not found.')],
+    ['set task deadline', without(sheet, 'Set the task deadline.')],
+    ['choose deadline or discretion', without(sheet, 'Choose a deadline or leave timing to the worker.')],
+    ['valid answer choice', without(sheet, 'Each answer must indicate the current question and a valid choice.')],
+    ['answer open questions', without(sheet, 'Answer the open questions of the current revision.')],
+    ['import object shape', without(sheet, 'Import an object with title, goal, where it stands, decided decisions, and open questions.')],
+    ['fill title goal state', without(sheet, 'Fill in title, goal, and where it stands.')],
+    ['commondir', without(sheet, 'commondir')],
+    ['alternates', without(sheet, 'objects/info/alternates')],
+    ['http alternates', without(sheet, 'objects/info/http-alternates')],
+    ['worktree config', without(sheet, 'worktree=')],
+    ['fsmonitor config', without(sheet, 'fsmonitor=')],
+    ['validate reject unknown project keys', without(sheet, 'validateProject` rejects unknown keys on `data.project`')],
+    ['revision modes strictly manual grill import', without(sheet, 'Revision modes are strictly `manual`, `grill`, or `import`')],
+    ['snapshot reconcile match', without(sheet, 'A matching `snapshot.execution.results` row finishes with that status and `exitCode`')],
+    ['dead worker read paths', without(sheet, 'A dead worker reads `exitPath` and the first 8192 characters of `resultPath`')],
+    ['no status blocked', without(sheet, 'No status becomes `BLOCKED`')],
+    ['attempt not closed on complete', without(sheet, 'The attempt is not closed')],
+    ['append newline on missing newline', without(sheet, 'If the file does not end in a newline, append one before new records')],
+    ['second running task invalidates', without(sheet, 'A second running task makes `validate` false')],
+    ['concurrent append reload', without(sheet, 'A concurrent test in one process appends two lines and reloads both')],
+    ['one ledger per directory', without(sheet, 'There is one ledger file per directory')],
+    ['no cross process lock', without(sheet, 'The JavaScript does not lock two processes')],
+    ['external worktrees out', without(sheet, 'External worktrees and shared object stores stay out')],
+    ['junction escaping rejected', without(sheet, 'A directory symlink or junction that leaves the root is rejected')],
+    ['note count limit', without(sheet, 'at most 1000 notes')],
+    ['note length limit', without(sheet, 'text up to 10000 characters')],
+    ['safe revision ids in last visit', without(sheet, 'safe integer `revisionIds`')],
+    ['non array models input', without(sheet, 'Non-array inputs to `getEnabledModels` or `setModelEnabled` return an empty array')],
+    ['entries walk limit', without(sheet, '100000 entries')],
+    ['middle dot spaces', without(sheet, 'middle dot, spaces')],
+    ['cached input safe integer', without(sheet, 'cachedInput` is added only when it is a safe integer')],
+    ['duration non negative', without(sheet, 'durationMs` is `max(0, end - start)`')],
+    ['recent rows limit', without(sheet, 'recent` is the last 20 rows, newest first')],
+    ['timeout limit', without(sheet, 'TIMEOUT_MS` is 10 minutes')],
+    ['stream tail limit', without(sheet, '20000 characters')],
+    ['output tail limit', without(sheet, '3000 characters, with a leading `...` when cut')],
+    ['windows taskkill tree', without(sheet, 'taskkill` with `/PID`, `/T`, `/F`')],
+    ['sigkill posix', without(sheet, 'SIGKILL')]
   ];
   for (const [name, broken] of cases) assert.ok(assessSheet(broken).length > 0, name);
 });
@@ -329,7 +413,8 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
   assert.match(next, /23-phase2-rest\.md/);
   for (const job of ['24', '25']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 23 \| #\? \|.*\| Independent verification pending \|/);
+  assert.match(built, /\| 23 \| #\? \|.*\| Independent verification by Gemini:.*\|/);
+  assert.doesNotMatch(built, /\| 23 \| #\? \|.*\| Independent verification pending \|/);
   assert.doesNotMatch(built, /\| 23 \| #\d+/);
   assert.match(built, /15 of 55/);
   const branch = git(['branch', '--show-current']).trim();

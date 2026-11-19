@@ -69,7 +69,10 @@ Field order in returned objects is the order the JavaScript builds. Compare whol
 `example()` returns the Neighborhood library fixture. `validate` accepts schema 1 or schema 2 with
 at least one project, unique project ids, unique revision ids, and at most one task with status
 `running` per project. A second running task makes `validate` false. Two projects may each have a
-running task.
+running task. `validateProject` rejects unknown keys on `data.project` beyond `id`, `name`, `folder`,
+and `github`. Optional `home.notes` allows at most 1000 notes, non-empty text up to 10000 characters,
+unique note ids, and valid dates. Optional `home.lastVisit` requires parseable `viewedAt` and safe integer
+`revisionIds`. Revision modes are strictly `manual`, `grill`, or `import`.
 
 `createProject` on schema 1 wraps a clone into schema 2 and appends. The previous project must stay
 JSON-identical or the call throws `The updated notebook is invalid.` The same guard applies to
@@ -125,7 +128,8 @@ above 100 clamps to 100.
 
 `getEnabledModels` returns a new array of shallow copies where `enabled === true` and
 `available !== false`. Anything else is omitted, including a null entry. The input array and
-objects stay unchanged. `setModelEnabled` also copies. A null entry stays null, not a copy.
+objects stay unchanged. Non-array inputs to `getEnabledModels` or `setModelEnabled` return an empty array.
+`setModelEnabled` also copies. A null entry stays null, not a copy.
 `enabled` is stored as a boolean, and `available === false` forces `enabled` false even when the
 caller asked for true. `validateWorkerClaim` checks in this order: no enabled and available model
 returns `{ ok: false, reason: 'no model enabled' }` even when the id is also missing; then a
