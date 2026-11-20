@@ -43,6 +43,7 @@ public sealed partial class MainWindow : Window
     internal Action<WorkAlert>? AlertReceived { get; set; }
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
+    JsonArray prList = new(); string prError = "";
     bool busy, menuOpen, refreshing, closed;
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
@@ -242,7 +243,7 @@ public sealed partial class MainWindow : Window
     {
         if (mode == "settings" && api != null) _ = LoadSettingsAsync();
         sideMode = mode; sideSig = null;
-        sideTitle.Text = mode != null && sideTitles.TryGetValue(mode, out var named) ? named : "";
+        sideTitle.Text = mode == "prs" ? Strings.T("Pull requests") : mode != null && sideTitles.TryGetValue(mode, out var named) ? named : "";
         foreach (var (name, button) in sideButtons) button.IsChecked = name == mode;
         if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
         sidePanel.IsVisible = mode != null;
@@ -566,38 +567,54 @@ public sealed partial class MainWindow : Window
     async Task CheckPrsAsync()
     {
         if (api == null || projectId == null) return;
-        hint.Text = Strings.T("Checking pull requests…"); hint.Foreground = Palette.Muted;
+        prList = new JsonArray(); prError = "";
+        OpenSide("prs");
         try
         {
             var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId));
-            var prs = listed["prs"] as JsonArray ?? new JsonArray();
-            if (prs.Count == 0) { hint.Text = Strings.T("No open pull requests."); hint.Foreground = Palette.Text; return; }
-            var lines = new List<string>();
-            foreach (var pr in prs)
-            {
-                var number = pr?["number"]?.GetValue<int>() ?? 0;
-                var conflicts = pr?["conflicts"]?.GetValue<bool>() == true;
-                var failing = pr?["failing"] as JsonArray;
-                if (conflicts) lines.Add(Strings.Format("#{0} has conflicts.", number));
-                else if (failing is { Count: > 0 }) lines.Add(Strings.Format("#{0} fails: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
-                else lines.Add(Strings.Format("#{0} is green.", number));
-            }
-            var broken = prs.Where(pr => pr?["conflicts"]?.GetValue<bool>() == true || pr?["failing"] is JsonArray { Count: > 0 }).ToList();
-            if (broken.Count == 0) { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Accent; return; }
-            if (!await Confirm(string.Join("\n", lines) + "\n\n" + Strings.T("Fix the conflicts and hand the failures to the crew?"), Strings.T("Fix them")))
-            { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Warn; return; }
-            foreach (var pr in broken)
-            {
-                var number = pr?["number"]?.GetValue<int>() ?? 0;
-                if (pr?["conflicts"]?.GetValue<bool>() == true)
-                    await api.PostAsync("/api/prs/resolve", new { projectId = projectId, number });
-                var failing = pr?["failing"] as JsonArray;
-                if (failing is { Count: > 0 })
-                    await api.AskAsync(projectId, Strings.Format("Fix the failing checks on pull request #{0}: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
-            }
-            hint.Text = Strings.T("Pull requests checked. Conflicts merged where clean; failures handed to the crew."); hint.Foreground = Palette.Accent;
+            prList = listed["prs"] as JsonArray ?? new JsonArray();
         }
-        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
+        catch (Exception error) { prError = error.Message; }
+        sideSig = null;
+        RenderSide(ProjectViews.Project(snapshot, projectId));
+    }
+
+    void PrsPanel()
+    {
+        var section = Look.Section("git", Palette.Accent, Palette.AccentSoft, Strings.T("Pull requests"));
+        if (prError.Length > 0) { section.Children.Add(Line(prError, Palette.Danger, 13)); side.Children.Add(section); return; }
+        if (prList.Count == 0) { section.Children.Add(Line(Strings.T("No open pull requests."), Palette.Muted, 13)); side.Children.Add(section); return; }
+        foreach (var pr in prList)
+        {
+            var number = pr?["number"]?.GetValue<int>() ?? 0;
+            var title = pr?["title"]?.GetValue<string>() ?? "";
+            var conflicts = pr?["conflicts"]?.GetValue<bool>() == true;
+            var failing = pr?["failing"] as JsonArray;
+            var broken = conflicts || failing is { Count: > 0 };
+            var state = conflicts ? Strings.T("Conflicts") : failing is { Count: > 0 } ? Strings.T("Failing") : Strings.T("Green");
+            var row = new StackPanel { Spacing = 4, Margin = new Thickness(0, 0, 0, 12) };
+            row.Children.Add(Item("#" + number, title, state, broken ? Palette.Danger : Palette.Accent));
+            if (failing is { Count: > 0 }) row.Children.Add(Line(string.Join(", ", failing.Select(item => item?.GetValue<string>())), Palette.Muted, 12));
+            if (broken)
+            {
+                var fix = Small(Strings.T("Fix"), true);
+                var n = number; var hasConflicts = conflicts; var failed = failing;
+                fix.Click += async (_, _) =>
+                {
+                    fix.IsEnabled = false;
+                    try
+                    {
+                        if (hasConflicts) await api!.PostAsync("/api/prs/resolve", new { projectId, number = n });
+                        if (failed is { Count: > 0 }) await api!.AskAsync(projectId!, Strings.Format("Fix the failing checks on pull request #{0}: {1}.", n, string.Join(", ", failed.Select(item => item?.GetValue<string>()))));
+                        await CheckPrsAsync();
+                    }
+                    catch (Exception error) { prError = error.Message; sideSig = null; RenderSide(ProjectViews.Project(snapshot, projectId)); }
+                };
+                row.Children.Add(fix);
+            }
+            section.Children.Add(row);
+        }
+        side.Children.Add(section);
     }
 
     async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)
@@ -661,6 +678,7 @@ public sealed partial class MainWindow : Window
             case "progress" when progress != null: ProgressSide(progress); break;
             case "usage" when usage != null: UsageSide(usage); break;
             case "files" when files != null: FilesSide(files, folder); break;
+            case "prs": PrsPanel(); break;
             default: SettingsPanel(folder, view?.Name ?? ""); break;
         }
     }
