@@ -69,7 +69,7 @@ With any kind you also need at least one AI coding tool, installed and signed in
 A native window instead of a web page, much lighter than the desktop app, with everything the desktop app does: chat with the lead, the crew at work, Team, Progress, Usage, Files, Settings, commit and push. Download the zip for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest), extract it and open `Planwharf` (`Planwharf.exe` on Windows).
 
 - **What is native and what is not, yet:** the window is native (no browser inside). Today Planwharf's engine still runs on Node.js, included in the zip (about 75 MB in all), and the window starts it for you. The engine is being ported to C# ([the plan](native/porting/PLAN.md)); when that is done the app will no longer contain Node.js, and it will be the only kind of Planwharf.
-- To update, download the new zip: the app tells you when one is out.
+- To update, press **Settings → Updates → Update now**: the app downloads the new zip, checks it and restarts itself (a copy without that button: download the new zip once).
 - It is not code-signed yet: on Windows choose **More info > Run anyway**; on macOS, if it is blocked, open **System Settings > Privacy & Security** and choose **Open Anyway**.
 - It uses the same projects as the desktop app: close one before you open the other.
 

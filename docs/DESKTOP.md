@@ -1,6 +1,8 @@
-# Desktop app and Linux install
+# Desktop app and web app (deprecated)
 
-Planwharf comes in two forms. Both run the same app on your computer.
+> **Use the native app.** These two versions are deprecated: they still work and get fixes for serious errors, but no new features, and they will be removed once the native app runs on its own C# engine. Newer features (alerts on the computer and phone, tools per model, company limits, self-update of the native app, Italian) are in the native app only. See the [user guide](USER-GUIDE.md).
+
+The two older forms run the same engine on your computer.
 
 | | Portable (ZIP) | Desktop app |
 | --- | --- | --- |

@@ -2,143 +2,93 @@
 
 Planwharf runs a team of AI models on your computer to build what you describe. **You are the captain**: you set the goal, choose the team, and start or stop the work. A **lead** model talks with you and plans; **builders** write the code and tests; **verifiers** check that work and fix it.
 
-For a two-minute tour of the screen, read [the chat view](CHAT-VIEW.md). To build something right away, follow the [first project guide](HOW-TO.md).
+This guide describes the **native app**, the version developed from now on. The desktop app (Electron) and the web app are deprecated: they still work, see [Desktop app and web app](DESKTOP.md). For a two-minute tour of the screen, read [the chat view](CHAT-VIEW.md); to build something right away, follow the [first project guide](HOW-TO.md).
 
 ## Install and launch
 
-Install Node.js. Planwharf has no npm dependencies. Download `Planwharf-vX.Y.Z.zip` from the [latest GitHub Release](https://github.com/benitz94/Planwharf/releases/latest) under **Assets** and extract the whole archive. The same ZIP works on Windows, macOS and Linux. `planwharf-update.json.gz` is update metadata, not the application. GitHub's **Source code** archives are repository snapshots.
+1. Install and sign in to at least one AI coding tool: Codex (ChatGPT), Claude Code, Grok CLI or Antigravity (Gemini). Planwharf uses those sign-ins and never asks for a password.
+2. Download the native app for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest): `Planwharf-native-win-x64-vX.Y.Z.zip` (or `…-win-arm64-…`), `…-linux-x64-…` (or `…-linux-arm64-…`), `…-osx-arm64-…` or `…-osx-x64-…`.
+3. Extract the zip anywhere and open `Planwharf` (`Planwharf.exe` on Windows). Nothing else to install: the zip carries what it needs.
 
-- **Windows:** open `Planwharf.exe` (or `planwharf.cmd`, or `node planwharf.cjs`).
-- **macOS / Linux:** run `sh ./planwharf.sh` or `node ./planwharf.cjs`.
+Your projects and settings are kept in your user folder (`%APPDATA%\Planwharf\data`, `~/.config/Planwharf/data`, `~/Library/Application Support/Planwharf/data`), never in the app folder, so updating or moving the app does not touch them. Use one Planwharf at a time on the same data.
 
-`Planwharf.exe` is a launcher: keep it with the rest of the folder. Windows is the verified desktop platform.
+**Updates:** **Settings → Updates → Update now** downloads the new version, checks it against the digest GitHub publishes, saves running work, and restarts. After the restart, press **Resume** if work was running.
 
-Planwharf listens on `127.0.0.1`, normally port 4173, and opens one window on the chat. Opening it again reuses the running app. Closing the window, or **Settings → Quit**, saves unfinished work and shuts Planwharf down.
-
-Terminal options:
-
-- `node planwharf.cjs projects` lists projects;
-- `node planwharf.cjs status` reads the recorded status without starting work;
-- `--plan`, `--attempts-dir` and `--port` choose the notebook, the evidence folder and the port;
-- `--browser` picks a browser name, `default`, or an executable path;
-- `--no-window` starts without a window.
-
-For a separate practice notebook:
-
-```powershell
-Copy-Item fixtures/starter-notebook.json practice.json
-node planwharf.cjs --plan practice.json --attempts-dir practice-attempts --port 4180
-```
-
-The default notebook, `plan.json`, is local data and is never committed. First launch creates it from the starter fixture only if it is missing.
+**Language:** **Settings → Look → Language**: English (default) or Italiano. Texts written by the engine (statuses, reasons, the crew's answers) stay in English for now; the lead answers in the language you write in.
 
 ## Projects and folders
 
-**+ New project** asks for a name, what to build, and a folder. Leave the folder empty to create one inside the default projects folder (**Settings → New projects**). **Settings → This project** changes the folder later. **Settings → Remove project** removes the project from Planwharf; its folder stays on disk.
+**+ New project** asks for a name and a folder; leave the folder empty to create one inside the projects folder (**Settings**). The project list on the left shows the project you used last first, with its status and who is working. **Settings → Remove project** removes it from Planwharf; its folder stays on disk.
 
-Workers run only inside the project folder. A missing folder blocks the work. This is a check on where work starts, not an operating-system sandbox for the AI tools.
+Workers run only inside the project folder. This is a check on where work starts, not an operating-system sandbox for the AI tools.
 
-Git evidence is unavailable for inherited parent repositories, external worktrees and redirected Git metadata, and submodules are not inspected. Planwharf reports these cases instead of guessing.
+## The team
 
-## The team and its roles
+Open **Team**. Each project has its own team.
 
-Open **Team**. Each model shows one button per role:
+| On screen | Job |
+| --- | --- |
+| Lead (menu at the top) | Talks with you, plans, picks who does each step. The menu lists the leads from the most capable down; if the lead runs out of quota, the next one takes over. |
+| Build | Writes the code and its tests. |
+| Verify | Checks the builder's work independently and fixes what fails. A strong model is preferred: a light one verifies only when nobody else can. |
+| Bench | Available, but never used until you give it a role. |
 
-| Role on screen | Role name in files | Job | What it never does |
-| --- | --- | --- | --- |
-| Lead (selector) | Orchestrator | Talks with you, plans, picks who does each step. | Build or verify, unless you also give it those roles. |
-| Build | Worker | Writes the code and its tests. | Check its own work as the verifier. |
-| Verify | Verifier | Checks the builder's work independently and fixes what fails. Planwharf prefers a verifier from another company. | Build the job. With no verifier the job runs as one step and Planwharf only runs the tests. |
-| Review (optional) | Reviewer | Reads the work and reports problems, without changing files. | Implementation. |
+Each model card shows its quota left (5-hour and weekly windows), its **weight** (light, default, premium: light parts of the work go to light models, heavy parts to strong ones), and:
 
-Nobody needs to be picked to watch the work: Planwharf always does it by itself and tells the lead when something stalls or fails ([Supervisor](SUPERVISOR.md)).
+- **Limit**: the quota left at which Planwharf stops giving the model new work and moves its running step to another model. **Save for all <company>** sets it for every model of that company (all Claude models share one quota); **Only this model** sets an exception. The general limit, 35% of both windows, is in **Settings**.
+- **Tools**: MCP servers, browser, hooks and memory for that model, or the same as the project.
 
-A model with no role sits on the **bench** and is never used. Roles are permissions, not rankings: changing them affects the next assignment, not work already running. A role a model cannot do is shown disabled.
+**Find models** filters by company, weight and state, with **All / None** to give or take a role for every model shown. **AI tools** turns each program on or off, and **Look for models again** rereads the models of the accounts signed in on this computer. Models of an expired plan or a signed-out account are hidden, with one line saying why. Where a program allows it (Claude Code, Codex), **Add another account** uses a second subscription of the same company before moving to another company.
 
-**AI tools** lists each provider with an **On/Off** switch; a tool that is off is never used. **Look for models again** rereads the models available to the accounts signed in on this computer. Planwharf runs this check at every start too. A model that disappears from a provider's list is removed from Team; saved roles and past evidence keep its exact ID. New models start on the bench.
-
-Supported tools: Codex / ChatGPT, Grok CLI, Antigravity / Gemini and Claude Code (see [Claude Code setup](EXTERNAL-PROVIDERS.md#claude-code-subscription-cli)). Sign in to each tool separately; Planwharf uses that login and never asks for your password.
-
-**Connect a model by API** adds an OpenAI-compatible or Anthropic Messages API, for example DeepSeek or Kimi. Put the API key in an environment variable and give Planwharf only the variable's name. Tick **These models can use tools** only if the models can call tools; building code needs it. See [external providers](EXTERNAL-PROVIDERS.md).
-
-### Personal and Business accounts
-
-Confirmed team, Business or Enterprise accounts add **Business** to model names. Roles are saved per recognised account: switching back to an account restores its roles, and a new account starts with no roles. Antigravity and Claude Code do not expose account type, so their names do not change. Stop work before switching a tool's account, then press **Look for models again**.
+**Connect a model by API** adds an OpenAI-compatible or Anthropic Messages API (DeepSeek, Kimi…): the key stays in an environment variable, Planwharf stores only its name. See [external providers](EXTERNAL-PROVIDERS.md).
 
 ## Working with the lead
 
-Write in the chat what you want. Ordinary conversation never starts work by itself.
+Write in the chat what you want; ordinary conversation never starts work by itself. Under each of your messages, **Copy** copies it and **Use again** puts it back in the box. Short orders such as `usage`, `files`, `settings`, `bench <model>`, `stop` are handled by Planwharf without calling a model ([the chat view](CHAT-VIEW.md#commands-in-the-chat)).
 
-- When the lead proposes work, a card shows the steps and who does each. **Approve and start** launches it; to change it, tell the lead.
-- **Let the crew do it** turns on [project autonomy](PROJECT-AUTONOMY.md). The crew then plans, approves its own steps within limits, builds, verifies and stops when the goal is reached or a limit is hit. **Stop the crew** turns it off.
+When the lead suggests a goal, **Let the crew do it** starts it. The crew then works on its own ([project autonomy](PROJECT-AUTONOMY.md)): the lead splits the work, approves its own steps within limits, and stops when the goal is reached or a limit is hit. **Stop the crew** stops it at any time.
 
-Short commands such as `show usage`, `files`, `settings` or `bench <model>` are handled by Planwharf without calling a model; see [the chat view](CHAT-VIEW.md#commands-in-the-chat). Each answer shows the time it took. **How the lead got there** shows the lead's reasoning when the tool provides it.
+## What happens after "Let the crew do it"
 
-The lead receives a short briefing on the project: goal, current work, recent results, saved point and repository state. Earlier conversation turns are sent in order; the tool's own context limit still applies.
+1. **Safe start.** Planwharf checks that the project folder has no uncommitted changes from something else, fetches GitHub, and creates the work's branch from the latest `main` (or goes on with the work's own branch). It writes the work plan, `.planwharf/plan.md`, kept out of git unless you choose **Settings → Keep the work plan in git**.
+2. **Split.** The lead divides the work into parts that can run at the same time, each with its own files and weight. Parallel parts each work in their own copy of the folder (a git worktree), and are joined at the end.
+3. **Build, then Verify.** Each part is built; then another model checks the whole work and fixes what fails. A step is done only when the worker leaves a valid result and exits cleanly.
+4. **Quota watch.** A model that falls under its limit hands its step to another model with a handoff (files changed, tests, summary). A step that ends with no result is tried once more, then moves to the next model. A lead that runs out of quota hands over to the next lead at once.
+5. **Decisions.** What only you can decide is shown highlighted as **Needs your decision**, with a suggestion and buttons to answer.
+6. **Finished.** The **Work finished** card shows the summary, the time, what each model used, and the git state.
 
-## Following the work
+The **Crew at work** card shows the steps, their models and state, what the running model is doing, and **about how long is left** (from how long past steps took). **Progress**, **Usage** and **Files** are in the panel on the right.
 
-While the crew works, a **Crew at work** card in the chat shows:
+## Commits and pushes
 
-- a progress bar;
-- each step, with its role and model, and a coloured dot for each provider;
-- the state of each step: waiting, working, done, failed;
-- **What … is doing**: the latest actions of the running model, in plain words.
+The crew commits on the work's branch and never pushes: every worker runs with a git setting that makes any push fail. You publish: **Push** sends the branch to GitHub under its own name, opens the pull request (named after the work), and never pushes `main`. If GitHub refuses a private email address in the commits, they get your GitHub noreply address and the push is tried again. You merge the pull request on GitHub. **Check PRs** in the app lists the open pull requests of the project.
 
-Short lines in the chat record each milestone. **Progress** lists the steps and recent activity; **Files** lists files changed since the last Git commit.
+## Alerts
 
-A step is done only when the worker leaves a valid structured result and exits cleanly. A process ID or an optimistic message is not proof. When everything is done, a **Work finished** card summarises steps, time and uncommitted files. Planwharf never commits, pushes or publishes on its own: test the result in the project folder.
-
-Terms you may meet in files and logs:
-
-- a **MegaTask** is one approved piece of work;
-- a **SubTask** is one step of it;
-- an **Attempt** is one run of a model on a step;
-- a **Result** records the outcome, files, tests and blockers;
-- a **Checkpoint** is a saved point to resume from.
+- **On the computer:** when a work ends, fails or needs you: a notification, the taskbar flashing and a short sound, each switchable in **Settings → Look**.
+- **On the phone:** **Settings → Phone**: ntfy (a private topic name, no account), or a Telegram bot you create with BotFather and pair with the code shown there. The bot reports stops, resumes, verification and model switches, and answers `/status`, `/stop <project>` (after "yes") and `/resume <project>`. Messages carry only the project name, the goal, the state and times: never code, file names or paths.
 
 ## Stop and resume
 
-**Stop work** ends the running workers and saves a checkpoint. Partial files stay as they are. **Resume** continues from the checkpoint. It keeps finished steps and starts fresh attempts only for the rest. If the repository or plan changed since the checkpoint, Planwharf says so and asks you to confirm. Resuming does not restore a model's internal memory. After a restart, unfinished work waits for you; it never restarts on its own.
+**Stop the crew** ends the running workers and saves a checkpoint; partial files stay. **Resume** continues from it, keeping finished steps. If the folder or the plan changed meanwhile, Planwharf says so and asks you to confirm. After a restart, unfinished work waits for you.
 
 ## Quota and usage
 
-**Usage** shows the quota **left** in each provider's shared pool. Every model on the same plan shares that value. When a provider does not report quota, Planwharf shows the provider's own reason instead of a number.
-
-Lead calls and crew work list calls, time and output tokens. A provider that does not report tokens shows "not reported", never zero or an estimate. This is operational evidence, not a bill.
+**Usage** shows the quota left for each company and window, with reset times, the status of each company, and the calls, time and tokens of the lead and the crew. A provider that does not report a value shows "not reported", never a guess.
 
 ## Move a project to another computer
 
-**Settings → Move a project → Save … to a file** downloads the project as JSON. The file holds plan revisions, notes, tasks, results, checkpoints, history and a readable summary. It never includes source code, raw logs or credentials. **Open a project file** adds it as a new project; it never overwrites one. Check the folder in Settings, then press **Resume** if work was saved. See [Continue work](CONTINUE-WORK.md).
-
-## Updates
-
-Planwharf checks for the latest release when it starts, without downloading anything; **Check again** repeats the check. When one is available, a link appears at the bottom left. **Settings → Updates → Update and restart** installs it after a second confirmation. Unfinished work is checkpointed first; if that fails, the update stops. After the restart, press **Resume** to continue.
-
-## Not in the chat view
-
-These earlier controls are not available in the current screen:
-
-- personal notes;
-- the clarification interview (Grill);
-- **Pause after current tasks** and **Finish by** deadlines;
-- Gold model;
-- per-model and per-provider usage policies (Always approve / YOLO);
-- linking a GitHub URL and the remote comparison;
-- the browser picker (use `--browser`).
-
-Data they saved is kept and still applies; for example, a provider policy set earlier remains in force.
+**Settings → Move a project → Save … to a file** saves the project's plan, notes, tasks, results, checkpoints and history as JSON (never source code, raw logs or credentials). **Open a project file** adds it as a new project. See [Continue work](CONTINUE-WORK.md).
 
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| The launcher cannot find Node.js | Install Node.js and keep the whole application folder together. The error dialog names its log file. |
-| "Let the crew do it" is disabled | The line next to it says what is missing: a lead, a builder or the folder. |
-| A model is missing | Sign in to that tool, check that it is **On** in Team, then press **Look for models again**. |
-| No model can take a step | Give a model the role that step needs (Build or Verify), and check its quota. |
-| Quota shows a reason instead of a number | The provider did not report it; Planwharf does not guess. |
-| Resume asks for confirmation | The folder or plan changed since the checkpoint; review, then confirm. |
-| Old behaviour after updating files by hand | Quit Planwharf and start it again. |
+| "Let the crew do it" is disabled | The line next to it says what is missing: a lead, a builder, the folder, or a goal. |
+| "Commit or stash the changes in the folder first" | Files in the folder do not belong to this work. Commit them, or set them aside with `git stash push -u`. |
+| A model is missing | Sign in to that tool, check it is **On** in Team, then **Look for models again**. A hidden model may have an expired plan. |
+| No model can take a step | Give a model the role the step needs (Build or Verify), and check its quota and limit. |
+| A quota shows a reason instead of a number | The provider did not report it; Planwharf does not guess. |
+| The push is refused | The message under the card says why; a private email is fixed by itself when the GitHub CLI (`gh`) is signed in. |
 
-Keep TLS verification on. See [project status](PROJECT-STATUS.md) for verified platforms and limits, [provider adapters](PROVIDER-ADAPTERS.md) for developers, and [third-party notices](THIRD-PARTY-NOTICES.md).
+More: [the chat view](CHAT-VIEW.md) · [FAQ](FAQ.md) · [technical reference](REFERENCE.md) · [Built with Planwharf](BUILT-WITH-PLANWHARF.md).
