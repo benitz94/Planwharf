@@ -237,7 +237,8 @@ test('ollama escapes model HTML, retries once, and hides error bodies', async ()
   });
   assert.equal(failures, 2);
   assert.equal(failed.ok, false);
-  assert.equal(failed.text, down);
+  assert.equal(failed.text, unavailableReply('en', 'HTTP 500'));
+  assert.match(failed.text, /refused the question/);
   assert.equal(failed.text.includes('plan.js'), false);
   assert.equal(failed.text.includes('<no>'), false);
 

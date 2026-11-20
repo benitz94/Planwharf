@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { say, companionOffline, languageOrDefault } = require('./phone-voice.cjs');
 
 const DEFAULT_OLLAMA_URL = 'http://127.0.0.1:11434';
 const DEFAULT_OLLAMA_MODEL = 'qwen2.5:3b';
@@ -44,20 +45,26 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
-function withCaptain(body) {
+function withCaptain(body, language) {
   const text = String(body || '').trim();
-  if (!text) return '⚓ Captain';
-  if (text.startsWith('⚓ Captain')) return text;
-  return `⚓ Captain\n\n${text}`;
+  const isIt = languageOrDefault(language) === 'it';
+  const greeting = isIt ? '⚓ Capitano' : '⚓ Captain';
+  if (!text) return greeting;
+  const stripped = text.replace(/^(?:⚓\s*)?(?:captain|capitano)[:\s]*/i, '').trim();
+  if (!stripped) return greeting;
+  return `${greeting}\n\n${stripped}`;
 }
 
 function isClearMemory(text) {
-  const value = String(text || '').trim().toLowerCase().replace(/^(\/(?:clear|forget))(?:@[a-z0-9_]+)?$/i, '$1');
-  return value === '/clear' || value === '/forget' || value === 'clear memory' || value === 'forget this chat';
+  const value = String(text || '').trim().toLowerCase().replace(/^(\/(?:clear|forget|cancella|dimentica|pulisci|svuota))(?:@[a-z0-9_]+)?$/i, '$1');
+  return value === '/clear' || value === '/forget' || value === '/cancella' || value === '/dimentica' || value === '/pulisci' || value === '/svuota'
+    || value === 'clear memory' || value === 'forget this chat'
+    || value === 'cancella memoria' || value === 'pulisci memoria' || value === 'svuota memoria' || value === 'dimentica questa chat';
 }
 
 function isBareConfirmation(text) {
-  return /^(yes|si|sì)$/i.test(String(text || '').trim());
+  const clean = String(text || '').trim().toLowerCase().replace(/[.!?]+$/, '');
+  return clean === 'yes' || clean === 'si' || clean === 'sì';
 }
 
 function createChatMemory({ maxMessages = MAX_MEMORY_MESSAGES } = {}) {
@@ -119,14 +126,14 @@ function projectFacts(projects = [], sanitize) {
       name: clean(project?.name || project?.id || 'Project').slice(0, 80) || 'Project',
       goal: clean(goalSource).slice(0, 80),
       status: clean(project?.status || 'idle').slice(0, 40) || 'idle',
-      step: project?.step?.step && project?.step?.total ? `${Number(project.step.step)}/${Number(project.step.total)}` : '',
+      step: project?.step?.step != null && project?.step?.total != null ? `${Number(project.step.step)}/${Number(project.step.total)}` : '',
       minutes: Number.isFinite(minutes) && minutes >= 0 ? Math.round(minutes) : null,
       waiting: project?.status === 'waiting_on_you'
     };
   });
 }
 
-function buildReplyMessages({ question, projects, history, sanitize, model } = {}) {
+function buildReplyMessages({ question, projects, history, sanitize, model, language } = {}) {
   const lines = projectFacts(projects, sanitize).map(item => {
     const bits = [`${item.name}: ${item.status}`];
     if (item.goal) bits.push(`goal ${item.goal}`);
@@ -142,6 +149,7 @@ function buildReplyMessages({ question, projects, history, sanitize, model } = {
     'Use only the project facts below. Do not invent files, paths, commands, or actions.',
     'You cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.',
     'If the facts do not answer the question, say so.',
+    say(language, 'conversationExtra'),
     `The local model answering this message is ${String(model || DEFAULT_OLLAMA_MODEL)}. Do not claim another name.`,
     lines.length ? `Facts:\n${lines.join('\n')}` : 'Facts: no projects.'
   ].join('\n').slice(0, 2400);
@@ -156,19 +164,11 @@ function buildReplyMessages({ question, projects, history, sanitize, model } = {
   ];
 }
 
-function unavailableReply() {
-  return [
-    '⚓ Captain',
-    '',
-    '<b>Harbor Companion Offline</b>',
-    '⚠️ The local model is not answering right now. Deck commands still work:',
-    '• /status',
-    '• /stop &lt;project&gt;',
-    '• /resume &lt;project&gt;'
-  ].join('\n');
+function unavailableReply(language, reason) {
+  return companionOffline(languageOrDefault(language), reason);
 }
 
-async function askOllamaOnce({ baseUrl, model, messages, fetchImpl, timeoutMs }) {
+async function askOllamaOnce({ baseUrl, model, messages, fetchImpl, timeoutMs, language }) {
   const settings = normalizeOllamaSettings({ baseUrl, model, enabled: true });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), Math.max(1, Number(timeoutMs) || 45000));
@@ -188,11 +188,12 @@ async function askOllamaOnce({ baseUrl, model, messages, fetchImpl, timeoutMs })
     const data = typeof response?.json === 'function' ? await response.json().catch(() => null) : null;
     const text = data?.message?.content || '';
     if (!response?.ok || !String(text).trim()) {
-      return { ok: false, model: settings.model, text: unavailableReply(), reason: response?.ok ? 'empty' : `HTTP ${response?.status || 0}` };
+      return { ok: false, model: settings.model, text: unavailableReply(language, response?.ok ? 'empty' : `HTTP ${response?.status || 0}`), reason: response?.ok ? 'empty' : `HTTP ${response?.status || 0}` };
     }
-    return { ok: true, model: settings.model, text: withCaptain(escapeHtml(String(text).trim())) };
+    return { ok: true, model: settings.model, text: withCaptain(escapeHtml(String(text).trim()), language) };
   } catch (error) {
-    return { ok: false, model: settings.model, text: unavailableReply(), reason: error?.name === 'AbortError' ? 'timeout' : 'unreachable' };
+    const reason = error?.name === 'AbortError' ? 'timeout' : 'unreachable';
+    return { ok: false, model: settings.model, text: unavailableReply(language, reason), reason };
   } finally {
     clearTimeout(timer);
   }
