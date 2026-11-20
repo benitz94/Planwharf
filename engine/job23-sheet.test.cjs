@@ -485,7 +485,7 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
   const here = git(['branch', '--show-current']);
   const branchFiles = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').map(line => line.trim()).filter(Boolean);
   if (here && here !== 'port/23-sheet') return;
-  if (!here && branchFiles.some(file => !allowedDiff.has(file))) return;
+  if (!here && (branchFiles.some(file => !allowedDiff.has(file)) || !branchFiles.includes(sheetPath))) return;
 
   const worktree = git(['status', '--porcelain']).split('\n').filter(Boolean)
     .map(line => line.slice(3).trim().replace(/\\/g, '/'));

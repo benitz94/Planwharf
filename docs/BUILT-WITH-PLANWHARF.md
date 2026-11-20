@@ -1,6 +1,6 @@
 # Built with Planwharf
 
-Planwharf is moving its own engine from JavaScript to C# (see [the plan](NEXT-WORK.md)), and it does
+Planwharf is moving its own engine from JavaScript to C# (see [the work list](NEXT-WORK.md)), and it does
 the work itself: the owner gives the lead one line, "Read docs/NEXT-WORK.md and continue.", the lead
 picks the next job, a crew of models builds and verifies it, and every pull
 request is reviewed before it is merged. Using Planwharf on itself every day also shows where it falls
