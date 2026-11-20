@@ -170,7 +170,10 @@ public sealed class NotebookFileTests : IDisposable
         var plan = Path.Combine(root, "plan.json");
         Directory.CreateDirectory(plan);
 
-        Assert.NotNull(Record.Exception(() => NotebookFile.EnsureDefaultNotebook(plan, root)));
+        // As Node: on Windows copying over a folder is refused (EPERM) and thrown; on Linux and macOS the
+        // exclusive create answers EEXIST, which counts as "already there". Either way the folder stays.
+        var error = Record.Exception(() => NotebookFile.EnsureDefaultNotebook(plan, root));
+        if (OperatingSystem.IsWindows()) Assert.NotNull(error); else Assert.Null(error);
         Assert.True(Directory.Exists(plan));
         Assert.Equal("{}", File.ReadAllText(starter));
     }
