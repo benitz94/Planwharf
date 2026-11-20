@@ -1,6 +1,6 @@
 # The chat view
 
-Planwharf has one screen: a chat with your lead, with your projects on the left and one detail panel at a time on the right.
+Planwharf has one screen: a chat with your lead, with your projects on the left and one detail panel at a time on the right. This page describes the native app; the deprecated web app looks much the same.
 
 ## Who does what
 
@@ -10,8 +10,7 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
 | --- | --- |
 | Lead | Talks with you, plans the work and picks who does each step. |
 | Build | Writes the code and the tests. |
-| Verify | Checks the builder's work independently, preferably from another provider, and fixes what fails. |
-| Review (optional) | Reads the work and reports problems, without changing files. |
+| Verify | Checks the builder's work independently with a strong model, and fixes what fails. |
 | Bench | Available, but not used until you give it a role. |
 
 ## The screen

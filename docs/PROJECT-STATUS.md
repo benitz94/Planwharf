@@ -1,5 +1,7 @@
 # Planwharf project status
 
+> This page is the acceptance record of the first versions (October and November 2026), kept as history. For today's progress see [Built with Planwharf](BUILT-WITH-PLANWHARF.md) and [the work list](NEXT-WORK.md); for how to use the app, the [user guide](USER-GUIDE.md).
+
 Project containment: implementation and audit launches fail closed without a real linked directory. Launch working directories and local inspection paths are resolved against the selected project; inherited parent Git repositories are not used to inspect sibling projects. The chat shows one next action at a time: set the folder, approve prepared work, or Resume a checkpoint, before the existing execution next step. Import without a confirmed folder displays relink first. This is path validation at launch and inspection, not an OS sandbox for arbitrary provider commands.
 
 Task: `PLANWHARF-FINAL`. The final-scope acceptance is retained. The owner subsequently requested model role permissions and English publication guides; these additions do not introduce a new development phase or roadmap.

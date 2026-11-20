@@ -36,9 +36,9 @@ You can open and use the local project notebook without invoking AI. To perform 
 
 Planwharf includes native adapters for Codex, Grok, Antigravity and Claude Code, plus documented direct API and compatible CLI connection options. Configure the actual connection and exact model IDs that your account supports. Availability and compatibility vary by provider and environment; not every model/combination has been tested. See [external providers](EXTERNAL-PROVIDERS.md).
 
-### What is the difference between Orchestrator, Worker and Reviewer?
+### What is the difference between Lead, Build and Verify?
 
-The **Orchestrator** coordinates approved work; **Workers** perform implementation or supported research; **Reviewers** inspect and report on approved review assignments. These are independent permissions assigned to models, not a ranking of which model is smarter. Review-only permission does not authorize implementation.
+The **Lead** (Orchestrator in files) talks with you, plans and assigns the work; **Build** (Worker) writes the code and tests; **Verify** checks the whole work and fixes what fails. These are permissions you give each model in Team, not a ranking. The former Review role was removed: checking is Verify's job.
 
 ### Does Planwharf pick a different AI model if mine is unavailable?
 

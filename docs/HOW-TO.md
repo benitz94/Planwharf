@@ -4,15 +4,12 @@ This guide takes you from installation to a first result. It takes about fifteen
 
 ## 1. Install
 
-1. Install [Node.js](https://nodejs.org/).
-2. Download `Planwharf-vX.Y.Z.zip` from the [latest release](https://github.com/benitz94/Planwharf/releases/latest) under **Assets**, and extract the whole archive.
-3. Install and sign in to at least one AI coding tool: Codex (ChatGPT), Claude Code, Grok CLI or Antigravity (Gemini). Each tool has its own sign-in; Planwharf uses it and never asks for your password.
+1. Download the native app for your system from the [latest release](https://github.com/benitz94/Planwharf/releases/latest) under **Assets** (`Planwharf-native-<system>-vX.Y.Z.zip`), and extract the whole archive.
+2. Install and sign in to at least one AI coding tool: Codex (ChatGPT), Claude Code, Grok CLI or Antigravity (Gemini). Each tool has its own sign-in; Planwharf uses it and never asks for your password.
 
 ## 2. Open Planwharf
 
-On Windows double-click `Planwharf.exe`; on macOS or Linux run `sh ./planwharf.sh`. A window opens on the chat with **Welcome aboard, captain**.
-
-If the launcher cannot find Node.js, it says so; install Node.js and try again. Startup logs are under `%LOCALAPPDATA%\Planwharf\logs`.
+Open `Planwharf` (`Planwharf.exe` on Windows) in the extracted folder. A window opens on the chat with **Welcome aboard, captain**.
 
 ## 3. Choose your team
 
@@ -59,7 +56,7 @@ If Planwharf sees something odd, such as no progress for ten minutes or a failed
 
 ## 7. Check the result
 
-When the **Work finished** card appears, open **Files** to see what changed, then open the project folder and try the result. Planwharf never commits, pushes or publishes anything by itself.
+When the **Work finished** card appears, open **Files** to see what changed, then open the project folder and try the result. The crew commits on the work's own branch and never pushes; when you are happy, press **Push**: the branch goes to GitHub and the pull request opens. Nothing reaches `main` until you merge it ([commits and pushes](USER-GUIDE.md#commits-and-pushes)).
 
 If the result is not right, say in the chat what is wrong. The lead prepares a correction.
 

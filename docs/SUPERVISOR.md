@@ -5,6 +5,8 @@ no model. In the chat view, each active warning appears as a **Something needs a
 look** card in the conversation, with **Ignore**. It is always on and needs no
 role in Team. During automatic work, each new alert is passed to the lead, which decides what to do.
 
+> The rest of this page describes the earlier Supervisor screen and its optional AI answers, which used the engine's Reviewer role. That role no longer appears in Team; the page is kept as a technical record.
+
 The earlier dedicated Supervisor screen, with **Inspect evidence**, **Ask Supervisor**,
 the name field and the automatic-analysis switch, was removed with the old interface
 on 2026-11-06. The backend features below remain, and saved settings still apply.

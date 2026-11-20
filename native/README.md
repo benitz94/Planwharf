@@ -14,7 +14,7 @@ Its engine is still the JavaScript one: it starts the same local Planwharf serve
 - Finished work in a git folder: changed files not yet committed, **Commit**, **Commit and push**, or **Push N commits** when commits are not on GitHub yet; asks first, never force-pushes.
 - One clear next action: **Let the crew do it** (with the goal agreed in the chat, after a confirmation), **Stop the crew**, **Approve and start**, **Resume**; and why the crew stopped, in plain English.
 - **+ New project**: a name and an existing folder, or no folder and Planwharf creates one in the projects folder.
-- **Team**, per project: choose the lead; give each model Build, Verify or Review, or put it on the bench; quota left for each model; models that are not available are shown greyed with the reason; AI tools on or off, look for models again, connect a model by API.
+- **Team**, per project: choose the lead; give each model Build or Verify, or put it on the bench; its quota limit (for the whole company or only that model) and its tools; quota left for each model; models that are not available are shown greyed with the reason; AI tools on or off, look for models again, connect a model by API.
 - The model of each step that is not done can be changed from its menu, among the team models with that role; a step at work asks first, then restarts on the new model.
 - Before the crew starts, the app says what is missing: the project folder, a lead, a model that builds.
 - **Progress** (status, steps, recent activity), **Usage** (quota left for each limit with its reset time, lead calls and crew work, "not reported" when a provider does not say) and **Files** (changes not yet saved in Git), in the panel on the right.
@@ -47,7 +47,7 @@ The notification's own sound is suppressed; the Sound switch controls the separa
 The alert decision, effect switches and headless window integration have automated tests. Actual
 notification appearance, Dock/taskbar behavior and audible output require manual platform checks.
 
-Not yet in the native app (use the web or desktop version meanwhile): the light theme and text colours, installers. Updates: the app tells you when a new version is out and opens the download page.
+Also in the native app: light and dark themes, text and main colours, English and Italian (**Settings → Look**); **Update now** in Settings → Updates installs the new version itself; alerts on the phone (Settings → Phone); Copy and Use again under your messages; Check PRs. Not yet: installers (the app is a zip to extract).
 
 ## Build and run
 ```sh
