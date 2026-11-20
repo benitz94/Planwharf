@@ -78,7 +78,6 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 35 | 5. | Port them, as sheet 34 says. Then **stop**: the owner approves the orchestrator split | `port/35-phase5` | To do |
 | 36 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/36-sheets` | To do |
 | 37+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/37-…` | To do |
-| 32+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/32-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
