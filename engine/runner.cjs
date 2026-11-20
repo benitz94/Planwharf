@@ -268,7 +268,9 @@ function parseAskLine(acc, row) {
   if (acc.expectedModel) {
     const reported = row.type === 'assistant' ? row.message?.model : row.type === 'system' && row.subtype === 'init' ? row.model : null;
     if (reported === acc.expectedModel) acc.modelSeen = true;
-    if (reported && reported !== acc.expectedModel) {
+    // Claude Code writes its own messages (a credit or usage-limit refusal) as model "<synthetic>": that is
+    // Claude Code speaking, not another model answering, so the refusal is read as a refusal.
+    if (reported && reported !== acc.expectedModel && reported !== '<synthetic>') {
       acc.failure = 'PROVIDER_MODEL_IDENTITY_CHANGED';
       acc.error = 'PROVIDER_MODEL_IDENTITY_CHANGED: Claude Code returned a different model.';
     }
