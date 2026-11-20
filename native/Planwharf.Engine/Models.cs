@@ -19,7 +19,7 @@ public static class Models
         foreach (var entry in list)
         {
             if (entry is JsonObject model && IsEnabledAvailable(model))
-                result.Add(CopyModel(model));
+                Push(result, CopyModel(model));
         }
         return result;
     }
@@ -42,13 +42,13 @@ public static class Models
             }
             if (entry is not JsonObject model)
             {
-                result.Add(AssignObject(entry));
+                Push(result, AssignObject(entry));
                 continue;
             }
             var copy = CopyModel(model);
             if (SameId(model, id))
                 copy["enabled"] = enabled && !IsFalse(Prop(model, "available"));
-            result.Add(copy);
+            Push(result, copy);
         }
         return result;
     }
@@ -137,6 +137,9 @@ public static class Models
 
     static bool IsTrue(JsonNode? node) => node is JsonValue value && value.GetValueKind() == JsonValueKind.True;
     static bool IsFalse(JsonNode? node) => node is JsonValue value && value.GetValueKind() == JsonValueKind.False;
+
+    // Add(JsonNode) stays AOT-safe. Add<T> of a JsonObject is rejected by the trimmer.
+    static void Push(JsonArray array, JsonNode? node) => array.Add(node);
 
     static JsonObject Claim(bool ok, string? reason)
     {

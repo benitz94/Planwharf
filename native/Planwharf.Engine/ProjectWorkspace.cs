@@ -210,17 +210,17 @@ public static class ProjectWorkspace
     {
         var research = Research(info);
         var root = LinkedWorkspace(research ? info.Folder : info.LinkedFolder);
-        if (root is null) throw new InvalidOperationException("A real linked project folder is required before worker launch.");
+        if (root is null) throw Error("A real linked project folder is required before worker launch.");
         var folder = LinkedWorkspace(info.Folder);
         // Same condition as JavaScript: !folder || folder !== root && (research || !registeredWorktree).
         if (folder is null)
-            throw new InvalidOperationException("Worker launch folder must stay inside the linked project folder.");
+            throw Error("Worker launch folder must stay inside the linked project folder.");
         if (folder != root && (research || !RegisteredWorktree(root, folder, info)))
-            throw new InvalidOperationException("Worker launch folder must stay inside the linked project folder.");
+            throw Error("Worker launch folder must stay inside the linked project folder.");
         if (info.Cwd is not null && LinkedWorkspace(info.Cwd) != folder)
-            throw new InvalidOperationException("Worker cwd and job folder must match the linked project folder.");
+            throw Error("Worker cwd and job folder must match the linked project folder.");
         if (info.Job?.Folder is not null && LinkedWorkspace(info.Job.Folder) != folder)
-            throw new InvalidOperationException("Worker cwd and job folder must match the linked project folder.");
+            throw Error("Worker cwd and job folder must match the linked project folder.");
         return new WorkspaceBinding(folder, research ? "" : root);
     }
 
@@ -363,4 +363,6 @@ public static class ProjectWorkspace
     {
         try { Task.WaitAll(tasks, 5000); } catch { }
     }
+
+    static InvalidOperationException Error(string message) => new(message);
 }

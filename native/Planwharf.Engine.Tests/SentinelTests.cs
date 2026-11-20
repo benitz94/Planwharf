@@ -1,5 +1,6 @@
 // Deferred, not implemented: attempts.js, createAttemptEngine, and every sentinel test that needs the real store.
 // The three fake-engine cases from engine/attempts.test.cjs are in scope. Phase 3 owns the store.
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Planwharf.Engine;
 using Xunit;
@@ -19,7 +20,7 @@ public sealed class SentinelTests : IDisposable
     }
 
     static string? Status(JsonObject? verdict) =>
-        verdict?["status"] is null ? null : verdict["status"]!.GetValueKind() == JsonValueKind.Null ? "null" : verdict["status"]!.GetValue<string>();
+        verdict is null || !verdict.ContainsKey("status") ? null : verdict["status"] is null ? "null" : verdict["status"]!.GetValue<string>();
 
     [Fact]
     public void ReadResultFile_blank_missing_and_unreadable_paths_are_null()
@@ -199,7 +200,7 @@ public sealed class SentinelTests : IDisposable
             Claim = _ => new JsonObject { ["ok"] = true }
         }, new SentinelHooks { IsAlive = _ => true }).Tick(Attempt(), extra);
         Assert.Equal("reassigned", open["reason"]!.GetValue<string>());
-        Assert.Equal(JsonValueKind.Null, open["attempt"]!.GetValueKind());
+        Assert.Null(open["attempt"]);
     }
 
     [Fact]
@@ -243,7 +244,7 @@ public sealed class SentinelTests : IDisposable
         Assert.Equal("model not eligible", refused["reason"]!.GetValue<string>());
         Assert.False(refused["waiting"]!.GetValue<bool>());
         Assert.False(refused["reassigned"]!.GetValue<bool>());
-        Assert.Equal(JsonValueKind.Null, refused["attempt"]!.GetValueKind());
+        Assert.Null(refused["attempt"]);
 
         var missing = Sentinel.CreateSentinel(new SentinelEngine
         {
@@ -252,7 +253,7 @@ public sealed class SentinelTests : IDisposable
             Claim = _ => null
         }, new SentinelHooks { IsAlive = _ => true }).Tick(Attempt(), extra);
         Assert.Equal("not reassigned", missing["reason"]!.GetValue<string>());
-        Assert.Equal(JsonValueKind.Null, missing["attempt"]!.GetValueKind());
+        Assert.Null(missing["attempt"]);
     }
 
     [Fact]
@@ -330,7 +331,7 @@ public sealed class SentinelTests : IDisposable
             }
         };
 
-        public JsonObject? GetActive() => Engine().GetActiveAttempt!(new JsonObject());
+        public JsonObject? GetActive() => Engine().GetActiveAttempt!(new JsonObject()) as JsonObject;
         public JsonObject? GetResult() => Engine().GetResult!(null) as JsonObject;
     }
 }

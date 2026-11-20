@@ -41,8 +41,7 @@ public static class Plan
     {
         ["schema"] = 1,
         ["project"] = new JsonObject { ["id"] = "biblioteca", ["name"] = "Neighborhood library" },
-        ["revisions"] = new JsonArray
-        {
+        ["revisions"] = Arr(
             Revision(1, "manual", "Starting point", "2026-10-06T09:00:00+02:00",
                 "Open a small neighborhood library accessible to everyone.",
                 "Two possible locations identified. Initial collection: 120 donated books.",
@@ -52,20 +51,16 @@ public static class Plan
                 "Open the library on Harbor Street for a one-month trial.",
                 "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
                 ["Free borrowing for residents.", "Start with a single location.", "Use the Harbor Street location."],
-                ["Who covers the first opening shift?", "Should we confirm Saturday morning opening?"])
-        },
-        ["tasks"] = new JsonArray
+                ["Who covers the first opening shift?", "Should we confirm Saturday morning opening?"])),
+        ["tasks"] = Arr(new JsonObject
         {
-            new JsonObject
-            {
-                ["id"] = "calendario",
-                ["projectId"] = "biblioteca",
-                ["revision_id"] = 2,
-                ["title"] = "Prepare the trial-month schedule",
-                ["detail"] = "Define four shifts and collect volunteer availability.",
-                ["status"] = "running"
-            }
-        }
+            ["id"] = "calendario",
+            ["projectId"] = "biblioteca",
+            ["revision_id"] = 2,
+            ["title"] = "Prepare the trial-month schedule",
+            ["detail"] = "Define four shifts and collect volunteer availability.",
+            ["status"] = "running"
+        })
     };
 
     public static bool IsFolderPath(string? value)
@@ -178,7 +173,7 @@ public static class Plan
     static JsonArray Strings(IEnumerable<string> values)
     {
         var array = new JsonArray();
-        foreach (var value in values) array.Add(value);
+        foreach (var value in values) Push(array, Text(value));
         return array;
     }
 
@@ -204,8 +199,8 @@ public static class Plan
     {
         var folder = input["folder"] is JsonValue && TryString(input["folder"], out var folderText) ? NormalizeFolder(folderText) : "";
         var github = input["github"] is JsonValue && TryString(input["github"], out var githubText) ? NormalizeGithub(githubText) : "";
-        if (folder.Length > 0 && !IsFolderPath(folder)) throw new InvalidOperationException("Folder must be an absolute path on this PC.");
-        if (github.Length > 0 && !IsGithubUrl(github)) throw new InvalidOperationException("Repository must be an HTTPS GitHub or Gitea owner/repository URL.");
+        if (folder.Length > 0 && !IsFolderPath(folder)) throw Error("Folder must be an absolute path on this PC.");
+        if (github.Length > 0 && !IsGithubUrl(github)) throw Error("Repository must be an HTTPS GitHub or Gitea owner/repository URL.");
         return new JsonObject { ["folder"] = folder, ["github"] = github };
     }
 
@@ -307,9 +302,9 @@ public static class Plan
 
     static string ToIsoString(double milliseconds)
     {
-        if (double.IsNaN(milliseconds) || Math.Abs(milliseconds) > 8.64e15) throw new InvalidOperationException("Invalid time value");
+        if (double.IsNaN(milliseconds) || Math.Abs(milliseconds) > 8.64e15) throw Error("Invalid time value");
         var date = DateTime.UnixEpoch.AddMilliseconds(Math.Truncate(milliseconds));
-        if (date.Year is < 0 or > 9999) throw new InvalidOperationException("Invalid time value");
+        if (date.Year is < 0 or > 9999) throw Error("Invalid time value");
         return date.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
     }
 
@@ -317,9 +312,9 @@ public static class Plan
 
     static JsonObject Append(JsonObject data, JsonObject? draft, string mode, string timestamp)
     {
-        if (!ValidateProject(data)) throw new InvalidOperationException("The saved notebook is invalid.");
+        if (!ValidateProject(data)) throw Error("The saved notebook is invalid.");
         if (draft is null || !NonEmptyTrimmed(draft, "title") || !NonEmptyTrimmed(draft, "direction") || !NonEmptyTrimmed(draft, "state") || draft["closed"] is not JsonArray closed || draft["open"] is not JsonArray open || !AllStrings(closed) || !AllStrings(open))
-            throw new InvalidOperationException("Fill in title, goal, and where it stands.");
+            throw Error("Fill in title, goal, and where it stands.");
         var next = CloneObject(data);
         long max = 0;
         foreach (var revision in data["revisions"]!.AsArray())
@@ -335,8 +330,8 @@ public static class Plan
             ["closed"] = TrimmedStrings(closed),
             ["open"] = TrimmedStrings(open)
         };
-        next["revisions"]!.AsArray().Add(revisionObject);
-        if (!Validate(next)) throw new InvalidOperationException("The new revision is invalid.");
+        Push(next["revisions"]!.AsArray(), revisionObject);
+        if (!Validate(next)) throw Error("The new revision is invalid.");
         return next;
     }
 
@@ -346,7 +341,7 @@ public static class Plan
         foreach (var item in values)
         {
             var text = StringValue(item)!.Trim();
-            if (text.Length > 0) array.Add(text);
+            if (text.Length > 0) Push(array, Text(text));
         }
         return array;
     }
@@ -369,7 +364,7 @@ public static class Plan
             {
                 var text = JsString(item).Trim();
                 if (text.Length == 0) continue;
-                picked.Add(text);
+                Push(picked, Text(text));
                 if (picked.Count == 8) break;
             }
             return picked;
@@ -389,18 +384,16 @@ public static class Plan
                 if (docs.Count == 12) break;
             }
         }
-        var questions = new JsonArray
-        {
-            goal.Length > 0
+        var questions = Arr(
+            Text(goal.Length > 0
                 ? $"Is this run the next slice of {name}: {goal}? Recommended: yes."
-                : $"Is this run the next slice of {name}? Recommended: yes, stay on the notebook goal.",
-            folder.Length > 0
+                : $"Is this run the next slice of {name}? Recommended: yes, stay on the notebook goal."),
+            Text(folder.Length > 0
                 ? $"Stay inside {folder} and the files already there. No paid APIs. Recommended: yes."
-                : "Keep this local: existing files, no paid APIs. Recommended: yes.",
-            "Is the slice done when the work is on disk with tests, and nothing extra ships? Recommended: yes.",
-            "Is everything else out of scope until this slice is done? Recommended: yes."
-        };
-        if (docs.Count > 0) questions.Add($"Should {string.Join(", ", docs)} bound this slice? Recommended: yes, those docs are the authority.");
+                : "Keep this local: existing files, no paid APIs. Recommended: yes."),
+            Text("Is the slice done when the work is on disk with tests, and nothing extra ships? Recommended: yes."),
+            Text("Is everything else out of scope until this slice is done? Recommended: yes."));
+        if (docs.Count > 0) Push(questions, Text($"Should {string.Join(", ", docs)} bound this slice? Recommended: yes, those docs are the authority."));
         return questions;
     }
 
@@ -415,7 +408,7 @@ public static class Plan
             {
                 var text = JsString(item).Trim();
                 if (text.Length == 0) continue;
-                names.Add(text);
+                Push(names, Text(text));
                 if (names.Count == 12) break;
             }
         }
@@ -426,20 +419,20 @@ public static class Plan
 
     static JsonObject BeginGrill(JsonObject data, string title, JsonArray open, string timestamp, bool replace)
     {
-        if (!ValidateProject(data)) throw new InvalidOperationException("The saved notebook is invalid.");
+        if (!ValidateProject(data)) throw Error("The saved notebook is invalid.");
         var revisions = data["revisions"]!.AsArray();
         var latest = revisions.Count == 0 ? null : revisions[^1] as JsonObject;
-        if (latest is null) throw new InvalidOperationException("Cannot read properties of undefined (reading 'open')");
+        if (latest is null) throw Error("Cannot read properties of undefined (reading 'open')");
         var latestOpen = latest["open"] as JsonArray;
         if (latestOpen is { Count: > 0 } && !replace && !IsGenericFrontier(latestOpen)) return data;
         var direction = StringProp(latest, "direction") ?? "";
-        if (direction.Trim().Length == 0) throw new InvalidOperationException("Fill in title, goal, and where it stands.");
+        if (direction.Trim().Length == 0) throw Error("Fill in title, goal, and where it stands.");
         var previous = CloneArray(revisions);
         var next = CloneObject(data);
         long max = 0;
         foreach (var revision in revisions)
             if (revision is JsonObject row && IsSafeInteger(row["id"], out var id) && id > max) max = id;
-        next["revisions"]!.AsArray().Add(new JsonObject
+        Push(next["revisions"]!.AsArray(), new JsonObject
         {
             ["id"] = max + 1,
             ["mode"] = "grill",
@@ -454,7 +447,7 @@ public static class Plan
         var withoutNew = new JsonArray();
         for (var i = 0; i < kept.Count - 1; i++) withoutNew.Add(kept[i]!.DeepClone());
         if (!Validate(next) || !SameJson(withoutNew, previous) || !SameJson(next["tasks"], data["tasks"]))
-            throw new InvalidOperationException("The updated notebook is invalid.");
+            throw Error("The updated notebook is invalid.");
         return next;
     }
 
@@ -476,11 +469,11 @@ public static class Plan
             {
                 var text = JsString(item).Trim();
                 if (text.Length == 0) continue;
-                names.Add(text);
+                Push(names, Text(text));
                 if (names.Count == 12) break;
             }
         }
-        if (names.Count == 0) throw new InvalidOperationException("No docs in the folder to grill with.");
+        if (names.Count == 0) throw Error("No docs in the folder to grill with.");
         var revisions = RequireRevisions(data);
         var latest = Latest(revisions);
         var questions = DocsFrontier(names, SpreadContext(data, latest, context));
@@ -490,12 +483,12 @@ public static class Plan
 
     public static JsonObject Grill(JsonObject data, JsonObject? round, string timestamp)
     {
-        if (!ValidateProject(data)) throw new InvalidOperationException("The saved notebook is invalid.");
+        if (!ValidateProject(data)) throw Error("The saved notebook is invalid.");
         var latest = Latest(RequireRevisions(data));
         var open = latest["open"] as JsonArray;
         var answers = round?["answers"] as JsonArray;
         if (round is null || !NonEmptyTrimmed(round, "title") || answers is null || open is null || answers.Count != open.Count || open.Count == 0)
-            throw new InvalidOperationException("Answer the open questions of the current revision.");
+            throw Error("Answer the open questions of the current revision.");
         var draft = CloneObject(latest);
         draft["title"] = StringProp(round, "title");
         draft["open"] = new JsonArray();
@@ -504,16 +497,16 @@ public static class Plan
         for (var i = 0; i < open.Count; i++)
         {
             if (answers[i] is not JsonObject response || !TryString(open[i], out var question) || StringProp(response, "question") != question || !TryString(response["action"], out var action) || action is not ("keep" or "close" or "direction") || !TryString(response["answer"], out var answerText) || (action != "keep" && answerText.Trim().Length == 0))
-                throw new InvalidOperationException("Each answer must indicate the current question and a valid choice.");
+                throw Error("Each answer must indicate the current question and a valid choice.");
             var answer = answerText.Trim();
-            responses.Add(new JsonObject { ["question"] = question, ["action"] = action, ["answer"] = answer });
-            if (action == "keep") draft["open"]!.AsArray().Add(question);
+            Push(responses, new JsonObject { ["question"] = question, ["action"] = action, ["answer"] = answer });
+            if (action == "keep") Push(draft["open"]!.AsArray(), Text(question));
             else
             {
-                draft["closed"]!.AsArray().Add(question + " → " + answer);
+                Push(draft["closed"]!.AsArray(), Text(question + " → " + answer));
                 if (action == "direction")
                 {
-                    if (++directionChanges > 1) throw new InvalidOperationException("Choose only one new direction per round.");
+                    if (++directionChanges > 1) throw Error("Choose only one new direction per round.");
                     draft["direction"] = answer;
                 }
             }
@@ -527,36 +520,36 @@ public static class Plan
     {
         JsonNode? parsed;
         try { parsed = JsonNode.Parse(json); }
-        catch (JsonException) { throw new InvalidOperationException("Invalid import JSON."); }
+        catch (JsonException) { throw Error("Invalid import JSON."); }
         const string importError = "Import an object with title, goal, where it stands, decided decisions, and open questions.";
-        if (parsed is not JsonObject draft) throw new InvalidOperationException(importError);
+        if (parsed is not JsonObject draft) throw Error(importError);
         foreach (var pair in draft)
             if (pair.Key is not ("id" or "mode" or "createdAt" or "title" or "direction" or "state" or "closed" or "open"))
-                throw new InvalidOperationException(importError);
-        if (draft.ContainsKey("id") && (!IsSafeInteger(draft["id"], out var id) || id < 1)) throw new InvalidOperationException(importError);
-        if (draft.ContainsKey("mode") && (!TryString(draft["mode"], out var mode) || Array.IndexOf(RevisionModes, mode) < 0)) throw new InvalidOperationException(importError);
-        if (draft.ContainsKey("createdAt") && (!TryString(draft["createdAt"], out var createdAt) || !IsFiniteDate(createdAt))) throw new InvalidOperationException(importError);
+                throw Error(importError);
+        if (draft.ContainsKey("id") && (!IsSafeInteger(draft["id"], out var id) || id < 1)) throw Error(importError);
+        if (draft.ContainsKey("mode") && (!TryString(draft["mode"], out var mode) || Array.IndexOf(RevisionModes, mode) < 0)) throw Error(importError);
+        if (draft.ContainsKey("createdAt") && (!TryString(draft["createdAt"], out var createdAt) || !IsFiniteDate(createdAt))) throw Error(importError);
         return Append(data, draft, "import", timestamp);
     }
 
     static JsonArray RequireRevisions(JsonObject data)
     {
         if (!data.TryGetPropertyValue("revisions", out var node) || node is null)
-            throw new InvalidOperationException("Cannot read properties of undefined (reading 'at')");
-        if (node is not JsonArray revisions) throw new InvalidOperationException("data.revisions.at is not a function");
+            throw Error("Cannot read properties of undefined (reading 'at')");
+        if (node is not JsonArray revisions) throw Error("data.revisions.at is not a function");
         return revisions;
     }
 
     static JsonObject Latest(JsonArray revisions)
     {
         if (revisions.Count == 0 || revisions[^1] is not JsonObject latest)
-            throw new InvalidOperationException("Cannot read properties of undefined (reading 'open')");
+            throw Error("Cannot read properties of undefined (reading 'open')");
         return latest;
     }
 
     static JsonObject SpreadContext(JsonObject data, JsonObject latest, JsonObject? context)
     {
-        if (data["project"] is not JsonObject project) throw new InvalidOperationException("Cannot read properties of undefined (reading 'name')");
+        if (data["project"] is not JsonObject project) throw Error("Cannot read properties of undefined (reading 'name')");
         var merged = new JsonObject();
         if (project.ContainsKey("name")) merged["name"] = project["name"]?.DeepClone();
         if (latest.ContainsKey("direction")) merged["goal"] = latest["direction"]?.DeepClone();
@@ -611,24 +604,23 @@ public static class Plan
 
     public static JsonObject CreateProject(JsonNode? data, JsonObject? input, string timestamp)
     {
-        if (data is not JsonObject existing || !Validate(existing)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (input is null || !NonEmptyTrimmed(input, "name") || !NonEmptyTrimmed(input, "direction")) throw new InvalidOperationException("Fill in name and goal.");
+        if (data is not JsonObject existing || !Validate(existing)) throw Error("The saved notebook is invalid.");
+        if (input is null || !NonEmptyTrimmed(input, "name") || !NonEmptyTrimmed(input, "direction")) throw Error("Fill in name and goal.");
         var place = PlaceFrom(input);
         var notebook = IsNumber(existing["schema"], 2)
             ? CloneObject(existing)
-            : new JsonObject { ["schema"] = 2, ["projects"] = new JsonArray { CloneObject(existing) } };
-        return PushProject(notebook, NewProject(notebook, StringProp(input, "name")!.Trim(), ProjectIdFromName(StringProp(input, "name")!, UsedIds(notebook)), place, new JsonArray
-        {
+            : new JsonObject { ["schema"] = 2, ["projects"] = Arr(CloneObject(existing)) };
+        return PushProject(notebook, NewProject(notebook, StringProp(input, "name")!.Trim(), ProjectIdFromName(StringProp(input, "name")!, UsedIds(notebook)), place, Arr(
             Revision(1, "manual", "", timestamp, StringProp(input, "direction")!.Trim(), "", [], [])
-        }, new JsonArray(), null));
+        ), new JsonArray(), null));
     }
 
     public static JsonObject RestoreProject(JsonNode? data, JsonObject? source, string timestamp) => RestoreProject(data, source, null, timestamp);
 
     public static JsonObject RestoreProject(JsonNode? data, JsonObject? source, JsonObject? place, string timestamp)
     {
-        if (data is not JsonObject existing || !Validate(existing)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (source is null || !NonEmptyTrimmed(source, "name")) throw new InvalidOperationException("Export is missing a project name.");
+        if (data is not JsonObject existing || !Validate(existing)) throw Error("The saved notebook is invalid.");
+        if (source is null || !NonEmptyTrimmed(source, "name")) throw Error("Export is missing a project name.");
         var placeInput = new JsonObject
         {
             ["folder"] = place is not null && place.TryGetPropertyValue("folder", out var folder) ? folder?.DeepClone() : "",
@@ -637,7 +629,7 @@ public static class Plan
         var located = PlaceFrom(placeInput);
         var notebook = IsNumber(existing["schema"], 2)
             ? CloneObject(existing)
-            : new JsonObject { ["schema"] = 2, ["projects"] = new JsonArray { CloneObject(existing) } };
+            : new JsonObject { ["schema"] = 2, ["projects"] = Arr(CloneObject(existing)) };
         var name = StringProp(source, "name")!.Trim();
         var id = ProjectIdFromName(name, UsedIds(notebook));
         JsonArray revisions;
@@ -646,10 +638,10 @@ public static class Plan
             revisions = new JsonArray();
             foreach (var node in sourceRevisions)
             {
-                if (node is null) throw new InvalidOperationException("Cannot read properties of null (reading 'id')");
+                if (node is null) throw Error("Cannot read properties of null (reading 'id')");
                 var revision = node as JsonObject;
                 var created = revision is not null && TryString(revision["createdAt"], out var createdText) && IsFiniteDate(createdText) ? createdText : timestamp;
-                revisions.Add(new JsonObject
+                Push(revisions, new JsonObject
                 {
                     ["id"] = revision?["id"]?.DeepClone(),
                     ["mode"] = revision is not null && TryString(revision["mode"], out var mode) && Array.IndexOf(RevisionModes, mode) >= 0 ? mode : "import",
@@ -662,16 +654,16 @@ public static class Plan
                 });
             }
         }
-        else revisions = new JsonArray { Revision(1, "import", "Imported project", timestamp, name, "", [], []) };
+        else revisions = Arr(Revision(1, "import", "Imported project", timestamp, name, "", [], []));
         var tasks = new JsonArray();
         if (source["tasks"] is JsonArray sourceTasks)
         {
             foreach (var node in sourceTasks)
             {
-                if (node is null) throw new InvalidOperationException("Cannot read properties of null (reading 'id')");
+                if (node is null) throw Error("Cannot read properties of null (reading 'id')");
                 if (node is not JsonObject task)
                 {
-                    tasks.Add(new JsonObject());
+                    Push(tasks, new JsonObject());
                     continue;
                 }
                 var copy = new JsonObject();
@@ -684,7 +676,7 @@ public static class Plan
                 else CopyIfPresent(task, copy, "status");
                 if (Truthy(task["timing"])) copy["timing"] = task["timing"]!.DeepClone();
                 if (Truthy(task["deadlineAt"])) copy["deadlineAt"] = task["deadlineAt"]!.DeepClone();
-                tasks.Add(copy);
+                Push(tasks, copy);
             }
         }
         JsonObject? home = null;
@@ -698,34 +690,34 @@ public static class Plan
                 var copy = new JsonObject { ["id"] = noteId, ["text"] = noteText, ["createdAt"] = noteCreated };
                 if (note["pinned"] is JsonValue pinned && pinned.TryGetValue<bool>(out var pinnedValue) && pinnedValue) copy["pinned"] = true;
                 if (note["aiRelevant"] is JsonValue relevant && relevant.TryGetValue<bool>(out var relevantValue) && relevantValue) copy["aiRelevant"] = true;
-                notes.Add(copy);
+                Push(notes, copy);
             }
             if (notes.Count > 0) home = new JsonObject { ["notes"] = notes };
         }
         var item = NewProject(notebook, name, id, located, revisions, tasks, home);
-        if (!ValidateProject(item)) throw new InvalidOperationException("Import is not a valid Planwharf project.");
+        if (!ValidateProject(item)) throw Error("Import is not a valid Planwharf project.");
         return PushProject(notebook, item);
     }
 
     public static JsonObject SetPlace(JsonNode? data, JsonObject? input)
     {
-        if (data is not JsonObject existing || !Validate(existing)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (input is null || !NonEmptyTrimmed(input, "id")) throw new InvalidOperationException("Project not found.");
+        if (data is not JsonObject existing || !Validate(existing)) throw Error("The saved notebook is invalid.");
+        if (input is null || !NonEmptyTrimmed(input, "id")) throw Error("Project not found.");
         var place = PlaceFrom(input);
         if (IsNumber(existing["schema"], 1))
         {
             var project = existing["project"] as JsonObject;
-            if (StringProp(input, "id") != StringProp(project, "id")) throw new InvalidOperationException("Project not found.");
+            if (StringProp(input, "id") != StringProp(project, "id")) throw Error("Project not found.");
             var next = CloneObject(existing);
             next["project"] = ProjectRecord(StringProp(project, "id")!, StringProp(project, "name")!, place);
             if (!Validate(next) || !SameJson(next["revisions"], existing["revisions"]) || !SameJson(next["tasks"], existing["tasks"]))
-                throw new InvalidOperationException("The updated notebook is invalid.");
+                throw Error("The updated notebook is invalid.");
             return next;
         }
         var notebook = CloneObject(existing);
         var projects = notebook["projects"]!.AsArray();
         var index = FindProject(projects, StringProp(input, "id")!);
-        if (index < 0) throw new InvalidOperationException("Project not found.");
+        if (index < 0) throw Error("Project not found.");
         var previous = Snapshot(projects);
         var current = projects[index]!.AsObject();
         var currentProject = current["project"]!.AsObject();
@@ -737,45 +729,45 @@ public static class Plan
             ["revisions"] = CloneArray(current["revisions"]!.AsArray()),
             ["tasks"] = CloneArray(current["tasks"]!.AsArray())
         };
-        if (!Validate(notebook)) throw new InvalidOperationException("The updated notebook is invalid.");
+        if (!Validate(notebook)) throw Error("The updated notebook is invalid.");
         for (var i = 0; i < previous.Count; i++)
         {
             var updated = projects[i]!.AsObject();
             if (i == index)
             {
                 if (!SameJson(previous[i]["revisions"], updated["revisions"]) || !SameJson(previous[i]["tasks"], updated["tasks"]) || StringProp(previous[i]["project"] as JsonObject, "id") != StringProp(updated["project"] as JsonObject, "id") || StringProp(previous[i]["project"] as JsonObject, "name") != StringProp(updated["project"] as JsonObject, "name"))
-                    throw new InvalidOperationException("The updated notebook is invalid.");
+                    throw Error("The updated notebook is invalid.");
             }
-            else if (!SameJson(previous[i], updated)) throw new InvalidOperationException("The updated notebook is invalid.");
+            else if (!SameJson(previous[i], updated)) throw Error("The updated notebook is invalid.");
         }
         return notebook;
     }
 
     public static JsonObject ResetProject(JsonNode? data, JsonObject? input, string timestamp)
     {
-        if (data is not JsonObject existing || !Validate(existing)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (input is null || !NonEmptyTrimmed(input, "id") || !NonEmptyTrimmed(input, "direction")) throw new InvalidOperationException("Project not found.");
+        if (data is not JsonObject existing || !Validate(existing)) throw Error("The saved notebook is invalid.");
+        if (input is null || !NonEmptyTrimmed(input, "id") || !NonEmptyTrimmed(input, "direction")) throw Error("Project not found.");
         var notebook = CloneObject(existing);
         var schema2 = IsNumber(notebook["schema"], 2);
         // Schema 1 stores the notebook in a fresh array. Replacing that slot does not change the notebook.
-        var items = schema2 ? notebook["projects"]!.AsArray() : new JsonArray { notebook };
+        var items = schema2 ? notebook["projects"]!.AsArray() : Arr(notebook);
         var index = FindProject(items, StringProp(input, "id")!);
-        if (index < 0) throw new InvalidOperationException("Project not found.");
+        if (index < 0) throw Error("Project not found.");
         var others = new List<JsonObject>();
         for (var i = 0; i < items.Count; i++)
             if (i != index) others.Add(CloneObject(items[i]!.AsObject()));
         items[index] = ReplaceHistory(items[index]!.AsObject(), timestamp, StringProp(input, "direction")!.Trim());
         if (!schema2)
         {
-            if (!Validate(notebook)) throw new InvalidOperationException("The updated notebook is invalid.");
+            if (!Validate(notebook)) throw Error("The updated notebook is invalid.");
             return notebook;
         }
-        if (!Validate(notebook)) throw new InvalidOperationException("The updated notebook is invalid.");
+        if (!Validate(notebook)) throw Error("The updated notebook is invalid.");
         var kept = 0;
         for (var i = 0; i < items.Count; i++)
         {
             if (i == index) continue;
-            if (!SameJson(items[i], others[kept])) throw new InvalidOperationException("The updated notebook is invalid.");
+            if (!SameJson(items[i], others[kept])) throw Error("The updated notebook is invalid.");
             kept++;
         }
         return notebook;
@@ -783,21 +775,21 @@ public static class Plan
 
     public static JsonObject RemoveProject(JsonNode? data, JsonObject? input)
     {
-        if (data is not JsonObject existing || !Validate(existing)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (input is null || !NonEmptyTrimmed(input, "id")) throw new InvalidOperationException("Project not found.");
+        if (data is not JsonObject existing || !Validate(existing)) throw Error("The saved notebook is invalid.");
+        if (input is null || !NonEmptyTrimmed(input, "id")) throw Error("Project not found.");
         if (IsNumber(existing["schema"], 1) || existing["projects"] is not JsonArray || existing["projects"]!.AsArray().Count < 2)
-            throw new InvalidOperationException("The notebook must keep at least one project.");
+            throw Error("The notebook must keep at least one project.");
         var notebook = CloneObject(existing);
         var projects = notebook["projects"]!.AsArray();
         var index = FindProject(projects, StringProp(input, "id")!);
-        if (index < 0) throw new InvalidOperationException("Project not found.");
+        if (index < 0) throw Error("Project not found.");
         var remaining = new List<JsonObject>();
         for (var i = 0; i < projects.Count; i++)
             if (i != index) remaining.Add(CloneObject(projects[i]!.AsObject()));
         projects.RemoveAt(index);
-        if (!Validate(notebook)) throw new InvalidOperationException("The updated notebook is invalid.");
+        if (!Validate(notebook)) throw Error("The updated notebook is invalid.");
         for (var i = 0; i < remaining.Count; i++)
-            if (!SameJson(remaining[i], projects[i])) throw new InvalidOperationException("The updated notebook is invalid.");
+            if (!SameJson(remaining[i], projects[i])) throw Error("The updated notebook is invalid.");
         return notebook;
     }
 
@@ -830,10 +822,10 @@ public static class Plan
     {
         var projects = notebook["projects"]!.AsArray();
         var previous = Snapshot(projects);
-        projects.Add(item);
-        if (!Validate(notebook)) throw new InvalidOperationException("The updated notebook is invalid.");
+        Push(projects, item);
+        if (!Validate(notebook)) throw Error("The updated notebook is invalid.");
         for (var i = 0; i < previous.Count; i++)
-            if (!SameJson(previous[i], projects[i])) throw new InvalidOperationException("The updated notebook is invalid.");
+            if (!SameJson(previous[i], projects[i])) throw Error("The updated notebook is invalid.");
         return notebook;
     }
 
@@ -853,7 +845,7 @@ public static class Plan
 
     static JsonObject ReplaceHistory(JsonObject current, string timestamp, string direction)
     {
-        var revisions = new JsonArray { Revision(1, "manual", "", timestamp, direction, "", [], []) };
+        var revisions = Arr(Revision(1, "manual", "", timestamp, direction, "", [], []));
         var tasks = new JsonArray();
         var next = new JsonObject();
         var sawRevisions = false;
@@ -874,7 +866,7 @@ public static class Plan
         var array = new JsonArray();
         if (node is JsonArray items)
             foreach (var item in items)
-                if (TryString(item, out var text)) array.Add(text);
+                if (TryString(item, out var text)) Push(array, Text(text));
         return array;
     }
 
@@ -888,21 +880,21 @@ public static class Plan
         if (input is null || !input.TryGetPropertyValue("timing", out var timingNode) || timingNode is null || (TryString(timingNode, out var blank) && blank.Length == 0))
             return new JsonObject();
         if (!TryString(timingNode, out var timing) || (timing != "deadline" && timing != "discretion"))
-            throw new InvalidOperationException("Choose a deadline or leave timing to the worker.");
+            throw Error("Choose a deadline or leave timing to the worker.");
         if (timing == "discretion") return new JsonObject { ["timing"] = "discretion" };
         if (!TryString(input["deadlineAt"], out var deadline) || !IsFiniteDate(deadline))
-            throw new InvalidOperationException("Set the task deadline.");
+            throw Error("Set the task deadline.");
         return new JsonObject { ["timing"] = "deadline", ["deadlineAt"] = ToIsoString(DateParse(deadline)) };
     }
 
     public static JsonObject CreateTask(JsonObject data, JsonObject? input)
     {
-        if (!ValidateProject(data)) throw new InvalidOperationException("The saved notebook is invalid.");
+        if (!ValidateProject(data)) throw Error("The saved notebook is invalid.");
         foreach (var taskNode in data["tasks"]!.AsArray())
             if (StringProp(taskNode as JsonObject, "status") == "running")
-                throw new InvalidOperationException("This project already has a running task. No second task was created.");
+                throw Error("This project already has a running task. No second task was created.");
         if (input is null || !IsSafeInteger(input["revision_id"], out var revisionId) || !RevisionExists(data, revisionId) || !NonEmptyTrimmed(input, "title") || !HasString(input, "detail"))
-            throw new InvalidOperationException("The task requires a title and an existing revision.");
+            throw Error("The task requires a title and an existing revision.");
         var extra = TaskTiming(input);
         var next = CloneObject(data);
         var tasks = next["tasks"]!.AsArray();
@@ -918,24 +910,24 @@ public static class Plan
             ["status"] = "running"
         };
         foreach (var pair in extra) created[pair.Key] = pair.Value?.DeepClone();
-        tasks.Add(created);
+        Push(tasks, created);
         return next;
     }
 
     public static JsonObject RemoveTask(JsonObject data, JsonObject? input)
     {
-        if (!ValidateProject(data)) throw new InvalidOperationException("The saved notebook is invalid.");
-        if (input is null || !NonEmptyTrimmed(input, "id")) throw new InvalidOperationException("Job not found.");
+        if (!ValidateProject(data)) throw Error("The saved notebook is invalid.");
+        if (input is null || !NonEmptyTrimmed(input, "id")) throw Error("Job not found.");
         var next = CloneObject(data);
         var tasks = next["tasks"]!.AsArray();
         var id = StringProp(input, "id");
         var index = -1;
         for (var i = 0; i < tasks.Count; i++)
             if (StringProp(tasks[i] as JsonObject, "id") == id) { index = i; break; }
-        if (index < 0) throw new InvalidOperationException("Job not found.");
+        if (index < 0) throw Error("Job not found.");
         tasks.RemoveAt(index);
         if (!Validate(next) || !SameJson(next["revisions"], data["revisions"]) || !SameJson(next["project"], data["project"]))
-            throw new InvalidOperationException("The updated notebook is invalid.");
+            throw Error("The updated notebook is invalid.");
         return next;
     }
 
@@ -953,35 +945,35 @@ public static class Plan
             var change = new JsonObject { ["key"] = key };
             if (hasBefore) change["before"] = before?.DeepClone();
             if (hasAfter) change["after"] = after?.DeepClone();
-            changes.Add(change);
+            Push(changes, change);
         }
         JsonArray? closed = null;
         if (previous is not null && previous.TryGetPropertyValue("closed", out var closedNode) && closedNode is not null)
         {
-            if (closedNode is not JsonArray closedArray) throw new InvalidOperationException("previous.closed.filter is not a function");
+            if (closedNode is not JsonArray closedArray) throw Error("previous.closed.filter is not a function");
             closed = closedArray;
         }
         if (closed is { Count: > 0 })
         {
             if (!current.TryGetPropertyValue("open", out var openNode) || openNode is null)
-                throw new InvalidOperationException("Cannot read properties of undefined (reading 'some')");
-            if (openNode is not JsonArray open) throw new InvalidOperationException("current.open.some is not a function");
+                throw Error("Cannot read properties of undefined (reading 'some')");
+            if (openNode is not JsonArray open) throw Error("current.open.some is not a function");
             var reopened = new JsonArray();
             foreach (var decisionNode in closed)
             {
-                if (!TryString(decisionNode, out var decision)) throw new InvalidOperationException("decision.trim is not a function");
+                if (!TryString(decisionNode, out var decision)) throw Error("decision.trim is not a function");
                 foreach (var questionNode in open)
                 {
-                    if (!TryString(questionNode, out var question)) throw new InvalidOperationException("question.trim is not a function");
+                    if (!TryString(questionNode, out var question)) throw Error("question.trim is not a function");
                     if (string.Equals(question.Trim().ToLower(Italian), decision.Trim().ToLower(Italian), StringComparison.Ordinal))
                     {
-                        reopened.Add(decision);
+                        Push(reopened, Text(decision));
                         break;
                     }
                 }
             }
             if (reopened.Count > 0)
-                changes.Add(new JsonObject { ["key"] = "reopened", ["before"] = new JsonArray(), ["after"] = reopened });
+                Push(changes, new JsonObject { ["key"] = "reopened", ["before"] = new JsonArray(), ["after"] = reopened });
         }
         return changes;
     }
@@ -999,4 +991,18 @@ public static class Plan
             if (StringProp(task as JsonObject, "id") == id) return true;
         return false;
     }
+
+    // Add(JsonNode) stays AOT-safe. Add<T> of a JsonObject or a string is rejected by the trimmer.
+    static void Push(JsonArray array, JsonNode? node) => array.Add(node);
+
+    static JsonNode Text(string value) => JsonValue.Create(value)!;
+
+    static JsonArray Arr(params JsonNode?[] items)
+    {
+        var array = new JsonArray();
+        foreach (var item in items) array.Add(item);
+        return array;
+    }
+
+    static InvalidOperationException Error(string message) => new(message);
 }

@@ -48,12 +48,7 @@ public sealed class ModelsTests
     [Fact]
     public void Enabled_true_with_available_false_is_omitted()
     {
-        var input = Arr("""[
-          {"id":"down","enabled":true,"available":false},
-          {"id":"up","enabled":true,"available":true},
-          {"id":"open","enabled":true},
-          {"id":"off","enabled":false,"available":true}
-        ]""");
+        var input = Arr("""[{"id":"down","enabled":true,"available":false},{"id":"up","enabled":true,"available":true},{"id":"open","enabled":true},{"id":"off","enabled":false,"available":true}]""");
         var enabled = Models.GetEnabledModels(input);
         Assert.Equal(2, enabled.Count);
         Assert.Equal("up", Id(enabled[0]));
@@ -87,10 +82,7 @@ public sealed class ModelsTests
     [Fact]
     public void SetModelEnabled_refuses_to_turn_an_unavailable_model_on()
     {
-        var input = Arr("""[
-          {"id":"down","label":"Down","enabled":false,"available":false},
-          {"id":"up","enabled":true,"available":true}
-        ]""");
+        var input = Arr("""[{"id":"down","label":"Down","enabled":false,"available":false},{"id":"up","enabled":true,"available":true}]""");
         var before = input.ToJsonString();
         var updated = Models.SetModelEnabled(input, "down", true);
 
@@ -131,12 +123,7 @@ public sealed class ModelsTests
     [Fact]
     public void Model_disabled()
     {
-        var models = Arr("""[
-          {"id":"on","enabled":true,"available":true},
-          {"id":"off","enabled":false,"available":true},
-          {"id":"down","enabled":true,"available":false},
-          {"id":"loose","enabled":1,"available":true}
-        ]""");
+        var models = Arr("""[{"id":"on","enabled":true,"available":true},{"id":"off","enabled":false,"available":true},{"id":"down","enabled":true,"available":false},{"id":"loose","enabled":1,"available":true}]""");
         Assert.Equal("model disabled", Reason(Claim(models, "off")));
         Assert.Equal("model disabled", Reason(Claim(models, "down")));
         Assert.Equal("model disabled", Reason(Claim(models, "loose")));

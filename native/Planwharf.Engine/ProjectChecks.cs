@@ -234,7 +234,7 @@ public static class ProjectChecks
         process.EnableRaisingEvents = true;
         try
         {
-            if (!process.Start()) throw new InvalidOperationException("spawn failed");
+            if (!process.Start()) throw Error("spawn failed");
         }
         catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException)
         {
@@ -311,4 +311,6 @@ public static class ProjectChecks
             // The child already exited, or taskkill could not run.
         }
     }
+
+    static InvalidOperationException Error(string message) => new(message);
 }

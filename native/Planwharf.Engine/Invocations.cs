@@ -189,13 +189,13 @@ public sealed class InvocationLedger
             }
         }
         var array = new JsonArray();
-        foreach (var key in order) array.Add(totals[key]);
+        foreach (var key in order) array.Add((JsonNode)totals[key]);
         return array;
     }
 
     string Write(JsonObject record)
     {
-        var key = MapKey(record) ?? throw new InvalidOperationException("The invocation record has no id.");
+        var key = MapKey(record) ?? throw Error("The invocation record has no id.");
         // Node applies mode 0o600 when append creates the file. CreateNew is the path that stores UnixCreateMode.
         if (!System.IO.File.Exists(_file))
         {
@@ -241,13 +241,18 @@ public sealed class InvocationLedger
     }
 
     // mode 0o600. Windows ignores the Unix mode; the JSON line is what every platform can check.
-    FileStream OpenNew() => new(_file, new FileStreamOptions
+    FileStream OpenNew()
     {
-        Mode = FileMode.CreateNew,
-        Access = FileAccess.Write,
-        Share = FileShare.ReadWrite,
-        UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite
-    });
+        var options = new FileStreamOptions
+        {
+            Mode = FileMode.CreateNew,
+            Access = FileAccess.Write,
+            Share = FileShare.ReadWrite
+        };
+        if (!OperatingSystem.IsWindows())
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        return new(_file, options);
+    }
 
     FileStream OpenAppend() => new(_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
 
@@ -405,4 +410,6 @@ public sealed class InvocationLedger
             _ => false
         };
     }
+
+    static InvalidOperationException Error(string message) => new(message);
 }

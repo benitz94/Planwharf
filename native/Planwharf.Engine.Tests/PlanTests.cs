@@ -360,7 +360,8 @@ public class PlanTests
         Assert.Equal("After the visit", Text(answered["title"]));
         Assert.Equal("grill", Text(answered["mode"]));
         Assert.Equal("Who covers the first opening shift?", Text(answered["open"]![0]));
-        Assert.Contains("Should we confirm Saturday morning opening? → Yes", Text(answered["closed"]![^1]));
+        var closed = answered["closed"]!.AsArray();
+        Assert.Contains("Should we confirm Saturday morning opening? → Yes", Text(closed[closed.Count - 1]));
         Assert.Equal("keep", Text(answered["responses"]![0]!["action"]));
         Assert.Equal("", Text(answered["responses"]![0]!["answer"]));
 

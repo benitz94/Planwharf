@@ -72,26 +72,7 @@ public sealed class ProjectWorkspaceTests : IDisposable
 
     static void LinkDirectory(string link, string target)
     {
-        if (!OperatingSystem.IsWindows())
-        {
-            Directory.CreateSymbolicLink(link, target);
-            return;
-        }
-        var start = new ProcessStartInfo("cmd.exe")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-        start.ArgumentList.Add("/d");
-        start.ArgumentList.Add("/c");
-        start.ArgumentList.Add("mklink /J \"" + link + "\" \"" + target + "\"");
-        using var process = Process.Start(start)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        process.WaitForExit();
-        if (process.ExitCode != 0) throw new InvalidOperationException(stdout.Result + stderr.Result);
+        Links.Folder(link, target);
     }
 
     static void Git(string cwd, params string[] args)

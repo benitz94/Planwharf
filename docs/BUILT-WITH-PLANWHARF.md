@@ -13,14 +13,16 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **15 of 55** | 55 |
-| JavaScript engine lines ported | **about 1,040 of 10,300** (10%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), part of 2 | 0 to 8 |
-| C# engine tests | 462, plus 149 comparison cases with the JavaScript | |
+| Engine modules ported to C# | **23 of 55** (15 of 55 before this job) | 55 |
+| JavaScript engine lines ported | **about 1,856 of 10,300** (18%) | all; the orchestrator alone is about 3,800 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies) | 0 to 8 |
+| C# engine tests | 547, plus 149 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
-`browser-settings`, `model-policy`, `model-roles`, `project-history`, `provider-accounts`,
-`provider-diagnostics`, `provider-refusal`, `skills`, `structured-final`, `worker-result`.
+`browser-settings`, `invocations`, `model-policy`, `model-roles`, `models`, `notebook-file`,
+`plan`, `project-checks`, `project-history`, `project-workspace`, `provider-accounts`,
+`provider-diagnostics`, `provider-refusal`, `quota`, `sentinel`, `skills`, `structured-final`,
+`worker-result`.
 
 ## Jobs done by Planwharf
 
@@ -52,6 +54,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 21 | #? | Wrote the pipeline build sheet: routing by risk and parts touched, builder and reviewer pairs, review rounds, gate calls, and one pull request per job; implementation awaits review | Independent verification by Gemini: verified risk-based routing, builder/reviewer pairs, review rounds, gate integration, and single PR rules against sheets 18–20 and the pipeline design. Added comprehensive edge, error, recovery, and concurrency test coverage for quota switches, gate/review return counters, bad trees, invalid table rows, branch name validation, and unexpected PR states |
 | 22 | #? | Wrote the pipeline run sheet: several jobs at once in isolated worktrees within quota, the native pipeline view of stages, time, and quota, and an optional low-risk merge; implementation awaits review | Independent verification by Gemini: verified concurrent worktree isolation, model-id invocation caps, quota thresholds, native view bounds, and merge commit limits against sheets 18–21 and DESIGN-PIPELINE.md. Added comprehensive edge, error, recovery, and concurrency test coverage for schedule locks, worktree/branch collisions, merge crash recovery, drop handling, and forbidden rollbacks. This Grok 4.7 review left that Gemini sentence and commit a50520a unchanged. The archived work plan still checks Verify (claude-sonnet-4-6) on that same commit; this review does not replace either claim. The sheet test now also locks shared quota across projects, no second builder, expired and signed-out plans, cleanup with `git branch -d`, and quoted text that cannot raise a cap or authorize a merge |
 | 23 | #? | Wrote the phase 2 rest sheet for `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, and `project-workspace`; implementation awaits review | Independent verification by Gemini: verified parity cases, check commands, deferred dependencies, and file bounds across all eight modules against their JavaScript implementations, tests, and porting rules 1–12. Added comprehensive edge, error, recovery, and concurrency test coverage for schema migrations, note limits, token integer safety, sentinel verdict precedence, worktree containment, git sanitization, and execution isolation. This Grok 4.7 review left that Gemini sentence and commit 61cdb5b unchanged. The archived work plan still checks Verify (claude-sonnet-4-6) on that same commit. That Claude run stopped on quota before review and did not write 61cdb5b. This review does not replace the Gemini claim |
+| 24 | #? | Ported the eight phase 2 rest modules to C#: plan.js, quota.js, models.js, sentinel.js, invocations, notebook-file, project-checks, project-workspace | — |
 
 ## Improvements found while Planwharf worked on itself
 

@@ -114,7 +114,7 @@ public class InvocationsTests
             Assert.DoesNotContain("must-not-persist", raw);
             Assert.DoesNotContain("\"env\"", raw);
             Assert.DoesNotContain("\"token\"", raw);
-            Assert.True(Regex.IsMatch(id, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"));
+            Assert.Matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", id);
             Assert.NotEqual(id, worker);
             if (!OperatingSystem.IsWindows())
                 Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(ledger.File));
@@ -232,8 +232,8 @@ public class InvocationsTests
             var ledger = Invocations.CreateInvocationLedger(dir, () => Iso(0));
             var bad = Worker(ledger, "bad");
             ledger.Finish(bad, "COMPLETE", JsonValue.Create(1.5), new JsonObject { ["input"] = 1.5, ["output"] = 2 });
-            var unsafe = Worker(ledger, "unsafe");
-            ledger.Finish(unsafe, "COMPLETE", JsonValue.Create("0"), new JsonObject { ["input"] = 9007199254740992L, ["output"] = 1 });
+            var oversize = Worker(ledger, "unsafe");
+            ledger.Finish(oversize, "COMPLETE", JsonValue.Create("0"), new JsonObject { ["input"] = 9007199254740992L, ["output"] = 1 });
             var edge = Worker(ledger, "edge");
             ledger.Finish(edge, "COMPLETE", JsonValue.Create(true), new JsonObject { ["input"] = 9007199254740991L, ["output"] = 0, ["cachedInput"] = 1.5 });
             var cached = Worker(ledger, "cached", provider: "other");
@@ -241,8 +241,8 @@ public class InvocationsTests
             var view = ledger.View("p");
             Assert.True(ById(view, bad)["processExit"] is null);
             Assert.False(ById(view, bad).ContainsKey("tokens"));
-            Assert.True(ById(view, unsafe)["processExit"] is null);
-            Assert.False(ById(view, unsafe).ContainsKey("tokens"));
+            Assert.True(ById(view, oversize)["processExit"] is null);
+            Assert.False(ById(view, oversize).ContainsKey("tokens"));
             Assert.True(ById(view, edge)["processExit"] is null);
             Assert.Equal(9007199254740991L, long.Parse(ById(view, edge)["tokens"]!["input"]!.ToJsonString(), CultureInfo.InvariantCulture));
             Assert.False(((JsonObject)ById(view, edge)["tokens"]!).ContainsKey("cachedInput"));
@@ -427,7 +427,7 @@ public class InvocationsTests
             at = 4000;
             ledger.Finish(left, "COMPLETE", JsonValue.Create(0), new JsonObject { ["input"] = 3, ["output"] = 4, ["accountType"] = "normal" });
             var hidden = ledger.View("other");
-            Assert.Equal(1, ((JsonArray)hidden["recent"]!).Count);
+            Assert.Single((JsonArray)hidden["recent"]!);
             Assert.Equal(other, RecentRole(hidden, "worker")["id"]!.GetValue<string>());
             var view = ledger.View("p");
             Assert.Equal(3, ((JsonArray)view["recent"]!).Count);
