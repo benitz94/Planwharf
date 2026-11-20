@@ -704,7 +704,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           const existing = await gh(['pr', 'view', '--json', 'url', '--jq', '.url']);
           if (existing.status === 0 && existing.stdout.trim()) prUrl = existing.stdout.trim();
           else {
-            const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', message, '--body', 'Opened by Planwharf from the push button.']);
+            // The pull request is named after the work, not after "push" (the message sent when nothing new is committed).
+            const row = (state.projects || []).find(entry => entry.id === input.projectId) || {};
+            const goal = String(row.megaTask?.title || item.revisions?.at(-1)?.direction || '').split(/\r?\n/)[0].trim();
+            const said = commit && message && message.toLowerCase() !== 'push' ? message.split(/\r?\n/)[0].trim() : '';
+            const title = (said || goal || branch).slice(0, 120);
+            const done = (row.results || []).filter(result => result && result.summary && !result.modelChange).map(result => '- ' + String(result.summary).split(/\r?\n/)[0].slice(0, 300));
+            const prBody = [goal ? `## Goal\n\n${goal}` : '', done.length ? `## What was done\n\n${done.join('\n')}` : '', 'Opened by Planwharf from the push button.'].filter(Boolean).join('\n\n');
+            const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', title, '--body', prBody]);
             if (created.status === 0) prUrl = created.stdout.trim();
           }
           return { ok: true, commit, branch, pushed: true, prUrl };

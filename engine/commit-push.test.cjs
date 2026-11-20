@@ -239,3 +239,24 @@ test('a non-fast-forward push failure hides advice and keeps the local commit', 
   assert.equal(body.error.includes('HEAD:'), false);
   assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Local commit ahead of fetch');
 });
+
+test('the pull request opened by the push is named after the work, not "push"', { skip: process.platform === 'win32' }, async t => {
+  const { folder, post } = await fixture(t);
+  // A fake GitHub CLI: no pull request yet, and "pr create" records its arguments.
+  const bin = path.join(path.dirname(folder), 'bin'), log = path.join(path.dirname(folder), 'gh.log');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'gh'), `#!/bin/sh\nif [ "$1" = "pr" ] && [ "$2" = "view" ]; then exit 1; fi\nfor a in "$@"; do printf '%s\\n' "$a" >> "${log}"; done\necho https://github.com/owner/repo/pull/7\n`);
+  fs.chmodSync(path.join(bin, 'gh'), 0o755);
+  const oldPath = process.env.PATH;
+  process.env.PATH = bin + path.delimiter + oldPath;
+  t.after(() => { process.env.PATH = oldPath; });
+  git(folder, 'switch', '-c', 'topic');
+  const response = await post({ projectId: 'p', message: 'push', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 200, JSON.stringify(body));
+  assert.equal(body.prUrl, 'https://github.com/owner/repo/pull/7');
+  const args = fs.readFileSync(log, 'utf8').split('\n');
+  const title = args[args.indexOf('--title') + 1];
+  assert.notEqual(title, 'push');
+  assert.ok(title.length > 0);
+});
