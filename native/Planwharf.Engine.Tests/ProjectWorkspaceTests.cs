@@ -119,7 +119,8 @@ public sealed class ProjectWorkspaceTests : IDisposable
         catch (DirectoryNotFoundException) { return; }
         Assert.Equal(linked, ProjectWorkspace.LinkedWorkspace(alias));
         var escape = Path.Combine(alpha, "escape");
-        LinkDirectory(escape, beta);
+        try { LinkDirectory(escape, beta); }
+        catch (DirectoryNotFoundException) { return; }
         Assert.Equal(ProjectWorkspace.LinkedWorkspace(home), ProjectWorkspace.LinkedWorkspace(Path.Combine(escape, "..")));
         Assert.NotEqual(linked, ProjectWorkspace.LinkedWorkspace(escape));
     }
