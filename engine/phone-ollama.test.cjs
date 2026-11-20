@@ -103,7 +103,7 @@ test('ollama chat posts only the requested model and fails closed on timeout, ht
   });
   assert.equal(ok.ok, true);
   assert.equal(ok.model, 'qwen2.5:3b');
-  assert.equal(withCaptain(ok.text).startsWith('⚓ Captain'), true);
+  assert.equal(withCaptain(ok.text).startsWith('🏴‍☠️ Ahoy, Captain!'), true);
   assert.equal(seen.length, 1);
   assert.match(seen[0].url, /\/api\/chat$/);
   assert.equal(seen[0].body.model, 'qwen2.5:3b');
@@ -208,7 +208,7 @@ test('a paired chat gets a natural reply from fresh facts and does not run a com
 
 test('ollama escapes model HTML, retries once, and hides error bodies', async () => {
   const down = unavailableReply();
-  assert.match(down, /^⚓ Captain\n\n<b>Harbor Companion Offline<\/b>/);
+  assert.match(down, /^🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Companion Offline<\/b>/);
   assert.match(down, /⚠️/);
   const stripped = down.replace(/<\/?b>/g, '');
   assert.equal(stripped.includes('<'), false);
@@ -224,7 +224,7 @@ test('ollama escapes model HTML, retries once, and hides error bodies', async ()
   });
   assert.equal(calls, 2);
   assert.equal(recovered.ok, true);
-  assert.equal(recovered.text.startsWith('⚓ Captain\n\nTide &lt;high&gt; &amp; rising'), true);
+  assert.equal(recovered.text.startsWith('🏴‍☠️ Ahoy, Captain!\n\nTide &lt;high&gt; &amp; rising'), true);
   assert.equal(recovered.text.includes('<high>'), false);
   assert.equal(recovered.text.includes('<leak>'), false);
 
@@ -245,14 +245,14 @@ test('ollama escapes model HTML, retries once, and hides error bodies', async ()
   const prefixed = await askOllama({
     fetchImpl: async () => ({
       ok: true,
-      json: async () => ({ message: { content: '⚓ Captain\n\nAlready <b>on</b> watch' } })
+      json: async () => ({ message: { content: '🏴‍☠️ Ahoy, Captain!\n\nAlready <b>on</b> watch' } })
     })
   });
-  assert.equal(prefixed.text.startsWith('⚓ Captain\n\n⚓ Captain'), false);
+  assert.equal(prefixed.text.startsWith('🏴‍☠️ Ahoy, Captain!\n\n🏴‍☠️ Ahoy, Captain!'), false);
   assert.equal(prefixed.text.includes('<b>'), false);
   assert.equal(prefixed.text.includes('&lt;b&gt;on&lt;/b&gt;'), true);
-  assert.equal(withCaptain('⚓ Captain\n\nkept'), '⚓ Captain\n\nkept');
-  assert.equal(withCaptain(''), '⚓ Captain');
+  assert.equal(withCaptain('🏴‍☠️ Ahoy, Captain!\n\nkept'), '🏴‍☠️ Ahoy, Captain!\n\nkept');
+  assert.equal(withCaptain(''), '🏴‍☠️ Ahoy, Captain!');
 });
 
 test('concurrent ollama calls keep their own reply when one is down', async () => {

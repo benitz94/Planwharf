@@ -47,7 +47,7 @@ test('every catalog message is readable in every supported language', () => {
       const text = say(language, key, SAMPLE);
       const check = telegramReadable(text);
       assert.equal(check.ok, true, `${language} ${key} ${check.reasons.join(',')}`);
-      if (!isFragment(key)) assert.ok(text.startsWith('⚓'), `${language} ${key} should greet the captain`);
+      if (!isFragment(key)) assert.ok(text.startsWith('🏴‍☠️'), `${language} ${key} should greet the captain`);
       assert.equal(text.includes('<script'), false);
     }
     assert.notEqual(say('en', key, SAMPLE), say('it', key, SAMPLE), `${key} needs both languages`);

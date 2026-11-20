@@ -26,7 +26,7 @@ function readyHandover(overrides = {}) {
     pollOnce: async () => { calls.push('poll'); return { updates: [] }; },
     replyTo: async () => { throw new Error('must not reply'); },
     startBuild: async () => { calls.push('start'); return { address: 'http://127.0.0.1:4174', model: 'qwen2.5:3b', paired: true }; },
-    sendAlert: async () => { calls.push('alert'); return { messageId: 9, text: '⚓ Captain\nStatus: Done ✅' }; },
+    sendAlert: async () => { calls.push('alert'); return { messageId: 9, text: '🏴‍☠️ Ahoy, Captain!\nStatus: Done ✅' }; },
     stopBuild: async () => { calls.push('stop'); },
     resumePolling: async () => { calls.push('resume'); return { ok: true }; },
     ...overrides
@@ -49,9 +49,9 @@ test('handover stays blocked until the backup, token and a different build are p
 
 test('exchange evidence keeps the message text and drops a bot token', () => {
   const evidence = exchangeEvidence({
-    outbound: { messageId: 9, text: '⚓ Captain\nStatus: Done ✅ token 123456:ABCDEF_secret' },
+    outbound: { messageId: 9, text: '🏴‍☠️ Ahoy, Captain!\nStatus: Done ✅ token 123456:ABCDEF_secret' },
     inbound: { updateId: 4, text: 'how is Harbor?' },
-    reply: { messageId: 10, text: '⚓ Captain\nHarbor is on step 2 of 4.' }
+    reply: { messageId: 10, text: '🏴‍☠️ Ahoy, Captain!\nHarbor is on step 2 of 4.' }
   });
   assert.equal(evidence.outbound.messageId, 9);
   assert.match(evidence.outbound.text, /Done/);
@@ -69,9 +69,9 @@ test('a paused listener is restored when the updated build sends the alert and a
     token: '123456:secret',
     pausePolling: async () => { calls.push('pause'); return { ok: true }; },
     pollOnce: async () => ({ updates: [{ update_id: 4, message: { text: 'how is Harbor?' } }] }),
-    replyTo: async message => { calls.push(message.text); return { messageId: 10, text: '⚓ Captain\nHarbor is on step 2 of 4.' }; },
+    replyTo: async message => { calls.push(message.text); return { messageId: 10, text: '🏴‍☠️ Ahoy, Captain!\nHarbor is on step 2 of 4.' }; },
     startBuild: async () => { calls.push('start'); return { address: 'http://127.0.0.1:4174', model: 'qwen2.5:3b', paired: true }; },
-    sendAlert: async () => ({ messageId: 9, text: '⚓ Captain\nPlanwharf: Planwharf Test\nStatus: Done ✅' }),
+    sendAlert: async () => ({ messageId: 9, text: '🏴‍☠️ Ahoy, Captain!\nPlanwharf: Planwharf Test\nStatus: Done ✅' }),
     stopBuild: async () => { calls.push('stop'); },
     resumePolling: async () => { calls.push('resume'); return { ok: true }; }
   });
@@ -246,7 +246,7 @@ test('no pending message uses the idle question and records that reply', async (
   const result = await runHandover({
     ...readyHandover().input,
     pollOnce: async () => ({ updates: [{ update_id: 1, message: { text: '' } }, { update_id: 2 }] }),
-    askWhenIdle: async () => { calls.push('idle'); return { messageId: 12, text: '⚓ Captain\nAll systems are idle.' }; },
+    askWhenIdle: async () => { calls.push('idle'); return { messageId: 12, text: '🏴‍☠️ Ahoy, Captain!\nAll systems are idle.' }; },
     replyTo: async () => { throw new Error('blank text is not a question'); }
   });
   assert.equal(result.ok, true);

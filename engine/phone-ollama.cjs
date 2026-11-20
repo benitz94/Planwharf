@@ -48,9 +48,9 @@ function escapeHtml(text) {
 function withCaptain(body, language) {
   const text = String(body || '').trim();
   const isIt = languageOrDefault(language) === 'it';
-  const greeting = isIt ? '⚓ Capitano' : '⚓ Captain';
+  const greeting = isIt ? '🏴‍☠️ Ahoy, Capitano!' : '🏴‍☠️ Ahoy, Captain!';
   if (!text) return greeting;
-  const stripped = text.replace(/^(?:⚓\s*)?(?:captain|capitano)[:\s]*/i, '').trim();
+  const stripped = text.replace(/^(?:(?:⚓|🏴‍☠️)\s*)?(?:ahoy,?\s*)?(?:captain|capitano)[!:\s]*/i, '').trim();
   if (!stripped) return greeting;
   return `${greeting}\n\n${stripped}`;
 }

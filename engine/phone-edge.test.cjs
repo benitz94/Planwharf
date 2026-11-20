@@ -83,7 +83,7 @@ test('both channels send the estimate and neither sends paths, prompts, or the t
     assert.equal(ntfy.options.headers.Title.includes('\n'), false);
     assert.equal(ntfy.options.headers.Title.includes('\r'), false);
     const body = JSON.parse(telegram.options.body);
-    assert.ok(body.text.includes('About 12m left'));
+    assert.ok(body.text.includes('About 12 minutes'));
     for (const item of sent) {
       const raw = `${item.options.body || ''}\n${JSON.stringify(item.options.headers || {})}`;
       assert.equal(raw.includes('C:\\secret'), false);
@@ -535,7 +535,7 @@ test('live commands escape hostile names, show a zero step, and recover after a 
     assert.equal(sent.at(-1).text.includes('<down>'), false);
     ollamaDown = false;
     await notifier.processTelegramMessage({ chat: { id: 42 }, text: 'and the wind?' });
-    assert.match(sent.at(-1).text, /^⚓ Captain\n\nWind &lt;gale&gt; &amp; rain$/);
+    assert.match(sent.at(-1).text, /^🏴‍☠️ Ahoy, Captain!\n\nWind &lt;gale&gt; &amp; rain$/);
     assert.equal(sent.at(-1).parse_mode, 'HTML');
     assert.equal(sent.at(-1).text.includes('<gale>'), false);
 
@@ -546,7 +546,7 @@ test('live commands escape hostile names, show a zero step, and recover after a 
     ]);
     replies.push(...sent.slice(-2).map(item => item.text));
     assert.equal(replies.length, 2);
-    assert.ok(replies.every(text => text.startsWith('⚓ Captain')));
+    assert.ok(replies.every(text => text.startsWith('🏴‍☠️ Ahoy, Captain!')));
     assert.equal(replies.some(text => text.includes('<one>')), false);
     assert.equal(replies.some(text => text.includes('<two>')), false);
   } finally {
@@ -586,10 +586,10 @@ test('overlapping alerts keep ntfy plain and telegram HTML separate', async () =
     }
     const joined = telegram.map(item => item.text).join('\n');
     assert.equal(telegram.every(item => item.parse_mode === 'HTML'), true);
-    assert.match(joined, /Harbor Alert: A &lt;1&gt;/);
+    assert.match(joined, /🚢 <b>Ship<\/b>\nA &lt;1&gt;/);
     assert.match(joined, /Raise &lt;sail&gt;/);
     assert.match(joined, /■□ 1\/2/);
-    assert.match(joined, /Harbor Alert: B &amp; 2/);
+    assert.match(joined, /🚢 <b>Ship<\/b>\nB &amp; 2/);
     assert.match(joined, /□□□ 0\/3/);
     assert.equal(joined.includes('<1>'), false);
     assert.equal(joined.includes('<sail>'), false);
