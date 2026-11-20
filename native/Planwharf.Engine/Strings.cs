@@ -575,6 +575,8 @@ public static class Strings
         ["Start over"] = "Ricomincia",
         ["Remove project"] = "Rimuovi progetto",
         ["Quit"] = "Esci",
+        ["Checking company status…"] = "Controllo lo stato delle aziende…",
+        ["Companies"] = "Aziende",
         ["Suggestion: {0}"] = "Suggerimento: {0}",
         ["Or write your answer"] = "Oppure scrivi la risposta",
         ["Yes"] = "Sì",

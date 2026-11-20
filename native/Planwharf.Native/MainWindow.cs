@@ -44,6 +44,7 @@ public sealed partial class MainWindow : Window
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
     bool busy, menuOpen, refreshing, closed;
+    JsonArray providerStatus = new();
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
@@ -245,6 +246,7 @@ public sealed partial class MainWindow : Window
         sideTitle.Text = mode != null && sideTitles.TryGetValue(mode, out var named) ? named : "";
         foreach (var (name, button) in sideButtons) button.IsChecked = name == mode;
         if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
+        if (mode == "usage") _ = LoadProviderStatusAsync();
         sidePanel.IsVisible = mode != null;
         Render();
     }
@@ -563,6 +565,20 @@ public sealed partial class MainWindow : Window
         return card;
     }
 
+
+    async Task LoadProviderStatusAsync()
+    {
+        if (api == null) return;
+        try
+        {
+            var listed = await api.GetAsync("/api/provider-status");
+            providerStatus = listed["status"] as JsonArray ?? new JsonArray();
+            sideSig = null;
+            Render();
+        }
+        catch { /* the section stays on the last reading */ }
+    }
+
     async Task CheckPrsAsync()
     {
         if (api == null || projectId == null) return;
@@ -720,6 +736,14 @@ public sealed partial class MainWindow : Window
 
     void UsageSide(UsagePanel panel)
     {
+        var companies = Look.Section("team", Palette.Accent, Palette.AccentSoft, Strings.T("Companies"));
+        if (providerStatus.Count == 0) companies.Children.Add(Line(Strings.T("Checking company status…"), Palette.Muted, 13));
+        foreach (var company in providerStatus)
+        {
+            var up = company?["up"]?.GetValue<bool>() == true;
+            companies.Children.Add(Item(up ? "●" : "●", company?["name"]?.GetValue<string>() ?? "", company?["note"]?.GetValue<string>() ?? "", up ? Palette.Accent : Palette.Danger));
+        }
+        side.Children.Add(companies);
         var quota = Look.Section("usage", Palette.Accent, Palette.AccentSoft, Strings.T("Quota left"));
         if (panel.Plans.Count == 0) quota.Children.Add(Explain(Strings.T("No provider reports quota.")));
         foreach (var plan in panel.Plans)
