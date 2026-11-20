@@ -85,5 +85,5 @@ in the same branch under porting rule 12.
 ## Hand over
 
 Review this sheet before implementation. The current job commits this sheet,
-marks job 18 as "Done, waiting for review" in `docs/NEXT-WORK.md`, and adds
+marks job 18 as "Done, waiting for review" in `docs/WORK-LIST.md`, and adds
 job 18 to `docs/BUILT-WITH-PLANWHARF.md` with pull request `#?`.

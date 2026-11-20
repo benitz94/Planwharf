@@ -369,7 +369,7 @@ writes for `plan`, `quota`, and `models`. Nothing else: not the JavaScript
 ## Files this sheet job may change
 
 `native/porting/jobs/23-phase2-rest.md`, `engine/job23-sheet.test.cjs`,
-`docs/NEXT-WORK.md`, and `docs/BUILT-WITH-PLANWHARF.md`. No `Plan.cs`,
+`docs/WORK-LIST.md`, and `docs/BUILT-WITH-PLANWHARF.md`. No `Plan.cs`,
 `Quota.cs`, `Models.cs`, `Sentinel.cs`, `Invocations.cs`, `NotebookFile.cs`,
 `ProjectChecks.cs`, or `ProjectWorkspace.cs` on this branch.
 

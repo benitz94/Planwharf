@@ -423,7 +423,7 @@ Job 22 is not written yet. Its sheet will be `native/porting/jobs/22-pipeline-ru
 ## Hand over
 
 Commit this sheet on `feat/pipeline-build` and mark job 21 "Done, waiting
-for review" in `docs/NEXT-WORK.md`. Add its documentation row to
+for review" in `docs/WORK-LIST.md`. Add its documentation row to
 `docs/BUILT-WITH-PLANWHARF.md` with pull request `#?`. Do not push, open a
 pull request, or merge. Implementation starts only after this sheet is
 independently reviewed.

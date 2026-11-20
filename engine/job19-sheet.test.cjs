@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/19-gate.md';
 const allowedDiff = new Set([
   sheetPath,
-  'docs/NEXT-WORK.md',
+  'docs/WORK-LIST.md',
   'docs/BUILT-WITH-PLANWHARF.md',
   'engine/job19-sheet.test.cjs'
 ]);
@@ -207,7 +207,7 @@ test('the verdict stays on the sheet branch and does not add a gate', () => {
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/Gate.cs')), false);
   const missing = spawnSync('git', ['cat-file', '-e', 'HEAD:engine/job19-gate.cjs'], { cwd: root, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);
-  const next = read('docs/NEXT-WORK.md');
+  const next = read('docs/WORK-LIST.md');
   assert.match(next, /\| 19 \|.*\| `feat\/gate` \| Done, waiting for review \|/);
   for (const job of ['20', '21', '22']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
   const built = read('docs/BUILT-WITH-PLANWHARF.md');

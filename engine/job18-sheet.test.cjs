@@ -10,7 +10,7 @@ const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/18-mcp-protocol.md';
 const allowedDiff = new Set([
   sheetPath,
-  'docs/NEXT-WORK.md',
+  'docs/WORK-LIST.md',
   'docs/BUILT-WITH-PLANWHARF.md',
   'engine/job18-sheet.test.cjs'
 ]);
@@ -50,7 +50,7 @@ function sheetBranchErrors(snapshot) {
     if (!allowedDiff.has(file)) errors.push('file outside the sheet branch: ' + file);
   }
   if (!changed.includes(sheetPath)) errors.push('sheet missing from diff');
-  if (!changed.includes('docs/NEXT-WORK.md')) errors.push('NEXT-WORK missing from diff');
+  if (!changed.includes('docs/WORK-LIST.md')) errors.push('WORK-LIST missing from diff');
   if (!changed.includes('docs/BUILT-WITH-PLANWHARF.md')) errors.push('BUILT-WITH missing from diff');
   if (snapshot.mergeBase !== snapshot.originMain) errors.push('branch is not based on refreshed origin/main');
   if (snapshot.branch && snapshot.branch !== 'feat/mcp-protocol') errors.push('branch name is ' + snapshot.branch);
@@ -146,7 +146,7 @@ function liveSheetSnapshot() {
     mergeBase: git(['merge-base', 'HEAD', 'origin/main']),
     diffCheckStatus: diffCheck.status,
     diffCheck: (diffCheck.stdout || '').replace(/\r\n/g, '\n').trim(),
-    next: read('docs/NEXT-WORK.md'),
+    next: read('docs/WORK-LIST.md'),
     built: read('docs/BUILT-WITH-PLANWHARF.md'),
     publishedBuilt: git(['show', 'origin/main:docs/BUILT-WITH-PLANWHARF.md'])
   };
@@ -213,7 +213,7 @@ function snapshotOf(repo) {
     mergeBase: gitOk(repo, ['merge-base', 'HEAD', 'origin/main']),
     diffCheckStatus: diffCheck.status,
     diffCheck: (diffCheck.stdout || '').replace(/\r\n/g, '\n').trim(),
-    next: gitOk(repo, ['show', 'HEAD:docs/NEXT-WORK.md']),
+    next: gitOk(repo, ['show', 'HEAD:docs/WORK-LIST.md']),
     built: gitOk(repo, ['show', 'HEAD:docs/BUILT-WITH-PLANWHARF.md']),
     publishedBuilt: gitOk(repo, ['show', 'origin/main:docs/BUILT-WITH-PLANWHARF.md'])
   };
@@ -225,7 +225,7 @@ function withSheetRepo(setup) {
     gitOk(repo, ['config', 'user.name', 'Isolated fixture']);
     gitOk(repo, ['config', 'user.email', 'fixture@example.invalid']);
     gitOk(repo, ['config', 'core.autocrlf', 'false']);
-    writeRepoFile(repo, 'docs/NEXT-WORK.md', nextDoc('To do', 'To do'));
+    writeRepoFile(repo, 'docs/WORK-LIST.md', nextDoc('To do', 'To do'));
     writeRepoFile(repo, 'docs/BUILT-WITH-PLANWHARF.md', builtDoc('—'));
     writeRepoFile(repo, 'README.md', 'fixture baseline\n');
     commitAll(repo, 'baseline');
@@ -238,7 +238,7 @@ function withSheetRepo(setup) {
 }
 function addSheetCommit(repo, review, extra) {
   gitOk(repo, ['switch', '-c', 'feat/mcp-protocol']);
-  writeRepoFile(repo, 'docs/NEXT-WORK.md', nextDoc('Done, waiting for review', 'To do'));
+  writeRepoFile(repo, 'docs/WORK-LIST.md', nextDoc('Done, waiting for review', 'To do'));
   writeRepoFile(repo, 'docs/BUILT-WITH-PLANWHARF.md', builtDoc(review));
   writeRepoFile(repo, sheetPath, 'sheet fixture\n');
   writeRepoFile(repo, 'engine/job18-sheet.test.cjs', 'test fixture\n');
@@ -252,7 +252,7 @@ test('an isolated sheet branch on refreshed origin/main passes the same checks',
   assert.equal(snapshot.mergeBase, snapshot.originMain);
   assert.deepEqual(snapshot.changed.slice().sort(), [
     'docs/BUILT-WITH-PLANWHARF.md',
-    'docs/NEXT-WORK.md',
+    'docs/WORK-LIST.md',
     'engine/job18-sheet.test.cjs',
     sheetPath
   ].sort());
@@ -277,7 +277,7 @@ test('each isolated branch fault fails on its own', () => {
   assert.deepEqual(sheetBranchErrors(behind), ['branch is not based on refreshed origin/main']);
   const wrongName = withSheetRepo(repo => {
     gitOk(repo, ['switch', '-c', 'planwharf/from-refreshed-origin-main-create-feat-p']);
-    writeRepoFile(repo, 'docs/NEXT-WORK.md', nextDoc('Done, waiting for review', 'To do'));
+    writeRepoFile(repo, 'docs/WORK-LIST.md', nextDoc('Done, waiting for review', 'To do'));
     writeRepoFile(repo, 'docs/BUILT-WITH-PLANWHARF.md', builtDoc(provenance));
     writeRepoFile(repo, sheetPath, 'sheet fixture\n');
     writeRepoFile(repo, 'engine/job18-sheet.test.cjs', 'test fixture\n');
@@ -290,7 +290,7 @@ test('each isolated branch fault fails on its own', () => {
   assert.deepEqual(sheetBranchErrors(extra), ['file outside the sheet branch: engine/job18-gate.cjs']);
   const noSheet = withSheetRepo(repo => {
     gitOk(repo, ['switch', '-c', 'feat/mcp-protocol']);
-    writeRepoFile(repo, 'docs/NEXT-WORK.md', nextDoc('Done, waiting for review', 'To do'));
+    writeRepoFile(repo, 'docs/WORK-LIST.md', nextDoc('Done, waiting for review', 'To do'));
     writeRepoFile(repo, 'docs/BUILT-WITH-PLANWHARF.md', builtDoc(provenance));
     writeRepoFile(repo, 'engine/job18-sheet.test.cjs', 'test fixture\n');
     commitAll(repo, 'docs only');
@@ -301,12 +301,12 @@ test('each isolated branch fault fails on its own', () => {
   assert.ok(pendingErrors.includes('independent-review provenance is missing or inaccurate'));
   assert.ok(pendingErrors.includes('independent-review provenance is still pending'));
   const whitespace = withSheetRepo(repo => addSheetCommit(repo, provenance, checkout => {
-    writeRepoFile(checkout, 'docs/NEXT-WORK.md', nextDoc('Done, waiting for review', 'To do') + 'trailing \n');
+    writeRepoFile(checkout, 'docs/WORK-LIST.md', nextDoc('Done, waiting for review', 'To do') + 'trailing \n');
   }));
   assert.ok(sheetBranchErrors(whitespace).includes('diff check is not clean'));
   const drifted = withSheetRepo(repo => {
     gitOk(repo, ['switch', '-c', 'feat/mcp-protocol']);
-    writeRepoFile(repo, 'docs/NEXT-WORK.md', nextDoc('Done, waiting for review', 'Done, waiting for review'));
+    writeRepoFile(repo, 'docs/WORK-LIST.md', nextDoc('Done, waiting for review', 'Done, waiting for review'));
     writeRepoFile(repo, 'docs/BUILT-WITH-PLANWHARF.md', '**16 of 55**\n| 18 | #144 | Wrote the worker MCP protocol sheet | ' + provenance + ' |\n');
     writeRepoFile(repo, sheetPath, 'sheet fixture\n');
     writeRepoFile(repo, 'engine/job18-sheet.test.cjs', 'test fixture\n');
@@ -333,7 +333,7 @@ test('an empty diff behind origin/main is not a sheet-branch pass', () => {
   assert.deepEqual(sheetBranchErrors(snapshot), [
     'diff is empty',
     'sheet missing from diff',
-    'NEXT-WORK missing from diff',
+    'WORK-LIST missing from diff',
     'BUILT-WITH missing from diff',
     'branch is not based on refreshed origin/main',
     'branch name is planwharf/from-refreshed-origin-main-create-feat-p',
@@ -354,7 +354,7 @@ test('the set-aside gate files stay recoverable and out of this branch', () => {
     assert.equal(git(['cat-file', '-e', ref + '^3:engine/job18-gate.cjs']), '');
     assert.equal(git(['cat-file', '-e', ref + '^3:engine/job18-gate.test.cjs']), '');
     const parked = git(['diff', '--name-only', ref + '^1', ref]);
-    assert.match(parked, /docs\/NEXT-WORK\.md/);
+    assert.match(parked, /docs\/WORK-LIST\.md/);
   }
   const missing = spawnSync('git', ['cat-file', '-e', 'HEAD:engine/job18-gate.cjs'], { cwd: root, encoding: 'utf8' });
   assert.notEqual(missing.status, 0);

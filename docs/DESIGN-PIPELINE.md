@@ -1,7 +1,7 @@
 # Design: two ways of working, and how the crew talks to Planwharf
 
 Decided with the owner on 17 November 2026. The jobs that build it are 18 to 22 in
-[NEXT-WORK.md](NEXT-WORK.md), before the porting goes on, so the C# engine is written once, for this
+[WORK-LIST.md](WORK-LIST.md), before the porting goes on, so the C# engine is written once, for this
 design.
 
 ## Two ways of working

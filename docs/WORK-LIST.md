@@ -1,6 +1,6 @@
 # The whole plan, in order
 
-The owner only says: **"Read docs/NEXT-WORK.md and continue."** This file holds the whole plan:
+The owner only says: **"Read docs/WORK-LIST.md and continue."** This file holds the whole plan:
 Planwharf moves to one native app with its engine in C# (the plan drawn up with the owner on 12 and
 13 November 2026; the details of each phase are in [native/porting/PLAN.md](../native/porting/PLAN.md)
 and the porting rules in [native/porting/README.md](../native/porting/README.md)). Planwharf does the
@@ -8,7 +8,7 @@ jobs itself, one at a time, in the order below; each one is reviewed before it i
 
 ## For the lead: how to continue
 
-1. Read this file on the refreshed `origin/main` (`git fetch`, then `git show origin/main:docs/NEXT-WORK.md`):
+1. Read this file on the refreshed `origin/main` (`git fetch`, then `git show origin/main:docs/WORK-LIST.md`):
    the copy in the folder may be older.
 2. Take the **first job of the list below whose status is "To do"**. Skip a job whose branch already
    exists on `origin` (`git branch -r`): it is done and waiting for review; say so to the owner.

@@ -294,7 +294,7 @@ Left open on purpose, still owned by job 19. This sheet does not choose them:
 ## Hand over
 
 Commit this sheet on `feat/pipeline-intake` and mark job 20 "Done, waiting
-for review" in `docs/NEXT-WORK.md`. Add its documentation row to
+for review" in `docs/WORK-LIST.md`. Add its documentation row to
 `docs/BUILT-WITH-PLANWHARF.md` with pull request `#?`. Do not push, open a
 pull request, or merge. Implementation starts only after this sheet is
 independently reviewed.

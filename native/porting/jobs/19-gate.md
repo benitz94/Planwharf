@@ -156,6 +156,6 @@ Do not use a candidate branch's CI configuration as the gate authority.
 ## Hand over
 
 Commit this sheet on `feat/gate` and mark job 19 "Done, waiting for review" in
-`docs/NEXT-WORK.md`. Add its documentation row to
+`docs/WORK-LIST.md`. Add its documentation row to
 `docs/BUILT-WITH-PLANWHARF.md` with pull request `#?`. Job 18 remains deferred;
 job 19 implementation starts only after this sheet is independently reviewed.

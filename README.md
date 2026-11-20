@@ -23,7 +23,7 @@ In Planwharf every model you have is on the table. You see it, you see how much 
 ## Planwharf builds Planwharf
 
 Planwharf is rewriting its own engine, from JavaScript to C#, **with its own crew**. The owner writes one
-line to the lead, *"Read docs/NEXT-WORK.md and continue."*; the lead picks the next job of the plan, one
+line to the lead, *"Read docs/WORK-LIST.md and continue."*; the lead picks the next job of the plan, one
 model builds it, another model checks it and fixes what fails, and every pull request is
 reviewed before it is merged.
 

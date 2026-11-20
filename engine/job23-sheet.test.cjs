@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/23-phase2-rest.md';
 const allowedDiff = new Set([
   sheetPath,
-  'docs/NEXT-WORK.md',
+  'docs/WORK-LIST.md',
   'docs/BUILT-WITH-PLANWHARF.md',
   'engine/job23-sheet.test.cjs'
 ]);
@@ -506,7 +506,7 @@ test('the sheet stays on port/23-sheet and does not add a C# port', () => {
     const missing = spawnSync('git', ['cat-file', '-e', 'HEAD:' + file], { cwd: root, encoding: 'utf8' });
     assert.notEqual(missing.status, 0, file);
   }
-  const next = read('docs/NEXT-WORK.md');
+  const next = read('docs/WORK-LIST.md');
   assert.match(next, /\| 23 \|.*\| `port\/23-sheet` \| Done, waiting for review \|/);
   assert.match(next, /23-phase2-rest\.md/);
   for (const job of ['24', '25']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));

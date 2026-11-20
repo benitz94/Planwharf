@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/22-pipeline-run.md';
 const allowedDiff = new Set([
   sheetPath,
-  'docs/NEXT-WORK.md',
+  'docs/WORK-LIST.md',
   'docs/BUILT-WITH-PLANWHARF.md',
   'engine/job22-sheet.test.cjs'
 ]);
@@ -365,7 +365,7 @@ test('the sheet stays on feat/pipeline-run and does not add a runner', () => {
   assert.notEqual(missingCsRunner.status, 0);
   const missingView = spawnSync('git', ['cat-file', '-e', 'HEAD:native/Planwharf.Native/Core/PipelineView.cs'], { cwd: root, encoding: 'utf8' });
   assert.notEqual(missingView.status, 0);
-  const next = read('docs/NEXT-WORK.md');
+  const next = read('docs/WORK-LIST.md');
   assert.match(next, /\| 22 \|.*\| `feat\/pipeline-run` \| Done, waiting for review \|/);
   assert.match(next, /\| 21 \|.*\| `feat\/pipeline-build` \| Done, waiting for review \|/);
   for (const job of ['23', '24']) assert.match(next, new RegExp('\\| ' + job + ' \\|.*\\| To do \\|'));
