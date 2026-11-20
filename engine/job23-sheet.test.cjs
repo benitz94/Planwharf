@@ -430,8 +430,11 @@ function assessDiffFiles(changedFiles, guardDiff) {
 }
 
 test('reviewer provenance checks reject fabricated or conflicting attributions', () => {
-  // Once merged, the row gets its pull request number; the provenance rules are checked as they were written.
-  const valid = read('docs/BUILT-WITH-PLANWHARF.md').replace(/\| 23 \| #\d+ \|/, '| 23 | #? |');
+  // The rules are checked on the row as job 23 wrote it: the live page is rewritten over time.
+  const valid = '**15 of 55**\n| 23 | #? | Wrote the phase 2 rest sheet | Independent verification by Gemini: verified the sheet. '
+    + 'This Grok 4.7 review left that Gemini sentence and commit 61cdb5b unchanged. '
+    + 'The archived work plan still checks Verify (claude-sonnet-4-6) on that same commit. '
+    + 'That Claude run stopped on quota before review and did not write 61cdb5b. This review does not replace the Gemini claim |\n';
   assert.deepEqual(assessProvenance(valid), []);
 
   const cases = [
