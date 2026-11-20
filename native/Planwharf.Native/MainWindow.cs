@@ -44,6 +44,7 @@ public sealed partial class MainWindow : Window
     JsonNode? snapshot;
     string? projectId, threadSig, listSig, sideSig, sideMode, projectsRoot;
     bool busy, menuOpen, refreshing, closed;
+    JsonArray providerStatus = new();
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
