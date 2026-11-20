@@ -689,7 +689,11 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             pushed = await run(['push', '-u', 'origin', 'HEAD'], { push: true });
           }
           if (pushed.status !== 0) {
-            const first = `${pushed.stderr}\n${pushed.stdout}`.split(/\r?\n/).map(line => line.trim()).find(line => line && !line.includes('HEAD:'));
+            // The reason, not git's "To https://…" header or its advice (which suggests HEAD:main).
+            const lines = `${pushed.stderr}\n${pushed.stdout}`.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.includes('HEAD:') && !/^To \S+$/.test(line) && !/^hint:/i.test(line));
+            const rejected = lines.find(line => /rejected|non-fast-forward|fetch first|error:|fatal:|denied|GH\d{3}/i.test(line));
+            const behind = /non-fast-forward|fetch first/i.test(rejected || '') ? ' GitHub has newer commits on this branch: the work here is behind it.' : '';
+            const first = (rejected || lines[0] || '') + behind;
             throw new RequestError(400, (first ? first + '\n' : '') + 'Push failed. The commit is saved; nothing was sent.');
           }
           // The push opens the pull request too, so the user does not have to make it by hand.

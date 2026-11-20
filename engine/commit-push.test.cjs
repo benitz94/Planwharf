@@ -260,3 +260,23 @@ test('the pull request opened by the push is named after the work, not "push"', 
   assert.notEqual(title, 'push');
   assert.ok(title.length > 0);
 });
+
+test('a refused push says why, not only "To <remote>"', async t => {
+  const { folder, remote, post } = await fixture(t);
+  git(folder, 'switch', '-c', 'topic');
+  assert.equal((await post({ projectId: 'p', message: 'First', push: true })).status, 200);
+  // Someone else pushes to the same branch; this folder is now behind it.
+  const other = path.join(path.dirname(folder), 'other');
+  git(path.dirname(folder), 'clone', '-q', '-b', 'topic', remote, other);
+  git(other, 'config', 'user.name', 'Other'); git(other, 'config', 'user.email', 'other@example.invalid');
+  fs.writeFileSync(path.join(other, 'other.txt'), 'x\n'); git(other, 'add', '-A'); git(other, 'commit', '-q', '-m', 'other');
+  git(other, 'push', '-q', 'origin', 'topic');
+  fs.writeFileSync(path.join(folder, 'mine.txt'), 'y\n');
+  const response = await post({ projectId: 'p', message: 'Mine', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 400);
+  const said = body.error || body.reason || JSON.stringify(body);
+  assert.match(said, /rejected|fetch first|non-fast-forward/i);
+  assert.match(said, /behind/);
+  assert.doesNotMatch(said.split('\n')[0], /^To /);
+});
