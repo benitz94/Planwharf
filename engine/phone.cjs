@@ -16,6 +16,17 @@ const {
   askOllama,
   listInstalledModels
 } = require('./phone-ollama.cjs');
+const {
+  languageOrDefault,
+  languageName,
+  say,
+  telegramAlertLabel,
+  plainAlert,
+  stateLabel,
+  isDetailsRequest,
+  parseLanguageCommand,
+  fitTelegram
+} = require('./phone-voice.cjs');
 
 function restrictToOwner(file) {
   try { fs.chmodSync(file, 0o600); } catch { /* Some systems ignore Unix modes. */ }
@@ -81,7 +92,8 @@ const ALERT_LABELS = {
   blocked: 'Blocked ⚠️',
   verify: 'Verify started 🔎',
   switched: 'Switched model 🔁',
-  restarted: 'Step restarted 🔁'
+  restarted: 'Step restarted 🔁',
+  updated: 'Updated •'
 };
 
 const STATE_EMOJI = {
@@ -96,17 +108,19 @@ function mainKeyboard() {
   return { keyboard: [[{ text: '📊 Status' }, { text: '⏹ Stop' }, { text: '▶️ Resume' }]], resize_keyboard: true, is_persistent: true };
 }
 
-function statusKeyboard(projects = []) {
+function statusKeyboard(projects = [], language) {
+  const lang = languageOrDefault(language);
+  const isIt = lang === 'it';
   const rows = [];
   for (const p of projects) {
     if (!p || p.id == null || p.id === '') continue;
     const name = sanitizeText(p.name || p.id).slice(0, 24);
     const id = String(p.id);
     if (id.length > 48) continue;
-    if (p.status === 'watching') rows.push([{ text: `⏹ Stop ${name}`, callback_data: `stop:${id}` }]);
-    else if (p.status === 'checkpointed' || p.status === 'failed') rows.push([{ text: `▶️ Resume ${name}`, callback_data: `resume:${id}` }]);
+    if (p.status === 'watching') rows.push([{ text: isIt ? `⏹ Ferma ${name}` : `⏹ Stop ${name}`, callback_data: `stop:${id}` }]);
+    else if (p.status === 'checkpointed' || p.status === 'failed') rows.push([{ text: isIt ? `▶️ Riprendi ${name}` : `▶️ Resume ${name}`, callback_data: `resume:${id}` }]);
   }
-  rows.push([{ text: '🔄 Refresh', callback_data: 'status' }]);
+  rows.push([{ text: isIt ? '🔄 Aggiorna' : '🔄 Refresh', callback_data: 'status' }]);
   return { inline_keyboard: rows };
 }
 
@@ -173,58 +187,79 @@ function formatProgressBar(step, total) {
   return `${'■'.repeat(filled)}${'□'.repeat(empty)} ${s}/${t}`;
 }
 
-function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail }) {
+function progressCaption(language, step) {
+  const bar = formatProgressBar(step);
+  const fraction = bar.match(/(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+  if (!fraction) return '';
+  return say(language, 'progressStep', { current: fraction[1], total: fraction[2] });
+}
+
+function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail, language }) {
+  const lang = languageOrDefault(language);
   const safeProject = sanitizeText(projectName) || 'Project';
   const safeGoal = sanitizeGoalTitle(goalTitle);
-  let statusLabel = ALERT_LABELS[type] || 'Updated';
+  const known = Object.prototype.hasOwnProperty.call(ALERT_LABELS, type);
+  const statusLabel = lang === 'it'
+    ? (known ? telegramAlertLabel('it', type) : 'Aggiornato')
+    : (ALERT_LABELS[type] || 'Updated');
+  const goalWord = lang === 'it' ? 'Obiettivo' : 'Goal';
+  const statusWord = lang === 'it' ? 'Stato' : 'Status';
 
-  let msg = `Planwharf: ${safeProject}\nGoal: ${safeGoal}\nStatus: ${statusLabel}`;
+  let msg = `Planwharf: ${safeProject}\n${goalWord}: ${safeGoal}\n${statusWord}: ${statusLabel}`;
 
   if (type === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
-    if (dur) msg += `\nDuration: ${dur}`;
+    if (dur) msg += `\n${lang === 'it' ? 'Durata' : 'Duration'}: ${dur}`;
   }
 
   if (timeLeft && (timeLeft.minutes != null || timeLeft.endsAt)) {
     let timeText = '';
     if (timeLeft.minutes != null) {
-      timeText = `About ${timeLeft.minutes}m left`;
-      if (timeLeft.longerThanUsual) timeText += ' (longer than usual)';
+      timeText = lang === 'it' ? `Circa ${timeLeft.minutes}m rimasti` : `About ${timeLeft.minutes}m left`;
+      if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
       if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
     }
-    if (timeText) msg += `\nEstimate: ${timeText}`;
+    if (timeText) msg += `\n${lang === 'it' ? 'Stima' : 'Estimate'}: ${timeText}`;
   }
   if (detail) msg += `\n${sanitizeText(detail)}`;
+  const plain = plainAlert(lang, known ? type : 'updated');
+  if (plain) msg += `\n${plain}`;
 
   return msg;
 }
 
-function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step }) {
+function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language }) {
+  const lang = languageOrDefault(language);
   const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
   const safeGoal = escapeHtml(sanitizeGoalTitle(goalTitle));
-  const statusLabel = ALERT_LABELS[type] || 'Updated •';
+  const known = Object.prototype.hasOwnProperty.call(ALERT_LABELS, type);
+  const statusLabel = telegramAlertLabel(lang, known ? type : 'updated');
+  const heading = lang === 'it' ? 'Avviso dal porto' : 'Harbor Alert';
+  const goalWord = lang === 'it' ? 'Obiettivo' : 'Goal';
+  const statusWord = lang === 'it' ? 'Stato' : 'Status';
+  const greeting = lang === 'it' ? '⚓ Capitano' : '⚓ Captain';
 
   const lines = [
-    '⚓ Captain',
+    greeting,
     '',
-    `<b>Harbor Alert: ${safeProject}</b>`,
-    `<b>Goal:</b> ${safeGoal}`,
-    `<b>Status:</b> ${statusLabel}`
+    `<b>${heading}: ${safeProject}</b>`,
+    `<b>${goalWord}:</b> ${safeGoal}`,
+    `<b>${statusWord}:</b> ${statusLabel}`
   ];
 
   if (type === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
-    if (dur) lines.push(`<b>Duration:</b> ${dur}`);
+    if (dur) lines.push(`<b>${lang === 'it' ? 'Durata' : 'Duration'}:</b> ${dur}`);
   }
 
   if (timeLeft && (timeLeft.minutes != null || timeLeft.endsAt)) {
     let timeText = '';
     if (timeLeft.minutes != null) {
-      timeText = `About ${timeLeft.minutes}m left`;
-      if (timeLeft.longerThanUsual) timeText += ' (longer than usual)';
+      timeText = lang === 'it' ? `Circa ${timeLeft.minutes}m rimasti` : `About ${timeLeft.minutes}m left`;
+      if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
       if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
     }
-    if (timeText) lines.push(`<b>Estimate:</b> ${escapeHtml(timeText)}`);
+    if (timeText) lines.push(`<b>${lang === 'it' ? 'Stima' : 'Estimate'}:</b> ${escapeHtml(timeText)}`);
   }
 
   if (detail) {
@@ -232,9 +267,10 @@ function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinu
   }
 
   const bar = formatProgressBar(step);
-  if (bar) {
-    lines.push(bar);
-  }
+  if (bar) lines.push(bar);
+  const caption = progressCaption(lang, step);
+  if (caption) lines.push(escapeHtml(caption));
+  lines.push(plainAlert(lang, known ? type : 'updated'));
 
   return lines.join('\n');
 }
@@ -269,7 +305,8 @@ function loadPhoneSettings(storeDir) {
       pairedUsername: null,
       updateOffset: 0
     },
-    ollama: defaultOllamaSettings()
+    ollama: defaultOllamaSettings(),
+    language: 'en'
   };
 
   try {
@@ -292,6 +329,7 @@ function loadPhoneSettings(storeDir) {
           config.telegram.updateOffset = Number.isInteger(offset) && offset >= 0 ? offset : 0;
         }
         if (raw.ollama && typeof raw.ollama === 'object') config.ollama = normalizeOllamaSettings(raw.ollama);
+        if (raw.language !== undefined) config.language = languageOrDefault(raw.language);
       }
     }
   } catch (err) {
@@ -341,7 +379,8 @@ function savePhoneSettings(storeDir, settings, newToken) {
       enabled: settings.ollama.enabled !== undefined ? settings.ollama.enabled : current.ollama.enabled,
       baseUrl: settings.ollama.baseUrl !== undefined ? settings.ollama.baseUrl : current.ollama.baseUrl,
       model: settings.ollama.model !== undefined ? settings.ollama.model : current.ollama.model
-    })
+    }),
+    language: settings.language !== undefined ? languageOrDefault(settings.language) : languageOrDefault(current.language)
   };
 
   writePrivate(settingsPath, JSON.stringify(updated, null, 2) + '\n');
@@ -389,7 +428,7 @@ async function sendTelegramMessage({ token, chatId, text, parseMode = 'HTML', re
   if (!chatId) return { ok: false, reason: 'Chat ID is missing.' };
 
   const url = `${apiBaseUrl.replace(/\/+$/, '')}/bot${token}/sendMessage`;
-  const payload = { chat_id: chatId, text, reply_markup: replyMarkup || mainKeyboard() };
+  const payload = { chat_id: chatId, text: fitTelegram(text), reply_markup: replyMarkup || mainKeyboard() };
   if (parseMode) payload.parse_mode = parseMode;
   try {
     const res = await fetchImpl(url, {
@@ -423,11 +462,11 @@ async function pollTelegramUpdates({ token, offset = 0, timeout = 0, apiBaseUrl 
   }
 }
 
-function formatStatusMessage(projects = []) {
-  if (!projects || projects.length === 0) {
-    return '⚓ Captain\n\n<b>Harbor Status</b>\nNo projects in port.';
-  }
-  const sections = ['⚓ Captain\n\n<b>Harbor Status</b>'];
+function formatStatusMessage(projects = [], language) {
+  const lang = languageOrDefault(language);
+  if (!projects || projects.length === 0) return say(lang, 'statusEmpty');
+  const sections = [say(lang, 'statusHeader')];
+  const statusWord = lang === 'it' ? 'Stato' : 'Status';
   for (const p of projects) {
     const name = escapeHtml(sanitizeText(p.name || p.id || 'Project'));
     let state = 'Idle';
@@ -436,17 +475,22 @@ function formatStatusMessage(projects = []) {
     else if (p.status === 'failed') state = 'Failed';
     else if (p.status === 'checkpointed') state = 'Stopped';
     else if (p.status === 'waiting_on_you') state = 'Waiting on you';
-    else if (p.status === 'blocked_no_worker') state = 'Blocked (no usage)';
+    else if (p.status === 'blocked_no_worker' || p.status === 'blocked_no_folder') state = 'Blocked (no usage)';
+    else if (p.status === 'idle') state = 'Idle';
     else if (p.status) state = sanitizeText(p.status);
 
     const icon = statusEmoji(state);
     let details = '';
     if (p.status === 'watching' && p.timeLeft?.minutes != null) {
-      details = ` · ~${escapeHtml(p.timeLeft.minutes)}m left`;
+      details = lang === 'it'
+        ? ` · circa ${escapeHtml(p.timeLeft.minutes)}m rimasti`
+        : ` · ~${escapeHtml(p.timeLeft.minutes)}m left`;
     }
     const bar = formatProgressBar(p.step);
-    let item = `<b>${name}</b>\n${icon} <b>Status:</b> ${escapeHtml(state)}${details}`;
+    let item = `<b>${name}</b>\n${icon} <b>${statusWord}:</b> ${escapeHtml(stateLabel(lang, state))}${details}`;
     if (bar) item += `\n${bar}`;
+    const caption = progressCaption(lang, p.step);
+    if (caption) item += `\n${escapeHtml(caption)}`;
     sections.push(item);
   }
   return sections.join('\n\n');
@@ -460,11 +504,11 @@ function matchProject(projects = [], query = '') {
     if (projects.length === 1) return projects[0];
     return null;
   }
-  const named = value => (value && value.toLowerCase() === q);
+  const named = value => (value != null && String(value).toLowerCase() === q);
   const exact = projects.filter(p => named(p.id) || named(p.name));
   if (exact.length === 1) return exact[0];
   if (exact.length > 1) return null;
-  const partial = projects.filter(p => (p.id && p.id.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q)));
+  const partial = projects.filter(p => (p.id != null && String(p.id).toLowerCase().includes(q)) || (p.name != null && String(p.name).toLowerCase().includes(q)));
   return partial.length === 1 ? partial[0] : null;
 }
 
@@ -481,6 +525,21 @@ function createPhoneNotifier({
   let settings = loadPhoneSettings(storeDir);
   let telegramOffset = Number(settings.telegram.updateOffset) || 0;
   let pendingConfirmation = null; // { action: 'stop', projectId, projectName, expiresAt }
+  let lastTechnical = null;
+
+  function rememberTechnical(code, error) {
+    const raw = error && typeof error === 'object' ? error.message : error;
+    const note = sanitizeText(raw) || 'No further note was given.';
+    lastTechnical = { code, note: note.slice(0, 300) };
+  }
+
+  function technicalReply(language) {
+    if (!lastTechnical) return say(language, 'detailsNone');
+    return say(language, 'details', {
+      code: escapeHtml(lastTechnical.code),
+      note: escapeHtml(lastTechnical.note)
+    });
+  }
   const projectStates = new Map();
   const stepStates = new Map(); // projectId -> status
   const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
@@ -520,7 +579,8 @@ function createPhoneNotifier({
         enabled: settings.ollama.enabled,
         baseUrl: settings.ollama.baseUrl,
         model: settings.ollama.model
-      }
+      },
+      language: languageOrDefault(settings.language)
     };
   }
 
@@ -536,7 +596,7 @@ function createPhoneNotifier({
       baseUrl: patch.ollama.baseUrl,
       model: patch.ollama.model
     } : undefined;
-    settings = savePhoneSettings(storeDir, { ntfy: patch.ntfy, telegram, ollama }, newToken);
+    settings = savePhoneSettings(storeDir, { ntfy: patch.ntfy, telegram, ollama, language: patch.language }, newToken);
     if (telegram.unpair) pendingConfirmation = null;
     return getPublicSettings();
   }
@@ -548,7 +608,7 @@ function createPhoneNotifier({
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
         const priority = type === 'failed' ? 'high' : type === 'needs_owner' ? 'urgent' : 'default';
         const tags = type === 'failed' ? ['warning'] : type === 'needs_owner' ? ['bell'] : ['white_check_mark'];
-        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail });
+        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, language: fresh.language });
         return await sendNtfyAlert({
           topic: fresh.ntfy.topic,
           serverUrl: fresh.ntfy.serverUrl || ntfyServerUrl,
@@ -564,7 +624,7 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
-        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step });
+        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language: fresh.language });
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
@@ -628,7 +688,10 @@ function createPhoneNotifier({
     if (!msg || !msg.chat || !msg.chat.id) return;
     const chatId = String(msg.chat.id);
     const rawText = String(msg.text || '').trim();
-    const text = rawText === '📊 Status' ? '/status' : rawText === '⏹ Stop' ? '/stop' : rawText === '▶️ Resume' ? '/resume' : rawText;
+    const text = (rawText === '📊 Status' || rawText === '📊 Stato') ? '/status'
+      : (rawText === '⏹ Stop' || rawText === '⏹ Ferma') ? '/stop'
+      : (rawText === '▶️ Resume' || rawText === '▶️ Riprendi') ? '/resume'
+      : rawText;
     if (!text) {
       if (msg.document || msg.photo || msg.video || msg.voice || msg.audio || msg.sticker) {
         const fresh = loadPhoneSettings(storeDir);
@@ -636,7 +699,7 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token: fresh.telegramToken,
             chatId,
-            text: '⚓ Captain\n\n<b>Harbor Notice</b>\n📎 Attachments are not accepted. Use the deck buttons.',
+            text: say(languageOrDefault(fresh.language), 'attachments'),
             apiBaseUrl,
             fetchImpl
           });
@@ -666,16 +729,7 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: [
-            '⚓ Captain',
-            '',
-            '<b>Harbor Connected</b>',
-            'Planwharf connected and standing by.',
-            'You can now use the deck buttons or commands:',
-            '• /status — projects and progress',
-            '• /stop &lt;project&gt; — stop the crew (requires confirmation)',
-            '• /resume &lt;project&gt; — resume work'
-          ].join('\n'),
+          text: say(languageOrDefault(fresh.language), 'pairing'),
           replyMarkup: mainKeyboard(),
           apiBaseUrl,
           fetchImpl
@@ -692,31 +746,29 @@ function createPhoneNotifier({
 
     // 3. Handle confirmation if pending
     if (pendingConfirmation && Date.now() < pendingConfirmation.expiresAt) {
-      const lower = text.toLowerCase();
-      if (lower === 'yes' || lower === 'sì' || lower === 'si') {
+      if (isBareConfirmation(text)) {
         const target = pendingConfirmation;
         pendingConfirmation = null;
         try {
           if (typeof onStopProject === 'function') {
             await onStopProject(target.projectId);
           }
+          if (lastTechnical && lastTechnical.code === 'stop-failed') lastTechnical = null;
           await sendTelegramMessage({
             token,
             chatId,
-            text: [
-              '⚓ Captain',
-              '',
-              '<b>Crew Stopped</b>',
-              `⏹ The crew for "${escapeHtml(sanitizeText(target.projectName))}" has been stopped.`
-            ].join('\n'),
+            text: say(languageOrDefault(fresh.language), 'crewStopped', {
+              name: escapeHtml(sanitizeText(target.projectName))
+            }),
             apiBaseUrl,
             fetchImpl
           });
         } catch (err) {
+          rememberTechnical('stop-failed', err);
           await sendTelegramMessage({
             token,
             chatId,
-            text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not complete that.',
+            text: say(languageOrDefault(fresh.language), 'couldNotCompleteStop'),
             apiBaseUrl,
             fetchImpl
           });
@@ -728,7 +780,7 @@ function createPhoneNotifier({
         await sendTelegramMessage({
           token,
           chatId,
-          text: '⚓ Captain\n\n<b>Stop Cancelled</b>\nStop cancelled. Crew will continue work.',
+          text: say(languageOrDefault(fresh.language), 'stopCancelled'),
           apiBaseUrl,
           fetchImpl
         });
@@ -740,40 +792,83 @@ function createPhoneNotifier({
     }
 
     // 4. Commands handling. Telegram may append @BotName and any letter case.
+    const lang = languageOrDefault(fresh.language);
+    const command = text.replace(/^\/([a-z0-9]+)(?:@[A-Za-z0-9_]+)?/i, (_, verb) => '/' + verb.toLowerCase());
+
+    if (isDetailsRequest(text) || isDetailsRequest(command)) {
+      await sendTelegramMessage({
+        token, chatId, text: technicalReply(lang), replyMarkup: mainKeyboard(), apiBaseUrl, fetchImpl
+      });
+      return;
+    }
+
+    const languageCommand = parseLanguageCommand(text);
+    if (languageCommand) {
+      if (languageCommand.action === 'set') {
+        savePhoneSettings(storeDir, { language: languageCommand.language });
+        await sendTelegramMessage({
+          token,
+          chatId,
+          text: say(languageCommand.language, 'languageSet', {
+            languageName: languageName(languageCommand.language, languageCommand.language)
+          }),
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl,
+          fetchImpl
+        });
+      } else if (languageCommand.action === 'unknown') {
+        await sendTelegramMessage({
+          token, chatId, text: say(lang, 'languageUnknown'), replyMarkup: mainKeyboard(), apiBaseUrl, fetchImpl
+        });
+      } else {
+        await sendTelegramMessage({
+          token,
+          chatId,
+          text: say(lang, 'languageShow', { languageName: languageName(lang, lang) }),
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl,
+          fetchImpl
+        });
+      }
+      return;
+    }
+
     let snapshot = null;
     let snapshotFailed = false;
+    let snapshotError = null;
     if (getSnapshot) {
       try { snapshot = await getSnapshot(); }
-      catch { snapshotFailed = true; }
+      catch (error) { snapshotFailed = true; snapshotError = error; }
     }
     if (snapshotFailed) {
+      rememberTechnical('projects-unreadable', snapshotError);
       await sendTelegramMessage({
         token,
         chatId,
-        text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not read the projects. Try again.',
+        text: say(lang, 'couldNotReadProjects'),
         apiBaseUrl,
         fetchImpl
       });
       return;
     }
+    if (lastTechnical && lastTechnical.code === 'projects-unreadable') lastTechnical = null;
     const projects = snapshot?.projects || [];
-    const command = text.replace(/^\/([a-z0-9]+)(?:@[A-Za-z0-9_]+)?/i, (_, verb) => '/' + verb.toLowerCase());
 
-    if (command === '/status' || command.startsWith('/status ')) {
-      const statusText = formatStatusMessage(projects);
-      await sendTelegramMessage({ token, chatId, text: statusText, replyMarkup: statusKeyboard(projects), apiBaseUrl, fetchImpl });
+    if (command === '/status' || command === '/stato' || command.startsWith('/status ') || command.startsWith('/stato ')) {
+      const statusText = formatStatusMessage(projects, lang);
+      await sendTelegramMessage({ token, chatId, text: statusText, replyMarkup: statusKeyboard(projects, lang), apiBaseUrl, fetchImpl });
       return;
     }
 
-    if (command.startsWith('/stop')) {
-      const arg = command.replace(/^\/stop\s*/i, '').trim();
+    if (command.startsWith('/stop') || command.startsWith('/ferma')) {
+      const arg = command.replace(/^\/(?:stop|ferma)\s*/i, '').trim();
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
           await sendTelegramMessage({
             token,
             chatId,
-            text: '⚓ Captain\n\n<b>Stop Order</b>\nNo projects available to stop.',
+            text: say(lang, 'stopNone'),
             apiBaseUrl,
             fetchImpl
           });
@@ -782,13 +877,7 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token,
             chatId,
-            text: [
-              '⚓ Captain',
-              '',
-              '<b>Stop Order</b>',
-              'Please specify a project: /stop &lt;name&gt;',
-              `<b>Projects in port:</b> ${names}`
-            ].join('\n'),
+            text: say(lang, 'stopSpecify', { names }),
             apiBaseUrl,
             fetchImpl
           });
@@ -804,28 +893,23 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: [
-          '⚓ Captain',
-          '',
-          '<b>Confirm Stop Order</b>',
-          `⏹ Stop the crew for "${escapeHtml(sanitizeText(matched.name || matched.id))}"? Reply "yes" to confirm.`
-        ].join('\n'),
-        replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${matched.id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
+        text: say(lang, 'stopConfirm', { name: escapeHtml(sanitizeText(matched.name || matched.id)) }),
+        replyMarkup: { inline_keyboard: [[{ text: lang === 'it' ? '✅ Sì, ferma' : '✅ Yes, stop', callback_data: `yes:${matched.id}` }, { text: lang === 'it' ? '❌ Annulla' : '❌ Cancel', callback_data: 'cancel' }]] },
         apiBaseUrl,
         fetchImpl
       });
       return;
     }
 
-    if (command.startsWith('/resume')) {
-      const arg = command.replace(/^\/resume\s*/i, '').trim();
+    if (command.startsWith('/resume') || command.startsWith('/riprendi')) {
+      const arg = command.replace(/^\/(?:resume|riprendi)\s*/i, '').trim();
       const matched = matchProject(projects, arg);
       if (!matched) {
         if (projects.length === 0) {
           await sendTelegramMessage({
             token,
             chatId,
-            text: '⚓ Captain\n\n<b>Resume Order</b>\nNo projects available to resume.',
+            text: say(lang, 'resumeNone'),
             apiBaseUrl,
             fetchImpl
           });
@@ -834,13 +918,7 @@ function createPhoneNotifier({
           await sendTelegramMessage({
             token,
             chatId,
-            text: [
-              '⚓ Captain',
-              '',
-              '<b>Resume Order</b>',
-              'Please specify a project: /resume &lt;name&gt;',
-              `<b>Projects in port:</b> ${names}`
-            ].join('\n'),
+            text: say(lang, 'resumeSpecify', { names }),
             apiBaseUrl,
             fetchImpl
           });
@@ -851,23 +929,20 @@ function createPhoneNotifier({
         if (typeof onResumeProject === 'function') {
           await onResumeProject(matched.id);
         }
+        if (lastTechnical && lastTechnical.code === 'resume-failed') lastTechnical = null;
         await sendTelegramMessage({
           token,
           chatId,
-          text: [
-            '⚓ Captain',
-            '',
-            '<b>Crew Resumed</b>',
-            `▶️ The crew for "${escapeHtml(sanitizeText(matched.name || matched.id))}" has resumed.`
-          ].join('\n'),
+          text: say(lang, 'crewResumed', { name: escapeHtml(sanitizeText(matched.name || matched.id)) }),
           apiBaseUrl,
           fetchImpl
         });
       } catch (err) {
+        rememberTechnical('resume-failed', err);
         await sendTelegramMessage({
           token,
           chatId,
-          text: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not complete that.',
+          text: say(lang, 'couldNotCompleteResume'),
           apiBaseUrl,
           fetchImpl
         });
@@ -875,19 +950,11 @@ function createPhoneNotifier({
       return;
     }
 
-    if (command === '/help' || command.startsWith('/start')) {
+    if (command === '/help' || command === '/aiuto' || command === '/guida' || command.startsWith('/start')) {
       await sendTelegramMessage({
         token,
         chatId,
-        text: [
-          '⚓ Captain',
-          '',
-          '<b>Harbor Guide</b>',
-          'Use the deck buttons, or:',
-          '• /status — projects and progress',
-          '• /stop &lt;project&gt; — stop the crew (requires confirmation)',
-          '• /resume &lt;project&gt; — resume work'
-        ].join('\n'),
+        text: say(lang, 'help'),
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -901,7 +968,7 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: '⚓ Captain\n\n<b>Logbook Cleared</b>\nThis chat memory is clear. Commands are unchanged.',
+        text: say(lang, 'memoryCleared'),
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -914,7 +981,7 @@ function createPhoneNotifier({
       await sendTelegramMessage({
         token,
         chatId,
-        text: '⚓ Captain\n\n<b>Unrecognized Command</b>\nUnrecognized command. Use /status, /stop &lt;project&gt;, or /resume &lt;project&gt;.',
+        text: say(lang, 'unrecognized'),
         replyMarkup: mainKeyboard(),
         apiBaseUrl,
         fetchImpl
@@ -927,7 +994,8 @@ function createPhoneNotifier({
       projects,
       history: chatMemory.history(chatId),
       sanitize: sanitizeText,
-      model: ollama.model
+      model: ollama.model,
+      language: lang
     });
     chatMemory.remember(chatId, 'user', sanitizeText(text));
     const reply = await askOllama({
@@ -935,8 +1003,10 @@ function createPhoneNotifier({
       model: ollama.model,
       messages,
       fetchImpl,
-      timeoutMs: 45000
+      timeoutMs: 45000,
+      language: lang
     });
+    if (!reply.ok) rememberTechnical('companion-offline', reply.reason);
     if (reply.ok) chatMemory.remember(chatId, 'assistant', sanitizeText(reply.text));
     try { saveChatMemory(storeDir, chatMemory); } catch { /* Keep the answer even if memory cannot be stored. */ }
     await sendTelegramMessage({
@@ -977,10 +1047,19 @@ function createPhoneNotifier({
     const [verb, id] = data.split(':');
     if (!id) return;
     if (verb === 'stop') {
-      pendingConfirmation = { action: 'stop', projectId: id, projectName: id, expiresAt: Date.now() + confirmWindowMs };
+      const lang = languageOrDefault(loadPhoneSettings(storeDir).language);
+      let projName = id;
+      if (getSnapshot) {
+        try {
+          const snap = await getSnapshot();
+          const found = (snap?.projects || []).find(p => String(p?.id) === id);
+          if (found?.name) projName = found.name;
+        } catch {}
+      }
+      pendingConfirmation = { action: 'stop', projectId: id, projectName: projName, expiresAt: Date.now() + confirmWindowMs };
       await sendTelegramMessage({
-        token, chatId, text: '⚓ Captain\n\n<b>Confirm Stop Order</b>\n⏹ Stop this crew? Reply "yes" to confirm or tap below.',
-        replyMarkup: { inline_keyboard: [[{ text: '✅ Yes, stop', callback_data: `yes:${id}` }, { text: '❌ Cancel', callback_data: 'cancel' }]] },
+        token, chatId, text: say(lang, 'stopConfirmTap'),
+        replyMarkup: { inline_keyboard: [[{ text: lang === 'it' ? '✅ Sì, ferma' : '✅ Yes, stop', callback_data: `yes:${id}` }, { text: lang === 'it' ? '❌ Annulla' : '❌ Cancel', callback_data: 'cancel' }]] },
         apiBaseUrl, fetchImpl
       });
       return;
