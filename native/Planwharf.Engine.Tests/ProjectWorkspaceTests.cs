@@ -49,7 +49,7 @@ public sealed class ProjectWorkspaceTests : IDisposable
         {
             if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
             {
-                if (child is DirectoryInfo) Directory.Delete(child.FullName);
+                if (child is DirectoryInfo) DeleteDirectoryLink(child.FullName);
                 else File.Delete(child.FullName);
             }
             else if (child is DirectoryInfo) DeleteTree(child.FullName);
@@ -61,6 +61,18 @@ public sealed class ProjectWorkspaceTests : IDisposable
         }
         var directory = new DirectoryInfo(path) { Attributes = FileAttributes.Normal };
         directory.Delete();
+    }
+
+    // Linux rmdir on a directory symlink reports ENOENT (DirectoryNotFoundException), including
+    // when the temp path has an accent and the runner locale is not UTF-8. Unlink it as a file.
+    static void DeleteDirectoryLink(string path)
+    {
+        try { Directory.Delete(path); }
+        catch (DirectoryNotFoundException)
+        {
+            try { File.Delete(path); }
+            catch (Exception error) when (error is DirectoryNotFoundException or FileNotFoundException) { }
+        }
     }
 
     string Dir(string name)
@@ -123,6 +135,19 @@ public sealed class ProjectWorkspaceTests : IDisposable
         catch (DirectoryNotFoundException) { return; }
         Assert.Equal(ProjectWorkspace.LinkedWorkspace(home), ProjectWorkspace.LinkedWorkspace(Path.Combine(escape, "..")));
         Assert.NotEqual(linked, ProjectWorkspace.LinkedWorkspace(escape));
+    }
+
+    [Fact]
+    public void Cleanup_removes_a_directory_link_in_the_accented_temp_folder_and_keeps_the_target()
+    {
+        var alpha = Dir("alpha");
+        File.WriteAllText(Path.Combine(alpha, "keep.txt"), "keep");
+        var alias = Path.Combine(home, "alias");
+        LinkDirectory(alias, alpha);
+        Assert.Equal(ProjectWorkspace.LinkedWorkspace(alpha), ProjectWorkspace.LinkedWorkspace(alias));
+        DeleteDirectoryLink(alias);
+        Assert.False(Directory.Exists(alias));
+        Assert.Equal("keep", File.ReadAllText(Path.Combine(alpha, "keep.txt")));
     }
 
     [Fact]

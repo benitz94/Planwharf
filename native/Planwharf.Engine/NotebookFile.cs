@@ -23,11 +23,16 @@ public static class NotebookFile
         catch (IOException error) when (IsEexist(error))
         {
             // A notebook that is already there keeps its bytes.
+            // On Linux and macOS, O_CREAT|O_EXCL against a directory is also EEXIST, so a
+            // directory at plan.json is left in place. Windows reports access denied instead.
         }
     }
 
     static void CopyExclusive(string source, string destination)
     {
+        // Node's copyFile on Windows creates plan.json from a path that ends in a separator.
+        // FileStream reports that separator as an invalid directory name. POSIX leaves it and fails.
+        if (OperatingSystem.IsWindows()) destination = destination.TrimEnd('\\', '/');
         using var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
         using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
         input.CopyTo(output);
