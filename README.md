@@ -14,6 +14,12 @@ Planwharf is a free app for Linux, macOS and Windows. You tell a lead model what
 - **Your crew decides the cost.** Planwharf does not save tokens or time by itself: what a goal costs depends on the models you choose and on the task.
 - **Nothing is published without you.** The crew works on its own branch in your project folder and never pushes; only you publish the result, with one button, and never to `main`. See [Commits and pushes](#commits-and-pushes).
 
+## The models you paid for
+
+You probably have more than one. A strong one for the hard parts, a fast one for the small ones, maybe a local one that costs nothing. In most setups the choice gets made for you. The orchestrator picks, a small model gets used somewhere you never see, and the one you actually wanted stays idle. You subscribed to all of them. You should be the one spending them.
+
+In Planwharf every model you have is on the table. You see it, you see how much quota it has left, and you decide. This one builds. That one checks. This one sits out today. A small, cheap model is not hidden inside the machinery. It is a tool, the same as the strongest one you own, and you point it where it is useful. If you cancel a subscription or add one, the list changes with it. Nothing is reserved, and nothing is spent without you saying so.
+
 ## Planwharf builds Planwharf
 
 Planwharf is rewriting its own engine, from JavaScript to C#, **with its own crew**. The owner writes one
