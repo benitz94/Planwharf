@@ -1,6 +1,6 @@
 # Plan: Planwharf on a C# engine, native app only
 
-Updated on 13 November 2026 with the owner's three decisions. The porting rules are in
+Updated on 13 November 2026 with the owner's three decisions; statuses updated on 20 November 2026. The order of the jobs, including the protocol and the pipeline that come before phase 3, is in [docs/NEXT-WORK.md](../../docs/NEXT-WORK.md). The porting rules are in
 [README.md](README.md); each piece of work has a job sheet in [jobs/](jobs/).
 
 ## The decisions
@@ -23,8 +23,8 @@ and Planwharf itself does the porting jobs, with every pull request reviewed bef
 | Phase | What | Status |
 |---|---|---|
 | **0. Foundations** | .NET 10, the `Planwharf.Engine` and `Planwharf.Engine.Tests` projects, the porting rules, the README saying the native app is recommended, that it still includes the Node.js engine, and that the web app and Electron are being retired. | Done (#61; README updated with this plan) |
-| **1. Test bench** | 1a: fake AI programs (claude, codex, grok, agy) that replay recorded answers, for the later phases. 1b: **module-by-module comparison** (below), run in CI on the three systems. | 1b done (cases for the 5 pure modules ported so far); 1a done (#86) |
-| **2. Modules with no dependencies** | `plan.js`, `notebook-file`, `atomic-rename`, `project-history`, `model-policy`, `model-roles`, `provider-refusal`, `provider-diagnostics`, `provider-accounts`, `structured-final`, `activity-events`, `activity-evidence`, `invocations`, `briefing`, `autonomy`, `sentinel`, `quota`, `models`, `project-checks`, `project-workspace`, `skills`, `browser-settings`. | Started: jobs 01 and 02 (#64, #74); job 04 next |
+| **1. Test bench** | 1a: fake AI programs (claude, codex, grok, agy) that replay recorded answers, for the later phases. 1b: **module-by-module comparison** (below), run in CI on the three systems. | Done: 1a (#86), 1b (#81); 247 comparison cases now |
+| **2. Modules with no dependencies** | `plan.js`, `notebook-file`, `atomic-rename`, `project-history`, `model-policy`, `model-roles`, `provider-refusal`, `provider-diagnostics`, `provider-accounts`, `structured-final`, `activity-events`, `activity-evidence`, `invocations`, `briefing`, `autonomy`, `sentinel`, `quota`, `models`, `project-checks`, `project-workspace`, `skills`, `browser-settings`. | Done: jobs 01, 02, 04, 24 (#64, #74, #90, #158) |
 | **3. First level** | `attempts`, `claims`, `project-export`, `execution-next`, `worker-result` (done in job 01), `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`. | To do |
 | **4. Processes and providers** (the riskiest) | `runner` (start and stop the AI programs, read what they write, close process trees on Windows); `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`. Ends with a hand test on Windows with the real programs. | To do |
 | **5. Execution** | `execution.cjs`, `project-home`; at the same time, the design of how to split the orchestrator. | To do |
@@ -64,7 +64,7 @@ Known today, to be checked again then:
 |---|---|---|
 | Light theme, text colour | Yes | Yes (#78) |
 | Working indicator (turning compass) | Yes | Yes (#78) |
-| Updates itself | Web app: yes; Electron: new installer | Being added |
+| Updates itself | Web app: yes; Electron: new installer | Yes (#114) |
 | Installer for Windows | Electron: yes | No: a zip to extract |
 | Installer or package for Linux | Electron: AppImage, .deb | No: a zip to extract |
 | macOS | Web app only | Yes (zip) |
