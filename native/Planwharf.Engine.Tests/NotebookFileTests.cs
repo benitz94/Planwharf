@@ -85,7 +85,8 @@ public sealed class NotebookFileTests : IDisposable
         {
             NotebookFile.EnsureDefaultNotebook(otherCase, root);
             Assert.Equal(bytes, File.ReadAllBytes(plan));
-            if (!OperatingSystem.IsWindows()) Assert.False(File.Exists(otherCase));
+            // Windows and macOS default filesystems are case-insensitive, so Plan.json is plan.json.
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS()) Assert.False(File.Exists(otherCase));
         }
 
         var absent = Path.Combine(home, "absent-root");
