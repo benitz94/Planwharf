@@ -166,10 +166,10 @@ test('the branch is only the sheet and its required docs on refreshed origin/mai
 });
 test('job 18 records the independent review that actually happened', () => {
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 18 \| #\? \|/);
+  // "#?" until merged, then its pull request number.
+  assert.match(built, /\| 18 \| #(\?|\d+) \|/);
   assert.ok(built.includes(provenance));
   assert.doesNotMatch(built, /\| 18 \|[^|\n]*\|[^|\n]*\|[^|\n]*Independent verification pending/);
-  assert.doesNotMatch(built, /\| 18 \| #\d+/);
 });
 
 function gitRaw(repo, args) {
