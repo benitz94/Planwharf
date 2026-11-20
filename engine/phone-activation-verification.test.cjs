@@ -223,7 +223,7 @@ test('telegram bot handles /clear@BotName in live notifier without leaking memor
     // 2. Send /clear@PlanwharfBot -> should clear memory and NOT call Ollama
     await notifier.processTelegramMessage({ chat: { id: 55 }, text: '/clear@PlanwharfBot' });
     assert.equal(chatCalls, 1);
-    assert.match(sent.at(-1).text, /⚓ Captain/);
+    assert.match(sent.at(-1).text, /🏴‍☠️ Ahoy, Captain!/);
     assert.match(sent.at(-1).text, /chat memory is clear/);
 
     // 3. Verify memory is empty on disk

@@ -74,7 +74,7 @@ test('the telegram listener records a natural reply and a cold start keeps setti
     assert.equal(sent.length, 1);
     assert.match(sent[0].url, /\/sendMessage$/);
     assert.equal(sent[0].payload.chat_id, '42');
-    assert.match(sent[0].payload.text, /⚓ Captain/);
+    assert.match(sent[0].payload.text, /🏴‍☠️ Ahoy, Captain!/);
     assert.match(sent[0].payload.text, /step 2 of 4/);
     assert.match(chats[0].messages[0].content, /Paint the dock/);
     assert.equal(sent[0].payload.text.includes('[path]'), false);

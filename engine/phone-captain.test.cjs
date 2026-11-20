@@ -124,7 +124,7 @@ test('isolated Italian and English messages stay readable and commands still act
     assert.match(chat.body.messages[0].content, /cannot stop, resume/);
     assert.equal(chat.body.messages[0].content.includes('hull.js'), false);
     const reply = texts(sent).at(-1);
-    assert.match(reply, /^⚓ Capitano\n\nIl molo è al passo 1\.$/);
+    assert.match(reply, /^🏴‍☠️ Ahoy, Capitano!\n\nIl molo è al passo 1\.$/);
     assert.equal(telegramReadable(reply).ok, true);
 
     const again = createPhoneNotifier({
@@ -217,8 +217,8 @@ test('rendered harbor messages cover both languages with isolated project data',
   }
   assert.match(formatStatusMessage([project], 'en'), /<b>Status:<\/b> Working/);
   assert.match(formatStatusMessage([project], 'it'), /<b>Stato:<\/b> Al lavoro/);
-  assert.match(formatTelegramAlertMessage({ type: 'done', projectName: 'Dock', goalTitle: 'Done', language: 'en' }), /Harbor Alert/);
-  assert.match(formatTelegramAlertMessage({ type: 'done', projectName: 'Dock', goalTitle: 'Fatto', durationMinutes: 5, language: 'it' }), /Avviso dal porto/);
+  assert.match(formatTelegramAlertMessage({ type: 'done', projectName: 'Dock', goalTitle: 'Done', language: 'en' }), /AHOY, CAPTAIN!/);
+  assert.match(formatTelegramAlertMessage({ type: 'done', projectName: 'Dock', goalTitle: 'Fatto', durationMinutes: 5, language: 'it' }), /AHOY, CAPITANO!/);
 
   const prompt = buildReplyMessages({
     question: 'how is the pier?',

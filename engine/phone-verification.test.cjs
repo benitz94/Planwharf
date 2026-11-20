@@ -87,18 +87,18 @@ test('projectFacts and Ollama prompt preserve step 0 and sanitize paths/tokens',
 });
 
 test('withCaptain normalizes greeting to the user language', () => {
-  assert.equal(withCaptain('Hello harbor', 'en'), '⚓ Captain\n\nHello harbor');
-  assert.equal(withCaptain('Buongiorno porto', 'it'), '⚓ Capitano\n\nBuongiorno porto');
+  assert.equal(withCaptain('Hello harbor', 'en'), '🏴‍☠️ Ahoy, Captain!\n\nHello harbor');
+  assert.equal(withCaptain('Buongiorno porto', 'it'), '🏴‍☠️ Ahoy, Capitano!\n\nBuongiorno porto');
 
   // When model generates English greeting for Italian conversation, it normalizes to Capitano
-  assert.equal(withCaptain('⚓ Captain\n\nTutto bene', 'it'), '⚓ Capitano\n\nTutto bene');
+  assert.equal(withCaptain('🏴‍☠️ Ahoy, Captain!\n\nTutto bene', 'it'), '🏴‍☠️ Ahoy, Capitano!\n\nTutto bene');
 
   // When model generates Italian greeting for English conversation, it normalizes to Captain
-  assert.equal(withCaptain('⚓ Capitano\n\nAll clear', 'en'), '⚓ Captain\n\nAll clear');
+  assert.equal(withCaptain('🏴‍☠️ Ahoy, Capitano!\n\nAll clear', 'en'), '🏴‍☠️ Ahoy, Captain!\n\nAll clear');
 
   // Empty body gives just the greeting
-  assert.equal(withCaptain('', 'it'), '⚓ Capitano');
-  assert.equal(withCaptain('', 'en'), '⚓ Captain');
+  assert.equal(withCaptain('', 'it'), '🏴‍☠️ Ahoy, Capitano!');
+  assert.equal(withCaptain('', 'en'), '🏴‍☠️ Ahoy, Captain!');
 });
 
 test('normalizeLanguage and languageOrDefault handle locale codes and aliases', () => {
@@ -474,10 +474,10 @@ test('fitTelegram cuts surrogate pairs without orphaned high surrogates and pres
 });
 
 test('withCaptain cleans redundant prefixes without duplicating greetings', () => {
-  assert.equal(withCaptain('Captain: Everything is ready', 'en'), '⚓ Captain\n\nEverything is ready');
-  assert.equal(withCaptain('Capitano: Tutto pronto', 'it'), '⚓ Capitano\n\nTutto pronto');
-  assert.equal(withCaptain('⚓Captain Tutto pronto', 'it'), '⚓ Capitano\n\nTutto pronto');
-  assert.equal(withCaptain('⚓ Capitano: Avanti', 'en'), '⚓ Captain\n\nAvanti');
+  assert.equal(withCaptain('Captain: Everything is ready', 'en'), '🏴‍☠️ Ahoy, Captain!\n\nEverything is ready');
+  assert.equal(withCaptain('Capitano: Tutto pronto', 'it'), '🏴‍☠️ Ahoy, Capitano!\n\nTutto pronto');
+  assert.equal(withCaptain('⚓Captain Tutto pronto', 'it'), '🏴‍☠️ Ahoy, Capitano!\n\nTutto pronto');
+  assert.equal(withCaptain('🏴‍☠️ Ahoy, Capitano!: Avanti', 'en'), '🏴‍☠️ Ahoy, Captain!\n\nAvanti');
 });
 
 test('formatStatusMessage maps idle to Idle and localizes to A riposo with white circle emoji', () => {
@@ -499,6 +499,6 @@ test('formatAlertMessage and formatTelegramAlertMessage format updated type clea
   assert.ok(plainIt.includes('Il progetto è cambiato.'));
 
   const tgIt = formatTelegramAlertMessage({ type: 'updated', projectName: 'Dock', goalTitle: 'Obiettivo', language: 'it' });
-  assert.ok(tgIt.includes('<b>Stato:</b> Aggiornato •'));
+  assert.ok(tgIt.includes('🧭 <b>Stato</b>\nAggiornato •'));
   assert.ok(tgIt.includes('Il progetto è cambiato.'));
 });

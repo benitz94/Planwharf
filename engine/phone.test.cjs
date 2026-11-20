@@ -275,7 +275,7 @@ test('formatStatusMessage lists projects without exposing files, paths or prompt
   ];
 
   const statusText = formatStatusMessage(projects);
-  assert.ok(statusText.startsWith('⚓ Captain'));
+  assert.ok(statusText.startsWith('🏴‍☠️ Ahoy, Captain!'));
   assert.ok(statusText.includes('<b>Harbor Status</b>'));
   assert.ok(statusText.includes('<b>Harbor App in [path]</b>'));
   assert.ok(statusText.includes('🟢 <b>Status:</b> Working · ~25m left'));
@@ -507,9 +507,9 @@ test('checkTransitions detects work ending, failing, or needing owner and alerts
     const tgBody = JSON.parse(tgAlert.options.body);
     assert.equal(tgBody.chat_id, '12345');
     assert.equal(tgBody.parse_mode, 'HTML');
-    assert.ok(tgBody.text.includes('<b>Status:</b> Done ✅'));
-    assert.ok(tgBody.text.includes('⚓ Captain'));
-    assert.ok(tgBody.text.includes('<b>Harbor Alert: Engine Project</b>'));
+    assert.ok(tgBody.text.includes('🧭 <b>Status</b>\nDone ✅'));
+    assert.ok(tgBody.text.includes('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
+    assert.ok(tgBody.text.includes('🚢 <b>Ship</b>\nEngine Project'));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -588,10 +588,10 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
     goalTitle: 'Inspect <engine> & pipes\nsecond line',
     step: { step: 2, total: 5 }
   });
-  assert.ok(escapedAlert.startsWith('⚓ Captain'));
-  assert.ok(escapedAlert.includes('<b>Harbor Alert: Dock &lt;North&gt; &amp; South</b>'));
-  assert.ok(escapedAlert.includes('<b>Goal:</b> Inspect &lt;engine&gt; &amp; pipes'));
-  assert.ok(escapedAlert.includes('<b>Status:</b> Started ▶️'));
+  assert.ok(escapedAlert.startsWith('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
+  assert.ok(escapedAlert.includes('🚢 <b>Ship</b>\nDock &lt;North&gt; &amp; South'));
+  assert.ok(escapedAlert.includes('🎯 <b>Mission</b>\nInspect &lt;engine&gt; &amp; pipes'));
+  assert.ok(escapedAlert.includes('🧭 <b>Status</b>\nStarted ▶️'));
   assert.ok(escapedAlert.includes('■■□□□ 2/5'));
   assert.ok(!escapedAlert.includes('<North>'));
   assert.ok(!escapedAlert.includes('<engine>'));
@@ -603,8 +603,8 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
     goalTitle: 'Finished task',
     durationMinutes: 30
   });
-  assert.ok(alertNoStep.includes('<b>Status:</b> Done ✅'));
-  assert.ok(alertNoStep.includes('<b>Duration:</b> 30m'));
+  assert.ok(alertNoStep.includes('🧭 <b>Status</b>\nDone ✅'));
+  assert.ok(alertNoStep.includes('⏱️ <b>Voyage time</b>\n30m'));
   assert.ok(!alertNoStep.includes('■'));
   assert.ok(!alertNoStep.includes('□'));
 
@@ -673,11 +673,11 @@ test('harbor alerts and status cover step zero, hostile HTML, and progress edges
     step: { step: 0, total: 4 },
     durationMinutes: -1
   });
-  assert.ok(alert.startsWith('⚓ Captain'));
-  assert.ok(alert.includes('<b>Harbor Alert: A &amp; B</b>'));
-  assert.ok(alert.includes('<b>Goal:</b> Hold &lt;fast&gt;'));
-  assert.ok(alert.includes('<b>Status:</b> Needs your attention 🔔'));
-  assert.ok(alert.includes('<b>Estimate:</b> About 0m left (longer than usual) · rough &lt;guess&gt; &amp; co'));
+  assert.ok(alert.startsWith('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
+  assert.ok(alert.includes('🚢 <b>Ship</b>\nA &amp; B'));
+  assert.ok(alert.includes('🎯 <b>Mission</b>\nHold &lt;fast&gt;'));
+  assert.ok(alert.includes('🧭 <b>Status</b>\nNeeds your attention 🔔'));
+  assert.ok(alert.includes('⏳ <b>Time left</b>\nAbout 0 minutes (longer than usual) · rough &lt;guess&gt; &amp; co'));
   assert.ok(alert.includes('&lt;tag&gt; &amp; more'));
   assert.ok(alert.includes('□□□□ 0/4'));
   assert.ok(!alert.includes('Duration'));
@@ -701,8 +701,8 @@ test('harbor alerts and status cover step zero, hostile HTML, and progress edges
   assert.ok(!plain.includes('□'));
 
   const unknown = formatTelegramAlertMessage({ type: 'mystery', projectName: 'P <x>', goalTitle: 'G & H' });
-  assert.ok(unknown.includes('<b>Harbor Alert: P &lt;x&gt;</b>'));
-  assert.ok(unknown.includes('<b>Status:</b> Updated •'));
+  assert.ok(unknown.includes('🚢 <b>Ship</b>\nP &lt;x&gt;'));
+  assert.ok(unknown.includes('🧭 <b>Status</b>\nUpdated •'));
   assert.ok(!unknown.includes('■'));
   assert.ok(!unknown.includes('<x>'));
 });
