@@ -1190,6 +1190,7 @@ function createOrchestrator(options) {
           autonomy: parsed.autonomy && typeof parsed.autonomy === 'object' ? parsed.autonomy : {},
           autoSwitch: parsed.autoSwitch && typeof parsed.autoSwitch === 'object' ? parsed.autoSwitch : undefined,
           quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
+          creditsNeeded: parsed.creditsNeeded && typeof parsed.creditsNeeded === 'object' ? parsed.creditsNeeded : {},
           poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
@@ -1300,6 +1301,7 @@ function createOrchestrator(options) {
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
     onRefusal: (modelId, reason) => {
       const model = roster().find(item => item.id === modelId);
+      noteCredits(modelId, reason);
       const noted = require('./plan-status.cjs').notePlanRefusal(plansLive, model, reason);
       if (noted.status) {
         plansLive = noted.plans;
@@ -1838,6 +1840,14 @@ function createOrchestrator(options) {
     return null;
   }
 
+  // "Requires usage credits": the model is outside the plan, not out of quota for a while.
+  const CREDITS_NEEDED = /requires usage credits|purchase (?:more )?(?:usage )?credits|manage usage credits/i;
+  function noteCredits(modelId, reason) {
+    if (!modelId || !CREDITS_NEEDED.test(String(reason || ''))) return;
+    store.creditsNeeded = store.creditsNeeded && typeof store.creditsNeeded === 'object' ? store.creditsNeeded : {};
+    store.creditsNeeded[modelId] = { at: now() };
+  }
+  function clearCreditsNeeded() { store.creditsNeeded = {}; persist(); }
   function roster() {
     const team = teamFor();
     return normalizeModels(models).map(item => {
@@ -1884,6 +1894,10 @@ function createOrchestrator(options) {
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
       const refused = refusals.activeRefusal(store, item.id, Date.parse(now()));
       if (refused) Object.assign(resolved, { available: false, unavailableReason: refusalSentence(refused) });
+      // A model the plan no longer includes ("requires usage credits") is not a quota that comes back in a
+      // few hours: it is left out of the lead and the crew until Look for models again checks it.
+      if (store.creditsNeeded?.[item.id]) Object.assign(resolved, { available: false, neverUsable: true, creditsNeeded: true,
+        unavailableReason: 'Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.' });
       return resolved;
     });
   }
@@ -2744,7 +2758,7 @@ function createOrchestrator(options) {
       } catch (error) { failure = 'LEAD_FAILED: ' + error.message; continue; }
       const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
       const refused = spoken?.failure ? refusals.refusalReason(text) : null;
-      if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, `Lead ${lead.label || lead.id} refused work: ${refused}`); }
+      if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); noteCredits(lead.id, text); note(projectId, `Lead ${lead.label || lead.id} refused work: ${refused}`); }
       decision = spoken?.failure ? null : autonomy.parseDecision(text);
       if (!decision) {
         failure = 'LEAD_UNCONFIRMED';
@@ -2830,7 +2844,7 @@ function createOrchestrator(options) {
     const question = autonomy.assignmentPrompt({ name: item.project.name, said, goal: item.revisions.at(-1)?.direction, slices: subs.map(sub => sub.title), candidates: candidates.map(list => list.map(model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider }))) });
     let spoken;
     try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder: null, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return; }
-    if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) refusals.recordRefusal(store, lead.id, refused, now()); note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
+    if (spoken?.failure) { const refused = refusals.refusalReason(spoken.answer); if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); noteCredits(lead.id, spoken.answer); } note(projectId, 'Lead crew choice failed; keeping the proposed crew.'); return; }
     const choice = autonomy.parseAssignment(spoken && typeof spoken === 'object' ? spoken.answer : spoken, subs.length, candidates.map(list => list.map(model => model.id)));
     if (!choice) { note(projectId, 'Lead crew choice was unreadable; keeping the proposed crew.'); return; }
     try { bridge.reassign(projectId, megaTaskId, choice.assign, choice.why); } catch (error) { note(projectId, 'Lead crew choice was refused: ' + error.message); }
@@ -3340,6 +3354,17 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // A provider that closes the turn as failed is the same miss as a dead CLI: retry once, then hand over.
           const died = spoken => spoken?.failure === 'process' || (spoken?.failure === 'provider' && spoken?.diagnostic?.code === 'PROVIDER_EXECUTION_FAILED');
           const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
+          // A model the plan no longer includes ("requires usage credits"): left out from now on, and the
+          // best other lead answers, of this company or another.
+          if (spoken?.failure && CREDITS_NEEDED.test(String(spoken.answer || spoken.error || '')) && askCurrent(token)) {
+            noteCredits(lead.id, spoken.answer || spoken.error); persist();
+            const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+            if (next) {
+              switchLead(lead, next, (lead.label || lead.id) + ' needs usage credits.');
+              invokedLead = next;
+              spoken = await askThis(next);
+            }
+          } else
           // A quota error will not clear by asking again: hand over at once, to another company.
           if (outOfQuota(spoken) && askCurrent(token)) {
             const company = lead.providerId || lead.provider;
@@ -4067,7 +4092,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, execution: bridge.view(projectId) };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { answerDecision, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
