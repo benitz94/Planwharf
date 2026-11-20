@@ -220,9 +220,14 @@ function createExecutionBridge(options) {
     for (const line of String(result.summary || '').split(/\r?\n/)) {
       const at = line.toLowerCase().indexOf('needs your decision:');
       if (at < 0) continue;
-      const text = line.slice(at + 'needs your decision:'.length).trim();
-      if (!text || data.decisions.some(item => item.projectId === mega.projectId && item.text === text)) continue;
-      data.decisions.push({ id: result.resultId + ':' + data.decisions.length, projectId: mega.projectId, megaTaskId: mega.id, text, at: now(), answer: '' });
+      const raw = line.slice(at + 'needs your decision:'.length).trim();
+      if (!raw || data.decisions.some(item => item.projectId === mega.projectId && item.text === raw.split('|')[0].trim())) continue;
+      const parts = raw.split('|').map(part => part.trim());
+      const text = parts[0];
+      const suggestion = (parts.find(part => part.toLowerCase().startsWith('suggestion:')) || '').slice('suggestion:'.length).trim();
+      const breaks = /breaks:\s*yes/i.test(raw);
+      // A decision that cannot break anything is answered with the suggestion, so the owner is not asked.
+      data.decisions.push({ id: result.resultId + ':' + data.decisions.length, projectId: mega.projectId, megaTaskId: mega.id, text, suggestion, breaks, at: now(), answer: breaks ? '' : (suggestion || 'accepted') });
     }
     part.validatedResultStatus = result.status; part.recordedSubTaskStatus = sub.status;
     sub.completedAt = result.status === 'COMPLETE' ? now() : null;

@@ -428,7 +428,7 @@ public sealed partial class MainWindow : Window
         if (proposal && work.OpenDecisions.Count > 0)
         {
             var asks = new StackPanel { Spacing = 8, Children = { Line(Strings.T("Needs your decision"), Palette.Warn, 13, FontWeight.SemiBold) } };
-            foreach (var decision in work.OpenDecisions) asks.Children.Add(DecisionCard(decision.Id, decision.Text));
+            foreach (var decision in work.OpenDecisions) asks.Children.Add(DecisionCard(decision.Id, decision.Text, decision.Suggestion));
             asks.Children.Add(Line(Strings.T("Answer these before you approve, so the crew knows what to do."), Palette.Muted, 12));
             panel.Children.Add(new Border { Background = Palette.WarnSoft, CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8), Child = asks });
         }
@@ -541,7 +541,7 @@ public sealed partial class MainWindow : Window
     }
 
 
-    Control DecisionCard(string id, string text)
+    Control DecisionCard(string id, string text, string suggestion = "")
     {
         var box = Look.Field(new TextBox { Watermark = Strings.T("Or write your answer") });
         var yes = Small(Strings.T("Yes"), true);
@@ -557,10 +557,10 @@ public sealed partial class MainWindow : Window
         no.Click += async (_, _) => await Answer("no");
         var send = Small(Strings.T("Send"), false);
         send.Click += async (_, _) => { if ((box.Text ?? "").Trim().Length > 0) await Answer(box.Text!.Trim()); };
-        return new StackPanel { Spacing = 6, Children = {
-            Line(text, Palette.Text, 13),
-            new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, box, send } }
-        } };
+        var card = new StackPanel { Spacing = 6, Children = { Line(text, Palette.Text, 13) } };
+        if (suggestion.Length > 0) card.Children.Add(Line(Strings.Format("Suggestion: {0}", suggestion), Palette.Muted, 12));
+        card.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, box, send } });
+        return card;
     }
 
     async Task CheckPrsAsync()
