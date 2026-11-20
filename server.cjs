@@ -738,6 +738,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const result = await require('./engine/pr-check.cjs').resolveConflicts(folder, number);
         return json(result.ok ? 200 : 409, result);
       }
+      if (request.method === 'GET' && pathname === '/api/provider-status') {
+        const status = await require('./engine/provider-status.cjs').providerStatus();
+        return json(200, { status });
+      }
       if (request.method === 'GET' && pathname === '/api/repository') {
         const result = await orchestra.inspectRepository(loc.searchParams.get('projectId'), { force: loc.searchParams.get('refresh') === '1' });
         if (!result.ok) throw new RequestError(400, result.reason);
