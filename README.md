@@ -29,9 +29,9 @@ reviewed before it is merged.
 
 | So far | |
 |---|---|
-| Jobs done by Planwharf on itself | **14**, from the first C# modules to the logo in your colour |
-| C# engine | **15 of 55 modules** ported, 459 tests, 149 cases compared with the JavaScript result by result |
-| Improvements found by using Planwharf on itself, and fixed | **16** |
+| Jobs done by Planwharf on itself | **25**, from the first C# modules to the rest of phase 2 of the port |
+| C# engine | **23 of 55 modules** ported, 547 tests, 247 cases compared with the JavaScript result by result |
+| Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |
 
 The full record, job by job, with each crew and what the review changed: [Built with Planwharf](docs/BUILT-WITH-PLANWHARF.md).
