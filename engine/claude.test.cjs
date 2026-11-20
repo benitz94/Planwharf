@@ -64,6 +64,16 @@ test('stream requires final success and exact identity; extracts observed usage'
   const wrong = createAskStream(cli);
   wrong.push(JSON.stringify({ type: 'assistant', message: { model: 'claude-other', content: [] } }) + '\n');
   assert.equal(wrong.finish().failure, 'PROVIDER_MODEL_IDENTITY_CHANGED');
+  // A credit refusal written by Claude Code itself ("<synthetic>") is a refusal, not another model.
+  const credits = createAskStream(cli);
+  for (const row of [{ type: 'system', subtype: 'init', model: cli },
+    { type: 'assistant', message: { model: '<synthetic>', content: [{ type: 'text', text: 'Fable 5.2 requires usage credits. Switch to another model.' }] } },
+    { type: 'result', subtype: 'success', is_error: true, result: 'Fable 5.2 requires usage credits. Switch to another model.' }]) credits.push(JSON.stringify(row) + '\n');
+  const refused = credits.finish();
+  assert.notEqual(refused.failure, 'PROVIDER_MODEL_IDENTITY_CHANGED');
+  assert.ok(refused.failure, 'it still fails');
+  assert.match(refused.error, /requires usage credits/);
+  assert.match(require('./provider-refusal.cjs').refusalReason(refused.error) || '', /requires usage credits/, 'and reads as a quota refusal, so the next lead takes over');
   const failed = createAskStream(cli);
   failed.push(JSON.stringify({ type: 'result', subtype: 'error_max_turns', is_error: true, errors: ['Turn limit'] }) + '\n');
   assert.ok(failed.finish().failure);
