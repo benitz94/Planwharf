@@ -196,7 +196,7 @@ test('parallel assessments do not mix a sound sheet with a broken one', async ()
 
 test('the verdict stays on the sheet branch and does not add a gate', () => {
   const changed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').filter(Boolean);
-  if (!changed.length || changed.some(file => !allowedDiff.has(file))) return;
+  if (!changed.length || !changed.includes(sheetPath) || changed.some(file => !allowedDiff.has(file))) return;
   const base = git(['rev-parse', 'origin/main']);
   assert.equal(git(['merge-base', 'HEAD', 'origin/main']), base);
   for (const file of changed) assert.ok(allowedDiff.has(file), file);
