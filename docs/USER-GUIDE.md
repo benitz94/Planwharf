@@ -66,7 +66,7 @@ The crew commits on the work's branch and never pushes: every worker runs with a
 ## Alerts
 
 - **On the computer:** when a work ends, fails or needs you: a notification, the taskbar flashing and a short sound, each switchable in **Settings → Look**.
-- **On the phone:** **Settings → Phone**: ntfy (a private topic name, no account), or a Telegram bot you create with BotFather and pair with the code shown there. The bot reports stops, resumes, verification and model switches, and answers `/status`, `/stop <project>` (after "yes") and `/resume <project>`. Messages carry only the project name, the goal, the state and times: never code, file names or paths. Examples of the messages: [Planwharf on your phone](PHONE.md).
+- **On the phone:** **Settings → Phone**: ntfy (a private topic name, no account), or a Telegram bot you create with BotFather and pair with the code shown there. The bot reports stops, resumes, verification and model switches, and answers `/status`, `/stop <project>` (after "yes") and `/resume <project>`. Each message names the lead, the Build and Verify models, with an arrow when one took over. Messages carry only the project name, the goal, the state, the times and the model names: never code, file names or paths. Examples of the messages: [Planwharf on your phone](PHONE.md).
 
 ## Stop and resume
 

@@ -507,9 +507,9 @@ test('checkTransitions detects work ending, failing, or needing owner and alerts
     const tgBody = JSON.parse(tgAlert.options.body);
     assert.equal(tgBody.chat_id, '12345');
     assert.equal(tgBody.parse_mode, 'HTML');
-    assert.ok(tgBody.text.includes('🧭 <b>Status</b>\nDone ✅'));
+    assert.ok(tgBody.text.includes('🧭 Done ✅'));
     assert.ok(tgBody.text.includes('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
-    assert.ok(tgBody.text.includes('🚢 <b>Ship</b>\nEngine Project'));
+    assert.ok(tgBody.text.includes('🚢 <b>Engine Project</b>'));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -589,9 +589,9 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
     step: { step: 2, total: 5 }
   });
   assert.ok(escapedAlert.startsWith('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
-  assert.ok(escapedAlert.includes('🚢 <b>Ship</b>\nDock &lt;North&gt; &amp; South'));
-  assert.ok(escapedAlert.includes('🎯 <b>Mission</b>\nInspect &lt;engine&gt; &amp; pipes'));
-  assert.ok(escapedAlert.includes('🧭 <b>Status</b>\nStarted ▶️'));
+  assert.ok(escapedAlert.includes('🚢 <b>Dock &lt;North&gt; &amp; South</b>'));
+  assert.ok(escapedAlert.includes('🎯 Inspect &lt;engine&gt; &amp; pipes'));
+  assert.ok(escapedAlert.includes('🧭 Started ▶️ · ■■□□□ 2/5'));
   assert.ok(escapedAlert.includes('■■□□□ 2/5'));
   assert.ok(!escapedAlert.includes('<North>'));
   assert.ok(!escapedAlert.includes('<engine>'));
@@ -603,8 +603,7 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
     goalTitle: 'Finished task',
     durationMinutes: 30
   });
-  assert.ok(alertNoStep.includes('🧭 <b>Status</b>\nDone ✅'));
-  assert.ok(alertNoStep.includes('⏱️ <b>Voyage time</b>\n30m'));
+  assert.ok(alertNoStep.includes('🧭 Done ✅ · ⏱️ 30m'));
   assert.ok(!alertNoStep.includes('■'));
   assert.ok(!alertNoStep.includes('□'));
 
@@ -674,10 +673,10 @@ test('harbor alerts and status cover step zero, hostile HTML, and progress edges
     durationMinutes: -1
   });
   assert.ok(alert.startsWith('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
-  assert.ok(alert.includes('🚢 <b>Ship</b>\nA &amp; B'));
-  assert.ok(alert.includes('🎯 <b>Mission</b>\nHold &lt;fast&gt;'));
-  assert.ok(alert.includes('🧭 <b>Status</b>\nNeeds your attention 🔔'));
-  assert.ok(alert.includes('⏳ <b>Time left</b>\nAbout 0 minutes (longer than usual) · rough &lt;guess&gt; &amp; co'));
+  assert.ok(alert.includes('🚢 <b>A &amp; B</b>'));
+  assert.ok(alert.includes('🎯 Hold &lt;fast&gt;'));
+  assert.ok(alert.includes('🧭 Needs your attention 🔔'));
+  assert.ok(alert.includes('⏳ About 0 minutes (longer than usual)'));
   assert.ok(alert.includes('&lt;tag&gt; &amp; more'));
   assert.ok(alert.includes('□□□□ 0/4'));
   assert.ok(!alert.includes('Duration'));
@@ -701,8 +700,8 @@ test('harbor alerts and status cover step zero, hostile HTML, and progress edges
   assert.ok(!plain.includes('□'));
 
   const unknown = formatTelegramAlertMessage({ type: 'mystery', projectName: 'P <x>', goalTitle: 'G & H' });
-  assert.ok(unknown.includes('🚢 <b>Ship</b>\nP &lt;x&gt;'));
-  assert.ok(unknown.includes('🧭 <b>Status</b>\nUpdated •'));
+  assert.ok(unknown.includes('🚢 <b>P &lt;x&gt;</b>'));
+  assert.ok(unknown.includes('🧭 Updated •'));
   assert.ok(!unknown.includes('■'));
   assert.ok(!unknown.includes('<x>'));
 });

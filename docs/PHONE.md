@@ -4,106 +4,51 @@ Planwharf can tell you on the phone when the crew starts, switches model, verifi
 from there. Set it up in **Settings → Phone**: ntfy (a private topic name, no account) or a Telegram bot you create with
 BotFather and pair with the code shown there.
 
-The Telegram bot speaks like a ship's crew: you are the captain, the project is the ship, the goal is the mission. Each
-message also has one plain sentence, in italics in Telegram, that says what happened without the sea talk. It writes in English
-or Italian, like the app (**Settings → Look → Language**).
+The Telegram bot speaks like a ship's crew: you are the captain, the project is the ship, the goal is the mission. It
+writes in English or Italian, like the app (**Settings → Look → Language**).
 
-Messages carry only the project name, the goal, the state and times: never code, file names or paths.
+Messages carry only the project name, the goal, the state, the times and the names of the models: never code, file names or paths.
 
 ## Examples
 
-These are the messages the bot sends, on a sample project.
+These are the messages the bot sends, on a sample project. Every message has the same short shape: the news,
+the ship and the mission, the state with the progress and the time, then the crew: the lead (👑), each Build
+step (🔨) and the Verify step (🔍), with ✅ done, ⚙️ working, ❌ failed. When a model took over since the
+last message, the line shows who it replaced: `GPT-6 Astra → Gemini 3.8 Flash`.
 
 **The crew starts**
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN!
-
-🚀 The crew has set sail on a new mission!
-The crew has started.
-
-🚢 Ship
-Recipe app
-
-🎯 Mission
-Add a shopping list to the recipes
-
-🧭 Status
-Started ▶️
-
-⏳ Time left
-About 25 minutes · based on 40 past steps
-
+🏴‍☠️ AHOY, CAPTAIN! 🚀 The crew has set sail on a new mission!
+🚢 Recipe app · 🎯 Add a shopping list to the recipes
+🧭 Started ▶️ · □□ 0/2 · ⏳ About 25 minutes
+👑 Lead Grok 4.7
+🔨 Build Opus 5.5 ⚙️
+🔍 Verify GPT-6 Astra
 🦜 The crew is hard at work. I'll keep you posted, Captain!
 ```
 
 **Another model takes over a step**
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN!
-
-🔁 Change of watch!
-The crew changed who is doing this step.
-
-🚢 Ship
-Recipe app
-
-🎯 Mission
-Add a shopping list to the recipes
-
-🧭 Status
-Switched model 🔁
-
-■□ 1/2  The crew is on step 1 of 2.
-
+🏴‍☠️ AHOY, CAPTAIN! 🔁 Change of watch!
+🚢 Recipe app · 🎯 Add a shopping list to the recipes
+🧭 Switched model 🔁 · ■□ 1/2 · ⏳ About 8 minutes
+👑 Lead Grok 4.7
+🔨 Build Opus 5.5 ✅
+🔍 Verify GPT-6 Astra → Gemini 3.8 Flash ⚙️
 🦜 Another sailor took over this step.
-```
-
-**A second model checks the work**
-
-```text
-🏴‍☠️ AHOY, CAPTAIN!
-
-🔭 A second pair of eyes is checking the work.
-A different model is checking the work.
-
-🚢 Ship
-Recipe app
-
-🎯 Mission
-Add a shopping list to the recipes
-
-🧭 Status
-Verify started 🔎
-
-⏳ Time left
-About 8 minutes
-
-■□ 1/2  The crew is on step 1 of 2.
-
-🦜 Another model is inspecting every plank.
 ```
 
 **The work is finished** (in Italian)
 
 ```text
-🏴‍☠️ AHOY, CAPITANO!
-
-🏆 Missione compiuta!
-Il lavoro è finito.
-
-🚢 Nave
-Recipe app
-
-🎯 Missione
-Add a shopping list to the recipes
-
-🧭 Stato
-Fatto ✅
-
-⏱️ Durata del viaggio
-31m
-
+🏴‍☠️ AHOY, CAPITANO! 🏆 Missione compiuta!
+🚢 Recipe app · 🎯 Add a shopping list to the recipes
+🧭 Fatto ✅ · ■■ 2/2 · ⏱️ 31m
+👑 Lead Grok 4.7
+🔨 Build Opus 5.5 ✅
+🔍 Verify Gemini 3.8 Flash ✅
 🍻 Il bottino è nella stiva. Controllalo e fai il push quando ti piace.
 ```
 
