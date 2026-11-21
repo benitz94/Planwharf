@@ -712,7 +712,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             const row = (state.projects || []).find(entry => entry.id === input.projectId) || {};
             const goal = String(row.megaTask?.title || item.revisions?.at(-1)?.direction || '').split(/\r?\n/)[0].trim();
             const said = commit && message && message.toLowerCase() !== 'push' ? message.split(/\r?\n/)[0].trim() : '';
-            const title = (said || goal || branch).slice(0, 120);
+            const steps = (row.subTasks || []).map(sub => sub && sub.title);
+            const title = (said || require('./engine/plan-file.cjs').pullRequestTitle(goal, steps) || branch).slice(0, 120);
             const done = (row.results || []).filter(result => result && result.summary && !result.modelChange).map(result => '- ' + String(result.summary).split(/\r?\n/)[0].slice(0, 300));
             const prBody = [goal ? `## Goal\n\n${goal}` : '', done.length ? `## What was done\n\n${done.join('\n')}` : '', 'Opened by Planwharf from the push button.'].filter(Boolean).join('\n\n');
             const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', title, '--body', prBody]);
