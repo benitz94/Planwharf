@@ -84,6 +84,9 @@ function namedBranch(text) {
     /\bbranch\s+`([^`]+)`/i,
     /\bbranch\s+'([^']+)'/i,
     /\bbranch\s+"([^"]+)"/i,
+    // "Implement job 26 on `feat/gate-build`": a quoted name with a slash after "on" is the branch,
+    // never a remote one such as `origin/main`.
+    /\b(?:on|onto)\s+`(?!origin\/)([A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9._/-]*[A-Za-z0-9_-])`/i,
     // A bare word is a name only when the text says so ("on branch develop", "branch named develop")
     // or when it looks like one (a slash, dash, dot, underscore or digit). "branch creation" is not a branch.
     /\bbranch\s+(?:named|called)\s+([A-Za-z0-9][A-Za-z0-9._/-]*)/i,
@@ -122,6 +125,18 @@ function leadingBranch(folder, text) {
 function branchName(goal, requested) {
   if (requested && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(requested)) return requested;
   return namedBranch(goal) || ('planwharf/' + shortGoal(goal));
+}
+
+// A pull request named after the work, without the directions meant for the crew: "Implement job 26 on
+// `feat/gate-build` from refreshed `origin/main`, following …" becomes "Implement job 26", or the build
+// step's own title when it starts the same way and says more ("Implement job 26 C# acceptance gate").
+function pullRequestTitle(goal, stepTitles = []) {
+  const first = String(goal || '').split(/\r?\n/)[0].trim();
+  const cut = first.search(/\s+(?:on|onto)\s+`|\s+from\s+(?:the\s+)?(?:refreshed\s+)?`|,\s*following\s/i);
+  const short = (cut > 0 ? first.slice(0, cut) : first).replace(/`/g, '').replace(/[\s.,;:]+$/, '').trim();
+  const fuller = (stepTitles || []).map(text => String(text || '').trim())
+    .find(text => short && text.length > short.length && text.toLowerCase().startsWith(short.toLowerCase()) && !/[`\n]/.test(text));
+  return (fuller || short).slice(0, 120);
 }
 
 function shortSha(sha) { return String(sha || '').slice(0, 7); }
@@ -416,6 +431,6 @@ function finish(folder, spec = {}) {
 }
 
 module.exports = { isNoise,
-  EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, shortGoal,
+  EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, pullRequestTitle, shortGoal,
   prepare, read, parse, tickStep, finish, commitNote, currentBranch, pushed, planPath
 };

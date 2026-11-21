@@ -212,6 +212,10 @@ console.log('verify-1: input validation and fallback paths passed');
   assert.equal(planFile.namedBranch('use branch port/123 please'), 'port/123');
   // Quoted branch with special but valid chars
   assert.equal(planFile.namedBranch('branch `release/v1.2.3`'), 'release/v1.2.3');
+  // The lead's goal names the job's branch quoted after "on"; the base it starts from is not a branch name.
+  assert.equal(planFile.namedBranch('Implement job 26 on `feat/gate-build` from refreshed `origin/main` (`d8d52d1`), following `native/porting/jobs/19-gate.md`'), 'feat/gate-build');
+  assert.equal(planFile.namedBranch('Rebase on `origin/main` and run the tests'), null);
+  assert.equal(planFile.namedBranch('Read `docs/NEXT-WORK.md` and continue.'), null);
 }
 
 // --- 17. branchName ignores invalid requested name ---
@@ -444,3 +448,13 @@ console.log('verify-3: recovery, fallback and idempotence paths passed');
 }
 
 console.log('verify-4: concurrency, roundtrip, edge cases passed');
+
+// --- Pull request title: the work, not the crew's directions ---
+{
+  const goal = 'Implement job 26 on `feat/gate-build` from refreshed `origin/main` (`d8d52d1`), following `native/porting/jobs/19-gate.md`, with isolated acceptance tests.';
+  assert.equal(planFile.pullRequestTitle(goal), 'Implement job 26');
+  assert.equal(planFile.pullRequestTitle(goal, ['Implement job 26 C# acceptance gate', 'Verify the work independently']), 'Implement job 26 C# acceptance gate');
+  assert.equal(planFile.pullRequestTitle('Add a shopping list to the recipes'), 'Add a shopping list to the recipes');
+  assert.equal(planFile.pullRequestTitle('Fix the login page.', ['Check the work']), 'Fix the login page');
+  console.log('pull request titles passed');
+}
