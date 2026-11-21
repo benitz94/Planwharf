@@ -98,4 +98,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The job's branch named in the goal (`feat/gate-build`) was ignored, and the pull request took the crew's whole instructions as its title | #180 |
 | Fixing a pull request opened a new work in the chat, and checked out its branch in the owner's folder; now it is fixed in the background, in a copy, and pushed to the same branch | #181 |
 | A lead that failed twice handed over to Fable 5.2, which needed usage credits, and the chat stopped there; looking for models again brought Fable back | #182 |
-| A lead that did not answer handed over to a model under its company's quota limit | this pull request |
+| A lead that did not answer handed over to a model under its company's quota limit | #183 |
