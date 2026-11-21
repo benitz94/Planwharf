@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const autonomy = require('./autonomy.cjs');
+const chatMode = require('./chat-mode.cjs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { AsyncLocalStorage } = require('node:async_hooks');
@@ -755,14 +756,9 @@ function parseOrder(question, snap, projectId) {
   if (projectCommand('auto start|avvia|start')) {
     return { action: 'start', projectId: row && row.id, name: row && row.name };
   }
-  const wantsMode = /\b(mode|modalit|switch to|set to|passa a)\b/i.test(ql);
-  if (wantsMode && /\b(automatic|auto)\b/i.test(ql) && !/\bauto start\b/i.test(ql)) {
-    return { action: 'mode', mode: 'auto' };
-  }
-  if (wantsMode && /\b(manual|manuale)\b/i.test(ql)) {
-    return { action: 'mode', mode: 'manual' };
-  }
-  return null;
+  const chosen = chatMode.order(q);
+  if (!chosen) return null;
+  return { ...chosen, projectId: row && row.id || projectId || null };
 }
 
 function researchIntent(question, history = []) {
@@ -1175,7 +1171,7 @@ function createOrchestrator(options) {
     catch (error) { ledger.finish(id, 'FAILED'); throw error; }
   };
 
-  let store = { autonomy: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
+  let store = { autonomy: {}, chatModes: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
   // Chat replies in flight, one per project: asking in one project never cancels another.
   let thinkingByKey = {};
   const askTokens = new Map();
@@ -1201,6 +1197,7 @@ function createOrchestrator(options) {
           quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
           creditsNeeded: parsed.creditsNeeded && typeof parsed.creditsNeeded === 'object' ? parsed.creditsNeeded : {},
           poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
+          chatModes: parsed.chatModes && typeof parsed.chatModes === 'object' && !Array.isArray(parsed.chatModes) ? parsed.chatModes : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -2227,6 +2224,7 @@ function createOrchestrator(options) {
           goal: latest && latest.direction ? latest.direction : '',
           // The crew already worked on this goal (a job was made from it): it is not a plan ready to start.
           goalStarted: Boolean(latest && (item.tasks || []).some(task => task && task.revision_id === latest.id)),
+          chatMode: chatModeOf(item.project.id),
           notes: clone(item.home?.notes || []),
           stateArt: latest && latest.state ? latest.state : '',
           open: clone((latest && latest.open) || []),
@@ -2295,6 +2293,12 @@ function createOrchestrator(options) {
     };
     const stepHistory = readStepTimes(dir);
     view.projects.forEach(row => {
+      const mode = row.chatMode === 'talk' || row.chatMode === 'auto' ? row.chatMode : 'plan';
+      const last = (store.asks || []).find(ask => ask && ask.projectId === row.id && typeof ask.answer === 'string' && !ask.diagnostic);
+      // Talk never offers a crew goal. Plan offers today's two start controls. Auto starts the goal itself.
+      row.crewGoal = mode === 'talk' ? null : chatMode.suggestedGoal(last && last.answer);
+      row.offerUseGoal = mode === 'plan' && Boolean(row.crewGoal);
+      row.offerStart = mode === 'plan';
       row.analysis = analysisOf(row);
       const started = new Map((row.dispatch || []).filter(Boolean).map(part => [part.subTaskId, part.startedAt]));
       row.timeLeft = estimateTimeLeft({
@@ -2740,11 +2744,55 @@ function createOrchestrator(options) {
     return tick();
   }
 
+  // One project, one switch. Auto turns on today's automatic approvals and this project's autonomy
+  // for the session. Moving to Talk or Plan leaves running work going and ends Auto after that goal.
+  async function setChatMode(projectId, mode, options = {}) {
+    const next = chatMode.normalize(mode);
+    if (!next) return { ok: false, reason: 'Unknown chat mode.' };
+    const plan = await opts.readPlan();
+    if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
+    const previous = chatModeOf(projectId);
+    store.chatModes[projectId] = next;
+    if (options.approval === 'manual') store.mode = 'manual';
+    if (options.approval === 'auto') store.mode = 'auto';
+    if (next === 'auto') {
+      store.mode = 'auto';
+      const current = store.autonomy[projectId];
+      if (!current?.enabled || current.sessionId !== sessionId) store.autonomy[projectId] = autonomy.createSettings(sessionId, now());
+      else delete store.autonomy[projectId].endAfterCurrent;
+    } else if (previous === 'auto') {
+      // Plan and Talk approve nothing by themselves. A goal already running keeps going.
+      const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
+      if (!anyAuto) store.mode = 'manual';
+      const settings = store.autonomy[projectId];
+      if (settings?.enabled && settings.sessionId === sessionId) {
+        const row = snapshot(plan, projectId).projects.find(item => item.id === projectId);
+        if (chatMode.workInFlight(row)) settings.endAfterCurrent = true;
+        else { settings.enabled = false; settings.endAfterCurrent = false; }
+      }
+    }
+    note(projectId, 'Chat mode is now ' + chatMode.label(next) + '.');
+    persist();
+    return { ok: true, chatMode: next, snapshot: await tick(projectId) };
+  }
+
   // Authority lasts one session: a restart must never resume it silently.
-  for (const settings of Object.values(store.autonomy)) if (settings?.enabled && settings.sessionId !== sessionId) settings.enabled = false;
+  for (const settings of Object.values(store.autonomy)) {
+    if (settings?.enabled && settings.sessionId !== sessionId) settings.enabled = false;
+    if (settings) delete settings.endAfterCurrent;
+  }
+  // Talk and Plan are saved. Auto is this session only, and Pipeline is not implemented.
+  store.chatModes = store.chatModes && typeof store.chatModes === 'object' && !Array.isArray(store.chatModes) ? store.chatModes : {};
+  for (const [id, mode] of Object.entries(store.chatModes)) store.chatModes[id] = chatMode.persisted(mode);
+  function chatModeOf(projectId) {
+    const saved = projectId ? store.chatModes[projectId] : null;
+    return saved === 'talk' || saved === 'plan' || saved === 'auto' ? saved : chatMode.DEFAULT;
+  }
   async function setAutonomy(projectId, enabled) {
     const plan = await opts.readPlan();
     if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
+    // Stop the crew turns Auto off at once. A switch to Talk keeps Talk; it does not come through here.
+    if (!enabled && store.chatModes[projectId] === 'auto') store.chatModes[projectId] = 'plan';
     store.autonomy[projectId] = enabled ? autonomy.createSettings(sessionId, now()) : { enabled: false };
     note(projectId, enabled ? 'Project autonomy enabled for this session.' : 'Project autonomy disabled.');
     persist();
@@ -2872,6 +2920,22 @@ function createOrchestrator(options) {
   }
   async function runAutonomyStep(row, view) {
     const projectId = row.id, settings = store.autonomy[projectId];
+    // Leaving Auto keeps the current goal and does not start another. Stop the crew is what ends it now.
+    if (settings?.endAfterCurrent) {
+      const approving = row.status === 'needs_approval' || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL';
+      if (!chatMode.workInFlight(row)) {
+        settings.enabled = false;
+        settings.endAfterCurrent = false;
+        if (chatModeOf(projectId) !== 'auto') {
+          const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
+          if (!anyAuto) store.mode = 'manual';
+        }
+        note(projectId, 'Auto ended after the current goal.');
+        persist();
+        return;
+      }
+      if (!approving) return;
+    }
     const alerts = view.supervisor?.projects?.find(entry => entry.projectId === projectId)?.alerts || [];
     const step = autonomy.nextStep({ mode: store.mode, sessionId, settings, row, alerts, now: Date.parse(now()) });
     if (step.type === 'none') return;
@@ -3132,8 +3196,13 @@ function createOrchestrator(options) {
     if (order.action === 'endGrill') return { ok: true, snapshot: snapshot(await opts.readPlan(), order.projectId) };
     if (order.action === 'model') return setModelEnabled(order.id, order.enabled);
     if (order.action === 'lead') return setOrchestrator(order.id);
+    if (order.action === 'reject') return { ok: false, reason: 'Pipeline is not available.' };
     if (order.action === 'mode') {
-      const snapshot = await setMode(order.mode);
+      if (order.chatMode && order.projectId) {
+        const set = await setChatMode(order.projectId, order.chatMode, { approval: order.mode === 'auto' ? 'auto' : order.mode === 'manual' ? 'manual' : null });
+        return set.ok ? set : { ok: false, reason: set.reason, snapshot: await tick() };
+      }
+      const snapshot = await setMode(order.mode === 'auto' ? 'auto' : 'manual');
       return { ok: true, snapshot };
     }
     if (order.action === 'grillPropose') {
@@ -3257,7 +3326,9 @@ function createOrchestrator(options) {
 Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (order?.action === 'approve') order.megaTaskId = snap.projects.find(row => row.id === order.projectId)?.megaTaskId;
     let currentTask = null;
-    if (!order && !grillKind && !researchRequested && freshTaskIntent(q) && typeof opts.prepareTask === 'function') {
+    const talking = chatModeOf(projectId || contextProjectId) === 'talk';
+    // Talk thinks an idea through. A message there does not become a task.
+    if (!talking && !order && !grillKind && !researchRequested && freshTaskIntent(q) && typeof opts.prepareTask === 'function') {
       const target = pickAskedProject(snap, projectId, q);
       if (!target) return { ok: false, reason: 'Select the project for this new task.' };
       const prepared = await opts.prepareTask(target.id, q, () => askCurrent(token), goldModel);
@@ -3285,7 +3356,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       } else if (acted.ok && order.action === 'lead') {
         answer = `${who}: orchestrator lead is now ${order.label || order.id}.`;
       } else if (acted.ok && order.action === 'mode') {
-        answer = `${who}: mode is now ${order.mode === 'auto' ? 'Automatic' : 'Manual'}.`;
+        answer = `${who}: mode is now ${chatMode.label(order.chatMode || (order.mode === 'auto' ? 'auto' : 'plan'))}.`;
       } else if (acted.ok && order.action === 'endGrill') {
         answer = 'Grill session ended. Use Grill me to begin a new conversation.';
       } else if (acted.ok && order.action === 'grillPropose') {
@@ -3312,6 +3383,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         answer = `${who}: skipped grill on ${order.name || order.projectId}.`;
       } else if (acted.ok) {
         answer = `${who}: ${order.action} on ${order.name || order.projectId}.`;
+      } else if (order.action === 'reject') {
+        answer = `${who}: Pipeline is not available.`;
       } else {
         answer = `${who}: could not ${order.action}: ${acted.reason || 'failed'}.`;
       }
@@ -3350,6 +3423,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           const askThis = model => opts.askModel({
             question: q,
             model,
+            chatMode: chatModeOf((row && row.id) || projectId),
             ...(grillKind ? { grillKind, allowActions: false } : {}),
             projectId: (row && row.id) || fallback.projectId,
             folder: linkedWorkspace(row && row.folder),
@@ -3438,6 +3512,11 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           if (envelope.answer) answer = envelope.answer;
           else answer = `${lead.label} returned no answer. The provider CLI in the project folder produced nothing.`;
           if (envelope.error) answer += '\n\n' + envelope.error;
+          // A goal line in Talk is not a proposal: it is removed and nothing is started from it.
+          if (chatModeOf((row && row.id) || projectId) === 'talk') {
+            if (chatMode.suggestedGoal(answer)) answer = chatMode.withoutSuggestion(answer);
+            envelope.actions = [];
+          }
           // Crew changes are allowed in any message; research still needs the user's explicit request.
           if (Array.isArray(envelope.actions) && envelope.actions.length <= 3) {
             for (const action of envelope.actions.filter(item => item?.type === 'reassign_crew')) {
@@ -4188,7 +4267,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, started: true };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, fixPullRequest, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, fixPullRequest, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

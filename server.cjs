@@ -888,6 +888,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!input || (input.mode !== 'auto' && input.mode !== 'manual') || Object.keys(input).some(key => key !== 'mode')) throw new RequestError(400, 'Invalid data.');
         return json(200, await orchestra.setMode(input.mode));
       }
+      if (request.method === 'POST' && pathname === '/api/orchestrator/chat-mode') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || typeof input.mode !== 'string' || Object.keys(input).some(key => key !== 'projectId' && key !== 'mode')) throw new RequestError(400, 'Invalid data.');
+        const result = await enqueue(() => orchestra.setChatMode(input.projectId, input.mode));
+        if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
+        return json(200, result.snapshot);
+      }
       if (request.method === 'POST' && pathname === '/api/orchestrator/grill') {
         if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
         const input = await body(request);

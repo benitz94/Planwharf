@@ -32,6 +32,8 @@ public sealed class PlanwharfApi(string address)
         ? PostAsync("/api/orchestrator/ask", new { projectId, question })
         : PostAsync("/api/orchestrator/ask", new { projectId, question, chatSessionId });
     public Task<JsonNode?> SetModeAsync(string mode) => PostAsync("/api/orchestrator/mode", new { mode });
+    // One call for the chat switch. The engine turns Auto, Talk and Plan on together with autonomy.
+    public Task<JsonNode?> SetChatModeAsync(string projectId, string mode) => PostAsync("/api/orchestrator/chat-mode", new { projectId, mode });
     public Task<JsonNode?> SetAutonomyAsync(string projectId, bool enabled) => PostAsync("/api/orchestrator/autonomy", new { projectId, enabled });
     public Task<JsonNode?> StopAsync(string projectId) => PostAsync("/api/orchestrator/stop", new { projectId });
     public Task<JsonNode?> ResumeAsync(string projectId) => PostAsync("/api/orchestrator/resume", new { projectId });

@@ -21,7 +21,7 @@ The folder stored in the export is a hint, not a silent copy: the imported proje
 - Provider credentials, tokens, auth profiles, or raw worker logs
 - Live worker processes, PIDs, or an authorized backend session
 - Global Settings, model catalogs, or other projects in the notebook
-- Automatic worker launch
+- Automatic worker launch. The chat mode is not in the export: the new project opens in Plan. Auto never comes back after a restart anyway.
 
 Resume still needs the linked folder for implementation work, and it still compares the folder with the checkpoint. It does not restore a model's internal conversation memory.
 

@@ -4,7 +4,7 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
 
 ## Who does what
 
-**You are the captain.** You choose the goal, the team, and when work starts or stops. Nothing runs unless you set it in motion, and you can stop it at any time.
+**You are the captain.** You choose the goal, the team, and when work starts or stops. Nothing runs unless you set it in motion, and you can stop it at any time. Above the chat, **Talk**, **Plan** and **Auto** choose how this project does that. Plan is the default.
 
 | On screen | Job |
 | --- | --- |
@@ -21,9 +21,14 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
   - a **proposal card** with the steps and who does each, and **Approve and start**;
   - a **Crew at work** card with a progress bar, each step's model and state, and what the running model is doing, in plain words;
   - a **Work finished** card with steps done, time taken, files not yet committed, and **What this work used**: per model the time, tokens and quota before → after ("not reported" when the provider does not say);
-  - under your last message, while nothing runs, **Use as the goal**. A chat message never starts work by itself; this button makes it the project goal.
+  - under your last message, while nothing runs and the project is in **Plan**, **Use as the goal**. A chat message never starts work by itself; this button makes it the project goal. Talk and Auto do not offer it.
   - a **Something needs a look** card when Planwharf's own checks see stalled, failed or conflicting work. These checks use no model. **Ignore** hides one warning.
-- **Bottom:** one main button, depending on the state:
+- **Above the chat box:** a three-way switch for this project, with one line under it.
+  - **Talk:** a conversation with the lead. No crew goal, and neither **Use as the goal** nor **Let the crew do it**. Nothing starts.
+  - **Plan** (the default, and what comes back after a restart): the lead shapes a goal; you press **Let the crew do it**.
+  - **Auto:** the crew starts that goal and goes on within the [autonomy](PROJECT-AUTONOMY.md) limits, for this session only.
+  - Moving the switch does not stop work already running. Moving from Auto to Talk or Plan finishes the current goal and does not start another. A fourth position, Pipeline, is not shown yet.
+- **Bottom:** one main button, depending on the state. In Talk and Auto the start button is hidden; Stop, Approve and Resume stay:
   - **Let the crew do it** starts [project autonomy](PROJECT-AUTONOMY.md);
   - **Approve and start** launches proposed work;
   - **Stop work** or **Stop the crew** ends the work and keeps it saved;
@@ -58,6 +63,10 @@ Short commands are handled by Planwharf itself, without calling a model:
 | `bench <model>`, `metti <model> in panchina` | Asks you to confirm, then removes all of the model's roles. |
 | `stop`, `fermati`, `fermati adesso` | Stops the work now; it stays saved. |
 | `stop in 10 minutes`, `fermati tra 10 minuti` | Stops the work at that time. A countdown with **Cancel** shows by the main button. It runs while the Planwharf window is open. |
+| `mode talk`, `modalità chat` | Selects Talk. |
+| `mode plan` | Selects Plan. |
+| `mode auto` | Selects Auto for this session. |
+| `mode manual` | Selects Plan, and approvals stay manual until you start the crew. |
 
 Anything else goes to the lead.
 
@@ -67,7 +76,7 @@ The first screen lists what is missing, each with a button that opens the right 
 
 1. choose the lead (Team);
 2. create a project with a name and a folder;
-3. tell the lead what to build, then press **Use as the goal**;
+3. leave the switch on **Plan**, tell the lead what to build, then press **Use as the goal**;
 4. give at least one model the Build role (Team).
 
 Then press **Let the crew do it**.
