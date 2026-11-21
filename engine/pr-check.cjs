@@ -1,9 +1,13 @@
 'use strict';
 const { spawn } = require('child_process');
+const { gitEnvironment } = require('./project-workspace.cjs');
 
 function run(folder, cmd, args) {
   return new Promise(resolve => {
-    const child = spawn(cmd, args, { cwd: folder, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    // A worker blocks every push. Repairing a pull request is an intentional push, so Git and gh
+    // start from a clean Git environment, the same way the commit button does.
+    const env = cmd === 'git' || cmd === 'gh' ? gitEnvironment() : process.env;
+    const child = spawn(cmd, args, { cwd: folder, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env });
     let stdout = '', stderr = '';
     child.stdout.on('data', chunk => { stdout += chunk; });
     child.stderr.on('data', chunk => { stderr += chunk; });

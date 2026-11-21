@@ -6,12 +6,27 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const pr = require('./pr-check.cjs');
+const { gitEnvironment } = require('./project-workspace.cjs');
 
+// The worker that runs the suite blocks every push. These fixtures use a clean Git environment.
 const git = (cwd, ...args) => {
-  const out = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } });
+  const out = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...gitEnvironment(), GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } });
   if (out.status !== 0) throw new Error(args.join(' ') + ': ' + out.stderr);
   return out.stdout.trim();
 };
+
+function withPushGuard(fn) {
+  const saved = {};
+  for (const key of Object.keys(process.env)) if (key === 'GIT_CONFIG_COUNT' || /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(key)) saved[key] = process.env[key];
+  process.env.GIT_CONFIG_COUNT = '1';
+  process.env.GIT_CONFIG_KEY_0 = 'url.planwharf-push-blocked://.pushInsteadOf';
+  process.env.GIT_CONFIG_VALUE_0 = '';
+  const restore = () => {
+    for (const key of Object.keys(process.env)) if (key === 'GIT_CONFIG_COUNT' || /^GIT_CONFIG_(KEY|VALUE)_\d+$/.test(key)) delete process.env[key];
+    for (const [key, value] of Object.entries(saved)) process.env[key] = value;
+  };
+  return Promise.resolve().then(fn).finally(restore);
+}
 
 function setup() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-pr-fix-'));
@@ -59,4 +74,19 @@ test('conflict markers left in a file stop the push', async () => {
   assert.strictEqual(done.ok, false); assert.match(done.reason, /Conflict markers/);
   assert.strictEqual(git(remote, 'rev-parse', 'feat/x'), tip);
   await pr.removeWorktree(folder, worktree);
+});
+
+test('a fix is pushed while the worker push guard is set', async () => {
+  await withPushGuard(async () => {
+    const { remote, folder, worktree } = setup();
+    const fix = await pr.prepareWorktree(folder, { branch: 'feat/x', base: 'main' }, worktree);
+    assert.ok(fix.ok, fix.reason);
+    fs.writeFileSync(path.join(worktree, 'notes.md'), 'one\nfrom main\nfrom the branch\n');
+    git(worktree, 'add', 'notes.md');
+    const done = await pr.finishFix(folder, worktree, fix, 1);
+    assert.ok(done.ok, done.reason);
+    assert.strictEqual(git(remote, 'show', 'feat/x:notes.md'), 'one\nfrom main\nfrom the branch');
+    await pr.removeWorktree(folder, worktree);
+    assert.ok(!fs.existsSync(worktree));
+  });
 });
