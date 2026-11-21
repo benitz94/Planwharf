@@ -25,8 +25,8 @@ and Planwharf itself does the porting jobs, with every pull request reviewed bef
 | **0. Foundations** | .NET 10, the `Planwharf.Engine` and `Planwharf.Engine.Tests` projects, the porting rules, the README saying the native app is recommended, that it still includes the Node.js engine, and that the web app and Electron are being retired. | Done (#61; README updated with this plan) |
 | **1. Test bench** | 1a: fake AI programs (claude, codex, grok, agy) that replay recorded answers, for the later phases. 1b: **module-by-module comparison** (below), run in CI on the three systems. | Done: 1a (#86), 1b (#81); 247 comparison cases now |
 | **2. Modules with no dependencies** | `plan.js`, `notebook-file`, `atomic-rename`, `project-history`, `model-policy`, `model-roles`, `provider-refusal`, `provider-diagnostics`, `provider-accounts`, `structured-final`, `activity-events`, `activity-evidence`, `invocations`, `briefing`, `autonomy`, `sentinel`, `quota`, `models`, `project-checks`, `project-workspace`, `skills`, `browser-settings`. | Done: jobs 01, 02, 04, 24 (#64, #74, #90, #158) |
-| **3. First level** | `attempts`, `claims`, `project-export`, `execution-next`, `worker-result` (done in job 01), `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`. | To do |
-| **4. Processes and providers** (the riskiest) | `runner` (start and stop the AI programs, read what they write, close process trees on Windows); `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`. Ends with a hand test on Windows with the real programs. | To do |
+| **3. First level** | `attempts`, `claims`, `project-export`, `execution-next`, `worker-result` (done in job 01), `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`; added after the plan was drawn: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation`. | To do |
+| **4. Processes and providers** (the riskiest) | `runner` (start and stop the AI programs, read what they write, close process trees on Windows); `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; added after the plan was drawn: `worktrees` (parallel parts in their own git worktree), `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`. Ends with a hand test on Windows with the real programs. | To do |
 | **5. Execution** | `execution.cjs`, `project-home`; at the same time, the design of how to split the orchestrator. | To do |
 | **6. Orchestrator** | The 3,750-line file, split by that design, then put together. | To do |
 | **7. The native app runs the C# engine** | The window calls the engine directly instead of `server.cjs`. First as an **option** for at least one release, then the **default**; Node leaves the zip. | To do |
@@ -34,6 +34,10 @@ and Planwharf itself does the porting jobs, with every pull request reviewed bef
 
 Removed from the earlier plan: the C# HTTP server (old phase 7) and moving the web app and Electron
 onto the C# engine (old phase 9).
+
+Not ported: `app-windows`, `apply-update` and `package-release` serve the web app, Electron and the
+release scripts; `app-updates` is checked in phase 8 (the native app has its own updater). A new engine
+module gets its phase in this table in the same pull request that adds it.
 
 ## Module-by-module comparison (phase 1b)
 

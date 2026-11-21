@@ -30,7 +30,7 @@ reviewed before it is merged.
 | So far | |
 |---|---|
 | Jobs done by Planwharf on itself | **25**, from the first C# modules to the rest of phase 2 of the port |
-| C# engine | **23 of 55 modules** ported, 547 tests, 247 cases compared with the JavaScript result by result |
+| C# engine | **23 of 71 modules** ported, 578 tests, 247 cases compared with the JavaScript result by result |
 | Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |
 
@@ -77,7 +77,7 @@ Done ✅
 
 ## Download
 
-**Use the native app.** It is the version that is developed from now on. The desktop app (Electron) and the web app are **deprecated**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
+**Use the native app.** It is the version that is developed from now on, and it **updates itself**: **Settings → Updates → Update now**, no new download. The desktop app (Electron) and the web app are **deprecated**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
 
 | Kind | Windows | Linux | macOS | Needs Node.js | Status |
 |---|---|---|---|---|---|
