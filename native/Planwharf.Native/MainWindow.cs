@@ -22,6 +22,7 @@ public sealed partial class MainWindow : Window
     readonly StackPanel thread = new() { Spacing = 14, Margin = new Thickness(20, 20), MaxWidth = 780 };
     readonly ScrollViewer threadScroll;
     readonly Button actionButton = Look.Button(Strings.T("Let the crew do it"), "rocket", Look.Kind.Primary);
+    readonly ChatModeBar chatModes = new() { IsVisible = false };
     // Next to Resume: close the stopped work to start something new.
     readonly Button dropButton = Look.Button(Strings.T("Drop this work"), "trash");
     readonly TextBlock hint = new() { Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
@@ -125,10 +126,13 @@ public sealed partial class MainWindow : Window
         input.CornerRadius = new CornerRadius(14);
         var composer = new DockPanel { Children = { send, input } };
         DockPanel.SetDock(send, Dock.Right);
-        var footer = new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(20, 8, 20, 14), Child = new StackPanel { MaxWidth = 780, Children = { timedRow, actions, composer,
-            new TextBlock { FontSize = 12, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0), Inlines = new Avalonia.Controls.Documents.InlineCollection {
-                new Avalonia.Controls.Documents.Run(Strings.T("Talk with the lead to shape the plan, then press ")), new Avalonia.Controls.Documents.Run(Strings.T("Let the crew do it")) { FontWeight = FontWeight.Bold, Foreground = Palette.Text },
-                new Avalonia.Controls.Documents.Run(Strings.T(". The crew builds, checks and stops when the goal is reached.")) } } } } };
+        var footer = new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(20, 8, 20, 14), Child = new StackPanel { MaxWidth = 780, Children = { chatModes, timedRow, actions, composer } } };
+        chatModes.Bind(async mode =>
+        {
+            if (api == null || projectId == null) return;
+            var id = projectId;
+            await DoAsync(() => api.SetChatModeAsync(id, mode), Strings.T("Saved."));
+        });
         var middle = new DockPanel { Children = { header, footer, threadScroll } };
         DockPanel.SetDock(header, Dock.Top); DockPanel.SetDock(footer, Dock.Bottom);
         var close = Look.Button("", "close", Look.Kind.Quiet);
@@ -273,6 +277,7 @@ public sealed partial class MainWindow : Window
         if (view == null)
         {
             title.Text = Strings.T("Welcome"); badgeText.Text = "";
+            chatModes.IsVisible = false;
             hint.Text = Strings.T("Create a project to begin: \u002B New project."); hint.Foreground = Palette.Muted; actionButton.IsEnabled = false;
             RenderWelcome();
             RenderSide(null);

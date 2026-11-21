@@ -2,7 +2,7 @@
 
 Project autonomy lets the orchestrator carry one project forward without waiting for you. You can still step in at any time.
 
-It is off by default. To use it, press **Let the crew do it** at the bottom of the chat; Planwharf also switches approvals to automatic. **Stop the crew** turns it off. The setting lasts for the current Planwharf session: after a restart, turn it on again.
+It is off by default. To use it, press **Let the crew do it** at the bottom of the chat, or set the chat switch to **Auto**. Either way Planwharf switches approvals to automatic. **Stop the crew** turns it off at once and puts the switch back on **Plan**. Moving the switch from Auto to Talk or Plan leaves the current goal running and does not start a later one. The setting lasts for the current Planwharf session: after a restart the project comes back as **Plan**, and you turn autonomy on again.
 
 ## What happens
 

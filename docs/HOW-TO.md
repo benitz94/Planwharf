@@ -30,17 +30,18 @@ Press **+ New project** and fill in only:
 
 Then tell the lead in the chat what to build, in plain words, with how to check it. For example: *"A local HTML page with a counter, an increment button and a reset button. No dependencies. Test both buttons."*
 
-A chat message never starts work by itself. Under your last message, press **Use as the goal**: the message becomes the project goal.
+Above the chat, the switch starts on **Plan**. In Talk and Plan a chat message never starts work by itself. In Plan, under your last message, press **Use as the goal**: the message becomes the project goal. Talk offers neither that nor **Let the crew do it**.
 
 For your first try, use a new folder rather than an important repository.
 
 ## 5. Start
 
-Two ways:
+On **Plan**, two ways:
 
 - **Let the crew do it:** the crew plans, builds, verifies and stops when the goal is reached or a limit is hit.
+- **Auto** on the switch: the crew starts that goal itself and goes on for this session. After a restart the project is Plan again.
 
-If you prefer to approve each piece of work yourself, describe the work in the chat. When the lead proposes it, press **Approve and start**.
+If you prefer to approve each piece of work yourself, stay on Plan (or say `mode manual`) and describe the work in the chat. When the lead proposes it, press **Approve and start**. Moving the switch does not stop work already running; **Stop the crew** does.
 
 ## 6. Watch the work
 

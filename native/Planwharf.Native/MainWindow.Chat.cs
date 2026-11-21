@@ -112,6 +112,9 @@ public sealed partial class MainWindow
         // Right after start Planwharf shows saved data while it checks the AI tools again.
         var checking = view.Action == CrewAction.LetTheCrewDoIt && Flag(snapshot?["modelsChecking"]);
         var stopping = view.Action is CrewAction.StopTheCrew or CrewAction.StopWork;
+        chatModes.IsVisible = true;
+        chatModes.Show(view.ChatMode);
+        actionButton.IsVisible = view.Action != CrewAction.None;
         actionButton.Content = Look.Label(view.ActionText, stopping ? "stop" : view.Action switch { CrewAction.Approve => "check", CrewAction.Resume => "play", _ => "rocket" });
         Look.Paint(actionButton, stopping ? Look.Kind.Danger : Look.Kind.Primary);
         actionButton.IsEnabled = !busy && missing.Count == 0 && !checking;
@@ -246,7 +249,7 @@ public sealed partial class MainWindow
         var row = RowOf(view.Id);
         var goalReady = TeamViews.GoalReady(row, view.NextGoal, AskAt(view.Id), view.Work?.StartedAt);
         var sig = string.Join("|", items.Select(item => item is AskItem ask ? ask.At.ToUnixTimeMilliseconds() + ":" + ask.Answer.Length + ask.Elapsed : item.At.ToUnixTimeMilliseconds() + ((EventItem)item).Text))
-            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
+            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + view.ChatMode + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
             + string.Join(",", TeamViews.Missing(snapshot!, view.Id, goalReady))
             + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
             + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
@@ -479,7 +482,7 @@ public sealed partial class MainWindow
         var missing = TeamViews.Missing(snapshot!, view.Id, goalReady);
         var panel = new StackPanel { Spacing = 8, Children = {
             Look.Head("folder", Palette.Accent, Palette.AccentSoft, view.Name, 17),
-            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : Strings.T("Write below what you want built. When the lead suggests a goal, press Let the crew do it."), Palette.Text, 14),
+            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : view.ChatMode == "talk" ? Strings.T("Write below. This is a conversation with the lead. Nothing starts.") : view.ChatMode == "auto" ? Strings.T("Write below. The crew starts the goal and goes on, for this session.") : Strings.T("Write below what you want built. When the lead suggests a goal, press Let the crew do it."), Palette.Text, 14),
             Explain(Strings.T("Folder: ") + (Str(row?["folder"]) is { Length: > 0 } folder ? folder : Strings.T("not set"))) } };
         if (missing.Count > 0)
         {
@@ -496,7 +499,7 @@ public sealed partial class MainWindow
             }
             panel.Children.Add(fixes);
         }
-        else panel.Children.Add(Line(Strings.T("Everything is ready. Press Let the crew do it below, or tell the lead more first."), Palette.Muted, 13));
+        else panel.Children.Add(Line(view.ChatMode == "talk" ? Strings.T("A conversation with the lead. Nothing starts.") : view.ChatMode == "auto" ? Strings.T("The crew starts the goal and goes on, for this session.") : Strings.T("Everything is ready. Press Let the crew do it below, or tell the lead more first."), Palette.Muted, 13));
         return Look.Card(panel);
     }
 }

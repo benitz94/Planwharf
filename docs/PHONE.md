@@ -116,6 +116,6 @@ At the bottom of the chat the bot keeps three buttons: **📊 Status**, **⏹ St
 
 | Command | What it does |
 |---|---|
-| `/status` | The state of each project: who is working, the step, the time left |
+| `/status` | The state of each project: who is working, the step, the time left, and the mode (Talk, Plan or Auto; in Italian Chat, Piano or Auto) |
 | `/stop <project>` | Stops the crew, after you answer "yes" |
 | `/resume <project>` | Resumes the work from its checkpoint |

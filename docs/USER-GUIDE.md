@@ -44,9 +44,19 @@ Each model card shows its quota left (5-hour and weekly windows), its **weight**
 
 ## Working with the lead
 
-Write in the chat what you want; ordinary conversation never starts work by itself. Under each of your messages, **Copy** copies it and **Use again** puts it back in the box. Short orders such as `usage`, `files`, `settings`, `bench <model>`, `stop` are handled by Planwharf without calling a model ([the chat view](CHAT-VIEW.md#commands-in-the-chat)).
+Above the chat, a switch chooses how this project talks to the lead. **Plan** is the default. Talk and Plan are saved for the project. Auto lasts this session: after a restart the project comes back as Plan.
 
-When the lead suggests a goal, **Let the crew do it** starts it. The crew then works on its own ([project autonomy](PROJECT-AUTONOMY.md)): the lead splits the work, approves its own steps within limits, and stops when the goal is reached or a limit is hit. **Stop the crew** stops it at any time.
+- **Talk.** A conversation, to think an idea through. The lead does not suggest a goal for the crew, and the chat offers neither **Use as the goal** nor **Let the crew do it**. Nothing starts.
+- **Plan.** Today's behaviour. The lead shapes a goal, and you press **Let the crew do it**.
+- **Auto.** The crew starts that goal and goes on within the project's [autonomy](PROJECT-AUTONOMY.md) limits, for this session only.
+
+Moving the switch leaves running work going. Moving from Auto to Talk or Plan ends Auto after the current goal, so no later goal starts on its own. **Stop the crew** is what stops the work at once.
+
+The same positions can be typed: `mode talk` or `modalità chat`, `mode plan`, `mode auto`, and `mode manual` (Plan, and you approve each start). The lead's answer names the same position as the switch.
+
+Write in the chat what you want. In Talk and Plan, ordinary conversation never starts work by itself. Under each of your messages, **Copy** copies it and **Use again** puts it back in the box. Short orders such as `usage`, `files`, `settings`, `bench <model>`, `stop` are handled by Planwharf without calling a model ([the chat view](CHAT-VIEW.md#commands-in-the-chat)).
+
+In Plan, when the lead suggests a goal, **Let the crew do it** starts it. The crew then works on its own: the lead splits the work, approves its own steps within limits, and stops when the goal is reached or a limit is hit. **Stop the crew** stops it at any time.
 
 ## What happens after "Let the crew do it"
 

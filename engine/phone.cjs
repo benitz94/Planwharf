@@ -542,7 +542,9 @@ function formatStatusMessage(projects = [], language) {
         : ` · ~${escapeHtml(p.timeLeft.minutes)}m left`;
     }
     const bar = formatProgressBar(p.step);
-    let item = `<b>${name}</b>\n${icon} <b>${statusWord}:</b> ${escapeHtml(stateLabel(lang, state))}${details}`;
+    const modeWord = lang === 'it' ? 'Modalità' : 'Mode';
+    const modeName = { talk: lang === 'it' ? 'Chat' : 'Talk', plan: lang === 'it' ? 'Piano' : 'Plan', auto: 'Auto' }[p.chatMode] || (lang === 'it' ? 'Piano' : 'Plan');
+    let item = `<b>${name}</b>\n${icon} <b>${statusWord}:</b> ${escapeHtml(stateLabel(lang, state))}${details}\n<b>${modeWord}:</b> ${escapeHtml(modeName)}`;
     if (bar) item += `\n${bar}`;
     const caption = progressCaption(lang, p.step);
     if (caption) item += `\n${escapeHtml(caption)}`;
