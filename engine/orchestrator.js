@@ -1811,6 +1811,11 @@ function createOrchestrator(options) {
     for (const projectId of projects) { note(projectId, text); try { bridge.event(projectId, 'LEAD_SWITCHED', text); } catch { /* the note keeps it */ } }
     persist();
   }
+  // Leads above their quota limit first; one under its limit only when nobody else can lead.
+  function roomyLeads(list) {
+    const roomy = list.filter(model => !isLow(model));
+    return roomy.length ? roomy : list;
+  }
   function leadModel() {
     const list = roster();
     if (leadId()) {
@@ -3381,7 +3386,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             const credits = needsCredits(spoken);
             if (credits) { noteCredits(refusedLead.id, spoken.answer || spoken.error); persist(); }
             const company = refusedLead.providerId || refusedLead.provider;
-            const usable = roster().filter(model => !triedLeads.has(model.id) && leadUsable(model));
+            // The quota limits hold for the lead too: a model under its limit is taken only when no other can lead.
+            const usable = roomyLeads(roster().filter(model => !triedLeads.has(model.id) && leadUsable(model)));
             // Quota is shared by a company, so another company first; missing credits are the model's own.
             const pool = credits ? usable : (usable.filter(model => (model.providerId || model.provider) !== company).length ? usable.filter(model => (model.providerId || model.provider) !== company) : usable);
             const next = leadRanking(pool, plansLive)[0];
@@ -3399,7 +3405,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
             spoken = await askThis(lead);
             if (died(spoken) && askCurrent(token)) {
-              const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
+              const next = leadRanking(roomyLeads(roster().filter(model => model.id !== lead.id && leadUsable(model))), plansLive)[0];
               if (next) {
                 switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
                 invokedLead = next; refusedLead = next; triedLeads.add(next.id);
