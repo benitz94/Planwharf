@@ -105,4 +105,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A model under its limit kept working, and new steps could start on one, when no model was above its limit; the background fix of a pull request read the shared team instead of the project's | #187 |
 | The Auto chat mode started goals by itself and turned on automatic approval for the whole app; it was removed: Talk and Plan remain | #190 |
 | The phone named the shared team's lead instead of the project's, never said when the lead changed, and packed several items on one line | #192 |
-| Verify was chosen at the start and later ran on a model that had fallen under its limit; with no verifier above it, the work lost its Verify step | this pull request |
+| Verify was chosen at the start and later ran on a model that had fallen under its limit; with no verifier above it, the work lost its Verify step | #194 |
