@@ -2762,7 +2762,8 @@ function createOrchestrator(options) {
       else delete store.autonomy[projectId].endAfterCurrent;
     } else if (previous === 'auto') {
       // Plan and Talk approve nothing by themselves. A goal already running keeps going.
-      store.mode = 'manual';
+      const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
+      if (!anyAuto) store.mode = 'manual';
       const settings = store.autonomy[projectId];
       if (settings?.enabled && settings.sessionId === sessionId) {
         const row = snapshot(plan, projectId).projects.find(item => item.id === projectId);
@@ -2925,7 +2926,10 @@ function createOrchestrator(options) {
       if (!chatMode.workInFlight(row)) {
         settings.enabled = false;
         settings.endAfterCurrent = false;
-        if (chatModeOf(projectId) !== 'auto') store.mode = 'manual';
+        if (chatModeOf(projectId) !== 'auto') {
+          const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
+          if (!anyAuto) store.mode = 'manual';
+        }
         note(projectId, 'Auto ended after the current goal.');
         persist();
         return;

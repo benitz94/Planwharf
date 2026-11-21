@@ -30,7 +30,7 @@ function talkInstruction() {
 
 function suggestedGoal(answer) {
   const match = String(answer || '').match(SUGGESTED);
-  return match ? match[1].trim() : null;
+  return match && match[1].trim() ? match[1].trim() : null;
 }
 
 function withoutSuggestion(answer) {
@@ -58,7 +58,7 @@ function order(text) {
   if (/^(?:mode talk|mode chat|modalit[aà] chat)$/.test(command)) return pack('talk');
   if (/^(?:mode plan|modalit[aà] (?:plan|piano))$/.test(command)) return pack('plan');
   if (/^(?:mode pipeline|modalit[aà] pipeline)$/.test(command)) return { action: 'reject', mode: 'pipeline' };
-  const wantsMode = /\b(mode|modalit|switch to|set to|passa a)\b/i.test(command);
+  const wantsMode = /\b(mode|modalit[aà]|switch to|set to|passa a|passa ad)(?:\b|(?<=[à]))/i.test(command);
   if (!wantsMode) return null;
   if (/\bpipeline\b/i.test(command)) return { action: 'reject', mode: 'pipeline' };
   if (/\b(automatic|auto)\b/i.test(command) && !/\bauto start\b/i.test(command)) return pack('auto');

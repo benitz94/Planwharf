@@ -146,7 +146,7 @@ public static class ProjectViews
         var lastAsk = (snapshot["asks"] as JsonArray ?? []).OfType<JsonObject>().Where(ask => S(ask["projectId"]) == id)
             .OrderBy(ask => DateTimeOffset.TryParse(S(ask["at"]), out var at) ? at : DateTimeOffset.MinValue).LastOrDefault();
         var goal = S(row["goal"]).Trim();
-        var chatMode = S(row["chatMode"]).ToLowerInvariant();
+        var chatMode = S(row["chatMode"]).Trim().ToLowerInvariant();
         if (chatMode is not ("talk" or "auto")) chatMode = "plan";
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         // Talk offers neither goal. Auto starts it itself, so the chat does not offer the start buttons.

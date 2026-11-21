@@ -48,6 +48,55 @@ public class ChatModeTests
         Assert.Equal(CrewAction.LetTheCrewDoIt, view.Action);
     }
 
+    [Fact]
+    public void Running_work_in_Talk_mode_preserves_StopTheCrew_action()
+    {
+        var workingTalk = WithMode(SampleState.Working(), "weather", "talk");
+        var view = ProjectViews.Project(workingTalk, "weather")!;
+        Assert.Equal("talk", view.ChatMode);
+        Assert.Equal(CrewAction.StopTheCrew, view.Action);
+        Assert.Equal("Stop the crew", view.ActionText);
+        Assert.Null(view.NextGoal);
+    }
+
+    [Fact]
+    public void ProjectView_normalizes_casing_whitespace_and_invalid_modes()
+    {
+        var talkUpper = WithMode(SampleState.Finished(), "weather", "  TALK  ");
+        Assert.Equal("talk", ProjectViews.Project(talkUpper, "weather")!.ChatMode);
+
+        var autoSpaced = WithMode(SampleState.Finished(), "weather", " auto ");
+        Assert.Equal("auto", ProjectViews.Project(autoSpaced, "weather")!.ChatMode);
+
+        var unknown = WithMode(SampleState.Finished(), "weather", "random_mode");
+        Assert.Equal("plan", ProjectViews.Project(unknown, "weather")!.ChatMode);
+    }
+
+    [AvaloniaFact]
+    public void ChatModeBar_normalizes_casing_whitespace_and_invalid_values()
+    {
+        var bar = new ChatModeBar();
+        bar.Show("TALK");
+        Assert.Equal(ChatModeBar.Talk, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Talk));
+
+        bar.Show("  auto  ");
+        Assert.Equal(ChatModeBar.Auto, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Auto));
+
+        bar.Show(null);
+        Assert.Equal(ChatModeBar.Plan, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Plan));
+
+        bar.Show("pipeline");
+        Assert.Equal(ChatModeBar.Plan, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Plan));
+
+        bar.Show("random");
+        Assert.Equal(ChatModeBar.Plan, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Plan));
+    }
+
     [AvaloniaFact]
     public async Task Switch_shows_the_saved_mode_and_each_click_calls_the_engine_once()
     {

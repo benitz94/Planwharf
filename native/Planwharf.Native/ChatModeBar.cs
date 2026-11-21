@@ -49,7 +49,8 @@ public sealed class ChatModeBar : StackPanel
     // Shows the mode the engine saved. An unknown value, including Pipeline, stays on Plan.
     public void Show(string? saved)
     {
-        mode = saved is Talk or Auto ? saved : Plan;
+        var normalized = (saved ?? "").Trim().ToLowerInvariant();
+        mode = normalized is Talk or Auto ? normalized : Plan;
         applying = true;
         foreach (var (name, button) in buttons)
         {

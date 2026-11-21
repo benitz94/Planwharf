@@ -137,7 +137,17 @@ test('Talk drops a crew goal and both start controls; Plan keeps them', async ()
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-talk-'));
   const folder = path.join(dir, 'project');
   fs.mkdirSync(folder);
-  const plan = { schema: 2, projects: [{ project: { id: 'demo', name: 'Demo', folder }, revisions: [{ id: 1, direction: 'Ship it', open: [] }], tasks: [] }] };
+  const plan = {
+    schema: 2,
+    projects: [
+      {
+        schema: 1,
+        project: { id: 'demo', name: 'Demo', folder },
+        revisions: [{ id: 1, mode: 'manual', title: '', createdAt: new Date().toISOString(), direction: 'Ship it', state: '', closed: [], open: [] }],
+        tasks: []
+      }
+    ]
+  };
   const box = openOrchestra(dir, plan);
   try {
     await box.orchestra.setOrchestrator('lead');
@@ -199,7 +209,17 @@ test('chat orders stay on the same position as the switch', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-orders-'));
   const folder = path.join(dir, 'project');
   fs.mkdirSync(folder);
-  const plan = { schema: 2, projects: [{ project: { id: 'demo', name: 'Demo', folder }, revisions: [{ id: 1, direction: 'Ship it', open: [] }], tasks: [] }] };
+  const plan = {
+    schema: 2,
+    projects: [
+      {
+        schema: 1,
+        project: { id: 'demo', name: 'Demo', folder },
+        revisions: [{ id: 1, mode: 'manual', title: '', createdAt: new Date().toISOString(), direction: 'Ship it', state: '', closed: [], open: [] }],
+        tasks: []
+      }
+    ]
+  };
   const box = openOrchestra(dir, plan);
   try {
     const talk = await box.orchestra.ask('modalità chat', 'demo');
@@ -237,4 +257,169 @@ test('phone /status names the mode of each project', () => {
   assert.match(italian, /Alpha[\s\S]*<b>Modalità:<\/b> Chat/);
   assert.match(italian, /Beta[\s\S]*<b>Modalità:<\/b> Auto/);
   assert.match(italian, /Gamma[\s\S]*<b>Modalità:<\/b> Piano/);
+});
+
+test('multi-project Auto mode: switching one project to Plan leaves other project in Auto', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-multi-'));
+  const folderA = path.join(dir, 'a'), folderB = path.join(dir, 'b');
+  fs.mkdirSync(folderA); fs.mkdirSync(folderB);
+  const plan = {
+    schema: 2,
+    projects: [
+      { project: { id: 'alpha', name: 'Alpha', folder: folderA }, revisions: [{ id: 1, direction: 'Ship Alpha', open: [] }], tasks: [{ id: 'ta1', title: 'Build A', status: 'running', executionVersion: 2, revision_id: 1, source: 'chat' }] },
+      { project: { id: 'beta', name: 'Beta', folder: folderB }, revisions: [{ id: 2, direction: 'Ship Beta', open: [] }], tasks: [{ id: 'tb1', title: 'Build B', status: 'running', executionVersion: 2, revision_id: 2, source: 'chat' }] }
+    ]
+  };
+  const box = openOrchestra(dir, plan, { answer: () => '{"done":true}' });
+  try {
+    await box.orchestra.setChatMode('alpha', 'auto');
+    await box.orchestra.setChatMode('beta', 'auto');
+    let snap = await box.orchestra.snapshot();
+    assert.equal(snap.mode, 'auto');
+    assert.equal(snap.autonomy.alpha.enabled, true);
+    assert.equal(snap.autonomy.beta.enabled, true);
+
+    await box.orchestra.setChatMode('alpha', 'plan');
+    snap = await box.orchestra.snapshot();
+    assert.equal(snap.projects.find(p => p.id === 'alpha').chatMode, 'plan');
+    assert.equal(snap.projects.find(p => p.id === 'beta').chatMode, 'auto');
+    assert.equal(snap.mode, 'auto', 'global auto mode stays active because beta is in auto');
+    assert.equal(snap.autonomy.beta.enabled, true, 'beta autonomy remains enabled');
+
+    await box.orchestra.setChatMode('beta', 'plan');
+    snap = await box.orchestra.snapshot();
+    assert.equal(snap.projects.find(p => p.id === 'beta').chatMode, 'plan');
+    assert.equal(snap.mode, 'manual', 'global mode becomes manual when all projects leave auto');
+  } finally {
+    await box.orchestra.shutdown();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('order parser handles punctuation, Italian variants and non-order phrases', () => {
+  assert.deepEqual(chat.order('mode talk!'), { action: 'mode', mode: 'talk', chatMode: 'talk' });
+  assert.deepEqual(chat.order('mode plan?'), { action: 'mode', mode: 'plan', chatMode: 'plan' });
+  assert.deepEqual(chat.order('mode auto...'), { action: 'mode', mode: 'auto', chatMode: 'auto' });
+  assert.deepEqual(chat.order('modalità chat.'), { action: 'mode', mode: 'talk', chatMode: 'talk' });
+
+  assert.deepEqual(chat.order('modalità piano'), { action: 'mode', mode: 'plan', chatMode: 'plan' });
+  assert.deepEqual(chat.order('modalita piano'), { action: 'mode', mode: 'plan', chatMode: 'plan' });
+  assert.deepEqual(chat.order('passa a chat'), { action: 'mode', mode: 'talk', chatMode: 'talk' });
+  assert.deepEqual(chat.order('passa a piano'), { action: 'mode', mode: 'plan', chatMode: 'plan' });
+  assert.deepEqual(chat.order('passa ad auto'), { action: 'mode', mode: 'auto', chatMode: 'auto' });
+  assert.deepEqual(chat.order('modalità manuale'), { action: 'mode', mode: 'manual', chatMode: 'plan' });
+  assert.deepEqual(chat.order('modalita manuale'), { action: 'mode', mode: 'manual', chatMode: 'plan' });
+  assert.deepEqual(chat.order('passa a manuale'), { action: 'mode', mode: 'manual', chatMode: 'plan' });
+
+  assert.equal(chat.order('modalità pipeline').action, 'reject');
+  assert.equal(chat.order('modalita pipeline').action, 'reject');
+  assert.equal(chat.order('passa a pipeline').action, 'reject');
+
+  assert.equal(chat.order(''), null);
+  assert.equal(chat.order('   '), null);
+  assert.equal(chat.order(null), null);
+  assert.equal(chat.order(undefined), null);
+
+  assert.equal(chat.suggestedGoal('Suggested next goal:   \n'), null);
+  assert.equal(chat.suggestedGoal(null), null);
+
+  assert.equal(chat.order('How should we plan the database?'), null);
+  assert.equal(chat.order('Can you talk about the architecture?'), null);
+});
+
+test('state file recovers from corrupt or reserved chatModes on startup', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-corrupt-'));
+  const folder = path.join(dir, 'project');
+  fs.mkdirSync(folder);
+  const plan = {
+    schema: 2,
+    projects: [
+      {
+        schema: 1,
+        project: { id: 'demo', name: 'Demo', folder },
+        revisions: [{ id: 1, mode: 'manual', title: '', createdAt: new Date().toISOString(), direction: 'Ship it', state: '', closed: [], open: [] }],
+        tasks: []
+      }
+    ]
+  };
+  const statePath = path.join(dir, 'state.json');
+  fs.writeFileSync(statePath, JSON.stringify({
+    chatModes: { demo: 'pipeline', other: 'invalid', num: 42 },
+    autonomy: {}
+  }));
+  const box = openOrchestra(dir, plan);
+  try {
+    const snap = await box.orchestra.tick();
+    assert.equal(snap.projects.find(p => p.id === 'demo').chatMode, 'plan', 'pipeline recovers to plan');
+    const setRes = await box.orchestra.setChatMode('demo', 'pipeline');
+    assert.equal(setRes.ok, false);
+  } finally {
+    await box.orchestra.shutdown();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('server /api/orchestrator/chat-mode endpoint validates inputs and changes mode', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-server-mode-'));
+  const folder = path.join(dir, 'project');
+  fs.mkdirSync(folder);
+  const planPath = path.join(dir, 'plan.json');
+  const plan = {
+    schema: 2,
+    projects: [
+      {
+        schema: 1,
+        project: { id: 'demo', name: 'Demo', folder },
+        revisions: [{ id: 1, mode: 'manual', title: '', createdAt: new Date().toISOString(), direction: 'Ship it', state: '', closed: [], open: [] }],
+        tasks: []
+      }
+    ]
+  };
+  fs.writeFileSync(planPath, JSON.stringify(plan));
+  const { createServer } = require('../server.cjs');
+  const server = createServer({ dir, planFile: planPath, phase2: true });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+  try {
+    const nonJson = await fetch(`${baseUrl}/api/orchestrator/chat-mode`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: 'hello'
+    });
+    assert.equal(nonJson.status, 415);
+
+    const extra = await fetch(`${baseUrl}/api/orchestrator/chat-mode`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ projectId: 'demo', mode: 'talk', extra: true })
+    });
+    assert.equal(extra.status, 400);
+
+    const badMode = await fetch(`${baseUrl}/api/orchestrator/chat-mode`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ projectId: 'demo', mode: 'pipeline' })
+    });
+    assert.equal(badMode.status, 400);
+
+    const badProj = await fetch(`${baseUrl}/api/orchestrator/chat-mode`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ projectId: 'nonexistent', mode: 'talk' })
+    });
+    assert.equal(badProj.status, 400);
+
+    const good = await fetch(`${baseUrl}/api/orchestrator/chat-mode`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ projectId: 'demo', mode: 'talk' })
+    });
+    assert.equal(good.status, 200);
+    const snap = await good.json();
+    assert.equal(snap.projects.find(p => p.id === 'demo').chatMode, 'talk');
+  } finally {
+    server.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
