@@ -1096,6 +1096,15 @@ function refusalSentence(refused, today = new Date()) {
 }
 // A step's summary as the chat shows it: at most 600 characters, but the lines that ask the owner to
 // decide ("Needs your decision: …") are always kept whole, even past the cut.
+// A decision belongs to the work that raised it: it is asked under that work only, and never under a
+// later proposal, or after its work was dropped.
+function openDecisionsOf(projectId, row, execution) {
+  const megaTaskId = row?.megaTaskId;
+  if (!megaTaskId) return [];
+  const mega = (execution.megaTasks || []).find(item => item.id === megaTaskId);
+  if (mega?.status === 'CANCELLED') return [];
+  return (execution.decisions || []).filter(decision => decision.projectId === projectId && decision.megaTaskId === megaTaskId && !decision.answer);
+}
 function clipSummary(value) {
   const full = String(value || '');
   if (full.length <= 600) return full;
@@ -2227,7 +2236,7 @@ function createOrchestrator(options) {
           modelId: row.modelId,
           workerLabel: row.workerLabel || null,
           waitingFor: row.waitingFor || '',
-          openDecisions: (store.execution.decisions || []).filter(decision => decision.projectId === item.project.id && !decision.answer),
+          openDecisions: openDecisionsOf(item.project.id, row, store.execution),
           next: homeNext(item, row, store.execution),
           step: stepOf(row),
           pipeline: pipelineOf(row),
@@ -3354,26 +3363,28 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // A provider that closes the turn as failed is the same miss as a dead CLI: retry once, then hand over.
           const died = spoken => spoken?.failure === 'process' || (spoken?.failure === 'provider' && spoken?.diagnostic?.code === 'PROVIDER_EXECUTION_FAILED');
           const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
-          // A model the plan no longer includes ("requires usage credits"): left out from now on, and the
-          // best other lead answers, of this company or another.
-          if (spoken?.failure && CREDITS_NEEDED.test(String(spoken.answer || spoken.error || '')) && askCurrent(token)) {
-            noteCredits(lead.id, spoken.answer || spoken.error); persist();
-            const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
-            if (next) {
-              switchLead(lead, next, (lead.label || lead.id) + ' needs usage credits.');
-              invokedLead = next;
-              spoken = await askThis(next);
-            }
-          } else
-          // A quota error will not clear by asking again: hand over at once, to another company.
-          if (outOfQuota(spoken) && askCurrent(token)) {
-            const company = lead.providerId || lead.provider;
-            const next = leadRanking(roster().filter(model => model.id !== lead.id && (model.providerId || model.provider) !== company && leadUsable(model)), plansLive)[0];
-            if (next) {
-              switchLead(lead, next, (lead.label || lead.id) + ' is out of quota.');
-              invokedLead = next;
-              spoken = await askThis(next);
-            }
+          // A lead out of quota, or outside the plan ("requires usage credits"), hands over at once; the
+          // next lead may be refused too, so the hand-over goes on down the list, each lead tried once.
+          const needsCredits = spoken => Boolean(spoken?.failure) && CREDITS_NEEDED.test(String(spoken.answer || spoken.error || ''));
+          let refusedLead = lead;
+          const triedLeads = new Set([lead.id]);
+          let handedOver = false;
+          while ((needsCredits(spoken) || outOfQuota(spoken)) && askCurrent(token) && triedLeads.size <= 5) {
+            const credits = needsCredits(spoken);
+            if (credits) { noteCredits(refusedLead.id, spoken.answer || spoken.error); persist(); }
+            const company = refusedLead.providerId || refusedLead.provider;
+            const usable = roster().filter(model => !triedLeads.has(model.id) && leadUsable(model));
+            // Quota is shared by a company, so another company first; missing credits are the model's own.
+            const pool = credits ? usable : (usable.filter(model => (model.providerId || model.provider) !== company).length ? usable.filter(model => (model.providerId || model.provider) !== company) : usable);
+            const next = leadRanking(pool, plansLive)[0];
+            if (!next) break;
+            switchLead(refusedLead, next, (refusedLead.label || refusedLead.id) + (credits ? ' needs usage credits.' : ' is out of quota.'));
+            triedLeads.add(next.id);
+            invokedLead = next; refusedLead = next; handedOver = true;
+            spoken = await askThis(next);
+          }
+          if (handedOver) {
+            // The hand-over answered (or ran out of leads): nothing else to retry here.
           } else if (died(spoken) && askCurrent(token)) {
             note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
             spoken = await askThis(lead);
@@ -4095,4 +4106,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { clearCreditsNeeded, answerDecision, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { clipSummary, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

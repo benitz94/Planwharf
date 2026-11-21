@@ -54,7 +54,7 @@ When the lead suggests a goal, **Let the crew do it** starts it. The crew then w
 2. **Split.** The lead divides the work into parts that can run at the same time, each with its own files and weight. Parallel parts each work in their own copy of the folder (a git worktree), and are joined at the end.
 3. **Build, then Verify.** Each part is built; then another model checks the whole work and fixes what fails. A step is done only when the worker leaves a valid result and exits cleanly.
 4. **Quota watch.** A model that falls under its limit hands its step to another model with a handoff (files changed, tests, summary). A step that ends with no result is tried once more, then moves to the next model. A lead that runs out of quota hands over to the next lead at once.
-5. **Decisions.** What only you can decide is shown highlighted as **Needs your decision**, with a suggestion and buttons to answer.
+5. **Decisions.** What only you can decide is shown highlighted as **Needs your decision**, with a suggestion and buttons to answer A decision is asked only under the work that raised it: a dropped work, or a new proposal, does not carry it.
 6. **Finished.** The **Work finished** card shows the summary, the time, what each model used, and the git state.
 
 The **Crew at work** card shows the steps, their models and state, what the running model is doing, and **about how long is left** (from how long past steps took). **Progress**, **Usage** and **Files** are in the panel on the right.
@@ -66,7 +66,7 @@ The crew commits on the work's branch and never pushes: every worker runs with a
 ## Alerts
 
 - **On the computer:** when a work ends, fails or needs you: a notification, the taskbar flashing and a short sound, each switchable in **Settings → Look**.
-- **On the phone:** **Settings → Phone**: ntfy (a private topic name, no account), or a Telegram bot you create with BotFather and pair with the code shown there. The bot reports stops, resumes, verification and model switches, and answers `/status`, `/stop <project>` (after "yes") and `/resume <project>`. Messages carry only the project name, the goal, the state and times: never code, file names or paths.
+- **On the phone:** **Settings → Phone**: ntfy (a private topic name, no account), or a Telegram bot you create with BotFather and pair with the code shown there. The bot reports stops, resumes, verification and model switches, and answers `/status`, `/stop <project>` (after "yes") and `/resume <project>`. Messages carry only the project name, the goal, the state and times: never code, file names or paths. Examples of the messages: [Planwharf on your phone](PHONE.md).
 
 ## Stop and resume
 

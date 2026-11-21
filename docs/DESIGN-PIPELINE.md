@@ -21,6 +21,29 @@ queue → intake (questions) → spec + acceptance tests → route → worktree
 Both use the same engine, the same team, the same quota rules and the same safety: a new branch from
 the latest `main`, workers that never push, nothing published to `main` by Planwharf.
 
+## Switching between the two
+
+A project moves from one way of working to the other at any time, with one click, and nothing is lost.
+
+1. **One switch.** The switch above the chat (job 27: Talk, Plan, Auto) gets a fourth position,
+   **Pipeline**. The choice is saved per project. In Pipeline the chat stays open: you talk with the
+   lead, answer the intake questions, and a goal you agree on goes into the queue instead of starting
+   a chat work.
+2. **Switching never stops work.** A chat work that is running finishes as a chat work (Stop and Resume
+   work as usual); pipeline jobs already started go on to their pull request. Only new work follows the
+   new mode.
+3. **Leaving Pipeline pauses the queue, it does not empty it.** New requests wait; coming back picks
+   them up where they were.
+4. **A goal moves across in one click.** On a chat goal, **Send to the pipeline** makes a queue item
+   with its text and the chat that shaped it (as quoted data); it still goes through intake and the
+   spec. On a pipeline job, **Take it to the chat** stops it at its stage and opens its request and spec
+   as the chat goal; its files stay.
+5. **Both can run at once, safely.** A chat work runs in the project folder on its own branch; pipeline
+   jobs run in their worktrees; each starts from the latest `main`, and the engine never gives the same
+   branch to both. The quota is one: both count against the same limits.
+6. **Same state on disk.** The mode, the queue, every job and the chat work are files, so a restart in
+   either mode picks up where it was.
+
 ## The pipeline, stage by stage
 
 1. **Queue.** Two sources, each one an option in Settings: GitHub issues with the label `planwharf`

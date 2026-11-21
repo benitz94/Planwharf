@@ -1140,6 +1140,8 @@ public sealed class AcceptanceGateTests : IDisposable
             scriptFile = Path.Combine(root, "shell script é.sh");
             File.WriteAllText(scriptFile, "#!/bin/sh\necho \"shell:$1 $2\"\n", Utf8);
             arguments = ["hello world", "テスト"];
+            // A script written by the test is not executable on Linux and macOS until it is marked so.
+            File.SetUnixFileMode(scriptFile, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
         var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var name in new[] { "PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP" })

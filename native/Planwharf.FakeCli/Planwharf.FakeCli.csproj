@@ -11,4 +11,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Planwharf.Engine\Planwharf.Engine.csproj" />
+  </ItemGroup>
 </Project>

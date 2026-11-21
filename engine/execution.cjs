@@ -216,12 +216,12 @@ function createExecutionBridge(options) {
     sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
-    // A decision the worker could not make is kept, so it can be asked before the next plan is approved.
+    // A decision the worker could not make is kept with its work, so the owner is asked under that work.
     for (const line of String(result.summary || '').split(/\r?\n/)) {
       const at = line.toLowerCase().indexOf('needs your decision:');
       if (at < 0) continue;
       const raw = line.slice(at + 'needs your decision:'.length).trim();
-      if (!raw || data.decisions.some(item => item.projectId === mega.projectId && item.text === raw.split('|')[0].trim())) continue;
+      if (!raw || data.decisions.some(item => item.projectId === mega.projectId && item.megaTaskId === mega.id && item.text === raw.split('|')[0].trim())) continue;
       const parts = raw.split('|').map(part => part.trim());
       const text = parts[0];
       const suggestion = (parts.find(part => part.toLowerCase().startsWith('suggestion:')) || '').slice('suggestion:'.length).trim();
@@ -707,8 +707,7 @@ function createExecutionBridge(options) {
     });
     data.subTasks = data.subTasks.filter(sub => sub.megaTaskId !== mega.id).concat(subs);
     mega.blockers = proposalBlockers(mega);
-    const built = subs.filter(sub => sub.scope);
-    event(projectId, 'MEGATASK_PROPOSED', `Lead split the work into ${built.length} part${built.length === 1 ? '' : 's'}${subs.length > built.length ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${models().find(item => item.id === sub.assignedModelId)?.label || sub.assignedModelId})`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId: mega.id });
+    event(projectId, 'MEGATASK_PROPOSED', splitSummary(subs, id => models().find(item => item.id === id)?.label || id, why), { megaTaskId: mega.id });
     persist();
     return paint(mega);
   }
@@ -795,5 +794,14 @@ function appendStepTime(dir, record) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
 }
+// The line that announces the lead's split. The last step is the check of the whole when it waits for
+// every other step; the rest is built, with or without its own files.
+function splitSummary(subs, label, why = '') {
+  const last = subs.at(-1);
+  const checked = subs.length > 1 && subs.slice(0, -1).every(sub => (last.dependencies || []).includes(sub.id));
+  const built = subs.length - (checked ? 1 : 0);
+  const shape = built === 1 ? 'Lead kept the work as one build step' : `Lead split the work into ${built} parts`;
+  return `${shape}${checked ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${label(sub.assignedModelId)})`).join(' · ')}.${why ? ' Why: ' + why : ''}`;
+}
 function noVerdictPlan(tries) { return tries >= 2 ? 'stop' : tries === 1 ? 'switch' : 'retry-same'; }
-module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };
+module.exports = { createExecutionBridge, splitSummary, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };

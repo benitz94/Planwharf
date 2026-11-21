@@ -590,7 +590,7 @@ public static class Strings
         ["#{0} is green."] = "La #{0} è verde.",
         ["Fix the conflicts and hand the failures to the crew?"] = "Risolvo i conflitti e passo i fallimenti alla squadra?",
         ["Fix them"] = "Sistemale",
-        ["Fix the failing checks on pull request #{0}: {1}."] = "Sistema i check che falliscono sulla pull request #{0}: {1}.",
+        ["Fix the failing checks of pull request #{0} on its own branch `{1}`: {2}. Commit on that branch, so the push updates the same pull request; do not open a new one."] = "Sistema i check che falliscono nella pull request #{0} sul suo stesso ramo `{1}`: {2}. Fai i commit su quel ramo, così il push aggiorna la stessa pull request; non aprirne una nuova.",
         ["Pull requests checked. Conflicts merged where clean; failures handed to the crew."] = "Pull request controllate. Conflitti mergiati dove puliti; fallimenti passati alla squadra.",
         ["Updates"] = "Aggiornamenti",
         ["Look"] = "Aspetto",
