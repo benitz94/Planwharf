@@ -94,4 +94,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | Pull requests were named "push"; the plan read "Done" for jobs that had only written their sheet | #159 |
 | An open decision of an earlier work was asked again under every new proposal | #175 |
 | A work with one build step was announced as "split into 0 parts", as if the builder had nothing to do | #176 |
-| Fixing a pull request opened a new work in the chat, and checked out its branch in the owner's folder; now it is fixed in the background, in a copy, and pushed to the same branch | this pull request |
+| Fixing a pull request opened a new work in the chat, and checked out its branch in the owner's folder; now it is fixed in the background, in a copy, and pushed to the same branch | #181 |
