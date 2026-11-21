@@ -136,7 +136,8 @@ public static class ChatViews
         ("usage", new(@"^(open |show |apri |mostra |vedi )?(the |i |l')?(usage|quota|tokens?|consumi|utilizzo)$")),
         ("progress", new(@"^(open |show |apri |mostra |vedi )?(the |l')?(progress|status|avanzamento|stato)$")),
         ("files", new(@"^(open |show |apri |mostra |vedi )?(the |i |le )?(files?|changes|changed files|file cambiati|modifiche)$")),
-        ("settings", new(@"^(open |show |apri |mostra |vedi )?(the |le )?(settings|options|impostazioni|opzioni)$"))
+        ("settings", new(@"^(open |show |apri |mostra |vedi )?(the |le )?(settings|options|impostazioni|opzioni)$")),
+        ("pulls", new(@"^(open |show |apri |mostra |vedi )?(the |le |i )?(pull requests?|prs?|richieste)$"))
     ];
     static readonly Regex BenchWords = new(@"^(?:bench|put|metti)\s+(.+?)(?:\s+(?:on the bench|in panchina))?$");
 

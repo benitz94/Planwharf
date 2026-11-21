@@ -87,5 +87,9 @@ public class ChatViewsTests
         Assert.Equal(new LocalCommand(CommandKind.Bench, Model: "grok"), ChatViews.Command("bench grok"));
         Assert.Equal(new LocalCommand(CommandKind.Bench, Model: "opus"), ChatViews.Command("metti opus in panchina"));
         Assert.Equal(CommandKind.None, ChatViews.Command("put the chart on the page").Kind);
+        Assert.Equal("pulls", ChatViews.Command("pull requests").Panel);
+        Assert.Equal("pulls", ChatViews.Command("prs").Panel);
+        Assert.Equal("pulls", ChatViews.Command("mostra richieste").Panel);
+        Assert.Equal(CommandKind.None, ChatViews.Command("please show me the pull requests of every project today").Kind);
     }
 }

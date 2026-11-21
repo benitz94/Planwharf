@@ -66,11 +66,11 @@ In Plan, when the lead suggests a goal, **Let the crew do it** starts it. The cr
 5. **Decisions.** What only you can decide is shown highlighted as **Needs your decision**, with a suggestion and buttons to answer. A decision is asked only under the work that raised it: a dropped work, or a new proposal, does not carry it.
 6. **Finished.** The **Work finished** card shows the summary, the time, what each model used, and the git state.
 
-The **Crew at work** card shows the steps, their models and state, what the running model is doing, and **about how long is left** (from how long past steps took). **Progress**, **Usage** and **Files** are in the panel on the right.
+The **Crew at work** card shows the steps, their models and state, what the running model is doing, and **about how long is left** (from how long past steps took). **Progress**, **Usage**, **Files** and **Pull requests** are in the panel on the right.
 
 ## Commits and pushes
 
-The crew commits on the work's branch and never pushes: every worker runs with a git setting that makes any push fail. You publish: **Push** sends the branch to GitHub under its own name, opens the pull request (named after the work), and never pushes `main`. If GitHub refuses a private email address in the commits, they get your GitHub noreply address and the push is tried again. You merge the pull request on GitHub. **Check PRs** in the app lists the open pull requests of the project; **Fix them** fixes conflicts and failing checks in the background, on a copy of the folder, and pushes to the same pull request. No work opens in the chat: a line says when it starts and when it is done.
+The crew commits on the work's branch and never pushes: every worker runs with a git setting that makes any push fail. You publish: **Push** sends the branch to GitHub under its own name, opens the pull request (named after the work), and never pushes `main`. If GitHub refuses a private email address in the commits, they get your GitHub noreply address and the push is tried again. You merge the pull request on GitHub. **Pull requests**, next to Team, Progress, Usage, Files and Settings, lists the open pull requests (number, title, branch, dates, named checks and conflicts) and the merged and closed ones, 30 at a time. The top of the panel summarises the last 30 days. **Fix in the background** on a pull request with conflicts or red checks fixes that one pull request on a copy of the folder and pushes to the same pull request. No work opens in the chat: a line says when it starts and when it is done. Without the GitHub CLI (`gh`), the panel says what to install and the rest of the app keeps working.
 
 ## Alerts
 

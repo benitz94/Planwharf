@@ -47,7 +47,7 @@ The notification's own sound is suppressed; the Sound switch controls the separa
 The alert decision, effect switches and headless window integration have automated tests. Actual
 notification appearance, Dock/taskbar behavior and audible output require manual platform checks.
 
-Also in the native app: light and dark themes, text and main colours, English and Italian (**Settings → Look**); **Update now** in Settings → Updates installs the new version itself; alerts on the phone (Settings → Phone); Copy and Use again under your messages; Check PRs. Not yet: installers (the app is a zip to extract).
+Also in the native app: light and dark themes, text and main colours, English and Italian (**Settings → Look**); **Update now** in Settings → Updates installs the new version itself; alerts on the phone (Settings → Phone); Copy and Use again under your messages; the Pull requests panel (open, merged and closed, with Fix in the background). Not yet: installers (the app is a zip to extract).
 
 ## Build and run
 ```sh

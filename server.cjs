@@ -705,9 +705,13 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             child.on('close', code => resolve({ status: code, stdout, stderr }));
           });
           let prUrl = '';
-          const existing = await gh(['pr', 'view', '--json', 'url', '--jq', '.url']);
-          if (existing.status === 0 && existing.stdout.trim()) prUrl = existing.stdout.trim();
-          else {
+          const existing = await gh(['pr', 'view', '--json', 'url,number']);
+          if (existing.status === 0 && existing.stdout.trim()) {
+            try {
+              const viewed = JSON.parse(existing.stdout);
+              prUrl = String(viewed.url || '').trim();
+            } catch { prUrl = existing.stdout.trim(); }
+          } else {
             // The pull request is named after the work, not after "push" (the message sent when nothing new is committed).
             const row = (state.projects || []).find(entry => entry.id === input.projectId) || {};
             const goal = String(row.megaTask?.title || item.revisions?.at(-1)?.direction || '').split(/\r?\n/)[0].trim();
@@ -719,7 +723,9 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', title, '--body', prBody]);
             if (created.status === 0) prUrl = created.stdout.trim();
           }
-          return { ok: true, commit, branch, pushed: true, prUrl };
+          const prNumber = Number((String(prUrl).match(/\/pull\/(\d+)\s*$/) || [])[1]);
+          if (Number.isInteger(prNumber) && prNumber > 0 && typeof orchestra.rememberPullRequest === 'function') orchestra.rememberPullRequest(input.projectId, prNumber, prUrl);
+          return { ok: true, commit, branch, pushed: true, prUrl, ...(Number.isInteger(prNumber) && prNumber > 0 ? { prNumber } : {}) };
         })();
         return json(200, result);
       }
@@ -733,11 +739,19 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const projectId = loc.searchParams.get('projectId');
         const notebook = await readPlan(planFile);
         const item = (notebook.schema === 2 ? notebook.projects : [notebook]).find(entry => entry.project.id === projectId);
-        const folder = item && item.project.folder;
-        if (!folder) throw new RequestError(404, 'Project not found.');
-        const result = await require('./engine/pr-check.cjs').listPrs(folder);
-        if (!result.ok) throw new RequestError(400, result.reason);
-        return json(200, result);
+        if (!item) throw new RequestError(404, 'Project not found.');
+        const folder = item.project.folder;
+        if (!folder) return json(200, { ok: false, reason: 'This project has no folder yet. Set it in Settings.' });
+        const state = loc.searchParams.get('state') || 'open';
+        const author = loc.searchParams.get('author') || 'all';
+        const offset = Number(loc.searchParams.get('offset') || '0');
+        const context = typeof orchestra.pullRequestContext === 'function' ? orchestra.pullRequestContext(projectId) : { works: [], fixes: [], fixing: [] };
+        const result = await require('./engine/pr-panel.cjs').pullRequestPanel({
+          folder, state, author, offset: Number.isInteger(offset) ? offset : 0,
+          works: context.works, fixes: context.fixes, fixing: context.fixing
+        });
+        // Missing gh is a panel message, not a failure of the rest of the app.
+        return json(result.ok || result.missing ? 200 : 400, result);
       }
       if (request.method === 'POST' && pathname === '/api/prs/resolve') {
         const input = await body(request);

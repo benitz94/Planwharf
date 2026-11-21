@@ -18,6 +18,13 @@ public sealed record QuotaPlan(string Label, string? Note, IReadOnlyList<QuotaWi
 public sealed record UsagePanel(IReadOnlyList<QuotaPlan> Plans, IReadOnlyList<(string Model, string Text)> Lead, IReadOnlyList<(string Model, string Text)> Crew);
 public sealed record ChangedFile(string Kind, string Path);
 public sealed record FilesPanel(string? Message, string Branch, IReadOnlyList<ChangedFile> Files, int Total, string CheckedAt);
+public sealed record PullCheck(string Name, string State);
+public sealed record PullStep(string Title, string Model);
+public sealed record PullWork(string Goal, string Started, string Finished, string Lead, IReadOnlyList<PullStep> Steps);
+public sealed record PullRequestRow(int Number, string Title, string Branch, string Url, string State, string Opened, string Updated, string When, string Duration, bool Conflicts, IReadOnlyList<PullCheck> Checks, bool ByPlanwharf, bool CanFix, string FixStatus, string FixText, PullWork? Work);
+public sealed record FailedCheck(string Name, int Count);
+public sealed record PullSummary(int Merged, string Median, int NeededFix, IReadOnlyList<FailedCheck> FailedChecks);
+public sealed record PullRequestPanel(string? Message, bool Missing, PullSummary Summary, IReadOnlyList<PullRequestRow> Items, bool More, string State, string Author);
 
 // The Progress, Usage and Files panels, read from the snapshot the way the chat page reads them.
 public static class PanelViews
@@ -101,5 +108,55 @@ public static class PanelViews
             return new ChangedFile(kind, line.Length > 3 ? line[3..] : "");
         }).ToList();
         return new FilesPanel(null, S(local["branch"]), files, N(local["uncommitted"]) is { } total ? (int)total : files.Count, Clock(S(repository["checkedAt"]), zone));
+    }
+
+    static string When(string at, TimeZoneInfo? zone)
+    {
+        if (!DateTimeOffset.TryParse(at, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)) return "";
+        return TimeZoneInfo.ConvertTime(parsed, zone ?? TimeZoneInfo.Local).ToString("d MMM HH:mm", Strings.Culture);
+    }
+
+    public static string Span(double? ms)
+    {
+        if (ms is not { } value || value < 0 || double.IsNaN(value)) return "—";
+        if (value < 60000) return Strings.T("under a minute");
+        var minutes = Math.Round(value / 60000);
+        if (minutes < 90) return Strings.Format("{0} min", minutes);
+        var hours = Math.Round(minutes / 60);
+        if (hours < 48) return Strings.Format("{0} h", hours);
+        return Strings.Format("{0} d", Math.Round(hours / 24));
+    }
+
+    static PullRequestRow Row(JsonObject pr, TimeZoneInfo? zone)
+    {
+        var state = S(pr["state"]) is "merged" or "closed" ? S(pr["state"]) : "open";
+        var checks = (pr["checks"] as JsonArray ?? []).OfType<JsonObject>().Select(check => new PullCheck(S(check["name"]), S(check["state"]) is "green" or "red" or "running" ? S(check["state"]) : "running")).ToList();
+        var workNode = pr["work"] as JsonObject;
+        PullWork? work = workNode == null ? null : new PullWork(S(workNode["goal"]), When(S(workNode["startedAt"]), zone), When(S(workNode["completedAt"]), zone), S(workNode["lead"]),
+            (workNode["steps"] as JsonArray ?? []).OfType<JsonObject>().Select(step => new PullStep(S(step["title"]), S(step["model"]))).ToList());
+        var when = state == "merged" ? When(S(pr["mergedAt"]), zone) : state == "closed" ? When(S(pr["closedAt"]), zone) : When(S(pr["updatedAt"]), zone);
+        return new PullRequestRow(pr["number"] is JsonValue number && number.TryGetValue<int>(out var n) ? n : 0, S(pr["title"]), S(pr["branch"]), S(pr["url"]), state,
+            When(S(pr["openedAt"]), zone), When(S(pr["updatedAt"]), zone), when, N(pr["durationMs"]) is { } duration ? Span(duration) : "",
+            B(pr["conflicts"]), checks, B(pr["byPlanwharf"]), B(pr["canFix"]), S(pr["fixStatus"]), S(pr["fixText"]), work);
+    }
+
+    // The list the panel draws. Filters apply here so a click changes the rows without another parse.
+    public static IReadOnlyList<PullRequestRow> Matching(IReadOnlyList<PullRequestRow> rows, string state, string author) =>
+        rows.Where(row => row.State == state && (author == "all" || (author == "planwharf" ? row.ByPlanwharf : !row.ByPlanwharf))).ToList();
+
+    public static PullRequestPanel PullRequests(JsonNode? payload, TimeZoneInfo? zone = null)
+    {
+        if (payload == null) return new PullRequestPanel(Strings.T("Checking pull requests…"), false, new PullSummary(0, "—", 0, []), [], false, "open", "all");
+        var state = S(payload["state"]) is "merged" or "closed" or "open" ? S(payload["state"]) : "open";
+        var author = S(payload["author"]) is "planwharf" or "others" or "all" ? S(payload["author"]) : "all";
+        var summaryNode = payload["summary"] as JsonObject;
+        var failed = (summaryNode?["failedChecks"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select(item => new FailedCheck(S(item["name"]), N(item["count"]) is { } count ? (int)count : 0)).Where(item => item.Name.Length > 0).ToList();
+        var summary = new PullSummary(N(summaryNode?["merged"]) is { } merged ? (int)merged : 0, Span(N(summaryNode?["medianMergeMs"])), N(summaryNode?["neededFix"]) is { } fixes ? (int)fixes : 0, failed);
+        var items = (payload["items"] as JsonArray ?? []).OfType<JsonObject>().Select(pr => Row(pr, zone)).ToList();
+        if (B(payload["missing"])) return new PullRequestPanel(Strings.T("GitHub CLI (gh) is not installed. Install it from https://cli.github.com/ and sign in with gh auth login. The rest of Planwharf keeps working."), true, summary, [], false, state, author);
+        if (payload["ok"] is JsonValue ok && ok.TryGetValue<bool>(out var fine) && !fine) return new PullRequestPanel(S(payload["reason"]) is { Length: > 0 } reason ? reason : Strings.T("Could not read pull requests."), false, summary, [], false, state, author);
+        // Items stay unfiltered: the panel applies Open, Merged, Closed and who opened them.
+        return new PullRequestPanel(null, false, summary, items, B(payload["more"]), state, author);
     }
 }
