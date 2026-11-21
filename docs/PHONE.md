@@ -11,17 +11,22 @@ Messages carry only the project name, the goal, the state, the times and the nam
 
 ## Examples
 
-These are the messages the bot sends, on a sample project. Every message has the same short shape: the news,
-the ship and the mission, the state with the progress and the time, then the crew: the lead (👑), each Build
-step (🔨) and the Verify step (🔍), with ✅ done, ⚙️ working, ❌ failed. When a model took over since the
-last message, the line shows who it replaced: `GPT-6 Astra → Gemini 3.8 Flash`.
+These are the messages the bot sends, on a sample project. Each one has one item per line: the news, the
+ship, the mission, the state, the progress and the time, then the crew: the lead (👑), each Build step (🔨)
+and the Verify step (🔍), with ✅ done, ⚙️ working, ❌ failed. When a model took over since the last
+message, the line shows who it replaced: `GPT-6 Astra → Gemini 3.8 Flash`. The lead is the one of the
+project's own team, and a new lead sends a message of its own.
 
 **The crew starts**
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN! 🚀 The crew has set sail on a new mission!
-🚢 Recipe app · 🎯 Add a shopping list to the recipes
-🧭 Started ▶️ · □□ 0/2 · ⏳ About 25 minutes
+🏴‍☠️ AHOY, CAPTAIN!
+🚀 The crew has set sail on a new mission!
+🚢 Recipe app
+🎯 Add a shopping list to the recipes
+🧭 Started ▶️
+□□ 0/2
+⏳ About 25 minutes
 👑 Lead Grok 4.7
 🔨 Build Opus 5.5 ⚙️
 🔍 Verify GPT-6 Astra
@@ -31,21 +36,44 @@ last message, the line shows who it replaced: `GPT-6 Astra → Gemini 3.8 Flash`
 **Another model takes over a step**
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN! 🔁 Change of watch!
-🚢 Recipe app · 🎯 Add a shopping list to the recipes
-🧭 Switched model 🔁 · ■□ 1/2 · ⏳ About 8 minutes
+🏴‍☠️ AHOY, CAPTAIN!
+🔁 Change of watch!
+🚢 Recipe app
+🎯 Add a shopping list to the recipes
+🧭 Switched model 🔁
+■□ 1/2
+⏳ About 8 minutes
 👑 Lead Grok 4.7
 🔨 Build Opus 5.5 ✅
 🔍 Verify GPT-6 Astra → Gemini 3.8 Flash ⚙️
 🦜 Another sailor took over this step.
 ```
 
+**A new lead takes over**
+
+```text
+🏴‍☠️ AHOY, CAPTAIN!
+👑 A new navigator takes the helm!
+🚢 Recipe app
+🎯 Add a shopping list to the recipes
+🧭 New lead 👑
+■□ 1/2
+👑 Lead Grok 4.7 → GPT-6 Astra
+🔨 Build Opus 5.5 ✅
+🔍 Verify Gemini 3.8 Flash ⚙️
+🦜 The new lead steers the crew from here.
+```
+
 **The work is finished** (in Italian)
 
 ```text
-🏴‍☠️ AHOY, CAPITANO! 🏆 Missione compiuta!
-🚢 Recipe app · 🎯 Add a shopping list to the recipes
-🧭 Fatto ✅ · ■■ 2/2 · ⏱️ 31m
+🏴‍☠️ AHOY, CAPITANO!
+🏆 Missione compiuta!
+🚢 Recipe app
+🎯 Add a shopping list to the recipes
+🧭 Fatto ✅
+■■ 2/2
+⏱️ 31m
 👑 Lead Grok 4.7
 🔨 Build Opus 5.5 ✅
 🔍 Verify Gemini 3.8 Flash ✅

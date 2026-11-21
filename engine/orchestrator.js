@@ -1814,6 +1814,11 @@ function createOrchestrator(options) {
     const roomy = list.filter(model => !isLow(model));
     return roomy.length ? roomy : list;
   }
+  function projectLeadLabel(projectId, shared) {
+    const own = Object.hasOwn(store.projectTeams || {}, projectId) ? store.projectTeams[projectId]?.orchestratorId : null;
+    const model = own ? roster().find(item => item.id === own) : shared;
+    return model ? (model.label || model.id) : ORCH_NAME;
+  }
   function leadModel() {
     const list = roster();
     if (leadId()) {
@@ -2251,7 +2256,9 @@ function createOrchestrator(options) {
           next: homeNext(item, row, store.execution),
           step: stepOf(row),
           pipeline: pipelineOf(row),
-          crew: crewOf({ ...row, dispatch, orchestratorDoing: orchestratorDoing(row), orchestratorLabel: lead ? lead.label : ORCH_NAME }, lead ? lead.label : ORCH_NAME, store.execution),
+          // A project with a team of its own has its own lead: the crew and the phone name that one.
+          leadLabel: projectLeadLabel(item.project.id, lead),
+          crew: crewOf({ ...row, dispatch, orchestratorDoing: orchestratorDoing(row), orchestratorLabel: projectLeadLabel(item.project.id, lead) }, projectLeadLabel(item.project.id, lead), store.execution),
           resultPath: row.resultPath || null,
           watchingSince: row.watchingSince || null,
           approved: Boolean(row.approved),
