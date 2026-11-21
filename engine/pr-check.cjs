@@ -111,8 +111,12 @@ async function finishFix(folder, worktree, fix, number) {
   const head = (await run(worktree, 'git', ['rev-parse', 'HEAD'])).stdout.trim();
   if (head === fix.before) return { ok: true, changed: false, reason: 'Nothing needed changing.' };
   // Never a force push: if someone pushed to the branch meanwhile, the push is refused and nothing is lost.
+  // The commit stays in this copy. The caller must not delete it.
   const pushed = await run(worktree, 'git', ['push', 'origin', 'HEAD:refs/heads/' + fix.branch]);
-  if (pushed.status !== 0) return { ok: false, reason: 'The push was refused: ' + (pushed.stderr || '').trim().split(/\r?\n/).slice(-1)[0] };
+  if (pushed.status !== 0) {
+    const why = (pushed.stderr || '').trim().split(/\r?\n/).filter(Boolean).slice(-1)[0] || 'the remote refused it';
+    return { ok: false, kept: true, reason: 'The push was refused: ' + why + ' The commit is saved locally.' };
+  }
   return { ok: true, changed: true, reason: 'Pushed to ' + fix.branch + '.' };
 }
 

@@ -134,7 +134,9 @@ test.describe('pull request fix edges', { concurrency: false }, () => {
     git(worktree, 'add', 'notes.md');
     const pushed = await pr.finishFix(folder, worktree, viewed, 4);
     assert.equal(pushed.ok, false);
+    assert.equal(pushed.kept, true);
     assert.match(pushed.reason, /push was refused/);
+    assert.match(pushed.reason, /saved locally/);
     assert.equal(git(remote, 'rev-parse', 'feat/x'), tip);
     assert.equal(fs.readFileSync(path.join(worktree, 'notes.md'), 'utf8'), 'one\nfrom main\nfrom feat/x\n');
     await pr.removeWorktree(folder, worktree);
@@ -274,5 +276,181 @@ test.describe('pull request fix edges', { concurrency: false }, () => {
     const mega = stored.execution.megaTasks.find(item => item.id === 'mega-old');
     assert.equal(mega.pullRequestUrl.length, 300);
     assert.equal(orchestra.rememberPullRequest('biblioteca', 4, '').ok, true);
+  });
+
+  test('two fixes asked together start only one, and a failed read does not leave the lock held', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-pr-race-'));
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let mode = 'gate';
+    let reads = 0;
+    const orchestra = createOrchestrator({
+      dir,
+      readPlan: async () => {
+        reads += 1;
+        if (mode === 'gate') await gate;
+        if (mode === 'boom') throw new Error('notebook busy');
+        return planWith(dir);
+      },
+      attempts: createAttemptEngine({ dir }), models: [], fetchPlans: null,
+      spawnWorker: () => ({ pid: 1 }), isProcessAlive: () => false
+    });
+    const restore = stub({ prepareFix: async () => ({ ok: false, reason: 'stopped' }) });
+    try {
+      const pending = Promise.all([
+        orchestra.fixPullRequest('biblioteca', 1),
+        orchestra.fixPullRequest('biblioteca', 2),
+        orchestra.fixPullRequest('other', 5)
+      ]);
+      assert.equal(reads, 2);
+      release();
+      const [first, second, other] = await pending;
+      assert.equal(first.started, true);
+      assert.equal(second.ok, false);
+      assert.notEqual(second.started, true);
+      assert.match(second.reason, /already running/);
+      assert.equal(other.started, true);
+      await settle(orchestra, 'biblioteca');
+      await settle(orchestra, 'other');
+      mode = 'boom';
+      await assert.rejects(() => orchestra.fixPullRequest('biblioteca', 3), /notebook busy/);
+      mode = 'ok';
+      assert.equal((await orchestra.fixPullRequest('biblioteca', 3)).started, true);
+      await settle(orchestra, 'biblioteca');
+    } finally { restore(); }
+  });
+
+  test('a project with no folder does not keep the fix lock', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-pr-nofolder-'));
+    let folder = '';
+    const orchestra = createOrchestrator({
+      dir,
+      readPlan: async () => ({ schema: 2, projects: [{ schema: 1, project: { id: 'biblioteca', name: 'biblioteca', folder }, revisions: [], tasks: [] }] }),
+      attempts: createAttemptEngine({ dir }), models: [], fetchPlans: null,
+      spawnWorker: () => ({ pid: 1 }), isProcessAlive: () => false
+    });
+    const restore = stub({ prepareFix: async () => ({ ok: false, reason: 'stopped' }) });
+    try {
+      const missing = await orchestra.fixPullRequest('biblioteca', 4);
+      assert.equal(missing.ok, false);
+      assert.match(missing.reason, /folder/);
+      folder = dir;
+      assert.equal((await orchestra.fixPullRequest('biblioteca', 4)).started, true);
+      await settle(orchestra, 'biblioteca');
+    } finally { restore(); }
+  });
+
+  test('a worker that stops without a result is not called fixed, and one that finishes with nothing to do is', async () => {
+    const { root, remote, folder } = setup();
+    const dir = path.join(root, 'data');
+    const tip = git(remote, 'rev-parse', 'feat/x');
+    let writeExit = false;
+    const orchestra = createOrchestrator({
+      dir, readPlan: async () => planWith(folder), attempts: createAttemptEngine({ dir }), fetchPlans: null,
+      models: [model('gpt-6-luna', 'GPT-6 Luna', 'codex', 'light')],
+      spawnWorker: info => {
+        if (writeExit) {
+          fs.mkdirSync(path.dirname(info.exitPath), { recursive: true });
+          fs.writeFileSync(info.exitPath, '{}');
+        }
+        return { pid: 9 };
+      },
+      isProcessAlive: () => false
+    });
+    const copy = pr.prepareWorktree;
+    const restore = stub({
+      prepareFix: (projectFolder, _number, worktree) => copy(projectFolder, { branch: 'feat/x', base: 'feat/x', failing: ['ci/circleci'] }, worktree)
+    });
+    try {
+      assert.equal((await orchestra.fixPullRequest('biblioteca', 8)).started, true);
+      const stopped = await settle(orchestra, 'biblioteca');
+      const failed = stopped.fixes.find(item => item.number === 8);
+      assert.equal(failed.result, 'failed');
+      assert.match(failed.text, /stopped before it finished/);
+      assert.equal(git(remote, 'rev-parse', 'feat/x'), tip);
+      assert.equal(git(folder, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
+      writeExit = true;
+      assert.equal((await orchestra.fixPullRequest('biblioteca', 8)).started, true);
+      const finished = await settle(orchestra, 'biblioteca');
+      const row = finished.fixes.find(item => item.number === 8);
+      assert.equal(row.result, 'fixed');
+      assert.match(row.text, /Nothing needed changing/);
+      assert.equal(git(remote, 'rev-parse', 'feat/x'), tip);
+    } finally { restore(); }
+  });
+
+  test('a finished fix stays in its copy when the push is refused, and the other project still runs', async () => {
+    const leftRepo = setup();
+    const rightRepo = setup();
+    const dir = path.join(leftRepo.root, 'data');
+    const tipLeft = git(leftRepo.remote, 'rev-parse', 'feat/x');
+    const tipRight = git(rightRepo.remote, 'rev-parse', 'feat/x');
+    const hook = path.join(leftRepo.remote, 'hooks', 'pre-receive');
+    for (const remote of [leftRepo.remote, rightRepo.remote]) {
+      const file = path.join(remote, 'hooks', 'pre-receive');
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, '#!/bin/sh\nexit 1\n');
+      fs.chmodSync(file, 0o755);
+    }
+    const plan = {
+      schema: 2,
+      projects: [
+        { schema: 1, project: { id: 'biblioteca', name: 'biblioteca', folder: leftRepo.folder }, revisions: [], tasks: [] },
+        { schema: 1, project: { id: 'other', name: 'other', folder: rightRepo.folder }, revisions: [], tasks: [] }
+      ]
+    };
+    const kept = new Map();
+    const orchestra = createOrchestrator({
+      dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir }), fetchPlans: null,
+      models: [model('gpt-6-luna', 'GPT-6 Luna', 'codex', 'light')],
+      spawnWorker: info => {
+        fs.writeFileSync(path.join(info.folder, 'fixed.md'), info.projectId + '\n');
+        git(info.folder, 'add', 'fixed.md');
+        git(info.folder, 'commit', '-q', '-m', 'local fix ' + info.projectId);
+        fs.mkdirSync(path.dirname(info.exitPath), { recursive: true });
+        fs.writeFileSync(info.exitPath, '{}');
+        kept.set(info.projectId + '#' + kept.size, info.folder);
+        return { pid: 11 };
+      },
+      isProcessAlive: () => false
+    });
+    const copy = pr.prepareWorktree;
+    const restore = stub({
+      prepareFix: (projectFolder, _number, worktree) => copy(projectFolder, { branch: 'feat/x', base: 'feat/x', failing: ['ci/circleci'] }, worktree)
+    });
+    const copyOf = projectId => [...kept.entries()].find(([key]) => key.startsWith(projectId + '#'))[1];
+    try {
+      const [first, second] = await Promise.all([
+        orchestra.fixPullRequest('biblioteca', 8),
+        orchestra.fixPullRequest('other', 5)
+      ]);
+      assert.equal(first.started, true);
+      assert.equal(second.started, true);
+      const left = await settle(orchestra, 'biblioteca');
+      const right = await settle(orchestra, 'other');
+      const failed = left.fixes.find(item => item.number === 8);
+      assert.equal(failed.result, 'failed');
+      assert.match(failed.text, /push was refused/);
+      assert.match(failed.text, /saved locally/);
+      assert.match(right.fixes.find(item => item.number === 5).text, /saved locally/);
+      assert.equal(git(leftRepo.remote, 'rev-parse', 'feat/x'), tipLeft);
+      assert.equal(git(rightRepo.remote, 'rev-parse', 'feat/x'), tipRight);
+      assert.equal(git(leftRepo.folder, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
+      assert.equal(git(rightRepo.folder, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
+      const firstCopy = copyOf('biblioteca');
+      const secondCopy = copyOf('other');
+      assert.equal(fs.readFileSync(path.join(firstCopy, 'fixed.md'), 'utf8'), 'biblioteca\n');
+      assert.equal(fs.readFileSync(path.join(secondCopy, 'fixed.md'), 'utf8'), 'other\n');
+      assert.match(git(firstCopy, 'log', '-1', '--format=%s'), /local fix biblioteca/);
+      assert.deepEqual(left.fixing, []);
+      fs.writeFileSync(hook, '#!/bin/sh\nexit 0\n');
+      assert.equal((await orchestra.fixPullRequest('biblioteca', 8)).started, true);
+      const retried = await settle(orchestra, 'biblioteca');
+      assert.equal(retried.fixes.find(item => item.number === 8).result, 'fixed');
+      assert.equal(fs.readFileSync(path.join(firstCopy, 'fixed.md'), 'utf8'), 'biblioteca\n');
+      assert.notEqual(git(leftRepo.remote, 'rev-parse', 'feat/x'), tipLeft);
+      assert.equal(git(rightRepo.remote, 'rev-parse', 'feat/x'), tipRight);
+      assert.equal(git(leftRepo.folder, 'rev-parse', '--abbrev-ref', 'HEAD'), 'main');
+    } finally { restore(); }
   });
 });

@@ -221,3 +221,26 @@ test('the four gh reads overlap, and two panels do not mix their answers', async
   current = a.items.length + b.items.length;
   assert.equal(current, 2);
 });
+
+test('the 30 day summary counts merges past the first page gh would return', async () => {
+  const merged = Array.from({ length: 120 }, (_, index) => row(index + 1, {
+    state: 'MERGED', createdAt: at(NOW - 2 * DAY), mergedAt: at(NOW - DAY), closedAt: at(NOW - DAY)
+  }));
+  let limit = 0;
+  const panel = await pullRequestPanel({
+    folder: '/work', now: NOW, state: 'merged',
+    run: async (_folder, cmd, args) => {
+      assert.equal(cmd, 'gh');
+      if (args[0] !== 'pr') return ok([]);
+      const state = args[args.indexOf('--state') + 1];
+      if (state !== 'merged') return ok([]);
+      limit = Number(args[args.indexOf('--limit') + 1]);
+      return ok(merged.slice(0, limit));
+    }
+  });
+  assert.equal(panel.ok, true);
+  assert.ok(limit >= 120);
+  assert.equal(panel.summary.merged, 120);
+  assert.equal(panel.items.length, 30);
+  assert.equal(panel.more, true);
+});

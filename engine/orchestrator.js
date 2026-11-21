@@ -4206,17 +4206,27 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   async function fixPullRequest(projectId, number) {
     if (!dir || typeof opts.spawnWorker !== 'function') return { ok: false, reason: 'Background fixes need the engine data folder.' };
     if (!Number.isInteger(number) || number <= 0) return { ok: false, reason: 'Pull request number required.' };
-    const item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
-    if (!item?.project?.folder) return { ok: false, reason: 'Project folder required.' };
-    if (!/^[A-Za-z0-9_-]{1,100}$/.test(projectId)) return { ok: false, reason: 'Unusual project id.' };
+    if (typeof projectId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(projectId)) return { ok: false, reason: 'Unusual project id.' };
     const key = projectId + '#' + number;
     if (prFixes.has(key)) return { ok: true, started: false, reason: `#${number} is already being fixed.` };
     if ([...prFixes.keys()].some(other => other.startsWith(projectId + '#'))) return { ok: false, reason: 'A fix is already running.' };
+    // Taken before the notebook is read, so two clicks cannot both pass the check.
+    prFixes.set(key, { startedAt: now(), text: '' });
+    let item;
+    try {
+      item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
+    } catch (error) {
+      prFixes.delete(key);
+      throw error;
+    }
+    if (!item?.project?.folder) {
+      prFixes.delete(key);
+      return { ok: false, reason: 'Project folder required.' };
+    }
     const pr = require('./pr-check.cjs');
     const fixId = 'fix-' + Date.now().toString(36);
     const megaTaskId = 'pr-' + number;
     const worktree = path.join(dir, 'worktrees', projectId, megaTaskId, fixId);
-    prFixes.set(key, { startedAt: now(), text: '' });
     const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
     const done = (type, text) => {
       markPullRequestFix(projectId, number, type === 'PR_FIX_COMPLETED' ? 'fixed' : 'failed', text);
@@ -4224,11 +4234,14 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     };
     inTeam(projectId, async () => {
       let fix;
+      // A finished commit whose push was refused stays in its copy.
+      let keepLocal = false;
+      const noteKept = result => { if (result && result.kept) keepLocal = true; return result; };
       try {
         fix = await pr.prepareFix(item.project.folder, number, worktree);
         if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
         if (!fix.conflicts.length && !fix.failing.length) {
-          const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+          const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
         const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false
@@ -4259,19 +4272,29 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           if (typeof opts.isProcessAlive === 'function' && !opts.isProcessAlive(launched.pid)) break;
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
-        const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+        const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
+        // The worker was started because checks or conflicts were still wrong. If it
+        // never wrote a result and changed nothing, that is not a finished fix.
+        if (result.ok && !result.changed && !fs.existsSync(info.exitPath)) {
+          const alive = typeof opts.isProcessAlive === 'function' && opts.isProcessAlive(launched.pid);
+          const why = alive ? 'did not finish in time' : 'stopped before it finished';
+          return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} ${why}. Nothing was pushed.`);
+        }
         done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok
           ? `${model.label || model.id} fixed pull request #${number}: ${result.reason}`
           : `Pull request #${number} was not fixed by ${model.label || model.id}: ${result.reason} Nothing was pushed.`);
       } catch (error) {
         done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${error.message}`);
       } finally {
-        // Hold the one-at-a-time lock until the copy is gone, so a retry cannot reuse its folder.
+        // The lock waits until this attempt's copy is gone, so a retry gets a new folder.
+        // A push that was refused keeps that copy: the finished commit is only there.
         try {
-          await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
-          const copy = path.resolve(worktree);
-          const copies = path.resolve(dir, 'worktrees') + path.sep;
-          if (copy.toLowerCase().startsWith(copies.toLowerCase())) fs.rmSync(copy, { recursive: true, force: true });
+          if (!keepLocal) {
+            await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+            const copy = path.resolve(worktree);
+            const copies = path.resolve(dir, 'worktrees') + path.sep;
+            if (copy.toLowerCase().startsWith(copies.toLowerCase())) fs.rmSync(copy, { recursive: true, force: true });
+          }
         } finally {
           prFixes.delete(key);
         }

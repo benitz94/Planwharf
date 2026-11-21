@@ -750,8 +750,9 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
           folder, state, author, offset: Number.isInteger(offset) ? offset : 0,
           works: context.works, fixes: context.fixes, fixing: context.fixing
         });
-        // Missing gh is a panel message, not a failure of the rest of the app.
-        return json(result.ok || result.missing ? 200 : 400, result);
+        // A failed read is a message in the panel, including when gh is missing.
+        // The desktop app can only show a body it was able to read.
+        return json(200, result);
       }
       if (request.method === 'POST' && pathname === '/api/prs/resolve') {
         const input = await body(request);

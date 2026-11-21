@@ -50,6 +50,7 @@ public sealed partial class MainWindow : Window
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
     JsonNode? pullPayload;
+    string? pullNotice;
     string pullState = "open", pullAuthor = "all";
     int pullOffset;
     int pullGeneration;
@@ -72,7 +73,7 @@ public sealed partial class MainWindow : Window
         var newProject = Look.Button(Strings.T("New project"), "plus", Look.Kind.Primary);
         newProject.HorizontalAlignment = HorizontalAlignment.Stretch; newProject.HorizontalContentAlignment = HorizontalAlignment.Center; newProject.Margin = new Thickness(0, 0, 0, 12);
         newProject.Click += async (_, _) => await NewProjectAsync();
-        projectList.SelectionChanged += (_, _) => { if (projectList.SelectedItem is ListBoxItem { Tag: string id } && id != projectId) { projectId = id; threadSig = sideSig = null; pullPayload = null; pullOffset = 0; _ = RefreshAsync(readOnly: true); if (sideMode == "pulls") _ = LoadPullsAsync(false); } };
+        projectList.SelectionChanged += (_, _) => { if (projectList.SelectedItem is ListBoxItem { Tag: string id } && id != projectId) { projectId = id; threadSig = sideSig = null; pullPayload = null; pullNotice = null; pullOffset = 0; _ = RefreshAsync(readOnly: true); if (sideMode == "pulls") _ = LoadPullsAsync(false); } };
         // The open project as in the chat page: a soft green row with round corners.
         foreach (var (key, value) in new (string, IBrush)[] { ("ListBoxItemBackgroundPointerOver", Palette.Surface2), ("ListBoxItemBackgroundPressed", Palette.Surface2),
             ("ListBoxItemBackgroundSelected", Palette.AccentSoft), ("ListBoxItemBackgroundSelectedPointerOver", Palette.AccentSoft), ("ListBoxItemBackgroundSelectedPressed", Palette.AccentSoft),
@@ -597,6 +598,11 @@ public sealed partial class MainWindow : Window
         if (sideMode == "pulls") Render();
     }
 
+    static bool PageFailed(JsonNode listed) => listed["ok"] is JsonValue ok && ok.TryGetValue<bool>(out var fine) && !fine;
+
+    static string PageReason(JsonNode listed) =>
+        listed["reason"] is JsonValue why && why.TryGetValue<string>(out var text) && text.Length > 0 ? text : Strings.T("Could not read pull requests.");
+
     async Task LoadPullsAsync(bool more)
     {
         if (api == null || projectId == null) return;
@@ -609,19 +615,30 @@ public sealed partial class MainWindow : Window
         {
             var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId) + "&state=" + Uri.EscapeDataString(state) + "&author=" + Uri.EscapeDataString(author) + "&offset=" + offset);
             if (token != pullGeneration || closed) return;
-            var freshCount = listed["items"] is JsonArray fresh ? fresh.Count : 0;
-            if (more && pullPayload?["items"] is JsonArray previous && listed["items"] is JsonArray page)
+            if (more && PageFailed(listed) && pullPayload?["items"] is JsonArray) pullNotice = PageReason(listed);
+            else
             {
-                foreach (var item in page.ToArray()) previous.Add(item?.DeepClone());
-                listed["items"] = previous;
+                pullNotice = null;
+                var freshCount = listed["items"] is JsonArray fresh ? fresh.Count : 0;
+                if (more && pullPayload?["items"] is JsonArray previous && listed["items"] is JsonArray page)
+                {
+                    foreach (var item in page.ToArray()) previous.Add(item?.DeepClone());
+                    listed["items"] = previous;
+                }
+                pullPayload = listed;
+                pullOffset = offset + freshCount;
             }
-            pullPayload = listed;
-            pullOffset = offset + freshCount;
         }
         catch (Exception error)
         {
             if (token != pullGeneration || closed) return;
-            pullPayload = new JsonObject { ["ok"] = false, ["reason"] = error.Message, ["state"] = state, ["author"] = author };
+            // The next page failed. The rows already on screen stay.
+            if (more && pullPayload?["items"] is JsonArray) pullNotice = error.Message;
+            else
+            {
+                pullNotice = null;
+                pullPayload = new JsonObject { ["ok"] = false, ["reason"] = error.Message, ["state"] = state, ["author"] = author };
+            }
         }
         finally { if (token == pullGeneration && !closed) { sideSig = null; Render(); } }
     }
@@ -673,6 +690,7 @@ public sealed partial class MainWindow : Window
         var shown = PanelViews.Matching(panel.Items, pullState, pullAuthor);
         if (panel.Message == null && shown.Count == 0) side.Children.Add(Explain(pullState == "merged" ? Strings.T("No merged pull requests.") : pullState == "closed" ? Strings.T("No closed pull requests.") : Strings.T("No open pull requests.")));
         foreach (var pr in shown) side.Children.Add(PullCard(pr));
+        if (!string.IsNullOrEmpty(pullNotice)) side.Children.Add(Line(pullNotice, Palette.Danger, 13));
         if (panel.More)
         {
             var more = Look.Button(Strings.T("Show more"), null, Look.Kind.Small);
@@ -785,7 +803,7 @@ public sealed partial class MainWindow : Window
         sig += progress is { } p ? p.Status + p.Next + p.TimeLeft + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
         sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) : "";
         sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
-        sig += pulls is { } pr ? pullState + pullAuthor + pr.Message + pr.More + pr.Summary.Merged + pr.Summary.Median + pr.Summary.NeededFix + string.Join(",", pr.Summary.FailedChecks.Select(item => item.Name + item.Count)) + string.Join(",", pr.Items.Select(item => item.Number + item.State + item.FixStatus + item.FixText + item.CanFix + item.Conflicts + string.Join("/", item.Checks.Select(check => check.Name + check.State)))) : "";
+        sig += pulls is { } pr ? pullNotice + pullState + pullAuthor + pr.Message + pr.More + pr.Summary.Merged + pr.Summary.Median + pr.Summary.NeededFix + string.Join(",", pr.Summary.FailedChecks.Select(item => item.Name + item.Count)) + string.Join(",", pr.Items.Select(item => item.Number + item.State + item.FixStatus + item.FixText + item.CanFix + item.Conflicts + string.Join("/", item.Checks.Select(check => check.Name + check.State)))) : "";
         if (sig == sideSig) return;
         sideSig = sig;
         side.Children.Clear();

@@ -127,8 +127,9 @@ async function pullRequestPanel(options = {}) {
   const fixing = (Array.isArray(options.fixing) ? options.fixing : []).map(item => typeof item === 'number' ? { number: item } : item).filter(item => item && Number.isInteger(item.number));
   if (!folder) return { ok: false, reason: 'This project has no folder yet. Set it in Settings.' };
 
-  // Newest first. 200 covers the summary window and several history pages.
-  const historyLimit = String(Math.min(200, Math.max(100, offset + PAGE)));
+  // Newest first. The summary is the last 30 days, so the first read has to
+  // reach past one page. 200 is the window the history pages share.
+  const historyLimit = '200';
   const [openRaw, mergedRaw, closedRaw, runsRaw] = await Promise.all([
     run(folder, 'gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json', FIELDS]),
     run(folder, 'gh', ['pr', 'list', '--state', 'merged', '--limit', historyLimit, '--json', FIELDS]),

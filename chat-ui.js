@@ -713,7 +713,12 @@
     try {
       const data = await getJson('/api/prs?projectId=' + encodeURIComponent(row.id) + '&state=' + encodeURIComponent(filter.state) + '&author=' + encodeURIComponent(filter.author) + '&offset=' + offset);
       if (token !== pullsSeq) return;
-      if (!data.ok) state.pulls = { error: data.reason || 'Could not read pull requests.', missing: Boolean(data.missing), filter, projectId: row.id, at: Date.now() };
+      if (!data.ok) {
+        const message = data.reason || 'Could not read pull requests.';
+        // The next page failed. The rows already on screen stay.
+        if (append && held?.data) state.pulls = { data: held.data, notice: message, filter, projectId: row.id, at: Date.now() };
+        else state.pulls = { error: message, missing: Boolean(data.missing), filter, projectId: row.id, at: Date.now() };
+      }
       else {
         const fresh = data.items || [];
         const previous = append && held?.data?.items ? held.data.items : [];
@@ -723,7 +728,8 @@
       }
     } catch (error) {
       if (token !== pullsSeq) return;
-      state.pulls = { error: error.message, filter, projectId: row.id, at: Date.now() };
+      if (append && held?.data) state.pulls = { data: held.data, notice: error.message, filter, projectId: row.id, at: Date.now() };
+      else state.pulls = { error: error.message, filter, projectId: row.id, at: Date.now() };
     }
     state.sideSig = '';
     if (state.panel === 'pulls') renderSide();
@@ -756,7 +762,8 @@
         ${checks ? `<div class="pr-checks">${checks}</div>` : ''}${pr.conflicts ? '<p class="small"><b>Conflicts</b></p>' : ''}${fix}${work}
         <div class="row">${pr.url ? `<a class="btn btn-small" href="${escape(pr.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}${pr.canFix ? `<button type="button" class="btn btn-small" data-pr-fix="${pr.number}">Fix in the background</button>` : ''}</div></article>`;
     }).join('');
-    return `${headSummary}<div class="section">${filters}${cards || `<p class="muted small">${empty}</p>`}${held.data.more ? `<button type="button" class="btn btn-small" data-action="pr-more">Show more</button>` : ''}<button type="button" class="btn btn-small" data-action="pr-refresh">${ic('refresh')}Check again</button></div>`;
+    const notice = held.notice ? `<p class="error">${escape(held.notice)}</p>` : '';
+    return `${headSummary}<div class="section">${filters}${cards || `<p class="muted small">${empty}</p>`}${notice}${held.data.more ? `<button type="button" class="btn btn-small" data-action="pr-more">Show more</button>` : ''}<button type="button" class="btn btn-small" data-action="pr-refresh">${ic('refresh')}Check again</button></div>`;
   }
   function progressPanel() {
     const row = project();
