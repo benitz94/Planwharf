@@ -90,3 +90,22 @@ test('a lead at the threshold hands over to the next in the ranking, and the cha
     assert.equal(asked.at(-1), 'astra');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('a lead hand-over skips a lead under its quota limit: Fable, with Claude at 20%, is passed over for GPT', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-lead-limit-'));
+  const plan = require('../plan.js').example(); plan.tasks = [];
+  const projectId = plan.projects ? plan.projects[0].project.id : plan.project.id;
+  const plans = [{ id: 'claude', readable: true, leftPct: 20 }, { id: 'chatgpt', readable: true, leftPct: 70 }, { id: 'grok', readable: false }];
+  const asked = [];
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, attempts: createAttemptEngine({ dir: path.join(dir, 'attempts') }), fetchPlans: async () => plans, plansTtl: 0,
+    models: [model('grok', 'Grok 4.7', 'grok', 'grok', { kind: 'premium', roles: { orchestrator: true, worker: true, verifier: true } }), model('fable', 'Fable 5.2', 'claude', 'claude'), model('sol', 'GPT-6.1 Sol', 'codex', 'chatgpt', { kind: 'default' })],
+    askModel: async info => { asked.push(info.model.id); return info.model.id === 'grok' ? { failure: 'process', answer: '' } : { answer: 'ok' }; } });
+  try {
+    assert.equal((await orchestra.setOrchestrator('grok')).ok, true);
+    await orchestra.tick();
+    await orchestra.ask('Read docs/NEXT-WORK.md and continue.', projectId);
+    assert.deepEqual(asked, ['grok', 'grok', 'sol'], 'Fable is a stronger lead, but Claude is under its limit');
+    const view = await orchestra.snapshot();
+    assert.ok(!view.leadBackups.includes('fable'), 'and it is not offered as a backup either');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
