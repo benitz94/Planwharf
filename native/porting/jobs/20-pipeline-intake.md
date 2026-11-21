@@ -210,7 +210,7 @@ an accepted manifest.
 Job 19's rule that a job without an accepted manifest waits applies to a
 pipeline job only. A Chat attempt is not submitted to the gate. An owner who
 wants that goal in the pipeline adds a local list item or a `planwharf` issue
-(job 31 adds a one-click **Send to the pipeline**; see the design's "Switching
+(job 32 adds a one-click **Send to the pipeline**; see the design's "Switching
 between the two").
 That becomes a new pipeline job and waits for its own intake and approval. The
 Chat attempt's history stays as it was. Work already running as Chat when this
