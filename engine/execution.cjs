@@ -216,12 +216,12 @@ function createExecutionBridge(options) {
     sub.finishedAt = now();
     result = { ...result, assignedModelId: sub.assignedModelId, provider: sub.provider, cli: sub.cli, pid: part.pid, startedAt: part.startedAt };
     data.results.push(result); sub.resultId = result.resultId; sub.status = result.status;
-    // A decision the worker could not make is kept, so it can be asked before the next plan is approved.
+    // A decision the worker could not make is kept with its work, so the owner is asked under that work.
     for (const line of String(result.summary || '').split(/\r?\n/)) {
       const at = line.toLowerCase().indexOf('needs your decision:');
       if (at < 0) continue;
       const raw = line.slice(at + 'needs your decision:'.length).trim();
-      if (!raw || data.decisions.some(item => item.projectId === mega.projectId && item.text === raw.split('|')[0].trim())) continue;
+      if (!raw || data.decisions.some(item => item.projectId === mega.projectId && item.megaTaskId === mega.id && item.text === raw.split('|')[0].trim())) continue;
       const parts = raw.split('|').map(part => part.trim());
       const text = parts[0];
       const suggestion = (parts.find(part => part.toLowerCase().startsWith('suggestion:')) || '').slice('suggestion:'.length).trim();

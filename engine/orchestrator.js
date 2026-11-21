@@ -1096,6 +1096,15 @@ function refusalSentence(refused, today = new Date()) {
 }
 // A step's summary as the chat shows it: at most 600 characters, but the lines that ask the owner to
 // decide ("Needs your decision: …") are always kept whole, even past the cut.
+// A decision belongs to the work that raised it: it is asked under that work only, and never under a
+// later proposal, or after its work was dropped.
+function openDecisionsOf(projectId, row, execution) {
+  const megaTaskId = row?.megaTaskId;
+  if (!megaTaskId) return [];
+  const mega = (execution.megaTasks || []).find(item => item.id === megaTaskId);
+  if (mega?.status === 'CANCELLED') return [];
+  return (execution.decisions || []).filter(decision => decision.projectId === projectId && decision.megaTaskId === megaTaskId && !decision.answer);
+}
 function clipSummary(value) {
   const full = String(value || '');
   if (full.length <= 600) return full;
@@ -2227,7 +2236,7 @@ function createOrchestrator(options) {
           modelId: row.modelId,
           workerLabel: row.workerLabel || null,
           waitingFor: row.waitingFor || '',
-          openDecisions: (store.execution.decisions || []).filter(decision => decision.projectId === item.project.id && !decision.answer),
+          openDecisions: openDecisionsOf(item.project.id, row, store.execution),
           next: homeNext(item, row, store.execution),
           step: stepOf(row),
           pipeline: pipelineOf(row),
@@ -4095,4 +4104,4 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   return { clearCreditsNeeded, answerDecision, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { clipSummary, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
