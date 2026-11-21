@@ -67,10 +67,10 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | To do |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below | `feat/chat-modes` | To do |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 30 | `feat/chat-modes` | To do |
 | 28 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
 | 29 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
-| 30 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22) | `feat/pipeline-run-build` | To do |
+| 30 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
 | 31 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/31-sheet` | To do |
 | 32 | 3. | Port them, as sheet 31 says | `port/32-phase3` | To do |
 | 33 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/33-sheet` | To do |
@@ -449,7 +449,8 @@ letting the crew go on by itself. The owner wants to pick one with one click, in
    - **Auto:** the crew starts the goal by itself, and goes on with the next one within the limits of
      [project autonomy](PROJECT-AUTONOMY.md). It is today's automatic mode with the project's autonomy on,
      in one click; it lasts the session, as autonomy does now.
-2. Switching never stops running work. Moving to **Talk** or **Plan** while the crew works ends Auto
+2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 30 adds
+   ([switching between the two](DESIGN-PIPELINE.md#switching-between-the-two)); until then it is not shown. Moving to **Talk** or **Plan** while the crew works ends Auto
    after the current goal; **Stop the crew** stays the way to stop at once.
 3. The chat orders still work (`mode auto`, `mode manual`), and `mode talk` / `modalità chat` and
    `mode plan` select the other two; the lead's answer and the switch always agree.
