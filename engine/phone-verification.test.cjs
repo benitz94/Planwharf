@@ -499,6 +499,6 @@ test('formatAlertMessage and formatTelegramAlertMessage format updated type clea
   assert.ok(plainIt.includes('Il progetto è cambiato.'));
 
   const tgIt = formatTelegramAlertMessage({ type: 'updated', projectName: 'Dock', goalTitle: 'Obiettivo', language: 'it' });
-  assert.ok(tgIt.includes('🧭 <b>Stato</b>\nAggiornato •'));
-  assert.ok(tgIt.includes('Il progetto è cambiato.'));
+  assert.ok(tgIt.includes('🧭 Aggiornato •'));
+  assert.ok(tgIt.startsWith('🏴‍☠️ <b>AHOY, CAPITANO!</b>'));
 });

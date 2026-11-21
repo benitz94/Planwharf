@@ -229,3 +229,22 @@ test('rendered harbor messages cover both languages with isolated project data',
   assert.match(prompt[0].content, /cannot stop, resume/);
   assert.match(prompt[0].content, /Answer in Italian/);
 });
+
+test('every alert names the lead, the builders and the verifier; a model that took over shows with an arrow', () => {
+  const { crewOfProject, formatTelegramAlertMessage } = require('./phone.cjs');
+  const models = [{ id: 'grok', label: 'Grok Build' }, { id: 'opus', label: 'Opus 5.5' }, { id: 'gem', label: 'Gemini 3.8' }, { id: 'luna', label: 'GPT-5.6 Luna' }];
+  const project = { crew: [{ role: 'Orchestrator', name: 'Grok 4.7' }], subTasks: [
+    { id: 'a', title: 'Port quota', assignedModelId: 'grok', status: 'COMPLETE' },
+    { id: 'b', title: 'Port skills', assignedModelId: 'luna', status: 'RUNNING' },
+    { id: 'c', title: 'Verify the work independently against the job', assignedModelId: 'gem', status: 'PENDING' }] };
+  const crew = crewOfProject(project, models, { __lead: 'Fable 5.2', a: 'Grok Build', b: 'Grok Build', c: 'Opus 5.5' });
+  const text = formatTelegramAlertMessage({ type: 'switched', projectName: 'Ship', goalTitle: 'Goal', crew });
+  assert.ok(text.includes('👑 <b>Lead</b> Fable 5.2 → Grok 4.7'));
+  assert.ok(text.includes('🔨 <b>Build</b> Grok Build ✅ · Grok Build → GPT-5.6 Luna ⚙️'));
+  assert.ok(text.includes('🔍 <b>Verify</b> Opus 5.5 → Gemini 3.8'));
+  // No change since the last message: no arrow.
+  const same = formatTelegramAlertMessage({ type: 'updated', projectName: 'Ship', goalTitle: 'Goal', crew: crewOfProject(project, models, { __lead: 'Grok 4.7', a: 'Grok Build', b: 'GPT-5.6 Luna', c: 'Gemini 3.8' }) });
+  assert.ok(!same.includes('→'));
+  // Compact: one line each.
+  assert.ok(text.split('\n').length <= 8, text);
+});
