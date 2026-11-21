@@ -67,19 +67,20 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 31 | `feat/chat-modes` | Done (#186) |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 32 | `feat/chat-modes` | Done (#186) |
 | 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | To do |
-| 29 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
-| 30 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
-| 31 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
-| 32 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/32-sheet` | To do |
-| 33 | 3. | Port them, as sheet 32 says | `port/33-phase3` | To do |
-| 34 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/34-sheet` | To do |
-| 35 | 4. | Port them, as sheet 34 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/35-phase4` | To do |
-| 36 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/36-sheet` | To do |
-| 37 | 5. | Port them, as sheet 36 says. Then **stop**: the owner approves the orchestrator split | `port/37-phase5` | To do |
-| 38 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/38-sheets` | To do |
-| 39+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/39-…` | To do |
+| 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no premium models: default and light only) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
+| 30 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
+| 31 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
+| 32 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
+| 33 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/33-sheet` | To do |
+| 34 | 3. | Port them, as sheet 33 says | `port/34-phase3` | To do |
+| 35 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/35-sheet` | To do |
+| 36 | 4. | Port them, as sheet 35 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/36-phase4` | To do |
+| 37 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/37-sheet` | To do |
+| 38 | 5. | Port them, as sheet 37 says. Then **stop**: the owner approves the orchestrator split | `port/38-phase5` | To do |
+| 39 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/39-sheets` | To do |
+| 40+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/40-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -450,7 +451,7 @@ letting the crew go on by itself. The owner wants to pick one with one click, in
    - **Auto:** the crew starts the goal by itself, and goes on with the next one within the limits of
      [project autonomy](PROJECT-AUTONOMY.md). It is today's automatic mode with the project's autonomy on,
      in one click; it lasts the session, as autonomy does now.
-2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 31 adds
+2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 32 adds
    ([switching between the two](DESIGN-PIPELINE.md#switching-between-the-two)); until then it is not shown. Moving to **Talk** or **Plan** while the crew works ends Auto
    after the current goal; **Stop the crew** stays the way to stop at once.
 3. The chat orders still work (`mode auto`, `mode manual`), and `mode talk` / `modalità chat` and
@@ -493,3 +494,38 @@ where the other panels are, with their history, to see how the work went and wha
 **Tests.** Engine: the list and the history read from a fake `gh` (opened, merged, closed, with and without
 checks), paging, the numbers of the summary, the link from a pull request to its work, no `gh`. Native: the
 panel draws the three states, the fix shows while it runs, and the filters change the list.
+
+## Job 29. Saving modes: Normal, Safe, Ultra safe
+
+**Why.** The owner wants to spend fewer tokens and less quota when the work allows it, with one choice,
+instead of changing the roles of every model in Team.
+
+**What.**
+
+1. A choice per project, saved, in Team at the top (and in the chat orders `mode normal`, `mode safe`,
+   `mode ultra safe`, `modalità sicura`, `modalità ultra sicura`):
+   - **Normal** (the default, today's behaviour): Planwharf picks the models as it does now (light parts
+     to light models, a strong model for Verify, the lead by ranking).
+   - **Safe:** no premium model, for the lead and the crew: only default and light.
+   - **Ultra safe:** only light models, for the lead and the crew.
+2. The class of a model is its **weight** in Team (premium = high, default = medium, light = low). A model
+   offered in effort variants (for example "(High)", "medium", "low" in its name) counts as that class,
+   unless the owner set its weight in Team.
+3. The mode limits every choice: the proposal, the lead's split and crew choice, every switch and
+   replacement (quota, refusal, no result), the lead hand-over and the background fix of a pull request.
+   The quota limits still hold inside it.
+4. Nobody allowed: the step does not start (or the work stops with a checkpoint), and the chat says which
+   models the mode leaves out and which are under their limit, as for the quota limits. The lead, with no
+   model allowed, keeps the best one of the lowest class available and says so, so the chat never goes
+   silent.
+5. Verify in Safe uses a default model; in Ultra safe a light one verifies (the "strong model for Verify"
+   rule gives way to the mode, and the chat says so once).
+6. The mode shows next to the project name, in the Crew at work card, and in the phone messages and
+   `/status`. Changing it never stops running work: it applies from the next step.
+7. English and Italian for every new text; the user guide describes the three modes.
+
+**Tests.** Engine: in each mode the proposal, the split, a quota switch, a refusal replacement and the lead
+hand-over pick only allowed classes; effort variants are classed by name unless a weight is set; nobody
+allowed stops the work with the reasons; the mode is saved per project and read again after a restart;
+changing it during running work does not stop it. Native: the choice shows the saved mode and each click
+calls the engine once.
