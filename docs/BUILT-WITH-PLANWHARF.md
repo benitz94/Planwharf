@@ -13,9 +13,9 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **23 of 71** | 71 |
+| Engine modules ported to C# | **23 of 72** | 72 |
 | JavaScript engine lines ported | **about 1,856 of 14,000** (13%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the pipeline (jobs 28 to 30), then phase 3. `chat-mode` (job 27) is not ported yet | 0 to 8 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the Pull requests panel (job 28), the pipeline (jobs 29 to 31), then phase 3 | 0 to 8 |
 | C# engine tests | 603, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
@@ -50,14 +50,14 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 17 | #132 | English and Italian in the native app, with a saved language picker, localized dates and a presentation-literal guard | Restored the completed job commit onto `feat/languages` from refreshed main; strengthened placeholder coverage |
 | 18 | #138 | Wrote the worker MCP protocol sheet for `ask`, `progress`, `finish`, `decision`, `handoff` and JSON fallback; implementation awaits review | Named the limits the sheet left implicit. **Sheet only: built by job 25** |
 | 19 | #140 | Wrote the engine-run acceptance gate sheet, including pinned checks outside the candidate branch and evidence bound to the exact worktree snapshot; implementation awaits review | Only the engine may start the gate; a branch cannot trigger or satisfy it. **Sheet only: built by job 26** |
-| 20 | #142 | Wrote the pipeline intake sheet: queue settings for `planwharf` issues and a local list, intake questions, `spec.md` with acceptance tests, file-backed job state, and the owner-approved manifest for the gate; implementation awaits review | **Sheet only: built by job 28** |
-| 21 | #144 | Wrote the pipeline build sheet: routing by risk and parts touched, builder and reviewer pairs, review rounds, gate calls, and one pull request per job; implementation awaits review | Checked against sheets 18–20 and the design. **Sheet only: built by job 29** |
-| 22 | #146 | Wrote the pipeline run sheet: several jobs at once in isolated worktrees within quota, the native pipeline view of stages, time, and quota, and an optional low-risk merge; implementation awaits review | Checked against sheets 18–21 and the design. **Sheet only: built by job 30** |
+| 20 | #142 | Wrote the pipeline intake sheet: queue settings for `planwharf` issues and a local list, intake questions, `spec.md` with acceptance tests, file-backed job state, and the owner-approved manifest for the gate; implementation awaits review | **Sheet only: built by job 29** |
+| 21 | #144 | Wrote the pipeline build sheet: routing by risk and parts touched, builder and reviewer pairs, review rounds, gate calls, and one pull request per job; implementation awaits review | Checked against sheets 18–20 and the design. **Sheet only: built by job 30** |
+| 22 | #146 | Wrote the pipeline run sheet: several jobs at once in isolated worktrees within quota, the native pipeline view of stages, time, and quota, and an optional low-risk merge; implementation awaits review | Checked against sheets 18–21 and the design. **Sheet only: built by job 31** |
 | 23 | #147 | Wrote the phase 2 rest sheet for `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, and `project-workspace`; implementation awaits review | Checked parity cases, commands and file limits for the eight modules |
 | 24 | #158 | Ported the eight phase 2 rest modules to C#: plan.js, quota.js, models.js, sentinel.js, invocations, notebook-file, project-checks, project-workspace | Built in 8 parallel parts, each in its own worktree; a notebook test expected the Windows result everywhere and was made to follow Node on each system |
 | 25 | #172 | Built the worker MCP tools `ask`, `progress`, `finish`, `decision` and `handoff` on the C# engine, with the JSON result file kept for programs that have no verified MCP launch; verified independently with edge-case and concurrent-lock tests | Planwharf's server is registered for Claude and Codex whether or not the owner's MCP checkbox is on, and it never turns the owner's own servers on. Grok, Antigravity, the API agent and a configured CLI stay on the JSON file. A vendor CLI was not executed. Concurrency retry added for session locks and audit log |
 | 26 | #179 | Built the C# acceptance gate. The owner-approved checks live outside the candidate worktree. The engine runs them before review and again after sync with main. A branch cannot choose or weaken those checks | A snapshot that cannot be pinned stops the gate. A shell command runs only when the owner named it. No model is called. A test script was not executable on Linux and macOS; branch brought up to date with main |
-| 27 | #? | Talk, Plan and Auto above the chat, one per project. Talk does not start the crew. Plan is the default and today's behaviour. Auto starts the goal for this session and returns to Plan after a restart. Pipeline is reserved and hidden | A pull-request fix still pushes when the worker push guard is set; verified independently with tests for concurrent remote push, clean no-change fix, and Auto-to-Talk running work preservation |
+| 27 | #186 | Talk, Plan and Auto above the chat, one per project. Talk does not start the crew. Plan is the default and today's behaviour. Auto starts the goal for this session and returns to Plan after a restart. Pipeline is reserved and hidden | A pull-request fix still pushes when the worker push guard is set; verified independently with tests for concurrent remote push, clean no-change fix, and Auto-to-Talk running work preservation |
 
 ## Improvements found while Planwharf worked on itself
 
@@ -100,3 +100,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | Fixing a pull request opened a new work in the chat, and checked out its branch in the owner's folder; now it is fixed in the background, in a copy, and pushed to the same branch | #181 |
 | A lead that failed twice handed over to Fable 5.2, which needed usage credits, and the chat stopped there; looking for models again brought Fable back | #182 |
 | A lead that did not answer handed over to a model under its company's quota limit | #183 |
+| The phone messages were long and did not say who leads, builds and verifies | #184 |

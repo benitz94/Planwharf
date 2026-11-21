@@ -67,18 +67,19 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 30 | `feat/chat-modes` | Done, waiting for review |
-| 28 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
-| 29 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
-| 30 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
-| 31 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/31-sheet` | To do |
-| 32 | 3. | Port them, as sheet 31 says | `port/32-phase3` | To do |
-| 33 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/33-sheet` | To do |
-| 34 | 4. | Port them, as sheet 33 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/34-phase4` | To do |
-| 35 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/35-sheet` | To do |
-| 36 | 5. | Port them, as sheet 35 says. Then **stop**: the owner approves the orchestrator split | `port/36-phase5` | To do |
-| 37 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/37-sheets` | To do |
-| 38+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/38-…` | To do |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 31 | `feat/chat-modes` | Done (#186) |
+| 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | To do |
+| 29 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
+| 30 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
+| 31 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
+| 32 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/32-sheet` | To do |
+| 33 | 3. | Port them, as sheet 32 says | `port/33-phase3` | To do |
+| 34 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/34-sheet` | To do |
+| 35 | 4. | Port them, as sheet 34 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/35-phase4` | To do |
+| 36 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/36-sheet` | To do |
+| 37 | 5. | Port them, as sheet 36 says. Then **stop**: the owner approves the orchestrator split | `port/37-phase5` | To do |
+| 38 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/38-sheets` | To do |
+| 39+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/39-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -449,7 +450,7 @@ letting the crew go on by itself. The owner wants to pick one with one click, in
    - **Auto:** the crew starts the goal by itself, and goes on with the next one within the limits of
      [project autonomy](PROJECT-AUTONOMY.md). It is today's automatic mode with the project's autonomy on,
      in one click; it lasts the session, as autonomy does now.
-2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 30 adds
+2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 31 adds
    ([switching between the two](DESIGN-PIPELINE.md#switching-between-the-two)); until then it is not shown. Moving to **Talk** or **Plan** while the crew works ends Auto
    after the current goal; **Stop the crew** stays the way to stop at once.
 3. The chat orders still work (`mode auto`, `mode manual`), and `mode talk` / `modalità chat` and
@@ -463,3 +464,32 @@ creates no proposal; Plan behaves as today; Auto approves and starts a proposal 
 autonomy limits; the mode is saved per project and read again after a restart (Auto returns as Plan, since
 autonomy lasts one session); switching during running work does not stop it. Native: the switch shows the
 saved mode, and each click calls the engine once.
+
+## Job 28. The Pull requests panel
+
+**Why.** Check PRs is a button that answers once in a dialog. The owner wants the project's pull requests
+where the other panels are, with their history, to see how the work went and what keeps failing.
+
+**What.**
+
+1. **Pull requests** in the top bar, next to Team, Progress, Usage, Files and Settings, opens a side
+   panel; it replaces the Check PRs button.
+2. **Open:** each open pull request with its number, title, branch, when it was opened and last updated,
+   its checks (each one green, red or running, by name), whether it has conflicts, and **Open on GitHub**.
+   A pull request with conflicts or red checks has **Fix in the background** (as Check PRs does now, one
+   pull request at a time) and shows the fix while it runs, then its result.
+3. **History:** the merged and closed pull requests of the project, newest first, 30 at a time with
+   **Show more**: number, title, merged or closed, when, how long from opened to merged, and whether
+   Planwharf fixed it in the background.
+4. **What Planwharf knows of its own:** for a pull request opened by the Push button, the work behind it
+   (its goal, its time, the lead and the models of its steps), from the work record. The engine keeps the
+   pull request number on the work when it opens it.
+5. **To analyse:** at the top, for the last 30 days: pull requests merged, the median time to merge, how
+   many needed a fix, and the checks that failed most often.
+6. **Filters:** open, merged, closed; opened by Planwharf or by others.
+7. Everything comes from `gh` (no token kept by Planwharf); without `gh` the panel says what to install,
+   and the rest of the app works as before. English and Italian for every text.
+
+**Tests.** Engine: the list and the history read from a fake `gh` (opened, merged, closed, with and without
+checks), paging, the numbers of the summary, the link from a pull request to its work, no `gh`. Native: the
+panel draws the three states, the fix shows while it runs, and the filters change the list.

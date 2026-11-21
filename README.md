@@ -29,8 +29,8 @@ reviewed before it is merged.
 
 | So far | |
 |---|---|
-| Jobs done by Planwharf on itself | **26**, from the first C# modules to the workers' own tools and the acceptance gate |
-| C# engine | **23 of 71 modules** ported, 603 tests, 247 cases compared with the JavaScript result by result |
+| Jobs done by Planwharf on itself | **27**, from the first C# modules to the acceptance gate and the chat modes |
+| C# engine | **23 of 72 modules** ported, 603 tests, 247 cases compared with the JavaScript result by result |
 | Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |
 
@@ -55,24 +55,13 @@ When the work is done, a summary says what happened, who did what and what is le
 On the phone, a Telegram bot keeps you posted, in the voice of a ship's crew ([more examples](docs/PHONE.md)):
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN!
-
-🏆 Mission accomplished!
-The work is finished.
-
-🚢 Ship
-Recipe app
-
-🎯 Mission
-Add a shopping list to the recipes
-
-🧭 Status
-Done ✅
-
-⏱️ Voyage time
-31m
-
-🍻 The work is in the hold. Inspect the treasure and push it when you like it.
+🏴‍☠️ AHOY, CAPTAIN! 🔁 Change of watch!
+🚢 Recipe app · 🎯 Add a shopping list to the recipes
+🧭 Switched model 🔁 · ■□ 1/2 · ⏳ About 8 minutes
+👑 Lead Grok 4.7
+🔨 Build Opus 5.5 ✅
+🔍 Verify GPT-6 Astra → Gemini 3.8 Flash ⚙️
+🦜 Another sailor took over this step.
 ```
 
 ## Download

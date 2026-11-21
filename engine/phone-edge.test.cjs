@@ -586,10 +586,10 @@ test('overlapping alerts keep ntfy plain and telegram HTML separate', async () =
     }
     const joined = telegram.map(item => item.text).join('\n');
     assert.equal(telegram.every(item => item.parse_mode === 'HTML'), true);
-    assert.match(joined, /🚢 <b>Ship<\/b>\nA &lt;1&gt;/);
+    assert.match(joined, /🚢 <b>A &lt;1&gt;<\/b>/);
     assert.match(joined, /Raise &lt;sail&gt;/);
     assert.match(joined, /■□ 1\/2/);
-    assert.match(joined, /🚢 <b>Ship<\/b>\nB &amp; 2/);
+    assert.match(joined, /🚢 <b>B &amp; 2<\/b>/);
     assert.match(joined, /□□□ 0\/3/);
     assert.equal(joined.includes('<1>'), false);
     assert.equal(joined.includes('<sail>'), false);

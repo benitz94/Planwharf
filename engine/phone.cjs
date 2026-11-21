@@ -282,7 +282,33 @@ function missionTitle(goalTitle) {
     .replace(/[,;:]\s*$/, '').trim() || 'Work';
 }
 
-function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language }) {
+// The crew of a project as the phone shows it: the lead, then each Build and Verify step with its model and
+// state. A model that took over since the last message shows as "before → now".
+const STEP_STATE = { COMPLETE: '✅', RUNNING: '⚙️', FAILED: '❌', BLOCKED: '⚠️' };
+function crewOfProject(project, models = [], previous = {}) {
+  if (!project) return null;
+  const label = id => (models.find(model => model && model.id === id) || {}).label || id || '';
+  const lead = (Array.isArray(project.crew) ? project.crew : []).find(member => member && member.role === 'Orchestrator')?.name || '';
+  const steps = (Array.isArray(project.subTasks) ? project.subTasks : []).filter(Boolean).map(sub => {
+    const name = label(sub.assignedModelId);
+    const verify = /^Verify the work independently/i.test(String(sub.title || '')) || /^check\b/i.test(String(sub.title || ''));
+    const from = previous[sub.id] && previous[sub.id] !== name ? previous[sub.id] : '';
+    return { id: sub.id, role: verify ? 'verify' : 'build', name, from, state: STEP_STATE[sub.status] || '' };
+  });
+  return { lead, leadFrom: previous.__lead && previous.__lead !== lead ? previous.__lead : '', build: steps.filter(step => step.role === 'build'), verify: steps.filter(step => step.role === 'verify') };
+}
+
+function crewLines(crew) {
+  if (!crew) return [];
+  const who = step => `${step.from ? escapeHtml(sanitizeText(step.from)) + ' → ' : ''}${escapeHtml(sanitizeText(step.name))}${step.state ? ' ' + step.state : ''}`;
+  const lines = [];
+  if (crew.lead) lines.push(`👑 <b>Lead</b> ${crew.leadFrom ? escapeHtml(sanitizeText(crew.leadFrom)) + ' → ' : ''}${escapeHtml(sanitizeText(crew.lead))}`);
+  if (crew.build.length) lines.push(`🔨 <b>Build</b> ${crew.build.map(who).join(' · ')}`);
+  if (crew.verify.length) lines.push(`🔍 <b>Verify</b> ${crew.verify.map(who).join(' · ')}`);
+  return lines;
+}
+
+function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language, crew }) {
   const lang = languageOrDefault(language);
   const voice = BUCCANEER[lang] || BUCCANEER.en;
   const known = Object.prototype.hasOwnProperty.call(ALERT_LABELS, type);
@@ -290,43 +316,27 @@ function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinu
   const [headline, signoff] = voice.lines[kind] || voice.lines.updated;
   const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
 
-  const lines = [
-    `🏴‍☠️ <b>${voice.ahoy}</b>`,
-    '',
-    headline,
-    `<i>${escapeHtml(plainAlert(lang, kind))}</i>`,
-    '',
-    `🚢 <b>${voice.project}</b>`,
-    safeProject,
-    '',
-    `🎯 <b>${voice.mission}</b>`,
-    htmlWithCode(missionTitle(goalTitle)),
-    '',
-    `🧭 <b>${voice.status}</b>`,
-    telegramAlertLabel(lang, kind)
-  ];
-
+  // One line each: the news, where, how far, who.
+  const status = [telegramAlertLabel(lang, kind)];
+  const bar = formatProgressBar(step);
+  if (bar) status.push(bar);
   if (kind === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
-    if (dur) lines.push('', `⏱️ <b>${voice.duration}</b>`, dur);
+    if (dur) status.push('⏱️ ' + dur);
   }
-
   if (timeLeft && timeLeft.minutes != null) {
     let timeText = voice.minutes(timeLeft.minutes);
     if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
-    if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
-    lines.push('', `⏳ <b>${voice.timeLeft}</b>`, escapeHtml(timeText));
+    status.push('⏳ ' + escapeHtml(timeText));
   }
-
-  const bar = formatProgressBar(step);
-  if (bar) {
-    const caption = progressCaption(lang, step);
-    lines.push('', bar + (caption ? `  ${escapeHtml(caption)}` : ''));
-  }
-
-  if (detail) lines.push('', htmlWithCode(sanitizeText(detail)));
-  lines.push('', signoff);
-
+  const lines = [
+    `🏴‍☠️ <b>${voice.ahoy}</b> ${headline}`,
+    `🚢 <b>${safeProject}</b> · 🎯 ${htmlWithCode(missionTitle(goalTitle))}`,
+    `🧭 ${status.join(' · ')}`,
+    ...crewLines(crew)
+  ];
+  if (detail) lines.push(htmlWithCode(sanitizeText(detail)));
+  lines.push(signoff);
   return lines.join('\n');
 }
 
@@ -599,6 +609,7 @@ function createPhoneNotifier({
   }
   const projectStates = new Map();
   const stepStates = new Map(); // projectId -> status
+  const crewBefore = new Map(); // projectId -> { subTaskId: model label, __lead: lead label } at the last message
   const lanes = { transitions: Promise.resolve(), commands: Promise.resolve() };
   const chatMemory = loadChatMemory(storeDir);
   const confirmWindowMs = Number.isFinite(confirmWindowMsOption) && confirmWindowMsOption > 0 ? confirmWindowMsOption : 60000;
@@ -658,7 +669,7 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew }) {
     const fresh = loadPhoneSettings(storeDir);
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
@@ -681,7 +692,7 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
-        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language: fresh.language });
+        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, language: fresh.language });
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
@@ -722,9 +733,22 @@ function createPhoneNotifier({
       const step = runningStep(p);
       const prevStep = stepStates.get(p.id) || null;
       stepStates.set(p.id, step);
+      // Who held each step and the lead before: a change shows with an arrow in the next message.
+      const before = crewBefore.get(p.id) || {};
+      const crew = crewOfProject(p, Array.isArray(snapshot.models) ? snapshot.models : [], before);
       const alertType = alertForStatus(prev, curr) || (curr === 'watching' ? alertForStep(prevStep, step) : null);
-      if (!alertType) continue;
-      const detail = alertType === 'switched' && step ? `Now: ${step.model}` : alertType === 'verify' ? 'A different model is checking the work.' : alertType === 'restarted' ? 'The same step started again.' : '';
+      if (!alertType) {
+        // No message now: keep the first model of each changed step, so the arrow shows it later.
+        const kept = { ...before };
+        for (const item of [...(crew?.build || []), ...(crew?.verify || [])]) if (!kept[item.id]) kept[item.id] = item.name;
+        if (!kept.__lead && crew?.lead) kept.__lead = crew.lead;
+        crewBefore.set(p.id, kept);
+        continue;
+      }
+      const now = { __lead: crew?.lead || '' };
+      for (const item of [...(crew?.build || []), ...(crew?.verify || [])]) now[item.id] = item.name;
+      crewBefore.set(p.id, now);
+      const detail = alertType === 'restarted' ? 'The same step started again.' : '';
       await sendAlert({
         type: alertType,
         projectId: p.id,
@@ -732,7 +756,8 @@ function createPhoneNotifier({
         goalTitle: p.goal || p.jobTitle,
         timeLeft: p.timeLeft,
         detail,
-        step: p.step
+        step: p.step,
+        crew
       });
     }
   }
@@ -1182,7 +1207,7 @@ function createPhoneNotifier({
   };
 }
 
-module.exports = { alertForStatus, alertForStep,
+module.exports = { alertForStatus, alertForStep, crewOfProject,
   escapeHtml,
   formatProgressBar,
   sanitizeText,
