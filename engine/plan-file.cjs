@@ -99,6 +99,16 @@ function namedBranch(text) {
   return null;
 }
 
+// "Fix pull request #172" works on that pull request's own branch, read with the GitHub CLI, so the
+// push updates the same pull request instead of opening another. Null without the CLI or the number.
+function pullRequestBranch(folder, text) {
+  const number = String(text || '').match(/\bpull request #(\d+)\b/i)?.[1];
+  if (!number) return null;
+  const read = require('node:child_process').spawnSync('gh', ['pr', 'view', number, '--json', 'headRefName', '--jq', '.headRefName'], { cwd: folder, encoding: 'utf8', windowsHide: true, timeout: 20000 });
+  const name = read.status === 0 ? String(read.stdout || '').trim() : '';
+  return /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(name) ? name : null;
+}
+
 // "On fix/plan-file, ..." names a branch only when that branch already exists here or on the remote.
 function leadingBranch(folder, text) {
   const match = String(text || '').match(/^\s*on\s+([A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9._/-]*[A-Za-z0-9_-])\s*[,:]/i);
@@ -280,7 +290,7 @@ function prepare(folder, options = {}) {
   if (options.keepWorkPlan !== true) ensureExclude(folder, false);
   const goal = String(options.goal || '').trim();
   const asked = options.branch && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(options.branch) ? options.branch : null;
-  const name = asked || namedBranch(goal) || leadingBranch(folder, goal) || branchName(goal, null);
+  const name = asked || namedBranch(goal) || pullRequestBranch(folder, goal) || leadingBranch(folder, goal) || branchName(goal, null);
   // Uncommitted changes block a new work, not the same work going on: on its own branch they are the
   // crew's unfinished changes, and the next step starts from them.
   let dirty = dirtyLines(folder, options.keepWorkPlan === true).filter(line => !isNoise(line));
@@ -319,8 +329,10 @@ function prepare(folder, options = {}) {
     base = `${remote} ${shortSha(baseSha)}`;
     startPoint = remote;
   }
-  const existed = branchExists(folder, name);
-  const switched = switchTo(folder, name, existed ? null : startPoint);
+  // A branch that is only on GitHub (a pull request's) is taken from there, not made anew from main.
+  const remoteOnly = !branchExists(folder, name) && git(folder, ['show-ref', '--verify', '--quiet', 'refs/remotes/origin/' + name]).ok;
+  const existed = branchExists(folder, name) || remoteOnly;
+  const switched = switchTo(folder, name, remoteOnly ? 'origin/' + name : existed ? null : startPoint);
   if (!switched.ok) return switched;
   // A work that already has its branch goes on from where it started: main may have moved on since, and
   // that is fine. The branch only has to come from the same history; its base is where it left main.

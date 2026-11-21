@@ -52,3 +52,25 @@ test('an ordinary quota refusal is not mistaken for missing credits', async t =>
   const opus = (await orchestra.tick()).models.find(item => item.id === 'claude-opus-5-5');
   assert.notEqual(opus.creditsNeeded, true);
 });
+
+test('the hand-over goes down the list: out of quota, then a lead that needs credits, then one that answers', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-credits-chain-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const plan = require('../plan.js').example(); plan.tasks = [];
+  const model = (id, label, provider, kind) => ({ id, label, provider, adapter: provider, cli: id, plan: provider, enabled: true, available: true, cost: 1, limit: 100, kind,
+    providerCatalog: true, capabilities: { canCode: true, canUseTools: true }, roles: { orchestrator: true, worker: true } });
+  const answers = {
+    'grok-4-7': { failure: 'provider', diagnostic: { code: 'PROVIDER_USAGE_LIMIT' }, answer: 'Rate limit reached: quota exceeded.' },
+    'claude-fable-5-2': { failure: 'provider', diagnostic: { code: 'PROVIDER_USAGE_LIMIT' }, answer: 'claude CLI failed (provider): Fable 5.2 requires usage credits. Switch to another model.' }
+  };
+  const asked = [];
+  const orchestra = createOrchestrator({ dir, readPlan: async () => plan, fetchPlans: null, attempts: createAttemptEngine({ dir: path.join(dir, 'attempts') }),
+    models: [model('grok-4-7', 'Grok 4.7', 'grok', 'premium'), model('claude-fable-5-2', 'Fable 5.2', 'claude', 'premium'), model('gpt-6-astra', 'GPT-6 Astra', 'codex', 'default')],
+    askModel: async info => { const id = info.model?.id; asked.push(id); return answers[id] || { answer: 'Aye.', ms: 1 }; } });
+  assert.equal((await orchestra.setOrchestrator('grok-4-7')).ok, true);
+  const reply = await orchestra.ask('Read docs/NEXT-WORK.md and continue.', undefined);
+  assert.deepEqual(asked.slice(0, 3), ['grok-4-7', 'claude-fable-5-2', 'gpt-6-astra']);
+  assert.match(JSON.stringify(reply), /Aye\./, 'the last lead answers the message');
+  const fable = (await orchestra.tick()).models.find(item => item.id === 'claude-fable-5-2');
+  assert.equal(fable.creditsNeeded, true);
+});

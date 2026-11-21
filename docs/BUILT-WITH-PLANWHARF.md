@@ -15,8 +15,8 @@ numbers below.
 |---|---|---|
 | Engine modules ported to C# | **23 of 55** | 55 |
 | JavaScript engine lines ported | **about 1,856 of 10,300** (18%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the protocol and the pipeline (jobs 25 to 29), then phase 3 | 0 to 8 |
-| C# engine tests | 547, plus 247 comparison cases with the JavaScript | |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the protocol and the pipeline (job 25 waiting for review, then jobs 26 to 29), then phase 3 | 0 to 8 |
+| C# engine tests | 578, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
 `browser-settings`, `invocations`, `model-policy`, `model-roles`, `models`, `notebook-file`,
@@ -55,6 +55,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 22 | #146 | Wrote the pipeline run sheet: several jobs at once in isolated worktrees within quota, the native pipeline view of stages, time, and quota, and an optional low-risk merge; implementation awaits review | Checked against sheets 18–21 and the design. **Sheet only: built by job 29** |
 | 23 | #147 | Wrote the phase 2 rest sheet for `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, and `project-workspace`; implementation awaits review | Checked parity cases, commands and file limits for the eight modules |
 | 24 | #158 | Ported the eight phase 2 rest modules to C#: plan.js, quota.js, models.js, sentinel.js, invocations, notebook-file, project-checks, project-workspace | Built in 8 parallel parts, each in its own worktree; a notebook test expected the Windows result everywhere and was made to follow Node on each system |
+| 25 | #? | Built the worker MCP tools `ask`, `progress`, `finish`, `decision` and `handoff` on the C# engine, with the JSON result file kept for programs that have no verified MCP launch; verified independently with edge-case and concurrent-lock tests | Planwharf's server is registered for Claude and Codex whether or not the owner's MCP checkbox is on, and it never turns the owner's own servers on. Grok, Antigravity, the API agent and a configured CLI stay on the JSON file. A vendor CLI was not executed. Concurrency retry added for session locks and audit log |
 
 ## Improvements found while Planwharf worked on itself
 
@@ -91,4 +92,5 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A quota error was reported as a sign-in error | #148 |
 | Open pull requests could not be checked from the app; company status was not in Usage | #151, #157 |
 | Pull requests were named "push"; the plan read "Done" for jobs that had only written their sheet | #159 |
+| An open decision of an earlier work was asked again under every new proposal | #175 |
 | A work with one build step was announced as "split into 0 parts", as if the builder had nothing to do | #176 |
