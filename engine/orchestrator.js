@@ -1172,7 +1172,7 @@ function createOrchestrator(options) {
     catch (error) { ledger.finish(id, 'FAILED'); throw error; }
   };
 
-  let store = { autonomy: {}, chatModes: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null };
+  let store = { autonomy: {}, chatModes: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null, pullRequestFixes: [] };
   // Chat replies in flight, one per project: asking in one project never cancels another.
   let thinkingByKey = {};
   const askTokens = new Map();
@@ -1230,6 +1230,7 @@ function createOrchestrator(options) {
           projectArchive: Array.isArray(parsed.projectArchive) ? parsed.projectArchive : [],
           projectTools: parsed.projectTools && typeof parsed.projectTools === 'object' && !Array.isArray(parsed.projectTools) ? parsed.projectTools : {},
           execution: parsed.execution,
+          pullRequestFixes: Array.isArray(parsed.pullRequestFixes) ? parsed.pullRequestFixes.filter(item => item && typeof item.projectId === 'string' && Number.isInteger(item.number)) : [],
           briefingBaselines: parsed.briefingBaselines || {},
           selectedProjectId: parsed.selectedProjectId || null,
           sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
@@ -1283,6 +1284,9 @@ function createOrchestrator(options) {
     fs.writeFileSync(temporary, JSON.stringify(store) + '\n', { encoding: 'utf8', flag: 'wx' });
     renameWithRetry(temporary, stateFile);
   }
+  // A background fix of one pull request at a time, and the record kept after it finishes.
+  const prFixes = new Map();
+  store.pullRequestFixes ||= [];
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
@@ -4199,29 +4203,45 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
   // model under its limit resolves what is left (conflicts, failing checks); the engine checks the result
   // and pushes to the same branch, so the same pull request updates. The chat shows a line when it starts
   // and one when it ends.
-  const prFixes = new Map();
   async function fixPullRequest(projectId, number) {
     if (!dir || typeof opts.spawnWorker !== 'function') return { ok: false, reason: 'Background fixes need the engine data folder.' };
     if (!Number.isInteger(number) || number <= 0) return { ok: false, reason: 'Pull request number required.' };
-    const item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
-    if (!item?.project?.folder) return { ok: false, reason: 'Project folder required.' };
-    if (!/^[A-Za-z0-9_-]{1,100}$/.test(projectId)) return { ok: false, reason: 'Unusual project id.' };
+    if (typeof projectId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(projectId)) return { ok: false, reason: 'Unusual project id.' };
     const key = projectId + '#' + number;
     if (prFixes.has(key)) return { ok: true, started: false, reason: `#${number} is already being fixed.` };
+    if ([...prFixes.keys()].some(other => other.startsWith(projectId + '#'))) return { ok: false, reason: 'A fix is already running.' };
+    // Taken before the notebook is read, so two clicks cannot both pass the check.
+    prFixes.set(key, { startedAt: now(), text: '' });
+    let item;
+    try {
+      item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
+    } catch (error) {
+      prFixes.delete(key);
+      throw error;
+    }
+    if (!item?.project?.folder) {
+      prFixes.delete(key);
+      return { ok: false, reason: 'Project folder required.' };
+    }
     const pr = require('./pr-check.cjs');
     const fixId = 'fix-' + Date.now().toString(36);
     const megaTaskId = 'pr-' + number;
     const worktree = path.join(dir, 'worktrees', projectId, megaTaskId, fixId);
-    prFixes.set(key, { startedAt: now() });
     const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
-    const done = (type, text) => { prFixes.delete(key); say(type, text); };
+    const done = (type, text) => {
+      markPullRequestFix(projectId, number, type === 'PR_FIX_COMPLETED' ? 'fixed' : 'failed', text);
+      say(type, text);
+    };
     inTeam(projectId, async () => {
       let fix;
+      // A finished commit whose push was refused stays in its copy.
+      let keepLocal = false;
+      const noteKept = result => { if (result && result.kept) keepLocal = true; return result; };
       try {
         fix = await pr.prepareFix(item.project.folder, number, worktree);
         if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
         if (!fix.conflicts.length && !fix.failing.length) {
-          const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+          const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
         const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false
@@ -4229,7 +4249,10 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' });
         const model = leadQuality(roster().filter(usable))[0];
         if (!model) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`);
-        say('PR_FIX_STARTED', `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`);
+        const started = `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`;
+        prFixes.set(key, { startedAt: (prFixes.get(key) || {}).startedAt || now(), text: started });
+        markPullRequestFix(projectId, number, 'started', started);
+        say('PR_FIX_STARTED', started);
         const work = [];
         if (fix.conflicts.length) work.push(`The merge of origin/${fix.base} into this branch stopped on conflicts in: ${fix.conflicts.join(', ')}. Resolve each conflict keeping what both sides meant (the branch's own work and what ${fix.base} added since), remove every conflict marker, and finish the merge with git add and git commit --no-edit.`);
         if (fix.failing.length) work.push(`These checks fail on the pull request: ${fix.failing.join(', ')}. Read their logs with \`gh pr checks ${number}\` and \`gh run view --log-failed\`, reproduce the failure locally, fix the cause (not the test, unless the test is wrong), and commit.`);
@@ -4249,20 +4272,85 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           if (typeof opts.isProcessAlive === 'function' && !opts.isProcessAlive(launched.pid)) break;
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
-        const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+        const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
+        // The worker was started because checks or conflicts were still wrong. If it
+        // never wrote a result and changed nothing, that is not a finished fix.
+        if (result.ok && !result.changed && !fs.existsSync(info.exitPath)) {
+          const alive = typeof opts.isProcessAlive === 'function' && opts.isProcessAlive(launched.pid);
+          const why = alive ? 'did not finish in time' : 'stopped before it finished';
+          return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} ${why}. Nothing was pushed.`);
+        }
         done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok
           ? `${model.label || model.id} fixed pull request #${number}: ${result.reason}`
           : `Pull request #${number} was not fixed by ${model.label || model.id}: ${result.reason} Nothing was pushed.`);
       } catch (error) {
         done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${error.message}`);
       } finally {
-        if (fix?.ok !== false) await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+        // The lock waits until this attempt's copy is gone, so a retry gets a new folder.
+        // A push that was refused keeps that copy: the finished commit is only there.
+        try {
+          if (!keepLocal) {
+            await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+            const copy = path.resolve(worktree);
+            const copies = path.resolve(dir, 'worktrees') + path.sep;
+            if (copy.toLowerCase().startsWith(copies.toLowerCase())) fs.rmSync(copy, { recursive: true, force: true });
+          }
+        } finally {
+          prFixes.delete(key);
+        }
       }
     });
     return { ok: true, started: true };
   }
+  // The panel keeps one short line. A long remote refusal must not cut off the sentence that says the commit is still on this computer.
+  function clipFixNote(text) {
+    const value = String(text || '');
+    if (value.length <= 300) return value;
+    const mark = 'The commit is saved locally.';
+    const at = value.indexOf(mark);
+    if (at < 0) return value.slice(0, 300);
+    const tail = value.slice(at);
+    if (tail.length >= 300) return tail.slice(0, 300);
+    const head = value.slice(0, at).slice(0, 300 - tail.length - 1).replace(/\s+\S*$/, '').trimEnd();
+    return head ? head + '…' + tail : tail;
+  }
+  function markPullRequestFix(projectId, number, result, text) {
+    store.pullRequestFixes ||= [];
+    let row = store.pullRequestFixes.find(item => item && item.projectId === projectId && item.number === number);
+    if (!row) { row = { projectId, number }; store.pullRequestFixes.push(row); }
+    row.result = result;
+    row.text = clipFixNote(text);
+    row.at = now();
+  }
+  // The Push button keeps the pull request number on the work it opened.
+  function rememberPullRequest(projectId, number, url) {
+    if (typeof projectId !== 'string' || !Number.isInteger(number) || number <= 0) return { ok: false, reason: 'Pull request number required.' };
+    const row = store.projects[projectId];
+    const megas = (store.execution && store.execution.megaTasks || []).filter(mega => mega && mega.projectId === projectId);
+    const mega = megas.find(item => item.id === (row && row.megaTaskId)) || megas.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0];
+    if (!mega) return { ok: false, reason: 'No work to attach.' };
+    mega.pullRequest = number;
+    if (url) mega.pullRequestUrl = String(url).slice(0, 300);
+    persist();
+    return { ok: true, megaTaskId: mega.id, number };
+  }
+  function pullRequestContext(projectId) {
+    const labels = new Map(roster().map(model => [model.id, model.label || model.id]));
+    const name = id => labels.get(id) || id || '';
+    const works = (store.execution && store.execution.megaTasks || []).filter(mega => mega && mega.projectId === projectId && Number.isInteger(mega.pullRequest)).map(mega => ({
+      number: mega.pullRequest,
+      goal: String(mega.goal || mega.title || '').split(/\r?\n/)[0],
+      startedAt: mega.approvedAt || mega.createdAt || null,
+      completedAt: mega.completedAt || null,
+      lead: name(mega.orchestratorModelId),
+      steps: (store.execution.subTasks || []).filter(sub => sub && sub.megaTaskId === mega.id).map(sub => ({ title: sub.title || '', model: name(sub.assignedModelId) }))
+    }));
+    const fixes = (store.pullRequestFixes || []).filter(item => item && item.projectId === projectId).map(item => ({ number: item.number, result: item.result, text: item.text || '', at: item.at || null }));
+    const fixing = [...prFixes.entries()].filter(([key]) => key.startsWith(projectId + '#')).map(([key, value]) => ({ number: Number(key.slice(projectId.length + 1)), startedAt: value && value.startedAt || null, text: value && value.text || '' }));
+    return { works, fixes, fixing };
+  }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, fixPullRequest, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

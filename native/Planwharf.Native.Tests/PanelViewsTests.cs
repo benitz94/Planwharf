@@ -122,4 +122,72 @@ public class PanelViewsTests
         Assert.Equal("This folder is not tracked by Git, so Planwharf cannot list what changed.", PanelViews.Files(JsonNode.Parse("""{ "local": { "exists": true, "git": false } }"""), "/x", null).Message);
         Assert.Equal("The folder /x does not exist.", PanelViews.Files(JsonNode.Parse("""{ "local": { "exists": false } }"""), "/x", null).Message);
     }
+
+    static JsonNode Pulls() => JsonNode.Parse("""
+    { "ok": true, "state": "open", "author": "all", "more": true,
+      "summary": { "merged": 4, "medianMergeMs": 172800000, "neededFix": 1, "failedChecks": [ { "name": "build", "count": 3 }, { "name": "test", "count": 1 } ] },
+      "items": [
+        { "number": 12, "title": "Add the chart", "branch": "feat/chart", "url": "https://github.com/acme/app/pull/12", "state": "open",
+          "openedAt": "2026-11-20T09:00:00Z", "updatedAt": "2026-11-21T08:00:00Z", "conflicts": true, "byPlanwharf": true, "canFix": true,
+          "checks": [ { "name": "build", "state": "red" }, { "name": "lint", "state": "running" }, { "name": "odd", "state": "purple" } ],
+          "work": { "goal": "Add a 7-day chart", "startedAt": "2026-11-20T09:00:00Z", "completedAt": "2026-11-20T11:00:00Z", "lead": "Grok 4.7", "steps": [ { "title": "Draw the chart", "model": "Opus 5.5" } ] } },
+        { "number": 8, "title": "Fix the legend", "branch": "feat/legend", "url": "https://github.com/acme/app/pull/8", "state": "merged",
+          "openedAt": "2026-11-18T09:00:00Z", "mergedAt": "2026-11-19T09:00:00Z", "updatedAt": "2026-11-19T09:00:00Z", "durationMs": 86400000,
+          "byPlanwharf": true, "fixStatus": "fixed", "fixText": "Conflicts resolved.", "checks": [ { "name": "build", "state": "green" } ] },
+        { "number": 3, "title": "Old notes", "branch": "feat/notes", "url": "https://github.com/acme/app/pull/3", "state": "closed",
+          "openedAt": "2026-11-01T09:00:00Z", "closedAt": "2026-11-02T09:00:00Z", "updatedAt": "2026-11-02T09:00:00Z", "byPlanwharf": false } ] }
+    """)!;
+
+    [Fact]
+    public void Pull_requests_keep_open_merged_and_closed_and_the_filters_pick_them()
+    {
+        var panel = PanelViews.PullRequests(Pulls(), TimeZoneInfo.Utc);
+        Assert.Null(panel.Message);
+        Assert.True(panel.More);
+        Assert.Equal(4, panel.Summary.Merged);
+        Assert.Equal("2 d", panel.Summary.Median);
+        Assert.Equal(1, panel.Summary.NeededFix);
+        Assert.Equal([new FailedCheck("build", 3), new FailedCheck("test", 1)], panel.Summary.FailedChecks);
+        var open = Assert.Single(PanelViews.Matching(panel.Items, "open", "all"));
+        Assert.Equal(("#12", "Add the chart", "feat/chart", true, true), ( "#" + open.Number, open.Title, open.Branch, open.Conflicts, open.CanFix));
+        Assert.Equal([new PullCheck("build", "red"), new PullCheck("lint", "running"), new PullCheck("odd", "running")], open.Checks);
+        Assert.Equal("Add a 7-day chart", open.Work!.Goal);
+        Assert.Equal("Grok 4.7", open.Work.Lead);
+        Assert.Equal(new PullStep("Draw the chart", "Opus 5.5"), Assert.Single(open.Work.Steps));
+        var merged = Assert.Single(PanelViews.Matching(panel.Items, "merged", "planwharf"));
+        Assert.Equal(("fixed", "24 h", "Conflicts resolved."), (merged.FixStatus, merged.Duration, merged.FixText));
+        Assert.Equal(3, Assert.Single(PanelViews.Matching(panel.Items, "closed", "others")).Number);
+        Assert.Empty(PanelViews.Matching(panel.Items, "open", "others"));
+        Assert.Empty(PanelViews.Matching(panel.Items, "closed", "planwharf"));
+    }
+
+    [Fact]
+    public void Pull_requests_say_what_to_install_when_gh_is_missing_and_keep_a_running_fix()
+    {
+        Assert.Equal("Checking pull requests…", PanelViews.PullRequests(null).Message);
+        var missing = PanelViews.PullRequests(JsonNode.Parse("""{ "ok": false, "missing": true }""")!);
+        Assert.True(missing.Missing);
+        Assert.StartsWith("GitHub CLI (gh) is not installed.", missing.Message);
+        Assert.Empty(missing.Items);
+        var denied = PanelViews.PullRequests(JsonNode.Parse("""{ "ok": false, "reason": "gh auth login" }""")!);
+        Assert.False(denied.Missing);
+        Assert.Equal("gh auth login", denied.Message);
+        var running = JsonNode.Parse("""{ "ok": true, "items": [ { "number": 12, "title": "Add the chart", "state": "open", "fixStatus": "running", "fixText": "Reading the failing check", "canFix": false, "conflicts": true } ] }""")!;
+        var row = Assert.Single(PanelViews.PullRequests(running, TimeZoneInfo.Utc).Items);
+        Assert.Equal(("running", "Reading the failing check", false), (row.FixStatus, row.FixText, row.CanFix));
+        Assert.Equal("under a minute", PanelViews.Span(1000));
+        Assert.Equal("—", PanelViews.Span(null));
+        Assert.Equal("—", PanelViews.Span(-1));
+    }
+
+    [Fact]
+    public void Pull_filters_keep_the_open_list_when_the_choice_is_not_one_of_the_chips()
+    {
+        var panel = PanelViews.PullRequests(Pulls(), TimeZoneInfo.Utc);
+        Assert.Equal(12, Assert.Single(PanelViews.Matching(panel.Items, "open", "anyone")).Number);
+        Assert.Equal(12, Assert.Single(PanelViews.Matching(panel.Items, "nope", "all")).Number);
+        var missing = PanelViews.PullRequests(JsonNode.Parse("""{ "ok": false }""")!);
+        Assert.Equal("Could not read pull requests.", missing.Message);
+        Assert.Empty(missing.Items);
+    }
 }

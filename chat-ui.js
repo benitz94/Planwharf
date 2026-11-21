@@ -67,6 +67,7 @@
       const projects = orchestra.projects || [];
       if (!projects.some(row => row.id === state.projectId)) state.projectId = projects[0]?.id || null;
       render();
+      if (state.panel === 'pulls' && state.pulls?.data?.fixing?.length && !state.pulls.loading && Date.now() - (state.pulls.at || 0) > 8000) loadPulls();
     } catch (error) {
       if (!state.loaded) { $('thread').innerHTML = `<div class="card"><h2>Planwharf is not reachable</h2><p>${escape(error.message)}</p><p class="muted">Start Planwharf again, then reload this page.</p></div>`; }
     }
@@ -124,7 +125,8 @@
     send: '<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
     pause: '<path d="M9 5v14M15 5v14"/>',
     research: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
-    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+    git: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-3 5.5-7 5.5"/>'
   };
   const ic = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
   const tile = (name, tone) => `<span class="tile ${tone}" aria-hidden="true">${ic(name)}</span>`;
@@ -548,7 +550,7 @@
     const side = $('side-panel');
     if (!state.panel) { side.hidden = true; state.sideSig = ''; return; }
     side.hidden = false;
-    const body = ({ team: teamPanel, progress: progressPanel, usage: usagePanel, files: filesPanel, settings: settingsPanel }[state.panel] || teamPanel)();
+    const body = ({ team: teamPanel, progress: progressPanel, usage: usagePanel, files: filesPanel, pulls: pullsPanel, settings: settingsPanel }[state.panel] || teamPanel)();
     if (body === state.sideSig) return;
     // Never wipe what the user is typing or an open section; an action forces the redraw.
     const sideBody = $('side-body');
@@ -557,7 +559,7 @@
     state.sideRendered = state.panel;
     state.sideSig = body;
     const scroll = $('side-body').scrollTop;
-    $('side-title').textContent = { team: 'Team', progress: 'Progress', usage: 'Usage', files: 'Changed files', settings: 'Settings' }[state.panel] || 'Team';
+    $('side-title').textContent = { team: 'Team', progress: 'Progress', usage: 'Usage', files: 'Changed files', pulls: 'Pull requests', settings: 'Settings' }[state.panel] || 'Team';
     $('side-body').innerHTML = body;
     $('side-body').scrollTop = scroll;
   }
@@ -682,6 +684,86 @@
           <label class="small" for="api-models">Exact model IDs, separated by commas</label><input id="api-models" name="modelIds" required placeholder="deepseek-chat">
           <label class="small"><input type="checkbox" name="toolsEnabled"> These models can use tools (needed to build code)</label>
           <p class="error" id="api-error" role="alert"></p><button type="submit" class="btn btn-small">Connect</button></form></details></div>`;
+  }
+  function spanText(ms) {
+    if (!Number.isFinite(ms) || ms < 0) return '—';
+    if (ms < 60000) return 'under a minute';
+    const minutes = Math.round(ms / 60000);
+    if (minutes < 90) return minutes + ' min';
+    const hours = Math.round(minutes / 60);
+    if (hours < 48) return hours + ' h';
+    return Math.round(hours / 24) + ' d';
+  }
+  function whenText(at) {
+    const time = Date.parse(at || '');
+    if (!Number.isFinite(time)) return '';
+    return new Date(time).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+  let pullsSeq = 0;
+  async function loadPulls({ append = false } = {}) {
+    const token = ++pullsSeq;
+    const row = project();
+    const filter = state.prFilter || { state: 'open', author: 'all' };
+    if (!row) { state.pulls = { error: 'Select a project.', filter, projectId: null, at: Date.now() }; state.sideSig = ''; if (state.panel === 'pulls') renderSide(); return; }
+    const offset = append ? (state.prOffset || 0) : 0;
+    const held = state.pulls;
+    const same = Boolean(held && held.projectId === row.id && held.filter?.state === filter.state && held.filter?.author === filter.author);
+    // A new filter must not keep the previous list. A refresh of the same filter keeps it until the answer arrives.
+    state.pulls = { ...(append || same ? held || {} : {}), loading: true, filter, projectId: row.id };
+    try {
+      const data = await getJson('/api/prs?projectId=' + encodeURIComponent(row.id) + '&state=' + encodeURIComponent(filter.state) + '&author=' + encodeURIComponent(filter.author) + '&offset=' + offset);
+      if (token !== pullsSeq) return;
+      if (!data.ok) {
+        const message = data.reason || 'Could not read pull requests.';
+        // The next page failed. The rows already on screen stay.
+        if (append && held?.data) state.pulls = { data: held.data, notice: message, filter, projectId: row.id, at: Date.now() };
+        else state.pulls = { error: message, missing: Boolean(data.missing), filter, projectId: row.id, at: Date.now() };
+      }
+      else {
+        const fresh = data.items || [];
+        const previous = append && held?.data?.items ? held.data.items : [];
+        data.items = previous.concat(fresh);
+        state.prOffset = offset + fresh.length;
+        state.pulls = { data, filter, projectId: row.id, at: Date.now() };
+      }
+    } catch (error) {
+      if (token !== pullsSeq) return;
+      if (append && held?.data) state.pulls = { data: held.data, notice: error.message, filter, projectId: row.id, at: Date.now() };
+      else state.pulls = { error: error.message, filter, projectId: row.id, at: Date.now() };
+    }
+    state.sideSig = '';
+    if (state.panel === 'pulls') renderSide();
+  }
+  function pullsPanel() {
+    const row = project();
+    const filter = state.prFilter || { state: 'open', author: 'all' };
+    const held = state.pulls;
+    if (!held || held.projectId !== row?.id || held.filter?.state !== filter.state || held.filter?.author !== filter.author) {
+      loadPulls();
+      return '<p class="muted"><span class="dots">Checking pull requests</span></p>';
+    }
+    const chip = (key, value, text) => `<button type="button" class="chip" data-pr-${key}="${escape(value)}" aria-pressed="${filter[key] === value}">${escape(text)}</button>`;
+    const summary = held.data?.summary;
+    const failed = summary?.failedChecks || [];
+    const headSummary = summary ? `<div class="section">${head('git', 't-blue', 'Last 30 days')}
+      <div class="kv"><span>Merged</span><span class="v">${summary.merged}</span><span>Median time to merge</span><span class="v">${escape(spanText(summary.medianMergeMs))}</span><span>Needed a fix</span><span class="v">${summary.neededFix}</span></div>
+      <p class="small">${failed.length ? 'Checks that failed most: ' + failed.map(item => `${escape(item.name)} (${item.count})`).join(', ') : 'No check failed often in the last 30 days.'}</p></div>` : '';
+    const filters = `<div class="chips">${chip('state', 'open', 'Open')}${chip('state', 'merged', 'Merged')}${chip('state', 'closed', 'Closed')}</div>
+      <div class="chips">${chip('author', 'all', 'All')}${chip('author', 'planwharf', 'Opened by Planwharf')}${chip('author', 'others', 'Opened by others')}</div>`;
+    if (held.loading && !held.data) return headSummary + filters + '<p class="muted"><span class="dots">Checking pull requests</span></p>';
+    if (held.error) return headSummary + filters + `<p class="${held.missing ? 'muted' : 'error'}">${escape(held.error)}</p><button type="button" class="btn btn-small" data-action="pr-refresh">${ic('refresh')}Check again</button>`;
+    const empty = { open: 'No open pull requests.', merged: 'No merged pull requests.', closed: 'No closed pull requests.' }[filter.state];
+    const cards = (held.data.items || []).map(pr => {
+      const checks = (pr.checks || []).map(check => `<span class="pill pr-${escape(check.state)}">${escape(check.name)} · ${escape(check.state === 'green' ? 'green' : check.state === 'red' ? 'red' : 'running')}</span>`).join('');
+      const when = pr.state === 'merged' ? `Merged ${whenText(pr.mergedAt)}` : pr.state === 'closed' ? `Closed ${whenText(pr.closedAt)}` : `Updated ${whenText(pr.updatedAt)}`;
+      const work = pr.work ? `<div class="pr-work"><p class="small"><b>The work behind this pull request</b></p><p class="small">${escape(pr.work.goal || '')}</p><p class="small muted">${escape([whenText(pr.work.startedAt), whenText(pr.work.completedAt)].filter(Boolean).join(' – '))}${pr.work.lead ? ' · Lead: ' + escape(pr.work.lead) : ''}</p>${(pr.work.steps || []).map(step => `<p class="small">${escape(step.title)} <span class="muted">${escape(step.model)}</span></p>`).join('')}</div>` : '';
+      const fix = pr.fixStatus === 'running' ? `<p class="small">Fixing in the background. ${escape(pr.fixText || '')}</p>` : pr.fixed ? `<p class="small">Planwharf fixed this in the background. ${escape(pr.fixText || '')}</p>` : pr.fixStatus === 'failed' ? `<p class="small error">${escape(pr.fixText || 'The fix failed.')}</p>` : '';
+      return `<article class="pr-card"><h4>#${pr.number} ${escape(pr.title)}</h4><p class="small muted">${escape(pr.branch)} · Opened ${escape(whenText(pr.openedAt))} · ${escape(when)}${Number.isFinite(pr.durationMs) ? ' · ' + escape(spanText(pr.durationMs)) + ' to merge' : ''}</p>
+        ${checks ? `<div class="pr-checks">${checks}</div>` : ''}${pr.conflicts ? '<p class="small"><b>Conflicts</b></p>' : ''}${fix}${work}
+        <div class="row">${pr.url ? `<a class="btn btn-small" href="${escape(pr.url)}" target="_blank" rel="noopener">Open on GitHub</a>` : ''}${pr.canFix ? `<button type="button" class="btn btn-small" data-pr-fix="${pr.number}">Fix in the background</button>` : ''}</div></article>`;
+    }).join('');
+    const notice = held.notice ? `<p class="error">${escape(held.notice)}</p>` : '';
+    return `${headSummary}<div class="section">${filters}${cards || `<p class="muted small">${empty}</p>`}${notice}${held.data.more ? `<button type="button" class="btn btn-small" data-action="pr-more">Show more</button>` : ''}<button type="button" class="btn btn-small" data-action="pr-refresh">${ic('refresh')}Check again</button></div>`;
   }
   function progressPanel() {
     const row = project();
@@ -907,7 +989,7 @@
     catch (error) { toast(error.message); }
     state.sideSig = ''; await refresh({ tick: false });
   }
-  function openPanel(name) { state.panel = state.panel === name ? null : name; store.set('panel', state.panel); render(); }
+  function openPanel(name) { state.panel = state.panel === name ? null : name; store.set('panel', state.panel); if (state.panel === 'pulls') loadPulls(); render(); }
 
   // Short commands that only open a panel or change the team run here, without a model call.
   function localCommand(text) {
@@ -928,6 +1010,7 @@
     if (/^(open |show |apri |mostra |vedi )?(the |l')?(progress|status|avanzamento|stato)$/.test(clean)) { state.panel = 'progress'; store.set('panel', 'progress'); render(); return true; }
     if (/^(open |show |apri |mostra |vedi )?(the |i |le )?(files?|changes|changed files|file cambiati|modifiche)$/.test(clean)) { state.panel = 'files'; store.set('panel', 'files'); render(); return true; }
     if (/^(open |show |apri |mostra |vedi )?(the |le )?(settings|options|impostazioni|opzioni)$/.test(clean)) { state.panel = 'settings'; store.set('panel', 'settings'); render(); return true; }
+    if (/^(open |show |apri |mostra |vedi )?(the |le |i )?(pull requests?|prs?|richieste)$/.test(clean)) { state.panel = 'pulls'; store.set('panel', 'pulls'); loadPulls(); render(); return true; }
     const bench = /^(?:bench|put|metti)\s+(.+?)(?:\s+(?:on the bench|in panchina))?$/.exec(clean);
     if (bench && (/^bench\s/.test(clean) || /(on the bench|in panchina)$/.test(clean))) {
       const wanted = bench[1].replace(/^(the |il |la )/, '');
@@ -1126,7 +1209,7 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('button, a');
     if (!target) return;
-    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); return; }
+    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); if (state.panel === 'pulls') loadPulls(); return; }
     if (target.dataset.panel) { if (target.classList.contains('tab')) openPanel(target.dataset.panel); else { state.panel = target.dataset.panel; store.set('panel', state.panel); render(); } return; }
     if (target.id === 'side-close') { state.panel = null; store.set('panel', null); render(); return; }
     if (target.dataset.openSide) { $(target.dataset.openSide).classList.add('open'); return; }
@@ -1138,12 +1221,24 @@
     if (target.dataset.roleToggle) { const model = models().find(item => item.id === target.dataset.roleToggle); if (model) setRoles(model.id, { [target.dataset.role]: !(model.roles?.[target.dataset.role] === true) }); return; }
     if (target.dataset.unasked) { const provider = (state.orchestra?.providers || []).find(item => item.id === target.dataset.unasked); if (provider) setWorksUnasked(provider.id, provider.policy?.alwaysApprove !== true); return; }
     if (target.dataset.filterKey) { state.teamFilter = { ...(state.teamFilter || {}), [target.dataset.filterKey]: target.dataset.filterValue || '' }; state.sideSig = ''; renderSide(); return; }
+    if (target.dataset.prState || target.dataset.prAuthor) {
+      const filter = state.prFilter || { state: 'open', author: 'all' };
+      state.prFilter = { state: target.dataset.prState || filter.state, author: target.dataset.prAuthor || filter.author };
+      state.prOffset = 0; state.sideSig = ''; loadPulls(); return;
+    }
+    if (target.dataset.prFix) {
+      const number = Number(target.dataset.prFix);
+      act(() => post('/api/prs/fix', { projectId: state.projectId, number }), 'Fixing in the background. You can keep working.').then(() => loadPulls());
+      return;
+    }
     if (target.dataset.bulkRole) { setRolesForShown((target.dataset.bulkIds || '').split(',').filter(Boolean), target.dataset.bulkRole, target.dataset.bulkOn === 'true'); return; }
     if (target.dataset.limitNone) { saveLimit({ id: target.dataset.limitNone, none: true }); return; }
     if (target.dataset.limitReset) { saveLimit({ id: target.dataset.limitReset, reset: true }); return; }
     if (target.dataset.bench) { const model = models().find(item => item.id === target.dataset.bench); if (model) setRoles(model.id, NO_ROLES); return; }
     const action = target.dataset.action;
     if (action === 'copy-msg') { copyReply(target); return; }
+    if (action === 'pr-refresh') { loadPulls(); return; }
+    if (action === 'pr-more') { loadPulls({ append: true }); return; }
     if (action === 'autonomy-on') autonomyOn();
     else if (action === 'autonomy-off') autonomyOff();
     else if (action === 'stop') act(() => post('/api/orchestrator/stop', { projectId: state.projectId }), 'Work stopped and saved.');

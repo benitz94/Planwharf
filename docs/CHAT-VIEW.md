@@ -39,6 +39,7 @@ Planwharf has one screen: a chat with your lead, with your projects on the left 
   - **Progress:** the current state, the steps and recent activity.
   - **Usage:** quota left per provider, plus calls, time and output tokens. A value the provider does not report shows "not reported", never an estimate.
   - **Files:** files changed since the last Git commit in the project folder.
+  - **Pull requests:** the project's open pull requests (number, title, branch, dates, named checks, conflicts, and **Open on GitHub**), then the merged and closed ones, 30 at a time. The top summarises the last 30 days. **Fix in the background** appears when a pull request has conflicts or a red check. Without the GitHub CLI (`gh`), the panel says what to install.
   - **Settings:**
     - the project folder, an optional GitHub repository link, and the default folder for new projects;
     - approvals;
@@ -58,6 +59,7 @@ Short commands are handled by Planwharf itself, without calling a model:
 | `progress`, `stato`, `avanzamento` | Opens Progress. |
 | `usage`, `show usage`, `consumi` | Opens Usage. |
 | `files`, `changed files`, `file cambiati` | Opens Files. |
+| `pull requests`, `prs`, `richieste` | Opens Pull requests. |
 | `settings`, `impostazioni` | Opens Settings. |
 | `bench <model>`, `metti <model> in panchina` | Asks you to confirm, then removes all of the model's roles. |
 | `stop`, `fermati`, `fermati adesso` | Stops the work now; it stays saved. |

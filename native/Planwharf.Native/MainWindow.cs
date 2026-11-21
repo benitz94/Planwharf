@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
     readonly TextBlock now = new() { FontSize = 12, Foreground = Palette.Muted, Margin = new Thickness(0, 0, 0, 8) };
     readonly TextBlock sideTitle = new() { FontSize = 17, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
     // The panels on the right, as in the chat page.
-    static (string Mode, string Label, string Icon)[] Panels => [("team", Strings.T("Team"), "team"), ("progress", Strings.T("Progress"), "progress"), ("usage", Strings.T("Usage"), "usage"), ("files", Strings.T("Files"), "file"), ("settings", Strings.T("Settings"), "settings")];
+    static (string Mode, string Label, string Icon)[] Panels => [("team", Strings.T("Team"), "team"), ("progress", Strings.T("Progress"), "progress"), ("usage", Strings.T("Usage"), "usage"), ("files", Strings.T("Files"), "file"), ("pulls", Strings.T("Pull requests"), "git"), ("settings", Strings.T("Settings"), "settings")];
     readonly Dictionary<string, ToggleButton> sideButtons = Panels.ToDictionary(panel => panel.Mode, panel => { var tab = Look.Tab(panel.Label, panel.Icon); tab.Margin = new Thickness(6, 0, 0, 0); return tab; });
     readonly Dictionary<string, (JsonNode? Json, string? Error)> repoRaw = new();
     readonly StackPanel side = new() { Spacing = 10, Margin = new Thickness(16) };
@@ -49,6 +49,11 @@ public sealed partial class MainWindow : Window
     readonly Dictionary<string, RepoView> repos = new();
     readonly HashSet<string> repoLoading = new();
     readonly Dictionary<string, Dictionary<string, int?>> quotaStart = new();
+    JsonNode? pullPayload;
+    string? pullNotice;
+    string pullState = "open", pullAuthor = "all";
+    int pullOffset;
+    int pullGeneration;
     readonly Dictionary<string, string> gitBusy = new();
     readonly Dictionary<string, (bool Ok, string Text)> gitSaid = new();
     readonly Dictionary<string, string> commitMessages = new();
@@ -68,7 +73,7 @@ public sealed partial class MainWindow : Window
         var newProject = Look.Button(Strings.T("New project"), "plus", Look.Kind.Primary);
         newProject.HorizontalAlignment = HorizontalAlignment.Stretch; newProject.HorizontalContentAlignment = HorizontalAlignment.Center; newProject.Margin = new Thickness(0, 0, 0, 12);
         newProject.Click += async (_, _) => await NewProjectAsync();
-        projectList.SelectionChanged += (_, _) => { if (projectList.SelectedItem is ListBoxItem { Tag: string id } && id != projectId) { projectId = id; threadSig = sideSig = null; _ = RefreshAsync(readOnly: true); } };
+        projectList.SelectionChanged += (_, _) => { if (projectList.SelectedItem is ListBoxItem { Tag: string id } && id != projectId) { projectId = id; threadSig = sideSig = null; pullPayload = null; pullNotice = null; pullOffset = 0; _ = RefreshAsync(readOnly: true); if (sideMode == "pulls") _ = LoadPullsAsync(false); } };
         // The open project as in the chat page: a soft green row with round corners.
         foreach (var (key, value) in new (string, IBrush)[] { ("ListBoxItemBackgroundPointerOver", Palette.Surface2), ("ListBoxItemBackgroundPressed", Palette.Surface2),
             ("ListBoxItemBackgroundSelected", Palette.AccentSoft), ("ListBoxItemBackgroundSelectedPointerOver", Palette.AccentSoft), ("ListBoxItemBackgroundSelectedPressed", Palette.AccentSoft),
@@ -95,9 +100,6 @@ public sealed partial class MainWindow : Window
             button.Click += (_, _) => OpenSide(button.IsChecked == true ? mode : null);
         }
         // Quit, as the red tab of the chat page: unfinished work is saved.
-        var checkPrs = Look.Tab(Strings.T("Check PRs"), "git");
-        checkPrs.Click += async (_, _) => { checkPrs.IsChecked = false; await CheckPrsAsync(); };
-        tools.Children.Add(checkPrs);
         var quit = Look.Tab(Strings.T("Quit"), "power");
         quit.Foreground = Palette.Danger; quit.Margin = new Thickness(6, 0, 0, 0);
         quit.Resources["ToggleButtonForegroundPointerOver"] = Palette.Danger; quit.Resources["ToggleButtonForegroundPressed"] = Palette.Danger;
@@ -251,6 +253,7 @@ public sealed partial class MainWindow : Window
         foreach (var (name, button) in sideButtons) button.IsChecked = name == mode;
         if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
         if (mode == "usage") _ = LoadProviderStatusAsync();
+        if (mode == "pulls" && pullPayload == null) _ = LoadPullsAsync(false);
         sidePanel.IsVisible = mode != null;
         Render();
     }
@@ -260,7 +263,11 @@ public sealed partial class MainWindow : Window
     {
         if (api == null || refreshing) return;
         refreshing = true;
-        try { Show(await api.SnapshotAsync(readOnly, projectId)); }
+        try
+        {
+            Show(await api.SnapshotAsync(readOnly, projectId));
+            if (sideMode == "pulls" && pullPayload?["fixing"] is JsonArray { Count: > 0 } && ticks % 4 == 0) _ = LoadPullsAsync(false);
+        }
         catch (Exception error) { hint.Text = Strings.T("Planwharf is not answering: ") + error.Message; }
         finally { refreshing = false; }
     }
@@ -584,34 +591,165 @@ public sealed partial class MainWindow : Window
         catch { /* the section stays on the last reading */ }
     }
 
-    async Task CheckPrsAsync()
+    // For the window tests: the pull requests as the server would report them.
+    public void ShowPullRequests(JsonNode payload)
+    {
+        pullPayload = payload; pullOffset = 0; sideSig = null;
+        if (sideMode == "pulls") Render();
+    }
+
+    static bool PageFailed(JsonNode listed) => listed["ok"] is JsonValue ok && ok.TryGetValue<bool>(out var fine) && !fine;
+
+    static string PageReason(JsonNode listed) =>
+        listed["reason"] is JsonValue why && why.TryGetValue<string>(out var text) && text.Length > 0 ? text : Strings.T("Could not read pull requests.");
+
+    async Task LoadPullsAsync(bool more)
     {
         if (api == null || projectId == null) return;
-        hint.Text = Strings.T("Checking pull requests…"); hint.Foreground = Palette.Muted;
+        // A filter clicked while a read is in flight replaces that read. The late answer is ignored.
+        var token = ++pullGeneration;
+        var offset = more ? pullOffset : 0;
+        var state = pullState;
+        var author = pullAuthor;
         try
         {
-            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId));
-            var prs = listed["prs"] as JsonArray ?? new JsonArray();
-            if (prs.Count == 0) { hint.Text = Strings.T("No open pull requests."); hint.Foreground = Palette.Text; return; }
-            var lines = new List<string>();
-            foreach (var pr in prs)
+            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId) + "&state=" + Uri.EscapeDataString(state) + "&author=" + Uri.EscapeDataString(author) + "&offset=" + offset);
+            if (token != pullGeneration || closed) return;
+            // A failed or unreadable next page keeps the rows already on screen.
+            if (more && pullPayload?["items"] is JsonArray && (PageFailed(listed) || listed["items"] is not JsonArray))
+                pullNotice = PageFailed(listed) ? PageReason(listed) : Strings.T("Could not read pull requests.");
+            else
             {
-                var number = pr?["number"]?.GetValue<int>() ?? 0;
-                var conflicts = pr?["conflicts"]?.GetValue<bool>() == true;
-                var failing = pr?["failing"] as JsonArray;
-                if (conflicts) lines.Add(Strings.Format("#{0} has conflicts.", number));
-                else if (failing is { Count: > 0 }) lines.Add(Strings.Format("#{0} fails: {1}.", number, string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
-                else lines.Add(Strings.Format("#{0} is green.", number));
+                pullNotice = null;
+                var freshCount = listed["items"] is JsonArray fresh ? fresh.Count : 0;
+                if (more && pullPayload?["items"] is JsonArray previous && listed["items"] is JsonArray page)
+                {
+                    foreach (var item in page.ToArray()) previous.Add(item?.DeepClone());
+                    listed["items"] = previous;
+                }
+                pullPayload = listed;
+                pullOffset = offset + freshCount;
             }
-            var broken = prs.Where(pr => pr?["conflicts"]?.GetValue<bool>() == true || pr?["failing"] is JsonArray { Count: > 0 }).ToList();
-            if (broken.Count == 0) { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Accent; return; }
-            if (!await Confirm(string.Join("\n", lines) + "\n\n" + Strings.T("Fix them in the background? Planwharf works on a copy of the folder and pushes to the same pull request; the chat says when it is done."), Strings.T("Fix them")))
-            { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Warn; return; }
-            foreach (var pr in broken)
-                await api.PostAsync("/api/prs/fix", new { projectId = projectId, number = pr?["number"]?.GetValue<int>() ?? 0 });
-            hint.Text = Strings.T("Fixing in the background. You can keep working; the chat says when each pull request is done."); hint.Foreground = Palette.Accent;
+        }
+        catch (Exception error)
+        {
+            if (token != pullGeneration || closed) return;
+            // The next page failed. The rows already on screen stay.
+            if (more && pullPayload?["items"] is JsonArray) pullNotice = error.Message;
+            else
+            {
+                pullNotice = null;
+                pullPayload = new JsonObject { ["ok"] = false, ["reason"] = error.Message, ["state"] = state, ["author"] = author };
+            }
+        }
+        finally { if (token == pullGeneration && !closed) { sideSig = null; Render(); } }
+    }
+
+    void SetPullFilter(string? state, string? author)
+    {
+        if (state != null) pullState = state;
+        if (author != null) pullAuthor = author;
+        pullOffset = 0; sideSig = null;
+        if (api != null) _ = LoadPullsAsync(false);
+        else Render();
+    }
+
+    async Task FixPullAsync(int number)
+    {
+        if (api == null || projectId == null) return;
+        try
+        {
+            await api.PostAsync("/api/prs/fix", new { projectId, number });
+            hint.Text = Strings.T("Fixing in the background. You can keep working."); hint.Foreground = Palette.Accent;
+            await LoadPullsAsync(false);
         }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
+    }
+
+    void PullsSide(PullRequestPanel panel)
+    {
+        var summary = Look.Section("git", Palette.Build, Palette.BuildSoft, Strings.T("Last 30 days"));
+        summary.Children.Add(Line(Strings.Format("{0}: {1}", Strings.T("Merged"), panel.Summary.Merged), Palette.Text, 13));
+        summary.Children.Add(Line(Strings.T("Median time to merge") + ": " + panel.Summary.Median, Palette.Text, 13));
+        summary.Children.Add(Line(Strings.Format("{0}: {1}", Strings.T("Needed a fix"), panel.Summary.NeededFix), Palette.Text, 13));
+        summary.Children.Add(Explain(panel.Summary.FailedChecks.Count == 0 ? Strings.T("No check failed often in the last 30 days.") : Strings.T("Checks that failed most: ") + string.Join(", ", panel.Summary.FailedChecks.Select(item => Strings.Format("{0} ({1})", item.Name, item.Count)))));
+        side.Children.Add(summary);
+        var filters = new WrapPanel();
+        foreach (var (value, label) in new[] { ("open", Strings.T("Open")), ("merged", Strings.T("Merged")), ("closed", Strings.T("Closed")) })
+        {
+            var chip = Look.Chip(label, null, Palette.Accent, Palette.AccentSoft, pullState == value);
+            var picked = value; chip.Click += (_, _) => SetPullFilter(picked, null);
+            filters.Children.Add(chip);
+        }
+        foreach (var (value, label) in new[] { ("all", Strings.T("All")), ("planwharf", Strings.T("Opened by Planwharf")), ("others", Strings.T("Opened by others")) })
+        {
+            var chip = Look.Chip(label, null, Palette.Accent, Palette.AccentSoft, pullAuthor == value);
+            var picked = value; chip.Click += (_, _) => SetPullFilter(null, picked);
+            filters.Children.Add(chip);
+        }
+        side.Children.Add(filters);
+        if (panel.Message != null) side.Children.Add(Line(panel.Message, panel.Missing ? Palette.Muted : Palette.Danger, 13));
+        var shown = PanelViews.Matching(panel.Items, pullState, pullAuthor);
+        if (panel.Message == null && shown.Count == 0) side.Children.Add(Explain(pullState == "merged" ? Strings.T("No merged pull requests.") : pullState == "closed" ? Strings.T("No closed pull requests.") : Strings.T("No open pull requests.")));
+        foreach (var pr in shown) side.Children.Add(PullCard(pr));
+        if (!string.IsNullOrEmpty(pullNotice)) side.Children.Add(Line(pullNotice, Palette.Danger, 13));
+        if (panel.More)
+        {
+            var more = Look.Button(Strings.T("Show more"), null, Look.Kind.Small);
+            more.HorizontalAlignment = HorizontalAlignment.Left;
+            more.Click += async (_, _) => await LoadPullsAsync(true);
+            side.Children.Add(more);
+        }
+        var again = Look.Button(Strings.T("Check again"), "refresh", Look.Kind.Small);
+        again.HorizontalAlignment = HorizontalAlignment.Left;
+        again.Click += async (_, _) => { pullPayload = null; await LoadPullsAsync(false); };
+        side.Children.Add(again);
+    }
+
+    Control PullCard(PullRequestRow pr)
+    {
+        var card = new StackPanel { Spacing = 4 };
+        card.Children.Add(Line("#" + pr.Number + " " + pr.Title, Palette.Text, 14, FontWeight.SemiBold));
+        var when = pr.State == "merged" ? Strings.Format("Merged {0}", pr.When) : pr.State == "closed" ? Strings.Format("Closed {0}", pr.When) : Strings.Format("Updated {0}", pr.When);
+        card.Children.Add(Explain(pr.Branch + " · " + Strings.Format("Opened {0}", pr.Opened) + " · " + when + (pr.Duration.Length > 0 ? " · " + pr.Duration : "")));
+        if (pr.Checks.Count > 0)
+        {
+            var checks = new WrapPanel();
+            foreach (var check in pr.Checks)
+            {
+                var word = check.State == "green" ? Strings.T("Green") : check.State == "red" ? Strings.T("Red") : Strings.T("Running");
+                var color = check.State == "green" ? Palette.Accent : check.State == "red" ? Palette.Danger : Palette.Warn;
+                checks.Children.Add(Look.Badge(check.Name + " · " + word, color, check.State == "red" ? Palette.DangerSoft : Palette.AccentSoft).With(b => b.Margin = new Thickness(0, 0, 4, 4)));
+            }
+            card.Children.Add(checks);
+        }
+        if (pr.Conflicts) card.Children.Add(Line(Strings.T("Conflicts"), Palette.Danger, 13));
+        if (pr.FixStatus == "running") card.Children.Add(Line(Strings.T("Fixing in the background") + (pr.FixText.Length > 0 ? ". " + pr.FixText : "."), Palette.Text, 13));
+        else if (pr.FixStatus == "fixed") card.Children.Add(Line(Strings.T("Planwharf fixed this in the background.") + (pr.FixText.Length > 0 ? " " + pr.FixText : ""), Palette.Accent, 13));
+        else if (pr.FixStatus == "failed") card.Children.Add(Line(pr.FixText.Length > 0 ? pr.FixText : Strings.T("The fix failed."), Palette.Danger, 13));
+        if (pr.Work != null)
+        {
+            card.Children.Add(Line(Strings.T("The work behind this pull request"), Palette.Text, 13, FontWeight.SemiBold));
+            if (pr.Work.Goal.Length > 0) card.Children.Add(Explain(pr.Work.Goal));
+            var time = string.Join(" – ", new[] { pr.Work.Started, pr.Work.Finished }.Where(part => part.Length > 0));
+            card.Children.Add(Explain((time.Length > 0 ? time + " · " : "") + (pr.Work.Lead.Length > 0 ? Strings.T("Lead") + ": " + pr.Work.Lead : "")));
+            foreach (var step in pr.Work.Steps) card.Children.Add(Explain(step.Title + (step.Model.Length > 0 ? " · " + step.Model : "")));
+        }
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        if (pr.Url.Length > 0)
+        {
+            var open = Look.Button(Strings.T("Open on GitHub"), null, Look.Kind.Small);
+            open.Click += (_, _) => { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = pr.Url, UseShellExecute = true }); } catch { /* the link stays */ } };
+            row.Children.Add(open);
+        }
+        if (pr.CanFix)
+        {
+            var fix = Look.Button(Strings.T("Fix in the background"), null, Look.Kind.Small);
+            var number = pr.Number; fix.Click += async (_, _) => await FixPullAsync(number);
+            row.Children.Add(fix);
+        }
+        card.Children.Add(row);
+        return new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(10), Child = card };
     }
 
     async Task CommitAsync(string projectId, string workId, bool changes, int ahead, string message, bool push)
@@ -663,9 +801,11 @@ public sealed partial class MainWindow : Window
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
         var raw = projectId != null && repoRaw.TryGetValue(projectId, out var found) ? found : (null, null);
         var files = sideMode == "files" ? PanelViews.Files(raw.Json, folder, raw.Error) : null;
+        var pulls = sideMode == "pulls" ? PanelViews.PullRequests(pullPayload) : null;
         sig += progress is { } p ? p.Status + p.Next + p.TimeLeft + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
         sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) : "";
         sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
+        sig += pulls is { } pr ? pullNotice + pullState + pullAuthor + pr.Message + pr.More + pr.Summary.Merged + pr.Summary.Median + pr.Summary.NeededFix + string.Join(",", pr.Summary.FailedChecks.Select(item => item.Name + item.Count)) + string.Join(",", pr.Items.Select(item => item.Number + item.State + item.FixStatus + item.FixText + item.CanFix + item.Conflicts + string.Join("/", item.Checks.Select(check => check.Name + check.State)))) : "";
         if (sig == sideSig) return;
         sideSig = sig;
         side.Children.Clear();
@@ -675,6 +815,7 @@ public sealed partial class MainWindow : Window
             case "progress" when progress != null: ProgressSide(progress); break;
             case "usage" when usage != null: UsageSide(usage); break;
             case "files" when files != null: FilesSide(files, folder); break;
+            case "pulls" when pulls != null: PullsSide(pulls); break;
             default: SettingsPanel(folder, view?.Name ?? ""); break;
         }
     }
