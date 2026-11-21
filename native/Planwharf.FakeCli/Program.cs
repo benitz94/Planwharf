@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
+using Planwharf.Engine;
 
 namespace Planwharf.FakeCli;
 
@@ -35,6 +36,11 @@ public static class Program
             }
             return Environment.GetEnvironmentVariable(name);
         }
+
+        if (args.Length == 3 && args[0] == "--planwharf-mcp-serve")
+            return WorkerMcpServer.Serve(inReader, outWriter, errWriter, args[1], args[2]);
+        if (args.Length == 3 && args[0] == "--planwharf-mcp-worker")
+            return McpWorker.Run(args[1], args[2], errWriter);
 
         var fakeAs = GetEnv("PLANWHARF_FAKE_AS") ?? "";
         var scenarioPath = GetEnv("PLANWHARF_FAKE_SCENARIO");
