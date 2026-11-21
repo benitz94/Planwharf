@@ -15,5 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Planwharf.Engine\Planwharf.Engine.csproj" />
+    <ProjectReference Include="..\Planwharf.FakeCli\Planwharf.FakeCli.csproj" />
   </ItemGroup>
 </Project>
