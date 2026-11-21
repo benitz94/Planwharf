@@ -917,8 +917,8 @@ public static class AcceptanceGate
         && Text(run, "treeDigest") == pin.TreeDigest
         && Text(run, "workingInputDigest") == pin.WorkingInputDigest
         && Text(run, "artifactDigest") == pin.ArtifactDigest
-        && (request.CommitSha is null || Text(run, "commitSha") == request.CommitSha)
-        && (request.TreeSha is null || Text(run, "treeSha") == request.TreeSha);
+        && (request.CommitSha is null || string.Equals(Text(run, "commitSha"), request.CommitSha, StringComparison.OrdinalIgnoreCase))
+        && (request.TreeSha is null || string.Equals(Text(run, "treeSha"), request.TreeSha, StringComparison.OrdinalIgnoreCase));
 
     public static bool IsAcceptedPass(string attemptsRoot, string projectId, string jobId, string runId, PassClaim claim)
     {
@@ -938,8 +938,8 @@ public static class AcceptanceGate
             if (Text(run, "worktreeId") != claim.WorktreeId) return false;
             if (Text(run, "treeDigest") != claim.TreeDigest || Text(run, "workingInputDigest") != claim.WorkingInputDigest) return false;
             if ((Text(run, "artifactDigest") ?? "") != claim.ArtifactDigest) return false;
-            if ((claim.CommitSha ?? "") != (Text(run, "commitSha") ?? "")) return false;
-            if ((claim.TreeSha ?? "") != (Text(run, "treeSha") ?? "")) return false;
+            if (!string.Equals(claim.CommitSha ?? "", Text(run, "commitSha") ?? "", StringComparison.OrdinalIgnoreCase)) return false;
+            if (!string.Equals(claim.TreeSha ?? "", Text(run, "treeSha") ?? "", StringComparison.OrdinalIgnoreCase)) return false;
             if (run["commands"] is not JsonArray commands) return false;
             var passed = new HashSet<string>(StringComparer.Ordinal);
             foreach (var node in commands)
@@ -1159,10 +1159,7 @@ public static class AcceptanceGate
             {
                 var shell = Environment.GetEnvironmentVariable("ComSpec");
                 process.StartInfo.FileName = string.IsNullOrEmpty(shell) ? "cmd.exe" : shell;
-                process.StartInfo.ArgumentList.Add("/d");
-                process.StartInfo.ArgumentList.Add("/s");
-                process.StartInfo.ArgumentList.Add("/c");
-                process.StartInfo.ArgumentList.Add(command);
+                process.StartInfo.Arguments = "/d /s /c \"" + command + "\"";
             }
             else
             {

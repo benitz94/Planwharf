@@ -829,6 +829,424 @@ public sealed class AcceptanceGateTests : IDisposable
         Assert.False(alive);
     }
 
+    [Fact]
+    public async Task Pinned_external_checks_are_verified_and_run_from_check_store()
+    {
+        var extSha = Store("ext-tool", "tool content", job: "ext");
+        var check = new JsonObject
+        {
+            ["id"] = "ext-tool",
+            ["purpose"] = "Pinned external tool",
+            ["executable"] = "check.exe",
+            ["arguments"] = new JsonArray { "--json" },
+            ["workingDirectory"] = ".",
+            ["timeoutSeconds"] = 5,
+            ["expectedExitCode"] = 0,
+            ["expectedResult"] = "verified output",
+            ["shell"] = false,
+            ["trust"] = "pinned-external",
+            ["programSha256"] = extSha
+        };
+        var hash = WriteManifest(new JsonArray { check }, job: "ext");
+        var work = Work("src/a.txt", "content", "ext-work");
+
+        var calls = 0;
+        var outcome = await AcceptanceGate.Run(Gate(hash, work, (request, events) =>
+        {
+            calls++;
+            events.Output("verified output");
+            events.Exit(0);
+        }, job: "ext"));
+
+        Assert.Equal("pass", outcome.Status);
+        Assert.Equal(1, calls);
+        Assert.True(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "ext", outcome.RunId!, Claim(outcome)));
+
+        // Tampered program in check-store fails with tamper
+        File.WriteAllBytes(Path.Combine(JobDir("ext"), "check-store", "ext-tool", "check.exe"), "tampered"u8.ToArray());
+        var tampered = await AcceptanceGate.Run(Gate(hash, work, (_, _) => calls++, job: "ext", attempt: "attempt-2"));
+        Assert.Equal("blocked", tampered.Status);
+        Assert.Equal("tamper", tampered.Reason);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task Candidate_code_is_never_resumed_across_subsequent_runs()
+    {
+        var assertion = Store("assert", "trusted", "cand");
+        var hash = WriteManifest(new JsonArray
+        {
+            CandidateCheck("build", "assert"),
+            EngineCheck("assert", assertion, "ARTIFACT-OK")
+        }, job: "cand");
+        var work = Work("src/a.txt", "one", "cand-work");
+        File.WriteAllText(Path.Combine(work, "candidate.exe"), "cand");
+
+        var candidateRuns = 0;
+        var assertionRuns = 0;
+        AcceptanceGate.Starter start = (request, events) =>
+        {
+            if (request.CheckId == "build")
+            {
+                candidateRuns++;
+                events.Output("candidate executed");
+                events.Exit(0);
+            }
+            else if (request.CheckId == "assert")
+            {
+                assertionRuns++;
+                events.Output("ARTIFACT-OK");
+                events.Exit(0);
+            }
+        };
+
+        var first = await AcceptanceGate.Run(Gate(hash, work, start, job: "cand", tracked: ["src/a.txt", "candidate.exe"]));
+        Assert.Equal("pass", first.Status);
+        Assert.Equal(1, candidateRuns);
+        Assert.Equal(1, assertionRuns);
+
+        // On a second run with identical snapshot, trusted engine assertion can be resumed,
+        // but candidate-code MUST run again.
+        var second = await AcceptanceGate.Run(Gate(hash, work, start, job: "cand", tracked: ["src/a.txt", "candidate.exe"]));
+        Assert.Equal("pass", second.Status);
+        Assert.Equal(2, candidateRuns); // candidate executed again!
+        Assert.Equal(1, assertionRuns); // engine assertion was resumed from prior run
+    }
+
+    [Fact]
+    public async Task Checks_with_valid_and_invalid_subdirectories_behave_appropriately()
+    {
+        var sha = Store("subcheck", job: "subdir");
+        var validCheck = EngineCheck("subcheck", sha);
+        validCheck["workingDirectory"] = "sub/dir";
+        var hash = WriteManifest(new JsonArray { validCheck }, job: "subdir");
+        var work = Work("src/a.txt", "one", "subdir-work");
+        Directory.CreateDirectory(Path.Combine(work, "sub", "dir"));
+
+        string? actualCwd = null;
+        var ok = await AcceptanceGate.Run(Gate(hash, work, (request, events) =>
+        {
+            actualCwd = request.WorkingDirectory;
+            events.Output("ok");
+            events.Exit(0);
+        }, job: "subdir"));
+
+        Assert.Equal("pass", ok.Status);
+        Assert.Equal(Path.Combine(work, "sub", "dir"), actualCwd);
+
+        // When workingDirectory does not exist, fail with path-escape
+        Directory.Delete(Path.Combine(work, "sub", "dir"));
+        var escaped = await AcceptanceGate.Run(Gate(hash, work, (_, _) => { }, job: "subdir", attempt: "attempt-2"));
+        Assert.Equal("error", escaped.Status);
+        Assert.Equal("path-escape", escaped.Reason);
+    }
+
+    [Fact]
+    public async Task PassClaim_rejects_omitted_checks_tampered_commands_and_mismatched_worktree()
+    {
+        var hash = WriteManifest(new JsonArray
+        {
+            EngineCheck("build", Store("build", job: "claim-test")),
+            EngineCheck("test", Store("test", job: "claim-test"), "passed")
+        }, job: "claim-test");
+        var work = Work("src/a.txt", "one", "claim-work");
+
+        var outcome = await AcceptanceGate.Run(Gate(hash, work, (request, events) =>
+        {
+            events.Output(request.CheckId == "test" ? "passed" : "ok");
+            events.Exit(0);
+        }, job: "claim-test"));
+        Assert.Equal("pass", outcome.Status);
+
+        // Mismatched worktreeId
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "claim-test", outcome.RunId!,
+            Claim(outcome, worktree: "wt-different")));
+
+        // Mismatched attemptId
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "claim-test", outcome.RunId!,
+            Claim(outcome, attempt: "attempt-99")));
+
+        // Claim checkIds includes a check that never ran
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "claim-test", outcome.RunId!,
+            Claim(outcome, checks: ["build", "test", "deploy"])));
+
+        // Tamper run.json: command 'test' marked as failed but top-level outcome forged to 'pass'
+        var runPath = Evidence(outcome, "claim-test");
+        var doc = JsonNode.Parse(File.ReadAllText(runPath))!.AsObject();
+        var cmds = doc["commands"]!.AsArray();
+        cmds[1]!["outcome"] = "assertion-failed";
+        File.WriteAllBytes(runPath, Utf8.GetBytes(doc.ToJsonString()));
+        Reseal(runPath);
+
+        // Even though top-level outcome says pass and seal matches, test didn't pass so claim is rejected
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "claim-test", outcome.RunId!, Claim(outcome)));
+
+        // Tamper run.json: command 'test' removed entirely from commands array
+        cmds.RemoveAt(1);
+        File.WriteAllBytes(runPath, Utf8.GetBytes(doc.ToJsonString()));
+        Reseal(runPath);
+
+        // Required check 'test' is missing from run evidence
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "claim-test", outcome.RunId!, Claim(outcome)));
+    }
+
+    [Fact]
+    public async Task Git_exclude_ignores_files_and_modifications_invalidate_earlier_pass()
+    {
+        var hash = WriteManifest(new JsonArray { EngineCheck("build", Store("build", job: "excl")) }, job: "excl");
+        var work = Work("src/a.txt", "one", "excl-work");
+        var gitInfo = Path.Combine(work, ".git", "info");
+        Directory.CreateDirectory(gitInfo);
+        File.WriteAllText(Path.Combine(gitInfo, "exclude"), "ignored.tmp\n");
+        File.WriteAllText(Path.Combine(work, "ignored.tmp"), "should be ignored");
+
+        // Pin should succeed because ignored.tmp is in exclude
+        var pin = AcceptanceGate.Pin(work, ["src/a.txt"], null);
+        Assert.Equal("pinned", pin.Status);
+        Assert.DoesNotContain("ignored.tmp", pin.Included);
+
+        var outcome = await AcceptanceGate.Run(Gate(hash, work, (_, events) =>
+        {
+            events.Output("ok");
+            events.Exit(0);
+        }, job: "excl"));
+        Assert.Equal("pass", outcome.Status);
+        Assert.True(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "excl", outcome.RunId!, Claim(outcome)));
+
+        // If .git/info/exclude changes, TreeDigest changes and earlier pass cannot be reused
+        File.WriteAllText(Path.Combine(gitInfo, "exclude"), "ignored.tmp\nother.tmp\n");
+        var modifiedPin = AcceptanceGate.Pin(work, ["src/a.txt"], null);
+        Assert.NotEqual(outcome.TreeDigest, modifiedPin.TreeDigest);
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "excl", outcome.RunId!, new AcceptanceGate.PassClaim
+        {
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            SnapshotId = "rev-1",
+            ManifestSha256 = outcome.ManifestSha256,
+            WorktreeId = "wt-1",
+            TreeDigest = modifiedPin.TreeDigest,
+            WorkingInputDigest = modifiedPin.WorkingInputDigest,
+            ArtifactDigest = modifiedPin.ArtifactDigest,
+            CommitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            CheckIds = outcome.CheckIds
+        }));
+    }
+
+    [Fact]
+    public async Task Request_validation_rejects_invalid_commit_tree_sha_and_worktree_boundaries()
+    {
+        var hash = WriteManifest(new JsonArray { EngineCheck("build", Store("build", job: "val")) }, job: "val");
+        var work = Work("src/a.txt", "one", "val-work");
+
+        var calls = 0;
+        AcceptanceGate.Starter start = (_, _) => calls++;
+
+        // Non-hex or invalid length CommitSha
+        var badCommit = await AcceptanceGate.Run(new AcceptanceGate.Request
+        {
+            AttemptsRoot = Attempts(),
+            ProjectId = Project,
+            JobId = "val",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            BaseCommit = Base,
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            WorktreePath = work,
+            WorktreeId = "wt-1",
+            CommitSha = "invalid-not-40-hex",
+            TrackedRelativePaths = ["src/a.txt"],
+            Start = start
+        });
+        Assert.Equal("blocked", badCommit.Status);
+        Assert.Equal("stale", badCommit.Reason);
+        Assert.Equal(0, calls);
+
+        // Non-hex or invalid length TreeSha
+        var badTree = await AcceptanceGate.Run(new AcceptanceGate.Request
+        {
+            AttemptsRoot = Attempts(),
+            ProjectId = Project,
+            JobId = "val",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            BaseCommit = Base,
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            WorktreePath = work,
+            WorktreeId = "wt-1",
+            TreeSha = "xyz",
+            TrackedRelativePaths = ["src/a.txt"],
+            Start = start
+        });
+        Assert.Equal("blocked", badTree.Status);
+        Assert.Equal("stale", badTree.Reason);
+        Assert.Equal(0, calls);
+
+        // AttemptsRoot equals WorktreePath
+        var sameDir = await AcceptanceGate.Run(new AcceptanceGate.Request
+        {
+            AttemptsRoot = work,
+            ProjectId = Project,
+            JobId = "val",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            BaseCommit = Base,
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            WorktreePath = work,
+            WorktreeId = "wt-1",
+            TrackedRelativePaths = ["src/a.txt"],
+            Start = start
+        });
+        Assert.Equal("error", sameDir.Status);
+        Assert.Equal("path-escape", sameDir.Reason);
+        Assert.Equal(0, calls);
+
+        // Invalid WorktreeId with path traversal chars
+        var badWorktreeId = await AcceptanceGate.Run(new AcceptanceGate.Request
+        {
+            AttemptsRoot = Attempts(),
+            ProjectId = Project,
+            JobId = "val",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            BaseCommit = Base,
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            WorktreePath = work,
+            WorktreeId = "../escape",
+            TrackedRelativePaths = ["src/a.txt"],
+            Start = start
+        });
+        Assert.Equal("error", badWorktreeId.Status);
+        Assert.Equal("path-escape", badWorktreeId.Reason);
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public async Task Default_start_runs_shell_command_with_spaces_and_unicode()
+    {
+        string scriptFile;
+        string[] arguments;
+        if (OperatingSystem.IsWindows())
+        {
+            scriptFile = Path.Combine(root, "shell script é.cmd");
+            File.WriteAllText(scriptFile, "@echo off\r\nchcp 65001 >nul\r\necho shell:%~1 %~2\r\n", Utf8);
+            arguments = ["hello world", "テスト"];
+        }
+        else
+        {
+            scriptFile = Path.Combine(root, "shell script é.sh");
+            File.WriteAllText(scriptFile, "#!/bin/sh\necho \"shell:$1 $2\"\n", Utf8);
+            arguments = ["hello world", "テスト"];
+        }
+        var env = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in new[] { "PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP" })
+        {
+            var value = Environment.GetEnvironmentVariable(name);
+            if (!string.IsNullOrEmpty(value)) env[name] = value;
+        }
+        var output = new StringBuilder();
+        var exited = new TaskCompletionSource<int?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var events = new AcceptanceGate.ProcessEvents
+        {
+            Output = text => output.Append(text),
+            Exit = code => exited.TrySetResult(code)
+        };
+        AcceptanceGate.DefaultStart(new AcceptanceGate.ProcessRequest
+        {
+            Executable = scriptFile,
+            Arguments = arguments,
+            WorkingDirectory = root,
+            Environment = env,
+            TimeoutMs = 5_000,
+            Shell = true,
+            CheckId = "shell-test"
+        }, events);
+        Assert.Same(exited.Task, await Task.WhenAny(exited.Task, Task.Delay(5_000)));
+        Assert.True(await exited.Task == 0, "Exit: " + await exited.Task + ", Output: " + output.ToString());
+        Assert.Contains("shell:hello world テスト", output.ToString());
+    }
+
+    [Fact]
+    public async Task Hex_case_in_commit_and_tree_sha_matches_in_claims()
+    {
+        var hash = WriteManifest(new JsonArray { EngineCheck("build", Store("build", job: "case-job")) }, job: "case-job");
+        var work = Work("src/a.txt", "one", "case-work");
+
+        var outcome = await AcceptanceGate.Run(new AcceptanceGate.Request
+        {
+            AttemptsRoot = Attempts(),
+            ProjectId = Project,
+            JobId = "case-job",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            BaseCommit = Base,
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            WorktreePath = work,
+            WorktreeId = "wt-1",
+            TrackedRelativePaths = ["src/a.txt"],
+            CommitSha = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            TreeSha = "cccccccccccccccccccccccccccccccccccccccc",
+            Start = (_, events) => { events.Output("ok"); events.Exit(0); }
+        });
+        Assert.Equal("pass", outcome.Status);
+
+        // Claim with uppercase commit and tree SHA must still match
+        Assert.True(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "case-job", outcome.RunId!, new AcceptanceGate.PassClaim
+        {
+            Stage = "pre-review",
+            AttemptId = "attempt-1",
+            SnapshotId = "rev-1",
+            ManifestSha256 = hash,
+            WorktreeId = "wt-1",
+            TreeDigest = outcome.TreeDigest,
+            WorkingInputDigest = outcome.WorkingInputDigest,
+            ArtifactDigest = outcome.ArtifactDigest,
+            CommitSha = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+            TreeSha = "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            CheckIds = outcome.CheckIds
+        }));
+    }
+
+    [Fact]
+    public async Task Cancellation_while_waiting_for_job_lock_records_cancelled_and_leaves_running_job()
+    {
+        var hash = WriteManifest(new JsonArray { EngineCheck("build", Store("build", job: "lock-job")) }, job: "lock-job");
+        var work = Work("src/a.txt", "one", "lock-work");
+
+        var firstStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var firstCanFinish = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var firstRun = AcceptanceGate.Run(Gate(hash, work, (_, events) =>
+        {
+            firstStarted.TrySetResult();
+            firstCanFinish.Task.Wait(TimeSpan.FromSeconds(5));
+            events.Output("ok");
+            events.Exit(0);
+        }, job: "lock-job", attempt: "attempt-1"));
+
+        await firstStarted.Task;
+
+        // Second run attempts to acquire the lock for the same job directory, but is cancelled
+        using var cts = new CancellationTokenSource();
+        cts.CancelAfter(50);
+        var secondRun = await AcceptanceGate.Run(Gate(hash, work, (_, _) => { }, job: "lock-job", attempt: "attempt-2", cancellation: cts.Token));
+
+        Assert.Equal("blocked", secondRun.Status);
+        Assert.Equal("cancelled", secondRun.Reason);
+
+        firstCanFinish.TrySetResult();
+        var firstOutcome = await firstRun;
+        Assert.Equal("pass", firstOutcome.Status);
+
+        // First run passed and is accepted; second run cancelled and is not accepted
+        Assert.True(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "lock-job", firstOutcome.RunId!, Claim(firstOutcome)));
+        Assert.False(AcceptanceGate.IsAcceptedPass(Attempts(), Project, "lock-job", secondRun.RunId!, Claim(secondRun, attempt: "attempt-2")));
+    }
+
     void RewritePointer(string hash)
     {
         var job = JsonNode.Parse(File.ReadAllText(Path.Combine(JobDir(), "job.json")))!.AsObject();
