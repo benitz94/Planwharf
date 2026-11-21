@@ -8,6 +8,14 @@ const WINDOW_DAYS = 30;
 const DAY = 24 * 60 * 60 * 1000;
 const FIELDS = 'number,title,headRefName,state,createdAt,updatedAt,mergedAt,closedAt,mergeable,statusCheckRollup,url,author,body';
 const INSTALL = 'GitHub CLI (gh) is not installed. Install it from https://cli.github.com/ and sign in with gh auth login. The rest of Planwharf keeps working.';
+// The same reds as a pull request check, except a run somebody cancelled.
+const FAILED_RUN = new Set(['failure', 'timed_out', 'action_required', 'startup_failure', 'error']);
+
+function readGh(run, folder, args) {
+  return Promise.resolve().then(() => run(folder, 'gh', args)).catch(error => ({
+    status: 1, stderr: error && error.message ? String(error.message) : 'Could not read pull requests.'
+  }));
+}
 
 function spawnRun(folder, cmd, args) {
   return new Promise(resolve => {
@@ -131,10 +139,10 @@ async function pullRequestPanel(options = {}) {
   // reach past one page. 200 is the window the history pages share.
   const historyLimit = '200';
   const [openRaw, mergedRaw, closedRaw, runsRaw] = await Promise.all([
-    run(folder, 'gh', ['pr', 'list', '--state', 'open', '--limit', '100', '--json', FIELDS]),
-    run(folder, 'gh', ['pr', 'list', '--state', 'merged', '--limit', historyLimit, '--json', FIELDS]),
-    run(folder, 'gh', ['pr', 'list', '--state', 'closed', '--limit', historyLimit, '--json', FIELDS]),
-    run(folder, 'gh', ['run', 'list', '--limit', '200', '--json', 'name,conclusion,createdAt'])
+    readGh(run, folder, ['pr', 'list', '--state', 'open', '--limit', '100', '--json', FIELDS]),
+    readGh(run, folder, ['pr', 'list', '--state', 'merged', '--limit', historyLimit, '--json', FIELDS]),
+    readGh(run, folder, ['pr', 'list', '--state', 'closed', '--limit', historyLimit, '--json', FIELDS]),
+    readGh(run, folder, ['run', 'list', '--limit', '200', '--json', 'name,conclusion,createdAt'])
   ]);
   if ([openRaw, mergedRaw, closedRaw].some(missingGh)) return { ok: false, missing: true, reason: INSTALL };
   const open = parseJson(openRaw, 'Pull request list was not readable.');
@@ -176,7 +184,7 @@ async function pullRequestPanel(options = {}) {
   const failed = new Map();
   const runs = !missingGh(runsRaw) && runsRaw && runsRaw.status === 0 ? parseJson(runsRaw, '') : { ok: false, rows: [] };
   for (const runRow of runs.ok ? runs.rows : []) {
-    if (String(runRow && runRow.conclusion || '').toLowerCase() !== 'failure' || !inWindow(runRow.createdAt, now)) continue;
+    if (!FAILED_RUN.has(String(runRow && runRow.conclusion || '').toLowerCase()) || !inWindow(runRow.createdAt, now)) continue;
     const name = String(runRow.name || '').trim();
     if (!name) continue;
     failed.set(name, (failed.get(name) || 0) + 1);

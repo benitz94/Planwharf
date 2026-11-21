@@ -244,3 +244,89 @@ test('the 30 day summary counts merges past the first page gh would return', asy
   assert.equal(panel.items.length, 30);
   assert.equal(panel.more, true);
 });
+
+test('the merged list still answers when the closed list cannot be read', async () => {
+  const panel = await pullRequestPanel({
+    folder: '/work', now: NOW, state: 'merged',
+    run: scripted(state => {
+      if (state === 'closed') return { status: 1, stderr: 'closed history unavailable' };
+      if (state === 'merged') return ok([row(8, { state: 'MERGED', createdAt: at(NOW - 5 * DAY), mergedAt: at(NOW - 2 * DAY), closedAt: at(NOW - 2 * DAY) })]);
+      return ok([]);
+    })
+  });
+  assert.equal(panel.ok, true);
+  assert.deepEqual(panel.items.map(item => item.number), [8]);
+  assert.equal(panel.summary.merged, 1);
+});
+
+test('a gh read that crashes is a panel message, and it does not wipe the other panel', async () => {
+  const crashed = await pullRequestPanel({
+    folder: '/work', now: NOW, state: 'open',
+    run: async (_folder, _cmd, args) => {
+      const kind = args[0] === 'pr' ? args[args.indexOf('--state') + 1] : 'runs';
+      if (kind === 'open') throw new Error('gh crashed');
+      if (kind === 'merged') return ok([row(2, { state: 'MERGED', createdAt: at(NOW - 3 * DAY), mergedAt: at(NOW - DAY), closedAt: at(NOW - DAY) })]);
+      return ok([]);
+    }
+  });
+  assert.equal(crashed.ok, false);
+  assert.match(crashed.reason, /gh crashed/);
+  assert.equal(crashed.summary, undefined);
+
+  const hidden = await pullRequestPanel({
+    folder: '/work', now: NOW, state: 'open',
+    run: async (_folder, _cmd, args) => {
+      const kind = args[0] === 'pr' ? args[args.indexOf('--state') + 1] : 'runs';
+      if (kind === 'merged') throw new Error('merged history crashed');
+      return ok([row(3)]);
+    }
+  });
+  assert.equal(hidden.ok, false);
+  assert.match(hidden.reason, /merged history crashed/);
+  assert.equal(hidden.summary, undefined);
+
+  const checks = pullRequestPanel({
+    folder: '/checks', now: NOW, state: 'open',
+    run: async (_folder, _cmd, args) => {
+      if (args[0] === 'run') throw new Error('run list crashed');
+      return ok(args.includes('open') ? [row(4)] : []);
+    }
+  });
+  const other = pullRequestPanel({
+    folder: '/other', now: NOW, state: 'open',
+    run: async () => { throw new Error('other folder crashed'); }
+  });
+  const [listed, bad] = await Promise.all([checks, other]);
+  assert.equal(listed.ok, true);
+  assert.deepEqual(listed.items.map(item => item.number), [4]);
+  assert.deepEqual(listed.summary.failedChecks, []);
+  assert.equal(bad.ok, false);
+  assert.match(bad.reason, /other folder crashed/);
+});
+
+test('a timed out or broken check counts among the checks that failed most often', async () => {
+  const runs = [
+    { name: 'build', conclusion: 'timed_out', createdAt: at(NOW - DAY) },
+    { name: 'build', conclusion: 'TIMED_OUT', createdAt: at(NOW - 2 * DAY) },
+    { name: 'lint', conclusion: 'failure', createdAt: at(NOW - DAY) },
+    { name: 'deploy', conclusion: 'cancelled', createdAt: at(NOW - DAY) },
+    { name: 'docs', conclusion: 'startup_failure', createdAt: at(NOW - DAY) },
+    { name: 'nightly', conclusion: 'skipped', createdAt: at(NOW - DAY) },
+    { name: 'release', conclusion: 'action_required', createdAt: at(NOW - DAY) },
+    { name: 'package', conclusion: 'error', createdAt: at(NOW - DAY) },
+    { name: 'quiet', conclusion: 'success', createdAt: at(NOW - DAY) }
+  ];
+  const panel = await pullRequestPanel({
+    folder: '/work', now: NOW, state: 'merged',
+    run: scripted(state => state === 'runs' ? ok(runs) : state === 'merged' ? ok([row(1, { state: 'MERGED', createdAt: at(NOW - 2 * DAY), mergedAt: at(NOW - DAY), closedAt: at(NOW - DAY) })]) : ok([]))
+  });
+  assert.equal(panel.ok, true);
+  assert.equal(panel.summary.merged, 1);
+  assert.deepEqual(panel.summary.failedChecks, [
+    { name: 'build', count: 2 },
+    { name: 'docs', count: 1 },
+    { name: 'lint', count: 1 },
+    { name: 'package', count: 1 },
+    { name: 'release', count: 1 }
+  ]);
+});

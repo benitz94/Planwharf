@@ -4302,12 +4302,24 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     });
     return { ok: true, started: true };
   }
+  // The panel keeps one short line. A long remote refusal must not cut off the sentence that says the commit is still on this computer.
+  function clipFixNote(text) {
+    const value = String(text || '');
+    if (value.length <= 300) return value;
+    const mark = 'The commit is saved locally.';
+    const at = value.indexOf(mark);
+    if (at < 0) return value.slice(0, 300);
+    const tail = value.slice(at);
+    if (tail.length >= 300) return tail.slice(0, 300);
+    const head = value.slice(0, at).slice(0, 300 - tail.length - 1).replace(/\s+\S*$/, '').trimEnd();
+    return head ? head + '…' + tail : tail;
+  }
   function markPullRequestFix(projectId, number, result, text) {
     store.pullRequestFixes ||= [];
     let row = store.pullRequestFixes.find(item => item && item.projectId === projectId && item.number === number);
     if (!row) { row = { projectId, number }; store.pullRequestFixes.push(row); }
     row.result = result;
-    row.text = String(text || '').slice(0, 300);
+    row.text = clipFixNote(text);
     row.at = now();
   }
   // The Push button keeps the pull request number on the work it opened.

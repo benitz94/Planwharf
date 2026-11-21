@@ -156,14 +156,76 @@ public class PullPanelLoadTests
         finally { window.Close(); Strings.CurrentLanguage = language; }
     }
 
+    [AvaloniaFact]
+    public async Task Show_more_keeps_the_list_when_the_next_page_has_no_rows()
+    {
+        var language = Strings.CurrentLanguage;
+        Strings.CurrentLanguage = "en";
+        using var server = new PageServer(200, """{"ok":true,"state":"open","author":"all"}""");
+        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
+        window.Show();
+        try
+        {
+            window.Connect(new PlanwharfApi(server.Address));
+            var until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "Weather")) await Task.Delay(30);
+            Assert.True(Has(window, "Weather"));
+            window.OpenSide("pulls");
+            until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "#1 Open only")) await Task.Delay(30);
+            window.UpdateLayout();
+            Assert.True(Has(window, "Show more"));
+            Click(window, "Show more");
+            until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "Could not read pull requests.")) { window.UpdateLayout(); await Task.Delay(30); }
+            Assert.True(Has(window, "Could not read pull requests."));
+            Assert.True(Has(window, "#1 Open only"));
+            Assert.False(Has(window, "No open pull requests."));
+        }
+        finally { window.Close(); Strings.CurrentLanguage = language; }
+    }
+
+    [AvaloniaFact]
+    public async Task Show_more_keeps_the_list_when_the_server_errors()
+    {
+        var language = Strings.CurrentLanguage;
+        Strings.CurrentLanguage = "en";
+        using var server = new PageServer(500, """{"error":"unavailable"}""");
+        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
+        window.Show();
+        try
+        {
+            window.Connect(new PlanwharfApi(server.Address));
+            var until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "Weather")) await Task.Delay(30);
+            Assert.True(Has(window, "Weather"));
+            window.OpenSide("pulls");
+            until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "#1 Open only")) await Task.Delay(30);
+            window.UpdateLayout();
+            Assert.True(Has(window, "Show more"));
+            Click(window, "Show more");
+            until = DateTime.UtcNow.AddSeconds(4);
+            while (DateTime.UtcNow < until && !Has(window, "500")) { window.UpdateLayout(); await Task.Delay(30); }
+            Assert.True(Has(window, "500"));
+            Assert.True(Has(window, "#1 Open only"));
+            Assert.False(Has(window, "No open pull requests."));
+        }
+        finally { window.Close(); Strings.CurrentLanguage = language; }
+    }
+
     sealed class PageServer : IDisposable
     {
         readonly HttpListener listener = new();
         readonly CancellationTokenSource stop = new();
+        readonly int failureStatus;
+        readonly string failureBody;
         int pulls;
 
-        public PageServer()
+        public PageServer(int failureStatus = 200, string? failureBody = null)
         {
+            this.failureStatus = failureStatus;
+            this.failureBody = failureBody ?? """{"ok":false,"reason":"The next page did not load.","state":"open","author":"all"}""";
             var tcp = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
             tcp.Start();
             var port = ((IPEndPoint)tcp.LocalEndpoint).Port;
@@ -196,13 +258,18 @@ public class PullPanelLoadTests
                 if (path == "/api/prs")
                 {
                     var page = Interlocked.Increment(ref pulls);
-                    json = page == 1
+                    var first = page == 1;
+                    json = first
                         ? """{"ok":true,"state":"open","author":"all","more":true,"items":[{"number":1,"title":"Open only","state":"open","byPlanwharf":false}],"summary":{"merged":0,"failedChecks":[]}}"""
-                        : """{"ok":false,"reason":"The next page did not load.","state":"open","author":"all"}""";
+                        : failureBody;
+                    context.Response.StatusCode = first ? 200 : failureStatus;
                 }
-                else json = """{"projects":[{"id":"weather","name":"Weather","status":"idle","goal":""}],"asks":[],"models":[],"autonomy":{}}""";
+                else
+                {
+                    json = """{"projects":[{"id":"weather","name":"Weather","status":"idle","goal":""}],"asks":[],"models":[],"autonomy":{}}""";
+                    context.Response.StatusCode = 200;
+                }
                 var bytes = Encoding.UTF8.GetBytes(json);
-                context.Response.StatusCode = 200;
                 context.Response.ContentType = "application/json";
                 context.Response.ContentLength64 = bytes.Length;
                 await context.Response.OutputStream.WriteAsync(bytes);

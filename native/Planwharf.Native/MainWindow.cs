@@ -615,7 +615,9 @@ public sealed partial class MainWindow : Window
         {
             var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId) + "&state=" + Uri.EscapeDataString(state) + "&author=" + Uri.EscapeDataString(author) + "&offset=" + offset);
             if (token != pullGeneration || closed) return;
-            if (more && PageFailed(listed) && pullPayload?["items"] is JsonArray) pullNotice = PageReason(listed);
+            // A failed or unreadable next page keeps the rows already on screen.
+            if (more && pullPayload?["items"] is JsonArray && (PageFailed(listed) || listed["items"] is not JsonArray))
+                pullNotice = PageFailed(listed) ? PageReason(listed) : Strings.T("Could not read pull requests.");
             else
             {
                 pullNotice = null;
