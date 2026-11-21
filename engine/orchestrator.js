@@ -341,7 +341,10 @@ function pickWorkers(models, options) {
     const verifying = building && i > 0;
     const provider = workers[0] && (workers[0].providerId || workers[0].provider);
     const ordered = verifying ? [...pool.filter(item => item && (item.providerId || item.provider) !== provider), ...pool.filter(item => item && (item.providerId || item.provider) === provider)] : pool;
-    const chosen = pickWorker(ordered, { ...opts, usage, ...(verifying ? { job: verifyJob } : {}) });
+    // Verify is part of every build: with no verifier above its limit now, the step is still planned on the
+    // best one, and it waits for quota when its turn comes instead of leaving the work unchecked.
+    const chosen = pickWorker(ordered, { ...opts, usage, ...(verifying ? { job: verifyJob } : {}) })
+      || (verifying && typeof opts.low === 'function' ? pickWorker(ordered, { ...opts, usage, job: verifyJob, low: undefined }) : null);
     if (!chosen) break;
     workers.push(chosen);
     pool = pool.filter(item => item && item.id !== chosen.id);
@@ -1355,13 +1358,14 @@ function createOrchestrator(options) {
       if (sub?.type === 'RESEARCH') return worker && inMode(worker) ? worker : null;
       const resolved = worker && inMode(worker) ? resolveUsageFallback(worker, roster(), plansLive, candidate => inMode(candidate) && permitsAssignment(candidate, job) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
       if (resolved && inMode(resolved)) {
-        // Starting a step on a model already under the switch threshold: take one with more quota when there is one.
+        // Starting a step on a model already under the switch threshold: take one above it, or wait for quota.
         const settings = autoSwitch();
         if (!settings.enabled || !lowQuota(resolved, plansLive, limitFor)) return finish(resolved);
         const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: limitFor,
           eligible: candidate => inMode(candidate) && permitsAssignment(candidate, job) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked,
           allowed: inMode })[0];
-        return finish(better ? roster().find(model => model.id === better.toModelId) || resolved : resolved);
+        // Nobody above the limit: the step does not start, and explainNoWorker says it waits for quota.
+        return better ? finish(roster().find(model => model.id === better.toModelId) || null) : null;
       }
       // Quota not read yet: wait for it rather than switch model on a guess.
       if (worker && inMode(worker) && usagePolicy(worker, plansLive).state === 'unread') return null;
@@ -3279,7 +3283,7 @@ function createOrchestrator(options) {
     quotaWatchRunning = true;
     try {
       const view = snapshot(await opts.readPlan());
-      const busy = view.projects.filter(row => String(row.megaTask?.status || '').toUpperCase() === 'RUNNING' && (row.subTasks || []).some(sub => sub.status === 'RUNNING'));
+      const busy = view.projects.filter(row => String(row.megaTask?.status || '').toUpperCase() === 'RUNNING' && (row.subTasks || []).some(sub => sub.status === 'RUNNING' || sub.status === 'PENDING'));
       if (!busy.length) return;
       await refreshPlans(false);
       for (const row of busy) {
@@ -3296,6 +3300,13 @@ function createOrchestrator(options) {
             return allowedBySavingMode(mode, candidate) && permitsAssignment(candidate, job) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
           };
           const switches = quotaSwitches({ running, models, plans: plansLive, thresholdPercent: limitFor, eligible });
+          // A step still waiting its turn (Verify, usually) moves too, so it never starts on a model under its
+          // limit and the card shows who will really do it. With nobody above the limit it stays and waits.
+          const waiting = (row.subTasks || []).filter(sub => sub.status === 'PENDING' && sub.type !== 'RESEARCH' && !sub.goldModel && Date.now() - (quotaSwitchedAt.get(sub.id) || 0) > 10 * 60000)
+            .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
+              avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = models.find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
+          const waitingSwitches = quotaSwitches({ running: waiting, models, plans: plansLive, thresholdPercent: limitFor,
+            eligible: (candidate, step) => eligible(candidate, step) && (assignmentRole(step.sub) !== 'verifier' || ableToVerify([candidate]).length > 0) });
           const switched = new Set(switches.map(change => change.subTaskId));
           // A step on a model under its limit that nobody can take over: the work stops, and the chat says why
           // each other model cannot take the step, so the owner can check it.
@@ -3342,6 +3353,10 @@ function createOrchestrator(options) {
           for (const change of switches) {
             const from = models.find(model => model.id === change.fromModelId);
             apply(change, `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}).`);
+          }
+          for (const change of waitingSwitches) {
+            const from = models.find(model => model.id === change.fromModelId);
+            apply(change, `Quota of ${from?.label || change.fromModelId} is at ${change.leftPercent}% (switch at ${limitText(from)}), before this step starts.`);
           }
           for (const change of lostRole) {
             const from = models.find(model => model.id === change.fromModelId);
