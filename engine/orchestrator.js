@@ -4219,7 +4219,6 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     prFixes.set(key, { startedAt: now(), text: '' });
     const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
     const done = (type, text) => {
-      prFixes.delete(key);
       markPullRequestFix(projectId, number, type === 'PR_FIX_COMPLETED' ? 'fixed' : 'failed', text);
       say(type, text);
     };
@@ -4267,7 +4266,15 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       } catch (error) {
         done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${error.message}`);
       } finally {
-        if (fix?.ok !== false) await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+        // Hold the one-at-a-time lock until the copy is gone, so a retry cannot reuse its folder.
+        try {
+          await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+          const copy = path.resolve(worktree);
+          const copies = path.resolve(dir, 'worktrees') + path.sep;
+          if (copy.toLowerCase().startsWith(copies.toLowerCase())) fs.rmSync(copy, { recursive: true, force: true });
+        } finally {
+          prFixes.delete(key);
+        }
       }
     });
     return { ok: true, started: true };

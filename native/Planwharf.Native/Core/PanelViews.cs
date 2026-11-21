@@ -140,9 +140,17 @@ public static class PanelViews
             B(pr["conflicts"]), checks, B(pr["byPlanwharf"]), B(pr["canFix"]), S(pr["fixStatus"]), S(pr["fixText"]), work);
     }
 
-    // The list the panel draws. Filters apply here so a click changes the rows without another parse.
-    public static IReadOnlyList<PullRequestRow> Matching(IReadOnlyList<PullRequestRow> rows, string state, string author) =>
-        rows.Where(row => row.State == state && (author == "all" || (author == "planwharf" ? row.ByPlanwharf : !row.ByPlanwharf))).ToList();
+    // The list the panel draws. An unknown chip keeps the open list instead of hiding every row.
+    public static IReadOnlyList<PullRequestRow> Matching(IReadOnlyList<PullRequestRow> rows, string state, string author)
+    {
+        var wanted = state is "merged" or "closed" ? state : "open";
+        return rows.Where(row => row.State == wanted && author switch
+        {
+            "planwharf" => row.ByPlanwharf,
+            "others" => !row.ByPlanwharf,
+            _ => true
+        }).ToList();
+    }
 
     public static PullRequestPanel PullRequests(JsonNode? payload, TimeZoneInfo? zone = null)
     {

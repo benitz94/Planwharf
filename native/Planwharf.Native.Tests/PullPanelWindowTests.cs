@@ -99,4 +99,37 @@ public class PullPanelWindowTests
         }
         finally { window.Close(); }
     }
+
+    [AvaloniaFact]
+    public void A_failed_fix_is_shown_and_a_bad_read_replaces_the_list()
+    {
+        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
+        window.Show();
+        try
+        {
+            window.Show(SampleState.Working());
+            window.OpenSide("pulls");
+            window.ShowPullRequests(JsonNode.Parse("""
+            { "ok": true, "state": "open", "author": "all", "more": false,
+              "summary": { "merged": 0, "neededFix": 0, "failedChecks": [] },
+              "items": [ { "number": 4, "title": "Broken chart", "branch": "feat/broken", "state": "open", "conflicts": true, "canFix": true, "fixStatus": "failed", "fixText": "" } ] }
+            """)!);
+            window.UpdateLayout();
+            Assert.True(Has(window, "#4 Broken chart"));
+            Assert.True(Has(window, "The fix failed."));
+            Assert.True(Has(window, "Fix in the background"));
+            Assert.True(Has(window, "No check failed often in the last 30 days."));
+
+            window.ShowPullRequests(JsonNode.Parse("""{ "ok": true, "items": [], "summary": { "merged": 0, "failedChecks": [] } }""")!);
+            window.UpdateLayout();
+            Assert.True(Has(window, "No open pull requests."));
+            Assert.False(Has(window, "Broken chart"));
+
+            window.ShowPullRequests(JsonNode.Parse("""{ "ok": false, "reason": "API rate limit exceeded" }""")!);
+            window.UpdateLayout();
+            Assert.True(Has(window, "API rate limit exceeded"));
+            Assert.False(Has(window, "Fix in the background"));
+        }
+        finally { window.Close(); }
+    }
 }

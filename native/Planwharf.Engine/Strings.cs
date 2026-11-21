@@ -609,6 +609,7 @@ public static class Strings
         ["Running"] = "In corso",
         ["Conflicts"] = "Conflitti",
         ["Planwharf fixed this in the background."] = "Planwharf l'ha sistemata in background.",
+        ["The fix failed."] = "La correzione non \u00e8 riuscita.",
         ["The work behind this pull request"] = "Il lavoro dietro questa pull request",
         ["under a minute"] = "meno di un minuto",
         ["{0} h"] = "{0} h",

@@ -16,6 +16,13 @@ function run(folder, cmd, args) {
   });
 }
 
+// The same reds the panel shows: a failed check run, or an older commit status such as ci/circleci.
+const RED = ['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'];
+function failingNames(rollup) {
+  return (Array.isArray(rollup) ? rollup : []).filter(check => RED.includes(String(check && (check.conclusion || check.state) || '').toUpperCase()))
+    .map(check => String(check && (check.name || check.context) || '').trim()).filter(Boolean);
+}
+
 async function listPrs(folder) {
   const listed = await run(folder, 'gh', ['pr', 'list', '--state', 'open', '--json', 'number,title,mergeable,headRefName,statusCheckRollup,url']);
   if (listed.status !== 0) return { ok: false, reason: (listed.stderr || 'Could not read pull requests.').trim().split(/\r?\n/)[0] };
@@ -27,26 +34,28 @@ async function listPrs(folder) {
     branch: pr.headRefName,
     url: pr.url,
     conflicts: pr.mergeable === 'CONFLICTING',
-    failing: (pr.statusCheckRollup || []).filter(check => check.conclusion === 'FAILURE').map(check => check.name)
+    failing: failingNames(pr.statusCheckRollup)
   })) };
 }
 
 // Merge the default branch into a conflicting pull request and push when it merges cleanly.
-async function resolveConflicts(folder, number) {
-  const view = await run(folder, 'gh', ['pr', 'view', String(number), '--json', 'headRefName,baseRefName,mergeable']);
+async function resolveConflicts(folder, number, runCommand = run) {
+  const view = await runCommand(folder, 'gh', ['pr', 'view', String(number), '--json', 'headRefName,baseRefName,mergeable']);
   if (view.status !== 0) return { ok: false, reason: 'Pull request not found.' };
-  const pr = JSON.parse(view.stdout);
+  let pr;
+  try { pr = JSON.parse(view.stdout); } catch { return { ok: false, reason: 'Pull request was not readable.' }; }
+  if (!pr || typeof pr !== 'object') return { ok: false, reason: 'Pull request was not readable.' };
   if (pr.mergeable !== 'CONFLICTING') return { ok: true, changed: false, reason: 'No conflicts.' };
-  const checkout = await run(folder, 'gh', ['pr', 'checkout', String(number)]);
+  const checkout = await runCommand(folder, 'gh', ['pr', 'checkout', String(number)]);
   if (checkout.status !== 0) return { ok: false, reason: 'Could not check out the pull request.' };
-  await run(folder, 'git', ['fetch', 'origin', pr.baseRefName]);
-  const merged = await run(folder, 'git', ['merge', 'origin/' + pr.baseRefName, '--no-edit']);
+  await runCommand(folder, 'git', ['fetch', 'origin', pr.baseRefName]);
+  const merged = await runCommand(folder, 'git', ['merge', 'origin/' + pr.baseRefName, '--no-edit']);
   if (merged.status !== 0) {
-    await run(folder, 'git', ['merge', '--abort']);
-    const files = (await run(folder, 'git', ['diff', '--name-only', '--diff-filter=U'])).stdout.split(/\r?\n/).filter(Boolean);
+    await runCommand(folder, 'git', ['merge', '--abort']);
+    const files = (await runCommand(folder, 'git', ['diff', '--name-only', '--diff-filter=U'])).stdout.split(/\r?\n/).filter(Boolean);
     return { ok: false, reason: 'Conflicts need a decision.', files };
   }
-  const pushed = await run(folder, 'git', ['push']);
+  const pushed = await runCommand(folder, 'git', ['push']);
   return pushed.status === 0
     ? { ok: true, changed: true, reason: 'Merged the base branch and pushed.' }
     : { ok: false, reason: 'Merged, but the push failed. The commit is saved locally.' };
@@ -55,27 +64,28 @@ async function resolveConflicts(folder, number) {
 // Fixing a pull request in the background, the way a reviewer does: in a copy of the folder of its own (a
 // git worktree on the pull request's branch), never in the owner's folder, and pushed to the same branch,
 // so the same pull request updates. The engine merges the base branch; a model fixes what is left.
-async function prepareFix(folder, number, worktree) {
-  const view = await run(folder, 'gh', ['pr', 'view', String(number), '--json', 'headRefName,baseRefName,mergeable,statusCheckRollup,state']);
+async function prepareFix(folder, number, worktree, runCommand = run) {
+  const view = await runCommand(folder, 'gh', ['pr', 'view', String(number), '--json', 'headRefName,baseRefName,mergeable,statusCheckRollup,state']);
   if (view.status !== 0) return { ok: false, reason: 'Pull request not found.' };
   let pr;
   try { pr = JSON.parse(view.stdout); } catch { return { ok: false, reason: 'Pull request was not readable.' }; }
-  if (pr.state && pr.state !== 'OPEN') return { ok: false, reason: 'The pull request is not open.' };
+  if (!pr || typeof pr !== 'object') return { ok: false, reason: 'Pull request was not readable.' };
+  if (pr.state && String(pr.state).toUpperCase() !== 'OPEN') return { ok: false, reason: 'The pull request is not open.' };
   const branch = pr.headRefName, base = pr.baseRefName || 'main';
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch || '') || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(base)) return { ok: false, reason: 'The pull request branch has an unusual name.' };
-  const failing = (pr.statusCheckRollup || []).filter(check => check.conclusion === 'FAILURE').map(check => check.name);
-  return prepareWorktree(folder, { branch, base, failing }, worktree);
+  const failing = failingNames(pr.statusCheckRollup);
+  return prepareWorktree(folder, { branch, base, failing }, worktree, runCommand);
 }
 
-async function prepareWorktree(folder, { branch, base, failing = [] }, worktree) {
-  const fetched = await run(folder, 'git', ['fetch', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`, `+refs/heads/${base}:refs/remotes/origin/${base}`]);
+async function prepareWorktree(folder, { branch, base, failing = [] }, worktree, runCommand = run) {
+  const fetched = await runCommand(folder, 'git', ['fetch', 'origin', `+refs/heads/${branch}:refs/remotes/origin/${branch}`, `+refs/heads/${base}:refs/remotes/origin/${base}`]);
   if (fetched.status !== 0) return { ok: false, reason: 'Could not fetch the pull request branch.' };
   require('node:fs').mkdirSync(require('node:path').dirname(worktree), { recursive: true });
-  const added = await run(folder, 'git', ['worktree', 'add', '--detach', worktree, 'origin/' + branch]);
+  const added = await runCommand(folder, 'git', ['worktree', 'add', '--detach', worktree, 'origin/' + branch]);
   if (added.status !== 0) return { ok: false, reason: 'Could not make a copy of the folder for the fix.' };
-  const before = (await run(worktree, 'git', ['rev-parse', 'HEAD'])).stdout.trim();
-  const merged = await run(worktree, 'git', ['merge', 'origin/' + base, '--no-edit']);
-  const conflicts = merged.status === 0 ? [] : (await run(worktree, 'git', ['diff', '--name-only', '--diff-filter=U'])).stdout.split(/\r?\n/).filter(Boolean);
+  const before = (await runCommand(worktree, 'git', ['rev-parse', 'HEAD'])).stdout.trim();
+  const merged = await runCommand(worktree, 'git', ['merge', 'origin/' + base, '--no-edit']);
+  const conflicts = merged.status === 0 ? [] : (await runCommand(worktree, 'git', ['diff', '--name-only', '--diff-filter=U'])).stdout.split(/\r?\n/).filter(Boolean);
   if (merged.status !== 0 && !conflicts.length) { await removeWorktree(folder, worktree); return { ok: false, reason: 'The base branch could not be merged.' }; }
   return { ok: true, branch, base, before, conflicts, failing };
 }

@@ -177,5 +177,17 @@ public class PanelViewsTests
         Assert.Equal(("running", "Reading the failing check", false), (row.FixStatus, row.FixText, row.CanFix));
         Assert.Equal("under a minute", PanelViews.Span(1000));
         Assert.Equal("—", PanelViews.Span(null));
+        Assert.Equal("—", PanelViews.Span(-1));
+    }
+
+    [Fact]
+    public void Pull_filters_keep_the_open_list_when_the_choice_is_not_one_of_the_chips()
+    {
+        var panel = PanelViews.PullRequests(Pulls(), TimeZoneInfo.Utc);
+        Assert.Equal(12, Assert.Single(PanelViews.Matching(panel.Items, "open", "anyone")).Number);
+        Assert.Equal(12, Assert.Single(PanelViews.Matching(panel.Items, "nope", "all")).Number);
+        var missing = PanelViews.PullRequests(JsonNode.Parse("""{ "ok": false }""")!);
+        Assert.Equal("Could not read pull requests.", missing.Message);
+        Assert.Empty(missing.Items);
     }
 }

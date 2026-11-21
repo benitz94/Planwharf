@@ -39,11 +39,12 @@ function parseJson(result, label) {
 }
 
 function checkState(check) {
-  const conclusion = String(check && check.conclusion || '').toUpperCase();
+  // Check runs use conclusion. Older commit statuses (ci/circleci and the like) use state.
+  const conclusion = String(check && (check.conclusion || check.state) || '').toUpperCase();
   const status = String(check && check.status || '').toUpperCase();
   if (conclusion === 'SUCCESS' || conclusion === 'NEUTRAL' || conclusion === 'SKIPPED') return 'green';
-  if (['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE'].includes(conclusion)) return 'red';
-  if (['IN_PROGRESS', 'QUEUED', 'PENDING', 'WAITING', 'REQUESTED'].includes(status) || !conclusion) return 'running';
+  if (['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'].includes(conclusion)) return 'red';
+  if (['IN_PROGRESS', 'QUEUED', 'PENDING', 'WAITING', 'REQUESTED', 'EXPECTED'].includes(status) || ['PENDING', 'EXPECTED'].includes(conclusion) || !conclusion) return 'running';
   return 'running';
 }
 
@@ -139,8 +140,9 @@ async function pullRequestPanel(options = {}) {
   if (!open.ok) return { ok: false, reason: open.reason || 'Could not read pull requests.' };
   const merged = parseJson(mergedRaw, 'Pull request list was not readable.');
   const closed = parseJson(closedRaw, 'Pull request list was not readable.');
-  if (state === 'merged' && !merged.ok) return { ok: false, reason: merged.reason };
-  if (state === 'closed' && !closed.ok) return { ok: false, reason: closed.reason };
+  // The summary is on every view. A failed merged read must not show up as zero merges.
+  if (!merged.ok) return { ok: false, reason: merged.reason || 'Could not read pull requests.' };
+  if (state === 'closed' && !closed.ok) return { ok: false, reason: closed.reason || 'Could not read pull requests.' };
 
   const seen = new Set();
   const rows = [];

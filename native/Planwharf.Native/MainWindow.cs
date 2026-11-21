@@ -52,7 +52,7 @@ public sealed partial class MainWindow : Window
     JsonNode? pullPayload;
     string pullState = "open", pullAuthor = "all";
     int pullOffset;
-    bool pullLoading;
+    int pullGeneration;
     readonly Dictionary<string, string> gitBusy = new();
     readonly Dictionary<string, (bool Ok, string Text)> gitSaid = new();
     readonly Dictionary<string, string> commitMessages = new();
@@ -599,12 +599,16 @@ public sealed partial class MainWindow : Window
 
     async Task LoadPullsAsync(bool more)
     {
-        if (api == null || projectId == null || pullLoading) return;
-        pullLoading = true;
+        if (api == null || projectId == null) return;
+        // A filter clicked while a read is in flight replaces that read. The late answer is ignored.
+        var token = ++pullGeneration;
         var offset = more ? pullOffset : 0;
+        var state = pullState;
+        var author = pullAuthor;
         try
         {
-            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId) + "&state=" + Uri.EscapeDataString(pullState) + "&author=" + Uri.EscapeDataString(pullAuthor) + "&offset=" + offset);
+            var listed = await api.GetAsync("/api/prs?projectId=" + Uri.EscapeDataString(projectId) + "&state=" + Uri.EscapeDataString(state) + "&author=" + Uri.EscapeDataString(author) + "&offset=" + offset);
+            if (token != pullGeneration || closed) return;
             var freshCount = listed["items"] is JsonArray fresh ? fresh.Count : 0;
             if (more && pullPayload?["items"] is JsonArray previous && listed["items"] is JsonArray page)
             {
@@ -614,8 +618,12 @@ public sealed partial class MainWindow : Window
             pullPayload = listed;
             pullOffset = offset + freshCount;
         }
-        catch (Exception error) { pullPayload = new JsonObject { ["ok"] = false, ["reason"] = error.Message, ["state"] = pullState, ["author"] = pullAuthor }; }
-        finally { pullLoading = false; sideSig = null; Render(); }
+        catch (Exception error)
+        {
+            if (token != pullGeneration || closed) return;
+            pullPayload = new JsonObject { ["ok"] = false, ["reason"] = error.Message, ["state"] = state, ["author"] = author };
+        }
+        finally { if (token == pullGeneration && !closed) { sideSig = null; Render(); } }
     }
 
     void SetPullFilter(string? state, string? author)
@@ -698,7 +706,7 @@ public sealed partial class MainWindow : Window
         if (pr.Conflicts) card.Children.Add(Line(Strings.T("Conflicts"), Palette.Danger, 13));
         if (pr.FixStatus == "running") card.Children.Add(Line(Strings.T("Fixing in the background") + (pr.FixText.Length > 0 ? ". " + pr.FixText : "."), Palette.Text, 13));
         else if (pr.FixStatus == "fixed") card.Children.Add(Line(Strings.T("Planwharf fixed this in the background.") + (pr.FixText.Length > 0 ? " " + pr.FixText : ""), Palette.Accent, 13));
-        else if (pr.FixStatus == "failed" && pr.FixText.Length > 0) card.Children.Add(Line(pr.FixText, Palette.Danger, 13));
+        else if (pr.FixStatus == "failed") card.Children.Add(Line(pr.FixText.Length > 0 ? pr.FixText : Strings.T("The fix failed."), Palette.Danger, 13));
         if (pr.Work != null)
         {
             card.Children.Add(Line(Strings.T("The work behind this pull request"), Palette.Text, 13, FontWeight.SemiBold));
