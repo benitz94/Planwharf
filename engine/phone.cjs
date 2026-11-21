@@ -228,49 +228,104 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
   return msg;
 }
 
+// The headline and the sign-off of each alert, in the voice of a ship's crew.
+const BUCCANEER = {
+  en: {
+    ahoy: 'AHOY, CAPTAIN!',
+    project: 'Ship', mission: 'Mission', status: 'Status', timeLeft: 'Time left', duration: 'Voyage time',
+    minutes: n => `About ${n} minute${n === 1 ? '' : 's'}`,
+    lines: {
+      started: ['🚀 The crew has set sail on a new mission!', '🦜 The crew is hard at work. I\'ll keep you posted, Captain!'],
+      resumed: ['⛵ Back at sea!', '🦜 The crew picked up where it left off.'],
+      done: ['🏆 Mission accomplished!', '🍻 The work is in the hold. Inspect the treasure and push it when you like it.'],
+      failed: ['🌊 Rough seas: the mission hit a snag.', '🛟 The crew has stopped. Have a look when you can, Captain.'],
+      needs_owner: ['📯 The crew awaits your orders!', '🗺️ Open Planwharf and tell them which way to go.'],
+      stopped: ['⚓ The crew has dropped anchor.', '🦜 Say /resume when you want to sail again.'],
+      blocked: ['🪨 Stuck on the rocks!', '🛠️ The crew needs a worker and a place to work.'],
+      verify: ['🔭 A second pair of eyes is checking the work.', '🦜 Another model is inspecting every plank.'],
+      switched: ['🔁 Change of watch!', '🦜 Another sailor took over this step.'],
+      restarted: ['🔁 Same step, fresh start.', '🦜 The crew is trying again.'],
+      updated: ['🧭 News from the deck.', '🦜 I\'ll keep you posted, Captain!']
+    }
+  },
+  it: {
+    ahoy: 'AHOY, CAPITANO!',
+    project: 'Nave', mission: 'Missione', status: 'Stato', timeLeft: 'Tempo rimasto', duration: 'Durata del viaggio',
+    minutes: n => `Circa ${n} minut${n === 1 ? 'o' : 'i'}`,
+    lines: {
+      started: ['🚀 L\'equipaggio ha preso il largo per una nuova missione!', '🦜 La ciurma è al lavoro. Ti tengo aggiornato, Capitano!'],
+      resumed: ['⛵ Di nuovo in mare!', '🦜 La ciurma riparte da dove si era fermata.'],
+      done: ['🏆 Missione compiuta!', '🍻 Il bottino è nella stiva. Controllalo e fai il push quando ti piace.'],
+      failed: ['🌊 Mare grosso: la missione si è incagliata.', '🛟 La ciurma si è fermata. Dai un\'occhiata quando puoi, Capitano.'],
+      needs_owner: ['📯 La ciurma aspetta i tuoi ordini!', '🗺️ Apri Planwharf e indica la rotta.'],
+      stopped: ['⚓ La ciurma ha gettato l\'ancora.', '🦜 Scrivi /resume quando vuoi ripartire.'],
+      blocked: ['🪨 Incagliati sugli scogli!', '🛠️ Alla ciurma servono un marinaio e un posto dove lavorare.'],
+      verify: ['🔭 Un secondo paio d\'occhi controlla il lavoro.', '🦜 Un altro modello ispeziona ogni asse.'],
+      switched: ['🔁 Cambio della guardia!', '🦜 Un altro marinaio ha preso questo passo.'],
+      restarted: ['🔁 Stesso passo, nuova partenza.', '🦜 La ciurma riprova.'],
+      updated: ['🧭 Notizie dal ponte.', '🦜 Ti tengo aggiornato, Capitano!']
+    }
+  }
+};
+
+// Text written with Markdown code marks (`main`) shows them raw in Telegram's HTML: turn them into <code>.
+function htmlWithCode(text) {
+  return escapeHtml(text).replace(/`([^`\n]+)`/g, '<code>$1</code>');
+}
+
+// A mission title for someone who does not program: the first sentence, without branch and commit talk.
+function missionTitle(goalTitle) {
+  const first = sanitizeGoalTitle(goalTitle).split(/(?<=[.!?:;])\s/)[0];
+  return first
+    .replace(/[,;]?\s+(?:as|following|according to|seguendo|come)\b[^`]*`.*$/i, '')
+    .replace(/\s*(?:on|from|in|su|da)\s+(?:a\s+new\s+branch\s+)?`[^`]+`.*$/i, '')
+    .replace(/[,;:]\s*$/, '').trim() || 'Work';
+}
+
 function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language }) {
   const lang = languageOrDefault(language);
-  const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
-  const safeGoal = escapeHtml(sanitizeGoalTitle(goalTitle));
+  const voice = BUCCANEER[lang] || BUCCANEER.en;
   const known = Object.prototype.hasOwnProperty.call(ALERT_LABELS, type);
-  const statusLabel = telegramAlertLabel(lang, known ? type : 'updated');
-  const heading = lang === 'it' ? 'Avviso dal porto' : 'Harbor Alert';
-  const goalWord = lang === 'it' ? 'Obiettivo' : 'Goal';
-  const statusWord = lang === 'it' ? 'Stato' : 'Status';
-  const greeting = lang === 'it' ? '⚓ Capitano' : '⚓ Captain';
+  const kind = known ? type : 'updated';
+  const [headline, signoff] = voice.lines[kind] || voice.lines.updated;
+  const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
 
   const lines = [
-    greeting,
+    `🏴‍☠️ <b>${voice.ahoy}</b>`,
     '',
-    `<b>${heading}: ${safeProject}</b>`,
-    `<b>${goalWord}:</b> ${safeGoal}`,
-    `<b>${statusWord}:</b> ${statusLabel}`
+    headline,
+    `<i>${escapeHtml(plainAlert(lang, kind))}</i>`,
+    '',
+    `🚢 <b>${voice.project}</b>`,
+    safeProject,
+    '',
+    `🎯 <b>${voice.mission}</b>`,
+    htmlWithCode(missionTitle(goalTitle)),
+    '',
+    `🧭 <b>${voice.status}</b>`,
+    telegramAlertLabel(lang, kind)
   ];
 
-  if (type === 'done' && durationMinutes != null) {
+  if (kind === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
-    if (dur) lines.push(`<b>${lang === 'it' ? 'Durata' : 'Duration'}:</b> ${dur}`);
+    if (dur) lines.push('', `⏱️ <b>${voice.duration}</b>`, dur);
   }
 
-  if (timeLeft && (timeLeft.minutes != null || timeLeft.endsAt)) {
-    let timeText = '';
-    if (timeLeft.minutes != null) {
-      timeText = lang === 'it' ? `Circa ${timeLeft.minutes}m rimasti` : `About ${timeLeft.minutes}m left`;
-      if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
-      if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
-    }
-    if (timeText) lines.push(`<b>${lang === 'it' ? 'Stima' : 'Estimate'}:</b> ${escapeHtml(timeText)}`);
-  }
-
-  if (detail) {
-    lines.push(escapeHtml(sanitizeText(detail)));
+  if (timeLeft && timeLeft.minutes != null) {
+    let timeText = voice.minutes(timeLeft.minutes);
+    if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
+    if (timeLeft.sure) timeText += ` · ${timeLeft.sure}`;
+    lines.push('', `⏳ <b>${voice.timeLeft}</b>`, escapeHtml(timeText));
   }
 
   const bar = formatProgressBar(step);
-  if (bar) lines.push(bar);
-  const caption = progressCaption(lang, step);
-  if (caption) lines.push(escapeHtml(caption));
-  lines.push(plainAlert(lang, known ? type : 'updated'));
+  if (bar) {
+    const caption = progressCaption(lang, step);
+    lines.push('', bar + (caption ? `  ${escapeHtml(caption)}` : ''));
+  }
+
+  if (detail) lines.push('', htmlWithCode(sanitizeText(detail)));
+  lines.push('', signoff);
 
   return lines.join('\n');
 }

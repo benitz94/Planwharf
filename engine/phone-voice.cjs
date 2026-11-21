@@ -113,7 +113,7 @@ function fill(template, vars) {
 const CATALOG = {
   pairing: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Harbor Connected</b>',
       'Planwharf connected and standing by.',
@@ -125,7 +125,7 @@ const CATALOG = {
       '• /language — English or Italiano'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Porto collegato</b>',
       'Planwharf è collegato e in attesa.',
@@ -139,7 +139,7 @@ const CATALOG = {
   },
   help: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Harbor Guide</b>',
       'Use the deck buttons, or:',
@@ -151,7 +151,7 @@ const CATALOG = {
       'You can also ask in plain words. The buttons do the same work as the commands.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Guida del porto</b>',
       'Usa i pulsanti di coperta, oppure:',
@@ -165,14 +165,14 @@ const CATALOG = {
   },
   stopConfirm: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Confirm Stop Order</b>',
       '⏹ Stop the crew for "{name}"? Reply "yes" to confirm.',
       'The crew pauses only after you answer yes.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Conferma la fermata</b>',
       '⏹ Fermo l\'equipaggio di "{name}"? Rispondi "yes" o "sì" per confermare.',
@@ -180,20 +180,20 @@ const CATALOG = {
     ].join('\n')
   },
   stopConfirmTap: {
-    en: '⚓ Captain\n\n<b>Confirm Stop Order</b>\n⏹ Stop this crew? Reply "yes" to confirm or tap below.',
-    it: '⚓ Capitano\n\n<b>Conferma la fermata</b>\n⏹ Fermo questo equipaggio? Rispondi "yes" o "sì", oppure tocca sotto.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Confirm Stop Order</b>\n⏹ Stop this crew? Reply "yes" to confirm or tap below.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Conferma la fermata</b>\n⏹ Fermo questo equipaggio? Rispondi "yes" o "sì", oppure tocca sotto.'
   },
   crewStopped: {
-    en: '⚓ Captain\n\n<b>Crew Stopped</b>\n⏹ The crew for "{name}" has been stopped.',
-    it: '⚓ Capitano\n\n<b>Equipaggio fermo</b>\n⏹ L\'equipaggio di "{name}" è stato fermato.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Crew Stopped</b>\n⏹ The crew for "{name}" has been stopped.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Equipaggio fermo</b>\n⏹ L\'equipaggio di "{name}" è stato fermato.'
   },
   stopCancelled: {
-    en: '⚓ Captain\n\n<b>Stop Cancelled</b>\nStop cancelled. Crew will continue work.',
-    it: '⚓ Capitano\n\n<b>Fermata annullata</b>\nFermata annullata. L\'equipaggio continua il lavoro.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Stop Cancelled</b>\nStop cancelled. Crew will continue work.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Fermata annullata</b>\nFermata annullata. L\'equipaggio continua il lavoro.'
   },
   couldNotCompleteStop: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Harbor Notice</b>',
       '⚠️ Planwharf could not complete that.',
@@ -201,7 +201,7 @@ const CATALOG = {
       'Ask for technical details with /details.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Avviso dal porto</b>',
       '⚠️ Planwharf non è riuscito a fermare l\'equipaggio.',
@@ -211,7 +211,7 @@ const CATALOG = {
   },
   couldNotCompleteResume: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Harbor Notice</b>',
       '⚠️ Planwharf could not complete that.',
@@ -219,7 +219,7 @@ const CATALOG = {
       'Ask for technical details with /details.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Avviso dal porto</b>',
       '⚠️ Planwharf non è riuscito a far ripartire l\'equipaggio.',
@@ -228,60 +228,60 @@ const CATALOG = {
     ].join('\n')
   },
   couldNotReadProjects: {
-    en: '⚓ Captain\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not read the projects. Try again.\nAsk for technical details with /details.',
-    it: '⚓ Capitano\n\n<b>Avviso dal porto</b>\n⚠️ Planwharf non riesce a leggere i progetti. Riprova.\nChiedi i dettagli tecnici con /details.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Notice</b>\n⚠️ Planwharf could not read the projects. Try again.\nAsk for technical details with /details.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Avviso dal porto</b>\n⚠️ Planwharf non riesce a leggere i progetti. Riprova.\nChiedi i dettagli tecnici con /details.'
   },
   stopNone: {
-    en: '⚓ Captain\n\n<b>Stop Order</b>\nNo projects available to stop.',
-    it: '⚓ Capitano\n\n<b>Ordine di fermata</b>\nNon ci sono progetti da fermare.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Stop Order</b>\nNo projects available to stop.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Ordine di fermata</b>\nNon ci sono progetti da fermare.'
   },
   stopSpecify: {
-    en: '⚓ Captain\n\n<b>Stop Order</b>\nPlease specify a project: /stop &lt;name&gt;\n<b>Projects in port:</b> {names}',
-    it: '⚓ Capitano\n\n<b>Ordine di fermata</b>\nIndica un progetto: /stop &lt;nome&gt;\n<b>Progetti in porto:</b> {names}'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Stop Order</b>\nPlease specify a project: /stop &lt;name&gt;\n<b>Projects in port:</b> {names}',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Ordine di fermata</b>\nIndica un progetto: /stop &lt;nome&gt;\n<b>Progetti in porto:</b> {names}'
   },
   resumeNone: {
-    en: '⚓ Captain\n\n<b>Resume Order</b>\nNo projects available to resume.',
-    it: '⚓ Capitano\n\n<b>Ordine di ripresa</b>\nNon ci sono progetti da riprendere.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Resume Order</b>\nNo projects available to resume.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Ordine di ripresa</b>\nNon ci sono progetti da riprendere.'
   },
   resumeSpecify: {
-    en: '⚓ Captain\n\n<b>Resume Order</b>\nPlease specify a project: /resume &lt;name&gt;\n<b>Projects in port:</b> {names}',
-    it: '⚓ Capitano\n\n<b>Ordine di ripresa</b>\nIndica un progetto: /resume &lt;nome&gt;\n<b>Progetti in porto:</b> {names}'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Resume Order</b>\nPlease specify a project: /resume &lt;name&gt;\n<b>Projects in port:</b> {names}',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Ordine di ripresa</b>\nIndica un progetto: /resume &lt;nome&gt;\n<b>Progetti in porto:</b> {names}'
   },
   crewResumed: {
-    en: '⚓ Captain\n\n<b>Crew Resumed</b>\n▶️ The crew for "{name}" has resumed.',
-    it: '⚓ Capitano\n\n<b>Equipaggio ripartito</b>\n▶️ L\'equipaggio di "{name}" è ripartito.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Crew Resumed</b>\n▶️ The crew for "{name}" has resumed.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Equipaggio ripartito</b>\n▶️ L\'equipaggio di "{name}" è ripartito.'
   },
   memoryCleared: {
-    en: '⚓ Captain\n\n<b>Logbook Cleared</b>\nThis chat memory is clear. Commands are unchanged.',
-    it: '⚓ Capitano\n\n<b>Giornale di bordo pulito</b>\nLa memoria di questa chat è pulita. I comandi restano gli stessi.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Logbook Cleared</b>\nThis chat memory is clear. Commands are unchanged.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Giornale di bordo pulito</b>\nLa memoria di questa chat è pulita. I comandi restano gli stessi.'
   },
   unrecognized: {
-    en: '⚓ Captain\n\n<b>Unrecognized Command</b>\nUnrecognized command. Use /status, /stop &lt;project&gt;, or /resume &lt;project&gt;.\nOr ask in plain words. /details shows the last technical note.',
-    it: '⚓ Capitano\n\n<b>Comando non riconosciuto</b>\nComando non riconosciuto. Usa /status, /stop &lt;progetto&gt; o /resume &lt;progetto&gt;.\nOppure chiedi con parole semplici. /details mostra l\'ultima nota tecnica.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Unrecognized Command</b>\nUnrecognized command. Use /status, /stop &lt;project&gt;, or /resume &lt;project&gt;.\nOr ask in plain words. /details shows the last technical note.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Comando non riconosciuto</b>\nComando non riconosciuto. Usa /status, /stop &lt;progetto&gt; o /resume &lt;progetto&gt;.\nOppure chiedi con parole semplici. /details mostra l\'ultima nota tecnica.'
   },
   attachments: {
-    en: '⚓ Captain\n\n<b>Harbor Notice</b>\n📎 Attachments are not accepted. Use the deck buttons.',
-    it: '⚓ Capitano\n\n<b>Avviso dal porto</b>\n📎 Gli allegati non sono accettati. Usa i pulsanti di coperta.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Notice</b>\n📎 Attachments are not accepted. Use the deck buttons.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Avviso dal porto</b>\n📎 Gli allegati non sono accettati. Usa i pulsanti di coperta.'
   },
   statusEmpty: {
-    en: '⚓ Captain\n\n<b>Harbor Status</b>\nNo projects in port.\nWhen a project is running, its step appears here.',
-    it: '⚓ Capitano\n\n<b>Stato del porto</b>\nNessun progetto in porto.\nQuando un progetto è in corso, il suo passo compare qui.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Status</b>\nNo projects in port.\nWhen a project is running, its step appears here.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Stato del porto</b>\nNessun progetto in porto.\nQuando un progetto è in corso, il suo passo compare qui.'
   },
   statusHeader: {
-    en: '⚓ Captain\n\n<b>Harbor Status</b>\nHere is where every project stands.',
-    it: '⚓ Capitano\n\n<b>Stato del porto</b>\nEcco a che punto è ogni progetto.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Status</b>\nHere is where every project stands.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Stato del porto</b>\nEcco a che punto è ogni progetto.'
   },
   progressStep: {
     en: 'The crew is on step {current} of {total}.',
     it: 'L\'equipaggio è al passo {current} di {total}.'
   },
   detailsNone: {
-    en: '⚓ Captain\n\n<b>Technical details</b>\nNothing technical is waiting. The last command finished without an error.',
-    it: '⚓ Capitano\n\n<b>Dettagli tecnici</b>\nNon c\'è nulla di tecnico in attesa. L\'ultimo comando è finito senza errori.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Technical details</b>\nNothing technical is waiting. The last command finished without an error.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Dettagli tecnici</b>\nNon c\'è nulla di tecnico in attesa. L\'ultimo comando è finito senza errori.'
   },
   details: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Technical details</b>',
       'Code: {code}',
@@ -289,7 +289,7 @@ const CATALOG = {
       'File names, paths and secrets are left out.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Dettagli tecnici</b>',
       'Codice: {code}',
@@ -298,20 +298,20 @@ const CATALOG = {
     ].join('\n')
   },
   languageShow: {
-    en: '⚓ Captain\n\n<b>Language</b>\nMessages are in {languageName}.\nSend /language en or /language it.',
-    it: '⚓ Capitano\n\n<b>Lingua</b>\nI messaggi sono in {languageName}.\nInvia /language en o /language it.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Language</b>\nMessages are in {languageName}.\nSend /language en or /language it.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Lingua</b>\nI messaggi sono in {languageName}.\nInvia /language en o /language it.'
   },
   languageSet: {
-    en: '⚓ Captain\n\n<b>Language</b>\nMessages are now in {languageName}. Commands stay the same.',
-    it: '⚓ Capitano\n\n<b>Lingua</b>\nI messaggi ora sono in {languageName}. I comandi restano gli stessi.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Language</b>\nMessages are now in {languageName}. Commands stay the same.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Lingua</b>\nI messaggi ora sono in {languageName}. I comandi restano gli stessi.'
   },
   languageUnknown: {
-    en: '⚓ Captain\n\n<b>Language</b>\nPlanwharf knows English and Italian.\nSend /language en or /language it.',
-    it: '⚓ Capitano\n\n<b>Lingua</b>\nPlanwharf conosce inglese e italiano.\nInvia /language en o /language it.'
+    en: '🏴‍☠️ Ahoy, Captain!\n\n<b>Language</b>\nPlanwharf knows English and Italian.\nSend /language en or /language it.',
+    it: '🏴‍☠️ Ahoy, Capitano!\n\n<b>Lingua</b>\nPlanwharf conosce inglese e italiano.\nInvia /language en o /language it.'
   },
   companionOffline: {
     en: [
-      '⚓ Captain',
+      '🏴‍☠️ Ahoy, Captain!',
       '',
       '<b>Harbor Companion Offline</b>',
       '⚠️ The local model is not answering right now. {reasonLine}',
@@ -322,7 +322,7 @@ const CATALOG = {
       'Ask for technical details with /details.'
     ].join('\n'),
     it: [
-      '⚓ Capitano',
+      '🏴‍☠️ Ahoy, Capitano!',
       '',
       '<b>Compagno di porto assente</b>',
       '⚠️ Il modello locale non risponde in questo momento. {reasonLine}',
