@@ -91,4 +91,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A quota error was reported as a sign-in error | #148 |
 | Open pull requests could not be checked from the app; company status was not in Usage | #151, #157 |
 | Pull requests were named "push"; the plan read "Done" for jobs that had only written their sheet | #159 |
-| An open decision of an earlier work was asked again under every new proposal | this pull request |
+| An open decision of an earlier work was asked again under every new proposal | #175 |
