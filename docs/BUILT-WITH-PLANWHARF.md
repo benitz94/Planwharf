@@ -106,4 +106,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The Auto chat mode started goals by itself and turned on automatic approval for the whole app; it was removed: Talk and Plan remain | #190 |
 | The phone named the shared team's lead instead of the project's, never said when the lead changed, and packed several items on one line | #192 |
 | Verify was chosen at the start and later ran on a model that had fallen under its limit; with no verifier above it, the work lost its Verify step | #194 |
-| The background fix of a pull request picked Fable 5.2, which needs usage credits, and stopped there | this pull request |
+| The background fix of a pull request picked Fable 5.2, which needs usage credits, and stopped there | #197 |
