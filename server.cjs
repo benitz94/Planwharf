@@ -750,6 +750,12 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const result = await require('./engine/pr-check.cjs').resolveConflicts(folder, number);
         return json(result.ok ? 200 : 409, result);
       }
+      // Fixes a pull request in the background (conflicts and failing checks), with no work in the chat.
+      if (request.method === 'POST' && pathname === '/api/prs/fix') {
+        const input = await body(request);
+        const result = await orchestra.fixPullRequest(input && input.projectId, input && input.number);
+        return json(result.ok ? 200 : 409, result);
+      }
       if (request.method === 'GET' && pathname === '/api/provider-status') {
         const status = await require('./engine/provider-status.cjs').providerStatus();
         return json(200, { status });

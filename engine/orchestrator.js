@@ -4102,8 +4102,75 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     bridge.restore(projectId, execution);
     return { ok: true, execution: bridge.view(projectId) };
   }
+  // "Fix them" on a pull request: fixed in the background, the way a reviewer would, with no work in the
+  // chat. The engine merges the base branch in a copy of the folder on the pull request's branch; a Build
+  // model under its limit resolves what is left (conflicts, failing checks); the engine checks the result
+  // and pushes to the same branch, so the same pull request updates. The chat shows a line when it starts
+  // and one when it ends.
+  const prFixes = new Map();
+  async function fixPullRequest(projectId, number) {
+    if (!dir || typeof opts.spawnWorker !== 'function') return { ok: false, reason: 'Background fixes need the engine data folder.' };
+    if (!Number.isInteger(number) || number <= 0) return { ok: false, reason: 'Pull request number required.' };
+    const item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
+    if (!item?.project?.folder) return { ok: false, reason: 'Project folder required.' };
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(projectId)) return { ok: false, reason: 'Unusual project id.' };
+    const key = projectId + '#' + number;
+    if (prFixes.has(key)) return { ok: true, started: false, reason: `#${number} is already being fixed.` };
+    const pr = require('./pr-check.cjs');
+    const fixId = 'fix-' + Date.now().toString(36);
+    const megaTaskId = 'pr-' + number;
+    const worktree = path.join(dir, 'worktrees', projectId, megaTaskId, fixId);
+    prFixes.set(key, { startedAt: now() });
+    const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
+    const done = (type, text) => { prFixes.delete(key); say(type, text); };
+    (async () => {
+      let fix;
+      try {
+        fix = await pr.prepareFix(item.project.folder, number, worktree);
+        if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
+        if (!fix.conflicts.length && !fix.failing.length) {
+          const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+          return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
+        }
+        const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false
+          && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan) && !isLow(model)
+          && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' });
+        const model = leadQuality(roster().filter(usable))[0];
+        if (!model) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: no Build model is under its limit.`);
+        say('PR_FIX_STARTED', `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`);
+        const work = [];
+        if (fix.conflicts.length) work.push(`The merge of origin/${fix.base} into this branch stopped on conflicts in: ${fix.conflicts.join(', ')}. Resolve each conflict keeping what both sides meant (the branch's own work and what ${fix.base} added since), remove every conflict marker, and finish the merge with git add and git commit --no-edit.`);
+        if (fix.failing.length) work.push(`These checks fail on the pull request: ${fix.failing.join(', ')}. Read their logs with \`gh pr checks ${number}\` and \`gh run view --log-failed\`, reproduce the failure locally, fix the cause (not the test, unless the test is wrong), and commit.`);
+        work.push('Run the project\'s own checks before you finish. Commit on this branch; do not push, do not create branches, do not open pull requests: Planwharf pushes when you are done.');
+        const results = path.join(dir, 'pr-fixes', projectId, fixId);
+        fs.mkdirSync(results, { recursive: true });
+        const attemptId = fixId, resultId = fixId + '-result';
+        const info = { projectId, linkedFolder: item.project.folder, folder: worktree, megaTaskId, subTaskId: fixId, attemptId, resultId,
+          // The worktree check reads the data folder from the result path: <data>/pr-fixes/<file>.
+          resultPath: path.join(dir, 'pr-fixes', fixId + '.result'),
+          structuredResultPath: path.join(results, 'result.json'), exitPath: path.join(results, 'exit.json'), logPath: path.join(results, 'worker.log'),
+          worker: model, job: { kind: 'build', title: `Fix pull request #${number}`, detail: work.join('\n\n') }, slice: `Fix pull request #${number}` };
+        const launched = opts.spawnWorker(info);
+        if (!launched?.pid) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} did not start.`);
+        const limit = Date.now() + 90 * 60 * 1000;
+        while (Date.now() < limit && !fs.existsSync(info.exitPath)) {
+          if (typeof opts.isProcessAlive === 'function' && !opts.isProcessAlive(launched.pid)) break;
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        const result = await pr.finishFix(item.project.folder, worktree, fix, number);
+        done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok
+          ? `${model.label || model.id} fixed pull request #${number}: ${result.reason}`
+          : `Pull request #${number} was not fixed by ${model.label || model.id}: ${result.reason} Nothing was pushed.`);
+      } catch (error) {
+        done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${error.message}`);
+      } finally {
+        if (fix?.ok !== false) await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
+      }
+    })();
+    return { ok: true, started: true };
+  }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, fixPullRequest, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
