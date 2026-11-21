@@ -545,7 +545,7 @@ public static class WorkerMcp
     {
         Directory.CreateDirectory(Dir(root));
         var lockPath = Path.Combine(Dir(root), token + ".lock");
-        using var stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using var stream = OpenLock(lockPath);
         JsonObject? session = created;
         var path = SessionPath(root, token);
         if (created is null)
@@ -556,6 +556,22 @@ public static class WorkerMcp
         var result = action(session);
         if (session is not null) Save(path, session);
         return result;
+    }
+
+    static FileStream OpenLock(string lockPath, int timeoutMs = 2000)
+    {
+        var deadline = Environment.TickCount64 + timeoutMs;
+        for (var delay = 5; ; delay = Math.Min(100, delay * 2))
+        {
+            try
+            {
+                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (Exception e) when (AtomicRename.IsRetryable(e) && Environment.TickCount64 < deadline)
+            {
+                Thread.Sleep(delay);
+            }
+        }
     }
 
     static void Save(string path, JsonObject session)
@@ -569,9 +585,21 @@ public static class WorkerMcp
     {
         var line = attemptId + "\t" + tool + "\t" + code + "\n";
         var path = Path.Combine(Path.GetFullPath(root), "audit.log");
-        using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
         var bytes = Encoding.UTF8.GetBytes(line);
-        stream.Write(bytes);
+        var deadline = Environment.TickCount64 + 2000;
+        for (var delay = 5; ; delay = Math.Min(100, delay * 2))
+        {
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                stream.Write(bytes);
+                return;
+            }
+            catch (Exception e) when (AtomicRename.IsRetryable(e) && Environment.TickCount64 < deadline)
+            {
+                Thread.Sleep(delay);
+            }
+        }
     }
 
     static IEnumerable<JsonObject> Sessions(string root)
