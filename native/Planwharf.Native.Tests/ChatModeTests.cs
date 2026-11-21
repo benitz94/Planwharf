@@ -32,10 +32,11 @@ public class ChatModeTests
         var idle = WithMode(SampleState.Finished(), "notes", "plan");
         Assert.Equal(CrewAction.LetTheCrewDoIt, ProjectViews.Project(idle, "notes")!.Action);
 
+        // Auto was removed: a project saved in Auto reads as Plan and offers Let the crew do it.
         var auto = WithMode(SampleState.Finished(enabled: false), "notes", "auto");
         var autoView = ProjectViews.Project(auto, "notes")!;
-        Assert.Equal("auto", autoView.ChatMode);
-        Assert.Equal(CrewAction.None, autoView.Action);
+        Assert.Equal("plan", autoView.ChatMode);
+        Assert.Equal(CrewAction.LetTheCrewDoIt, autoView.Action);
         Assert.Equal(CrewAction.StopTheCrew, ProjectViews.Project(SampleState.Working(), "weather")!.Action);
     }
 
@@ -66,7 +67,7 @@ public class ChatModeTests
         Assert.Equal("talk", ProjectViews.Project(talkUpper, "weather")!.ChatMode);
 
         var autoSpaced = WithMode(SampleState.Finished(), "weather", " auto ");
-        Assert.Equal("auto", ProjectViews.Project(autoSpaced, "weather")!.ChatMode);
+        Assert.Equal("plan", ProjectViews.Project(autoSpaced, "weather")!.ChatMode);
 
         var unknown = WithMode(SampleState.Finished(), "weather", "random_mode");
         Assert.Equal("plan", ProjectViews.Project(unknown, "weather")!.ChatMode);
@@ -81,8 +82,8 @@ public class ChatModeTests
         Assert.True(Checked(bar, ChatModeBar.Talk));
 
         bar.Show("  auto  ");
-        Assert.Equal(ChatModeBar.Auto, bar.Mode);
-        Assert.True(Checked(bar, ChatModeBar.Auto));
+        Assert.Equal(ChatModeBar.Plan, bar.Mode);
+        Assert.True(Checked(bar, ChatModeBar.Plan));
 
         bar.Show(null);
         Assert.Equal(ChatModeBar.Plan, bar.Mode);
@@ -116,18 +117,16 @@ public class ChatModeTests
             Assert.Equal("A conversation with the lead. Nothing starts.", bar.HintLine.Text);
             Assert.True(Checked(bar, ChatModeBar.Talk));
             Assert.False(Checked(bar, ChatModeBar.Plan));
-            Assert.False(Checked(bar, ChatModeBar.Auto));
-            Assert.Equal(3, bar.Buttons.Count);
+            Assert.Equal(2, bar.Buttons.Count);
+            Assert.DoesNotContain(bar.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Auto");
             Assert.DoesNotContain(bar.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Pipeline");
             Assert.DoesNotContain(window.GetVisualDescendants().OfType<Button>(), button => button.IsVisible && button.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text == "Let the crew do it"));
 
             await Click(bar, ChatModeBar.Plan, server);
-            await Click(bar, ChatModeBar.Auto, server);
             await Click(bar, ChatModeBar.Talk, server);
             Assert.Equal(
             [
                 "/api/orchestrator/chat-mode {\"projectId\":\"weather\",\"mode\":\"plan\"}",
-                "/api/orchestrator/chat-mode {\"projectId\":\"weather\",\"mode\":\"auto\"}",
                 "/api/orchestrator/chat-mode {\"projectId\":\"weather\",\"mode\":\"talk\"}"
             ], server.Posts);
         }
@@ -143,10 +142,8 @@ public class ChatModeTests
             Strings.CurrentLanguage = "it";
             Assert.Equal("Chat", ChatModeBar.LabelOf(ChatModeBar.Talk));
             Assert.Equal("Piano", ChatModeBar.LabelOf(ChatModeBar.Plan));
-            Assert.Equal("Auto", ChatModeBar.LabelOf(ChatModeBar.Auto));
             Assert.Equal("Una conversazione con il coordinatore. Non parte nulla.", ChatModeBar.HintOf(ChatModeBar.Talk));
             Assert.Contains("Affida il lavoro alla squadra", ChatModeBar.HintOf(ChatModeBar.Plan));
-            Assert.Contains("questa sessione", ChatModeBar.HintOf(ChatModeBar.Auto));
         }
         finally { Strings.CurrentLanguage = previous; }
     }

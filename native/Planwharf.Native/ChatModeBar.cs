@@ -8,13 +8,12 @@ using Planwharf.Engine;
 
 namespace Planwharf.Native;
 
-// The three-way switch above the chat. Pipeline is reserved for a later job and is not a position.
+// The switch above the chat: Talk or Plan. Pipeline is reserved for a later job and is not a position.
 public sealed class ChatModeBar : StackPanel
 {
     public const string Talk = "talk";
     public const string Plan = "plan";
-    public const string Auto = "auto";
-    static readonly string[] Modes = [Talk, Plan, Auto];
+    static readonly string[] Modes = [Talk, Plan];
 
     readonly Dictionary<string, ToggleButton> buttons = new();
     readonly TextBlock hint = new() { FontSize = 12, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 8) };
@@ -50,7 +49,7 @@ public sealed class ChatModeBar : StackPanel
     public void Show(string? saved)
     {
         var normalized = (saved ?? "").Trim().ToLowerInvariant();
-        mode = normalized is Talk or Auto ? normalized : Plan;
+        mode = normalized == Talk ? Talk : Plan;
         applying = true;
         foreach (var (name, button) in buttons)
         {
@@ -73,16 +72,14 @@ public sealed class ChatModeBar : StackPanel
     public static string LabelOf(string name) => name switch
     {
         Talk => Strings.T("Talk"),
-        Auto => Strings.T("Auto"),
         _ => Strings.T("Plan")
     };
 
     public static string HintOf(string name) => name switch
     {
         Talk => Strings.T("A conversation with the lead. Nothing starts."),
-        Auto => Strings.T("The crew starts the goal and goes on, for this session."),
         _ => Strings.T("The lead shapes a goal. You press Let the crew do it.")
     };
 
-    static string IconOf(string name) => name switch { Talk => "send", Auto => "rocket", _ => "check" };
+    static string IconOf(string name) => name == Talk ? "send" : "check";
 }

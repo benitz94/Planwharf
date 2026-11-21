@@ -1,8 +1,8 @@
 'use strict';
-// Per-project chat mode. Talk, Plan and Auto are shown. Pipeline is reserved for
-// job 30: it is never accepted, never shown and never restored.
+// Per-project chat mode: Talk or Plan. Pipeline is reserved for a later job: it is never accepted, never
+// shown and never restored. Auto was removed: the crew starts only when the owner presses Let the crew do it.
 
-const VISIBLE = Object.freeze(['talk', 'plan', 'auto']);
+const VISIBLE = Object.freeze(['talk', 'plan']);
 const RESERVED = Object.freeze(['pipeline']);
 const DEFAULT = 'plan';
 const SUGGESTED = /^\s*\**Suggested next goal:\**\s*(.+)$/im;
@@ -12,8 +12,7 @@ function normalize(value) {
   return VISIBLE.includes(mode) ? mode : null;
 }
 
-// Talk and Plan are saved. Auto lasts one session, so a restart reads Plan.
-// Anything else, including the reserved Pipeline value, reads as Plan.
+// Talk and Plan are saved. Anything else, including a former Auto and the reserved Pipeline, reads as Plan.
 function persisted(value) {
   const mode = normalize(value);
   return mode === 'talk' || mode === 'plan' ? mode : DEFAULT;
@@ -51,7 +50,7 @@ function workInFlight(row) {
 }
 
 // Short orders. mode manual selects Plan: there is no separate visible Manual position.
-// mode auto selects Auto. The approval mode stays auto or manual, as those orders do today.
+// mode auto only sets the approval mode, as it did before the chat modes: it is not a chat mode.
 function order(text) {
   const command = String(text || '').trim().toLowerCase().replace(/[.!?]+$/g, '').trim();
   if (!command) return null;
@@ -61,7 +60,7 @@ function order(text) {
   const wantsMode = /\b(mode|modalit[aà]|switch to|set to|passa a|passa ad)(?:\b|(?<=[à]))/i.test(command);
   if (!wantsMode) return null;
   if (/\bpipeline\b/i.test(command)) return { action: 'reject', mode: 'pipeline' };
-  if (/\b(automatic|auto)\b/i.test(command) && !/\bauto start\b/i.test(command)) return pack('auto');
+  if (/\b(automatic|auto)\b/i.test(command) && !/\bauto start\b/i.test(command)) return { action: 'mode', mode: 'auto' };
   if (/\b(manual|manuale)\b/i.test(command)) return pack('plan', 'manual');
   if (/\btalk\b/i.test(command) || /\bchat\b/i.test(command)) return pack('talk');
   if (/\b(?:plan|piano)\b/i.test(command)) return pack('plan');
@@ -69,12 +68,11 @@ function order(text) {
 }
 
 function pack(chatMode, approval) {
-  const mode = chatMode === 'auto' ? 'auto' : approval === 'manual' ? 'manual' : chatMode;
-  return { action: 'mode', mode, chatMode };
+  return { action: 'mode', mode: approval === 'manual' ? 'manual' : chatMode, chatMode };
 }
 
 function label(mode) {
-  return { talk: 'Talk', plan: 'Plan', auto: 'Auto' }[mode] || 'Plan';
+  return { talk: 'Talk', plan: 'Plan' }[mode] || 'Plan';
 }
 
 module.exports = {
