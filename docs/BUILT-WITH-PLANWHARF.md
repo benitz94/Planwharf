@@ -93,3 +93,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | Open pull requests could not be checked from the app; company status was not in Usage | #151, #157 |
 | Pull requests were named "push"; the plan read "Done" for jobs that had only written their sheet | #159 |
 | An open decision of an earlier work was asked again under every new proposal | #175 |
+| A work with one build step was announced as "split into 0 parts", as if the builder had nothing to do | #176 |

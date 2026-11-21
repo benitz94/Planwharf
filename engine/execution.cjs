@@ -707,8 +707,7 @@ function createExecutionBridge(options) {
     });
     data.subTasks = data.subTasks.filter(sub => sub.megaTaskId !== mega.id).concat(subs);
     mega.blockers = proposalBlockers(mega);
-    const built = subs.filter(sub => sub.scope);
-    event(projectId, 'MEGATASK_PROPOSED', `Lead split the work into ${built.length} part${built.length === 1 ? '' : 's'}${subs.length > built.length ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${models().find(item => item.id === sub.assignedModelId)?.label || sub.assignedModelId})`).join(' · ')}.${why ? ' Why: ' + why : ''}`, { megaTaskId: mega.id });
+    event(projectId, 'MEGATASK_PROPOSED', splitSummary(subs, id => models().find(item => item.id === id)?.label || id, why), { megaTaskId: mega.id });
     persist();
     return paint(mega);
   }
@@ -795,5 +794,14 @@ function appendStepTime(dir, record) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
 }
+// The line that announces the lead's split. The last step is the check of the whole when it waits for
+// every other step; the rest is built, with or without its own files.
+function splitSummary(subs, label, why = '') {
+  const last = subs.at(-1);
+  const checked = subs.length > 1 && subs.slice(0, -1).every(sub => (last.dependencies || []).includes(sub.id));
+  const built = subs.length - (checked ? 1 : 0);
+  const shape = built === 1 ? 'Lead kept the work as one build step' : `Lead split the work into ${built} parts`;
+  return `${shape}${checked ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${label(sub.assignedModelId)})`).join(' · ')}.${why ? ' Why: ' + why : ''}`;
+}
 function noVerdictPlan(tries) { return tries >= 2 ? 'stop' : tries === 1 ? 'switch' : 'retry-same'; }
-module.exports = { createExecutionBridge, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };
+module.exports = { createExecutionBridge, splitSummary, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };
