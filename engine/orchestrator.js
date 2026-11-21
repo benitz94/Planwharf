@@ -3354,26 +3354,28 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // A provider that closes the turn as failed is the same miss as a dead CLI: retry once, then hand over.
           const died = spoken => spoken?.failure === 'process' || (spoken?.failure === 'provider' && spoken?.diagnostic?.code === 'PROVIDER_EXECUTION_FAILED');
           const outOfQuota = spoken => spoken?.diagnostic?.code === 'PROVIDER_USAGE_LIMIT';
-          // A model the plan no longer includes ("requires usage credits"): left out from now on, and the
-          // best other lead answers, of this company or another.
-          if (spoken?.failure && CREDITS_NEEDED.test(String(spoken.answer || spoken.error || '')) && askCurrent(token)) {
-            noteCredits(lead.id, spoken.answer || spoken.error); persist();
-            const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
-            if (next) {
-              switchLead(lead, next, (lead.label || lead.id) + ' needs usage credits.');
-              invokedLead = next;
-              spoken = await askThis(next);
-            }
-          } else
-          // A quota error will not clear by asking again: hand over at once, to another company.
-          if (outOfQuota(spoken) && askCurrent(token)) {
-            const company = lead.providerId || lead.provider;
-            const next = leadRanking(roster().filter(model => model.id !== lead.id && (model.providerId || model.provider) !== company && leadUsable(model)), plansLive)[0];
-            if (next) {
-              switchLead(lead, next, (lead.label || lead.id) + ' is out of quota.');
-              invokedLead = next;
-              spoken = await askThis(next);
-            }
+          // A lead out of quota, or outside the plan ("requires usage credits"), hands over at once; the
+          // next lead may be refused too, so the hand-over goes on down the list, each lead tried once.
+          const needsCredits = spoken => Boolean(spoken?.failure) && CREDITS_NEEDED.test(String(spoken.answer || spoken.error || ''));
+          let refusedLead = lead;
+          const triedLeads = new Set([lead.id]);
+          let handedOver = false;
+          while ((needsCredits(spoken) || outOfQuota(spoken)) && askCurrent(token) && triedLeads.size <= 5) {
+            const credits = needsCredits(spoken);
+            if (credits) { noteCredits(refusedLead.id, spoken.answer || spoken.error); persist(); }
+            const company = refusedLead.providerId || refusedLead.provider;
+            const usable = roster().filter(model => !triedLeads.has(model.id) && leadUsable(model));
+            // Quota is shared by a company, so another company first; missing credits are the model's own.
+            const pool = credits ? usable : (usable.filter(model => (model.providerId || model.provider) !== company).length ? usable.filter(model => (model.providerId || model.provider) !== company) : usable);
+            const next = leadRanking(pool, plansLive)[0];
+            if (!next) break;
+            switchLead(refusedLead, next, (refusedLead.label || refusedLead.id) + (credits ? ' needs usage credits.' : ' is out of quota.'));
+            triedLeads.add(next.id);
+            invokedLead = next; refusedLead = next; handedOver = true;
+            spoken = await askThis(next);
+          }
+          if (handedOver) {
+            // The hand-over answered (or ran out of leads): nothing else to retry here.
           } else if (died(spoken) && askCurrent(token)) {
             note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
             spoken = await askThis(lead);
