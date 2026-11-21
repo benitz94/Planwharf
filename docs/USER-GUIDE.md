@@ -26,6 +26,18 @@ Workers run only inside the project folder. This is a check on where work starts
 
 Open **Team**. Each project has its own team.
 
+At the top of Team, **Saving** chooses which models this project may use. The choice is saved, shown beside the project name and on the Crew at work card, and it applies from the next step. Work that is already running keeps its model.
+
+| Mode | Who may work |
+| --- | --- |
+| **Normal** | Today's picking. Flagship, mid and light models can work. This is the default. |
+| **Safe** | No flagship model of any company. Mid and light only, for the lead and the crew. |
+| **Ultra safe** | Light models only, for the lead and the crew. A light model verifies, and the chat says so once. |
+
+A model's class comes from its company's line-up (the same ranking as the lead). Gemini Flash (High) stays light. A weight you set on the model in Team wins over that line-up. Quota limits still hold inside the mode. If the mode leaves every model out, the step does not start and the chat says which models were left out and which are under their limit. If no lead is allowed, Planwharf keeps the best model of the lowest class that can still answer, and says so once.
+
+The same choice can be typed: `mode normal`, `mode safe`, `mode ultra safe`, or in Italian `modalità normale`, `modalità sicura`, `modalità ultra sicura`.
+
 | On screen | Job |
 | --- | --- |
 | Lead (menu at the top) | Talks with you, plans, picks who does each step. The menu lists the leads from the most capable down; if the lead runs out of quota, or does not answer, the next one takes over. The quota limits hold for the lead too: a model under its limit takes over only when no other can lead. |

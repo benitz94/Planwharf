@@ -195,7 +195,7 @@ function progressCaption(language, step) {
   return say(language, 'progressStep', { current: fraction[1], total: fraction[2] });
 }
 
-function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail, language }) {
+function formatAlertMessage({ type, projectName, goalTitle, status, durationMinutes, timeLeft, detail, language, savingMode }) {
   const lang = languageOrDefault(language);
   const safeProject = sanitizeText(projectName) || 'Project';
   const safeGoal = sanitizeGoalTitle(goalTitle);
@@ -225,6 +225,8 @@ function formatAlertMessage({ type, projectName, goalTitle, status, durationMinu
   if (detail) msg += `\n${sanitizeText(detail)}`;
   const plain = plainAlert(lang, known ? type : 'updated');
   if (plain) msg += `\n${plain}`;
+  const savingWord = lang === 'it' ? 'Risparmio' : 'Saving';
+  msg += `\n${savingWord}: ${require('./saving-mode.cjs').label(savingMode, lang)}`;
 
   return msg;
 }
@@ -311,7 +313,7 @@ function crewLines(crew) {
   return lines;
 }
 
-function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language, crew }) {
+function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, language, crew, savingMode }) {
   const lang = languageOrDefault(language);
   const voice = BUCCANEER[lang] || BUCCANEER.en;
   const known = Object.prototype.hasOwnProperty.call(ALERT_LABELS, type);
@@ -338,6 +340,9 @@ function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinu
     if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
     lines.push('⏳ ' + escapeHtml(timeText));
   }
+  const savingWord = lang === 'it' ? 'Risparmio' : 'Saving';
+  const savingName = require('./saving-mode.cjs').label(savingMode, lang);
+  lines.push(`<b>${savingWord}:</b> ${escapeHtml(savingName)}`);
   lines.push(...crewLines(crew));
   if (detail) lines.push(htmlWithCode(sanitizeText(detail)));
   lines.push(signoff);
@@ -558,7 +563,9 @@ function formatStatusMessage(projects = [], language) {
     const bar = formatProgressBar(p.step);
     const modeWord = lang === 'it' ? 'Modalità' : 'Mode';
     const modeName = { talk: lang === 'it' ? 'Chat' : 'Talk', plan: lang === 'it' ? 'Piano' : 'Plan' }[p.chatMode] || (lang === 'it' ? 'Piano' : 'Plan');
-    let item = `<b>${name}</b>\n${icon} <b>${statusWord}:</b> ${escapeHtml(stateLabel(lang, state))}${details}\n<b>${modeWord}:</b> ${escapeHtml(modeName)}`;
+    const savingWord = lang === 'it' ? 'Risparmio' : 'Saving';
+    const savingName = require('./saving-mode.cjs').label(p.savingMode, lang);
+    let item = `<b>${name}</b>\n${icon} <b>${statusWord}:</b> ${escapeHtml(stateLabel(lang, state))}${details}\n<b>${modeWord}:</b> ${escapeHtml(modeName)}\n<b>${savingWord}:</b> ${escapeHtml(savingName)}`;
     if (bar) item += `\n${bar}`;
     const caption = progressCaption(lang, p.step);
     if (caption) item += `\n${escapeHtml(caption)}`;
@@ -673,14 +680,14 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, savingMode }) {
     const fresh = loadPhoneSettings(storeDir);
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
         const priority = type === 'failed' ? 'high' : type === 'needs_owner' ? 'urgent' : 'default';
         const tags = type === 'failed' ? ['warning'] : type === 'needs_owner' ? ['bell'] : ['white_check_mark'];
-        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, language: fresh.language });
+        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, savingMode, language: fresh.language });
         return await sendNtfyAlert({
           topic: fresh.ntfy.topic,
           serverUrl: fresh.ntfy.serverUrl || ntfyServerUrl,
@@ -696,7 +703,7 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
-        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, language: fresh.language });
+        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, savingMode, language: fresh.language });
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
@@ -763,7 +770,8 @@ function createPhoneNotifier({
         timeLeft: p.timeLeft,
         detail,
         step: p.step,
-        crew
+        crew,
+        savingMode: p.savingMode
       });
     }
   }

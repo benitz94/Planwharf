@@ -59,7 +59,7 @@ public sealed partial class MainWindow
             else news = latest > seen[project.Id];
             return (project, sub: work is { } w ? ChatViews.WorkingText(w.Who, w.Since, now) : project.Status, working: work != null, news);
         }).ToList();
-        var sig = string.Join("|", rows.Select(row => row.project.Id + row.project.Name + row.sub + row.news)) + projectId;
+        var sig = string.Join("|", rows.Select(row => row.project.Id + row.project.Name + row.project.SavingMode + row.sub + row.news)) + projectId;
         if (sig == listSig) return;
         listSig = sig;
         // The logo's needle turns while anything is being worked on.
@@ -70,7 +70,7 @@ public sealed partial class MainWindow
             var attention = !row.working && Regex.IsMatch(row.sub, Strings.T("^(Stopped|Needs|Failed|Blocked|Waiting)"), RegexOptions.IgnoreCase);
             var done = !row.working && !attention && Regex.IsMatch(row.sub, Strings.T("^(Done|Goal reached|Finished)"), RegexOptions.IgnoreCase);
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = {
-                new TextBlock { Text = row.project.Name, Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
+                new TextBlock { Text = SavingModes.Beside(row.project.Name, row.project.SavingMode), Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
                 new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
             // The folder tile says the state at a glance, as in the chat page.
             // While the crew works, the tile shows the lead's compass turning, as in the chat page.
@@ -249,7 +249,7 @@ public sealed partial class MainWindow
         var row = RowOf(view.Id);
         var goalReady = TeamViews.GoalReady(row, view.NextGoal, AskAt(view.Id), view.Work?.StartedAt);
         var sig = string.Join("|", items.Select(item => item is AskItem ask ? ask.At.ToUnixTimeMilliseconds() + ":" + ask.Answer.Length + ask.Elapsed : item.At.ToUnixTimeMilliseconds() + ((EventItem)item).Text))
-            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + view.ChatMode + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
+            + Pending + Str(live?["draft"]).Length + ":" + Str(live?["thinking"]).Length + view.NextGoal + view.Action + view.ChatMode + view.SavingMode + Str(row?["folder"]) + Str(row?["goal"]) + TeamViews.GoalStarted(row)
             + string.Join(",", TeamViews.Missing(snapshot!, view.Id, goalReady))
             + (view.Work is { } w ? w.Title + w.Status + w.NextAction + w.Waiting + string.Join(",", w.Steps.Select(s => s.ModelId + s.Status)) + w.Results.Count : "")
             + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft))
@@ -275,10 +275,10 @@ public sealed partial class MainWindow
         var placed = false;
         foreach (var item in items)
         {
-            if (finished != null && !placed && item.At > finishedAt) { thread.Children.Add(WorkCard(view.Id, finished, team, card)); placed = true; }
+            if (finished != null && !placed && item.At > finishedAt) { thread.Children.Add(WorkCard(view.Id, finished, team, card, view.SavingMode)); placed = true; }
             thread.Children.Add(item switch { AskItem ask => AskControls(view.Id, ask), EventItem e => EventLine(e), _ => new Panel() });
         }
-        if (finished != null && !placed) thread.Children.Add(WorkCard(view.Id, finished, team, card));
+        if (finished != null && !placed) thread.Children.Add(WorkCard(view.Id, finished, team, card, view.SavingMode));
 
         if (Pending == null && view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt
             && TeamViews.SuggestionIsCurrent(AskAt(view.Id), view.Work?.StartedAt))
@@ -300,7 +300,7 @@ public sealed partial class MainWindow
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 8, Children = {
                 new TextBlock { Text = Strings.T("No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote."), FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
         }
-        if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card));
+        if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card, view.SavingMode));
         if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
         if (Pending is { } waiting)
         {

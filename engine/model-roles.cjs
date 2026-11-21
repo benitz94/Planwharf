@@ -31,6 +31,12 @@ function permitsAssignment(model, job) {
   const role = assignmentRole(job);
   const resolved = withModelRoles(model);
   if (role === 'worker' && job?.goldModel && (model.id !== job.goldModel.id || (model.providerId || model.provider) !== job.goldModel.provider || model.cli !== job.goldModel.cli)) return false;
+  // A saving mode on the job limits the class. Jobs without one keep today's roles.
+  if (job?.savingMode && job.savingMode !== 'normal') {
+    const saving = require('./saving-mode.cjs');
+    const tier = Number.isInteger(model?.leadTier) ? model.leadTier : null;
+    if (!saving.allows(job.savingMode, model, tier)) return false;
+  }
   return resolved.roles[role] === true;
 }
 module.exports = { ROLE_IDS, VERIFY_SLICE, isVerifySlice, roleEligibility, withModelRoles, assignmentRole, permitsAssignment, supportsSupervisor };

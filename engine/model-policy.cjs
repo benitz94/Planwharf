@@ -136,14 +136,14 @@ function lowQuota(model, plans = [], limit = AUTO_SWITCH_DEFAULT) {
 }
 
 // Which working steps should move, and to which model: the eligible one with the most quota left above the threshold.
-function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT, enabled = true, eligible = () => true } = {}) {
+function quotaSwitches({ running = [], models = [], plans = [], thresholdPercent = AUTO_SWITCH_DEFAULT, enabled = true, eligible = () => true, allowed = () => true } = {}) {
   if (!enabled) return [];
   const out = [];
   for (const step of running) {
     const current = models.find(model => model.id === step.modelId);
     if (!current || !lowQuota(current, plans, thresholdPercent)) continue;
     const best = models
-      .filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false && eligible(model, step))
+      .filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false && eligible(model, step) && allowed(model))
       .map(model => ({ model, left: quotaLeft(model, plans) }))
       // A model whose quota is not reported (Grok Business bills in dollars) can take over too, after
       // the ones with quota read above their threshold.

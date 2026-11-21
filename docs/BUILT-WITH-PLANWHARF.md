@@ -15,7 +15,7 @@ numbers below.
 |---|---|---|
 | Engine modules ported to C# | **23 of 72** | 72 |
 | JavaScript engine lines ported | **about 1,856 of 14,000** (13%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the saving modes (job 29), adding to running work (job 30), the pipeline (jobs 31 to 33), then phase 3 | 0 to 8 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: adding to running work (job 30), the pipeline (jobs 31 to 33), then phase 3 | 0 to 8 |
 | C# engine tests | 603, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
@@ -59,6 +59,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 26 | #179 | Built the C# acceptance gate. The owner-approved checks live outside the candidate worktree. The engine runs them before review and again after sync with main. A branch cannot choose or weaken those checks | A snapshot that cannot be pinned stops the gate. A shell command runs only when the owner named it. No model is called. A test script was not executable on Linux and macOS; branch brought up to date with main |
 | 27 | #186 | Talk, Plan and Auto above the chat, one per project. Talk does not start the crew. Plan is the default and today's behaviour. Auto starts the goal for this session and returns to Plan after a restart. Pipeline is reserved and hidden | A pull-request fix still pushes when the worker push guard is set; verified independently with tests for concurrent remote push, clean no-change fix, and Auto-to-Talk running work preservation |
 | 28 | — | Pull requests side panel in place of Check PRs: open pull requests with checks and conflicts, merged and closed history, a 30-day summary, filters, and Fix in the background | Verified independently, not pushed. A refused push keeps the commit and still says so when the refusal is long; one project can push while another keeps its copy. A crashed gh read stays a panel message. Timed-out checks count. An unreadable next page keeps the rows |
+| 29 | #? | Per-project saving modes: Normal, Safe and Ultra safe limit the lead and the crew to the allowed model classes, from the next step | Waiting for review, not pushed |
 
 ## Improvements found while Planwharf worked on itself
 

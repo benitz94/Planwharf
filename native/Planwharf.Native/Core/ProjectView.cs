@@ -4,7 +4,11 @@ using System.Text.RegularExpressions;
 
 namespace Planwharf.Native.Core;
 
-public sealed record ProjectItem(string Id, string Name, string Status);
+public sealed record ProjectItem(string Id, string Name, string Status)
+{
+    // Saved saving mode. The list shows it beside the name; Name itself stays the project name.
+    public string SavingMode { get; init; } = SavingModes.Normal;
+}
 public sealed record ChatMessage(bool FromUser, string Who, string Text, DateTimeOffset At);
 public sealed record StepResult(string Role, string Model, string Summary);
 public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "");
@@ -29,6 +33,8 @@ public sealed record ProjectView(string Id, string Name, string Status, IReadOnl
     public string TimeLeft { get; init; } = "";
     // talk, plan or auto. Missing and reserved values are Plan.
     public string ChatMode { get; init; } = "plan";
+    // normal, safe or ultra-safe. Missing and unknown values are Normal.
+    public string SavingMode { get; init; } = SavingModes.Normal;
 }
 
 // Reads the server's snapshot the way the chat page does: same labels, same next action, same stop sentences.
@@ -82,7 +88,7 @@ public static class ProjectViews
         (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>()
             .Select((row, index) => (row, index, used: LastUsed(snapshot, S(row["id"]))))
             .OrderByDescending(item => item.used).ThenBy(item => item.index)
-            .Select(item => new ProjectItem(S(item.row["id"]), S(item.row["name"]), StatusOf(snapshot, item.row))).ToList();
+            .Select(item => new ProjectItem(S(item.row["id"]), S(item.row["name"]), StatusOf(snapshot, item.row)) { SavingMode = SavingModes.Normalize(S(item.row["savingMode"])) }).ToList();
 
     public static DateTimeOffset LastUsed(JsonNode snapshot, string projectId)
     {
@@ -148,6 +154,7 @@ public static class ProjectViews
         var goal = S(row["goal"]).Trim();
         var chatMode = S(row["chatMode"]).Trim().ToLowerInvariant();
         if (chatMode != "talk") chatMode = "plan";
+        var savingMode = SavingModes.Normalize(S(row["savingMode"]));
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         // Talk offers neither goal.
         var nextGoal = chatMode == "talk" || lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
@@ -171,7 +178,7 @@ public static class ProjectViews
         if (chatMode == "talk" && action == CrewAction.LetTheCrewDoIt)
             (action, text, hint) = (CrewAction.None, "", Strings.T("A conversation with the lead. Nothing starts."));
         var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
-        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode };
+        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode, SavingMode = savingMode };
     }
 
     static bool stepsStillOpen(WorkView work) => work.Steps.Any(step => step.Status is "working" or "waiting" or "waiting for quota");
