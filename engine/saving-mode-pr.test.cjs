@@ -69,6 +69,12 @@ test('a background pull request fix obeys the saving mode and leaves the running
     assert.equal(alive.has(crewPid), true);
   } finally {
     await orchestra.shutdown();
-    fs.rmSync(root, { recursive: true, force: true });
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      try { fs.rmSync(root, { recursive: true, force: true }); break; }
+      catch (error) {
+        if (!['EBUSY', 'EPERM', 'ENOTEMPTY'].includes(error.code) || attempt === 19) throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
   }
 });

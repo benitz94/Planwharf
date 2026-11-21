@@ -56,7 +56,7 @@ function allows(mode, model, tier) {
 
 // Exact chat orders. Chat modes (Talk, Plan) stay with their own parser.
 function order(text) {
-  const command = String(text || '').trim().toLowerCase().replace(/[.!?]+$/g, '').trim();
+  const command = String(text || '').trim().toLowerCase().replace(/[.!?]+$/g, '').trim().replace(/\s+/g, ' ');
   if (!command) return null;
   if (/^(?:mode normal|modalit[aà] normale)$/.test(command)) return { action: 'saving-mode', savingMode: 'normal' };
   if (/^(?:mode safe|modalit[aà] sicura)$/.test(command)) return { action: 'saving-mode', savingMode: 'safe' };

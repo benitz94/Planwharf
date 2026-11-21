@@ -237,7 +237,9 @@ function leadTier(model) {
   return 1;
 }
 // Verify checks the whole work and fixes it: a light model is given it only when no stronger one can.
-const ableToVerify = list => { const strong = list.filter(model => leadTier(model) < 2); return strong.length ? strong : list; };
+// The class is the one saving mode uses, so a Team weight wins over the lineup rank.
+const verifyClass = model => savingMode.modelClass(model, Number.isInteger(model?.leadTier) ? model.leadTier : leadTier(model));
+const ableToVerify = list => { const strong = (list || []).filter(model => verifyClass(model) !== 'light'); return strong.length ? strong : list; };
 // "claude-opus-4-6-thinking" is Opus 4.6: dashes between digits are a version, and a Claude family is
 // known by its name whatever else the catalog writes around it.
 const plainName = model => modelName(model).replace(/(\d)-(\d)/g, '$1.$2');
@@ -1892,9 +1894,10 @@ function createOrchestrator(options) {
   function lowestClassLead(list) {
     const usable = (list || []).filter(leadUsable);
     if (!usable.length) return null;
-    const tierOf = model => Number.isInteger(model.leadTier) ? model.leadTier : leadTier(model);
-    const worst = Math.max(...usable.map(tierOf));
-    return leadRanking(usable.filter(model => tierOf(model) === worst), plansLive)[0] || null;
+    // Class follows the Team weight. The lineup rank only picks the best model inside that class.
+    const rankOf = model => ({ flagship: 0, mid: 1, light: 2 })[savingMode.modelClass(model, Number.isInteger(model.leadTier) ? model.leadTier : leadTier(model))] ?? 1;
+    const worst = Math.max(...usable.map(rankOf));
+    return leadRanking(usable.filter(model => rankOf(model) === worst), plansLive)[0] || null;
   }
   // Safe and Ultra safe hand the lead to the best model they allow. With none left, the best of the
   // lowest class that can still answer stays, and the chat says so once.
@@ -2929,13 +2932,25 @@ function createOrchestrator(options) {
     return { ok: true, modelId, weight: next };
   }
   store.savingModes = store.savingModes && typeof store.savingModes === 'object' && !Array.isArray(store.savingModes) ? store.savingModes : {};
-  for (const [id, mode] of Object.entries(store.savingModes)) store.savingModes[id] = savingMode.persisted(mode);
+  let savingRepaired = false;
+  for (const [id, mode] of Object.entries(store.savingModes)) {
+    const next = savingMode.persisted(mode);
+    if (store.savingModes[id] !== next) savingRepaired = true;
+    store.savingModes[id] = next;
+  }
   store.modelWeights = store.modelWeights && typeof store.modelWeights === 'object' && !Array.isArray(store.modelWeights) ? store.modelWeights : {};
   for (const [id, weight] of Object.entries(store.modelWeights)) {
     const next = savingMode.teamWeight(weight);
-    if (next) store.modelWeights[id] = next;
-    else delete store.modelWeights[id];
+    if (next) {
+      if (store.modelWeights[id] !== next) savingRepaired = true;
+      store.modelWeights[id] = next;
+    } else {
+      delete store.modelWeights[id];
+      savingRepaired = true;
+    }
   }
+  // A damaged mode or weight is dropped before the next crash can save it back.
+  if (savingRepaired) persist();
   async function setAutonomy(projectId, enabled) {
     const plan = await opts.readPlan();
     if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
@@ -4414,7 +4429,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (prFixes.has(key)) return { ok: true, started: false, reason: `#${number} is already being fixed.` };
     if ([...prFixes.keys()].some(other => other.startsWith(projectId + '#'))) return { ok: false, reason: 'A fix is already running.' };
     // Taken before the notebook is read, so two clicks cannot both pass the check.
+    // The mode is the one in force at the click. A change while the copy is prepared waits for the next step.
     prFixes.set(key, { startedAt: now(), text: '' });
+    const modeAtStart = savingModeOf(projectId);
     let item;
     try {
       item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
@@ -4447,7 +4464,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
-        const mode = savingModeOf(projectId);
+        const mode = modeAtStart;
         const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false
           && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan) && !isLow(model)
           && allowedBySavingMode(mode, model)
