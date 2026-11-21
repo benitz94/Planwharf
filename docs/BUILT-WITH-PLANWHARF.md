@@ -100,4 +100,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A lead that failed twice handed over to Fable 5.2, which needed usage credits, and the chat stopped there; looking for models again brought Fable back | #182 |
 | A lead that did not answer handed over to a model under its company's quota limit | #183 |
 | The phone messages were long and did not say who leads, builds and verifies | #184 |
-| A model under its limit kept working, and new steps could start on one, when no model was above its limit; the background fix of a pull request read the shared team instead of the project's | this pull request |
+| A model under its limit kept working, and new steps could start on one, when no model was above its limit; the background fix of a pull request read the shared team instead of the project's | #187 |
