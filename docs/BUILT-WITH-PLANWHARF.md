@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **23 of 55** | 55 |
 | JavaScript engine lines ported | **about 1,856 of 10,300** (18%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: the protocol and the pipeline (jobs 25 to 29), then phase 3 | 0 to 8 |
-| C# engine tests | 547, plus 247 comparison cases with the JavaScript | |
+| C# engine tests | 571, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
 `browser-settings`, `invocations`, `model-policy`, `model-roles`, `models`, `notebook-file`,
@@ -55,6 +55,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 22 | #146 | Wrote the pipeline run sheet: several jobs at once in isolated worktrees within quota, the native pipeline view of stages, time, and quota, and an optional low-risk merge; implementation awaits review | Checked against sheets 18–21 and the design. **Sheet only: built by job 29** |
 | 23 | #147 | Wrote the phase 2 rest sheet for `plan.js`, `quota.js`, `models.js`, `sentinel.js`, `invocations`, `notebook-file`, `project-checks`, and `project-workspace`; implementation awaits review | Checked parity cases, commands and file limits for the eight modules |
 | 24 | #158 | Ported the eight phase 2 rest modules to C#: plan.js, quota.js, models.js, sentinel.js, invocations, notebook-file, project-checks, project-workspace | Built in 8 parallel parts, each in its own worktree; a notebook test expected the Windows result everywhere and was made to follow Node on each system |
+| 26 | #? | Built the C# acceptance gate. The owner-approved checks live outside the candidate worktree. The engine runs them before review and again after sync with main. A branch cannot choose or weaken those checks | A snapshot that cannot be pinned stops the gate. A shell command runs only when the owner named it. No model is called |
 
 ## Improvements found while Planwharf worked on itself
 
