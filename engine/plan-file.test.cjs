@@ -391,3 +391,22 @@ console.log('plan-file second verification tests passed');
   assert.equal(asked.state.workPlanPath, '.planwharf/plan.md');
   console.log('plan-file orchestrator tests passed');
 })().catch(error => { console.error(error); process.exit(1); });
+
+// A pull request's branch that is only on GitHub is checked out from there, even when main moved on:
+// the fix lands on the same branch, so the push updates the same pull request.
+{
+  const { work } = freshRepo('pr-branch');
+  git(work, ['switch', '-q', '-c', 'fix/pr-work']);
+  fs.writeFileSync(path.join(work, 'pr.txt'), 'pr\n');
+  git(work, ['add', 'pr.txt']); git(work, ['commit', '-q', '-m', 'pr work']);
+  git(work, ['push', '-q', 'origin', 'fix/pr-work']);
+  const prHead = git(work, ['rev-parse', 'HEAD']);
+  git(work, ['switch', '-q', 'main']);
+  git(work, ['branch', '-q', '-D', 'fix/pr-work']);
+  fs.writeFileSync(path.join(work, 'readme.txt'), 'main moved\n');
+  git(work, ['commit', '-q', '-am', 'main moved']); git(work, ['push', '-q', 'origin', 'main']);
+  const prepared = planFile.prepare(work, { goal: 'Fix the failing checks of pull request #7 on its own branch `fix/pr-work`: build (linux).' });
+  assert.equal(prepared.ok, true, prepared.reason);
+  assert.equal(git(work, ['branch', '--show-current']), 'fix/pr-work');
+  assert.equal(git(work, ['rev-parse', 'HEAD']), prHead, 'the pull request\'s commit, not a new branch from main');
+}
