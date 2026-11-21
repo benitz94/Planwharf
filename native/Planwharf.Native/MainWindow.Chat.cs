@@ -482,7 +482,7 @@ public sealed partial class MainWindow
         var missing = TeamViews.Missing(snapshot!, view.Id, goalReady);
         var panel = new StackPanel { Spacing = 8, Children = {
             Look.Head("folder", Palette.Accent, Palette.AccentSoft, view.Name, 17),
-            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : view.ChatMode == "talk" ? Strings.T("Write below. This is a conversation with the lead. Nothing starts.") : view.ChatMode == "auto" ? Strings.T("Write below. The crew starts the goal and goes on, for this session.") : Strings.T("Write below what you want built. When the lead suggests a goal, press Let the crew do it."), Palette.Text, 14),
+            Line(TeamViews.HasGoal(row) ? Str(row?["goal"]) : view.ChatMode == "talk" ? Strings.T("Write below. This is a conversation with the lead. Nothing starts.") : Strings.T("Write below what you want built. When the lead suggests a goal, press Let the crew do it."), Palette.Text, 14),
             Explain(Strings.T("Folder: ") + (Str(row?["folder"]) is { Length: > 0 } folder ? folder : Strings.T("not set"))) } };
         if (missing.Count > 0)
         {
@@ -499,7 +499,7 @@ public sealed partial class MainWindow
             }
             panel.Children.Add(fixes);
         }
-        else panel.Children.Add(Line(view.ChatMode == "talk" ? Strings.T("A conversation with the lead. Nothing starts.") : view.ChatMode == "auto" ? Strings.T("The crew starts the goal and goes on, for this session.") : Strings.T("Everything is ready. Press Let the crew do it below, or tell the lead more first."), Palette.Muted, 13));
+        else panel.Children.Add(Line(view.ChatMode == "talk" ? Strings.T("A conversation with the lead. Nothing starts.") : Strings.T("Everything is ready. Press Let the crew do it below, or tell the lead more first."), Palette.Muted, 13));
         return Look.Card(panel);
     }
 }

@@ -676,12 +676,9 @@ public static class Strings
         ["Release page"] = "Pagina della versione",
         ["Talk"] = "Chat",
         ["Plan"] = "Piano",
-        ["Auto"] = "Auto",
         ["A conversation with the lead. Nothing starts."] = "Una conversazione con il coordinatore. Non parte nulla.",
         ["The lead shapes a goal. You press Let the crew do it."] = "Il coordinatore definisce un obiettivo. Premi Affida il lavoro alla squadra.",
-        ["The crew starts the goal and goes on, for this session."] = "La squadra avvia l'obiettivo e continua, per questa sessione.",
         ["Write below. This is a conversation with the lead. Nothing starts."] = "Scrivi qui sotto. \u00c8 una conversazione con il coordinatore. Non parte nulla.",
-        ["Write below. The crew starts the goal and goes on, for this session."] = "Scrivi qui sotto. La squadra avvia l'obiettivo e continua, per questa sessione."
     };
     static readonly Dictionary<string, string> English = Italian.Keys.ToDictionary(key => key, key => key, StringComparer.Ordinal);
 

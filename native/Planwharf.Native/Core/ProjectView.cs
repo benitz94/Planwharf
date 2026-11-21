@@ -147,9 +147,9 @@ public static class ProjectViews
             .OrderBy(ask => DateTimeOffset.TryParse(S(ask["at"]), out var at) ? at : DateTimeOffset.MinValue).LastOrDefault();
         var goal = S(row["goal"]).Trim();
         var chatMode = S(row["chatMode"]).Trim().ToLowerInvariant();
-        if (chatMode is not ("talk" or "auto")) chatMode = "plan";
+        if (chatMode != "talk") chatMode = "plan";
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
-        // Talk offers neither goal. Auto starts it itself, so the chat does not offer the start buttons.
+        // Talk offers neither goal.
         var nextGoal = chatMode == "talk" || lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
         var suggestedAt = lastAsk != null && DateTimeOffset.TryParse(S(lastAsk["at"]), out var parsedAsk) ? parsedAsk : (DateTimeOffset?)null;
@@ -167,11 +167,9 @@ public static class ProjectViews
                 stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason)
                 : goal.Length == 0 && nextGoal == null ? Strings.T("Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.")
                 : Strings.T("Ready. The crew will plan, build, check and stop when the goal is reached."));
-        // Talk and Auto do not offer Use as the goal or Let the crew do it. Stop, approve and resume stay.
-        if (chatMode != "plan" && action == CrewAction.LetTheCrewDoIt)
-            (action, text, hint) = (CrewAction.None, "", chatMode == "talk"
-                ? Strings.T("A conversation with the lead. Nothing starts.")
-                : Strings.T("The crew starts the goal and goes on, for this session."));
+        // Talk does not offer Use as the goal or Let the crew do it. Stop, approve and resume stay.
+        if (chatMode == "talk" && action == CrewAction.LetTheCrewDoIt)
+            (action, text, hint) = (CrewAction.None, "", Strings.T("A conversation with the lead. Nothing starts."));
         var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
         return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode };
     }

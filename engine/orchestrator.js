@@ -2294,9 +2294,9 @@ function createOrchestrator(options) {
     };
     const stepHistory = readStepTimes(dir);
     view.projects.forEach(row => {
-      const mode = row.chatMode === 'talk' || row.chatMode === 'auto' ? row.chatMode : 'plan';
+      const mode = row.chatMode === 'talk' ? 'talk' : 'plan';
       const last = (store.asks || []).find(ask => ask && ask.projectId === row.id && typeof ask.answer === 'string' && !ask.diagnostic);
-      // Talk never offers a crew goal. Plan offers today's two start controls. Auto starts the goal itself.
+      // Talk never offers a crew goal. Plan offers the two start controls.
       row.crewGoal = mode === 'talk' ? null : chatMode.suggestedGoal(last && last.answer);
       row.offerUseGoal = mode === 'plan' && Boolean(row.crewGoal);
       row.offerStart = mode === 'plan';
@@ -2745,33 +2745,15 @@ function createOrchestrator(options) {
     return tick();
   }
 
-  // One project, one switch. Auto turns on today's automatic approvals and this project's autonomy
-  // for the session. Moving to Talk or Plan leaves running work going and ends Auto after that goal.
+  // One project, one switch: Talk or Plan. Switching never touches running work.
   async function setChatMode(projectId, mode, options = {}) {
     const next = chatMode.normalize(mode);
     if (!next) return { ok: false, reason: 'Unknown chat mode.' };
     const plan = await opts.readPlan();
     if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
-    const previous = chatModeOf(projectId);
     store.chatModes[projectId] = next;
     if (options.approval === 'manual') store.mode = 'manual';
     if (options.approval === 'auto') store.mode = 'auto';
-    if (next === 'auto') {
-      store.mode = 'auto';
-      const current = store.autonomy[projectId];
-      if (!current?.enabled || current.sessionId !== sessionId) store.autonomy[projectId] = autonomy.createSettings(sessionId, now());
-      else delete store.autonomy[projectId].endAfterCurrent;
-    } else if (previous === 'auto') {
-      // Plan and Talk approve nothing by themselves. A goal already running keeps going.
-      const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
-      if (!anyAuto) store.mode = 'manual';
-      const settings = store.autonomy[projectId];
-      if (settings?.enabled && settings.sessionId === sessionId) {
-        const row = snapshot(plan, projectId).projects.find(item => item.id === projectId);
-        if (chatMode.workInFlight(row)) settings.endAfterCurrent = true;
-        else { settings.enabled = false; settings.endAfterCurrent = false; }
-      }
-    }
     note(projectId, 'Chat mode is now ' + chatMode.label(next) + '.');
     persist();
     return { ok: true, chatMode: next, snapshot: await tick(projectId) };
@@ -2780,20 +2762,17 @@ function createOrchestrator(options) {
   // Authority lasts one session: a restart must never resume it silently.
   for (const settings of Object.values(store.autonomy)) {
     if (settings?.enabled && settings.sessionId !== sessionId) settings.enabled = false;
-    if (settings) delete settings.endAfterCurrent;
   }
-  // Talk and Plan are saved. Auto is this session only, and Pipeline is not implemented.
+  // Talk and Plan are saved; anything else (a former Auto, the reserved Pipeline) reads as Plan.
   store.chatModes = store.chatModes && typeof store.chatModes === 'object' && !Array.isArray(store.chatModes) ? store.chatModes : {};
   for (const [id, mode] of Object.entries(store.chatModes)) store.chatModes[id] = chatMode.persisted(mode);
   function chatModeOf(projectId) {
     const saved = projectId ? store.chatModes[projectId] : null;
-    return saved === 'talk' || saved === 'plan' || saved === 'auto' ? saved : chatMode.DEFAULT;
+    return saved === 'talk' || saved === 'plan' ? saved : chatMode.DEFAULT;
   }
   async function setAutonomy(projectId, enabled) {
     const plan = await opts.readPlan();
     if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
-    // Stop the crew turns Auto off at once. A switch to Talk keeps Talk; it does not come through here.
-    if (!enabled && store.chatModes[projectId] === 'auto') store.chatModes[projectId] = 'plan';
     store.autonomy[projectId] = enabled ? autonomy.createSettings(sessionId, now()) : { enabled: false };
     note(projectId, enabled ? 'Project autonomy enabled for this session.' : 'Project autonomy disabled.');
     persist();
@@ -2921,22 +2900,6 @@ function createOrchestrator(options) {
   }
   async function runAutonomyStep(row, view) {
     const projectId = row.id, settings = store.autonomy[projectId];
-    // Leaving Auto keeps the current goal and does not start another. Stop the crew is what ends it now.
-    if (settings?.endAfterCurrent) {
-      const approving = row.status === 'needs_approval' || String(row.megaTask?.status || '').toUpperCase() === 'READY_FOR_APPROVAL';
-      if (!chatMode.workInFlight(row)) {
-        settings.enabled = false;
-        settings.endAfterCurrent = false;
-        if (chatModeOf(projectId) !== 'auto') {
-          const anyAuto = Object.values(store.chatModes).some(m => m === 'auto');
-          if (!anyAuto) store.mode = 'manual';
-        }
-        note(projectId, 'Auto ended after the current goal.');
-        persist();
-        return;
-      }
-      if (!approving) return;
-    }
     const alerts = view.supervisor?.projects?.find(entry => entry.projectId === projectId)?.alerts || [];
     const step = autonomy.nextStep({ mode: store.mode, sessionId, settings, row, alerts, now: Date.parse(now()) });
     if (step.type === 'none') return;

@@ -25,7 +25,7 @@ the latest `main`, workers that never push, nothing published to `main` by Planw
 
 A project moves from one way of working to the other at any time, with one click, and nothing is lost.
 
-1. **One switch.** The switch above the chat (job 27: Talk, Plan, Auto) gets a fourth position,
+1. **One switch.** The switch above the chat (job 27: Talk, Plan) gets a third position,
    **Pipeline**. The choice is saved per project. In Pipeline the chat stays open: you talk with the
    lead, answer the intake questions, and a goal you agree on goes into the queue instead of starting
    a chat work.
