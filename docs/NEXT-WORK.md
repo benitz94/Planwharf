@@ -67,20 +67,21 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 32 | `feat/chat-modes` | Done (#186) |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 33 | `feat/chat-modes` | Done (#186) |
 | 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | To do |
 | 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no premium models: default and light only) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
-| 30 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
-| 31 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
-| 32 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
-| 33 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/33-sheet` | To do |
-| 34 | 3. | Port them, as sheet 33 says | `port/34-phase3` | To do |
-| 35 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/35-sheet` | To do |
-| 36 | 4. | Port them, as sheet 35 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/36-phase4` | To do |
-| 37 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/37-sheet` | To do |
-| 38 | 5. | Port them, as sheet 37 says. Then **stop**: the owner approves the orchestrator split | `port/38-phase5` | To do |
-| 39 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/39-sheets` | To do |
-| 40+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/40-…` | To do |
+| 30 | Native app and engine | **Add to this work**: while the crew works, an addition agreed in the chat becomes one more step of the running work, before Verify, instead of waiting for the next goal. Sheet below | `feat/add-to-work` | To do |
+| 31 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
+| 32 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
+| 33 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
+| 34 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/34-sheet` | To do |
+| 35 | 3. | Port them, as sheet 34 says | `port/35-phase3` | To do |
+| 36 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/36-sheet` | To do |
+| 37 | 4. | Port them, as sheet 36 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/37-phase4` | To do |
+| 38 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/38-sheet` | To do |
+| 39 | 5. | Port them, as sheet 38 says. Then **stop**: the owner approves the orchestrator split | `port/39-phase5` | To do |
+| 40 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/40-sheets` | To do |
+| 41+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/41-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -451,7 +452,7 @@ letting the crew go on by itself. The owner wants to pick one with one click, in
    - **Auto:** the crew starts the goal by itself, and goes on with the next one within the limits of
      [project autonomy](PROJECT-AUTONOMY.md). It is today's automatic mode with the project's autonomy on,
      in one click; it lasts the session, as autonomy does now.
-2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 32 adds
+2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 33 adds
    ([switching between the two](DESIGN-PIPELINE.md#switching-between-the-two)); until then it is not shown. Moving to **Talk** or **Plan** while the crew works ends Auto
    after the current goal; **Stop the crew** stays the way to stop at once.
 3. The chat orders still work (`mode auto`, `mode manual`), and `mode talk` / `modalità chat` and
@@ -529,3 +530,32 @@ hand-over pick only allowed classes; effort variants are classed by name unless 
 allowed stops the work with the reasons; the mode is saved per project and read again after a restart;
 changing it during running work does not stop it. Native: the choice shows the saved mode and each click
 calls the engine once.
+
+## Job 30. Add to the running work
+
+**Why.** While the crew works, the owner can talk with the lead, but an addition only becomes a "Suggested
+next goal" that waits until the work ends: the crew at work never gets it. The owner wants to add it to the
+running work.
+
+**What.**
+
+1. While a work runs (not in Talk), the lead's answer about something to add ends with one line that
+   starts exactly with "Addition to this work:" and the addition in one or two sentences, instead of a
+   suggested next goal. Under that answer the chat shows **Add to this work** (and the phone does not
+   start anything by itself).
+2. **Add to this work** appends one Build step to the running work, before Verify, with the addition as
+   its detail and the files it may change when the lead names them. It follows every rule of the other
+   steps: the project's team and roles, the quota limits and the saving mode (job 29), the lead's choice
+   of model. It starts as soon as a model is free; a step already running on the same files goes first.
+3. Verify checks the whole work, the addition included. If Verify already started, it is run again after
+   the new step, on the same branch.
+4. The work plan (`.planwharf/plan.md`), the Crew at work card, the time left and the phone messages show
+   the new step; the chat says "Added to this work: …" with the model.
+5. A stopped work takes the addition too and resumes from its checkpoint with the new step; a finished
+   work does not (the addition is a new goal, as today).
+6. English and Italian for every new text; the user guide says how to add to a running work.
+
+**Tests.** Engine: an addition during running work adds one step before Verify and starts it on an allowed
+model; Verify already running runs again after it; two steps on the same files run one after the other; a
+stopped work resumes with the addition; a finished work turns it into a new goal; Talk never offers it.
+Native: the button shows only under an addition while work runs, and one click calls the engine once.
