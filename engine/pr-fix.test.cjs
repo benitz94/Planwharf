@@ -90,3 +90,55 @@ test('a fix is pushed while the worker push guard is set', async () => {
     assert.ok(!fs.existsSync(worktree));
   });
 });
+
+test('a concurrent push to the remote branch refuses the fix push without losing work', async () => {
+  const { remote, folder, worktree } = setup();
+  const fix = await pr.prepareWorktree(folder, { branch: 'feat/x', base: 'main' }, worktree);
+  assert.ok(fix.ok, fix.reason);
+
+  // A concurrent push lands on the remote branch before finishFix runs
+  const otherFolder = path.join(path.dirname(folder), 'other');
+  git(path.dirname(folder), 'clone', '-q', remote, otherFolder);
+  for (const [k, v] of [['user.name', 'other'], ['user.email', 'other@example.com']]) git(otherFolder, 'config', k, v);
+  git(otherFolder, 'switch', '-q', 'feat/x');
+  fs.writeFileSync(path.join(otherFolder, 'notes.md'), 'one\nfrom concurrent author\n');
+  git(otherFolder, 'commit', '-q', '-am', 'concurrent change');
+  git(otherFolder, 'push', '-q', 'origin', 'feat/x');
+  const remoteTip = git(remote, 'rev-parse', 'feat/x');
+
+  // Now resolve the conflict locally in the worktree and attempt to finish the fix
+  fs.writeFileSync(path.join(worktree, 'notes.md'), 'one\nfrom main\nfrom the branch\n');
+  git(worktree, 'add', 'notes.md');
+  const done = await pr.finishFix(folder, worktree, fix, 1);
+
+  // The non-fast-forward push is rejected, protecting remote history
+  assert.strictEqual(done.ok, false);
+  assert.match(done.reason, /push was refused/i);
+  assert.strictEqual(git(remote, 'rev-parse', 'feat/x'), remoteTip);
+
+  // Worktree preserves the local work for inspection/recovery
+  assert.strictEqual(fs.readFileSync(path.join(worktree, 'notes.md'), 'utf8'), 'one\nfrom main\nfrom the branch\n');
+  await pr.removeWorktree(folder, worktree);
+  assert.ok(!fs.existsSync(worktree));
+});
+
+test('a clean fix where nothing needed changing does not push', async () => {
+  const { remote, folder, worktree } = setup();
+  git(folder, 'switch', '-q', '-c', 'feat/clean');
+  fs.writeFileSync(path.join(folder, 'extra.md'), 'extra\n');
+  git(folder, 'add', '.'); git(folder, 'commit', '-q', '-m', 'clean');
+  git(folder, 'push', '-q', 'origin', 'feat/clean');
+  const tipBefore = git(remote, 'rev-parse', 'feat/clean');
+
+  const fix = await pr.prepareWorktree(folder, { branch: 'feat/clean', base: 'main' }, worktree);
+  assert.ok(fix.ok, fix.reason);
+  assert.deepStrictEqual(fix.conflicts, []);
+
+  const done = await pr.finishFix(folder, worktree, fix, 2);
+  assert.ok(done.ok, done.reason);
+  assert.strictEqual(done.changed, false);
+  assert.strictEqual(git(remote, 'rev-parse', 'feat/clean'), tipBefore);
+
+  await pr.removeWorktree(folder, worktree);
+  assert.ok(!fs.existsSync(worktree));
+});

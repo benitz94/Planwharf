@@ -151,6 +151,28 @@ public class ChatModeTests
         finally { Strings.CurrentLanguage = previous; }
     }
 
+    [Fact]
+    public void LabelOf_and_HintOf_fall_back_cleanly_for_null_or_unknown_modes()
+    {
+        Assert.Equal("Plan", ChatModeBar.LabelOf(null!));
+        Assert.Equal("Plan", ChatModeBar.LabelOf("UNKNOWN"));
+        Assert.Equal("Plan", ChatModeBar.LabelOf("pipeline"));
+
+        Assert.Contains("Let the crew do it", ChatModeBar.HintOf(null!));
+        Assert.Contains("Let the crew do it", ChatModeBar.HintOf("UNKNOWN"));
+
+        var previous = Strings.CurrentLanguage;
+        try
+        {
+            Strings.CurrentLanguage = "it";
+            Assert.Equal("Piano", ChatModeBar.LabelOf(null!));
+            Assert.Equal("Piano", ChatModeBar.LabelOf("invalid"));
+            Assert.Contains("Affida il lavoro alla squadra", ChatModeBar.HintOf(null!));
+        }
+        finally { Strings.CurrentLanguage = previous; }
+    }
+
+
     static bool Checked(ChatModeBar bar, string mode) => bar.Buttons.Single(button => (string?)button.Tag == mode).IsChecked == true;
 
     static async Task Click(ChatModeBar bar, string mode, ModeServer server)

@@ -423,3 +423,90 @@ test('server /api/orchestrator/chat-mode endpoint validates inputs and changes m
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('switching from Auto to Talk while work is in flight keeps running work and ends Auto after', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-auto-talk-'));
+  const folder = path.join(dir, 'project');
+  fs.mkdirSync(folder);
+  const plan = {
+    schema: 2,
+    projects: [{
+      project: { id: 'demo', name: 'Demo', folder },
+      revisions: [{ id: 1, direction: 'Ship it', open: [] }],
+      tasks: [{ id: 't1', title: 'Build', detail: 'Build it', status: 'running', executionVersion: 2, revision_id: 1, source: 'chat' }]
+    }]
+  };
+  const box = openOrchestra(dir, plan, { answer: () => '{"done":true}' });
+  try {
+    const started = await box.orchestra.setChatMode('demo', 'auto');
+    assert.equal(started.ok, true);
+    await box.orchestra.autonomyTick();
+    assert.equal(box.launches.length, 1, 'Auto approves and launches the work');
+
+    // Switch to Talk while work is in flight
+    const switched = await box.orchestra.setChatMode('demo', 'talk');
+    assert.equal(switched.ok, true);
+    assert.equal(switched.chatMode, 'talk');
+    assert.equal(switched.snapshot.projects[0].chatMode, 'talk');
+    assert.equal(switched.snapshot.projects[0].canStop, true, 'running work continues');
+    assert.equal(switched.snapshot.mode, 'manual', 'global mode becomes manual');
+    assert.equal(switched.snapshot.autonomy.demo.endAfterCurrent, true, 'marks end after current goal');
+
+    // Next autonomy tick must NOT launch any new tasks
+    const before = box.launches.length;
+    await box.orchestra.autonomyTick();
+    assert.equal(box.launches.length, before, 'no new task launched in Talk');
+
+    // A question asked in Talk while work is in flight does not produce a goal
+    const asked = await box.orchestra.ask('What is next?', 'demo');
+    assert.equal(chat.suggestedGoal(asked.answer), null);
+    assert.equal(asked.snapshot.projects[0].offerStart, false);
+  } finally {
+    await box.orchestra.shutdown();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('orchestrator setChatMode edge cases: input validation and casing normalization', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-chat-edge-'));
+  const folder = path.join(dir, 'project');
+  fs.mkdirSync(folder);
+  const plan = { schema: 2, projects: [project('demo', 'Demo')] };
+  plan.projects[0].project.folder = folder;
+  const box = openOrchestra(dir, plan);
+  try {
+    // Missing or invalid project ID
+    assert.equal((await box.orchestra.setChatMode('nonexistent', 'talk')).ok, false);
+    assert.equal((await box.orchestra.setChatMode(null, 'talk')).ok, false);
+
+    // Invalid modes
+    assert.equal((await box.orchestra.setChatMode('demo', 'unknown')).ok, false);
+    assert.equal((await box.orchestra.setChatMode('demo', 'pipeline')).ok, false);
+    assert.equal((await box.orchestra.setChatMode('demo', null)).ok, false);
+
+    // Whitespace and mixed casing normalization
+    const normalized = await box.orchestra.setChatMode('demo', '  TaLk  ');
+    assert.equal(normalized.ok, true);
+    assert.equal(normalized.chatMode, 'talk');
+    assert.equal((await box.orchestra.snapshot()).projects.find(p => p.id === 'demo').chatMode, 'talk');
+  } finally {
+    await box.orchestra.shutdown();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('suggestedGoal edge cases: formatted bold lines, indentation, empty suggestions', () => {
+  assert.equal(chat.suggestedGoal('**Suggested next goal:** Deploy the service'), 'Deploy the service');
+  assert.equal(chat.suggestedGoal('  Suggested next goal:    Ship release 2.0  '), 'Ship release 2.0');
+  assert.equal(chat.suggestedGoal('*Suggested next goal:* Do something'), 'Do something');
+  assert.equal(chat.suggestedGoal('Suggested next goal:'), null);
+  assert.equal(chat.suggestedGoal('Suggested next goal:   \r\n'), null);
+  assert.equal(chat.suggestedGoal('Just a normal discussion with no suggestion.'), null);
+
+  const complex = 'Here is the plan:\n\n**Suggested next goal:** Build feature\n\nNotes follow.';
+  assert.equal(chat.suggestedGoal(complex), 'Build feature');
+  const stripped = chat.withoutSuggestion(complex);
+  assert.doesNotMatch(stripped, /Suggested next goal/i);
+  assert.match(stripped, /Here is the plan:/);
+  assert.match(stripped, /Notes follow\./);
+});
