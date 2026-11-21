@@ -1857,6 +1857,13 @@ function createOrchestrator(options) {
     store.creditsNeeded[modelId] = { at: now() };
   }
   function clearCreditsNeeded() { store.creditsNeeded = {}; persist(); }
+  // A model that needs usage credits stays out for a day: a new model list does not bring it back, so the
+  // lead is not handed to it again and again. After a day it is tried once more.
+  const CREDITS_DAY = 24 * 60 * 60 * 1000;
+  function creditsMarked(modelId) {
+    const at = Date.parse(store.creditsNeeded?.[modelId]?.at || '');
+    return Number.isFinite(at) && Date.parse(now()) - at < CREDITS_DAY;
+  }
   function roster() {
     const team = teamFor();
     return normalizeModels(models).map(item => {
@@ -1905,7 +1912,7 @@ function createOrchestrator(options) {
       if (refused) Object.assign(resolved, { available: false, unavailableReason: refusalSentence(refused) });
       // A model the plan no longer includes ("requires usage credits") is not a quota that comes back in a
       // few hours: it is left out of the lead and the crew until Look for models again checks it.
-      if (store.creditsNeeded?.[item.id]) Object.assign(resolved, { available: false, neverUsable: true, creditsNeeded: true,
+      if (creditsMarked(item.id)) Object.assign(resolved, { available: false, neverUsable: true, creditsNeeded: true,
         unavailableReason: 'Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.' });
       return resolved;
     });
@@ -3369,6 +3376,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           let refusedLead = lead;
           const triedLeads = new Set([lead.id]);
           let handedOver = false;
+          const handOver = async () => {
           while ((needsCredits(spoken) || outOfQuota(spoken)) && askCurrent(token) && triedLeads.size <= 5) {
             const credits = needsCredits(spoken);
             if (credits) { noteCredits(refusedLead.id, spoken.answer || spoken.error); persist(); }
@@ -3383,6 +3391,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             invokedLead = next; refusedLead = next; handedOver = true;
             spoken = await askThis(next);
           }
+          };
+          await handOver();
           if (handedOver) {
             // The hand-over answered (or ran out of leads): nothing else to retry here.
           } else if (died(spoken) && askCurrent(token)) {
@@ -3392,8 +3402,10 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
               const next = leadRanking(roster().filter(model => model.id !== lead.id && leadUsable(model)), plansLive)[0];
               if (next) {
                 switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
-                invokedLead = next;
+                invokedLead = next; refusedLead = next; triedLeads.add(next.id);
                 spoken = await askThis(next);
+                // The next lead may need usage credits or be out of quota too: go on down the list.
+                await handOver();
               }
             }
           }

@@ -785,8 +785,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       if (request.method === 'POST' && pathname === '/api/models/refresh') {
         await syncAccounts();
         await providerModels.refresh(true);
-        // Looking again checks the models that needed usage credits too.
-        orchestra.clearCreditsNeeded?.();
+        // Models that needed usage credits stay out for a day (see creditsMarked): looking again does not
+        // bring them back, or the lead would be handed to them again at once.
         await orchestra.tick();
         const snapshot = await orchestra.snapshot();
         return json(200, { ...snapshot, providerModels: providerModels.snapshot() });
