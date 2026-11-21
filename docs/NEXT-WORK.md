@@ -67,21 +67,22 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 33 | `feat/chat-modes` | Done (#186); Auto removed afterwards, Talk and Plan remain |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 34 | `feat/chat-modes` | Done (#186); Auto removed afterwards, Talk and Plan remain |
 | 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | Done, verified independently, not pushed |
 | 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no flagship models of the AI companies: only their mid and light models) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
 | 30 | Native app and engine | **Add to this work**: while the crew works, an addition agreed in the chat becomes one more step of the running work, before Verify, instead of waiting for the next goal. Sheet below | `feat/add-to-work` | To do |
-| 31 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
-| 32 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
-| 33 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
-| 34 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/34-sheet` | To do |
-| 35 | 3. | Port them, as sheet 34 says | `port/35-phase3` | To do |
-| 36 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/36-sheet` | To do |
-| 37 | 4. | Port them, as sheet 36 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/37-phase4` | To do |
-| 38 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/38-sheet` | To do |
-| 39 | 5. | Port them, as sheet 38 says. Then **stop**: the owner approves the orchestrator split | `port/39-phase5` | To do |
-| 40 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/40-sheets` | To do |
-| 41+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/41-…` | To do |
+| 31 | Native app | **Clearer screens**: Work finished says first what was done, whether it works and what to do now; steps and events in plain words, the technical text in the details; larger, higher-contrast text; Team and Settings with everyday and advanced parts; new screenshots and a README that shows the app right after the diagram. Sheet below | `feat/clearer-screens` | To do |
+| 32 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
+| 33 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
+| 34 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
+| 35 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/35-sheet` | To do |
+| 36 | 3. | Port them, as sheet 35 says | `port/36-phase3` | To do |
+| 37 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/37-sheet` | To do |
+| 38 | 4. | Port them, as sheet 37 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/38-phase4` | To do |
+| 39 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/39-sheet` | To do |
+| 40 | 5. | Port them, as sheet 39 says. Then **stop**: the owner approves the orchestrator split | `port/40-phase5` | To do |
+| 41 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/41-sheets` | To do |
+| 42+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/42-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 
@@ -452,7 +453,7 @@ letting the crew go on by itself. The owner wants to pick one with one click, in
    - **Auto:** the crew starts the goal by itself, and goes on with the next one within the limits of
      [project autonomy](PROJECT-AUTONOMY.md). It is today's automatic mode with the project's autonomy on,
      in one click; it lasts the session, as autonomy does now.
-2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 33 adds
+2. Switching never stops running work. Leave room for a fourth position, **Pipeline**, that job 34 adds
    ([switching between the two](DESIGN-PIPELINE.md#switching-between-the-two)); until then it is not shown. Moving to **Talk** or **Plan** while the crew works ends Auto
    after the current goal; **Stop the crew** stays the way to stop at once.
 3. The chat orders still work (`mode auto`, `mode manual`), and `mode talk` / `modalità chat` and
@@ -564,3 +565,42 @@ running work.
 model; Verify already running runs again after it; two steps on the same files run one after the other; a
 stopped work resumes with the addition; a finished work turns it into a new goal; Talk never offers it.
 Native: the button shows only under an addition while work runs, and one click calls the engine once.
+
+## Job 31. Clearer screens
+
+**Why.** The look of Planwharf works (the dark theme, the mint green, the panels, the Crew at work card); the
+way it speaks does not always: some screens read like a report for a developer, not news for the captain.
+Nothing here changes the identity of the app: it changes the order of what is shown, and the words.
+
+**What.**
+
+1. **Work finished**, first. At the top, three lines and nothing else:
+   - **What was done**, in one or two plain sentences written by the lead from the results (not the raw
+     worker reports);
+   - **Does it work**: the tests and the Verify verdict, in one line (green, or what failed);
+   - **What to do now**: try it, Push, answer a decision, or fix a failed check, with the button for it.
+   Below, closed by default and opened with one click: the steps and their models, what each worker reported,
+   tests, files changed, git state, time and usage ("What this work used").
+2. **Steps and events in plain words.** Each step shows one short line the lead writes for it ("Opus is building
+   the weather page"); the instruction given to the worker stays in the step's details. The event list joins
+   repeated lines, shows one short line per event, and keeps the long text behind "more".
+3. **Readable text.** Slightly larger body text and higher contrast for secondary text (events, side panels),
+   in both themes; no text under the size the app uses for its body.
+4. **Team:** one short sentence per role and a simpler model card (name, quota, role buttons); the limit, the
+   tools and the account details open on demand. **Settings:** everyday settings first (folders, language, look,
+   phone, updates); advanced ones (MCP, hooks, memory, browser, permissions) in a section closed by default,
+   each with one plain sentence that says what it is for.
+5. **Status in a few words.** The same set of icons everywhere for working, waiting, needs you, done, failed;
+   short reassuring progress lines; a decision that needs the owner stands out. The sea voice stays in the
+   messages (the phone, the alerts), not as decoration.
+6. **New screenshots and the README.** New pictures of today's app on a sample project with sample data (the
+   headless pictures the native tests already make), with the version they show. In the README the **diagram
+   stays first**, then **one large screenshot of the app**, then the rest; the Team, Usage and Settings pictures
+   one under the other (not side by side), each readable on a phone.
+7. English and Italian for every new text; the user guide follows the new screens.
+
+**Tests.** Native: Work finished shows the three lines first and the details closed; a step shows its plain line
+and keeps the worker instruction in its details; repeated events are joined; Settings shows the advanced
+section closed; text sizes and contrast stay above the minimum in both themes; the screenshots are made from
+sample data and contain no real paths. Engine: the lead's plain summary and step lines are produced and kept
+short, with a fallback when the lead gives none.
