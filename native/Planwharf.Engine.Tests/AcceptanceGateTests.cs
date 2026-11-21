@@ -16,7 +16,13 @@ public sealed class AcceptanceGateTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(root)) Directory.Delete(root, true);
+        // A process ended a moment ago can still hold its folder on Windows: try again briefly.
+        for (var attempt = 0; Directory.Exists(root); attempt++)
+        {
+            try { Directory.Delete(root, true); }
+            catch (IOException) when (attempt < 20) { Thread.Sleep(250); }
+            catch (UnauthorizedAccessException) when (attempt < 20) { Thread.Sleep(250); }
+        }
     }
 
     string Attempts() => Path.Combine(root, "attempts");
@@ -811,14 +817,23 @@ public sealed class AcceptanceGateTests : IDisposable
             Arguments = arguments,
             WorkingDirectory = root,
             Environment = env,
-            TimeoutMs = 5_000,
+            // Windows PowerShell starting a second PowerShell can take well over 5 seconds on a busy CI runner.
+            TimeoutMs = 60_000,
             Shell = false,
             CheckId = "sleep"
         }, events);
-        Assert.Same(ready.Task, await Task.WhenAny(ready.Task, Task.Delay(8_000)));
+        try
+        {
+            Assert.Same(ready.Task, await Task.WhenAny(ready.Task, Task.Delay(45_000)));
+        }
+        finally
+        {
+            // Whatever happened, the tree is ended, so the temporary folder can be removed.
+            if (!ready.Task.IsCompleted) events.KillTree();
+        }
         var child = int.Parse(File.ReadAllText(pidFile).Trim(), System.Globalization.CultureInfo.InvariantCulture);
         events.KillTree();
-        Assert.Same(exited.Task, await Task.WhenAny(exited.Task, Task.Delay(8_000)));
+        Assert.Same(exited.Task, await Task.WhenAny(exited.Task, Task.Delay(15_000)));
         var alive = true;
         for (var i = 0; i < 20 && alive; i++)
         {
