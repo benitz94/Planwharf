@@ -290,9 +290,10 @@ function pickWorker(models, options) {
     .map((item, index) => ({ ...item, index }))
     .filter(item => item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, plans).blocked && (item.providerCatalog || usedOf(usage, item.id) + item.cost <= item.limit) && !planExhausted(plans, item.quotaPoolId || item.plan));
   if (!pool.length) return null;
-  // A model under its quota limit is taken only when no other one can do the job.
-  const roomy = typeof opts.low === 'function' ? pool.filter(item => !opts.low(item)) : pool;
-  const fit = roomy.length ? roomy : pool;
+  // A model under its quota limit is never given work: with nobody above the limit, nobody is picked and the
+  // step waits for quota (see explainNoWorker).
+  const fit = typeof opts.low === 'function' ? pool.filter(item => !opts.low(item)) : pool;
+  if (!fit.length) return null;
   const chosen = (assignmentRole(opts.job) === 'verifier' ? ableToVerify(fit) : fit)[0];
   chosen.why = `${kind} job · ${chosen.label} on ${chosen.plan}; user catalog order`;
   return chosen;
@@ -1304,7 +1305,7 @@ function createOrchestrator(options) {
       if (worker && usagePolicy(worker, plansLive).state === 'unread') return null;
       // The assigned model is disabled, no longer has this role, or ran out of quota with no fallback set:
       // take another eligible model that still has quota, as a normal assignment would.
-      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive });
+      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive , low: isLow });
       return picked ? roster().find(model => model.id === picked.id) || null : null;
     },
     workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
@@ -1318,7 +1319,7 @@ function createOrchestrator(options) {
       } else refusals.recordRefusal(store, modelId, reason, now());
       persist();
     },
-    replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive }),
+    replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive , low: isLow }),
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
   function entry(id) {
@@ -1773,13 +1774,13 @@ function createOrchestrator(options) {
     row.workerPid = null;
     row.workerAlive = false;
     row.attemptId = null;
-    const next = pickWorker(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive });
+    const next = pickWorker(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive , low: isLow });
     if (!next) {
       note(id, `Stopped. No remaining worker after ${reason || 'stall'}.`);
       applyCheckpoint(id, item, job, facts, reason || 'failed');
       return false;
     }
-    const replacements = pickWorkers(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive });
+    const replacements = pickWorkers(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive , low: isLow });
     const nextCrew = replacements.length ? replacements : [next];
     row.dispatch = dispatchPlan(nextCrew, job, facts);
     row.plan = planLines(item, facts, nextCrew[0] || next, false, { dispatch: row.dispatch, job, checkpoint: row.checkpoint });
@@ -2443,7 +2444,7 @@ function createOrchestrator(options) {
     }
     const open = job && job.source === 'chat' ? [] : latest && Array.isArray(latest.open) ? latest.open : [];
     const stallMs = Number.isFinite(opts.stallMs) && opts.stallMs >= 0 ? opts.stallMs : 90 * 1000;
-    const worker = pickWorker(roster(), { job, usage: store.usage, facts: row.facts, skip: row.tried, plans: plansLive });
+    const worker = pickWorker(roster(), { job, usage: store.usage, facts: row.facts, skip: row.tried, plans: plansLive , low: isLow });
 
     if (job && row.jobId && (row.jobId !== job.id || (row.jobFingerprint && row.jobFingerprint !== jobFingerprint(job)))) {
       row.approved = false;
@@ -2541,7 +2542,7 @@ function createOrchestrator(options) {
     }
     const facts = inspect(item.project.folder);
     row.facts = facts;
-    const workers = pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive });
+    const workers = pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive , low: isLow });
     if (facts && facts.error) {
       row.status = 'blocked_no_folder';
       row.doing = `Cannot inspect ${item.project.name}: ${facts.error}.`;
@@ -2822,7 +2823,7 @@ function createOrchestrator(options) {
     // A model at or under the switch threshold would be moved off its part right away: the lead is not
     // offered it, unless no other model has the role.
     const settings = autoSwitch();
-    const roomy = list => { const ok = settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list; return ok.length ? ok : list; };
+    const roomy = list => settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list;
     const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
     const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }))));
     // With a single model that can build there is no crew to split the work among: no lead call.
@@ -2856,7 +2857,7 @@ function createOrchestrator(options) {
     if (subs.length < 2 || !lead || typeof opts.askModel !== 'function') return;
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     // A model under its quota limit would be moved off at once: it is offered only when no other model can take the step.
-    const roomy = list => { const ok = list.filter(model => !isLow(model)); return ok.length ? ok : list; };
+    const roomy = list => list.filter(model => !isLow(model));
     const candidates = subs.map(sub => { const list = roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))); return assignmentRole(sub) === 'verifier' ? ableToVerify(list) : list; });
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
@@ -3052,6 +3053,30 @@ function createOrchestrator(options) {
           const eligible = (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
           const switches = quotaSwitches({ running, models, plans: plansLive, thresholdPercent: limitFor, eligible });
           const switched = new Set(switches.map(change => change.subTaskId));
+          // A step on a model under its limit that nobody can take over: the work stops, and the chat says why
+          // each other model cannot take the step, so the owner can check it.
+          const stuck = [];
+          for (const step of running) {
+            if (switched.has(step.subTaskId)) continue;
+            const current = models.find(model => model.id === step.modelId);
+            if (!current || !isLow(current)) continue;
+            const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(step.sub)] || 'Build';
+            const others = models.filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false);
+            const why = others.map(model => {
+              const policy = usagePolicy(model, plansLive);
+              const reason = !permitsAssignment(model, step.sub) ? `no ${role} role in this project` : policy.blocked ? (policy.reason || 'its quota rule blocks it')
+                : isLow(model) ? 'under its limit' : !eligible(model, step) ? 'cannot do this step' : '';
+              return reason ? `${model.label || model.id}: ${reason}` : '';
+            }).filter(Boolean).slice(0, 8);
+            stuck.push(`${current.label || current.id} is under its quota limit on ${role} and no other model can take the step${why.length ? ' (' + why.join('; ') + ')' : ''}`);
+          }
+          if (stuck.length) {
+            const text = `Stopped: ${stuck.join('. ')}. Resume when quota is back, or give the role to a model above its limit in Team.`;
+            try { bridge.event(row.id, 'QUOTA_STOPPED', text, { megaTaskId: row.megaTaskId }); } catch { /* the note keeps it */ }
+            note(row.id, text);
+            await stop(row.id, row.megaTaskId);
+            return;
+          }
           // The user removed this model from the step's role in Team. Quota can still be fine; the step still moves.
           const lostRole = [];
           for (const step of running) {
@@ -4141,7 +4166,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     prFixes.set(key, { startedAt: now() });
     const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
     const done = (type, text) => { prFixes.delete(key); say(type, text); };
-    (async () => {
+    inTeam(projectId, async () => {
       let fix;
       try {
         fix = await pr.prepareFix(item.project.folder, number, worktree);
@@ -4154,7 +4179,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan) && !isLow(model)
           && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' });
         const model = leadQuality(roster().filter(usable))[0];
-        if (!model) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: no Build model is under its limit.`);
+        if (!model) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`);
         say('PR_FIX_STARTED', `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`);
         const work = [];
         if (fix.conflicts.length) work.push(`The merge of origin/${fix.base} into this branch stopped on conflicts in: ${fix.conflicts.join(', ')}. Resolve each conflict keeping what both sides meant (the branch's own work and what ${fix.base} added since), remove every conflict marker, and finish the merge with git add and git commit --no-edit.`);
@@ -4184,7 +4209,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       } finally {
         if (fix?.ok !== false) await pr.removeWorktree(item.project.folder, worktree).catch(() => {});
       }
-    })();
+    });
     return { ok: true, started: true };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
