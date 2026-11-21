@@ -46,7 +46,7 @@ No. The selected provider and exact model identity remain visible. If an assignm
 
 ### Does Planwharf automatically change my source code?
 
-Creating a notebook project, or discussing an idea in **Talk** or **Plan**, does not start coding. **Auto** starts the goal for this session and comes back as Plan after a restart. For execution, Planwharf prepares a **MegaTask** and its **SubTasks** for review and approval, unless Auto is on. Approved workers can then edit files in the linked project folder. Completion does **not** automatically commit, push, or publish those changes.
+Creating a notebook project, or discussing an idea in **Talk** or **Plan**, does not start coding. For execution, Planwharf prepares a **MegaTask** and its **SubTasks**, and work starts only when you press **Let the crew do it**. Approved workers can then edit files in the linked project folder. Completion does **not** automatically commit, push, or publish those changes.
 
 ## Progress and recovery
 

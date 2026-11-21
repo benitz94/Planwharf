@@ -67,9 +67,9 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 24 | 2. | Port them, as sheet 23 says | `port/24-phase2-rest` | Done (#158) |
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
-| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 33 | `feat/chat-modes` | Done (#186) |
+| 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 32 | `feat/chat-modes` | Done (#186); Auto removed afterwards, Talk and Plan remain |
 | 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | To do |
-| 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no premium models: default and light only) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
+| 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no flagship models of the AI companies: only their mid and light models) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
 | 30 | Native app and engine | **Add to this work**: while the crew works, an addition agreed in the chat becomes one more step of the running work, before Verify, instead of waiting for the next goal. Sheet below | `feat/add-to-work` | To do |
 | 31 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
 | 32 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
@@ -507,11 +507,16 @@ instead of changing the roles of every model in Team.
    `mode ultra safe`, `modalità sicura`, `modalità ultra sicura`):
    - **Normal** (the default, today's behaviour): Planwharf picks the models as it does now (light parts
      to light models, a strong model for Verify, the lead by ranking).
-   - **Safe:** no premium model, for the lead and the crew: only default and light.
+   - **Safe:** no **flagship** model of any company, for the lead and the crew: only mid and light models.
    - **Ultra safe:** only light models, for the lead and the crew.
-2. The class of a model is its **weight** in Team (premium = high, default = medium, light = low). A model
-   offered in effort variants (for example "(High)", "medium", "low" in its name) counts as that class,
-   unless the owner set its weight in Team.
+2. The class of a model is its place in its company's line-up, the same one Planwharf already uses to rank
+   the leads (`leadTier` in `engine/orchestrator.js`):
+   - **Flagship (high):** each company's top model, for example Claude Fable and Opus, GPT-6 Astra, Grok 4.7,
+     Gemini Pro; a model Team weighs premium.
+   - **Mid:** Claude Sonnet, GPT-6.1 Sol and Terra, the companies' default models.
+   - **Light (low):** Claude Haiku, Gemini Flash, GPT mini, nano or Luna, the light ones.
+   The effort of a run ("(High)", "medium", "low" in a variant's name) does not change the class: Gemini 3.8
+   Flash (High) is a light model. A weight the owner sets in Team takes precedence.
 3. The mode limits every choice: the proposal, the lead's split and crew choice, every switch and
    replacement (quota, refusal, no result), the lead hand-over and the background fix of a pull request.
    The quota limits still hold inside it.
@@ -526,7 +531,7 @@ instead of changing the roles of every model in Team.
 7. English and Italian for every new text; the user guide describes the three modes.
 
 **Tests.** Engine: in each mode the proposal, the split, a quota switch, a refusal replacement and the lead
-hand-over pick only allowed classes; effort variants are classed by name unless a weight is set; nobody
+hand-over pick only allowed classes; flagship, mid and light are classed as `leadTier` ranks them, an effort variant keeps its model's class, and a weight set in Team wins; nobody
 allowed stops the work with the reasons; the mode is saved per project and read again after a restart;
 changing it during running work does not stop it. Native: the choice shows the saved mode and each click
 calls the engine once.

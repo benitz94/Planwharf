@@ -44,13 +44,12 @@ Each model card shows its quota left (5-hour and weekly windows), its **weight**
 
 ## Working with the lead
 
-Above the chat, a switch chooses how this project talks to the lead. **Plan** is the default. Talk and Plan are saved for the project. Auto lasts this session: after a restart the project comes back as Plan.
+Above the chat, a switch chooses how this project talks to the lead. **Plan** is the default; the choice is saved for the project.
 
 - **Talk.** A conversation, to think an idea through. The lead does not suggest a goal for the crew, and the chat offers neither **Use as the goal** nor **Let the crew do it**. Nothing starts.
 - **Plan.** Today's behaviour. The lead shapes a goal, and you press **Let the crew do it**.
-- **Auto.** The crew starts that goal and goes on within the project's [autonomy](PROJECT-AUTONOMY.md) limits, for this session only.
 
-Moving the switch leaves running work going. Moving from Auto to Talk or Plan ends Auto after the current goal, so no later goal starts on its own. **Stop the crew** is what stops the work at once.
+Moving the switch leaves running work going. **Stop the crew** is what stops the work at once. Work never starts by itself: only **Let the crew do it** starts it.
 
 The same positions can be typed: `mode talk` or `modalità chat`, `mode plan`, `mode auto`, and `mode manual` (Plan, and you approve each start). The lead's answer names the same position as the switch.
 

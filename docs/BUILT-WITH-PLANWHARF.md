@@ -102,3 +102,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A lead that did not answer handed over to a model under its company's quota limit | #183 |
 | The phone messages were long and did not say who leads, builds and verifies | #184 |
 | A model under its limit kept working, and new steps could start on one, when no model was above its limit; the background fix of a pull request read the shared team instead of the project's | #187 |
+| The Auto chat mode started goals by itself and turned on automatic approval for the whole app; it was removed: Talk and Plan remain | #190 |
