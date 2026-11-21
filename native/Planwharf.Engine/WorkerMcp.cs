@@ -545,6 +545,15 @@ public static class WorkerMcp
     {
         Directory.CreateDirectory(Dir(root));
         var lockPath = Path.Combine(Dir(root), token + ".lock");
+        // Threads of this process wait their turn here; the file lock below keeps other processes out.
+        lock (Gates.GetOrAdd(Path.GetFullPath(lockPath), _ => new object()))
+            return WithLockedSession(root, token, created, action, lockPath);
+    }
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, object> Gates = new();
+
+    static T WithLockedSession<T>(string root, string token, JsonObject? created, Func<JsonObject?, T> action, string lockPath)
+    {
         using var stream = OpenLock(lockPath);
         JsonObject? session = created;
         var path = SessionPath(root, token);
@@ -567,7 +576,9 @@ public static class WorkerMcp
             {
                 return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (Exception e) when (AtomicRename.IsRetryable(e) && Environment.TickCount64 < deadline)
+            // Windows says sharing violation; Linux and macOS say the file is locked (EWOULDBLOCK), which the
+            // rename helper does not count as retryable. A held lock is waited for on every system.
+            catch (Exception e) when ((AtomicRename.IsRetryable(e) || e is IOException and not FileNotFoundException and not DirectoryNotFoundException) && Environment.TickCount64 < deadline)
             {
                 Thread.Sleep(delay);
             }
