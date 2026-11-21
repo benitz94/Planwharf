@@ -61,7 +61,7 @@ The **Crew at work** card shows the steps, their models and state, what the runn
 
 ## Commits and pushes
 
-The crew commits on the work's branch and never pushes: every worker runs with a git setting that makes any push fail. You publish: **Push** sends the branch to GitHub under its own name, opens the pull request (named after the work), and never pushes `main`. If GitHub refuses a private email address in the commits, they get your GitHub noreply address and the push is tried again. You merge the pull request on GitHub. **Check PRs** in the app lists the open pull requests of the project.
+The crew commits on the work's branch and never pushes: every worker runs with a git setting that makes any push fail. You publish: **Push** sends the branch to GitHub under its own name, opens the pull request (named after the work), and never pushes `main`. If GitHub refuses a private email address in the commits, they get your GitHub noreply address and the push is tried again. You merge the pull request on GitHub. **Check PRs** in the app lists the open pull requests of the project; **Fix them** fixes conflicts and failing checks in the background, on a copy of the folder, and pushes to the same pull request. No work opens in the chat: a line says when it starts and when it is done.
 
 ## Alerts
 

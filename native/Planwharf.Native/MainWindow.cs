@@ -600,18 +600,11 @@ public sealed partial class MainWindow : Window
             }
             var broken = prs.Where(pr => pr?["conflicts"]?.GetValue<bool>() == true || pr?["failing"] is JsonArray { Count: > 0 }).ToList();
             if (broken.Count == 0) { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Accent; return; }
-            if (!await Confirm(string.Join("\n", lines) + "\n\n" + Strings.T("Fix the conflicts and hand the failures to the crew?"), Strings.T("Fix them")))
+            if (!await Confirm(string.Join("\n", lines) + "\n\n" + Strings.T("Fix them in the background? Planwharf works on a copy of the folder and pushes to the same pull request; the chat says when it is done."), Strings.T("Fix them")))
             { hint.Text = string.Join(" ", lines); hint.Foreground = Palette.Warn; return; }
             foreach (var pr in broken)
-            {
-                var number = pr?["number"]?.GetValue<int>() ?? 0;
-                if (pr?["conflicts"]?.GetValue<bool>() == true)
-                    await api.PostAsync("/api/prs/resolve", new { projectId = projectId, number });
-                var failing = pr?["failing"] as JsonArray;
-                if (failing is { Count: > 0 })
-                    await api.AskAsync(projectId, Strings.Format("Fix the failing checks of pull request #{0} on its own branch `{1}`: {2}. Commit on that branch, so the push updates the same pull request; do not open a new one.", number, pr?["branch"]?.GetValue<string>() ?? "", string.Join(", ", failing.Select(item => item?.GetValue<string>()))));
-            }
-            hint.Text = Strings.T("Pull requests checked. Conflicts merged where clean; failures handed to the crew."); hint.Foreground = Palette.Accent;
+                await api.PostAsync("/api/prs/fix", new { projectId = projectId, number = pr?["number"]?.GetValue<int>() ?? 0 });
+            hint.Text = Strings.T("Fixing in the background. You can keep working; the chat says when each pull request is done."); hint.Foreground = Palette.Accent;
         }
         catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
     }
