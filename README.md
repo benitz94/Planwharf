@@ -52,6 +52,29 @@ When the work is done, a summary says what happened, who did what and what is le
 
 <sub>Screenshots of the native app, on a sample project with sample data.</sub>
 
+On the phone, a Telegram bot keeps you posted, in the voice of a ship's crew ([more examples](docs/PHONE.md)):
+
+```text
+🏴‍☠️ AHOY, CAPTAIN!
+
+🏆 Mission accomplished!
+The work is finished.
+
+🚢 Ship
+Recipe app
+
+🎯 Mission
+Add a shopping list to the recipes
+
+🧭 Status
+Done ✅
+
+⏱️ Voyage time
+31m
+
+🍻 The work is in the hold. Inspect the treasure and push it when you like it.
+```
+
 ## Download
 
 **Use the native app.** It is the version that is developed from now on. The desktop app (Electron) and the web app are **deprecated**: they stay in every release for now, as a fallback, and get only fixes for serious errors, no new features. They will be removed, together with the JavaScript engine, once the native app runs on its own C# engine.
@@ -145,7 +168,7 @@ Updates arrive inside the app: **Settings > Updates**. Your projects and setting
 
 ## Learn more
 
-- [User guide](docs/USER-GUIDE.md) · [The chat screen](docs/CHAT-VIEW.md) · [FAQ](docs/FAQ.md)
+- [User guide](docs/USER-GUIDE.md) · [The chat screen](docs/CHAT-VIEW.md) · [Planwharf on your phone](docs/PHONE.md) · [FAQ](docs/FAQ.md)
 - [Benchmark: a small SQL database, four AI tools and Planwharf](docs/benchmarks/2026-11-minidb/README.md)
 - [Benchmark: Planwharf and four AI tools on the same task](docs/benchmarks/2026-11-logbook/README.md)
 - [Two ways of working, and how the crew talks to Planwharf](docs/DESIGN-PIPELINE.md): chat and pipeline, the design in progress
