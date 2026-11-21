@@ -92,6 +92,7 @@ const ALERT_LABELS = {
   blocked: 'Blocked ⚠️',
   verify: 'Verify started 🔎',
   switched: 'Switched model 🔁',
+  lead: 'New lead 👑',
   restarted: 'Step restarted 🔁',
   updated: 'Updated •'
 };
@@ -244,6 +245,7 @@ const BUCCANEER = {
       blocked: ['🪨 Stuck on the rocks!', '🛠️ The crew needs a worker and a place to work.'],
       verify: ['🔭 A second pair of eyes is checking the work.', '🦜 Another model is inspecting every plank.'],
       switched: ['🔁 Change of watch!', '🦜 Another sailor took over this step.'],
+      lead: ['👑 A new navigator takes the helm!', '🦜 The new lead steers the crew from here.'],
       restarted: ['🔁 Same step, fresh start.', '🦜 The crew is trying again.'],
       updated: ['🧭 News from the deck.', '🦜 I\'ll keep you posted, Captain!']
     }
@@ -262,6 +264,7 @@ const BUCCANEER = {
       blocked: ['🪨 Incagliati sugli scogli!', '🛠️ Alla ciurma servono un marinaio e un posto dove lavorare.'],
       verify: ['🔭 Un secondo paio d\'occhi controlla il lavoro.', '🦜 Un altro modello ispeziona ogni asse.'],
       switched: ['🔁 Cambio della guardia!', '🦜 Un altro marinaio ha preso questo passo.'],
+      lead: ['👑 Un nuovo navigatore prende il timone!', '🦜 Da qui guida la ciurma il nuovo lead.'],
       restarted: ['🔁 Stesso passo, nuova partenza.', '🦜 La ciurma riprova.'],
       updated: ['🧭 Notizie dal ponte.', '🦜 Ti tengo aggiornato, Capitano!']
     }
@@ -288,7 +291,7 @@ const STEP_STATE = { COMPLETE: '✅', RUNNING: '⚙️', FAILED: '❌', BLOCKED:
 function crewOfProject(project, models = [], previous = {}) {
   if (!project) return null;
   const label = id => (models.find(model => model && model.id === id) || {}).label || id || '';
-  const lead = (Array.isArray(project.crew) ? project.crew : []).find(member => member && member.role === 'Orchestrator')?.name || '';
+  const lead = project.leadLabel || (Array.isArray(project.crew) ? project.crew : []).find(member => member && member.role === 'Orchestrator')?.name || '';
   const steps = (Array.isArray(project.subTasks) ? project.subTasks : []).filter(Boolean).map(sub => {
     const name = label(sub.assignedModelId);
     const verify = /^Verify the work independently/i.test(String(sub.title || '')) || /^check\b/i.test(String(sub.title || ''));
@@ -303,8 +306,8 @@ function crewLines(crew) {
   const who = step => `${step.from ? escapeHtml(sanitizeText(step.from)) + ' → ' : ''}${escapeHtml(sanitizeText(step.name))}${step.state ? ' ' + step.state : ''}`;
   const lines = [];
   if (crew.lead) lines.push(`👑 <b>Lead</b> ${crew.leadFrom ? escapeHtml(sanitizeText(crew.leadFrom)) + ' → ' : ''}${escapeHtml(sanitizeText(crew.lead))}`);
-  if (crew.build.length) lines.push(`🔨 <b>Build</b> ${crew.build.map(who).join(' · ')}`);
-  if (crew.verify.length) lines.push(`🔍 <b>Verify</b> ${crew.verify.map(who).join(' · ')}`);
+  for (const step of crew.build) lines.push(`🔨 <b>Build</b> ${who(step)}`);
+  for (const step of crew.verify) lines.push(`🔍 <b>Verify</b> ${who(step)}`);
   return lines;
 }
 
@@ -316,25 +319,26 @@ function formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinu
   const [headline, signoff] = voice.lines[kind] || voice.lines.updated;
   const safeProject = escapeHtml(sanitizeText(projectName) || 'Project');
 
-  // One line each: the news, where, how far, who.
-  const status = [telegramAlertLabel(lang, kind)];
+  // One item per line, no blank lines: the news, the ship, the mission, the state, progress, time, the crew.
+  const lines = [
+    `🏴‍☠️ <b>${voice.ahoy}</b>`,
+    headline,
+    `🚢 <b>${safeProject}</b>`,
+    `🎯 ${htmlWithCode(missionTitle(goalTitle))}`,
+    `🧭 ${telegramAlertLabel(lang, kind)}`
+  ];
   const bar = formatProgressBar(step);
-  if (bar) status.push(bar);
+  if (bar) lines.push(bar);
   if (kind === 'done' && durationMinutes != null) {
     const dur = formatDuration(durationMinutes);
-    if (dur) status.push('⏱️ ' + dur);
+    if (dur) lines.push('⏱️ ' + dur);
   }
   if (timeLeft && timeLeft.minutes != null) {
     let timeText = voice.minutes(timeLeft.minutes);
     if (timeLeft.longerThanUsual) timeText += lang === 'it' ? ' (più del solito)' : ' (longer than usual)';
-    status.push('⏳ ' + escapeHtml(timeText));
+    lines.push('⏳ ' + escapeHtml(timeText));
   }
-  const lines = [
-    `🏴‍☠️ <b>${voice.ahoy}</b> ${headline}`,
-    `🚢 <b>${safeProject}</b> · 🎯 ${htmlWithCode(missionTitle(goalTitle))}`,
-    `🧭 ${status.join(' · ')}`,
-    ...crewLines(crew)
-  ];
+  lines.push(...crewLines(crew));
   if (detail) lines.push(htmlWithCode(sanitizeText(detail)));
   lines.push(signoff);
   return lines.join('\n');
@@ -736,7 +740,9 @@ function createPhoneNotifier({
       // Who held each step and the lead before: a change shows with an arrow in the next message.
       const before = crewBefore.get(p.id) || {};
       const crew = crewOfProject(p, Array.isArray(snapshot.models) ? snapshot.models : [], before);
-      const alertType = alertForStatus(prev, curr) || (curr === 'watching' ? alertForStep(prevStep, step) : null);
+      // A new lead is news of its own, whatever the work is doing.
+      const leadChanged = Boolean(crew?.leadFrom);
+      const alertType = alertForStatus(prev, curr) || (curr === 'watching' ? alertForStep(prevStep, step) : null) || (leadChanged ? 'lead' : null);
       if (!alertType) {
         // No message now: keep the first model of each changed step, so the arrow shows it later.
         const kept = { ...before };

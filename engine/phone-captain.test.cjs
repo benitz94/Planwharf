@@ -240,11 +240,26 @@ test('every alert names the lead, the builders and the verifier; a model that to
   const crew = crewOfProject(project, models, { __lead: 'Fable 5.2', a: 'Grok Build', b: 'Grok Build', c: 'Opus 5.5' });
   const text = formatTelegramAlertMessage({ type: 'switched', projectName: 'Ship', goalTitle: 'Goal', crew });
   assert.ok(text.includes('👑 <b>Lead</b> Fable 5.2 → Grok 4.7'));
-  assert.ok(text.includes('🔨 <b>Build</b> Grok Build ✅ · Grok Build → GPT-5.6 Luna ⚙️'));
+  assert.ok(text.includes('🔨 <b>Build</b> Grok Build ✅\n🔨 <b>Build</b> Grok Build → GPT-5.6 Luna ⚙️'), 'one line per builder');
   assert.ok(text.includes('🔍 <b>Verify</b> Opus 5.5 → Gemini 3.8'));
   // No change since the last message: no arrow.
   const same = formatTelegramAlertMessage({ type: 'updated', projectName: 'Ship', goalTitle: 'Goal', crew: crewOfProject(project, models, { __lead: 'Grok 4.7', a: 'Grok Build', b: 'GPT-5.6 Luna', c: 'Gemini 3.8' }) });
   assert.ok(!same.includes('→'));
-  // Compact: one line each.
-  assert.ok(text.split('\n').length <= 8, text);
+  // One item per line, no blank lines.
+  assert.ok(!text.includes('\n\n'), text);
+  assert.ok(text.includes('<b>AHOY, CAPTAIN!</b>\n🔁 Change of watch!\n🚢 <b>Ship</b>\n🎯 Goal\n🧭 Switched model 🔁'), text);
+});
+
+test('the own lead of a project is named, and a new lead sends a message with an arrow', async () => {
+  const { crewOfProject, formatTelegramAlertMessage } = require('./phone.cjs');
+  // The snapshot names each project's own lead; the shared lead in crew does not win over it.
+  const own = crewOfProject({ leadLabel: 'GPT-6 Astra', crew: [{ role: 'Orchestrator', name: 'Fable 5.2' }], subTasks: [] }, [], {});
+  assert.equal(own.lead, 'GPT-6 Astra');
+  const moved = crewOfProject({ leadLabel: 'GPT-6 Astra', subTasks: [] }, [], { __lead: 'Grok 4.7' });
+  const text = formatTelegramAlertMessage({ type: 'lead', projectName: 'Ship', goalTitle: 'Goal', crew: moved });
+  assert.ok(text.includes('👑 A new navigator takes the helm!'));
+  assert.ok(text.includes('🧭 New lead 👑'));
+  assert.ok(text.includes('👑 <b>Lead</b> Grok 4.7 → GPT-6 Astra'));
+  const it = formatTelegramAlertMessage({ type: 'lead', projectName: 'Nave', goalTitle: 'Meta', crew: moved, language: 'it' });
+  assert.ok(it.includes('🧭 Nuovo lead 👑'));
 });

@@ -55,9 +55,13 @@ When the work is done, a summary says what happened, who did what and what is le
 On the phone, a Telegram bot keeps you posted, in the voice of a ship's crew ([more examples](docs/PHONE.md)):
 
 ```text
-🏴‍☠️ AHOY, CAPTAIN! 🔁 Change of watch!
-🚢 Recipe app · 🎯 Add a shopping list to the recipes
-🧭 Switched model 🔁 · ■□ 1/2 · ⏳ About 8 minutes
+🏴‍☠️ AHOY, CAPTAIN!
+🔁 Change of watch!
+🚢 Recipe app
+🎯 Add a shopping list to the recipes
+🧭 Switched model 🔁
+■□ 1/2
+⏳ About 8 minutes
 👑 Lead Grok 4.7
 🔨 Build Opus 5.5 ✅
 🔍 Verify GPT-6 Astra → Gemini 3.8 Flash ⚙️

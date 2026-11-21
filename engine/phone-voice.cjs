@@ -16,6 +16,7 @@ const ALERT_LABELS = {
     blocked: 'Blocked ⚠️',
     verify: 'Verify started 🔎',
     switched: 'Switched model 🔁',
+    lead: 'New lead 👑',
     restarted: 'Step restarted 🔁',
     updated: 'Updated •'
   },
@@ -29,6 +30,7 @@ const ALERT_LABELS = {
     blocked: 'Bloccato ⚠️',
     verify: 'Controllo avviato 🔎',
     switched: 'Modello cambiato 🔁',
+    lead: 'Nuovo lead 👑',
     restarted: 'Passo riavviato 🔁',
     updated: 'Aggiornato •'
   }
@@ -45,6 +47,7 @@ const PLAIN_ALERTS = {
     blocked: 'The crew cannot move until Planwharf has a worker and a place to work.',
     verify: 'A different model is checking the work.',
     switched: 'The crew changed who is doing this step.',
+    lead: 'Another model now leads the crew.',
     restarted: 'The same step started again.',
     updated: 'The project changed.'
   },
@@ -58,6 +61,7 @@ const PLAIN_ALERTS = {
     blocked: 'L\'equipaggio non può muoversi finché Planwharf non ha un lavoratore e un posto dove lavorare.',
     verify: 'Un altro modello sta controllando il lavoro.',
     switched: 'L\'equipaggio ha cambiato chi esegue questo passo.',
+    lead: 'Un altro modello ora guida l\'equipaggio.',
     restarted: 'Lo stesso passo è ricominciato.',
     updated: 'Il progetto è cambiato.'
   }

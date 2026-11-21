@@ -591,7 +591,7 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
   assert.ok(escapedAlert.startsWith('🏴‍☠️ <b>AHOY, CAPTAIN!</b>'));
   assert.ok(escapedAlert.includes('🚢 <b>Dock &lt;North&gt; &amp; South</b>'));
   assert.ok(escapedAlert.includes('🎯 Inspect &lt;engine&gt; &amp; pipes'));
-  assert.ok(escapedAlert.includes('🧭 Started ▶️ · ■■□□□ 2/5'));
+  assert.ok(escapedAlert.includes('🧭 Started ▶️\n■■□□□ 2/5'), 'each item on a line of its own');
   assert.ok(escapedAlert.includes('■■□□□ 2/5'));
   assert.ok(!escapedAlert.includes('<North>'));
   assert.ok(!escapedAlert.includes('<engine>'));
@@ -603,7 +603,7 @@ test('formatTelegramAlertMessage and formatProgressBar render harbor companion v
     goalTitle: 'Finished task',
     durationMinutes: 30
   });
-  assert.ok(alertNoStep.includes('🧭 Done ✅ · ⏱️ 30m'));
+  assert.ok(alertNoStep.includes('🧭 Done ✅\n⏱️ 30m'));
   assert.ok(!alertNoStep.includes('■'));
   assert.ok(!alertNoStep.includes('□'));
 
@@ -704,4 +704,28 @@ test('harbor alerts and status cover step zero, hostile HTML, and progress edges
   assert.ok(unknown.includes('🧭 Updated •'));
   assert.ok(!unknown.includes('■'));
   assert.ok(!unknown.includes('<x>'));
+});
+
+test('a new lead sends one Telegram message with the arrow, even when the work state does not change', async () => {
+  const os = require('node:os'), path = require('node:path'), fs = require('node:fs');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'phone-lead-test-'));
+  const sent = [];
+  const fakeFetch = async (url, options = {}) => { sent.push({ url, options }); return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) }; };
+  let snapshot = { projects: [{ id: 'p1', name: 'Engine', status: 'watching', goal: 'Build', leadLabel: 'Grok 4.7', subTasks: [] }] };
+  try {
+    const notifier = createPhoneNotifier({ storeDir: tempDir, getSnapshot: async () => snapshot, fetchImpl: fakeFetch, apiBaseUrl: 'http://fake.telegram.invalid', ntfyServerUrl: 'http://fake.ntfy.invalid' });
+    notifier.updateSettings({ telegram: { enabled: true } }, 'secret-bot-token');
+    savePhoneSettings(tempDir, { telegram: { pairedChatId: '12345' } });
+    await notifier.checkTransitions();
+    await notifier.checkTransitions();
+    assert.equal(sent.length, 0, 'nothing changed');
+    snapshot = { projects: [{ ...snapshot.projects[0], leadLabel: 'GPT-6 Astra' }] };
+    await notifier.checkTransitions();
+    assert.equal(sent.length, 1);
+    const text = JSON.parse(sent[0].options.body).text;
+    assert.ok(text.includes('🧭 New lead 👑'), text);
+    assert.ok(text.includes('👑 <b>Lead</b> Grok 4.7 → GPT-6 Astra'), text);
+    await notifier.checkTransitions();
+    assert.equal(sent.length, 1, 'said once');
+  } finally { fs.rmSync(tempDir, { recursive: true, force: true }); }
 });
