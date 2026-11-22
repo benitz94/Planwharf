@@ -75,16 +75,20 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 32 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
 | 33 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | To do |
 | 34 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | To do |
-| 35 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/35-sheet` | To do |
-| 36 | 3. | Port them, as sheet 35 says | `port/36-phase3` | To do |
-| 37 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/37-sheet` | To do |
-| 38 | 4. | Port them, as sheet 37 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/38-phase4` | To do |
-| 39 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/39-sheet` | To do |
-| 40 | 5. | Port them, as sheet 39 says. Then **stop**: the owner approves the orchestrator split | `port/40-phase5` | To do |
-| 41 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/41-sheets` | To do |
-| 42+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/42-…` | To do |
+| 35 | Safety | **Sandbox sheet**: how each worker runs isolated on Linux, macOS and Windows (what it can read and write, the network, the commands that need the owner's OK), built on what the AI tools already offer. Sheet only; the build is a job of its own after review. Sheet below | `docs/sandbox-sheet` | To do |
+| 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | To do |
+| 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | To do |
+| 38 | 3. | Port them, as sheet 37 says | `port/38-phase3` | To do |
+| 39 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/39-sheet` | To do |
+| 40 | 4. | Port them, as sheet 39 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/40-phase4` | To do |
+| 41 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/41-sheet` | To do |
+| 42 | 5. | Port them, as sheet 41 says. Then **stop**: the owner approves the orchestrator split | `port/42-phase5` | To do |
+| 43 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/43-sheets` | To do |
+| 44+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/44-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
+| — | After the port | **Benchmarks**, repeated on small, medium and large tasks: reliability, defects, time and quota, Planwharf against each AI tool alone; no saving claimed that the numbers do not show | — | To do |
+| — | After the port | **Models chosen by results**: the step outcomes of job 36 and the benchmarks rank the models per kind of work, once there are enough examples; the owner's roles and limits still decide | — | To do |
 
 Every phase ends with the review done, CI green on Windows, macOS and Linux, and the comparison showing
 no difference for its modules. Until phase 7 Planwharf keeps running on the Node engine.
@@ -606,3 +610,39 @@ and keeps the worker instruction in its details; repeated events are joined; Set
 section closed; text sizes and contrast stay above the minimum in both themes; the screenshots are made from
 sample data and contain no real paths. Engine: the lead's plain summary and step lines are produced and kept
 short, with a fallback when the lead gives none.
+
+## Job 35. The sandbox sheet
+
+**Why.** Workers start inside the project folder, but that is a check on where they start, not an
+operating-system barrier: a model that decides to can read or delete files outside the project, read
+credentials, or run a dangerous command. The owner wants each worker isolated, with risky commands asking
+first, and no way around it.
+
+**What the sheet covers** (a sheet only, in `native/porting/jobs/35-sandbox.md`; the build is a later job
+after the owner's review):
+
+1. What a worker may do: read and write in its worktree; read the project's own toolchain; the network
+   only when the work needs it; nothing in the owner's home, other projects, or credential stores.
+2. How, on each system: Linux (bubblewrap or namespaces), macOS (sandbox-exec profiles), Windows
+   (AppContainer or a low-rights user), and what each AI tool already enforces (Codex's sandbox modes, Claude
+   Code's permission modes, Grok and Antigravity), so Planwharf uses one consistent level whatever the tool.
+3. Commands that need the owner's OK (deleting outside the worktree, installing system packages, network
+   to unknown hosts), how the request reaches the owner (chat, phone) and what happens with no answer.
+4. What stays allowed today so nothing breaks (tests, builds, git on the worktree), how to measure the cost,
+   and how the owner turns it off per project if a tool cannot work inside it.
+5. Tests the build will need, on the three systems, including a worker that tries to escape.
+
+## Job 36. Step outcomes
+
+**Why.** Choosing models by real results needs data first. Planwharf already keeps the time of each step;
+it does not keep how the step went.
+
+**What.** For every finished step, one line in an outcomes file in Planwharf's data folder: the model, its
+company and class, the role, the kind and size of the work, whether Verify accepted the step as it was or had
+to fix it (and how much), the tests reported and passed, a refusal or a switch, the time and the quota used.
+Nothing about the code itself, no file names or paths. **Usage** shows a small summary per model (steps,
+accepted as they were, fixed by Verify). Nothing is chosen from it yet: that waits for enough examples and
+the benchmarks, after the port.
+
+**Tests.** One line per finished step with every field; a step that was switched or refused is recorded as
+such; no path or code in the file; the summary counts match the lines.
