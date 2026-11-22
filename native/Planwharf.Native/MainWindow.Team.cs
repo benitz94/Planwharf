@@ -228,6 +228,16 @@ public sealed partial class MainWindow
             : model.QuotaLeft is { } left ? Strings.Format("{0}% quota left", left) + (model.LowQuota ? Strings.T(" \u00B7 under its limit") : "") : Strings.T("quota not reported");
         var chips = new WrapPanel();
         if (model.Bench) chips.Children.Add(new TextBlock { Text = Strings.T("Bring in as:"), Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
+        if (model.CanLead)
+        {
+            // Whether this model may lead the project: the lead menu and every hand-over choose among these.
+            var (leadColor, leadSoft, leadIcon) = Palette.Role("Lead");
+            var mayLead = Look.Chip(Strings.T("Lead"), leadIcon, leadColor, leadSoft, model.LeadAllowed || model.Lead);
+            mayLead.IsEnabled = model.Available && !model.Lead;
+            ToolTip.SetTip(mayLead, model.Lead ? Strings.T("This is the lead. Choose another lead first to switch it off.") : Strings.T("Can lead this project: in the lead menu, and taking over when the lead runs low or does not answer"));
+            mayLead.Click += async (_, _) => await DoAsync(() => api!.SetLeadAllowedAsync(projectId!, model.Id, !model.LeadAllowed), model.LeadAllowed ? Strings.Format("{0} will not lead this project.", model.Label) : Strings.Format("{0} can lead this project.", model.Label));
+            chips.Children.Add(mayLead);
+        }
         chips.Children.Add(RoleChip(model, Strings.T("Build"), "worker", model.Build, model.CanBuild, Strings.T("Writes the code and the tests")));
         chips.Children.Add(RoleChip(model, Strings.T("Verify"), "verifier", model.Verify, model.CanVerify, Strings.T("Checks the work and fixes what fails")));
         if (!model.Bench)

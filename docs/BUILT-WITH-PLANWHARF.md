@@ -109,3 +109,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | Verify was chosen at the start and later ran on a model that had fallen under its limit; with no verifier above it, the work lost its Verify step | #194 |
 | The background fix of a pull request picked Fable 5.2, which needs usage credits, and stopped there | #197 |
 | The bench, the limit and the Tools folds of the Team panel closed by themselves each time a model was picked | #198 |
+| The owner could not choose which models may lead: every eligible model could take over | #199 |
