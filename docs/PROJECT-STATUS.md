@@ -18,6 +18,7 @@ Planwharf is a local project notebook and AI coding coordinator. Planwharf expla
 - Business labels from provider-reported login metadata, account-scoped roles and account-change cache invalidation.
 - User-controlled provider/model catalogs, independent persisted Orchestrator/Worker/Reviewer permission flags, role filtering, eligibility, coding/research/tool capabilities and shared REMAINING quota pools.
 - Per-project saving mode: **Normal** (today's model picking), **Safe** (mid and light only) and **Ultra safe** (light only). It limits the lead, the crew, switches, replacements and a background pull-request fix, and applies from the next step. The choice is in Team and in the chat (`mode safe`, `modalità sicura`, and the same for Normal and Ultra safe).
+- Clearer screens: Work finished presents what was done, verification results and immediate next actions first with detail sections closed by default; plain step lines and lead summaries with fallbacks; joined timeline events with expandable text; higher-contrast readable text; everyday Settings first with advanced settings grouped and closed; simplified model cards with limit and tools on demand.
 - Adapter execution facade and documented developer registration contract.
 - Deterministic command/status paths, compact selected-project briefings and six bounded recent chat turns with full archived history.
 - Persistent metadata-only invocation ledger and operational AI usage view, including reliable provider-reported lead tokens when available.

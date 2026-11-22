@@ -63,7 +63,7 @@ public static class Palette
         if (dark)
         {
             Background = B("#141715"); Panel = Card = B("#1d211e"); Surface2 = B("#262b27"); Line = B("#313732");
-            Text = B(InkColour(ink)); Muted = B("#a2a9a3");
+            Text = B(InkColour(ink)); Muted = B("#b5bcb6");
             Accent = B("#5fcf98"); AccentHover = B("#72dba8"); AccentText = B("#0c1a12"); AccentSoft = B("#1b3a2a");
             Warn = B("#e8b455"); WarnSoft = B("#3a2f1a"); Danger = B("#f08a8a"); DangerSoft = B("#3d2222"); DangerHover = B("#4a2828");
             Lead = B("#a993ff"); LeadSoft = B("#2a2445"); Build = B("#7fa9f5"); BuildSoft = B("#1d2a42");
@@ -72,11 +72,11 @@ public static class Palette
         else
         {
             Background = B("#f5f7f4"); Panel = Card = B("#ffffff"); Surface2 = B("#eef1ec"); Line = B("#e1e6e0");
-            Text = B("#1b211d"); Muted = B("#646b66");
+            Text = B("#141a16"); Muted = B("#4a534c");
             Accent = B("#1f7a52"); AccentHover = B("#26905f"); AccentText = B("#ffffff"); AccentSoft = B("#e2f3e9");
             Warn = B("#9a5b00"); WarnSoft = B("#fdf0d8"); Danger = B("#b42525"); DangerSoft = B("#fbe4e4"); DangerHover = B("#f7d5d5");
             Lead = B("#6d4fd8"); LeadSoft = B("#eee9fd"); Build = B("#2563c9"); BuildSoft = B("#e4edfc");
-            Verify = B("#c2600f"); VerifySoft = B("#fdeedd"); Review = B("#0b8794"); ReviewSoft = B("#dff3f5"); Watch = B("#c0367a"); WatchSoft = B("#fbe6f0");
+            Verify = B("#9c4805"); VerifySoft = B("#fdeedd"); Review = B("#086973"); ReviewSoft = B("#dff3f5"); Watch = B("#c0367a"); WatchSoft = B("#fbe6f0");
         }
         // Another main colour: its shade for this theme, a soft tint of it on the background, and readable text on it.
         if (Accents.FirstOrDefault(item => item.Key == accent) is { Key: not null and not "green" } chosen)

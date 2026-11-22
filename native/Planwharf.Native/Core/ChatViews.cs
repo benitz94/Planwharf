@@ -8,7 +8,7 @@ namespace Planwharf.Native.Core;
 public sealed record ProjectStatusView(string Text, string Kind);
 public abstract record ThreadItem(DateTimeOffset At);
 public sealed record AskItem(DateTimeOffset At, string Question, string Answer, string Who, string Elapsed, bool Failed, string Thinking, string ToolRequest) : ThreadItem(At) { public string ModelId { get; init; } = ""; }
-public sealed record EventItem(DateTimeOffset At, string Kind, string Text) : ThreadItem(At);
+public sealed record EventItem(DateTimeOffset At, string Kind, string Text, int Count = 1) : ThreadItem(At);
 public enum CommandKind { None, StopNow, StopIn, OpenPanel, Bench }
 public sealed record LocalCommand(CommandKind Kind, int Minutes = 0, string Panel = "", string Model = "");
 
@@ -109,11 +109,22 @@ public static class ChatViews
             items.Add(new AskItem(T(S(ask["at"])), S(ask["question"]), S(ask["answer"]), who, ms is { } m ? Strings.Format("{0} s", Math.Max(1, Math.Round(m / 1000))) : "",
                 ask["diagnostic"] is JsonObject, S(ask["thinking"]) is var thinking && thinking.Length > 4000 ? thinking[^4000..] : thinking, S(ask["toolRequest"])) { ModelId = S(ask["orchestratorId"]) });
         }
+        var rawEvents = new List<EventItem>();
         foreach (var e in (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId && Shown.IsMatch(S(e["type"]))).TakeLast(60))
         {
             var (kind, text) = Event(S(e["type"]), S(e["summary"]));
-            items.Add(new EventItem(T(S(e["createdAt"])), kind, text));
+            if (text.Length > 0)
+                rawEvents.Add(new EventItem(T(S(e["createdAt"])), kind, text));
         }
+        var events = new List<EventItem>();
+        foreach (var ev in rawEvents)
+        {
+            if (events.Count > 0 && events[^1].Kind == ev.Kind && events[^1].Text == ev.Text)
+                events[^1] = events[^1] with { Count = events[^1].Count + 1, At = ev.At };
+            else
+                events.Add(ev);
+        }
+        items.AddRange(events);
         return items.OrderBy(item => item.At).ToList();
     }
 

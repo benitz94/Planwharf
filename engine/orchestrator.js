@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const autonomy = require('./autonomy.cjs');
+const plainLines = require('./plain-lines.cjs');
 const chatMode = require('./chat-mode.cjs');
 const savingMode = require('./saving-mode.cjs');
 const path = require('node:path');
@@ -2385,7 +2386,8 @@ function createOrchestrator(options) {
           attemptId: row.attemptId,
           megaTaskId: row.megaTaskId || null,
           megaTask: row.megaTask || null,
-          subTasks: row.subTasks || [],
+          subTasks: (row.subTasks || []).map(sub => ({ ...sub, plainLine: plainLines.stepLine(sub).line })),
+          plain: plainLines.forWork(row.megaTask, row.subTasks, row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId) : []),
           results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: clipSummary(result.summary), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
@@ -2978,7 +2980,7 @@ function createOrchestrator(options) {
     note(projectId, 'Project autonomy stopped: ' + reason);
     persist();
   }
-  async function askLeadDecision(projectId, item, settings, question) {
+  async function askLeadDecision(projectId, item, settings, question, evalMegaTaskId = null) {
     if (typeof opts.askModel !== 'function') { stopAutonomy(projectId, settings, 'NO_LEAD_AVAILABLE'); return; }
     // One retry with a lead from another provider: a refusal, a timeout or an unreadable reply
     // from one model must not end autonomy while another eligible lead exists.
@@ -3010,6 +3012,12 @@ function createOrchestrator(options) {
       }
     }
     if (!decision) { stopAutonomy(projectId, settings, failure || 'NO_LEAD_AVAILABLE'); return; }
+    if (decision.summary && evalMegaTaskId) {
+      try {
+        const mega = bridge.target(projectId, evalMegaTaskId);
+        if (mega) mega.leadSummary = decision.summary;
+      } catch { /* ignore */ }
+    }
     if (decision.assumptions.length) { settings.assumptions = [...settings.assumptions, ...decision.assumptions].slice(-50); note(projectId, 'Lead assumptions: ' + decision.assumptions.join('; ')); }
     if (decision.done) { stopAutonomy(projectId, settings, 'GOAL_REACHED'); return; }
     if (!decision.next) { persist(); return; }
@@ -3068,7 +3076,7 @@ function createOrchestrator(options) {
     // The check of the whole uses the same instructions as the usual verify step.
     const check = dispatchPlan([{ id: 'build' }, { id: 'check' }], { title: mega.title }, {})[1].slice;
     const several = split.parts.length > 1;
-    const parts = [...split.parts.map(part => ({ modelId: part.model, slice: part.title, detail: part.detail, dependsOn: part.dependsOn, size: part.size, ...(several ? { scope: part.files } : {}) })),
+    const parts = [...split.parts.map(part => ({ modelId: part.model, slice: part.title, detail: part.detail, dependsOn: part.dependsOn, size: part.size, ...(part.line ? { leadLine: part.line } : {}), ...(several ? { scope: part.files } : {}) })),
       { modelId: split.verify, slice: check, detail: check, dependsOn: split.parts.map((_, index) => index) }];
     try { bridge.replan(projectId, megaTaskId, parts, split.why); return true; }
     catch (error) { note(projectId, 'The lead split was refused: ' + error.message); return false; }
@@ -3152,7 +3160,7 @@ function createOrchestrator(options) {
         note(projectId, 'Goal accepted without a lead call: every slice finished without blockers and the fresh test run passed.');
         return stopAutonomy(projectId, settings, 'GOAL_REACHED');
       }
-      return askLeadDecision(projectId, item, settings, autonomy.evaluationPrompt({ name: item.project.name, goal, results, checks }));
+      return askLeadDecision(projectId, item, settings, autonomy.evaluationPrompt({ name: item.project.name, goal, results, checks }), step.megaTaskId);
     }
     settings.nudgedKeys.push(step.alert.key); settings.nudgeTimes = [...settings.nudgeTimes, now()].slice(-20); persist();
     note(projectId, 'Supervisor nudged the lead: ' + step.alert.title);

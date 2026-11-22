@@ -178,8 +178,9 @@ public static class Autonomy
     }
 
     public static string LeadInstructions() => string.Join("\n",
-        "Reply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"]}.",
+        "Reply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}",
         "Set done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.",
+        PlainLines.SummaryAsk,
         "Decide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release.");
 
     public static List<string> ChecksText(JsonObject? checks, bool isNullChecks = false)
@@ -365,6 +366,7 @@ public static class Autonomy
         parts.Add($"Your crew can work in parallel: up to {MAX_PARTS} workers at the same time, all in the same project folder.");
         parts.Add("Split the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.");
         parts.Add("For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).");
+        parts.Add(PlainLines.SplitLineAsk);
         parts.Add("Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.");
         parts.Add("Each model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.");
         parts.Add("Also name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.");
@@ -474,12 +476,17 @@ public static class Autonomy
             }
         }
 
+        var summary = parsed.TryGetPropertyValue("summary", out var sNode) && sNode is JsonValue sv && sv.TryGetValue<string>(out var sStr) && !string.IsNullOrWhiteSpace(sStr)
+            ? PlainLines.Clip(PlainLines.Sentences(sStr, 2), PlainLines.SummaryMax)
+            : "";
+
         var result = new JsonObject
         {
             ["done"] = done,
             ["next"] = done ? null : (next is null ? null : (JsonNode)JsonValue.Create(next)),
             ["assumptions"] = assumptionsArr
         };
+        if (summary.Length > 0) result["summary"] = summary;
         return result;
     }
 
@@ -743,6 +750,10 @@ public static class Autonomy
             var depsJsonArr = new JsonArray();
             foreach (var d in dependsOn) depsJsonArr.Add((JsonNode)JsonValue.Create(d));
 
+            var line = part.TryGetPropertyValue("line", out var lNode) && lNode is JsonValue lv && lv.TryGetValue<string>(out var lStr) && !string.IsNullOrWhiteSpace(lStr)
+                ? PlainLines.ShortLine(lStr)
+                : "";
+
             var row = new JsonObject
             {
                 ["title"] = title.Trim() is var t && t.Length > 200 ? t.Substring(0, 200) : t,
@@ -752,6 +763,7 @@ public static class Autonomy
                 ["size"] = size,
                 ["model"] = model
             };
+            if (line.Length > 0) row["line"] = line;
             parts.Add(row);
         }
 

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { gitEnvironment } = require('./project-workspace.cjs');
 
 const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/18-mcp-protocol.md';
@@ -173,10 +174,11 @@ test('job 18 records the independent review that actually happened', () => {
 });
 
 function gitRaw(repo, args) {
-  return spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8' });
+  return spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', env: gitEnvironment(), windowsHide: true });
 }
 function gitOk(repo, args) {
-  const result = gitRaw(repo, args);
+  let result = gitRaw(repo, args);
+  if (result.status !== 0 && args[0] === 'init') result = gitRaw(repo, args);
   assert.equal(result.status, 0, (result.stderr || result.stdout || '').slice(0, 500));
   return (result.stdout || '').replace(/\r\n/g, '\n').trim();
 }

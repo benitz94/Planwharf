@@ -71,7 +71,7 @@ public sealed partial class MainWindow
             var done = !row.working && !attention && Regex.IsMatch(row.sub, Strings.T("^(Done|Goal reached|Finished)"), RegexOptions.IgnoreCase);
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Children = {
                 new TextBlock { Text = SavingModes.Beside(row.project.Name, row.project.SavingMode), Foreground = open ? Palette.Accent : Palette.Text, FontSize = 15, FontWeight = open ? FontWeight.SemiBold : FontWeight.Normal, TextTrimming = TextTrimming.CharacterEllipsis },
-                new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis } } };
+                new TextBlock { Text = row.sub, Foreground = row.working ? Palette.Accent : attention ? Palette.Warn : Palette.Muted, FontSize = 14, TextTrimming = TextTrimming.CharacterEllipsis } } };
             // The folder tile says the state at a glance, as in the chat page.
             // While the crew works, the tile shows the lead's compass turning, as in the chat page.
             var tile = row.working ? Look.Tile("lead", Palette.Accent, Palette.AccentSoft, 30, 17, 9).With(t => Look.Spin(t.Child is Panel p ? p.Children[0] : t))
@@ -283,10 +283,10 @@ public sealed partial class MainWindow
         if (Pending == null && view.NextGoal != null && view.Action == CrewAction.LetTheCrewDoIt
             && TeamViews.SuggestionIsCurrent(AskAt(view.Id), view.Work?.StartedAt))
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 6, Children = {
-                new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection {
+                new TextBlock { FontSize = 14, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new InlineCollection {
                     new Run(Strings.T("Nothing has started yet. When the plan is right, press ")), new Run(Strings.T("Let the crew do it")) { FontWeight = FontWeight.Bold, Foreground = Palette.Text }, new Run(Strings.T(": the crew will work on")) } },
-                new TextBlock { Text = view.NextGoal, FontSize = 13, FontWeight = FontWeight.Bold, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = Strings.T("Not right yet? Keep talking with the lead."), FontSize = 13, Foreground = Palette.Muted } } }));
+                new TextBlock { Text = view.NextGoal, FontSize = 14, FontWeight = FontWeight.Bold, Foreground = Palette.Text, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = Strings.T("Not right yet? Keep talking with the lead."), FontSize = 14, Foreground = Palette.Muted } } }));
         // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
         if (Pending == null && view.NextGoal == null && view.Action == CrewAction.LetTheCrewDoIt
             && !TeamViews.GoalReady(row, null)
@@ -298,7 +298,7 @@ public sealed partial class MainWindow
             use.HorizontalAlignment = HorizontalAlignment.Left;
             use.Click += async (_, _) => await DoAsync(() => api!.SaveGoalAsync(view.Id, mine.Question.Trim()), Strings.T("Goal saved. Press Let the crew do it to start."));
             thread.Children.Add(Hint("alert", new StackPanel { Spacing = 8, Children = {
-                new TextBlock { Text = Strings.T("No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote."), FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
+                new TextBlock { Text = Strings.T("No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote."), FontSize = 14, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap }, use } }));
         }
         if (view.Work != null && finished == null) thread.Children.Add(WorkCard(view.Id, view.Work, team, card, view.SavingMode));
         if (card.Alerts.Count > 0) thread.Children.Add(AlertsCard(view.Id, card.Alerts));
@@ -331,7 +331,7 @@ public sealed partial class MainWindow
         var bubble = new Border { Background = fromUser ? Palette.UserBubble : failed ? Palette.DangerSoft : Palette.Card, Padding = new Thickness(14, 10), Child = body, MaxWidth = fromUser ? 640 : 720,
             CornerRadius = fromUser ? new CornerRadius(14, 14, 4, 14) : new CornerRadius(14, 14, 14, 4),
             HorizontalAlignment = fromUser ? HorizontalAlignment.Right : HorizontalAlignment.Stretch, Margin = fromUser ? default : new Thickness(0, 0, 60, 0), BorderBrush = fromUser || failed ? null : Palette.Line, BorderThickness = new Thickness(fromUser || failed ? 0 : 1) };
-        return fromUser ? bubble : new StackPanel { Spacing = 4, Children = { new TextBlock { Text = who, Foreground = Palette.Muted, FontSize = 12 }, bubble } };
+        return fromUser ? bubble : new StackPanel { Spacing = 4, Children = { new TextBlock { Text = who, Foreground = Palette.Muted, FontSize = 14 }, bubble } };
     }
 
     // One line or paragraph with **bold** and `code` shown as such.
@@ -355,7 +355,7 @@ public sealed partial class MainWindow
                 BlockKind.Heading => Rich(block.Text, fg, block.Level <= 1 ? 19 : block.Level == 2 ? 17 : 16, FontWeight.Bold).With(t => t.Margin = new Thickness(0, 4, 0, 0)),
                 BlockKind.Rule => new Border { Height = 1, Background = Palette.Line, Margin = new Thickness(0, 4) },
                 BlockKind.Code => new Border { Background = Palette.Background, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8),
-                    Child = new SelectableTextBlock { Text = block.Text, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 13, Foreground = fg, TextWrapping = TextWrapping.Wrap } },
+                    Child = new SelectableTextBlock { Text = block.Text, FontFamily = new FontFamily("Consolas, Menlo, monospace"), FontSize = 14, Foreground = fg, TextWrapping = TextWrapping.Wrap } },
                 BlockKind.Quote => new Border { BorderBrush = Palette.Line, BorderThickness = new Thickness(3, 0, 0, 0), Padding = new Thickness(10, 0, 0, 0), Child = Rich(block.Text, Palette.Muted) },
                 BlockKind.Bullet or BlockKind.Numbered => ListItem(block, fg),
                 _ => Rich(block.Text, fg),
@@ -445,11 +445,35 @@ public sealed partial class MainWindow
             "plan" => ("pencil", Palette.Lead, Palette.LeadSoft),
             _ => ("clock", Palette.Muted, Palette.Surface2),
         };
-        var mark = Look.Tile(icon, color, soft, 24, 13, 12);
+        var mark = Look.Tile(icon, color, soft, 24, 14, 12);
         mark.VerticalAlignment = VerticalAlignment.Top; mark.Margin = new Thickness(0, 0, 10, 0);
-        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm", Strings.Culture), Foreground = Palette.Muted, FontSize = 13, Margin = new Thickness(10, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top };
-        var line = new DockPanel { Children = { time, mark,
-            new TextBlock { Text = e.Text, Foreground = Palette.Muted, FontSize = 13, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) } } };
+        var time = new TextBlock { Text = e.At == DateTimeOffset.MinValue ? "" : e.At.ToLocalTime().ToString("HH:mm", Strings.Culture), Foreground = Palette.Muted, FontSize = 14, Margin = new Thickness(10, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+        var fullText = e.Count > 1 ? $"{e.Text} (×{e.Count})" : e.Text;
+        var firstLine = fullText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? fullText;
+        var isLong = fullText.Length > 85 || fullText.Contains('\n') || fullText.Contains('\r');
+        var shortText = firstLine.Length > 80 ? firstLine[..80].TrimEnd() + "…" : firstLine;
+
+        Control content;
+        if (!isLong)
+        {
+            content = new TextBlock { Text = fullText, Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 0) };
+        }
+        else
+        {
+            var textBlock = new TextBlock { Text = shortText, Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 4, 0) };
+            var more = Look.Button(Strings.T("more"), null, Look.Kind.Link);
+            more.VerticalAlignment = VerticalAlignment.Top;
+            var expanded = false;
+            more.Click += (_, _) =>
+            {
+                expanded = !expanded;
+                textBlock.Text = expanded ? fullText : shortText;
+                more.Content = Look.Label(expanded ? Strings.T("less") : Strings.T("more"), null, 14);
+            };
+            content = new WrapPanel { Orientation = Orientation.Horizontal, Children = { textBlock, more } };
+        }
+
+        var line = new DockPanel { Children = { time, mark, content } };
         DockPanel.SetDock(time, Dock.Right);
         DockPanel.SetDock(mark, Dock.Left);
         return line;
@@ -462,7 +486,7 @@ public sealed partial class MainWindow
         Control Step(int n, bool done, string text) => new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = {
             new Border { Width = 24, Height = 24, CornerRadius = new CornerRadius(12), Background = done ? Palette.AccentSoft : Palette.Surface2,
                 Child = done ? Look.Icon("check", 13, Palette.Accent).With(i => i.HorizontalAlignment = HorizontalAlignment.Center)
-                    : new TextBlock { Text = n.ToString(), Foreground = Palette.Muted, FontSize = 12, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
+                    : new TextBlock { Text = n.ToString(), Foreground = Palette.Muted, FontSize = 14, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
             new TextBlock { Text = text, Foreground = done ? Palette.Muted : Palette.Text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center } } };
         var leads = TeamViews.Leads(team);
         var leadMenu = new ComboBox { ItemsSource = leads.Select(model => model.Label).ToList(), SelectedIndex = leads.FindIndex(model => model.Id == team.LeadId), PlaceholderText = Strings.T("Choose your lead\u2026"), MinWidth = 220 };

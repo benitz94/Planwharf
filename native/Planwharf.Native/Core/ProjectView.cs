@@ -11,7 +11,7 @@ public sealed record ProjectItem(string Id, string Name, string Status)
 }
 public sealed record ChatMessage(bool FromUser, string Who, string Text, DateTimeOffset At);
 public sealed record StepResult(string Role, string Model, string Summary);
-public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "");
+public sealed record WorkStep(string Id, string Role, string Model, string Status, string ModelId, string Title = "", string PlainLine = "", string Instruction = "");
 public sealed record WorkView(string Title, string Status, int Done, int Total, IReadOnlyList<WorkStep> Steps, IReadOnlyList<string> Results)
 {
     public IReadOnlyList<(string Id, string Text, string Suggestion)> OpenDecisions { get; init; } = [];
@@ -24,6 +24,8 @@ public sealed record WorkView(string Title, string Status, int Done, int Total, 
     public string Waiting { get; init; } = "";
     public IReadOnlyList<StepResult> StepResults { get; init; } = [];
     public string Id { get; init; } = "";
+    public string PlainSummary { get; init; } = "";
+    public string PlainSummaryFrom { get; init; } = "";
 }
 public enum CrewAction { None, LetTheCrewDoIt, StopTheCrew, Approve, Resume, StopWork }
 public sealed record ProjectView(string Id, string Name, string Status, IReadOnlyList<ChatMessage> Messages, WorkView? Work,
@@ -131,13 +133,35 @@ public static class ProjectViews
         if (row["megaTask"] is JsonObject mega && S(mega["status"]).ToUpperInvariant() != "CANCELLED")
         {
             var subs = (row["subTasks"] as JsonArray ?? []).OfType<JsonObject>().ToList();
-            var steps = subs.Select(sub => new WorkStep(S(sub["id"]),
-                S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith(VerifyPrefix) ? "Verify" : "Build",
-                Label(S(sub["assignedModelId"])),
-                S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() },
-                S(sub["assignedModelId"]),
-                S(sub["title"]).StartsWith(VerifyPrefix) ? Strings.T("Check the work and fix what fails") : S(sub["title"]) is { Length: > 120 } long_ ? long_[..120] : S(sub["title"]))).ToList();
+            var steps = subs.Select(sub => {
+                var role = S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith(VerifyPrefix) ? "Verify" : "Build";
+                var rawTitle = S(sub["title"]);
+                var instruction = S(sub["detail"]) is { Length: > 0 } detail ? detail : rawTitle;
+                var line = S(sub["plainLine"]);
+                if (line.Length == 0)
+                {
+                    var (fallback, _) = PlainLines.StepLine(sub);
+                    line = fallback;
+                }
+                if (line == "Checks the whole work and runs the tests.") line = Strings.T(line);
+                return new WorkStep(S(sub["id"]),
+                    role,
+                    Label(S(sub["assignedModelId"])),
+                    S(sub["status"]).ToUpperInvariant() switch { "PENDING" => S(sub["waitingFor"]).Length > 0 ? "waiting for quota" : "waiting", "RUNNING" => "working", "COMPLETE" => "done", var other => other.ToLowerInvariant() },
+                    S(sub["assignedModelId"]),
+                    rawTitle.StartsWith(VerifyPrefix) ? Strings.T("Check the work and fix what fails") : rawTitle is { Length: > 120 } long_ ? long_[..120] : rawTitle,
+                    line,
+                    instruction);
+            }).ToList();
             var results = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"])).Select(result => S(result["summary"])).Where(text => text.Length > 0).ToList();
+            var plainSummary = S(row["plain"]?["summary"]);
+            var plainFrom = S(row["plain"]?["summaryFrom"]);
+            if (plainSummary.Length == 0)
+            {
+                var (summary, from) = PlainLines.WorkSummary(mega, row["results"] as JsonArray, row["subTasks"] as JsonArray);
+                plainSummary = summary;
+                plainFrom = from;
+            }
             work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results)
             {
                 OpenDecisions = (row["openDecisions"] as JsonArray ?? []).OfType<JsonObject>().Select(item => (S(item["id"]), S(item["text"]), S(item["suggestion"]))).Where(item => item.Item2.Length > 0).ToList(),
@@ -145,6 +169,8 @@ public static class ProjectViews
                 NextAction = new[] { S(mega["nextAction"]), S(row["next"]), S(row["label"]) }.FirstOrDefault(text => text.Length > 0) ?? "",
                 StartedAt = S(mega["approvedAt"]) is { Length: > 0 } approved ? approved : S(mega["createdAt"]), CompletedAt = S(mega["completedAt"]),
                 Waiting = subs.Select(sub => S(sub["status"]).ToUpperInvariant() == "PENDING" ? S(sub["waitingFor"]) : "").FirstOrDefault(text => text.Length > 0) ?? "",
+                PlainSummary = plainSummary,
+                PlainSummaryFrom = plainFrom,
                 // What each step reported, in order, with its role and model: the commit message is made from it.
                 StepResults = (row["results"] as JsonArray ?? []).OfType<JsonObject>().Where(result => !B(result["modelChange"]) && S(result["summary"]).Length > 0)
                     .Select(result => steps.FirstOrDefault(step => step.Id == S(result["subTaskId"])) is { } step ? new StepResult(step.Role, step.Model, S(result["summary"])) : null)
@@ -189,6 +215,20 @@ public static class ProjectViews
             (action, text, hint) = (CrewAction.None, "", Strings.T("A conversation with the lead. Nothing starts."));
         var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
         return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode, SavingMode = savingMode, Addition = addition };
+    }
+
+    public static string FirstSentence(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var plain = Regex.Replace(text, @"```[\s\S]*?```", " ");
+        plain = Regex.Replace(plain, @"`([^`]*)`", "$1");
+        plain = Regex.Replace(plain, @"\*\*|__", "");
+        plain = Regex.Replace(plain, @"^\s*#+\s*", "", RegexOptions.Multiline);
+        plain = Regex.Replace(plain, @"^\s*[-*•]\s+", "", RegexOptions.Multiline);
+        plain = Regex.Replace(plain, @"\s+", " ").Trim();
+        var match = Regex.Match(plain, @"[.!?](\s|$)|:\s");
+        var end = match.Success ? (plain[match.Index] == ':' ? match.Index : match.Index + 1) : plain.Length;
+        return plain[..end].Trim();
     }
 
     static bool stepsStillOpen(WorkView work) => work.Steps.Any(step => step.Status is "working" or "waiting" or "waiting for quota");
