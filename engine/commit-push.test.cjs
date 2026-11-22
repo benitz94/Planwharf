@@ -309,6 +309,35 @@ test('the pull request opened by the push is named after the work, not "push"', 
   assert.ok(title.length > 0);
 });
 
+test('the pull request title uses the revision direction when message is "push"', async t => {
+  const { folder, post } = await fixture(t);
+  const bin = path.join(path.dirname(folder), 'bin'), log = path.join(path.dirname(folder), 'gh.log');
+  const oldPath = process.env.PATH;
+  const oldGh = { GH_LOG: process.env.GH_LOG, GH_NODE: process.env.GH_NODE, GH_STUB: process.env.GH_STUB };
+  if (!installFakeGh(bin, log)) { t.skip('no C# compiler to stub gh.exe on Windows'); return; }
+  process.env.PATH = bin + path.delimiter + oldPath;
+  t.after(() => {
+    process.env.PATH = oldPath;
+    for (const [key, value] of Object.entries(oldGh)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  const planPath = path.join(path.dirname(folder), 'plan.json');
+  const notebook = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+  notebook.projects[0].revisions[0].direction = 'Implement job 42 on `feat/topic` from `origin/main`';
+  fs.writeFileSync(planPath, JSON.stringify(notebook));
+
+  git(folder, 'switch', '-c', 'topic');
+  const response = await post({ projectId: 'p', message: 'push', push: true });
+  const body = await response.json();
+  assert.equal(response.status, 200, JSON.stringify(body));
+  assert.equal(body.prUrl, 'https://github.com/owner/repo/pull/7');
+  const args = fs.readFileSync(log, 'utf8').split('\n');
+  const title = args[args.indexOf('--title') + 1];
+  assert.equal(title, 'Implement job 42');
+});
+
 test('a refused push says why, not only "To <remote>"', async t => {
   const { folder, remote, post } = await fixture(t);
   git(folder, 'switch', '-c', 'topic');
