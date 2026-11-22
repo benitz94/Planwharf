@@ -11,6 +11,9 @@ namespace Planwharf.Native;
 // The project's team, as in the chat page: lead, models on the team and on the bench, AI tools, API connections.
 public sealed partial class MainWindow
 {
+    // Which folds of the Team panel the owner opened or closed: kept while the panel is drawn again.
+    readonly Dictionary<string, bool> folds = new();
+
     string accountSignInCommand = "";
     void TeamPanel(TeamView team, string name, string savingMode)
     {
@@ -61,7 +64,11 @@ public sealed partial class MainWindow
             var list = new StackPanel { Spacing = 8 };
             foreach (var model in bench) list.Children.Add(Member(model, team.LeadId));
             var fold = Fold(bench.Count <= 4 ? Strings.T("Models on the bench") : Strings.Format("Show the {0} models on the bench", bench.Count), list);
-            fold.IsExpanded = bench.Count <= 4 || teamFilter.Values.Any(value => value.Length > 0);
+            // The panel is drawn again after every change (a role picked, a new reading of the quota): what the
+            // owner opened or closed stays so, per project, until the app restarts.
+            var benchKey = "bench:" + projectId;
+            fold.IsExpanded = folds.TryGetValue(benchKey, out var benchOpen) ? benchOpen : bench.Count <= 4 || teamFilter.Values.Any(value => value.Length > 0);
+            fold.Toggled += opened => folds[benchKey] = opened;
             benchSection.Children.Add(fold);
         }
         if (hidden > 0) benchSection.Children.Add(Explain(Strings.Format(hidden == 1 ? "{0} model is not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model)." : "{0} models are not shown: the AI tools on this computer no longer offer {1}, or Planwharf cannot run {2} (such as Codex's own review model).", hidden, Strings.T(hidden == 1 ? "it" : "them"), Strings.T(hidden == 1 ? "it" : "them"))));
@@ -250,8 +257,12 @@ public sealed partial class MainWindow
         var card = new StackPanel { Spacing = 8, Children = { info, chips } };
         if (!model.Bench) card.Children.Add(LimitEditor(model));
         var toolsProject = projectId!;
-        card.Children.Add(ModelToolsEditor.Create(ModelToolsView.Read(snapshot, toolsProject, model.Id),
-            tools => DoAsync(() => api!.SetToolsAsync(toolsProject, tools, model.Id), Strings.Format("Tools for {0} saved.", model.Label))));
+        var tools = ModelToolsEditor.Create(ModelToolsView.Read(snapshot, toolsProject, model.Id),
+            chosen => DoAsync(() => api!.SetToolsAsync(toolsProject, chosen, model.Id), Strings.Format("Tools for {0} saved.", model.Label)));
+        var toolsKey = "tools:" + toolsProject + ":" + model.Id;
+        if (folds.TryGetValue(toolsKey, out var toolsOpen)) tools.IsExpanded = toolsOpen;
+        tools.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty) folds[toolsKey] = tools.IsExpanded; };
+        card.Children.Add(tools);
         return MemberCard(card, !model.Bench, model.Bench);
     }
 
@@ -299,7 +310,9 @@ public sealed partial class MainWindow
                 new TextBlock { Text = Strings.T("% left"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Muted, FontSize = 13 }),
             buttons } };
         var fold = Fold(said, form);
-        fold.IsExpanded = false;
+        var limitKey = "limit:" + projectId + ":" + model.Id;
+        fold.IsExpanded = folds.TryGetValue(limitKey, out var limitOpen) && limitOpen;
+        fold.Toggled += opened => folds[limitKey] = opened;
         return fold;
     }
 
