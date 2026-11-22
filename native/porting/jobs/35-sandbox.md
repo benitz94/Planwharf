@@ -36,13 +36,15 @@ Every worker process runs under the principle of least privilege, bound to a spe
 | Target path | Access mode | Purpose / Justification |
 |---|---|---|
 | Assigned worktree (`.planwharf/worktrees/<id>`) | **Read-Write** | Primary working directory for source changes, build outputs, and local artifacts. |
-| Project-level shared caches (`.cache`, compiler artifacts) | **Read-Only** (or isolated overlay) | Avoid downloading standard runtime packages from scratch; prevent poisoning cache for other workers. |
+| Project-level shared caches (`.cache`, compiler artifacts) | **Read-Only** (or isolated overlay) | Avoid downloading standard runtime packages from scratch; prevent poisoning cache for other workers or write races. |
 | System toolchain and runtimes (`/usr`, `/opt`, `Program Files`, `.dotnet`) | **Read-Only / Execute** | Running compilers (`dotnet`, `node`, `git`, `python`, standard system utilities). |
 | OS temporary directories (`/tmp`, Windows `%TEMP%`) | **Isolated private per-worker temp directory** | Scratch space cleaned up immediately upon process or attempt completion. |
 | User Home directory (`~`, `%USERPROFILE%`) | **Deny all** | Prevent access to personal files, desktop, downloads, browser data, or shell configuration. |
 | Credential and secret stores (`~/.ssh`, `~/.aws`, `~/.config/gcloud`, macOS Keychain, Windows Credential Manager) | **Deny all / Blocked** | Workers must never read host keys, cloud tokens, or API secrets. |
 | Planwharf engine state and attempts store (`.planwharf/attempts/`, notebooks) | **Deny / Engine-brokered only** | Workers interact with Planwharf exclusively through the approved MCP protocol or result JSON, not direct file access. |
 | Other project directories and sibling worktrees | **Deny all** | Complete isolation between concurrent jobs and unrelated projects. |
+
+Two concurrent workers never share a worktree or an AppContainer profile. Each concurrent worker is assigned a dedicated worktree (`.planwharf/worktrees/<id>` or `worktrees/<P>/jobs/<J>`) and a unique private temp directory (`/tmp/planwharf-worker-<attemptId>` on Linux/macOS, `%TEMP%\planwharf-worker-<attemptId>` on Windows). Sibling worktree isolation ensures a worker in one worktree cannot inspect, read, or modify the worktree of a concurrent worker. Shared runtime caches are mounted read-only (or with isolated per-worker copy-on-write overlays) to prevent write races or cache poisoning between concurrent workers. Git repository internal protection ensures that while workers run local git commands on their branch, the repository's `.git/config` and `.git/hooks` are protected against modification, and git push is blocked inside the sandbox (only the engine outside the sandbox may push). Symlink and hardlink breakouts are strictly prevented by rejecting path traversal and links resolving outside the worktree.
 
 ### 2.2 Network access
 
@@ -51,7 +53,7 @@ Every worker process runs under the principle of least privilege, bound to a spe
   external assets must be retrieved, and restricted where possible to known package registries (e.g.,
   `api.nuget.org`, `registry.npmjs.org`).
 - **Localhost and LAN restriction**: Direct access to local loopback ports (preventing probing of local web
-  servers, database instances, or internal microservices) is blocked unless specifically authorized for integration testing.
+  servers, database instances, or internal microservices) is blocked unless specifically authorized for integration testing. Localhost network isolation via private network namespaces or loopback filtering prevents concurrent workers from probing or colliding on each other's test ports.
 - **Credential isolation**: Git operations requiring remote authentication are performed exclusively by the
   engine outside the sandbox; workers never receive Git push credentials.
 
@@ -99,8 +101,7 @@ native OS isolation primitives while presenting a single configuration interface
     active process count bounds, and memory limits, ensuring reliable process tree termination (preventing lingering node/dotnet background processes).
   - **Restricted Security Tokens**: Worker processes run with stripped privileges, removing administrative and debugging rights
     (`SeDebugPrivilege`, `SeAssignPrimaryTokenPrivilege`), and explicit deny SIDs on sensitive directories.
-  - **AppContainer / Low-Integrity Isolation**: For maximum isolation, workers run under an AppContainer profile with explicit
-    file capabilities granted only to the worktree and private temp folder, with internet client capability toggled per job policy.
+  - **AppContainer / Low-Integrity Isolation**: For maximum isolation, workers run under an AppContainer profile with unique AppContainer profile names and SIDs per worker attempt (`Planwharf.Worker.<AttemptId>`), with explicit file capabilities granted only to the worktree and private temp folder, with internet client capability toggled per job policy.
   - **Credential Isolation**: Access to DPAPI, Windows Credential Manager (`CredRead`), and `%USERPROFILE%\.ssh` / `%USERPROFILE%\.aws`
     is explicitly blocked or masked.
 
@@ -114,7 +115,7 @@ Different AI tools currently offer disparate sandboxing controls:
 - **Grok & Antigravity CLI**: Lack autonomous native OS sandboxing on arbitrary script invocation; Planwharf's outer sandbox
   envelops these workers uniformly.
 - **Sanitized Environment**: For all tools, Planwharf strips extraneous host environment variables before launch:
-  `AWS_*`, `GITHUB_TOKEN`, `AZURE_*`, `SSH_AUTH_SOCK`, `GCLOUD_*`, and API keys belonging to other providers are cleared.
+  `AWS_*`, `GITHUB_TOKEN`, `AZURE_*`, `SSH_AUTH_SOCK`, `GCLOUD_*`, `GIT_ASKPASS`, and all provider API keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`). Neutralizing HOME and USERPROFILE to an isolated dummy scratch directory prevents tools from discovering or reading user profile dotfiles.
 
 ---
 
@@ -147,6 +148,14 @@ When a risky command is detected:
    - If the owner does not respond within the configured timeout (default: 5 minutes), the operation is **strictly denied**.
    - The worker is returned a standard `EACCES` / permission denied error, allowing the model to adapt its strategy or report a blocker. Under no circumstances does a timeout default to approval.
 
+### 4.3 Error paths and exception handling
+
+- **Sandbox initialization failure**: If the OS sandbox primitive fails to initialize (e.g. `bwrap` missing, unprivileged namespaces disabled, or AppContainer creation failure), the engine strictly fails closed immediately with diagnostic code `sandbox-init-failed` and does not run uncontained without explicit owner override.
+- **Access violation handling**: Attempted boundary breaches return `EACCES` / access denied, do not crash the engine, and log an append-only audit event in `sandbox.log`.
+- **Escalation channel failure**: If desktop chat or phone channels (ntfy/Telegram) are offline or unreachable, escalation fails closed immediately (never default to approval).
+- **Explicit denial**: When the owner selects Deny or `/deny`, worker immediately receives `EACCES` cleanly and adapts.
+- **Resource exhaustion**: Exceeding memory ceilings or process count limits triggers Job Object or cgroups termination with reason `worker-resource-exhausted`, halting runaway fork-bombs without crashing the engine.
+
 ---
 
 ## 5. Development workflow compatibility, overhead, and configuration
@@ -174,6 +183,12 @@ The following actions proceed without interruption:
   - `sandbox.escalationTimeoutSeconds`: Defaults to 300 seconds (5 minutes).
 - **Audit trail**: Every sandbox initialization, policy violation, and escalation decision is logged append-only to `.planwharf/attempts/<id>/sandbox.log` for debugging and security auditing.
 
+### 5.4 Recovery paths and lifecycle cleanup
+
+- **Process tree cleanup on crash, timeout, or cancellation**: Windows Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) and Linux `--die-with-parent` / PID namespace reaper guarantee all descendant processes are terminated when a worker finishes, hangs, or is cancelled.
+- **Ephemeral temp cleanup**: Private worker temp directory is deleted upon worker termination or crash, and cleanup errors do not leave orphaned mounts.
+- **Engine restart recovery**: Startup sweeps close leftover Job Objects / containers and delete stale sandbox temp directories from previous sessions.
+
 ---
 
 ## 6. Acceptance checks and verification test suite for the build job
@@ -196,6 +211,8 @@ The test suite must include automated adversarial scenarios attempting to bypass
    - Verifying that explicit denial returns `EACCES` cleanly to the worker.
    - Verifying that expiration of the timeout period results in strict fail-closed rejection.
    - Verifying that approved execution resumes and completes without un-sandboxing unrelated tasks.
+9. **Sibling worktree containment**: Attempting to read or write a concurrent worker's worktree (`../sibling-worktree`). Verified: blocked with access violation.
+10. **Sandbox init failure containment**: Simulating missing sandbox prerequisites or corrupted profiles. Verified: engine halts attempt with `sandbox-init-failed`, refusing unconfined fallback.
 
 ### 6.2 Acceptance check for the implementation job
 

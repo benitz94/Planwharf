@@ -75,6 +75,37 @@ const openDecisions = [
   'Outbound network filtering mechanism'
 ];
 
+const concurrencyPaths = [
+  'Two concurrent workers never share a worktree or an AppContainer profile',
+  'unique AppContainer profile names and SIDs',
+  'Sibling worktree isolation',
+  'prevent write races or cache poisoning',
+  'Localhost network isolation'
+];
+
+const errorPaths = [
+  'sandbox-init-failed',
+  'Access violation handling',
+  'Escalation channel failure',
+  'worker-resource-exhausted'
+];
+
+const recoveryPaths = [
+  'Process tree cleanup on crash, timeout, or cancellation',
+  'Ephemeral temp cleanup',
+  'Engine restart recovery'
+];
+
+const edgeCases = [
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'GEMINI_API_KEY',
+  'Neutralizing HOME and USERPROFILE',
+  'Git repository internal protection',
+  'git push is blocked inside the sandbox',
+  'Symlink and hardlink breakouts'
+];
+
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
@@ -86,29 +117,28 @@ function git(args) {
 }
 
 function flat(text) {
-  return text.replace(/\s+/g, ' ');
+  return (text || '').replace(/\s+/g, ' ');
 }
 
 function assessSheet(sheet) {
   const errors = [];
   const text = flat(sheet);
-  for (const phrase of filesystemAndNetwork) {
-    if (!text.includes(phrase)) errors.push('filesystem/network missing "' + phrase + '"');
-  }
-  for (const phrase of platformsAndTools) {
-    if (!text.includes(phrase)) errors.push('platform/tool missing "' + phrase + '"');
-  }
-  for (const phrase of escalationAndApprovals) {
-    if (!text.includes(phrase)) errors.push('escalation missing "' + phrase + '"');
-  }
-  for (const phrase of workflowAndCompatibility) {
-    if (!text.includes(phrase)) errors.push('workflow missing "' + phrase + '"');
-  }
-  for (const phrase of escapeTests) {
-    if (!text.includes(phrase)) errors.push('escape test missing "' + phrase + '"');
-  }
-  for (const phrase of openDecisions) {
-    if (!text.includes(phrase)) errors.push('open decision missing "' + phrase + '"');
+  const groups = [
+    ['filesystem/network', filesystemAndNetwork],
+    ['platform/tool', platformsAndTools],
+    ['escalation', escalationAndApprovals],
+    ['workflow', workflowAndCompatibility],
+    ['escape test', escapeTests],
+    ['open decision', openDecisions],
+    ['concurrency', concurrencyPaths],
+    ['error path', errorPaths],
+    ['recovery path', recoveryPaths],
+    ['edge case', edgeCases]
+  ];
+  for (const [label, phrases] of groups) {
+    for (const phrase of phrases) {
+      if (!text.includes(phrase)) errors.push(label + ' missing "' + phrase + '"');
+    }
   }
   if (/the sandbox is implemented/i.test(sheet)) errors.push('sheet marks sandbox implemented');
   if (!/Open design decisions/.test(sheet)) errors.push('open design decisions section removed');
@@ -147,6 +177,41 @@ test('dropping an isolation rule, platform, escalation, or escape test fails ass
     const errors = assessSheet(broken);
     assert.ok(errors.length > 0, name + ' did not produce errors');
   }
+});
+
+test('dropping a concurrency, error, recovery, or edge case limit fails assessment', () => {
+  const sheet = read(sheetPath);
+  const cases = [
+    ['no shared worktree', without(sheet, 'Two concurrent workers never share a worktree or an AppContainer profile')],
+    ['unique container SID', without(sheet, 'unique AppContainer profile names and SIDs')],
+    ['sibling isolation', without(sheet, 'Sibling worktree isolation')],
+    ['cache write race', without(sheet, 'prevent write races or cache poisoning')],
+    ['localhost isolation', without(sheet, 'Localhost network isolation')],
+    ['sandbox init failed', without(sheet, 'sandbox-init-failed')],
+    ['access violation', without(sheet, 'Access violation handling')],
+    ['channel failure', without(sheet, 'Escalation channel failure')],
+    ['resource exhausted', without(sheet, 'worker-resource-exhausted')],
+    ['process tree cleanup', without(sheet, 'Process tree cleanup on crash, timeout, or cancellation')],
+    ['temp cleanup', without(sheet, 'Ephemeral temp cleanup')],
+    ['restart recovery', without(sheet, 'Engine restart recovery')],
+    ['anthropic key strip', without(sheet, 'ANTHROPIC_API_KEY')],
+    ['openai key strip', without(sheet, 'OPENAI_API_KEY')],
+    ['gemini key strip', without(sheet, 'GEMINI_API_KEY')],
+    ['home neutralize', without(sheet, 'Neutralizing HOME and USERPROFILE')],
+    ['git repo protection', without(sheet, 'Git repository internal protection')],
+    ['git push blocked', without(sheet, 'git push is blocked inside the sandbox')],
+    ['symlink breakout edge', without(sheet, 'Symlink and hardlink breakouts')]
+  ];
+  for (const [name, broken] of cases) {
+    const errors = assessSheet(broken);
+    assert.ok(errors.length > 0, name + ' did not produce errors');
+  }
+});
+
+test('assessSheet rejects empty text, malformed structures, and premature implementation claims', () => {
+  assert.ok(assessSheet('').length > 0);
+  assert.ok(assessSheet(null).length > 0);
+  assert.ok(assessSheet('The sandbox is implemented in full.').length > 0);
 });
 
 test('documentation reflects job 35 status and built-with entries', () => {
