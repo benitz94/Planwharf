@@ -240,16 +240,64 @@ test('a non-fast-forward push failure hides advice and keeps the local commit', 
   assert.equal(git(folder, 'log', '-1', '--format=%s').stdout.trim(), 'Local commit ahead of fetch');
 });
 
-test('the pull request opened by the push is named after the work, not "push"', { skip: process.platform === 'win32' }, async t => {
-  const { folder, post } = await fixture(t);
-  // A fake GitHub CLI: no pull request yet, and "pr create" records its arguments.
-  const bin = path.join(path.dirname(folder), 'bin'), log = path.join(path.dirname(folder), 'gh.log');
-  fs.mkdirSync(bin);
-  fs.writeFileSync(path.join(bin, 'gh'), `#!/bin/sh\nif [ "$1" = "pr" ] && [ "$2" = "view" ]; then exit 1; fi\nfor a in "$@"; do printf '%s\\n' "$a" >> "${log}"; done\necho https://github.com/owner/repo/pull/7\n`);
+function installFakeGh(bin, log) {
+  fs.mkdirSync(bin, { recursive: true });
+  const stub = path.join(bin, 'gh-stub.cjs');
+  fs.writeFileSync(stub, `'use strict';
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args[0] === 'pr' && args[1] === 'view') process.exit(1);
+fs.appendFileSync(process.env.GH_LOG, args.join('\\n') + '\\n');
+process.stdout.write('https://github.com/owner/repo/pull/7\\n');
+`);
+  process.env.GH_LOG = log;
+  process.env.GH_NODE = process.execPath;
+  process.env.GH_STUB = stub;
+  if (process.platform === 'win32') {
+    // spawn('gh') looks up gh.exe, so a .cmd stub never wins over GitHub CLI.
+    const windir = process.env.WINDIR || 'C:\\Windows';
+    const csc = [
+      path.join(windir, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+      path.join(windir, 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe')
+    ].find(file => fs.existsSync(file));
+    if (!csc) return false;
+    const cs = path.join(bin, 'GhShim.cs');
+    fs.writeFileSync(cs, [
+      'using System; using System.Diagnostics;',
+      'class P {',
+      '  static int Main(string[] args) {',
+      '    var q = ((char)34).ToString();',
+      '    var psi = new ProcessStartInfo(Environment.GetEnvironmentVariable("GH_NODE"));',
+      '    psi.UseShellExecute = false;',
+      '    psi.Arguments = q + Environment.GetEnvironmentVariable("GH_STUB") + q;',
+      '    foreach (var a in args) psi.Arguments += " " + q + a.Replace(q, "\\\\" + q) + q;',
+      '    var p = Process.Start(psi); p.WaitForExit(); return p.ExitCode;',
+      '  }',
+      '}',
+      ''
+    ].join('\n'));
+    const compiled = spawnSync(csc, ['/nologo', '/out:' + path.join(bin, 'gh.exe'), cs], { encoding: 'utf8', windowsHide: true });
+    return compiled.status === 0 && fs.existsSync(path.join(bin, 'gh.exe'));
+  }
+  fs.writeFileSync(path.join(bin, 'gh'), `#!/bin/sh\nexec "${process.execPath.replace(/\\/g, '/')}" "${stub.replace(/\\/g, '/')}" "$@"\n`);
   fs.chmodSync(path.join(bin, 'gh'), 0o755);
+  return true;
+}
+
+test('the pull request opened by the push is named after the work, not "push"', async t => {
+  const { folder, post } = await fixture(t);
+  const bin = path.join(path.dirname(folder), 'bin'), log = path.join(path.dirname(folder), 'gh.log');
   const oldPath = process.env.PATH;
+  const oldGh = { GH_LOG: process.env.GH_LOG, GH_NODE: process.env.GH_NODE, GH_STUB: process.env.GH_STUB };
+  if (!installFakeGh(bin, log)) { t.skip('no C# compiler to stub gh.exe on Windows'); return; }
   process.env.PATH = bin + path.delimiter + oldPath;
-  t.after(() => { process.env.PATH = oldPath; });
+  t.after(() => {
+    process.env.PATH = oldPath;
+    for (const [key, value] of Object.entries(oldGh)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
   git(folder, 'switch', '-c', 'topic');
   const response = await post({ projectId: 'p', message: 'push', push: true });
   const body = await response.json();

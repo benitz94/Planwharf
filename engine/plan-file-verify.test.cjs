@@ -9,12 +9,12 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const planFile = require('./plan-file.cjs');
+const { gitEnvironment } = require('./project-workspace.cjs');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-verify-'));
 
 function git(cwd, args) {
-  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8', windowsHide: true, env });
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', windowsHide: true, env: gitEnvironment() });
   assert.equal(result.status, 0, `${args.join(' ')} failed: ${result.stderr || result.stdout}`);
   return (result.stdout || '').trim();
 }
@@ -99,21 +99,22 @@ function freshRepo(tag) {
 }
 
 // --- 7. tickStep falls back to first unchecked when role/title don't match ---
+// writePlan only: prepare() talks to git, and a missed plan file under parallel load
+// was reported as tickStep returning false.
 {
-  const { work } = freshRepo('tick-fallback');
-  planFile.prepare(work, { goal: 'fallback goal', steps: [{ role: 'Build', model: 'Grok' }] });
-  // Use a completely different role that doesn't match
-  const ticked = planFile.tickStep(work, { role: 'Research', model: 'Totally Different', commit: 'abc1234' });
+  const dir = fs.mkdtempSync(path.join(root, 'tick-fallback-'));
+  planFile.writePlan(dir, { goal: 'fallback goal', steps: [{ role: 'Build', model: 'Grok' }] });
+  const ticked = planFile.tickStep(dir, { role: 'Research', model: 'Totally Different', commit: 'abc1234' });
   assert.equal(ticked, true, 'tickStep falls back to first unchecked step');
-  assert.match(planFile.read(work), /- \[x\] Build \(Grok\) — abc1234/);
+  assert.match(planFile.read(dir), /- \[x\] Build \(Grok\) — abc1234/);
 }
 
 // --- 8. tickStep returns false when all steps already ticked ---
 {
-  const { work } = freshRepo('all-ticked');
-  planFile.prepare(work, { goal: 'all ticked goal', steps: [{ role: 'Build', model: 'G' }] });
-  planFile.tickStep(work, { role: 'Build', model: 'G', commit: 'aaa' });
-  const second = planFile.tickStep(work, { role: 'Build', model: 'G', commit: 'bbb' });
+  const dir = fs.mkdtempSync(path.join(root, 'all-ticked-'));
+  planFile.writePlan(dir, { goal: 'all ticked goal', steps: [{ role: 'Build', model: 'G' }] });
+  planFile.tickStep(dir, { role: 'Build', model: 'G', commit: 'aaa' });
+  const second = planFile.tickStep(dir, { role: 'Build', model: 'G', commit: 'bbb' });
   assert.equal(second, false, 'no unchecked steps left');
 }
 
