@@ -1243,4 +1243,3 @@ public static class PipelineIntake
         }
     }
 }
-
