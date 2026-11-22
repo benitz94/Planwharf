@@ -1558,9 +1558,3 @@ public sealed class PipelineBuildTests : IDisposable
         Assert.Contains("chk-1: dotnet test", textOnDisk);
     }
 }
-
-
-
-
-
-
