@@ -432,5 +432,5 @@ function finish(folder, spec = {}) {
 
 module.exports = { isNoise,
   EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, pullRequestTitle, shortGoal,
-  prepare, read, parse, tickStep, finish, commitNote, currentBranch, pushed, planPath
+  prepare, writePlan, read, parse, tickStep, finish, commitNote, currentBranch, pushed, planPath
 };

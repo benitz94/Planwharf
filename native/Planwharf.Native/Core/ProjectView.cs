@@ -83,7 +83,12 @@ public static class ProjectViews
             .Where(line => line.Length > 0).Distinct().ToList();
 
     public static string? SuggestedGoal(string? answer) => answer != null && Suggested.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
-    public static string? AdditionText(string? answer) => answer != null && Addition.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
+    public static string? AdditionText(string? answer)
+    {
+        if (answer == null || Addition.Match(answer) is not { Success: true } match) return null;
+        var text = match.Groups[1].Value.Trim();
+        return text.Length > 0 ? text : null;
+    }
 
     // The project used last comes first, so a message is not sent to a project the user left long ago.
     // Used means a message to its lead or work of its crew; only opening a project does not move it.

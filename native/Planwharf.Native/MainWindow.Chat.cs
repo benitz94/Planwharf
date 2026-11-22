@@ -406,6 +406,7 @@ public sealed partial class MainWindow
             var addBtn = Look.Button(Strings.T("Add to this work"), "plus", Look.Kind.Small);
             addBtn.Click += async (_, _) =>
             {
+                if (!addBtn.IsEnabled) return;
                 addBtn.IsEnabled = false;
                 await DoAsync(() => api!.AddToWorkAsync(id, addition), Strings.Format(Strings.T("Added to this work: {0}"), addition));
             };

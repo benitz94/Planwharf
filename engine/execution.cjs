@@ -792,12 +792,16 @@ function createExecutionBridge(options) {
     if (!scope && Array.isArray(spec.scope) && spec.scope.length) scope = spec.scope.map(slash);
 
     const dependencies = [];
+    const incompleteBuilds = subs.filter(sub => stepRole(sub) === 'Build' && sub.status !== 'COMPLETE');
     if (scope && scope.length) {
-      for (const other of subs.filter(sub => stepRole(sub) === 'Build' && sub.status !== 'COMPLETE')) {
-        if (Array.isArray(other.scope) && other.scope.length && other.scope.some(x => scope.some(y => x === y || y.startsWith(x + '/') || x.startsWith(y + '/')))) {
+      for (const other of incompleteBuilds) {
+        const otherScope = Array.isArray(other.scope) && other.scope.length ? other.scope : null;
+        if (!otherScope || otherScope.some(x => scope.some(y => x === y || y.startsWith(x + '/') || x.startsWith(y + '/')))) {
           dependencies.push(other.id);
         }
       }
+    } else {
+      for (const other of incompleteBuilds) dependencies.push(other.id);
     }
 
     let worker = null;

@@ -4235,6 +4235,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (!megaTaskId) return { ok: false, reason: 'no active work' };
     const mega = bridge.target(projectId, megaTaskId);
     if (!mega || mega.status === 'COMPLETE') return { ok: false, reason: 'work is already complete' };
+    if (mega.status !== 'RUNNING' && mega.status !== 'PAUSED') return { ok: false, reason: 'no running work' };
     const last = (store.asks || []).find(ask => ask && ask.projectId === projectId && typeof ask.answer === 'string' && !ask.diagnostic);
     const additionText = typeof request === 'string' ? request : request?.addition || request?.detail || chatMode.addition(last?.answer);
     if (!additionText || !additionText.trim()) return { ok: false, reason: 'addition required' };
@@ -4247,6 +4248,10 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       const model = roster().find(m => m.id === added.subTask.assignedModelId);
       const modelLabel = model?.label || added.subTask.assignedModelId;
       note(projectId, `Added to this work: ${added.subTask.detail} (${modelLabel}).`);
+      const offered = last && chatMode.addition(last.answer);
+      if (offered && (offered === additionText.trim() || String(additionText).includes(offered))) {
+        last.answer = chatMode.withoutAddition(last.answer);
+      }
       row.authorizedSessionId = sessionId;
       row.approved = true;
       row.holdApproval = false;
