@@ -145,6 +145,10 @@ public sealed class PlanwharfApi(string address)
         await PostAsync("/api/orchestrator/lead", projectId == null ? new { id = modelId } : new { id = modelId, projectId });
     }
 
+    // The Lead button in Team: whether this model may lead the project (the menu and every hand-over).
+    public Task<JsonNode?> SetLeadAllowedAsync(string? projectId, string modelId, bool allowed) =>
+        PostAsync("/api/orchestrator/lead-allowed", projectId == null ? new { id = modelId, allowed } : new { id = modelId, allowed, projectId });
+
     public Task<JsonNode?> SetRolesAsync(string? projectId, string modelId, IDictionary<string, bool> roles) =>
         PostAsync("/api/models/roles", projectId == null ? new { id = modelId, roles } : new { id = modelId, roles, projectId });
 

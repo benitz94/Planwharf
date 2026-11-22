@@ -60,7 +60,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 27 | #186 | Talk, Plan and Auto above the chat, one per project. Talk does not start the crew. Plan is the default and today's behaviour. Auto starts the goal for this session and returns to Plan after a restart. Pipeline is reserved and hidden | A pull-request fix still pushes when the worker push guard is set; verified independently with tests for concurrent remote push, clean no-change fix, and Auto-to-Talk running work preservation |
 | 28 | #193 | Pull requests side panel in place of Check PRs: open pull requests with checks and conflicts, merged and closed history, a 30-day summary, filters, and Fix in the background | Verified independently, not pushed. A refused push keeps the commit and still says so when the refusal is long; one project can push while another keeps its copy. A crashed gh read stays a panel message. Timed-out checks count. An unreadable next page keeps the rows |
 | 29 | #196 | Per-project saving modes: Normal, Safe and Ultra safe limit the lead and the crew to the allowed model classes, from the next step | Waiting for review, not pushed |
-| 30 | #? | Add to the running work: while work runs, an agreed addition appends one Build step before Verify and starts on an allowed model; Verify reruns after; stopped work resumes with it | Verified independently, not pushed. The work plan now records the new step. A second click does not start it twice. Ultra safe keeps a flagship off the extra step. |
+| 30 | #200 | Add to the running work: while work runs, an agreed addition appends one Build step before Verify and starts on an allowed model; Verify reruns after; stopped work resumes with it | Verified independently, not pushed. The work plan now records the new step. A second click does not start it twice. Ultra safe keeps a flagship off the extra step. |
 
 ## Improvements found while Planwharf worked on itself
 
@@ -109,3 +109,5 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The phone named the shared team's lead instead of the project's, never said when the lead changed, and packed several items on one line | #192 |
 | Verify was chosen at the start and later ran on a model that had fallen under its limit; with no verifier above it, the work lost its Verify step | #194 |
 | The background fix of a pull request picked Fable 5.2, which needs usage credits, and stopped there | #197 |
+| The bench, the limit and the Tools folds of the Team panel closed by themselves each time a model was picked | #198 |
+| The owner could not choose which models may lead: every eligible model could take over | #199 |
