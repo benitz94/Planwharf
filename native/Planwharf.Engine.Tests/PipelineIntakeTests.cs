@@ -667,4 +667,505 @@ public sealed class PipelineIntakeTests : IDisposable
             Directory.Delete(attemptsWithSpaces, true);
         }
     }
+
+    [Fact]
+    public void LocalItem_EditBeforeAndAfterApproval_RequeuesOrDrifts()
+    {
+        var settings = PipelineIntake.DefaultSettings(null);
+        var items = new List<PipelineIntake.LocalItem>
+        {
+            new("loc-1", "Local Task", "Initial local requirements")
+        };
+
+        var poll1 = PipelineIntake.ProcessLocalItems(Attempts(), Project, settings, items);
+        Assert.Equal(1, poll1.QueuedCount);
+        Assert.Equal(0, poll1.UpdatedCount);
+
+        var job = PipelineIntake.LoadJob(Attempts(), Project, "local-loc-1");
+        Assert.NotNull(job);
+        Assert.Equal("queued", job.Status);
+
+        // Edit body before approval -> re-queues and updates request.md
+        items[0] = items[0] with { Body = "Updated requirements before intake" };
+        var poll2 = PipelineIntake.ProcessLocalItems(Attempts(), Project, settings, items);
+        Assert.Equal(0, poll2.QueuedCount);
+        Assert.Equal(1, poll2.UpdatedCount);
+
+        job = PipelineIntake.LoadJob(Attempts(), Project, "local-loc-1");
+        Assert.NotNull(job);
+        Assert.Equal("queued", job.Status);
+        var reqText = File.ReadAllText(Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "local-loc-1"), "request.md"));
+        Assert.Contains("Updated requirements before intake", reqText);
+
+        // Run intake and draft spec and approve
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+        PipelineIntake.RunIntake(Attempts(), Project, "local-loc-1", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Local intake",
+            WorthBuilding = "yes",
+            ScopeIn = "Core local scope",
+            ScopeOut = "None",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out _);
+
+        var progHash = new string('3', 64);
+        PipelineIntake.DraftSpec(Attempts(), Project, "local-loc-1", lead, (_, _) => new PipelineIntake.SpecDraft
+        {
+            Summary = "Local spec",
+            WhatToBuild = "B",
+            WhatNotToBuild = "NB",
+            SharedInterfaces = "I",
+            TaskTree = [new("t1", "T1", [])],
+            Checks = [new("chk-1", "Local check", "bin/test", ["run"], ".", 10, 0, "ok", false, "engine-owned", null, progHash)]
+        }, out _);
+
+        const string baseSha = "aaaaabbbbbcccccdddddeeeeefffff0000011111";
+        var appOk = PipelineIntake.ApproveSpec(Attempts(), Project, "local-loc-1", baseSha, out _);
+        Assert.True(appOk);
+
+        job = PipelineIntake.LoadJob(Attempts(), Project, "local-loc-1");
+        Assert.NotNull(job);
+        Assert.Equal("approved", job.Status);
+        Assert.False(job.RequestDrift);
+
+        // Edit body after approval -> records drift, leaves frozen spec untouched
+        items[0] = items[0] with { Body = "Post-approval edit" };
+        var poll3 = PipelineIntake.ProcessLocalItems(Attempts(), Project, settings, items);
+        Assert.Equal(0, poll3.QueuedCount);
+        Assert.Equal(1, poll3.UpdatedCount);
+
+        job = PipelineIntake.LoadJob(Attempts(), Project, "local-loc-1");
+        Assert.NotNull(job);
+        Assert.Equal("approved", job.Status);
+        Assert.True(job.RequestDrift);
+
+        var frozen = File.ReadAllText(Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "local-loc-1"), "revisions", "1", "acceptance.json"));
+        Assert.Contains("Local check", frozen);
+    }
+
+    [Fact]
+    public void ShellChecks_ApprovedAndNamedInApprovalRecord_LoadedByAcceptanceGate()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(70, "Shell Check Job", "Needs shell runner", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        PipelineIntake.RunIntake(Attempts(), Project, "gh-70", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Intake shell",
+            WorthBuilding = "yes",
+            ScopeIn = "Shell build",
+            ScopeOut = "None",
+            Risk = "medium",
+            RiskReason = "Shell invocation",
+            TouchesInterface = false,
+            TouchesSecurity = true,
+            Questions = []
+        }, out _);
+
+        var progHash = new string('4', 64);
+        PipelineIntake.DraftSpec(Attempts(), Project, "gh-70", lead, (_, _) => new PipelineIntake.SpecDraft
+        {
+            Summary = "Shell Spec",
+            WhatToBuild = "Shell feature",
+            WhatNotToBuild = "None",
+            SharedInterfaces = "None",
+            TaskTree = [new("t1", "T1", [])],
+            Checks = [
+                new("trusted-shell-check", "Run via shell", "scripts/check.sh", ["--ci"], ".", 15, 0, "PASS", Shell: true, Trust: "engine-owned", ProgramSha256: progHash),
+                new("standard-check", "Standard check", "bin/check", ["--all"], ".", 15, 0, "PASS", Shell: false, Trust: "engine-owned", ProgramSha256: progHash)
+            ]
+        }, out _);
+
+        const string baseSha = "2222333344445555666677778888999900001111";
+        var ok = PipelineIntake.ApproveSpec(Attempts(), Project, "gh-70", baseSha, out var appMsg);
+        Assert.True(ok, appMsg);
+
+        var job = PipelineIntake.LoadJob(Attempts(), Project, "gh-70");
+        Assert.NotNull(job);
+        Assert.Equal("approved", job.Status);
+
+        var approvalJson = File.ReadAllText(Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "gh-70"), "approval.json"));
+        Assert.Contains("trusted-shell-check", approvalJson);
+        Assert.DoesNotContain("standard-check", approvalJson);
+
+        var gateLoaded = AcceptanceGate.Load(Attempts(), Project, "gh-70", job.SnapshotId!, job.ManifestSha256!, baseSha);
+        Assert.Equal("ok", gateLoaded.Status);
+        Assert.Contains("trusted-shell-check", gateLoaded.ShellChecks);
+        Assert.DoesNotContain("standard-check", gateLoaded.ShellChecks);
+    }
+
+    [Fact]
+    public void MultipleRevisions_SecondRevisionPreservesFirstRevisionImmutably()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(80, "Multi Rev Job", "Spec revisions", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        PipelineIntake.RunIntake(Attempts(), Project, "gh-80", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Rev 1 intake",
+            WorthBuilding = "yes",
+            ScopeIn = "V1",
+            ScopeOut = "V2",
+            Risk = "low",
+            RiskReason = "Clean",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out _);
+
+        var progHash = new string('5', 64);
+        PipelineIntake.DraftSpec(Attempts(), Project, "gh-80", lead, (_, _) => new PipelineIntake.SpecDraft
+        {
+            Summary = "Spec V1",
+            WhatToBuild = "Feature V1",
+            WhatNotToBuild = "Feature V2",
+            SharedInterfaces = "IV1",
+            TaskTree = [new("t1", "T1", [])],
+            Checks = [new("chk-1", "V1 Check", "bin/test", ["v1"], ".", 10, 0, "V1_PASS", false, "engine-owned", null, progHash)]
+        }, out _);
+
+        const string baseSha1 = "1111111111111111111111111111111111111111";
+        PipelineIntake.ApproveSpec(Attempts(), Project, "gh-80", baseSha1, out _);
+
+        var rev1Job = PipelineIntake.LoadJob(Attempts(), Project, "gh-80")!;
+        Assert.Equal(1, rev1Job.SpecRevision);
+        Assert.Equal("rev-1", rev1Job.SnapshotId);
+        var rev1ManifestBytes = File.ReadAllBytes(Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "gh-80"), "revisions", "1", "acceptance.json"));
+        var rev1Hash = rev1Job.ManifestSha256;
+
+        // Owner requests revision 2 (transitions status to specifying for draft)
+        rev1Job.Status = "specifying";
+        PipelineIntake.SaveJob(Attempts(), rev1Job);
+
+        PipelineIntake.DraftSpec(Attempts(), Project, "gh-80", lead, (_, _) => new PipelineIntake.SpecDraft
+        {
+            Summary = "Spec V2",
+            WhatToBuild = "Feature V1 and V2",
+            WhatNotToBuild = "None",
+            SharedInterfaces = "IV2",
+            TaskTree = [new("t1", "T1", []), new("t2", "T2", ["t1"])],
+            Checks = [
+                new("chk-1", "V1 Check", "bin/test", ["v1"], ".", 10, 0, "V1_PASS", false, "engine-owned", null, progHash),
+                new("chk-2", "V2 Check", "bin/test", ["v2"], ".", 10, 0, "V2_PASS", false, "engine-owned", null, progHash)
+            ]
+        }, out _);
+
+        const string baseSha2 = "2222222222222222222222222222222222222222";
+        var app2 = PipelineIntake.ApproveSpec(Attempts(), Project, "gh-80", baseSha2, out var appMsg2);
+        Assert.True(app2, appMsg2);
+
+        var rev2Job = PipelineIntake.LoadJob(Attempts(), Project, "gh-80")!;
+        Assert.Equal(2, rev2Job.SpecRevision);
+        Assert.Equal("rev-2", rev2Job.SnapshotId);
+        Assert.Equal(baseSha2, rev2Job.BaseCommit);
+        Assert.NotEqual(rev1Hash, rev2Job.ManifestSha256);
+
+        // Immutability of Revision 1: bytes and hash in revisions/1/ are identical
+        var rev1BytesAfter = File.ReadAllBytes(Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "gh-80"), "revisions", "1", "acceptance.json"));
+        Assert.Equal(rev1ManifestBytes, rev1BytesAfter);
+
+        // Revision 2 is active and loads via AcceptanceGate
+        var gate2 = AcceptanceGate.Load(Attempts(), Project, "gh-80", rev2Job.SnapshotId!, rev2Job.ManifestSha256!, baseSha2);
+        Assert.Equal("ok", gate2.Status);
+        Assert.Equal(2, gate2.SpecRevision);
+        Assert.Equal(2, gate2.Checks.Length);
+
+        // Stale snapshot rev-1 is rejected by AcceptanceGate
+        var gateOld = AcceptanceGate.Load(Attempts(), Project, "gh-80", "rev-1", rev1Hash!, baseSha1);
+        Assert.Equal("blocked", gateOld.Status);
+        Assert.Equal("stale", gateOld.Reason);
+    }
+
+    [Fact]
+    public void TamperedAcceptanceJson_RejectedByApproveSpec()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(85, "Tamper Test", "Body", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        PipelineIntake.RunIntake(Attempts(), Project, "gh-85", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Intake",
+            WorthBuilding = "yes",
+            ScopeIn = "Scope",
+            ScopeOut = "None",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out _);
+
+        var progHash = new string('6', 64);
+        PipelineIntake.DraftSpec(Attempts(), Project, "gh-85", lead, (_, _) => new PipelineIntake.SpecDraft
+        {
+            Summary = "Valid initial spec",
+            WhatToBuild = "B",
+            WhatNotToBuild = "NB",
+            SharedInterfaces = "I",
+            TaskTree = [new("t1", "T1", [])],
+            Checks = [new("chk-1", "Valid check", "bin/test", ["run"], ".", 10, 0, "ok", false, "engine-owned", null, progHash)]
+        }, out _);
+
+        // Tamper with acceptance.json on disk to insert unsafe path escape
+        var accPath = Path.Combine(PipelineIntake.JobDir(Attempts(), Project, "gh-85"), "acceptance.json");
+        var tamperedJson = """
+        {
+            "summary": "Tampered",
+            "schema": 1,
+            "jobId": "gh-85",
+            "specRevision": 1,
+            "baseCommit": "1111222233334444555566667777888899990000",
+            "checks": [
+                {
+                    "id": "bad-chk",
+                    "purpose": "Escape",
+                    "executable": "../escape",
+                    "arguments": ["run"],
+                    "workingDirectory": ".",
+                    "timeoutSeconds": 10,
+                    "expectedExitCode": 0,
+                    "expectedResult": "ok",
+                    "shell": false,
+                    "trust": "engine-owned",
+                    "programSha256": "6666666666666666666666666666666666666666666666666666666666666666"
+                }
+            ]
+        }
+        """;
+        File.WriteAllText(accPath, tamperedJson);
+
+        const string baseSha = "1111222233334444555566667777888899990000";
+        var approved = PipelineIntake.ApproveSpec(Attempts(), Project, "gh-85", baseSha, out var appErr);
+        Assert.False(approved);
+        Assert.Contains("Invalid manifest checks", appErr);
+
+        var job = PipelineIntake.LoadJob(Attempts(), Project, "gh-85");
+        Assert.NotNull(job);
+        Assert.Equal("awaiting-approval", job.Status);
+    }
+
+    [Fact]
+    public void IntakeValidation_InvalidWorthBuildingAndMissingRejectionReason()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(90, "Intake Eval Test", "Body", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        // 1. Invalid worthBuilding value (not yes or no)
+        var ok1 = PipelineIntake.RunIntake(Attempts(), Project, "gh-90", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Eval",
+            WorthBuilding = "uncertain",
+            ScopeIn = "In",
+            ScopeOut = "Out",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out var msg1);
+        Assert.False(ok1);
+        Assert.Contains("Invalid worthBuilding value 'uncertain'", msg1);
+        Assert.Equal("queued", PipelineIntake.LoadJob(Attempts(), Project, "gh-90")!.Status);
+
+        // 2. worthBuilding = "no" but rejection reason is empty
+        var ok2 = PipelineIntake.RunIntake(Attempts(), Project, "gh-90", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Eval",
+            WorthBuilding = "no",
+            RejectionReason = "   ",
+            ScopeIn = "In",
+            ScopeOut = "Out",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out var msg2);
+        Assert.False(ok2);
+        Assert.Contains("Rejection reason required when worthBuilding is 'no'", msg2);
+        Assert.Equal("queued", PipelineIntake.LoadJob(Attempts(), Project, "gh-90")!.Status);
+
+        // 3. Null risk rating
+        var ok3 = PipelineIntake.RunIntake(Attempts(), Project, "gh-90", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Eval",
+            WorthBuilding = "yes",
+            ScopeIn = "In",
+            ScopeOut = "Out",
+            Risk = null!,
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = []
+        }, out var msg3);
+        Assert.False(ok3);
+        Assert.Contains("Invalid risk rating", msg3);
+        Assert.Equal("queued", PipelineIntake.LoadJob(Attempts(), Project, "gh-90")!.Status);
+    }
+
+    [Fact]
+    public void IntakeReporting_TimeTokensQuota_PersistedAndLoaded()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(95, "Metrics Job", "Body", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        var tokens = new JsonObject
+        {
+            ["promptTokens"] = 540,
+            ["completionTokens"] = 180,
+            ["totalTokens"] = 720
+        };
+        var quota = new JsonObject
+        {
+            ["estimatedCostUsd"] = 0.0054,
+            ["rateLimitRemaining"] = 4900
+        };
+
+        var ok = PipelineIntake.RunIntake(Attempts(), Project, "gh-95", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Metrics intake",
+            WorthBuilding = "yes",
+            ScopeIn = "Scoped",
+            ScopeOut = "None",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = [],
+            TimeMs = 3450,
+            Tokens = tokens,
+            Quota = quota
+        }, out var msg);
+
+        Assert.True(ok, msg);
+
+        var job = PipelineIntake.LoadJob(Attempts(), Project, "gh-95");
+        Assert.NotNull(job);
+        Assert.Equal("specifying", job.Status);
+        Assert.Equal(3450, job.ReportedTimeMs);
+        Assert.NotNull(job.Tokens);
+        Assert.Equal(540, job.Tokens["promptTokens"]?.GetValue<int>());
+        Assert.NotNull(job.Quota);
+        Assert.Equal(0.0054, job.Quota["estimatedCostUsd"]?.GetValue<double>());
+    }
+
+    [Fact]
+    public void Questions_IncrementalAnswers_AndExistingAnswerPreservation()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+        PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", [new(97, "Multi Question Job", "Body", ["planwharf"], true)]);
+        var lead = new PipelineIntake.LeadModelConfig("anthropic/claude-3-7-sonnet", "anthropic");
+
+        // Initial intake asks 2 questions
+        PipelineIntake.RunIntake(Attempts(), Project, "gh-97", lead, (_, _) => new PipelineIntake.IntakeEvaluation
+        {
+            Summary = "Intake with 2 questions",
+            WorthBuilding = "yes",
+            ScopeIn = "Scope",
+            ScopeOut = "None",
+            Risk = "low",
+            RiskReason = "Safe",
+            TouchesInterface = false,
+            TouchesSecurity = false,
+            Questions = [
+                new("q1", "Target framework?"),
+                new("q2", "Support Linux?")
+            ]
+        }, out _);
+
+        var job = PipelineIntake.LoadJob(Attempts(), Project, "gh-97")!;
+        Assert.Equal("waiting", job.Status);
+        Assert.Equal(2, job.Questions.Count);
+
+        // Answer question 1 only
+        PipelineIntake.AnswerQuestion(Attempts(), Project, "gh-97", "q1", ".NET 10");
+
+        // Running intake again fails because question 2 is still unanswered
+        var stillWaiting = PipelineIntake.RunIntake(Attempts(), Project, "gh-97", lead, (_, _) => throw new Exception("Evaluator shouldn't be called"), out var waitMsg);
+        Assert.False(stillWaiting);
+        Assert.Contains("Job is waiting for unanswered author questions", waitMsg);
+
+        // Answer question 2
+        PipelineIntake.AnswerQuestion(Attempts(), Project, "gh-97", "q2", "Yes");
+
+        // Running intake again now proceeds; evaluator sees both answers
+        var resumed = PipelineIntake.RunIntake(Attempts(), Project, "gh-97", lead, (prompt, _) =>
+        {
+            Assert.Contains(".NET 10", prompt);
+            Assert.Contains("Yes", prompt);
+            return new PipelineIntake.IntakeEvaluation
+            {
+                Summary = "Resumed intake",
+                WorthBuilding = "yes",
+                ScopeIn = "Scope with .NET 10 on Linux",
+                ScopeOut = "None",
+                Risk = "low",
+                RiskReason = "Safe",
+                TouchesInterface = true,
+                TouchesSecurity = false,
+                // Evaluator returns answered questions list
+                Questions = [
+                    new("q1", "Target framework?", ".NET 10"),
+                    new("q2", "Support Linux?", "Yes")
+                ]
+            };
+        }, out var resMsg);
+
+        Assert.True(resumed, resMsg);
+        var advancedJob = PipelineIntake.LoadJob(Attempts(), Project, "gh-97")!;
+        Assert.Equal("specifying", advancedJob.Status);
+    }
+
+    [Fact]
+    public void MalformedOrNullInput_AndCorruptJobJson_HandledSafely()
+    {
+        var settings = PipelineIntake.DefaultSettings("owner/repo");
+
+        // 1. Null title and body in issue
+        var issues = new List<PipelineIntake.GitHubIssue>
+        {
+            new(101, null!, null!, ["planwharf"], true),
+            new(-5, "Negative number", "Should skip", ["planwharf"], true)
+        };
+        var pollResult = PipelineIntake.ProcessGitHubIssues(Attempts(), Project, settings, "owner/repo", issues);
+        Assert.Equal(1, pollResult.QueuedCount);
+        Assert.Equal(1, pollResult.SkippedCount);
+
+        var nullJob = PipelineIntake.LoadJob(Attempts(), Project, "gh-101");
+        Assert.NotNull(nullJob);
+        Assert.Equal("(untitled)", nullJob.Summary);
+
+        // 2. Local item with path traversal ID
+        var localItems = new List<PipelineIntake.LocalItem>
+        {
+            new("../escape", "Escape", "Body")
+        };
+        var localPoll = PipelineIntake.ProcessLocalItems(Attempts(), Project, settings, localItems);
+        Assert.Equal(0, localPoll.QueuedCount);
+        Assert.Equal(1, localPoll.SkippedCount);
+
+        // 3. Corrupt job.json on disk returns null safely
+        var corruptDir = PipelineIntake.JobDir(Attempts(), Project, "corrupt-job");
+        Directory.CreateDirectory(corruptDir);
+        File.WriteAllText(Path.Combine(corruptDir, "job.json"), "{ invalid-json: true ");
+        Assert.Null(PipelineIntake.LoadJob(Attempts(), Project, "corrupt-job"));
+
+        // 4. Invalid base commit in ApproveSpec
+        var baseErr1 = PipelineIntake.ApproveSpec(Attempts(), Project, "gh-101", "tooshort", out var err1);
+        Assert.False(baseErr1);
+        Assert.Contains("40-character", err1);
+
+        var baseErr2 = PipelineIntake.ApproveSpec(Attempts(), Project, "gh-101", new string('z', 40), out var err2);
+        Assert.False(baseErr2);
+        Assert.Contains("40-character", err2);
+    }
 }
