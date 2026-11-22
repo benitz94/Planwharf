@@ -22,10 +22,10 @@ static class SampleState
         "answer": "Good plan: the app already has **24 files** and `src/api.js` fetches the data.\n\nSuggested next goal: Add a 7-day forecast page with charts and tests." } ],
       "projects": [
         { "id": "weather", "name": "Weather dashboard", "label": "Done", "status": "complete", "goal": "Add a 7-day forecast page with charts and tests.",
-          "megaTaskId": "MT-1", "megaTask": { "id": "MT-1", "title": "Add a 7-day forecast page with charts and tests.", "status": "COMPLETE", "approvedAt": "2026-11-11T15:41:00Z", "completedAt": "2026-11-11T15:55:00Z" },
+          "megaTaskId": "MT-1", "megaTask": { "id": "MT-1", "title": "Add a 7-day forecast page with charts and tests.", "leadSummary": "Built the 7-day forecast page with temperature charts. All unit and integration tests pass.", "status": "COMPLETE", "approvedAt": "2026-11-11T15:41:00Z", "completedAt": "2026-11-11T15:55:00Z" },
           "subTasks": [
-            { "id": "s1", "title": "Implement the whole job.", "status": "COMPLETE", "assignedModelId": "opus" },
-            { "id": "s2", "title": "Verify the work independently against the job.", "status": "COMPLETE", "assignedModelId": "astra" } ],
+            { "id": "s1", "title": "Implement the whole job.", "plainLine": "Opus built the forecast page and charts.", "detail": "Implement weather forecast page with temperature chart components and test suites.", "status": "COMPLETE", "assignedModelId": "opus" },
+            { "id": "s2", "title": "Verify the work independently against the job.", "plainLine": "Checks the whole work and runs the tests.", "detail": "Verify forecast calculations and test coverage independently.", "status": "COMPLETE", "assignedModelId": "astra" } ],
           "results": [ { "subTaskId": "s1", "status": "COMPLETE", "summary": "Added the page and 9 tests.", "testsReported": 1 },
                        { "subTaskId": "s2", "status": "BLOCKED", "summary": "Model changed.", "modelChange": true },
                        { "subTaskId": "s2", "status": "COMPLETE", "summary": "Covered time zones; 47 tests pass." } ] },

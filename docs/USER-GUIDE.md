@@ -14,6 +14,8 @@ Your projects and settings are kept in your user folder (`%APPDATA%\Planwharf\da
 
 **Updates:** **Settings → Updates → Update now** downloads the new version, checks it against the digest GitHub publishes, saves running work, and restarts. After the restart, press **Resume** if work was running.
 
+**Settings:** Everyday settings (new project folders, language, look, phone alerts, updates) are shown first. Advanced settings (approvals, automatic model switches, project tools, skills, project moving) start closed in an **Advanced settings** section.
+
 **Language:** **Settings → Look → Language**: English (default) or Italiano. Texts written by the engine (statuses, reasons, the crew's answers) stay in English for now; the lead answers in the language you write in.
 
 ## Projects and folders
@@ -47,8 +49,7 @@ The same choice can be typed: `mode normal`, `mode safe`, `mode ultra safe`, or 
 
 Each model card shows its quota left (5-hour and weekly windows), its **weight** (light, default, premium: light parts of the work go to light models, heavy parts to strong ones), and:
 
-- **Limit**: the quota left at which Planwharf stops giving the model new work and moves its running step to another model. **Save for all <company>** sets it for every model of that company (all Claude models share one quota); **Only this model** sets an exception. The general limit, 35% of both windows, is in **Settings**.
-- **Tools**: MCP servers, browser, hooks and memory for that model, or the same as the project.
+- **Limit and tools**: model limits and tools (MCP servers, browser, hooks, memory) are kept in a section that opens on demand to keep model cards simple. The general limit, 35% of both windows, is in **Settings**.
 
 **Find models** filters by company, weight and state, with **All / None** to give or take a role for every model shown. **AI tools** turns each program on or off, and **Look for models again** rereads the models of the accounts signed in on this computer. Models of an expired plan or a signed-out account are hidden, with one line saying why. A model that answers it needs usage credits (outside your plan) is hidden for a day, and the lead and the crew move on to the next model. Where a program allows it (Claude Code, Codex), **Add another account** uses a second subscription of the same company before moving to another company.
 
@@ -78,9 +79,9 @@ While work is running, if you talk with the lead about something to add, the lea
 3. **Build, then Verify.** Each part is built; then another model checks the whole work and fixes what fails. A step is done only when the worker leaves a valid result and exits cleanly.
 4. **Quota watch.** A model that falls under its limit hands its step to another model with a handoff (files changed, tests, summary). When no other model can take the step (no model with that role above its limit), the work stops with a checkpoint, and the chat says why each other model cannot take it; **Resume** continues once quota is back. A step never starts on a model under its limit: a step still waiting its turn (Verify, usually) moves to a model above its limit before it starts, or waits for quota. A step that ends with no result is tried once more, then moves to the next model. A lead that runs out of quota hands over to the next lead at once.
 5. **Decisions.** What only you can decide is shown highlighted as **Needs your decision**, with a suggestion and buttons to answer. A decision is asked only under the work that raised it: a dropped work, or a new proposal, does not carry it.
-6. **Finished.** The **Work finished** card shows the summary, the time, what each model used, and the git state.
+6. **Finished.** The **Work finished** card shows three lines at the top: what was done, whether it works, and what to do now, with the matching action button (such as try it in the project folder, Push commits, or answer an open decision). Below, detail sections start closed and open with one click: steps and their models, what each worker reported, tests, files changed, git state, time and what the work used.
 
-The **Crew at work** card shows the steps, their models and state, what the running model is doing, and **about how long is left** (from how long past steps took). **Progress**, **Usage**, **Files** and **Pull requests** are in the panel on the right.
+The **Crew at work** card shows the steps with plain lines from the lead ("Opus is building the weather page"), with worker instructions tucked inside closed details. The event timeline joins repeated events (showing a multiplier like `(×3)`) and keeps long text behind a "more" button. **Progress**, **Usage**, **Files** and **Pull requests** are in the panel on the right.
 
 ## Commits and pushes
 

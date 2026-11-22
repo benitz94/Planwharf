@@ -153,7 +153,7 @@ static class Look
         button.Background = bg; button.Foreground = fg; button.BorderBrush = border; button.BorderThickness = new Thickness(1);
         button.CornerRadius = new CornerRadius(kind is Kind.Small or Kind.Quiet ? 8 : 10);
         button.Padding = kind switch { Kind.Small => new Thickness(10, 4), Kind.Quiet => new Thickness(8, 3), Kind.Link => new Thickness(0), _ => new Thickness(14, 9) };
-        button.FontSize = kind is Kind.Small or Kind.Link ? 13 : kind is Kind.Quiet ? 12 : 15;
+        button.FontSize = kind is Kind.Small or Kind.Link or Kind.Quiet ? 14 : 15;
         if (kind == Kind.Primary) button.FontWeight = FontWeight.SemiBold;
         button.Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand);
         button.Resources["ButtonBackgroundPointerOver"] = hover;
@@ -192,8 +192,8 @@ static class Look
 
     // A small round label, as .badge.
     public static Border Badge(string text, IBrush color, IBrush soft) =>
-        new() { Background = soft, CornerRadius = new CornerRadius(99), Padding = new Thickness(8, 1), VerticalAlignment = VerticalAlignment.Center,
-            Child = new TextBlock { Text = text, FontSize = 11, Foreground = color } };
+        new() { Background = soft, CornerRadius = new CornerRadius(99), Padding = new Thickness(8, 2), VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock { Text = text, FontSize = 14, Foreground = color } };
 
     // A card, as .card: the surface colour, a thin line and round corners.
     public static Border Card(Control child, IBrush? border = null, double padding = 18) =>
@@ -227,7 +227,7 @@ static class Look
     // A round chip that can be pressed, as .chip: in its role's colour when on.
     public static ToggleButton Chip(string text, string? icon, IBrush color, IBrush soft, bool on)
     {
-        var chip = new ToggleButton { Content = Label(text, icon, 13, 4), IsChecked = on, CornerRadius = new CornerRadius(999), Padding = new Thickness(9, 3), FontSize = 12,
+        var chip = new ToggleButton { Content = Label(text, icon, 14, 4), IsChecked = on, CornerRadius = new CornerRadius(999), Padding = new Thickness(10, 4), FontSize = 14,
             Background = Palette.Card, Foreground = Palette.Text, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), Margin = new Thickness(0, 0, 4, 4),
             FontWeight = on ? FontWeight.SemiBold : FontWeight.Normal, Cursor = new Cursor(StandardCursorType.Hand) };
         foreach (var (key, value) in new (string, IBrush)[] {
@@ -246,7 +246,7 @@ static class Look
     public static StackPanel Section(string icon, IBrush color, IBrush soft, string title, string? explain = null)
     {
         var section = new StackPanel { Spacing = 8, Margin = new Thickness(0, 0, 0, 14), Children = { Head(icon, color, soft, title) } };
-        if (explain != null) section.Children.Add(new TextBlock { Text = explain, Foreground = Palette.Muted, FontSize = 13, TextWrapping = TextWrapping.Wrap });
+        if (explain != null) section.Children.Add(new TextBlock { Text = explain, Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap });
         return section;
     }
 

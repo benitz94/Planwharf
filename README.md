@@ -29,7 +29,7 @@ reviewed before it is merged.
 
 | So far | |
 |---|---|
-| Jobs done by Planwharf on itself | **30**, from the first C# modules to the saving modes and adding to running work |
+| Jobs done by Planwharf on itself | **31**, from the first C# modules to the clearer screens, saving modes and adding to running work |
 | C# engine | **23 of 72 modules** ported, 603 tests, 247 cases compared with the JavaScript result by result |
 | Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |
@@ -46,9 +46,11 @@ When the work is done, a summary says what happened, who did what and what is le
 
 ![Work finished: a summary in plain English, what each model did, and the buttons to commit or commit and push](docs/images/work-finished.png)
 
-| Your team | Quota left | Settings |
-|---|---|---|
-| ![Team: the lead, and who can build, verify or review](docs/images/team.png) | ![Usage: quota left for each provider and what each model used](docs/images/usage.png) | ![Settings: project folder, tools, approvals and the automatic model switch](docs/images/settings.png) |
+![Team: the lead, and who can build, verify or review](docs/images/team.png)
+
+![Usage: quota left for each provider and what each model used](docs/images/usage.png)
+
+![Settings: project folder, tools, approvals and the automatic model switch](docs/images/settings.png)
 
 <sub>Screenshots of the native app, on a sample project with sample data.</sub>
 

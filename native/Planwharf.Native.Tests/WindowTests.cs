@@ -64,7 +64,7 @@ public class WindowTests
     [AvaloniaFact]
     public void Draws_the_chat_and_the_finished_work()
     {
-        var window = new MainWindow("v0.2.24") { Height = 1700 };
+        var window = new MainWindow("v0.2.161") { Height = 1700 };
         window.Show();
         window.Show(SampleState.Finished());
         window.ShowRepo("weather", "MT-1", System.Text.Json.Nodes.JsonNode.Parse("""{ "checkedAt": "2026-11-11T15:56:00Z", "local": { "exists": true, "git": true, "branch": "main", "uncommitted": 6, "changes": [" M src/forecast.js", " M src/chart.js", "?? src/forecast.test.js", " M index.html", "?? docs/forecast.md", "D  src/old-chart.js"] } }""")!);
@@ -75,11 +75,26 @@ public class WindowTests
         Assert.True(new FileInfo(output).Length > 10_000);
     }
 
+    // The crew at work: Opus 5.5 built the page, GPT-6 Astra checks it.
+    [AvaloniaFact]
+    public void Draws_the_crew_at_work()
+    {
+        var window = new MainWindow("v0.2.161") { Height = 1500 };
+        window.Show();
+        window.Show(SampleState.Working());
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
+        var output = shot != null ? Path.ChangeExtension(shot, null) + "-crew.png" : Path.Combine(AppContext.BaseDirectory, "native-crew.png");
+        frame!.Save(output);
+        Assert.True(new FileInfo(output).Length > 10_000);
+    }
+
     // The crew at work, a step's model menu, and the Team panel on the right.
     [AvaloniaFact]
     public void Draws_the_team_panel_and_the_step_menus()
     {
-        var window = new MainWindow("v0.2.24") { Height = 1500 };
+        var window = new MainWindow("v0.2.161") { Height = 1500 };
         window.Show();
         window.Show(SampleState.Working());
         window.OpenSide("team");
@@ -95,13 +110,13 @@ public class WindowTests
     public void Draws_the_settings_panel_and_the_new_project_dialog()
     {
         // Tall enough to show every section of Settings in one picture.
-        var window = new MainWindow("v0.2.24") { Height = 2300 };
+        var window = new MainWindow("v0.2.161") { Height = 2300 };
         window.Show();
         window.Show(SampleState.Working());
         window.OpenSide("settings");
         window.ShowSettings(System.Text.Json.Nodes.JsonNode.Parse("""{ "enabled": true, "thresholdPercent": 20 }""")!,
             System.Text.Json.Nodes.JsonNode.Parse("""[ { "cli": "claude", "label": "Claude Code", "skillsFolder": "/home/sample/.claude/skills", "instructions": "/home/sample/.claude/CLAUDE.md", "settingsExist": true, "skills": [ { "name": "release-notes", "description": "Writes release notes from the git log.", "source": "yours" } ] } ]""")!,
-            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.24", "latestVersion": "0.2.25", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!,
+            System.Text.Json.Nodes.JsonNode.Parse("""{ "state": "current", "available": true, "currentVersion": "0.2.161", "latestVersion": "0.2.161", "releaseUrl": "https://github.com/benitz94/Planwharf/releases" }""")!,
             System.Text.Json.Nodes.JsonNode.Parse("""{ "ntfy": { "enabled": true, "topic": "my-alerts" }, "telegram": { "enabled": true, "tokenConfigured": true, "tokenPreview": "123...456", "paired": false, "startCode": "pw-481920" } }""")!);
         var dialog = new ProjectDialog();
         dialog.Show();
@@ -121,7 +136,7 @@ public class WindowTests
     [AvaloniaFact]
     public void Draws_the_progress_usage_and_files_panels()
     {
-        var window = new MainWindow("v0.2.24");
+        var window = new MainWindow("v0.2.161");
         window.Show();
         var state = SampleState.Finished();
         state["plans"] = System.Text.Json.Nodes.JsonNode.Parse("""[ { "id": "max", "label": "Claude Max", "readable": true, "leftPct": 71, "windows": [ { "name": "5-hour", "leftPct": 71 }, { "name": "weekly", "leftPct": 18 } ] }, { "id": "grok", "label": "SuperGrok", "readable": false, "reason": "Grok does not report quota." } ]""");
@@ -148,7 +163,7 @@ public class WindowTests
     {
         var shot = Environment.GetEnvironmentVariable("PLANWHARF_NATIVE_SHOT");
         string Output(string name) => shot != null ? Path.ChangeExtension(shot, null) + $"-{name}.png" : Path.Combine(AppContext.BaseDirectory, $"native-{name}.png");
-        var window = new MainWindow("v0.2.24");
+        var window = new MainWindow("v0.2.161");
         window.Show();
         var models = """[ { "id": "opus", "label": "Opus 5.5", "enabled": true, "roles": {} }, { "id": "grok", "label": "Grok 4.7", "enabled": true, "roles": {} } ]""";
         window.Show(System.Text.Json.Nodes.JsonNode.Parse($$"""{ "projects": [], "models": {{models}} }""")!);
@@ -165,7 +180,7 @@ public class ChatBoxTests
     [AvaloniaFact]
     public void The_chat_box_keeps_every_line_of_a_message()
     {
-        var window = new MainWindow("v0.2.24") { Height = 900 };
+        var window = new MainWindow("v0.2.161") { Height = 900 };
         window.Show();
         window.Show(SampleState.Working());
         var box = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.TextBox>()
@@ -181,7 +196,7 @@ public class ChatBoxTests
     [AvaloniaFact]
     public void A_message_of_mine_can_be_used_again()
     {
-        var window = new MainWindow("v0.2.24") { Height = 1700 };
+        var window = new MainWindow("v0.2.161") { Height = 1700 };
         window.Show();
         window.Show(SampleState.Finished());
         var again = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Controls.Button>()

@@ -19,10 +19,10 @@ public sealed partial class MainWindow
     // Extra tools for one project's team, all off by default (same words as the chat page).
     static (string Name, string Label, string Explain)[] Tools =>
     [
-        ("mcp", Strings.T("MCP servers"), Strings.T("Your own MCP servers, as set up in Claude Code and Codex. They can act outside the project folder, and a server that controls the computer can move your mouse and type.")),
-        ("browser", Strings.T("Browser"), Strings.T("Claude in Chrome: open and try web pages in a browser tab. It does not move your mouse.")),
-        ("hooks", Strings.T("Hooks"), Strings.T("Your Claude Code hooks: commands that run by themselves before or after the model acts.")),
-        ("memory", Strings.T("Memory"), Strings.T("Notes Claude keeps for itself from one session to the next."))
+        ("mcp", Strings.T("MCP servers"), Strings.T("Lets models use external MCP tools configured on your machine.")),
+        ("browser", Strings.T("Browser"), Strings.T("Allows models to open and inspect web pages in Chrome.")),
+        ("hooks", Strings.T("Hooks"), Strings.T("Runs custom commands before or after a model acts.")),
+        ("memory", Strings.T("Memory"), Strings.T("Keeps notes between sessions so models remember past context."))
     ];
 
     static string Str(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
@@ -87,7 +87,7 @@ public sealed partial class MainWindow
     {
         var button = Look.Button(label, null, primary ? Look.Kind.Primary : danger ? Look.Kind.Danger : Look.Kind.Small);
         // .btn-small: the same size whatever its colour.
-        button.Padding = new Thickness(10, 4); button.FontSize = 13; button.CornerRadius = new CornerRadius(8);
+        button.Padding = new Thickness(10, 4); button.FontSize = 14; button.CornerRadius = new CornerRadius(8);
         return button;
     }
 
@@ -142,25 +142,9 @@ public sealed partial class MainWindow
             }
             side.Children.Add(buttons);
 
-            side.Children.Add(SettingsHead(Strings.T("Tools")));
-            side.Children.Add(Explain(Strings.Format("Project defaults for {0}. Models with their own tools use those instead. All off by default. Claude follows all four, Codex follows MCP, Grok uses its own settings. Subagents stay off: the lead splits the work.", name)));
-            var on = snapshot?["projectTools"]?[Str(row["id"])];
-            foreach (var (tool, label, explain) in Tools)
-            {
-                var toggle = new ToggleSwitch { OnContent = label, OffContent = label, IsChecked = Flag(on?[tool]) };
-                ToolTip.SetTip(toggle, explain);
-                toggle.IsCheckedChanged += async (_, _) =>
-                {
-                    var wanted = toggle.IsChecked == true;
-                    if (wanted == Flag(on?[tool])) return;
-                    // MCP servers can act outside the project folder: the user says yes knowing that.
-                    if (wanted && tool == "mcp" && !await Confirm(explain + Strings.T(" Turn it on for this project?"), Strings.T("Yes, turn on MCP servers"))) { sideSig = null; Render(); return; }
-                    await DoAsync(() => api!.SetToolsAsync(projectId!, new Dictionary<string, bool> { [tool] = wanted }), wanted ? Strings.Format("{0} on for {1}.", label, name) : Strings.T("Turned off."));
-                };
-                side.Children.Add(toggle);
-            }
         }
 
+        // Everyday settings first: folders, language, look, phone, updates
         side.Children.Add(SettingsHead(Strings.T("New projects")));
         side.Children.Add(Explain(Strings.T("Default folder for new projects. When you leave the folder empty on a new project, Planwharf creates it here.")));
         var root = Look.Field(new TextBox { Text = projectsRoot ?? "", Watermark = OperatingSystem.IsWindows() ? @"C:\Projects" : "~/Projects" });
@@ -178,38 +162,6 @@ public sealed partial class MainWindow
                 await DoAsync(async () => appSettings = await api!.SetKeepWorkPlanAsync(keepPlan.IsChecked == true), Strings.T("Work plan preference saved."));
         };
         side.Children.Add(keepPlan);
-
-        side.Children.Add(SettingsHead(Strings.T("Approvals")));
-        var auto = Str(snapshot?["mode"]) == "auto";
-        side.Children.Add(Explain(auto ? Strings.T("The lead may start approved work without asking each time.") : Strings.T("The lead asks you before each piece of work starts.")));
-        var mode = new ToggleSwitch { OnContent = Strings.T("Let the lead start approved work by itself"), OffContent = Strings.T("Let the lead start approved work by itself"), IsChecked = auto };
-        mode.IsCheckedChanged += async (_, _) => { if ((mode.IsChecked == true) != auto) await DoAsync(() => api!.SetModeAsync(mode.IsChecked == true ? "auto" : "manual"), Strings.T("Saved.")); };
-        side.Children.Add(mode);
-
-        if (autoSwitch != null)
-        {
-            var enabled = autoSwitch["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var flag) || flag;
-            int Percent(string key, int fallback) => autoSwitch[key] is JsonValue v && v.TryGetValue<double>(out var pct) ? (int)pct : fallback;
-            var both = Percent("thresholdPercent", 35);
-            var five = Percent("fiveHourPercent", both);
-            var week = Percent("weeklyPercent", both);
-            side.Children.Add(SettingsHead(Strings.T("Model switch")));
-            side.Children.Add(Explain(enabled ? Strings.Format("A model is low when its 5-hour quota drops to {0}% left or its weekly quota to {1}% (the lower of the two counts). Planwharf then does not give it new work, and a step it is working on goes to another model with the same role and more quota, with a handoff of what was done. Each model can have its own limit, or none, in Team.", five, week)
-                : Strings.T("Off: a model that runs out of quota stops its step, and you choose the next model.")));
-            var toggle = new ToggleSwitch { OnContent = Strings.T("Switch model automatically"), OffContent = Strings.T("Switch model automatically"), IsChecked = enabled };
-            toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != enabled) await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(toggle.IsChecked == true), Strings.T("Model switch saved.")); };
-            side.Children.Add(toggle);
-            if (enabled)
-            {
-                var atFive = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = five, FormatString = "0", Width = 120 };
-                var atWeek = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = week, FormatString = "0", Width = 120 };
-                var saveAt = Small(Strings.T("Save"));
-                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(atFive.Value ?? five), (int)(atWeek.Value ?? week)), Strings.T("Model switch saved."));
-                side.Children.Add(Row(new TextBlock { Text = Strings.T("5 hours"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, atFive));
-                side.Children.Add(Row(new TextBlock { Text = Strings.T("Week"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
-                    new TextBlock { Text = Strings.T("% left"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
-            }
-        }
 
         // Light or dark, and in the dark theme the text colour, as in the chat page.
         side.Children.Add(SettingsHead(Strings.T("Look")));
@@ -238,10 +190,10 @@ public sealed partial class MainWindow
             Avalonia.Automation.AutomationProperties.SetName(alertToggle, Strings.Format("Alerts: {0}", alertName.ToLowerInvariant()));
             alertToggle.IsCheckedChanged += (_, _) =>
             {
-                var on = alertToggle.IsChecked == true;
-                Prefs.Save(alerts: alertName switch { "Notification" => Prefs.Alerts with { Notification = on },
-                    "Flash" => Prefs.Alerts with { Flash = on }, _ => Prefs.Alerts with { Sound = on } });
-                if (alertName == "Flash" && !on) desktopAlerts?.ClearAttention();
+                var onAlert = alertToggle.IsChecked == true;
+                Prefs.Save(alerts: alertName switch { "Notification" => Prefs.Alerts with { Notification = onAlert },
+                    "Flash" => Prefs.Alerts with { Flash = onAlert }, _ => Prefs.Alerts with { Sound = onAlert } });
+                if (alertName == "Flash" && !onAlert) desktopAlerts?.ClearAttention();
             };
             side.Children.Add(alertToggle);
         }
@@ -280,10 +232,67 @@ public sealed partial class MainWindow
             side.Children.Add(inks);
         }
 
+        PhoneSection();
+        UpdatesSection();
+
+        // Advanced ones in a section closed by default: MCP, hooks, memory, browser, permissions, model switch
+        var adv = new StackPanel { Spacing = 8 };
+
+        if (row != null)
+        {
+            adv.Children.Add(SettingsHead(Strings.T("Tools")));
+            var on = snapshot?["projectTools"]?[Str(row["id"])];
+            foreach (var (tool, label, explain) in Tools)
+            {
+                var toggle = new ToggleSwitch { OnContent = label, OffContent = label, IsChecked = Flag(on?[tool]) };
+                ToolTip.SetTip(toggle, explain);
+                toggle.IsCheckedChanged += async (_, _) =>
+                {
+                    var wanted = toggle.IsChecked == true;
+                    if (wanted == Flag(on?[tool])) return;
+                    if (wanted && tool == "mcp" && !await Confirm(explain + Strings.T(" Turn it on for this project?"), Strings.T("Yes, turn on MCP servers"))) { sideSig = null; Render(); return; }
+                    await DoAsync(() => api!.SetToolsAsync(projectId!, new Dictionary<string, bool> { [tool] = wanted }), wanted ? Strings.Format("{0} on for {1}.", label, name) : Strings.T("Turned off."));
+                };
+                adv.Children.Add(toggle);
+                adv.Children.Add(Explain(explain));
+            }
+        }
+
+        adv.Children.Add(SettingsHead(Strings.T("Approvals")));
+        var auto = Str(snapshot?["mode"]) == "auto";
+        adv.Children.Add(Explain(Strings.T("Choose whether the lead asks for your approval before starting work.")));
+        var mode = new ToggleSwitch { OnContent = Strings.T("Let the lead start approved work by itself"), OffContent = Strings.T("Let the lead start approved work by itself"), IsChecked = auto };
+        mode.IsCheckedChanged += async (_, _) => { if ((mode.IsChecked == true) != auto) await DoAsync(() => api!.SetModeAsync(mode.IsChecked == true ? "auto" : "manual"), Strings.T("Saved.")); };
+        adv.Children.Add(mode);
+
+        if (autoSwitch != null)
+        {
+            var enabled = autoSwitch["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var flag) || flag;
+            int Percent(string key, int fallback) => autoSwitch[key] is JsonValue v && v.TryGetValue<double>(out var pct) ? (int)pct : fallback;
+            var both = Percent("thresholdPercent", 35);
+            var five = Percent("fiveHourPercent", both);
+            var week = Percent("weeklyPercent", both);
+            adv.Children.Add(SettingsHead(Strings.T("Model switch")));
+            adv.Children.Add(Explain(Strings.T("Switches to another model automatically when quota runs low.")));
+            var toggle = new ToggleSwitch { OnContent = Strings.T("Switch model automatically"), OffContent = Strings.T("Switch model automatically"), IsChecked = enabled };
+            toggle.IsCheckedChanged += async (_, _) => { if ((toggle.IsChecked == true) != enabled) await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(toggle.IsChecked == true), Strings.T("Model switch saved.")); };
+            adv.Children.Add(toggle);
+            if (enabled)
+            {
+                var atFive = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = five, FormatString = "0", Width = 120 };
+                var atWeek = new NumericUpDown { Minimum = 0, Maximum = 90, Increment = 5, Value = week, FormatString = "0", Width = 120 };
+                var saveAt = Small(Strings.T("Save"));
+                saveAt.Click += async (_, _) => await DoAsync(async () => autoSwitch = await api!.SetAutoSwitchAsync(true, (int)(atFive.Value ?? five), (int)(atWeek.Value ?? week)), Strings.T("Model switch saved."));
+                adv.Children.Add(Row(new TextBlock { Text = Strings.T("5 hours"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, atFive));
+                adv.Children.Add(Row(new TextBlock { Text = Strings.T("Week"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text, Width = 52 }, atWeek,
+                    new TextBlock { Text = Strings.T("% left"), VerticalAlignment = VerticalAlignment.Center, Foreground = Palette.Text }, saveAt));
+            }
+        }
+
         if (skills is JsonArray programs && programs.Count > 0)
         {
-            side.Children.Add(SettingsHead(Strings.T("Skills and instructions")));
-            side.Children.Add(Explain(Strings.T("Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them.")));
+            adv.Children.Add(SettingsHead(Strings.T("Skills and instructions")));
+            adv.Children.Add(Explain(Strings.T("Skills are instructions a model reads when it needs them. The team uses the ones you have in each program. Add or change them there; Planwharf only shows and opens them.")));
             foreach (var program in programs.OfType<JsonObject>())
             {
                 var list = (program["skills"] as JsonArray ?? []).OfType<JsonObject>().ToList();
@@ -292,7 +301,7 @@ public sealed partial class MainWindow
                 foreach (var skill in list)
                 {
                     var source = Str(skill["source"]);
-                    content.Children.Add(Line(Str(skill["name"]) + (source.Length > 0 && source != "yours" ? $" ({Strings.T(source)})" : ""), Palette.Text, 13, FontWeight.SemiBold));
+                    content.Children.Add(Line(Str(skill["name"]) + (source.Length > 0 && source != "yours" ? $" ({Strings.T(source)})" : ""), Palette.Text, 14, FontWeight.SemiBold));
                     if (Str(skill["description"]).Length > 0) content.Children.Add(Explain(Str(skill["description"])));
                 }
                 var cli = Str(program["cli"]);
@@ -306,33 +315,18 @@ public sealed partial class MainWindow
                     open.Children.Add(button);
                 }
                 content.Children.Add(open);
-                var fold = Fold(Strings.Format(list.Count == 1 ? "{0} · {1} skill" : "{0} · {1} skills", Str(program["label"]), list.Count), content);
-                fold.IsExpanded = false;
-                side.Children.Add(fold);
+                var skillFold = Fold(Strings.Format(list.Count == 1 ? "{0} · {1} skill" : "{0} · {1} skills", Str(program["label"]), list.Count), content);
+                skillFold.IsExpanded = false;
+                adv.Children.Add(skillFold);
             }
             var again = Small(Strings.T("Read again"));
             again.Click += async (_, _) => await LoadSettingsAsync();
-            side.Children.Add(again);
+            adv.Children.Add(again);
         }
 
-        side.Children.Add(SettingsHead(Strings.T("Move a project")));
-        side.Children.Add(Explain(Strings.T("Save a project to a file, or open one saved on another computer. Code stays in the project folder; the file holds the plan, history and saved points.")));
-        var move = new WrapPanel();
-        if (row != null)
-        {
-            var export = Small(Strings.Format("Save {0} to a file", name));
-            export.Margin = new Thickness(0, 0, 8, 6);
-            export.Click += async (_, _) => await ExportAsync(Str(row["id"]), name);
-            move.Children.Add(export);
-        }
-        var import = Small(Strings.T("Open a project file"));
-        import.Margin = new Thickness(0, 0, 8, 6);
-        import.Click += async (_, _) => await ImportAsync();
-        move.Children.Add(import);
-        side.Children.Add(move);
-
-        UpdatesSection();
-        PhoneSection();
+        var advFold = Fold(Strings.T("Advanced settings"), adv);
+        advFold.IsExpanded = false;
+        side.Children.Add(advFold);
 
         if (row != null)
         {

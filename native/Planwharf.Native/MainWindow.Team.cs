@@ -50,9 +50,9 @@ public sealed partial class MainWindow
         var active = shown.Where(m => !m.Bench).ToList();
         var bench = shown.Where(m => m.Bench).ToList();
         var onTeam = Look.Section("team", Palette.Accent, Palette.AccentSoft, Strings.Format("On the team \u00B7 {0}", active.Count));
-        onTeam.Children.Add(new TextBlock { FontSize = 13, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
-            new Avalonia.Controls.Documents.Run(Strings.T("Build")) { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(Strings.T(" writes code and tests. ")),
-            new Avalonia.Controls.Documents.Run(Strings.T("Verify")) { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(Strings.T(" checks the work and fixes it, ideally a model from another company. Planwharf always watches running work by itself: if something stalls or fails, the lead is told.")) } });
+        onTeam.Children.Add(new TextBlock { FontSize = 14, Foreground = Palette.Muted, TextWrapping = TextWrapping.Wrap, Inlines = new Avalonia.Controls.Documents.InlineCollection {
+            new Avalonia.Controls.Documents.Run(Strings.T("Build")) { Foreground = Palette.Build, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(": " + Strings.T("Writes the code and tests.") + " "),
+            new Avalonia.Controls.Documents.Run(Strings.T("Verify")) { Foreground = Palette.Verify, FontWeight = FontWeight.Bold }, new Avalonia.Controls.Documents.Run(": " + Strings.T("Checks the work independently and fixes what fails.")) } });
         if (active.Count == 0) onTeam.Children.Add(Explain(Strings.T("Nobody yet. Bring models in from the bench.")));
         foreach (var model in active) onTeam.Children.Add(Member(model, team.LeadId));
         side.Children.Add(onTeam);
@@ -227,7 +227,7 @@ public sealed partial class MainWindow
                 ? string.Join(" · ", new[] { model.FiveHourLeft is { } f ? Strings.Format("5h {0}%", f) : "", model.WeeklyLeft is { } w ? Strings.Format("week {0}%", w) : "" }.Where(part => part.Length > 0)) + Strings.T(" left") + (model.LowQuota ? Strings.T(" \u00B7 under its limit") : "")
             : model.QuotaLeft is { } left ? Strings.Format("{0}% quota left", left) + (model.LowQuota ? Strings.T(" \u00B7 under its limit") : "") : Strings.T("quota not reported");
         var chips = new WrapPanel();
-        if (model.Bench) chips.Children.Add(new TextBlock { Text = Strings.T("Bring in as:"), Foreground = Palette.Muted, FontSize = 12, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
+        if (model.Bench) chips.Children.Add(new TextBlock { Text = Strings.T("Bring in as:"), Foreground = Palette.Muted, FontSize = 14, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 4) });
         if (model.CanLead)
         {
             // Whether this model may lead the project: the lead menu and every hand-over choose among these.
@@ -238,8 +238,8 @@ public sealed partial class MainWindow
             mayLead.Click += async (_, _) => await DoAsync(() => api!.SetLeadAllowedAsync(projectId!, model.Id, !model.LeadAllowed), model.LeadAllowed ? Strings.Format("{0} will not lead this project.", model.Label) : Strings.Format("{0} can lead this project.", model.Label));
             chips.Children.Add(mayLead);
         }
-        chips.Children.Add(RoleChip(model, Strings.T("Build"), "worker", model.Build, model.CanBuild, Strings.T("Writes the code and the tests")));
-        chips.Children.Add(RoleChip(model, Strings.T("Verify"), "verifier", model.Verify, model.CanVerify, Strings.T("Checks the work and fixes what fails")));
+        chips.Children.Add(RoleChip(model, Strings.T("Build"), "worker", model.Build, model.CanBuild, Strings.T("Writes the code and tests.")));
+        chips.Children.Add(RoleChip(model, Strings.T("Verify"), "verifier", model.Verify, model.CanVerify, Strings.T("Checks the work independently and fixes what fails.")));
         if (!model.Bench)
         {
             var bench = Look.Chip(Strings.T("Bench"), null, Palette.Muted, Palette.Surface2, false);
@@ -252,17 +252,28 @@ public sealed partial class MainWindow
             new TextBlock { Text = model.Label, Foreground = Palette.Text, FontWeight = FontWeight.SemiBold, FontSize = 15, VerticalAlignment = VerticalAlignment.Center } } };
         if (model.Lead || model.Id == leadId) name.Children.Add(Look.Badge(Strings.T("Lead"), Palette.Lead, Palette.LeadSoft).With(b => b.Margin = new Thickness(8, 0, 0, 0)));
         var info = new StackPanel { Spacing = 2, Children = { name,
-            new TextBlock { Text = string.Join(" · ", new[] { model.Provider, status }.Where(part => part.Length > 0)), Foreground = model.Available ? Palette.Muted : Palette.Warn, FontSize = 12, TextWrapping = TextWrapping.Wrap } } };
+            new TextBlock { Text = string.Join(" · ", new[] { model.Provider, status }.Where(part => part.Length > 0)), Foreground = model.Available ? Palette.Muted : Palette.Warn, FontSize = 14, TextWrapping = TextWrapping.Wrap } } };
         if (model.QuotaLeft is { } quota && !model.Bench) info.Children.Add(Look.Bar(quota, model.LowQuota));
         var card = new StackPanel { Spacing = 8, Children = { info, chips } };
-        if (!model.Bench) card.Children.Add(LimitEditor(model));
         var toolsProject = projectId!;
         var tools = ModelToolsEditor.Create(ModelToolsView.Read(snapshot, toolsProject, model.Id),
             chosen => DoAsync(() => api!.SetToolsAsync(toolsProject, chosen, model.Id), Strings.Format("Tools for {0} saved.", model.Label)));
         var toolsKey = "tools:" + toolsProject + ":" + model.Id;
         if (folds.TryGetValue(toolsKey, out var toolsOpen)) tools.IsExpanded = toolsOpen;
         tools.PropertyChanged += (_, change) => { if (change.Property == Expander.IsExpandedProperty) folds[toolsKey] = tools.IsExpanded; };
-        card.Children.Add(tools);
+        if (!model.Bench)
+        {
+            var detailsPanel = new StackPanel { Spacing = 6, Children = { LimitEditor(model), tools } };
+            var fold = Fold(Strings.T("Limit and tools"), detailsPanel);
+            var foldKey = "details:" + toolsProject + ":" + model.Id;
+            fold.IsExpanded = folds.TryGetValue(foldKey, out var foldOpen) && foldOpen;
+            fold.Toggled += opened => folds[foldKey] = opened;
+            card.Children.Add(fold);
+        }
+        else
+        {
+            card.Children.Add(tools);
+        }
         return MemberCard(card, !model.Bench, model.Bench);
     }
 
