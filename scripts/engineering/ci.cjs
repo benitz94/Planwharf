@@ -27,7 +27,12 @@ try {
   // Historical review evidence preserves its original bytes and whitespace.
   const patchPaths = ['--', '.', ':(exclude).review/**'];
   run('working-patch', 'git', ['diff', '--check', ...patchPaths]);
-  if (process.env.PLANWHARF_DIFF_BASE) run('pr-patch', 'git', ['diff', '--check', process.env.PLANWHARF_DIFF_BASE, 'HEAD', ...patchPaths]);
+  run('staged-patch', 'git', ['diff', '--cached', '--check', ...patchPaths]);
+  // The same whitespace check GitHub runs on the pull request, also on a local run: the commits of this
+  // branch since it left main. Without it a blank line at the end of a file passed here and failed there.
+  const mergeBase = () => { const found = spawnSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: root, encoding: 'utf8' }); return found.status === 0 ? found.stdout.trim() : ''; };
+  const diffBase = process.env.PLANWHARF_DIFF_BASE || mergeBase();
+  if (diffBase) run('pr-patch', 'git', ['diff', '--check', diffBase, 'HEAD', ...patchPaths]);
   // Every engine test runs on every pull request, so a regression is caught before merge.
   // A test listed here is excluded only with its reason, until it is brought up to date.
   const excluded = {};
