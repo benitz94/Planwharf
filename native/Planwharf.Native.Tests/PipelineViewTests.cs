@@ -247,4 +247,34 @@ public sealed class PipelineViewTests : IDisposable
         Assert.Equal("Serve una tua decisione", view.Jobs[0].DecisionLabel);
         Assert.Contains("non letto", view.Jobs[0].QuotaDisplay);
     }
+
+    [Fact]
+    public void View_PartialStageFiles_DoesNotCrashOrAdvanceStatus()
+    {
+        WriteJob(ProjectAlpha, Job1, "building");
+        var dir = JobDir(ProjectAlpha, Job1);
+
+        // Valid intake
+        File.WriteAllText(Path.Combine(dir, "intake.json"), new JsonObject { ["summary"] = "Valid intake" }.ToJsonString());
+
+        // Corrupted/partial pull-request.json
+        File.WriteAllText(Path.Combine(dir, "pull-request.json"), "{\"summary\": \"trunca");
+
+        // Another job with totally unreadable/corrupted job.json
+        var corruptedJobDir = JobDir(ProjectAlpha, "job-corrupted");
+        Directory.CreateDirectory(corruptedJobDir);
+        File.WriteAllText(Path.Combine(corruptedJobDir, "job.json"), "{ invalid-json ");
+
+        var view = PipelineViews.ReadProjectView(Attempts(), ProjectAlpha);
+
+        // Only the valid job row appears; the unreadable job.json is skipped and does not crash
+        Assert.Single(view.Jobs);
+        Assert.Equal(Job1, view.Jobs[0].JobId);
+        Assert.Equal("building", view.Jobs[0].Stage);
+
+        // The partial pull-request.json did not advance stage details
+        Assert.Single(view.Jobs[0].StageDetails);
+        Assert.Equal("Intake", view.Jobs[0].StageDetails[0].StageName);
+        Assert.Equal("Valid intake", view.Jobs[0].StageDetails[0].Summary);
+    }
 }

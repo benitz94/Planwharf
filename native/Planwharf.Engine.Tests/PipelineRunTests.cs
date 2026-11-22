@@ -844,4 +844,232 @@ public sealed class PipelineRunTests : IDisposable
         Assert.NotNull(mergeObj);
         Assert.Equal(789, mergeObj.PullRequestNumber);
     }
+
+    [Fact]
+    public void Schedule_MultiProject_ModelBusy_EnforcedAcrossProjects()
+    {
+        const string Project2 = "proj-other";
+        // Project 1 has a running job with claude-sonnet
+        SetupApprovedJob(JobAlpha, status: "building");
+        var alphaDir = JobDir(JobAlpha);
+        var routing1 = new JsonObject
+        {
+            ["summary"] = "Routing snapshot",
+            ["chosen"] = new JsonObject
+            {
+                ["builder"] = new JsonObject { ["providerId"] = "anthropic", ["modelId"] = "claude-sonnet" }
+            }
+        };
+        File.WriteAllText(Path.Combine(alphaDir, "routing.json"), routing1.ToJsonString());
+
+        // Project 2 has an approved job that also needs claude-sonnet
+        var p2JobDir = Path.Combine(Attempts(), "pipeline", Project2, "jobs", JobBeta);
+        Directory.CreateDirectory(Path.Combine(p2JobDir, "revisions", "1"));
+        var (manifestHash2, jobFile2) = SetupApprovedJob(JobBeta);
+        // Move JobBeta to Project2
+        var p2JobObj = PipelineBuild.LoadJson(jobFile2)!;
+        p2JobObj["projectId"] = Project2;
+        File.WriteAllText(Path.Combine(p2JobDir, "job.json"), p2JobObj.ToJsonString());
+        File.Copy(Path.Combine(JobDir(JobBeta), "revisions", "1", "acceptance.json"), Path.Combine(p2JobDir, "revisions", "1", "acceptance.json"));
+        File.Copy(Path.Combine(JobDir(JobBeta), "revisions", "1", "approval.json"), Path.Combine(p2JobDir, "revisions", "1", "approval.json"));
+
+        var team = CreateTestTeam(remaining: 80);
+        var settings = new PipelineRun.PipelineRunSettings();
+
+        // Schedule project 2: should see claude-sonnet is busy in project 1
+        var outcome = PipelineRun.ScheduleJobs(Attempts(), DataRoot(), RepoPath(), Project2, settings, team);
+
+        Assert.Equal(0, outcome.StartedCount);
+        Assert.Equal(1, outcome.WaitingCount);
+        Assert.Equal(JobBeta, outcome.WaitingJobs[0].JobId);
+        Assert.Equal(PipelineRun.ReasonModelBusy, outcome.WaitingJobs[0].Reason);
+    }
+
+    [Fact]
+    public void Schedule_NonIntegerCap_StartsNothing_ReasonInvalidCap()
+    {
+        SetupApprovedJob(JobAlpha);
+        var team = CreateTestTeam(remaining: 80);
+        var settings = PipelineRun.PipelineRunSettings.FromJson(new JsonObject
+        {
+            ["pipeline.run.maxConcurrentJobs"] = "not-an-integer"
+        });
+
+        Assert.True(settings.HasInvalidCap);
+        var outcome = PipelineRun.ScheduleJobs(Attempts(), DataRoot(), RepoPath(), Project, settings, team);
+
+        Assert.Equal(0, outcome.StartedCount);
+        Assert.Equal(1, outcome.WaitingCount);
+        Assert.Equal(PipelineRun.ReasonInvalidCap, outcome.WaitingJobs[0].Reason);
+
+        var job = PipelineBuild.LoadJson(Path.Combine(JobDir(JobAlpha), "job.json"));
+        Assert.Equal("approved", job!["status"]?.ToString());
+    }
+
+    [Fact]
+    public void Schedule_WorktreeAndBranchReuse_OnRestart()
+    {
+        var (manifestHash, jobFile) = SetupApprovedJob(JobAlpha);
+        var worktreeDir = PipelineBuild.WorktreeDir(DataRoot(), Project, JobAlpha);
+        Directory.CreateDirectory(worktreeDir);
+        File.WriteAllText(Path.Combine(worktreeDir, ".planwharf-job"), JobAlpha);
+
+        // Record worktreePath and worktreeBranch in job.json as written by EnsureWorktree
+        var jobObj = PipelineBuild.LoadJson(jobFile)!;
+        jobObj["worktreePath"] = worktreeDir;
+        jobObj["worktreeBranch"] = $"pipeline/{JobAlpha}";
+        jobObj["startCommit"] = Base;
+        File.WriteAllText(jobFile, jobObj.ToJsonString());
+
+        var fakeGit = new FakeGitOps
+        {
+            WorktreeExistsVal = true,
+            BranchExistsVal = true
+        };
+
+        var team = CreateTestTeam(remaining: 80);
+        var settings = new PipelineRun.PipelineRunSettings();
+
+        var outcome = PipelineRun.ScheduleJobs(Attempts(), DataRoot(), RepoPath(), Project, settings, team, fakeGit);
+
+        // Does NOT report collision; admits and starts job reusing worktree
+        Assert.Equal(1, outcome.StartedCount);
+        Assert.Equal([JobAlpha], outcome.StartedJobIds);
+
+        var updatedJob = PipelineBuild.LoadJson(jobFile);
+        Assert.Equal("routing", updatedJob!["status"]?.ToString());
+    }
+
+    [Fact]
+    public void GateVerifier_DefaultVerifier_ChecksStageOutcomeCommitAndSeal()
+    {
+        SetupApprovedJob(JobAlpha);
+        var dir = JobDir(JobAlpha);
+        var gateRunsDir = Path.Combine(dir, "gate-runs");
+        Directory.CreateDirectory(gateRunsDir);
+
+        var verifier = new PipelineRun.DefaultGateEvidenceVerifier();
+        const string manifestHash = "manifest-sha-123";
+        const string headSha = "commit-sha-456";
+
+        void WriteGateRun(string runId, string stage, string outcome, string jobIdVal, string mHash, string cSha, bool tamperSeal = false, bool omitSeal = false)
+        {
+            var runObj = new JsonObject
+            {
+                ["summary"] = $"Gate run {runId}",
+                ["jobId"] = jobIdVal,
+                ["stage"] = stage,
+                ["outcome"] = outcome,
+                ["manifestSha256"] = mHash,
+                ["commitSha"] = cSha
+            };
+            var bytes = Utf8.GetBytes(runObj.ToJsonString());
+            var jsonPath = Path.Combine(gateRunsDir, $"{runId}.json");
+            File.WriteAllBytes(jsonPath, bytes);
+
+            if (!omitSeal)
+            {
+                var sealHash = tamperSeal ? "tampered-seal" : AcceptanceGate.Sha256(bytes);
+                File.WriteAllText(Path.Combine(gateRunsDir, $"{runId}.seal"), sealHash);
+            }
+        }
+
+        // 1. Earlier pre-review pass cannot satisfy post-sync requirement
+        WriteGateRun("run-1", stage: "pre-review", outcome: "pass", jobIdVal: JobAlpha, mHash: manifestHash, cSha: headSha);
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 2. Post-sync but outcome fail
+        WriteGateRun("run-2", stage: "post-sync", outcome: "fail", jobIdVal: JobAlpha, mHash: manifestHash, cSha: headSha);
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 3. Post-sync pass but manifest mismatch
+        WriteGateRun("run-3", stage: "post-sync", outcome: "pass", jobIdVal: JobAlpha, mHash: "wrong-manifest", cSha: headSha);
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 4. Post-sync pass but commit mismatch
+        WriteGateRun("run-4", stage: "post-sync", outcome: "pass", jobIdVal: JobAlpha, mHash: manifestHash, cSha: "wrong-commit");
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 5. Tampered seal
+        WriteGateRun("run-5", stage: "post-sync", outcome: "pass", jobIdVal: JobAlpha, mHash: manifestHash, cSha: headSha, tamperSeal: true);
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 6. Omitted seal
+        WriteGateRun("run-6", stage: "post-sync", outcome: "pass", jobIdVal: JobAlpha, mHash: manifestHash, cSha: headSha, omitSeal: true);
+        Assert.False(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+
+        // 7. Legitimate post-sync pass with matching manifest and commit
+        WriteGateRun("run-7", stage: "post-sync", outcome: "pass", jobIdVal: JobAlpha, mHash: manifestHash, cSha: headSha);
+        Assert.True(verifier.HasPassingPostSyncGate(Attempts(), Project, JobAlpha, manifestHash, headSha));
+    }
+
+    [Fact]
+    public void Cleanup_BranchNotMergedIntoDefault_LeavesBranch_ReasonCleanupFailed()
+    {
+        SetupPullRequestStage(risk: "low", status: "merged");
+        var worktreeDir = PipelineBuild.WorktreeDir(DataRoot(), Project, JobAlpha);
+        Directory.CreateDirectory(worktreeDir);
+
+        var git = new FakeGitOps
+        {
+            Dirty = false,
+            WorktreeExistsVal = true,
+            BranchExistsVal = true,
+            IsMerged = false // Not merged into default branch
+        };
+
+        var outcome = PipelineRun.PerformCleanup(Attempts(), DataRoot(), RepoPath(), Project, JobAlpha, git);
+
+        Assert.False(outcome.Cleaned);
+        Assert.Equal(PipelineRun.ReasonCleanupFailed, outcome.Reason);
+        Assert.Contains(worktreeDir, git.RemovedWorktrees);
+        Assert.Empty(git.DeletedBranches); // Branch was NOT deleted
+    }
+
+    [Fact]
+    public void Cleanup_AndDrop_InvalidJobId_OrPathMismatch_Refused()
+    {
+        var git = new FakeGitOps();
+
+        // Invalid job ID format
+        var outcome = PipelineRun.PerformCleanup(Attempts(), DataRoot(), RepoPath(), Project, "../evil-job", git);
+        Assert.False(outcome.Cleaned);
+        Assert.Equal(PipelineRun.ReasonCleanupFailed, outcome.Reason);
+
+        var dropOutcome = PipelineRun.DropJob(Attempts(), DataRoot(), RepoPath(), Project, "../evil-job", git);
+        Assert.False(dropOutcome.Cleaned);
+        Assert.Equal(PipelineRun.ReasonCleanupFailed, dropOutcome.Reason);
+    }
+
+    [Fact]
+    public void DropJob_AlreadyMerged_RefusesDrop()
+    {
+        SetupPullRequestStage(risk: "low", status: "merged");
+        var git = new FakeGitOps();
+
+        var outcome = PipelineRun.DropJob(Attempts(), DataRoot(), RepoPath(), Project, JobAlpha, git, confirmed: true);
+        Assert.False(outcome.Cleaned);
+        Assert.Equal("already-merged", outcome.Reason);
+
+        var job = PipelineBuild.LoadJson(Path.Combine(JobDir(JobAlpha), "job.json"));
+        Assert.Equal("merged", job!["status"]?.ToString());
+    }
+
+    [Fact]
+    public void RetryMerge_RefusesIfAwaitingOwnerReasonIsNotMergeFailed()
+    {
+        SetupPullRequestStage(risk: "low", status: "awaiting-owner");
+        var jobDir = JobDir(JobAlpha);
+        var job = PipelineBuild.LoadJson(Path.Combine(jobDir, "job.json"))!;
+        job["awaitingOwnerReason"] = PipelineRun.ReasonDirtyWorktree;
+        File.WriteAllText(Path.Combine(jobDir, "job.json"), job.ToJsonString());
+
+        var forge = new FakeForgeOps();
+        var verifier = new FakeGateVerifier();
+
+        var outcome = PipelineRun.RetryMerge(Attempts(), Project, JobAlpha, "owner/repo", forge, verifier);
+        Assert.False(outcome.Merged);
+        Assert.Equal("invalid-await-reason", outcome.Reason);
+        Assert.Equal(0, forge.MergeCallCount);
+    }
 }

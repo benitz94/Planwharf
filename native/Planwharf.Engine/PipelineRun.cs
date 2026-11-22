@@ -37,6 +37,38 @@ public static class PipelineRun
     {
         public int? MaxConcurrentJobs { get; set; }
         public bool MergeLowRisk { get; set; }
+        public bool HasInvalidCap { get; set; }
+
+        public static PipelineRunSettings FromJson(JsonObject? obj)
+        {
+            var settings = new PipelineRunSettings();
+            if (obj is null) return settings;
+
+            if (obj["pipeline.run.mergeLowRisk"] is JsonValue mVal && mVal.TryGetValue<bool>(out var mergeLow))
+            {
+                settings.MergeLowRisk = mergeLow;
+            }
+            else if (obj["mergeLowRisk"] is JsonValue mVal2 && mVal2.TryGetValue<bool>(out var mergeLow2))
+            {
+                settings.MergeLowRisk = mergeLow2;
+            }
+
+            var capNode = obj["pipeline.run.maxConcurrentJobs"] ?? obj["maxConcurrentJobs"];
+            if (capNode is not null)
+            {
+                if (capNode is JsonValue jv && jv.TryGetValue<int>(out var capInt))
+                {
+                    settings.MaxConcurrentJobs = capInt;
+                    if (capInt <= 0) settings.HasInvalidCap = true;
+                }
+                else
+                {
+                    settings.HasInvalidCap = true;
+                }
+            }
+
+            return settings;
+        }
     }
 
     public sealed record ScheduleSlot(
@@ -517,17 +549,14 @@ public static class PipelineRun
             return new AdmissibilityResult(false, "start-gate-failed", null, null, null);
         }
 
-        if (settings.MaxConcurrentJobs.HasValue)
+        if (settings.HasInvalidCap || (settings.MaxConcurrentJobs.HasValue && settings.MaxConcurrentJobs.Value <= 0))
         {
-            if (settings.MaxConcurrentJobs.Value <= 0)
-            {
-                return new AdmissibilityResult(false, ReasonInvalidCap, null, null, null);
-            }
+            return new AdmissibilityResult(false, ReasonInvalidCap, null, null, null);
+        }
 
-            if (currentRunningJobCount >= settings.MaxConcurrentJobs.Value)
-            {
-                return new AdmissibilityResult(false, ReasonCap, null, null, null);
-            }
+        if (settings.MaxConcurrentJobs.HasValue && currentRunningJobCount >= settings.MaxConcurrentJobs.Value)
+        {
+            return new AdmissibilityResult(false, ReasonCap, null, null, null);
         }
 
         var (builderModelId, builderProviderId) = ResolveBuilderModel(attemptsRoot, projectId, jobId, team);
@@ -543,8 +572,9 @@ public static class PipelineRun
 
             if (teamModel is not null)
             {
-                if (teamModel["quotaKnown"]?.GetValue<bool>() != true &&
-                    (teamModel["quotaUnread"]?.GetValue<bool>() == true || teamModel["unread"]?.GetValue<bool>() == true))
+                if (teamModel["quotaKnown"]?.GetValue<bool>() == false ||
+                    teamModel["quotaUnread"]?.GetValue<bool>() == true ||
+                    teamModel["unread"]?.GetValue<bool>() == true)
                 {
                     return new AdmissibilityResult(false, ReasonUnreadQuota, builderModelId, builderProviderId, null);
                 }
@@ -580,26 +610,28 @@ public static class PipelineRun
         {
             if (gitOps.WorktreeExists(repoPath, worktreeDir, out var wtExists, out _) && wtExists)
             {
-                // Check if directory belongs to another job or collision
+                // Check if directory belongs to this job (recorded on earlier run) or another job
+                var recordedWorktree = jobObj?["worktreePath"]?.ToString();
+                var isRecordedWorktree = !string.IsNullOrWhiteSpace(recordedWorktree) &&
+                    string.Equals(Path.GetFullPath(recordedWorktree), Path.GetFullPath(worktreeDir), StringComparison.OrdinalIgnoreCase);
+
                 var existingJobFile = Path.Combine(worktreeDir, ".planwharf-job");
-                if (File.Exists(existingJobFile))
+                var hasMatchingJobFile = File.Exists(existingJobFile) &&
+                    string.Equals(File.ReadAllText(existingJobFile).Trim(), jobId, StringComparison.Ordinal);
+
+                if (!isRecordedWorktree && !hasMatchingJobFile)
                 {
-                    var existingJobId = File.ReadAllText(existingJobFile).Trim();
-                    if (!string.Equals(existingJobId, jobId, StringComparison.Ordinal))
+                    if (File.Exists(existingJobFile) || !Directory.Exists(worktreeDir) || Directory.EnumerateFileSystemEntries(worktreeDir).Any())
                     {
                         return new AdmissibilityResult(false, ReasonWorktreeCollision, builderModelId, builderProviderId, null);
                     }
-                }
-                else if (Directory.EnumerateFileSystemEntries(worktreeDir).Any())
-                {
-                    return new AdmissibilityResult(false, ReasonWorktreeCollision, builderModelId, builderProviderId, null);
                 }
             }
 
             if (gitOps.BranchExists(repoPath, branchName, out var bExists, out _) && bExists)
             {
                 // If branch exists and is not recorded for this job
-                var recordedBranch = jobObj?["headBranch"]?.ToString();
+                var recordedBranch = jobObj?["worktreeBranch"]?.ToString() ?? jobObj?["headBranch"]?.ToString();
                 if (!string.Equals(recordedBranch, branchName, StringComparison.OrdinalIgnoreCase))
                 {
                     return new AdmissibilityResult(false, ReasonBranchCollision, builderModelId, builderProviderId, null);
@@ -676,8 +708,9 @@ public static class PipelineRun
 
             if (tm is not null)
             {
-                if (tm["quotaKnown"]?.GetValue<bool>() != true &&
-                    (tm["quotaUnread"]?.GetValue<bool>() == true || tm["unread"]?.GetValue<bool>() == true))
+                if (tm["quotaKnown"]?.GetValue<bool>() == false ||
+                    tm["quotaUnread"]?.GetValue<bool>() == true ||
+                    tm["unread"]?.GetValue<bool>() == true)
                 {
                     waitReason = ReasonUnreadQuota;
                     return false;
@@ -762,6 +795,34 @@ public static class PipelineRun
             var busyModelIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var approvedList = new List<ApprovedJobCandidate>();
 
+            // Collect active running models across every project (shared account quota)
+            var pipelineDir = Path.Combine(attemptsRoot, "pipeline");
+            if (Directory.Exists(pipelineDir))
+            {
+                foreach (var projDir in Directory.GetDirectories(pipelineDir))
+                {
+                    var otherProjJobsDir = Path.Combine(projDir, "jobs");
+                    if (!Directory.Exists(otherProjJobsDir)) continue;
+                    foreach (var jd in Directory.GetDirectories(otherProjJobsDir))
+                    {
+                        var jf = Path.Combine(jd, "job.json");
+                        var jObj = PipelineBuild.LoadJson(jf);
+                        if (jObj is null) continue;
+                        var st = jObj["status"]?.ToString() ?? "";
+                        if (ActiveRunningStatuses.Contains(st, StringComparer.OrdinalIgnoreCase))
+                        {
+                            var otherProjId = Path.GetFileName(projDir);
+                            var otherJobId = Path.GetFileName(jd);
+                            var (otherModelId, _) = ResolveBuilderModel(attemptsRoot, otherProjId, otherJobId, team);
+                            if (!string.IsNullOrWhiteSpace(otherModelId))
+                            {
+                                busyModelIds.Add(otherModelId);
+                            }
+                        }
+                    }
+                }
+            }
+
             foreach (var jd in jobDirs)
             {
                 var jf = Path.Combine(jd, "job.json");
@@ -819,7 +880,7 @@ public static class PipelineRun
             var startedJobIds = new List<string>();
             var waitingJobDetails = new List<(string JobId, string Reason)>();
 
-            if (settings.MaxConcurrentJobs.HasValue && settings.MaxConcurrentJobs.Value <= 0)
+            if (settings.HasInvalidCap || (settings.MaxConcurrentJobs.HasValue && settings.MaxConcurrentJobs.Value <= 0))
             {
                 // Invalid cap: starts nothing for that project until corrected
                 foreach (var candidate in sortedApproved)
@@ -978,9 +1039,20 @@ public static class PipelineRun
                 return new MergeOutcome(false, currentStatus, "invalid-status", null, $"Job status must be 'pull-request', found '{currentStatus}'.");
             }
 
-            if (isRetry && currentStatus is not ("pull-request" or "awaiting-owner" or "merging"))
+            if (isRetry)
             {
-                return new MergeOutcome(false, currentStatus, "invalid-status", null, $"Retry merge requires pull-request, awaiting-owner, or merging; found '{currentStatus}'.");
+                if (currentStatus == "awaiting-owner")
+                {
+                    var awaitReason = jobObj["awaitingOwnerReason"]?.ToString();
+                    if (!string.Equals(awaitReason, ReasonMergeFailed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new MergeOutcome(false, currentStatus, "invalid-await-reason", null, $"Retry merge is only permitted when awaitingOwnerReason is '{ReasonMergeFailed}', found '{awaitReason}'.");
+                    }
+                }
+                else if (currentStatus is not ("pull-request" or "merging"))
+                {
+                    return new MergeOutcome(false, currentStatus, "invalid-status", null, $"Retry merge requires pull-request, awaiting-owner, or merging; found '{currentStatus}'.");
+                }
             }
 
             // Owner merges by default: setting must be true
@@ -1191,6 +1263,11 @@ public static class PipelineRun
         IPipelineGitOps gitOps,
         string defaultBranch = "main")
     {
+        if (!PipelineBuild.SafeJobId(jobId) || !AcceptanceGate.SafeId(projectId))
+        {
+            return new CleanupOutcome(false, ReasonCleanupFailed, "Invalid projectId or jobId format.");
+        }
+
         var dir = PipelineBuild.JobDir(attemptsRoot, projectId, jobId);
         lock (PipelineBuild.LockFor(dir))
         {
@@ -1216,6 +1293,13 @@ public static class PipelineRun
                 string.Equals(recordedWorktree, attemptsRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return new CleanupOutcome(false, ReasonCleanupFailed, "Path does not match recorded pipeline worktree path.");
+            }
+
+            var jobWorktreePath = jobObj["worktreePath"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(jobWorktreePath) &&
+                !string.Equals(Path.GetFullPath(jobWorktreePath), Path.GetFullPath(recordedWorktree), StringComparison.OrdinalIgnoreCase))
+            {
+                return new CleanupOutcome(false, ReasonCleanupFailed, "Stored worktree path does not match expected pipeline path.");
             }
 
             // Check if worktree directory exists
@@ -1292,6 +1376,11 @@ public static class PipelineRun
             return new CleanupOutcome(false, "unconfirmed", "Drop requires owner confirmation.");
         }
 
+        if (!PipelineBuild.SafeJobId(jobId) || !AcceptanceGate.SafeId(projectId))
+        {
+            return new CleanupOutcome(false, ReasonCleanupFailed, "Invalid projectId or jobId format.");
+        }
+
         var dir = PipelineBuild.JobDir(attemptsRoot, projectId, jobId);
         lock (PipelineBuild.LockFor(dir))
         {
@@ -1300,6 +1389,12 @@ public static class PipelineRun
             if (jobObj is null)
             {
                 return new CleanupOutcome(false, "missing-job", "job.json not found.");
+            }
+
+            var status = jobObj["status"]?.ToString() ?? "";
+            if (string.Equals(status, "merged", StringComparison.OrdinalIgnoreCase))
+            {
+                return new CleanupOutcome(false, "already-merged", "Cannot drop a merged job.");
             }
 
             // Set dropped
@@ -1317,6 +1412,13 @@ public static class PipelineRun
                 string.Equals(recordedWorktree, attemptsRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return new CleanupOutcome(false, ReasonCleanupFailed, "Path does not match recorded pipeline worktree path.");
+            }
+
+            var jobWorktreePath = jobObj["worktreePath"]?.ToString();
+            if (!string.IsNullOrWhiteSpace(jobWorktreePath) &&
+                !string.Equals(Path.GetFullPath(jobWorktreePath), Path.GetFullPath(recordedWorktree), StringComparison.OrdinalIgnoreCase))
+            {
+                return new CleanupOutcome(false, ReasonCleanupFailed, "Stored worktree path does not match expected pipeline path.");
             }
 
             // Remove recorded worktree even if dirty
