@@ -1079,6 +1079,484 @@ public sealed class PipelineBuildTests : IDisposable
         Assert.Contains("pipeline/" + Job, fakeGit.PushedBranches);
         Assert.DoesNotContain("main", fakeGit.PushedBranches);
     }
+
+    [Fact]
+    public void StartGate_ManifestPathEscapesDirectory_DoesNotRoute()
+    {
+        SetupApprovedJob();
+        var jobFile = Path.Combine(JobDir(), "job.json");
+        var jobObj = PipelineBuild.LoadJson(jobFile)!;
+        jobObj["manifestPath"] = "../../outside/acceptance.json";
+        File.WriteAllBytes(jobFile, Utf8.GetBytes(jobObj.ToJsonString()));
+
+        var ok = PipelineBuild.StartRouting(Attempts(), Project, Job, out var failure);
+        Assert.False(ok);
+        Assert.Contains("must be under the job attempts directory", failure);
+    }
+
+    [Fact]
+    public void StartGate_MissingPointerFields_DoesNotRoute()
+    {
+        SetupApprovedJob();
+        var jobFile = Path.Combine(JobDir(), "job.json");
+        var jobObj = PipelineBuild.LoadJson(jobFile)!;
+        jobObj.Remove("manifestSha256");
+        File.WriteAllBytes(jobFile, Utf8.GetBytes(jobObj.ToJsonString()));
+
+        var ok = PipelineBuild.StartRouting(Attempts(), Project, Job, out var failure);
+        Assert.False(ok);
+        Assert.Contains("Missing snapshot pointer fields", failure);
+    }
+
+    [Fact]
+    public void StartGate_CorruptedApprovalJson_DoesNotRoute()
+    {
+        SetupApprovedJob();
+        var approvalFile = Path.Combine(JobDir(), "revisions", "1", "approval.json");
+        File.WriteAllText(approvalFile, "not-valid-json{{{");
+
+        var ok = PipelineBuild.StartRouting(Attempts(), Project, Job, out var failure);
+        Assert.False(ok);
+        Assert.Contains("approval.json missing or unreadable", failure);
+    }
+
+    [Fact]
+    public void RouteJob_WeightZeroOrNegative_DroppedAsInvalidWeight()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+
+        var savedTable = new PipelineBuild.RoutingTable
+        {
+            Rows =
+            [
+                new PipelineBuild.RoutingRow("medium", "builder",
+                [
+                    new PipelineBuild.RoutingCandidate("anthropic", "claude-haiku", 0), // invalid weight <= 0
+                    new PipelineBuild.RoutingCandidate("anthropic", "claude-sonnet", 10)
+                ]),
+                new PipelineBuild.RoutingRow("medium", "reviewer-code",
+                [
+                    new PipelineBuild.RoutingCandidate("openai", "gpt-4o", 10)
+                ])
+            ]
+        };
+
+        var ok = PipelineBuild.RouteJob(Attempts(), Project, Job, CreateTestTeam(), savedTable, out var snapshot, out var reason, out _);
+        Assert.True(ok, reason);
+        Assert.NotNull(snapshot);
+
+        // Zero-weight candidate was dropped
+        var dropped = snapshot.Dropped["builder"];
+        Assert.Contains(dropped, d => d.ModelId == "claude-haiku" && d.Reason.Contains("positive integer"));
+        // Winner is claude-sonnet
+        Assert.Equal("claude-sonnet", snapshot.Chosen["builder"].ModelId);
+    }
+
+    [Fact]
+    public void RouteJob_TeamModelStringStatus_Dropped()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+
+        var team = new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "signed-out-worker",
+                ["providerId"] = "prov-a",
+                ["roles"] = new JsonObject { ["worker"] = true, ["verifier"] = true },
+                ["status"] = "not signed in",
+                ["remainingPercent"] = 100
+            },
+            new JsonObject
+            {
+                ["id"] = "active-worker",
+                ["providerId"] = "prov-a",
+                ["roles"] = new JsonObject { ["worker"] = true, ["verifier"] = true },
+                ["status"] = "active",
+                ["remainingPercent"] = 90
+            },
+            new JsonObject
+            {
+                ["id"] = "active-verifier",
+                ["providerId"] = "prov-b",
+                ["roles"] = new JsonObject { ["worker"] = false, ["verifier"] = true },
+                ["status"] = "active",
+                ["remainingPercent"] = 90
+            }
+        };
+
+        var ok = PipelineBuild.RouteJob(Attempts(), Project, Job, team, savedTable: null, out var snapshot, out var reason, out _);
+        Assert.True(ok, reason);
+        Assert.NotNull(snapshot);
+
+        Assert.Equal("active-worker", snapshot.Chosen["builder"].ModelId);
+        var dropped = snapshot.Dropped["builder"];
+        Assert.Contains(dropped, d => d.ModelId == "signed-out-worker" && d.Reason.Contains("signed out"));
+    }
+
+    [Fact]
+    public void RouteJob_SameVerifierWinsMultipleLanes_ProducesSeparateVerdicts()
+    {
+        SetupApprovedJob();
+        // Touches interface and security
+        var jobFile = Path.Combine(JobDir(), "job.json");
+        var jobObj = PipelineBuild.LoadJson(jobFile)!;
+        jobObj["touchesInterface"] = true;
+        jobObj["touchesSecurity"] = true;
+        File.WriteAllBytes(jobFile, Utf8.GetBytes(jobObj.ToJsonString()));
+
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+
+        // One builder from anthropic, one verifier from openai that qualifies for all reviewer lanes
+        var team = new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "worker-1",
+                ["providerId"] = "anthropic",
+                ["roles"] = new JsonObject { ["worker"] = true, ["verifier"] = false },
+                ["remainingPercent"] = 90
+            },
+            new JsonObject
+            {
+                ["id"] = "verifier-1",
+                ["providerId"] = "openai",
+                ["roles"] = new JsonObject { ["worker"] = false, ["verifier"] = true },
+                ["remainingPercent"] = 90
+            }
+        };
+
+        var ok = PipelineBuild.RouteJob(Attempts(), Project, Job, team, savedTable: null, out var snapshot, out var reason, out _);
+        Assert.True(ok, reason);
+        Assert.NotNull(snapshot);
+
+        // Same verifier-1 won reviewer-code, reviewer-interface, and reviewer-security
+        Assert.Equal("verifier-1", snapshot.Chosen["reviewer-code"].ModelId);
+        Assert.Equal("verifier-1", snapshot.Chosen["reviewer-interface"].ModelId);
+        Assert.Equal("verifier-1", snapshot.Chosen["reviewer-security"].ModelId);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, Job, new FakeGitOps(), out _, out _);
+
+        var fakeGate = new FakeGateRunner { OutcomeStatus = "pass" };
+        var fakeModel = new FakeModelOps { ReviewerVerdict = "accept" };
+
+        var taskOk = PipelineBuild.ExecuteTask(dataRoot, Attempts(), Project, Job, "task-parts", fakeModel, fakeGate, out var status, out _);
+        Assert.True(taskOk);
+        Assert.Equal("accepted", status);
+
+        // Verify separate verdict records exist for each lane
+        var roundDir = Path.Combine(JobDir(), "tasks", "task-parts", "rounds", "1");
+        Assert.True(File.Exists(Path.Combine(roundDir, "review-reviewer-code.json")));
+        Assert.True(File.Exists(Path.Combine(roundDir, "review-reviewer-interface.json")));
+        Assert.True(File.Exists(Path.Combine(roundDir, "review-reviewer-security.json")));
+    }
+
+    [Fact]
+    public void StatusTransitions_DisallowedStatusesRejected()
+    {
+        Assert.False(PipelineBuild.CanTransitionTo("approved", "queued"));
+        Assert.False(PipelineBuild.CanTransitionTo("routing", "intake"));
+        Assert.False(PipelineBuild.CanTransitionTo("building", "waiting"));
+        Assert.False(PipelineBuild.CanTransitionTo("gating", "specifying"));
+        Assert.False(PipelineBuild.CanTransitionTo("reviewing", "awaiting-approval"));
+
+        Assert.True(PipelineBuild.CanTransitionTo("approved", "routing"));
+        Assert.True(PipelineBuild.CanTransitionTo("routing", "building"));
+        Assert.True(PipelineBuild.CanTransitionTo("building", "gating"));
+        Assert.True(PipelineBuild.CanTransitionTo("gating", "reviewing"));
+        Assert.True(PipelineBuild.CanTransitionTo("reviewing", "awaiting-owner"));
+        Assert.True(PipelineBuild.CanTransitionTo("reviewing", "syncing"));
+        Assert.True(PipelineBuild.CanTransitionTo("syncing", "opening-pr"));
+        Assert.True(PipelineBuild.CanTransitionTo("opening-pr", "pull-request"));
+        Assert.True(PipelineBuild.CanTransitionTo("syncing", "ready-local"));
+        Assert.True(PipelineBuild.CanTransitionTo("pull-request", "stopped"));
+    }
+
+    [Fact]
+    public void TaskExecution_MidReviewQuotaSwitch_RewritesRoutingJsonOnDisk()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+
+        var savedTable = new PipelineBuild.RoutingTable
+        {
+            Rows =
+            [
+                new PipelineBuild.RoutingRow("medium", "builder",
+                [
+                    new PipelineBuild.RoutingCandidate("anthropic", "claude-haiku", 10)
+                ]),
+                new PipelineBuild.RoutingRow("medium", "reviewer-code",
+                [
+                    new PipelineBuild.RoutingCandidate("openai", "gpt-4o", 10),
+                    new PipelineBuild.RoutingCandidate("google", "gemini-pro", 5) // Alternate verifier of another company!
+                ])
+            ]
+        };
+
+        PipelineBuild.RouteJob(Attempts(), Project, Job, CreateTestTeam(), savedTable, out _, out _, out _);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        var fakeGit = new FakeGitOps();
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, Job, fakeGit, out _, out _);
+
+        var fakeGate = new FakeGateRunner { OutcomeStatus = "pass" };
+        var fakeModel = new FakeModelOps();
+
+        // Block gpt-4o quota during review
+        fakeModel.BlockedModels.Add("openai:gpt-4o");
+
+        // Should switch to gemini-pro from google and accept!
+        var ok = PipelineBuild.ExecuteTask(dataRoot, Attempts(), Project, Job, "task-rev-quota", fakeModel, fakeGate, out var taskStatus, out var reason);
+        Assert.True(ok, reason);
+        Assert.Equal("accepted", taskStatus);
+
+        // Routing.json on disk was updated with gemini-pro
+        var routingOnDisk = PipelineBuild.LoadJson(Path.Combine(JobDir(), "routing.json"))!;
+        var chosenRev = routingOnDisk["chosen"]?["reviewer-code"]?["modelId"]?.ToString();
+        Assert.Equal("gemini-pro", chosenRev);
+    }
+
+    [Fact]
+    public void TaskExecution_GateThrowsException_StopsAtGateNotPorted()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+        PipelineBuild.RouteJob(Attempts(), Project, Job, CreateTestTeam(), savedTable: null, out _, out _, out _);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, Job, new FakeGitOps(), out _, out _);
+
+        // Gate runner throws exception
+        var throwingGate = new ThrowingGateRunner();
+        var fakeModel = new FakeModelOps();
+
+        var ok = PipelineBuild.ExecuteTask(dataRoot, Attempts(), Project, Job, "task-throw", fakeModel, throwingGate, out var taskStatus, out var reason);
+        Assert.False(ok);
+        Assert.Equal("awaiting-owner", taskStatus);
+        Assert.Equal("gate-not-ported", reason);
+
+        var job = PipelineBuild.LoadJson(Path.Combine(JobDir(), "job.json"))!;
+        Assert.Equal("awaiting-owner", job["status"]?.ToString());
+        Assert.Equal("gate-not-ported", job["awaitingOwnerReason"]?.ToString());
+    }
+
+    sealed class ThrowingGateRunner : PipelineBuild.IGateRunner
+    {
+        public AcceptanceGate.Outcome RunGate(AcceptanceGate.Request request) =>
+            throw new InvalidOperationException("Simulated unported gate runner error.");
+    }
+
+    [Fact]
+    public void SyncAndOpenPR_ReadyLocalStaysReadyLocal_DoesNotRetroactivelyOpenPR()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+        PipelineBuild.RouteJob(Attempts(), Project, Job, CreateTestTeam(), savedTable: null, out _, out _, out _);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, Job, new FakeGitOps(), out _, out _);
+
+        var fakeGate = new FakeGateRunner { OutcomeStatus = "pass" };
+        var fakeForge = new FakeForgeOps();
+
+        // 1. Post-sync gate on repo without linked GitHub repository -> ready-local
+        var ok1 = PipelineBuild.SyncAndOpenPullRequest(
+            Attempts(), Project, Job,
+            linkedGitHubRepository: null,
+            gitOps: new FakeGitOps(),
+            gateRunner: fakeGate,
+            forgeOps: fakeForge,
+            out var finalStatus1,
+            out var reason1);
+
+        Assert.True(ok1);
+        Assert.Equal("ready-local", finalStatus1);
+
+        // 2. Later, someone links a GitHub repository and calls SyncAndOpenPullRequest again
+        var ok2 = PipelineBuild.SyncAndOpenPullRequest(
+            Attempts(), Project, Job,
+            linkedGitHubRepository: "https://github.com/org/repo",
+            gitOps: new FakeGitOps(),
+            gateRunner: fakeGate,
+            forgeOps: fakeForge,
+            out var finalStatus2,
+            out var reason2);
+
+        // Spec: "This job does not open a pull request retroactively. Status stays ready-local."
+        Assert.True(ok2);
+        Assert.Equal("ready-local", finalStatus2);
+        Assert.Empty(fakeForge.OpenedPRs); // Does not open a pull request retroactively!
+    }
+
+    [Fact]
+    public void SyncAndOpenPR_PostSyncGateNotPullRequestReady_StopsAtAwaitingOwner()
+    {
+        SetupApprovedJob();
+        PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
+        PipelineBuild.RouteJob(Attempts(), Project, Job, CreateTestTeam(), savedTable: null, out _, out _, out _);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, Job, new FakeGitOps(), out _, out _);
+
+        // Gate runner returns Outcome with Status: pass, but PullRequestReady: false!
+        var fakeGate = new FakeGateRunner
+        {
+            OutcomeStatus = "pass"
+        };
+        // Use custom outcome that simulates a pre-review pass attempting to satisfy post-sync
+        var customGate = new CustomOutcomeGateRunner(new AcceptanceGate.Outcome(
+            Status: "pass",
+            Reason: "Pre-review pass",
+            RunId: "run-custom",
+            FailingChecks: [],
+            Log: "Gate log",
+            ReturnToBuilder: false,
+            PullRequestReady: false, // NOT ready for PR!
+            BlocksPullRequest: true,
+            ManifestSha256: AcceptanceGate.Sha256(File.ReadAllBytes(Path.Combine(JobDir(), "revisions", "1", "acceptance.json"))),
+            CheckIds: ["chk-1"],
+            TreeDigest: "tree",
+            WorkingInputDigest: "input",
+            ArtifactDigest: "artifact"));
+
+        var fakeForge = new FakeForgeOps();
+        var ok = PipelineBuild.SyncAndOpenPullRequest(
+            Attempts(), Project, Job,
+            linkedGitHubRepository: "https://github.com/org/repo",
+            gitOps: new FakeGitOps(),
+            gateRunner: customGate,
+            forgeOps: fakeForge,
+            out var finalStatus,
+            out var reason);
+
+        Assert.False(ok);
+        Assert.Equal("awaiting-owner", finalStatus);
+        Assert.Equal("post-sync gate failed", reason);
+        Assert.Empty(fakeForge.OpenedPRs);
+    }
+
+    sealed class CustomOutcomeGateRunner(AcceptanceGate.Outcome outcome) : PipelineBuild.IGateRunner
+    {
+        public AcceptanceGate.Outcome RunGate(AcceptanceGate.Request request) => outcome;
+    }
+
+    [Fact]
+    public void Concurrency_TwoJobsSimultaneous_IndependentWorktreesAndBranches()
+    {
+        const string job1 = "job-alpha-1";
+        const string job2 = "job-beta-2";
+
+        SetupApprovedJob(job: job1);
+        SetupApprovedJob(job: job2);
+
+        PipelineBuild.StartRouting(Attempts(), Project, job1, out _);
+        PipelineBuild.StartRouting(Attempts(), Project, job2, out _);
+
+        var dataRoot = Path.Combine(root, "data");
+        var repoRoot = Path.Combine(root, "repo");
+        var fakeGit1 = new FakeGitOps();
+        var fakeGit2 = new FakeGitOps();
+
+        var ok1 = PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, job1, fakeGit1, out var wt1, out _);
+        var ok2 = PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, job2, fakeGit2, out var wt2, out _);
+
+        Assert.True(ok1);
+        Assert.True(ok2);
+        Assert.NotEqual(wt1, wt2);
+        Assert.Equal(PipelineBuild.WorktreeDir(dataRoot, Project, job1), wt1);
+        Assert.Equal(PipelineBuild.WorktreeDir(dataRoot, Project, job2), wt2);
+
+        var branch1 = PipelineBuild.BranchNameForJob(job1);
+        var branch2 = PipelineBuild.BranchNameForJob(job2);
+        Assert.Equal("pipeline/" + job1, branch1);
+        Assert.Equal("pipeline/" + job2, branch2);
+        Assert.NotEqual(branch1, branch2);
+    }
+
+    [Fact]
+    public void UnicodeAndSpecialCharacters_HandlingThroughoutPipeline()
+    {
+        const string unicodeJob = "job-unicode-test";
+        SetupApprovedJob(job: unicodeJob);
+
+        var jobFile = Path.Combine(JobDir(unicodeJob), "job.json");
+        var jobObj = PipelineBuild.LoadJson(jobFile)!;
+        jobObj["summary"] = "Funzionalità avanzata: calcolo & validazione 🚀 (100% test superati)";
+        jobObj["source"] = new JsonObject
+        {
+            ["type"] = "github",
+            ["number"] = 777
+        };
+        File.WriteAllBytes(jobFile, Utf8.GetBytes(jobObj.ToJsonString()));
+
+        PipelineBuild.StartRouting(Attempts(), Project, unicodeJob, out _);
+        PipelineBuild.RouteJob(Attempts(), Project, unicodeJob, CreateTestTeam(), savedTable: null, out _, out _, out _);
+
+        var dataRoot = Path.Combine(root, "data spazio e accento é ");
+        var repoRoot = Path.Combine(root, "repo spazio");
+        var fakeGit = new FakeGitOps();
+        var fakeGate = new FakeGateRunner { OutcomeStatus = "pass" };
+        var fakeForge = new FakeForgeOps();
+
+        PipelineBuild.EnsureWorktree(dataRoot, repoRoot, Attempts(), Project, unicodeJob, fakeGit, out var wtPath, out _);
+        Assert.Contains("data spazio e accento é", wtPath);
+
+        var fakeModel = new FakeModelOps
+        {
+            ReviewerNotes = "Revisione eccellente: test e verifica superati con successo! 💯 🚀"
+        };
+
+        var taskOk = PipelineBuild.ExecuteTask(dataRoot, Attempts(), Project, unicodeJob, "task-unicode", fakeModel, fakeGate, out var taskStatus, out _);
+        Assert.True(taskOk);
+        Assert.Equal("accepted", taskStatus);
+
+        var prOk = PipelineBuild.SyncAndOpenPullRequest(
+            Attempts(), Project, unicodeJob,
+            linkedGitHubRepository: "https://github.com/org/repo-unicode",
+            gitOps: fakeGit,
+            gateRunner: fakeGate,
+            forgeOps: fakeForge,
+            out var finalStatus,
+            out _);
+
+        Assert.True(prOk);
+        Assert.Equal("pull-request", finalStatus);
+
+        var prRecord = PipelineBuild.LoadJson(Path.Combine(JobDir(unicodeJob), "pull-request.json"))!;
+        Assert.Equal(42, prRecord["number"]?.GetValue<int>());
+
+        var openedPr = Assert.Single(fakeForge.OpenedPRs);
+        Assert.Contains("Funzionalità avanzata", openedPr.title);
+        Assert.Contains("Closes #777", openedPr.body);
+    }
+
+    [Fact]
+    public void SpecParsing_TaskBriefGeneration()
+    {
+        var specText = "# Spec: Gestione pipeline\n## Shared Interfaces\npublic interface IOrderService { }\n## Task Tree\n- [T1] Implement interface\n- [T2] Add integration test (depends on: T1)\n## Acceptance Tests\n### chk-1: dotnet test\n";
+        Assert.True(PipelineBuild.TryParseSpec(specText, out var spec, out _));
+
+        var task = spec.Tasks[1];
+        var briefContent = PipelineBuild.WriteTaskBrief(
+            Attempts(), Project, Job, spec, task, ["T1 accepted and tested"]);
+
+        var briefFile = Path.Combine(JobDir(), "tasks", "T2", "brief.md");
+        Assert.True(File.Exists(briefFile));
+        var textOnDisk = File.ReadAllText(briefFile);
+        Assert.Equal(briefContent, textOnDisk);
+        Assert.Contains("IOrderService", textOnDisk);
+        Assert.Contains("T1 accepted and tested", textOnDisk);
+        Assert.Contains("chk-1: dotnet test", textOnDisk);
+    }
 }
 
 

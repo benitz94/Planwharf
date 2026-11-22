@@ -44,6 +44,13 @@ public static class PipelineBuild
         "awaiting-approval"
     ];
 
+    public static bool CanTransitionTo(string? currentStatus, string? nextStatus)
+    {
+        if (string.IsNullOrWhiteSpace(nextStatus)) return false;
+        if (DisallowedPreviousStatuses.Contains(nextStatus, StringComparer.OrdinalIgnoreCase)) return false;
+        return AllowedJobStatuses.Contains(nextStatus, StringComparer.OrdinalIgnoreCase);
+    }
+
     public static bool SafeJobId(string? jobId) =>
         !string.IsNullOrWhiteSpace(jobId) && JobIdRegex.IsMatch(jobId);
 
@@ -126,6 +133,12 @@ public static class PipelineBuild
         }
 
         var fullManifestPath = Path.GetFullPath(Path.Combine(dir, manifestPath));
+        if (!fullManifestPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase))
+        {
+            failureReason = "Manifest path must be under the job attempts directory.";
+            return false;
+        }
+
         if (!File.Exists(fullManifestPath))
         {
             failureReason = $"Frozen manifest file missing at '{manifestPath}'.";
@@ -581,6 +594,12 @@ public static class PipelineBuild
                 continue;
             }
 
+            if (c.Weight <= 0)
+            {
+                dropped.Add(new DroppedCandidate(c.ProviderId, c.ModelId, "weight must be a positive integer"));
+                continue;
+            }
+
             var key = $"{c.ProviderId}:{c.ModelId}";
             if (!seen.Add(key))
             {
@@ -607,10 +626,12 @@ public static class PipelineBuild
                 continue;
             }
 
+            var statusStr = teamModel["status"]?.ToString()?.ToLowerInvariant();
             if (teamModel["disabled"]?.GetValue<bool>() == true ||
                 teamModel["unavailable"]?.GetValue<bool>() == true ||
                 teamModel["expired"]?.GetValue<bool>() == true ||
-                teamModel["signedOut"]?.GetValue<bool>() == true)
+                teamModel["signedOut"]?.GetValue<bool>() == true ||
+                statusStr is "expired" or "not signed in" or "signed-out" or "disabled" or "unavailable")
             {
                 dropped.Add(new DroppedCandidate(c.ProviderId, c.ModelId, "disabled, unavailable, expired, or signed out"));
                 continue;
@@ -656,10 +677,10 @@ public static class PipelineBuild
 
     public sealed class ParsedSpec
     {
-        public string Summary { get; init; } = "";
-        public string WhatToBuild { get; init; } = "";
-        public string WhatNotToBuild { get; init; } = "";
-        public string SharedInterfaces { get; init; } = "";
+        public string Summary { get; set; } = "";
+        public string WhatToBuild { get; set; } = "";
+        public string WhatNotToBuild { get; set; } = "";
+        public string SharedInterfaces { get; set; } = "";
         public List<SpecTask> Tasks { get; init; } = [];
         public List<string> ChecksQuoted { get; init; } = [];
     }
@@ -773,6 +794,9 @@ public static class PipelineBuild
             return false;
         }
 
+        spec.SharedInterfaces = sbInterfaces.ToString().Trim();
+        spec.WhatToBuild = sbWhat.ToString().Trim();
+
         return true;
     }
 
@@ -855,6 +879,28 @@ public static class PipelineBuild
         }
         sb.AppendLine("```");
         return sb.ToString();
+    }
+
+    public static string WriteTaskBrief(
+        string attemptsRoot,
+        string projectId,
+        string jobId,
+        ParsedSpec spec,
+        SpecTask task,
+        IReadOnlyList<string>? dependencyResults = null)
+    {
+        var dir = JobDir(attemptsRoot, projectId, jobId);
+        var taskDir = Path.Combine(dir, "tasks", task.Id);
+        Directory.CreateDirectory(taskDir);
+        var briefFile = Path.Combine(taskDir, "brief.md");
+        var briefContent = FormatBriefMarkdown(
+            task.Id,
+            task.Title,
+            spec.SharedInterfaces,
+            dependencyResults ?? [],
+            spec.ChecksQuoted);
+        WriteAtomic(briefFile, briefContent);
+        return briefContent;
     }
 
     public interface IGitOps
@@ -1102,6 +1148,9 @@ public static class PipelineBuild
                         taskStatus = "awaiting-owner";
                         return false;
                     }
+                    WriteAtomic(routingFile, routingObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    jobObj[$"handoff_{taskId}"] = $"Switched builder to {chosenBuilder.ProviderId}:{chosenBuilder.ModelId} due to quota block.";
+                    WriteAtomic(jobFile, jobObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
                 }
 
                 jobObj["status"] = "building";
@@ -1187,10 +1236,6 @@ public static class PipelineBuild
                     gateOutcome.Status != "pass" ||
                     gateOutcome.ManifestSha256 != manifestSha256)
                 {
-                    // Red pre-review gate returns log to builder
-                    gateReturns++;
-                    jobObj[$"gateReturns_{taskId}"] = gateReturns;
-
                     if (gateReturns >= maxGateReturns)
                     {
                         jobObj["status"] = "awaiting-owner";
@@ -1200,6 +1245,10 @@ public static class PipelineBuild
                         taskStatus = "awaiting-owner";
                         return false;
                     }
+
+                    // Red pre-review gate returns log to builder
+                    gateReturns++;
+                    jobObj[$"gateReturns_{taskId}"] = gateReturns;
 
                     // Hand log back to builder for next iteration
                     var failingCheckIds = gateOutcome?.FailingChecks != null ? string.Join(", ", gateOutcome.FailingChecks) : "(none)";
@@ -1240,6 +1289,9 @@ public static class PipelineBuild
                             taskStatus = "awaiting-owner";
                             return false;
                         }
+                        WriteAtomic(routingFile, routingObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                        jobObj[$"reviewerSwitch_{rLane}"] = $"{revModel.ProviderId}:{revModel.ModelId}";
+                        WriteAtomic(jobFile, jobObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
                     }
 
                     if (!modelOps.RunReviewer(rLane, briefContent, builderMd, worktreePath, taskId, currentRound, revModel, out var revRes, out var revErr))
@@ -1265,6 +1317,12 @@ public static class PipelineBuild
                         ["providerId"] = revModel.ProviderId
                     };
                     WriteAtomic(revFile, revObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    if (rLane.StartsWith("reviewer-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var shortLane = rLane["reviewer-".Length..];
+                        var shortRevFile = Path.Combine(roundDir, $"review-{shortLane}.json");
+                        WriteAtomic(shortRevFile, revObj.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+                    }
 
                     if (revRes.Verdict == "changes")
                     {
@@ -1276,9 +1334,6 @@ public static class PipelineBuild
 
                 if (anyChanges)
                 {
-                    reviewReturns++;
-                    jobObj[$"reviewReturns_{taskId}"] = reviewReturns;
-
                     if (reviewReturns >= maxReviewRounds)
                     {
                         jobObj["status"] = "awaiting-owner";
@@ -1288,6 +1343,9 @@ public static class PipelineBuild
                         taskStatus = "awaiting-owner";
                         return false;
                     }
+
+                    reviewReturns++;
+                    jobObj[$"reviewReturns_{taskId}"] = reviewReturns;
 
                     jobObj[$"handoff_{taskId}"] = $"Review requested changes:\n{reviewerNotesForNextRound}";
                     currentRound++;
@@ -1482,6 +1540,14 @@ public static class PipelineBuild
                 }
             }
 
+            // If already ready-local, do not open a pull request retroactively even if a repo is linked later
+            if (string.Equals(jobObj["status"]?.ToString(), "ready-local", StringComparison.OrdinalIgnoreCase))
+            {
+                finalStatus = "ready-local";
+                awaitReason = "no linked GitHub repository";
+                return true;
+            }
+
             var worktreePath = jobObj["worktreePath"]?.ToString();
             var branchName = jobObj["worktreeBranch"]?.ToString() ?? BranchNameForJob(jobId);
             if (string.IsNullOrWhiteSpace(worktreePath) || !Directory.Exists(worktreePath))
@@ -1559,7 +1625,9 @@ public static class PipelineBuild
 
             if (postSyncOutcome is null ||
                 postSyncOutcome.Status != "pass" ||
-                postSyncOutcome.ManifestSha256 != manifestSha256)
+                postSyncOutcome.ManifestSha256 != manifestSha256 ||
+                !postSyncOutcome.PullRequestReady ||
+                postSyncOutcome.BlocksPullRequest)
             {
                 jobObj["status"] = "awaiting-owner";
                 jobObj["awaitingOwnerReason"] = "post-sync gate failed";
