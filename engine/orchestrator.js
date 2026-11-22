@@ -2437,8 +2437,11 @@ function createOrchestrator(options) {
     view.projects.forEach(row => {
       const mode = row.chatMode === 'talk' ? 'talk' : 'plan';
       const last = (store.asks || []).find(ask => ask && ask.projectId === row.id && typeof ask.answer === 'string' && !ask.diagnostic);
-      // Talk never offers a crew goal. Plan offers the two start controls.
-      row.crewGoal = mode === 'talk' ? null : chatMode.suggestedGoal(last && last.answer);
+      const isRunning = chatMode.workInFlight(row);
+      const addition = chatMode.addition(last && last.answer);
+      const suggested = chatMode.suggestedGoal(last && last.answer);
+      row.addition = mode === 'talk' ? null : (isRunning ? addition : null);
+      row.crewGoal = mode === 'talk' ? null : (isRunning ? (suggested || null) : (suggested || addition));
       row.offerUseGoal = mode === 'plan' && Boolean(row.crewGoal);
       row.offerStart = mode === 'plan';
       row.analysis = analysisOf(row);
@@ -3652,6 +3655,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             question: q,
             model,
             chatMode: chatModeOf((row && row.id) || projectId),
+            workRunning: chatMode.workInFlight(row),
             ...(grillKind ? { grillKind, allowActions: false } : {}),
             projectId: (row && row.id) || fallback.projectId,
             folder: linkedWorkspace(row && row.folder),
@@ -3742,6 +3746,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           // A goal line in Talk is not a proposal: it is removed and nothing is started from it.
           if (chatModeOf((row && row.id) || projectId) === 'talk') {
             if (chatMode.suggestedGoal(answer)) answer = chatMode.withoutSuggestion(answer);
+            if (chatMode.addition(answer)) answer = chatMode.withoutAddition(answer);
             envelope.actions = [];
           }
           const modeNow = savingModeOf((row && row.id) || projectId);
@@ -4216,6 +4221,47 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, snapshot: await tick(projectId) };
   }
 
+  async function addToWork(projectId, request = {}) {
+    if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => addToWork(projectId, request));
+    if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
+    const plan = await opts.readPlan();
+    const item = notebookProjects(plan).find(row => row.project.id === projectId);
+    if (!item) return { ok: false, reason: 'project not found' };
+    if (chatModeOf(projectId) === 'talk') return { ok: false, reason: 'Talk mode does not allow additions.' };
+    const row = entry(projectId);
+    const job = (item.tasks || []).find(task => task.status === 'running');
+    if (!job) return { ok: false, reason: 'no running job' };
+    const megaTaskId = row.megaTaskId || bridge.find(projectId, job.id)?.id;
+    if (!megaTaskId) return { ok: false, reason: 'no active work' };
+    const mega = bridge.target(projectId, megaTaskId);
+    if (!mega || mega.status === 'COMPLETE') return { ok: false, reason: 'work is already complete' };
+    const last = (store.asks || []).find(ask => ask && ask.projectId === projectId && typeof ask.answer === 'string' && !ask.diagnostic);
+    const additionText = typeof request === 'string' ? request : request?.addition || request?.detail || chatMode.addition(last?.answer);
+    if (!additionText || !additionText.trim()) return { ok: false, reason: 'addition required' };
+    try {
+      const added = bridge.appendAddition(item, job, mega.id, {
+        ...(typeof request === 'object' ? request : {}),
+        addition: additionText.trim()
+      });
+      if (!added.ok) return added;
+      const model = roster().find(m => m.id === added.subTask.assignedModelId);
+      const modelLabel = model?.label || added.subTask.assignedModelId;
+      note(projectId, `Added to this work: ${added.subTask.detail} (${modelLabel}).`);
+      row.authorizedSessionId = sessionId;
+      row.approved = true;
+      row.holdApproval = false;
+      row.addition = null;
+      if (row.status === 'checkpointed') {
+        row.status = 'watching';
+        row.checkpoint = null;
+      }
+      persist();
+      return { ok: true, subTask: added.subTask, snapshot: await tick(projectId) };
+    } catch (error) {
+      return { ok: false, reason: error.message };
+    }
+  }
+
   function prepareForNewTask(projectId) {
     const row = entry(projectId);
     if (row.megaTaskId) {
@@ -4609,7 +4655,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { works, fixes, fixing };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, addToWork, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

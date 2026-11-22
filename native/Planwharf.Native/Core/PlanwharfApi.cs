@@ -163,6 +163,10 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> CommitAsync(string projectId, string message, bool push) => PostAsync("/api/repository/commit", new { projectId, message, push });
     public Task<JsonNode?> IgnoreAlertAsync(string projectId, string alertId) => PostAsync("/api/supervisor/ignore", new { projectId, alertId });
 
+    // Adds an agreed addition as one more Build step before Verify.
+    public Task<JsonNode?> AddToWorkAsync(string projectId, string? addition = null) =>
+        PostAsync("/api/orchestrator/add-to-work", addition == null ? new { projectId } : (object)new { projectId, addition });
+
     // The goal agreed in the chat becomes the project's goal before the crew starts.
     public async Task SaveGoalAsync(string projectId, string goal)
     {

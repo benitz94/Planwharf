@@ -60,6 +60,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 27 | #186 | Talk, Plan and Auto above the chat, one per project. Talk does not start the crew. Plan is the default and today's behaviour. Auto starts the goal for this session and returns to Plan after a restart. Pipeline is reserved and hidden | A pull-request fix still pushes when the worker push guard is set; verified independently with tests for concurrent remote push, clean no-change fix, and Auto-to-Talk running work preservation |
 | 28 | #193 | Pull requests side panel in place of Check PRs: open pull requests with checks and conflicts, merged and closed history, a 30-day summary, filters, and Fix in the background | Verified independently, not pushed. A refused push keeps the commit and still says so when the refusal is long; one project can push while another keeps its copy. A crashed gh read stays a panel message. Timed-out checks count. An unreadable next page keeps the rows |
 | 29 | #196 | Per-project saving modes: Normal, Safe and Ultra safe limit the lead and the crew to the allowed model classes, from the next step | Waiting for review, not pushed |
+| 30 | #197 | Add to the running work: while work runs, an agreed addition appends one Build step before Verify and starts on an allowed model; Verify reruns after; stopped work resumes with it | Waiting for review, not pushed |
 
 ## Improvements found while Planwharf worked on itself
 

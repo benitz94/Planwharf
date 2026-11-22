@@ -775,6 +775,153 @@ function createExecutionBridge(options) {
     paint(mega); persist();
     return mega;
   }
+  function appendAddition(item, job, megaTaskId, spec = {}) {
+    const mega = target(item.project.id, megaTaskId);
+    if (mega.status === 'COMPLETE') {
+      throw new Error('Work is already complete. Start a new goal instead.');
+    }
+    reconcile(mega);
+    let subs = subtasks(mega);
+    const verifySub = subs.find(sub => stepRole(sub) === 'Verify');
+
+    let scope = Array.isArray(spec.files) && spec.files.length ? spec.files.map(slash) : null;
+    if (!scope && typeof spec.addition === 'string') {
+      const matches = [...spec.addition.matchAll(/`([^`\r\n]+\.[a-zA-Z0-9]+)`/g)].map(m => m[1].trim());
+      if (matches.length) scope = matches.map(slash);
+    }
+    if (!scope && Array.isArray(spec.scope) && spec.scope.length) scope = spec.scope.map(slash);
+
+    const dependencies = [];
+    if (scope && scope.length) {
+      for (const other of subs.filter(sub => stepRole(sub) === 'Build' && sub.status !== 'COMPLETE')) {
+        if (Array.isArray(other.scope) && other.scope.length && other.scope.some(x => scope.some(y => x === y || y.startsWith(x + '/') || x.startsWith(y + '/')))) {
+          dependencies.push(other.id);
+        }
+      }
+    }
+
+    let worker = null;
+    if (spec.modelId) {
+      const candidate = models().find(m => m.id === spec.modelId);
+      if (candidate && (!options.workerEligible || options.workerEligible(candidate, { type: 'IMPLEMENTATION' }))) {
+        worker = candidate;
+      }
+    }
+    if (!worker && typeof options.replacement === 'function') {
+      worker = options.replacement({ type: 'IMPLEMENTATION', title: spec.title || spec.addition }, []);
+    }
+    if (!worker) {
+      worker = models().find(m => m.roles?.worker && (!options.workerEligible || options.workerEligible(m, { type: 'IMPLEMENTATION' })));
+    }
+
+    const assignedModelId = worker?.id || spec.modelId || 'unassigned';
+    const proposedProvider = worker?.provider || null;
+    const proposedCli = worker?.cli || null;
+
+    const newIndex = subs.length + 1;
+    const id = `${mega.id}-ST-${String(newIndex).padStart(2, '0')}`;
+    const rawTitle = spec.title || String(spec.addition || '').split(/\r?\n/)[0].replace(/^Addition to this work:\s*/i, '').trim();
+    const title = rawTitle.slice(0, 120) || 'Addition to work';
+    const detail = spec.addition || spec.detail || title;
+
+    const newSub = {
+      id,
+      megaTaskId: mega.id,
+      title,
+      detail,
+      status: 'PENDING',
+      assignedModelId,
+      attemptIds: [],
+      resultId: null,
+      createdAt: now(),
+      completedAt: null,
+      type: 'IMPLEMENTATION',
+      dependencies: [...new Set(dependencies)],
+      proposedProvider,
+      proposedCli,
+      provider: null,
+      cli: null,
+      ...(scope ? { scope } : {})
+    };
+
+    if (verifySub) {
+      const verifyIdx = data.subTasks.findIndex(s => s.id === verifySub.id);
+      if (verifyIdx >= 0) data.subTasks.splice(verifyIdx, 0, newSub);
+      else data.subTasks.push(newSub);
+
+      if (!verifySub.dependencies.includes(newSub.id)) {
+        verifySub.dependencies.push(newSub.id);
+      }
+      if (verifySub.status === 'RUNNING') {
+        const row = rowFor(mega.projectId, mega.id);
+        const part = (row.dispatch || []).find(p => p.subTaskId === verifySub.id && p.alive);
+        if (part) {
+          if (typeof killWorker === 'function') {
+            try { killWorker(part.pid); } catch (_) {}
+          }
+          part.alive = false;
+          part.observedAlive = false;
+          attempts.closeAttempt({ attemptId: part.attemptId, reason: 'interrupted by addition' });
+        }
+        verifySub.status = 'PENDING';
+        verifySub.resultId = null;
+        verifySub.completedAt = null;
+      } else if (verifySub.status === 'COMPLETE' || verifySub.status === 'BLOCKED' || verifySub.status === 'FAILED') {
+        verifySub.status = 'PENDING';
+        verifySub.resultId = null;
+        verifySub.completedAt = null;
+      }
+    } else {
+      data.subTasks.push(newSub);
+    }
+
+    if (mega.status === 'PAUSED') {
+      const latestCp = data.checkpoints.filter(cp => cp.megaTaskId === mega.id).at(-1);
+      if (latestCp) mega.currentCheckpointId = latestCp.id;
+      for (const sub of subtasks(mega)) if (sub.status !== 'COMPLETE') {
+        sub.status = 'PENDING';
+        sub.resultId = null;
+      }
+      mega.status = 'RUNNING';
+      mega.pauseRequested = false;
+      mega.interruptedAttemptIds = [];
+      mega.nextAction = 'Resume with the new addition step.';
+      event(mega.projectId, 'MEGATASK_RESUMED', `Resumed ${mega.title} with addition.`, { megaTaskId: mega.id });
+    }
+
+    event(mega.projectId, 'SUBTASK_ADDED', `Added to this work: ${title} (${worker?.label || worker?.id || assignedModelId}).`, { megaTaskId: mega.id, subTaskId: newSub.id });
+
+    const folder = item?.project?.folder;
+    if (folder) {
+      try {
+        const prev = planFile.parse(planFile.read(folder));
+        const allSubs = subtasks(mega);
+        const steps = allSubs.map(sub => ({
+          role: stepRole(sub),
+          model: models().find(m => m.id === sub.assignedModelId)?.label || sub.assignedModelId || 'unassigned',
+          title: sub.title,
+          done: sub.status === 'COMPLETE',
+          reset: stepRole(sub) === 'Verify' && sub.status !== 'COMPLETE',
+          commit: sub.status === 'COMPLETE' ? (data.results.find(r => r.subTaskId === sub.id)?.summary || 'committed') : ''
+        }));
+        planFile.writePlan(folder, {
+          goal: prev.goal || mega.goal,
+          base: prev.base,
+          branch: prev.branch || planFile.currentBranch(folder),
+          steps
+        });
+      } catch (_) {}
+    }
+
+    paint(mega);
+    persist();
+
+    if (mega.status === 'RUNNING') {
+      advance(item, job, [], true);
+    }
+
+    return { ok: true, subTask: newSub, megaTask: mega };
+  }
   function answerDecision(projectId, decisionId, answer) {
     const decision = data.decisions.find(item => item.projectId === projectId && item.id === decisionId);
     if (!decision) return { ok: false, reason: 'Decision not found.' };
@@ -783,7 +930,7 @@ function createExecutionBridge(options) {
     persist();
     return { ok: true };
   }
-  return { replan, propose, approve, advance, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision };
+  return { replan, propose, approve, advance, appendAddition, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision };
 }
 function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
 function readStepTimes(dir) {

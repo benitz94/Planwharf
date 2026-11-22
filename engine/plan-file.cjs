@@ -254,7 +254,7 @@ function writePlan(folder, spec) {
   const steps = spec.steps && spec.steps.length
     ? spec.steps.map(step => {
       const label = step.label || stepLabel(step, spec.steps);
-      const kept = same && previous.steps.find(old => old.done && old.line.includes(label));
+      const kept = same && !step.reset && step.done !== false && previous.steps.find(old => old.done && old.line.includes(label));
       return kept ? { label, done: true, commit: kept.commit } : { ...step, label, done: Boolean(step.done), commit: step.commit || '' };
     })
     : (same ? previous.steps.map(step => ({ label: step.line.replace(/^- \[[ xX]\] /, '').replace(/ — .*$/, ''), done: step.done, commit: step.commit })) : []);
