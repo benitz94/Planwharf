@@ -35,12 +35,14 @@ public sealed record ProjectView(string Id, string Name, string Status, IReadOnl
     public string ChatMode { get; init; } = "plan";
     // normal, safe or ultra-safe. Missing and unknown values are Normal.
     public string SavingMode { get; init; } = SavingModes.Normal;
+    public string? Addition { get; init; }
 }
 
 // Reads the server's snapshot the way the chat page does: same labels, same next action, same stop sentences.
 public static class ProjectViews
 {
     static readonly Regex Suggested = new(@"^\s*\**Suggested next goal:\**\s*(.+)$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+    static readonly Regex Addition = new(@"^\s*\**Addition to this work:\**\s*(.+)$", RegexOptions.Multiline | RegexOptions.IgnoreCase);
     const string VerifyPrefix = "Verify the work independently";
 
     static Dictionary<string, string> StopLabels => new()
@@ -80,7 +82,13 @@ public static class ProjectViews
             .Select(line => line.IndexOf("Needs your decision:", StringComparison.OrdinalIgnoreCase) is var at && at >= 0 ? line[(at + "Needs your decision:".Length)..].Trim() : "")
             .Where(line => line.Length > 0).Distinct().ToList();
 
-    public static string? SuggestedGoal(string answer) => Suggested.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
+    public static string? SuggestedGoal(string? answer) => answer != null && Suggested.Match(answer) is { Success: true } match ? match.Groups[1].Value.Trim() : null;
+    public static string? AdditionText(string? answer)
+    {
+        if (answer == null || Addition.Match(answer) is not { Success: true } match) return null;
+        var text = match.Groups[1].Value.Trim();
+        return text.Length > 0 ? text : null;
+    }
 
     // The project used last comes first, so a message is not sent to a project the user left long ago.
     // Used means a message to its lead or work of its crew; only opening a project does not move it.
@@ -155,15 +163,17 @@ public static class ProjectViews
         var chatMode = S(row["chatMode"]).Trim().ToLowerInvariant();
         if (chatMode != "talk") chatMode = "plan";
         var savingMode = SavingModes.Normalize(S(row["savingMode"]));
+        // Between two works the crew is still on: the lead checks the result and decides the next step.
+        var running = work != null && work.Status is "RUNNING" or "READY_FOR_APPROVAL" || B(row["canStop"]);
         // Only a goal the lead suggested is offered to the crew: a plain question is not work to do.
         // Talk offers neither goal.
-        var nextGoal = chatMode == "talk" || lastAsk == null ? null : SuggestedGoal(S(lastAsk["answer"]));
+        var additionText = chatMode == "talk" || lastAsk == null ? null : AdditionText(S(lastAsk["answer"]));
+        var nextGoal = chatMode == "talk" || lastAsk == null ? null : (running ? SuggestedGoal(S(lastAsk["answer"])) : (SuggestedGoal(S(lastAsk["answer"])) ?? additionText));
         if (nextGoal != null && (nextGoal == goal || S(lastAsk?["question"]).Trim() == goal)) nextGoal = null;
         var suggestedAt = lastAsk != null && DateTimeOffset.TryParse(S(lastAsk["at"]), out var parsedAsk) ? parsedAsk : (DateTimeOffset?)null;
         if (nextGoal != null && !TeamViews.SuggestionIsCurrent(suggestedAt, work?.StartedAt)) nextGoal = null;
+        var addition = chatMode == "talk" || lastAsk == null || !running ? null : additionText;
 
-        // Between two works the crew is still on: the lead checks the result and decides the next step.
-        var running = work != null && work.Status is "RUNNING" or "READY_FOR_APPROVAL" || B(row["canStop"]);
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, Strings.T("Stop the crew"), running
                 ? Strings.T("The crew is working. You can keep chatting with the lead and change models at any time.")
                 : Strings.T("The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on."))
@@ -178,7 +188,7 @@ public static class ProjectViews
         if (chatMode == "talk" && action == CrewAction.LetTheCrewDoIt)
             (action, text, hint) = (CrewAction.None, "", Strings.T("A conversation with the lead. Nothing starts."));
         var timeLeft = work != null && stepsStillOpen(work) ? ChatViews.TimeLeft(row["timeLeft"], zone) : "";
-        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode, SavingMode = savingMode };
+        return new ProjectView(id, S(row["name"]), StatusOf(snapshot, row), messages, work, action, text, hint, nextGoal, S(row["megaTaskId"]) is { Length: > 0 } mt ? mt : null) { TimeLeft = timeLeft, ChatMode = chatMode, SavingMode = savingMode, Addition = addition };
     }
 
     static bool stepsStillOpen(WorkView work) => work.Steps.Any(step => step.Status is "working" or "waiting" or "waiting for quota");

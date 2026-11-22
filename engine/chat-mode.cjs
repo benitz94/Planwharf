@@ -6,6 +6,7 @@ const VISIBLE = Object.freeze(['talk', 'plan']);
 const RESERVED = Object.freeze(['pipeline']);
 const DEFAULT = 'plan';
 const SUGGESTED = /^\s*\**Suggested next goal:\**\s*(.+)$/im;
+const ADDITION = /^\s*\**Addition to this work:\**\s*(.+)$/im;
 
 function normalize(value) {
   const mode = String(value || '').trim().toLowerCase();
@@ -27,6 +28,14 @@ function talkInstruction() {
   ].join(' ');
 }
 
+function additionInstruction() {
+  return [
+    'While work is running, when the user talks about something to add, help shape the plan, then end with one line that starts exactly with "Addition to this work:" followed by the agreed addition in one or two sentences, instead of a suggested next goal.',
+    'After finished work, say briefly what it did when it helps.',
+    'The user adds it with the Add to this work button; never claim it has started, and never say you created a task.'
+  ].join(' ');
+}
+
 function suggestedGoal(answer) {
   const match = String(answer || '').match(SUGGESTED);
   return match && match[1].trim() ? match[1].trim() : null;
@@ -35,6 +44,18 @@ function suggestedGoal(answer) {
 function withoutSuggestion(answer) {
   return String(answer || '')
     .replace(/^\s*\**Suggested next goal:\**\s*.+(?:\r?\n)?/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function addition(answer) {
+  const match = String(answer || '').match(ADDITION);
+  return match && match[1].trim() ? match[1].trim() : null;
+}
+
+function withoutAddition(answer) {
+  return String(answer || '')
+    .replace(/^\s*\**Addition to this work:\**\s*.+(?:\r?\n)?/gim, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -76,6 +97,6 @@ function label(mode) {
 }
 
 module.exports = {
-  VISIBLE, RESERVED, DEFAULT, normalize, persisted, talkInstruction,
-  suggestedGoal, withoutSuggestion, workInFlight, order, label
+  VISIBLE, RESERVED, DEFAULT, normalize, persisted, talkInstruction, additionInstruction,
+  suggestedGoal, withoutSuggestion, addition, withoutAddition, workInFlight, order, label
 };

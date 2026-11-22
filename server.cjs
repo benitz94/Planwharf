@@ -425,7 +425,7 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
       // Wait for the fresh startup catalog before reporting or executing model work.
       // Local shutdown and status polling remain available while discovery runs.
       if (pathname.startsWith('/api/orchestrator') || pathname === '/api/plan') await legacyClosed;
-      if (!quickRead && pathname === '/api/orchestrator' || request.method === 'POST' && ['/api/orchestrator/propose', '/api/orchestrator/approve', '/api/orchestrator/resume', '/api/orchestrator/start', '/api/orchestrator/ask', '/api/orchestrator/lead', '/api/orchestrator/research/approve', '/api/orchestrator/research/resume'].includes(pathname)) await initialModelsSync;
+      if (!quickRead && pathname === '/api/orchestrator' || request.method === 'POST' && ['/api/orchestrator/propose', '/api/orchestrator/approve', '/api/orchestrator/resume', '/api/orchestrator/add-to-work', '/api/orchestrator/start', '/api/orchestrator/ask', '/api/orchestrator/lead', '/api/orchestrator/research/approve', '/api/orchestrator/research/resume'].includes(pathname)) await initialModelsSync;
       // Model discovery is explicit or startup-only; status polling never spawns provider CLIs.
       if (refreshModels && request.method === 'POST' && pathname === '/api/orchestrator/propose') await providerModels.refresh();
       // The chat view is the only page. Addresses of the earlier screens open it.
@@ -1026,6 +1026,14 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['projectId', 'megaTaskId', 'checkpointId', 'confirmChanges', 'assignments'].includes(key)) || input.confirmChanges !== undefined && typeof input.confirmChanges !== 'boolean') throw new RequestError(400, 'Invalid data.');
         const result = await enqueue(() => orchestra.resume(input.projectId, input));
         if (result.requiresConfirmation) return json(409, result);
+        if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
+        return json(200, result.snapshot);
+      }
+      if (request.method === 'POST' && pathname === '/api/orchestrator/add-to-work') {
+        if (request.headers['content-type'] !== 'application/json') throw new RequestError(415, 'Use JSON for the revision.');
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || Object.keys(input).some(key => !['projectId', 'addition', 'detail', 'title', 'files', 'modelId'].includes(key))) throw new RequestError(400, 'Invalid data.');
+        const result = await enqueue(() => orchestra.addToWork(input.projectId, input));
         if (!result.ok) throw new RequestError(400, result.reason || 'Invalid data.');
         return json(200, result.snapshot);
       }

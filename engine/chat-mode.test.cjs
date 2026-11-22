@@ -397,3 +397,29 @@ test('suggestedGoal edge cases: formatted bold lines, indentation, empty suggest
   assert.match(stripped, /Here is the plan:/);
   assert.match(stripped, /Notes follow\./);
 });
+
+test('addition marker parsing, stripping, and the running-work prompt', () => {
+  assert.equal(chat.addition('Addition to this work: Add a logger.'), 'Add a logger.');
+  assert.equal(chat.addition('**Addition to this work:** Add a logger.'), 'Add a logger.');
+  assert.equal(chat.addition('  Addition to this work:    Add a logger.  '), 'Add a logger.');
+  assert.equal(chat.addition('Addition to this work:'), null);
+  assert.equal(chat.addition('Addition to this work:   \n'), null);
+  assert.equal(chat.addition('Suggested next goal: Add a logger.'), null);
+  assert.equal(chat.addition(null), null);
+
+  const reply = 'Agreed.\n\n**Addition to this work:** Cover empty input.\n\nThanks.';
+  assert.equal(chat.addition(reply), 'Cover empty input.');
+  const body = chat.withoutAddition(reply);
+  assert.doesNotMatch(body, /Addition to this work/i);
+  assert.match(body, /Agreed/);
+  assert.match(body, /Thanks/);
+
+  const running = askPrompt({ question: 'Also add logging', chatMode: 'plan', workRunning: true, model: { label: 'Lead' }, state: {} });
+  assert.match(running, /Addition to this work:/);
+  assert.doesNotMatch(running, /end with one line that starts exactly with "Suggested next goal:"/);
+  const idle = askPrompt({ question: 'What next', chatMode: 'plan', workRunning: false, model: { label: 'Lead' }, state: {} });
+  assert.match(idle, /Suggested next goal:/);
+  const talk = askPrompt({ question: 'What if', chatMode: 'talk', workRunning: true, model: { label: 'Lead' }, state: {} });
+  assert.match(talk, /Do not suggest a goal for the crew/);
+  assert.doesNotMatch(talk, /Addition to this work:/);
+});

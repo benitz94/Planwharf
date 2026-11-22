@@ -69,6 +69,8 @@ Write in the chat what you want. In Talk and Plan, ordinary conversation never s
 
 In Plan, when the lead suggests a goal, **Let the crew do it** starts it. The crew then works on its own: the lead splits the work, approves its own steps within limits, and stops when the goal is reached or a limit is hit. **Stop the crew** stops it at any time.
 
+While work is running, if you talk with the lead about something to add, the lead's answer ends with a line starting with "Addition to this work:" instead of a suggested next goal. Under that answer, click **Add to this work**: Planwharf appends one Build step before Verify with the addition as its detail. The new step follows the project team, quota limits and saving mode, and starts as soon as an allowed model is free (a step running on the same files goes first). If Verify had already started, it is run again after the new step on the same branch. A stopped work takes the addition too and resumes from its checkpoint; once work is finished, the addition becomes a new goal proposal as usual.
+
 ## What happens after "Let the crew do it"
 
 1. **Safe start.** Planwharf checks that the project folder has no uncommitted changes from something else, fetches GitHub, and creates the work's branch from the latest `main` (or goes on with the work's own branch). It writes the work plan, `.planwharf/plan.md`, kept out of git unless you choose **Settings → Keep the work plan in git**.

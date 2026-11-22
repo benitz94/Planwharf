@@ -398,6 +398,20 @@ public sealed partial class MainWindow
             copy.Click += async (_, _) => { if (Clipboard != null) { await Clipboard.SetTextAsync(ask.Answer); copy.Content = Look.Label(Strings.T("Copied"), "check", 14, 5); copy.Foreground = Palette.Accent; } };
             under.Children.Add(copy);
         }
+        var addition = ProjectViews.AdditionText(ask.Answer);
+        var row = RowOf(id);
+        var running = row != null && (Str(row["megaTask"]?["status"]) is "RUNNING" or "PAUSED" || Flag(row["canStop"]) || (row["dispatch"] as JsonArray)?.Any(part => Flag(part?["alive"])) == true) && Str(row["chatMode"]).ToLowerInvariant() != "talk";
+        if (addition != null && running)
+        {
+            var addBtn = Look.Button(Strings.T("Add to this work"), "plus", Look.Kind.Small);
+            addBtn.Click += async (_, _) =>
+            {
+                if (!addBtn.IsEnabled) return;
+                addBtn.IsEnabled = false;
+                await DoAsync(() => api!.AddToWorkAsync(id, addition), Strings.Format(Strings.T("Added to this work: {0}"), addition));
+            };
+            under.Children.Add(addBtn);
+        }
         // The lead asked to turn on a tool: one button, and only a click from the user turns it on.
         if (Tools.FirstOrDefault(tool => tool.Name == ask.ToolRequest) is { Name.Length: > 0 } wanted && !ModelToolsView.Read(snapshot, id, ask.ModelId).Tools[wanted.Name])
         {
