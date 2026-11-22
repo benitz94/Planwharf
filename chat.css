@@ -373,3 +373,29 @@ details.skills summary { cursor: pointer; }
 .pill.pr-running { background: var(--warn-soft); color: var(--warn); }
 .pr-work { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .filters .bulk { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; }
+
+/* Three-way chat mode switch: Talk, Plan, Pipeline */
+.chat-mode-bar { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.chat-mode-bar:empty { display: none; }
+.mode-switches { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.mode-tab { border: 1px solid var(--line); background: var(--surface); padding: 5px 12px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.mode-tab:hover { background: var(--surface-2); }
+.mode-tab .i { width: 14px; height: 14px; }
+.mode-tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.chat-mode-hint { font-size: 12px; color: var(--muted); margin: 2px 0 2px; }
+
+/* Pipeline project panel */
+.pipeline-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; background: var(--surface); box-shadow: var(--shadow); }
+.pipeline-card.needs-decision { border-color: var(--warn); background: linear-gradient(180deg, var(--warn-soft), var(--surface) 90px); }
+.pipeline-card.merged { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 90px); }
+.pipeline-card.running, .pipeline-card.building, .pipeline-card.merging { border-color: var(--build); }
+.pipeline-card.dropped { opacity: .75; border-style: dashed; }
+.pipeline-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.pipeline-title { font-weight: 600; font-size: 14px; margin: 0; overflow-wrap: anywhere; }
+.pipeline-meta { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 6px 0; }
+.pipeline-stages { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+.pipeline-stage { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--bg); font-size: 12px; }
+.pipeline-stage-summary { font-weight: 500; overflow-wrap: anywhere; }
+.pipeline-detail summary { cursor: pointer; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.pipeline-detail[open] summary { margin-bottom: 6px; }
+.pipeline-quota-list { display: flex; flex-direction: column; gap: 3px; font-size: 12px; margin: 4px 0; }

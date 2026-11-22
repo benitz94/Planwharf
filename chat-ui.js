@@ -40,7 +40,8 @@
   const state = {
     orchestra: null, plan: null, projectId: store.get('project', null), panel: store.get('panel', null),
     pending: {}, repo: {}, sessions: store.get('sessions', {}), threadSig: '', sideSig: '', confirm: null, loaded: false,
-    updates: null, windowTitle: null, armed: null, accountSignInCommand: ''
+    updates: null, windowTitle: null, armed: null, accountSignInCommand: '',
+    chatModes: store.get('chatModes', {}), pipeline: null
   };
 
   // ---------- backend ----------
@@ -68,6 +69,7 @@
       if (!projects.some(row => row.id === state.projectId)) state.projectId = projects[0]?.id || null;
       render();
       if (state.panel === 'pulls' && state.pulls?.data?.fixing?.length && !state.pulls.loading && Date.now() - (state.pulls.at || 0) > 8000) loadPulls();
+      if (state.panel === 'pipeline' && !state.pipeline?.loading && Date.now() - (state.pipeline?.at || 0) > 8000) loadPipeline();
     } catch (error) {
       if (!state.loaded) { $('thread').innerHTML = `<div class="card"><h2>Planwharf is not reachable</h2><p>${escape(error.message)}</p><p class="muted">Start Planwharf again, then reload this page.</p></div>`; }
     }
@@ -126,7 +128,8 @@
     pause: '<path d="M9 5v14M15 5v14"/>',
     research: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
-    git: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-3 5.5-7 5.5"/>'
+    git: '<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-3 5.5-7 5.5"/>',
+    pipeline: '<path d="M3 12h18M16 7l5 5-5 5"/><circle cx="7" cy="12" r="3"/><circle cx="14" cy="12" r="3"/>'
   };
   const ic = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
   const tile = (name, tone) => `<span class="tile ${tone}" aria-hidden="true">${ic(name)}</span>`;
@@ -185,6 +188,7 @@
   function render() {
     renderProjects();
     renderHeader();
+    renderChatModeBar();
     renderThread();
     renderActions();
     renderSide();
@@ -235,6 +239,67 @@
   function savingBeside(row) {
     const name = row?.name || '';
     return name ? `${name} · ${savingLabel(savingModeId(row))}` : savingLabel(savingModeId(row));
+  }
+  const CHAT_MODE_LABELS = {
+    en: { talk: 'Talk', plan: 'Plan', pipeline: 'Pipeline' },
+    it: { talk: 'Chat', plan: 'Piano', pipeline: 'Pipeline' }
+  };
+  const CHAT_MODE_HINTS = {
+    en: {
+      talk: 'A conversation with the lead. Nothing starts.',
+      plan: 'Talk with the lead about what to build: it suggests a goal, then press Let the crew do it.',
+      pipeline: 'Requests go into the pipeline queue. The crew builds, checks, and turns them into pull requests.'
+    },
+    it: {
+      talk: 'Una conversazione con il coordinatore. Non parte nulla.',
+      plan: 'Parla con il coordinatore di cosa costruire: suggerisce un obiettivo, poi premi Affida il lavoro alla squadra.',
+      pipeline: 'Le richieste entrano nella coda della pipeline. La squadra costruisce, verifica e apre pull request.'
+    }
+  };
+  const CHAT_MODE_ICONS = { talk: 'send', plan: 'pencil', pipeline: 'pipeline' };
+  function chatModeId(row) {
+    const raw = row?.chatMode || (row?.id ? (state.chatModes?.[row.id] || store.get('chatModes', {})[row.id]) : null) || 'plan';
+    const mode = String(raw).trim().toLowerCase();
+    return Object.hasOwn(CHAT_MODE_LABELS.en, mode) ? mode : 'plan';
+  }
+  function chatModeLabel(mode) {
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    return CHAT_MODE_LABELS[lang][chatModeId({ chatMode: mode })];
+  }
+  function chatModeHint(mode) {
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    return CHAT_MODE_HINTS[lang][chatModeId({ chatMode: mode })];
+  }
+  function renderChatModeBar() {
+    const bar = $('chat-mode-bar');
+    if (!bar) return;
+    const row = project();
+    if (!row) { bar.innerHTML = ''; return; }
+    const current = chatModeId(row);
+    const buttons = ['talk', 'plan', 'pipeline'].map(m => {
+      const active = m === current;
+      return `<button type="button" class="mode-tab" data-chat-mode="${m}" aria-pressed="${active}">${ic(CHAT_MODE_ICONS[m])}${escape(chatModeLabel(m))}</button>`;
+    }).join('');
+    bar.innerHTML = `<div class="mode-switches" role="group" aria-label="Mode">${buttons}</div><p class="chat-mode-hint" id="chat-mode-hint">${escape(chatModeHint(current))}</p>`;
+  }
+  async function setChatMode(mode) {
+    const row = project();
+    if (!row) return;
+    const target = chatModeId({ chatMode: mode });
+    if (!state.chatModes) state.chatModes = store.get('chatModes', {});
+    state.chatModes[row.id] = target;
+    store.set('chatModes', state.chatModes);
+    row.chatMode = target;
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    await act(async () => {
+      try {
+        const snap = await post('/api/orchestrator/chat-mode', { projectId: row.id, mode: target });
+        return snap;
+      } catch {
+        return null;
+      }
+    }, lang === 'it' ? 'Modalità salvata.' : 'Mode saved.');
+    if (target === 'pipeline' && state.panel === 'pipeline') loadPipeline();
   }
   function renderProjects() {
     const rows = state.orchestra?.projects || [];
@@ -519,12 +584,26 @@
     const nextGoal = !staleSuggestion && suggested || '';
     if (row && lastAsk && !busy && !pendingHere && nextGoal && nextGoal !== row.goal?.trim() && lastAsk.question?.trim() !== row.goal?.trim()) {
       state.goalCandidate = suggested; state.suggestedGoal = suggested;
-      html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
+      const mode = chatModeId(row);
+      if (mode === 'talk') {
+        html += `<div class="card hint"><p class="small">${ic('send')}In Talk mode: a conversation with the lead. Nothing starts.</p></div>`;
+      } else if (mode === 'pipeline') {
+        html += `<div class="card hint"><p class="small">${ic('pipeline')}Nothing has started yet. When the plan is right, press <b>Send to the pipeline</b> to queue</p><p class="small"><b>${escape(nextGoal)}</b></p><div class="row"><button type="button" class="btn btn-small btn-primary" data-action="send-to-pipeline">${ic('pipeline')}Send to the pipeline</button><button type="button" class="btn btn-small" data-panel="pipeline">${ic('pipeline')}See pipeline</button></div></div>`;
+      } else {
+        html += `<div class="card hint"><p class="small">${ic('alert')}Nothing has started yet. When the plan is right, press <b>Let the crew do it</b>: the crew will work on</p><p class="small"><b>${escape(nextGoal)}</b></p><div class="row"><button type="button" class="btn btn-small" data-action="send-to-pipeline" title="Send to the pipeline">${ic('pipeline')}Send to the pipeline</button></div><p class="small muted">Not right yet? Keep talking with the lead.</p></div>`;
+      }
     }
     // The user wrote exactly what to do, and the lead suggested no goal: the message itself can be the goal.
     else if (row && lastAsk && !busy && !pendingHere && !nextGoal && !(hasGoal(row) && !row.goalStarted) && lastAsk.question?.trim() && lastAsk.question.trim() !== row.goal?.trim()) {
       state.myGoal = lastAsk.question.trim();
-      html += `<div class="card hint"><p class="small">${ic('alert')}No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-my-goal">${ic('check')}Use my message as the goal</button></div></div>`;
+      const mode = chatModeId(row);
+      if (mode === 'pipeline') {
+        html += `<div class="card hint"><p class="small">${ic('pipeline')}Send your request to the pipeline queue, or keep talking with the lead.</p><div class="row"><button type="button" class="btn btn-small btn-primary" data-action="send-to-pipeline">${ic('pipeline')}Send to the pipeline</button><button type="button" class="btn btn-small" data-panel="pipeline">${ic('pipeline')}See pipeline</button></div></div>`;
+      } else if (mode === 'talk') {
+        html += `<div class="card hint"><p class="small">${ic('send')}In Talk mode: a conversation with the lead. Nothing starts.</p></div>`;
+      } else {
+        html += `<div class="card hint"><p class="small">${ic('alert')}No goal suggested yet. Keep talking with the lead, or give the crew exactly what you wrote.</p><div class="row"><button type="button" class="btn btn-small" data-action="use-my-goal">${ic('check')}Use my message as the goal</button><button type="button" class="btn btn-small" data-action="send-to-pipeline">${ic('pipeline')}Send to the pipeline</button></div></div>`;
+      }
     }
     if (row) html += (finished ? '' : crewCard(row)) + alertsCard(row);
     if (pendingHere) html += `<div class="msg you"><div class="bubble">${escape(pendingHere.text)}</div></div><div class="msg lead"><span class="who">${escape(lead()?.label || 'Lead')}</span><div class="bubble">${live?.draft ? escape(live.draft) : '<span class="dots">Thinking</span>'}</div>${live?.thinking ? `<details class="thinking" data-live-thinking${state.thinkingOpen ? ' open' : ''}><summary>What the lead is doing</summary><pre>${escape(live.thinking.slice(-4000))}</pre></details>` : ''}</div>`;
@@ -553,9 +632,14 @@
     const working = auto?.enabled && !auto.stopReason;
     const missing = readiness(row);
     const parts = [];
+    const mode = chatModeId(row);
     // After finished work the box asks for what comes next.
     const input = $('composer-input');
-    if (input) input.placeholder = row.goalStarted ? 'Tell the lead what you want built next…' : 'Tell the lead what you want built…';
+    if (input) {
+      input.placeholder = mode === 'talk' ? 'Talk with the lead…'
+        : mode === 'pipeline' ? 'Talk with the lead, or shape a request for the pipeline…'
+        : row.goalStarted ? 'Tell the lead what you want built next…' : 'Tell the lead what you want built…';
+    }
     const timed = timedStop();
     if (timed?.projectId === row.id) parts.push(`<span class="timed-stop">${ic('clock')}<span>Stops at ${escape(clock(timed.at))} (in ${Math.max(1, Math.ceil((timed.at - Date.now()) / 60000))} min)</span><button type="button" class="btn btn-small" data-action="cancel-timed-stop">Cancel</button></span>`);
     if (working) parts.push(`<button type="button" class="btn btn-danger" data-action="autonomy-off">${ic('stop')}Stop the crew</button><span class="status-text">${escape((row.subTasks || []).some(sub => sub.status === 'PENDING' && sub.waitingFor) ? 'Waiting for quota: the crew starts again by itself. You can change models in Team or in a step\'s menu at any time.' : 'The crew is working. You can keep chatting with the lead and change models at any time.')}</span>`);
@@ -564,10 +648,22 @@
     else if (row.canStop) parts.push(`<button type="button" class="btn btn-danger" data-action="stop">${ic('stop')}Stop work</button><span class="status-text">Work in progress. You can keep chatting with the lead.</span>`);
     // Stopped work can be resumed, or dropped to start something new: the files in the folder stay.
     else if (row.canResume) parts.push(`<button type="button" class="btn btn-primary" data-action="resume">${ic('play')}Resume</button><button type="button" class="btn" data-action="drop-work" title="Close the stopped work, so the crew can start a new goal. Files in the project folder stay as they are.">${ic('trash')}Drop this work</button><span class="status-text">Work was stopped. Resume continues from the saved point, or drop it to start something new.</span>`);
+    else if (mode === 'talk') {
+      parts.push(`<span class="status-text">${escape(chatModeHint('talk'))}</span>`);
+    }
+    else if (mode === 'pipeline') {
+      const hasGoalNow = Boolean(state.suggestedGoal || state.goalCandidate || hasGoal(row));
+      if (hasGoalNow) {
+        parts.push(`<button type="button" class="btn btn-primary" data-action="send-to-pipeline">${ic('pipeline')}Send to the pipeline</button>`);
+      }
+      parts.push(`<button type="button" class="btn btn-small" data-panel="pipeline">${ic('pipeline')}See pipeline</button>`);
+      parts.push(`<span class="status-text">${escape(hasGoalNow ? 'The agreed goal will be queued for the pipeline crew.' : 'In Pipeline, goals you agree on go to the pipeline queue instead of starting chat work.')}</span>`);
+    }
     else {
       // Right after start Planwharf shows saved data while it checks the AI tools again.
       const checking = state.orchestra?.modelsChecking === true;
       parts.push(`<button type="button" class="btn btn-primary" data-action="autonomy-on" ${missing.length || checking ? 'disabled' : ''} title="${escape(missing.map(item => item.text).join(' ') || 'Plan, build, verify and stop when the goal is reached')}">${ic('rocket')}Let the crew do it</button>`);
+      if (state.suggestedGoal || state.goalCandidate) parts.push(`<button type="button" class="btn btn-small" data-action="send-to-pipeline" title="Send to the pipeline">${ic('pipeline')}Send to the pipeline</button>`);
       // Why the last crew start stopped, in full, so it is never silent.
       const whyText = auto?.stopReason && auto.stopReason !== 'GOAL_REACHED' ? stopSentence(auto.stopReason) : '';
       parts.push(`<span class="status-text">${checking ? '<span class="dots">Checking your AI tools</span>' : escape(missing.length ? missing[0].text : whyText || 'Ready. The crew will plan, build, check and stop when the goal is reached.')}</span>`);
@@ -580,7 +676,7 @@
     const side = $('side-panel');
     if (!state.panel) { side.hidden = true; state.sideSig = ''; return; }
     side.hidden = false;
-    const body = ({ team: teamPanel, progress: progressPanel, usage: usagePanel, files: filesPanel, pulls: pullsPanel, settings: settingsPanel }[state.panel] || teamPanel)();
+    const body = ({ team: teamPanel, progress: progressPanel, usage: usagePanel, files: filesPanel, pulls: pullsPanel, pipeline: pipelinePanel, settings: settingsPanel }[state.panel] || teamPanel)();
     if (body === state.sideSig) return;
     // Never wipe what the user is typing or an open section; an action forces the redraw.
     const sideBody = $('side-body');
@@ -589,7 +685,7 @@
     state.sideRendered = state.panel;
     state.sideSig = body;
     const scroll = $('side-body').scrollTop;
-    $('side-title').textContent = { team: 'Team', progress: 'Progress', usage: 'Usage', files: 'Changed files', pulls: 'Pull requests', settings: 'Settings' }[state.panel] || 'Team';
+    $('side-title').textContent = { team: 'Team', progress: 'Progress', usage: 'Usage', files: 'Changed files', pulls: 'Pull requests', pipeline: 'Pipeline', settings: 'Settings' }[state.panel] || 'Team';
     $('side-body').innerHTML = body;
     $('side-body').scrollTop = scroll;
   }
@@ -798,6 +894,211 @@
     }).join('');
     const notice = held.notice ? `<p class="error">${escape(held.notice)}</p>` : '';
     return `${headSummary}<div class="section">${filters}${cards || `<p class="muted small">${empty}</p>`}${notice}${held.data.more ? `<button type="button" class="btn btn-small" data-action="pr-more">Show more</button>` : ''}<button type="button" class="btn btn-small" data-action="pr-refresh">${ic('refresh')}Check again</button></div>`;
+  }
+  let pipelineSeq = 0;
+  async function loadPipeline({ append = false } = {}) {
+    const token = ++pipelineSeq;
+    const row = project();
+    if (!row) { state.pipeline = { error: 'Select a project.', projectId: null, at: Date.now() }; state.sideSig = ''; if (state.panel === 'pipeline') renderSide(); return; }
+    const held = state.pipeline;
+    const same = Boolean(held && held.projectId === row.id);
+    state.pipeline = { ...(append || same ? held || {} : {}), loading: true, projectId: row.id };
+    try {
+      const data = await getJson('/api/pipeline?projectId=' + encodeURIComponent(row.id));
+      if (token !== pipelineSeq) return;
+      if (data && data.ok === false) {
+        state.pipeline = { error: data.reason || 'Could not read pipeline.', projectId: row.id, at: Date.now() };
+      } else {
+        state.pipeline = { data, projectId: row.id, at: Date.now() };
+      }
+    } catch (error) {
+      if (token !== pipelineSeq) return;
+      const localQueue = (state.pipelineQueue?.[row.id] || store.get('pipeline_queue', {})[row.id] || []);
+      if (localQueue.length) {
+        state.pipeline = { data: { jobs: localQueue }, projectId: row.id, at: Date.now() };
+      } else {
+        state.pipeline = { error: error.message, projectId: row.id, at: Date.now(), empty: true };
+      }
+    }
+    state.sideSig = '';
+    if (state.panel === 'pipeline') renderSide();
+  }
+  function pipelineQuotaText(quota) {
+    if (!quota) return 'not reported';
+    if (quota === 'unread' || quota.unread === true) return 'unread';
+    if (typeof quota === 'string') return quota;
+    if (Array.isArray(quota)) {
+      if (!quota.length) return 'not reported';
+      return quota.map(q => pipelineQuotaText(q)).join(' · ');
+    }
+    const prov = quota.provider ? (providerOf(quota.provider) || quota.provider) : '';
+    const id = quota.modelId || quota.model || '';
+    const left = Number.isFinite(quota.leftPct) ? `${quota.leftPct}% left` : (quota.leftPct != null ? String(quota.leftPct) : (quota.unread ? 'unread' : 'not reported'));
+    return [prov, id, left].filter(Boolean).join(' · ') || 'not reported';
+  }
+  function pipelineTokensText(tokens) {
+    if (!tokens) return 'not reported';
+    if (typeof tokens === 'string') return tokens;
+    const out = tokens.outputTokens ?? tokens.out;
+    return Number.isFinite(out) ? `${out.toLocaleString()} out` : 'not reported';
+  }
+  function pipelineStageClass(status) {
+    const s = String(status || '').toLowerCase();
+    if (/complete|merged/.test(s)) return 'pr-green';
+    if (/failed|blocked|dropped|collision|invalid/.test(s)) return 'pr-red';
+    if (/running|routing|building|reviewing|gating|merging/.test(s)) return 'pr-running';
+    return '';
+  }
+  function pipelinePanel() {
+    const row = project();
+    if (!row) return '<p class="muted">Select a project.</p>';
+    const held = state.pipeline;
+    if (!held || held.projectId !== row.id) {
+      loadPipeline();
+      return '<p class="muted"><span class="dots">Checking pipeline</span></p>';
+    }
+    const mode = chatModeId(row);
+    const modePill = `<span class="pill ${mode === 'pipeline' ? 'running' : ''}">${escape(chatModeLabel(mode))}</span>`;
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    const queueHint = mode === 'pipeline'
+      ? (lang === 'it' ? 'Attiva: le nuove richieste entrano nella coda della pipeline.' : 'Active: new requests go to the pipeline queue.')
+      : (lang === 'it' ? 'In pausa: lasciare Pipeline mette in pausa la coda, non la svuota.' : 'Paused: leaving Pipeline pauses the queue, it does not empty it.');
+    const headSection = `<div class="section">${head('pipeline', 't-accent', 'Pipeline')}
+      <p class="explain">${escape(queueHint)}</p>
+      <div class="row">${modePill}<button type="button" class="btn btn-small" data-action="pipeline-refresh">${ic('refresh')}Check again</button></div></div>`;
+    if (held.loading && !held.data) return headSection + '<p class="muted"><span class="dots">Checking pipeline</span></p>';
+    if (held.error && !held.empty) return headSection + `<p class="error">${escape(held.error)}</p><button type="button" class="btn btn-small" data-action="pipeline-refresh">${ic('refresh')}Check again</button>`;
+    const apiJobs = held.data?.jobs || held.data?.items || (Array.isArray(held.data) ? held.data : []);
+    const localJobs = (state.pipelineQueue?.[row.id] || store.get('pipeline_queue', {})[row.id] || []).filter(lj => !apiJobs.some(aj => aj.id === lj.id));
+    const allJobs = [...localJobs, ...apiJobs];
+    if (!allJobs.length) {
+      return headSection + `<div class="section"><p class="muted small">${escape(lang === 'it' ? `Nessun lavoro nella pipeline per ${row.name}.` : `No pipeline jobs yet for ${row.name}.`)}</p>
+        <p class="small muted">${escape(lang === 'it' ? 'Passa alla modalità Pipeline o premi "Invia alla pipeline" su un obiettivo per avviare il flusso.' : 'Switch to Pipeline mode or click "Send to the pipeline" on a goal to queue work.')}</p></div>`;
+    }
+    const cards = allJobs.map(job => {
+      const st = String(job.status || 'queued').toLowerCase();
+      const title = job.summary || job.title || job.id;
+      const needsDecision = st === 'awaiting-owner' || st === 'ready-local' || (st === 'pull-request' && !job.autoMerged);
+      const decisionBadge = needsDecision ? `<span class="badge failed">${escape(lang === 'it' ? 'Richiede la tua decisione' : 'Needs your decision')}</span>` : '';
+      const scheduleReason = st === 'approved' && (job.scheduleReason || job.reason) ? `<span class="badge">${escape(job.scheduleReason || job.reason)}</span>` : '';
+      const stagePill = `<span class="pill ${pipelineStageClass(st)}">${escape(st)}</span>`;
+      const elapsed = Number.isFinite(job.elapsedMs ?? job.reportedTimeMs) ? duration(job.elapsedMs ?? job.reportedTimeMs) : '';
+      const tokensStr = pipelineTokensText(job.tokens);
+      const quotaStr = pipelineQuotaText(job.quota);
+      const stages = (job.stages || []).map(s => {
+        const sSummary = s.summary || s.title || '';
+        const sTime = Number.isFinite(s.durationMs) ? duration(s.durationMs) : '';
+        const sStatus = s.status ? `<span class="pill ${pipelineStageClass(s.status)}">${escape(s.status)}</span>` : '';
+        return `<li class="pipeline-stage"><span class="pipeline-stage-summary"><b>${escape(s.name || s.stage || 'stage')}:</b> ${escape(sSummary)}</span><span>${sTime ? `<span class="muted small">${escape(sTime)}</span> ` : ''}${sStatus}</span></li>`;
+      }).join('');
+      const detail = stages ? `<details class="pipeline-detail"><summary>Stages &amp; summaries (${(job.stages || []).length})</summary><ul class="pipeline-stages">${stages}</ul></details>` : '';
+      const takeToChatBtn = `<button type="button" class="btn btn-small" data-action="take-to-chat" data-job-id="${escape(job.id)}" title="Stop at this stage and open as chat goal">${ic('send')}Take it to the chat</button>`;
+      const mergeBtn = st === 'pull-request' ? `<button type="button" class="btn btn-small btn-primary" data-action="merge-pipeline-job" data-job-id="${escape(job.id)}">${ic('git')}Merge pull request</button>` : '';
+      const retryMergeBtn = job.reason === 'merge-failed' || job.mergeFailed ? `<button type="button" class="btn btn-small btn-danger" data-action="retry-merge-pipeline-job" data-job-id="${escape(job.id)}">${ic('refresh')}Retry merge</button>` : '';
+      const dropBtn = !['merged', 'dropped'].includes(st) ? `<button type="button" class="btn btn-small" data-action="drop-pipeline-job" data-job-id="${escape(job.id)}" title="Drop this pipeline job">${ic('trash')}Drop</button>` : '';
+      return `<article class="pipeline-card ${needsDecision ? 'needs-decision' : ''} ${st}">
+        <div class="pipeline-head"><h4 class="pipeline-title">${escape(title)}</h4>${stagePill}</div>
+        <div class="pipeline-meta">
+          ${decisionBadge}${scheduleReason}
+          ${elapsed ? `<span>${ic('clock')}<b>${escape(elapsed)}</b></span>` : ''}
+          <span>Tokens: ${escape(tokensStr)}</span>
+          <span>Quota: ${escape(quotaStr)}</span>
+        </div>
+        ${detail}
+        <div class="row">${takeToChatBtn}${mergeBtn}${retryMergeBtn}${dropBtn}</div>
+      </article>`;
+    }).join('');
+    return `${headSection}<div class="section">${cards}</div>`;
+  }
+  async function sendToPipeline(goalText) {
+    const row = project();
+    if (!row) return;
+    const text = goalText || state.suggestedGoal || state.goalCandidate || row.goal || state.myGoal;
+    if (!text) { toast('No goal to send to the pipeline.'); return; }
+    const asks = (state.orchestra?.asks || []).filter(item => item.projectId === row.id);
+    const chatContext = asks.slice(-5).map(a => `User: ${a.question}\nLead: ${a.answer}`).join('\n\n');
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    try {
+      await post('/api/pipeline/queue', { projectId: row.id, title: text, body: text, chat: chatContext });
+      toast(lang === 'it' ? 'Inviato alla coda della pipeline.' : 'Sent to the pipeline queue.');
+    } catch {
+      const queue = state.pipelineQueue || (state.pipelineQueue = store.get('pipeline_queue', {}));
+      const projQueue = queue[row.id] || (queue[row.id] = []);
+      const newJob = {
+        id: 'job-' + Math.random().toString(36).slice(2, 8),
+        projectId: row.id,
+        summary: text,
+        title: text,
+        status: 'queued',
+        reportedTimeMs: 0,
+        quota: null,
+        tokens: null,
+        stages: [{ name: 'queue', summary: 'Queued from chat', status: 'queued', durationMs: 0 }]
+      };
+      projQueue.unshift(newJob);
+      store.set('pipeline_queue', queue);
+      toast(lang === 'it' ? 'Inviato alla coda della pipeline.' : 'Sent to the pipeline queue.');
+    }
+    state.suggestedGoal = null;
+    state.goalCandidate = null;
+    state.threadSig = '';
+    state.sideSig = '';
+    render();
+    if (state.panel === 'pipeline') loadPipeline();
+  }
+  async function takeToChat(jobId) {
+    const row = project();
+    if (!row) return;
+    const held = state.pipeline?.data?.items || state.pipeline?.data?.jobs || state.pipelineQueue?.[row.id] || [];
+    const job = held.find(j => j.id === jobId);
+    const goal = job?.summary || job?.title || jobId;
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    try {
+      await post('/api/pipeline/take-to-chat', { projectId: row.id, jobId });
+    } catch {
+      if (job) job.status = 'stopped';
+    }
+    await setChatMode('plan');
+    state.suggestedGoal = goal;
+    state.goalCandidate = goal;
+    state.panel = null;
+    store.set('panel', null);
+    toast(lang === 'it' ? `Spostato nella chat: ${goal}` : `Moved to chat: ${goal}`);
+    state.threadSig = '';
+    state.sideSig = '';
+    render();
+  }
+  async function mergePipelineJob(jobId) {
+    const row = project();
+    if (!row) return;
+    await act(async () => post('/api/pipeline/merge', { projectId: row.id, jobId }), 'Pull request merged.');
+    loadPipeline();
+  }
+  async function retryMergePipelineJob(jobId) {
+    const row = project();
+    if (!row) return;
+    await act(async () => post('/api/pipeline/retry-merge', { projectId: row.id, jobId }), 'Retrying merge.');
+    loadPipeline();
+  }
+  async function dropPipelineJob(jobId) {
+    const row = project();
+    if (!row) return;
+    state.confirm = {
+      text: `Drop pipeline job "${jobId}"? Files in its worktree will be removed and status set to dropped.`,
+      run: async () => {
+        try {
+          await post('/api/pipeline/drop', { projectId: row.id, jobId });
+        } catch {
+          const held = state.pipeline?.data?.items || state.pipeline?.data?.jobs || state.pipelineQueue?.[row.id] || [];
+          const job = held.find(j => j.id === jobId);
+          if (job) job.status = 'dropped';
+        }
+        toast('Pipeline job dropped.');
+        loadPipeline();
+      }
+    };
+    state.threadSig = '';
+    render();
   }
   function progressPanel() {
     const row = project();
@@ -1023,7 +1324,7 @@
     catch (error) { toast(error.message); }
     state.sideSig = ''; await refresh({ tick: false });
   }
-  function openPanel(name) { state.panel = state.panel === name ? null : name; store.set('panel', state.panel); if (state.panel === 'pulls') loadPulls(); render(); }
+  function openPanel(name) { state.panel = state.panel === name ? null : name; store.set('panel', state.panel); if (state.panel === 'pulls') loadPulls(); if (state.panel === 'pipeline') loadPipeline(); render(); }
 
   // Short commands that only open a panel or change the team run here, without a model call.
   function localCommand(text) {
@@ -1045,6 +1346,10 @@
     if (/^(open |show |apri |mostra |vedi )?(the |i |le )?(files?|changes|changed files|file cambiati|modifiche)$/.test(clean)) { state.panel = 'files'; store.set('panel', 'files'); render(); return true; }
     if (/^(open |show |apri |mostra |vedi )?(the |le )?(settings|options|impostazioni|opzioni)$/.test(clean)) { state.panel = 'settings'; store.set('panel', 'settings'); render(); return true; }
     if (/^(open |show |apri |mostra |vedi )?(the |le |i )?(pull requests?|prs?|richieste)$/.test(clean)) { state.panel = 'pulls'; store.set('panel', 'pulls'); loadPulls(); render(); return true; }
+    if (/^(open |show |apri |mostra |vedi )?(the |la |il )?(pipeline|flusso)$/.test(clean)) { state.panel = 'pipeline'; store.set('panel', 'pipeline'); loadPipeline(); render(); return true; }
+    if (/^(?:mode pipeline|modalit[aà] pipeline)$/.test(clean)) { setChatMode('pipeline'); return true; }
+    if (/^(?:mode talk|mode chat|modalit[aà] chat)$/.test(clean)) { setChatMode('talk'); return true; }
+    if (/^(?:mode plan|modalit[aà] (?:plan|piano))$/.test(clean)) { setChatMode('plan'); return true; }
     const bench = /^(?:bench|put|metti)\s+(.+?)(?:\s+(?:on the bench|in panchina))?$/.exec(clean);
     if (bench && (/^bench\s/.test(clean) || /(on the bench|in panchina)$/.test(clean))) {
       const wanted = bench[1].replace(/^(the |il |la )/, '');
@@ -1243,9 +1548,10 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('button, a');
     if (!target) return;
+    if (target.dataset.chatMode) { setChatMode(target.dataset.chatMode); return; }
     if (target.dataset.savingMode) { const row = project(); if (row) act(() => post('/api/orchestrator/saving-mode', { projectId: row.id, mode: target.dataset.savingMode }), String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'Salvato.' : 'Saved.'); return; }
-    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); if (state.panel === 'pulls') loadPulls(); return; }
-    if (target.dataset.panel) { if (target.classList.contains('tab')) openPanel(target.dataset.panel); else { state.panel = target.dataset.panel; store.set('panel', state.panel); render(); } return; }
+    if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); if (state.panel === 'pulls') loadPulls(); if (state.panel === 'pipeline') loadPipeline(); return; }
+    if (target.dataset.panel) { if (target.classList.contains('tab')) openPanel(target.dataset.panel); else { state.panel = target.dataset.panel; store.set('panel', state.panel); if (state.panel === 'pipeline') loadPipeline(); render(); } return; }
     if (target.id === 'side-close') { state.panel = null; store.set('panel', null); render(); return; }
     if (target.dataset.openSide) { $(target.dataset.openSide).classList.add('open'); return; }
     if (target.dataset.closeSide) { $(target.dataset.closeSide).classList.remove('open'); return; }
@@ -1274,6 +1580,12 @@
     if (action === 'copy-msg') { copyReply(target); return; }
     if (action === 'pr-refresh') { loadPulls(); return; }
     if (action === 'pr-more') { loadPulls({ append: true }); return; }
+    if (action === 'pipeline-refresh') { loadPipeline(); return; }
+    if (action === 'send-to-pipeline') { sendToPipeline(); return; }
+    if (action === 'take-to-chat') { takeToChat(target.dataset.jobId); return; }
+    if (action === 'merge-pipeline-job') { mergePipelineJob(target.dataset.jobId); return; }
+    if (action === 'retry-merge-pipeline-job') { retryMergePipelineJob(target.dataset.jobId); return; }
+    if (action === 'drop-pipeline-job') { dropPipelineJob(target.dataset.jobId); return; }
     if (action === 'autonomy-on') autonomyOn();
     else if (action === 'autonomy-off') autonomyOff();
     else if (action === 'stop') act(() => post('/api/orchestrator/stop', { projectId: state.projectId }), 'Work stopped and saved.');
