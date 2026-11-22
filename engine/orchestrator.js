@@ -4484,14 +4484,21 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan) && !isLow(model)
           && allowedBySavingMode(mode, model)
           && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement', ...(mode === 'normal' ? {} : { savingMode: mode }) });
-        const model = leadQuality(roster().filter(usable))[0];
+        // A model that refuses the work (usage credits, quota) did nothing: it is noted, like a refusal in the
+        // crew, and the next model takes the same copy of the folder. Three tries at most.
+        const tried = new Set();
+        let model = null, info = null, launched = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+        model = leadQuality(roster().filter(candidate => usable(candidate) && !tried.has(candidate.id) && !refusals.activeRefusal(store, candidate.id, Date.parse(now()))))[0];
         if (!model) {
+          if (tried.size) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${[...tried].map(id => roster().find(item => item.id === id)?.label || id).join(', ')} refused the work, and no other model with the Build role is above its quota limit. Nothing was pushed.`);
           const leftOut = roster().filter(item => item.enabled && item.available !== false && !allowedBySavingMode(mode, item)).map(item => item.label || item.id);
           const underLimit = roster().filter(item => item.enabled && allowedBySavingMode(mode, item) && isLow(item)).map(item => item.label || item.id);
           const why = mode === 'normal' ? `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`
             : `Pull request #${number} was not fixed: ${savingMode.blockedReason({ mode, title: 'pull request #' + number, role: 'Build', leftOut, underLimit })}`;
           return done('PR_FIX_FAILED', why);
         }
+        tried.add(model.id);
         const started = `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`;
         prFixes.set(key, { startedAt: (prFixes.get(key) || {}).startedAt || now(), text: started });
         markPullRequestFix(projectId, number, 'started', started);
@@ -4500,20 +4507,29 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         if (fix.conflicts.length) work.push(`The merge of origin/${fix.base} into this branch stopped on conflicts in: ${fix.conflicts.join(', ')}. Resolve each conflict keeping what both sides meant (the branch's own work and what ${fix.base} added since), remove every conflict marker, and finish the merge with git add and git commit --no-edit.`);
         if (fix.failing.length) work.push(`These checks fail on the pull request: ${fix.failing.join(', ')}. Read their logs with \`gh pr checks ${number}\` and \`gh run view --log-failed\`, reproduce the failure locally, fix the cause (not the test, unless the test is wrong), and commit.`);
         work.push('Run the project\'s own checks before you finish. Commit on this branch; do not push, do not create branches, do not open pull requests: Planwharf pushes when you are done.');
-        const results = path.join(dir, 'pr-fixes', projectId, fixId);
+        const results = path.join(dir, 'pr-fixes', projectId, fixId, String(attempt));
         fs.mkdirSync(results, { recursive: true });
-        const attemptId = fixId, resultId = fixId + '-result';
-        const info = { projectId, linkedFolder: item.project.folder, folder: worktree, megaTaskId, subTaskId: fixId, attemptId, resultId,
+        const attemptId = fixId + '-' + attempt, resultId = attemptId + '-result';
+        info = { projectId, linkedFolder: item.project.folder, folder: worktree, megaTaskId, subTaskId: fixId, attemptId, resultId,
           // The worktree check reads the data folder from the result path: <data>/pr-fixes/<file>.
-          resultPath: path.join(dir, 'pr-fixes', fixId + '.result'),
+          resultPath: path.join(dir, 'pr-fixes', attemptId + '.result'),
           structuredResultPath: path.join(results, 'result.json'), exitPath: path.join(results, 'exit.json'), logPath: path.join(results, 'worker.log'),
           worker: model, job: { kind: 'build', title: `Fix pull request #${number}`, detail: work.join('\n\n') }, slice: `Fix pull request #${number}` };
-        const launched = opts.spawnWorker(info);
+        launched = opts.spawnWorker(info);
         if (!launched?.pid) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} did not start.`);
         const limit = Date.now() + 90 * 60 * 1000;
         while (Date.now() < limit && !fs.existsSync(info.exitPath)) {
           if (typeof opts.isProcessAlive === 'function' && !opts.isProcessAlive(launched.pid)) break;
           await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        // A refusal leaves the folder as it was: note it and let the next model try.
+        let said = ''; try { said = fs.readFileSync(info.logPath, 'utf8').slice(-20000); } catch { /* no log */ }
+        const refused = refusals.refusalReason(said);
+        if (!refused) break;
+        noteCredits(model.id, refused);
+        refusals.recordRefusal(store, model.id, refused, now());
+        persist();
+        say('PR_FIX_STARTED', `${model.label || model.id} refused the work (${String(refused).slice(0, 160)}); the next model takes over.`);
         }
         const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
         // The worker was started because checks or conflicts were still wrong. If it
