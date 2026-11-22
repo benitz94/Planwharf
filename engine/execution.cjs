@@ -435,6 +435,8 @@ function createExecutionBridge(options) {
     if (sub.type === 'RESEARCH') Object.assign(part, { resultPath: path.join(folder, 'result.txt'), structuredResultPath: path.join(folder, 'result.json'), exitPath: path.join(folder, 'exit.json') });
     fs.mkdirSync(path.dirname(part.resultPath), { recursive: true }); fs.writeFileSync(part.resultPath, 'STATUS: WATCHING\n');
     attempts.attachResult({ attemptId, resultPath: part.structuredResultPath });
+    // The mode in force when the step starts stays with that step. A later change waits for the next one.
+    if (typeof options.freezeSavingMode === 'function') options.freezeSavingMode(mega.projectId, sub);
     sub.attemptIds.push(attemptId); sub.status = 'RUNNING'; sub.provider = worker.provider; sub.cli = worker.cli;
     row.dispatch ||= []; row.dispatch = row.dispatch.filter(existing => existing.subTaskId !== sub.id); row.dispatch.push(part);
     row.attemptId = attemptId; row.modelId = worker.id; row.resultPath = part.resultPath;

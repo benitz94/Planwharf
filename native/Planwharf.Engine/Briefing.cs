@@ -142,6 +142,8 @@ public static class Briefing
 
         var result = Spread(root);
         Put(result, "focus", focus);
+        var saving = focus.Node is null ? Value.Missing : focus.Get("savingMode");
+        if (saving.Truthy) Put(result, "savingMode", saving);
         Put(result, "others", List(Items(root.Get("others"), "others")?.Select(project =>
         {
             if (project.IsNullish) throw new InvalidOperationException("Cannot destructure a project that is null");

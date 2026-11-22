@@ -3,13 +3,14 @@
 const fs = require('node:fs');
 const autonomy = require('./autonomy.cjs');
 const chatMode = require('./chat-mode.cjs');
+const savingMode = require('./saving-mode.cjs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { AsyncLocalStorage } = require('node:async_hooks');
 const Plan = require('../plan.js');
 const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
-const { modelRouteError } = require('./model-routing.cjs');
+const { modelRouteError, savingModeError } = require('./model-routing.cjs');
 const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
 const worktrees = require('./worktrees.cjs');
 const { estimate: estimateTimeLeft } = require('./time-left.cjs');
@@ -236,7 +237,9 @@ function leadTier(model) {
   return 1;
 }
 // Verify checks the whole work and fixes it: a light model is given it only when no stronger one can.
-const ableToVerify = list => { const strong = list.filter(model => leadTier(model) < 2); return strong.length ? strong : list; };
+// The class is the one saving mode uses, so a Team weight wins over the lineup rank.
+const verifyClass = model => savingMode.modelClass(model, Number.isInteger(model?.leadTier) ? model.leadTier : leadTier(model));
+const ableToVerify = list => { const strong = (list || []).filter(model => verifyClass(model) !== 'light'); return strong.length ? strong : list; };
 // "claude-opus-4-6-thinking" is Opus 4.6: dashes between digits are a version, and a Claude family is
 // known by its name whatever else the catalog writes around it.
 const plainName = model => modelName(model).replace(/(\d)-(\d)/g, '$1.$2');
@@ -281,6 +284,13 @@ function jobKind(job) {
   return 'inspect';
 }
 
+// Normal, or no mode, keeps today's pool. Safe and Ultra safe drop the classes they forbid.
+function allowedBySavingMode(mode, item) {
+  if (!mode || savingMode.persisted(mode) === 'normal') return true;
+  const tier = Number.isInteger(item?.leadTier) ? item.leadTier : leadTier(item);
+  return savingMode.allows(mode, item, tier);
+}
+
 function pickWorker(models, options) {
   const opts = options && typeof options === 'object' ? options : {};
   const usage = opts.usage || {};
@@ -289,7 +299,7 @@ function pickWorker(models, options) {
   const skip = new Set(Array.isArray(opts.skip) ? opts.skip.filter(Boolean) : []);
   const pool = normalizeModels(models)
     .map((item, index) => ({ ...item, index }))
-    .filter(item => item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, plans).blocked && (item.providerCatalog || usedOf(usage, item.id) + item.cost <= item.limit) && !planExhausted(plans, item.quotaPoolId || item.plan));
+    .filter(item => item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, plans).blocked && (item.providerCatalog || usedOf(usage, item.id) + item.cost <= item.limit) && !planExhausted(plans, item.quotaPoolId || item.plan) && allowedBySavingMode(opts.savingMode, item));
   if (!pool.length) return null;
   // A model under its quota limit is never given work: with nobody above the limit, nobody is picked and the
   // step waits for quota (see explainNoWorker).
@@ -316,7 +326,7 @@ function pickWorkers(models, options) {
   const skip = new Set(Array.isArray(opts.skip) ? opts.skip.filter(Boolean) : []);
   const baseUsage = opts.usage || {};
   const eligible = normalizeModels(models).filter(item => (
-    item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, opts.plans || []).blocked && (item.providerCatalog || usedOf(baseUsage, item.id) + item.cost <= item.limit) && !planExhausted(opts.plans, item.quotaPoolId || item.plan)
+    item.enabled && item.available !== false && permitsAssignment(item, opts.job) && (assignmentRole(opts.job) === 'reviewer' ? true : opts.job?.kind === 'research' ? item.capabilities?.canResearch !== false : jobKind(opts.job) === 'build' ? item.capabilities?.canCode !== false : true) && item.providerEnabled !== false && !skip.has(item.id) && !usagePolicy(item, opts.plans || []).blocked && (item.providerCatalog || usedOf(baseUsage, item.id) + item.cost <= item.limit) && !planExhausted(opts.plans, item.quotaPoolId || item.plan) && allowedBySavingMode(opts.savingMode, item)
   )).length;
   const building = assignmentRole(opts.job) === 'worker' && opts.job?.kind !== 'research';
   // The verifier also fixes code, so it needs the same coding capability as the builder.
@@ -540,6 +550,7 @@ function packState(snap, row) {
       git: facts ? Boolean(facts.git) : null,
       lastCommit: facts && facts.lastCommit || '',
       dirty: facts && Array.isArray(facts.dirty) ? facts.dirty.slice(0, 12) : [],
+      ...(row.savingMode && row.savingMode !== 'normal' ? { savingMode: row.savingMode } : {}),
       workers: (row.dispatch || []).map(part => ({
         id: part.modelId,
         name: part.label,
@@ -760,6 +771,8 @@ function parseOrder(question, snap, projectId) {
   if (projectCommand('auto start|avvia|start')) {
     return { action: 'start', projectId: row && row.id, name: row && row.name };
   }
+  const savingOrder = savingMode.order(q);
+  if (savingOrder) return { ...savingOrder, projectId: row && row.id || projectId || null };
   const chosen = chatMode.order(q);
   if (!chosen) return null;
   return { ...chosen, projectId: row && row.id || projectId || null };
@@ -1175,7 +1188,7 @@ function createOrchestrator(options) {
     catch (error) { ledger.finish(id, 'FAILED'); throw error; }
   };
 
-  let store = { autonomy: {}, chatModes: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null, pullRequestFixes: [] };
+  let store = { autonomy: {}, chatModes: {}, savingModes: {}, modelWeights: {}, mode: 'manual', grillPropose: false, grillKind: 'off', usage: {}, enabled: {}, providerEnabled: {}, catalogVisibility: {}, modelPolicies: {}, providerPolicies: {}, projects: {}, asks: [], orchestratorId: null, pullRequestFixes: [] };
   // Chat replies in flight, one per project: asking in one project never cancels another.
   let thinkingByKey = {};
   const askTokens = new Map();
@@ -1202,6 +1215,8 @@ function createOrchestrator(options) {
           creditsNeeded: parsed.creditsNeeded && typeof parsed.creditsNeeded === 'object' ? parsed.creditsNeeded : {},
           poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
           chatModes: parsed.chatModes && typeof parsed.chatModes === 'object' && !Array.isArray(parsed.chatModes) ? parsed.chatModes : {},
+          savingModes: parsed.savingModes && typeof parsed.savingModes === 'object' && !Array.isArray(parsed.savingModes) ? parsed.savingModes : {},
+          modelWeights: parsed.modelWeights && typeof parsed.modelWeights === 'object' && !Array.isArray(parsed.modelWeights) ? parsed.modelWeights : {},
           mode: parsed.mode === 'auto' ? 'auto' : 'manual',
           // The clarification interview was removed: it stays off whatever an older state file says.
           grillPropose: false,
@@ -1254,6 +1269,40 @@ function createOrchestrator(options) {
   const inTeam = (projectId, fn) => typeof projectId === 'string' && projectId ? teamScope.run(projectId, fn) : fn();
   const teamKey = (scope, id) => (scope || '-') + '|' + id;
   const leadId = () => { const team = teamFor(); return team ? team.orchestratorId || null : store.orchestratorId || null; };
+  function savingModeOf(projectId) {
+    return savingMode.persisted(projectId ? store.savingModes?.[projectId] : null);
+  }
+  function projectOfSub(sub) {
+    return teamScope.getStore()
+      || (store.execution?.megaTasks || []).find(mega => mega && mega.id === sub?.megaTaskId)?.projectId
+      || null;
+  }
+  // The mode a step started with. A new step takes the mode saved now; a running step keeps its own.
+  function stepSavingMode(projectId, sub, stamp) {
+    const id = projectId || projectOfSub(sub);
+    const current = savingModeOf(id);
+    if (!id || !sub?.id) return current;
+    const row = entry(id);
+    const saved = savingMode.normalize(row.stepModes?.[sub.id]);
+    if (saved) return saved;
+    if (!stamp) return current;
+    row.stepModes = { ...(row.stepModes || {}), [sub.id]: current };
+    persist();
+    return current;
+  }
+  function noteOnce(projectId, key, text) {
+    if (!projectId || !text) return false;
+    const row = entry(projectId);
+    row.savingNotes = row.savingNotes && typeof row.savingNotes === 'object' ? row.savingNotes : {};
+    if (row.savingNotes[key]) return false;
+    row.savingNotes[key] = true;
+    note(projectId, text);
+    return true;
+  }
+  function pickSaving(projectId, job) {
+    const sub = job && job.id && job.megaTaskId ? job : null;
+    return sub ? stepSavingMode(projectId, sub, false) : savingModeOf(projectId || teamScope.getStore());
+  }
   function ensureTeam(projectId) {
     if (!teamFor(projectId)) {
       // A new project team starts as a copy of the shared team.
@@ -1294,26 +1343,41 @@ function createOrchestrator(options) {
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
     explainNoWorker: (worker, sub) => explainNoWorker(worker, sub),
+    freezeSavingMode: (projectId, sub) => stepSavingMode(projectId, sub, true),
     resolveWorker: (worker, sub) => {
-      if (sub?.type === 'RESEARCH' || sub?.goldModel && assignmentRole(sub) === 'worker') return worker;
-      const resolved = worker ? resolveUsageFallback(worker, roster(), plansLive, candidate => permitsAssignment(candidate, sub) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
-      if (resolved) {
+      const mode = stepSavingMode(projectOfSub(sub), sub, false);
+      const inMode = candidate => allowedBySavingMode(mode, candidate);
+      const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
+      // Ultra safe verifies with a light model. Say so once, including when a later slice starts after the mode changed.
+      const finish = model => {
+        if (model && mode === 'ultra-safe' && assignmentRole(sub) === 'verifier') noteOnce(projectOfSub(sub), 'verify-light:' + mode, savingMode.verifyLightNote(mode));
+        return model;
+      };
+      // A Gold step never switches. If the mode leaves that model out, it does not start.
+      if (sub?.goldModel && assignmentRole(sub) === 'worker') return worker && inMode(worker) ? worker : null;
+      if (sub?.type === 'RESEARCH') return worker && inMode(worker) ? worker : null;
+      const resolved = worker && inMode(worker) ? resolveUsageFallback(worker, roster(), plansLive, candidate => inMode(candidate) && permitsAssignment(candidate, job) && candidate.providerEnabled !== false && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && (candidate.providerCatalog || candidate.remaining >= candidate.cost)) : null;
+      if (resolved && inMode(resolved)) {
         // Starting a step on a model already under the switch threshold: take one above it, or wait for quota.
         const settings = autoSwitch();
-        if (!settings.enabled || !lowQuota(resolved, plansLive, limitFor)) return resolved;
+        if (!settings.enabled || !lowQuota(resolved, plansLive, limitFor)) return finish(resolved);
         const better = quotaSwitches({ running: [{ subTaskId: sub?.id, modelId: resolved.id }], models: roster(), plans: plansLive, thresholdPercent: limitFor,
-          eligible: candidate => permitsAssignment(candidate, sub) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked })[0];
+          eligible: candidate => inMode(candidate) && permitsAssignment(candidate, job) && (sub?.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked,
+          allowed: inMode })[0];
         // Nobody above the limit: the step does not start, and explainNoWorker says it waits for quota.
-        return better ? roster().find(model => model.id === better.toModelId) || null : null;
+        return better ? finish(roster().find(model => model.id === better.toModelId) || null) : null;
       }
       // Quota not read yet: wait for it rather than switch model on a guess.
-      if (worker && usagePolicy(worker, plansLive).state === 'unread') return null;
-      // The assigned model is disabled, no longer has this role, or ran out of quota with no fallback set:
-      // take another eligible model that still has quota, as a normal assignment would.
-      const picked = pickWorker(roster(), { job: sub, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive , low: isLow });
-      return picked ? roster().find(model => model.id === picked.id) || null : null;
+      if (worker && inMode(worker) && usagePolicy(worker, plansLive).state === 'unread') return null;
+      // The assigned model is disabled, outside the saving mode, or ran out of quota with no fallback set.
+      const picked = pickWorker(roster(), { job, usage: store.usage, skip: worker ? [worker.id] : [sub?.assignedModelId], plans: plansLive, low: isLow, savingMode: mode });
+      return finish(picked ? roster().find(model => model.id === picked.id) || null : null);
     },
-    workerEligible: (worker, sub) => permitsAssignment(worker, sub) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost),
+    workerEligible: (worker, sub) => {
+      const mode = stepSavingMode(projectOfSub(sub), sub, false);
+      const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
+      return allowedBySavingMode(mode, worker) && permitsAssignment(worker, job) && (assignmentRole(sub) === 'reviewer' ? true : sub?.type === 'RESEARCH' ? worker.capabilities?.canResearch !== false : worker.capabilities?.canCode !== false) && worker.providerEnabled !== false && !usagePolicy(worker, plansLive).blocked && !planExhausted(plansLive, worker.quotaPoolId || worker.plan) && (worker.providerCatalog || worker.remaining >= worker.cost);
+    },
     onRefusal: (modelId, reason) => {
       const model = roster().find(item => item.id === modelId);
       noteCredits(modelId, reason);
@@ -1324,7 +1388,11 @@ function createOrchestrator(options) {
       } else refusals.recordRefusal(store, modelId, reason, now());
       persist();
     },
-    replacement: (sub, exclude) => pickWorker(roster(), { job: sub, usage: store.usage, skip: exclude, plans: plansLive , low: isLow }),
+    replacement: (sub, exclude) => {
+      const mode = stepSavingMode(projectOfSub(sub), sub, false);
+      const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
+      return pickWorker(roster(), { job, usage: store.usage, skip: exclude, plans: plansLive, low: isLow, savingMode: mode });
+    },
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
   function entry(id) {
@@ -1779,13 +1847,13 @@ function createOrchestrator(options) {
     row.workerPid = null;
     row.workerAlive = false;
     row.attemptId = null;
-    const next = pickWorker(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive , low: isLow });
+    const next = pickWorker(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive, low: isLow, savingMode: savingModeOf(id) });
     if (!next) {
       note(id, `Stopped. No remaining worker after ${reason || 'stall'}.`);
       applyCheckpoint(id, item, job, facts, reason || 'failed');
       return false;
     }
-    const replacements = pickWorkers(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive , low: isLow });
+    const replacements = pickWorkers(roster(), { job, usage: store.usage, facts, skip: row.tried, plans: plansLive, low: isLow, savingMode: savingModeOf(id) });
     const nextCrew = replacements.length ? replacements : [next];
     row.dispatch = dispatchPlan(nextCrew, job, facts);
     row.plan = planLines(item, facts, nextCrew[0] || next, false, { dispatch: row.dispatch, job, checkpoint: row.checkpoint });
@@ -1827,7 +1895,56 @@ function createOrchestrator(options) {
     const model = own ? roster().find(item => item.id === own) : shared;
     return model ? (model.label || model.id) : ORCH_NAME;
   }
+  function lowestClassLead(list) {
+    const usable = (list || []).filter(leadUsable);
+    if (!usable.length) return null;
+    // Class follows the Team weight. The lineup rank only picks the best model inside that class.
+    const rankOf = model => ({ flagship: 0, mid: 1, light: 2 })[savingMode.modelClass(model, Number.isInteger(model.leadTier) ? model.leadTier : leadTier(model))] ?? 1;
+    const worst = Math.max(...usable.map(rankOf));
+    return leadRanking(usable.filter(model => rankOf(model) === worst), plansLive)[0] || null;
+  }
+  // Safe and Ultra safe hand the lead to the best model they allow. With none left, the best of the
+  // lowest class that can still answer stays, and the chat says so once.
+  function constrainLead(picked) {
+    const projectId = teamScope.getStore();
+    const mode = savingModeOf(projectId);
+    if (mode === 'normal' || !picked) return picked;
+    const list = roster();
+    // A model with Orchestrator turned off in Team is not a lead the mode can hand the chat to.
+    const mayLead = model => canOrchestrate(model) && leadUsable(model);
+    const allowed = list.filter(model => model.id !== picked.id && mayLead(model) && allowedBySavingMode(mode, model));
+    if (allowedBySavingMode(mode, picked) && canOrchestrate(picked)) {
+      if (!isLow(picked)) return picked;
+      const better = leadRanking(roomyLeads(allowed), plansLive)[0];
+      if (!better) return picked;
+      switchLead(picked, better, `${picked.label || picked.id} is under its limit, and ${savingMode.label(mode)} keeps the other classes out.`);
+      return better;
+    }
+    const next = leadRanking(roomyLeads(allowed), plansLive)[0];
+    if (next) {
+      switchLead(picked, next, `${picked.label || picked.id} is outside ${savingMode.label(mode)}.`);
+      return next;
+    }
+    // Nobody the mode allows can lead. Keep the best of the lowest class that can still answer.
+    const fallback = lowestClassLead(list.filter(model => canOrchestrate(model) || model.id === picked.id)) || picked;
+    if (fallback.id !== picked.id) switchLead(picked, fallback, savingMode.leadFallbackNote(mode, fallback));
+    const fresh = noteOnce(projectId, 'lead-fallback:' + mode, savingMode.leadFallbackNote(mode, fallback));
+    if (fresh) persist();
+    return { ...fallback, outsideSavingMode: true, savingFallbackFresh: fresh };
+  }
+  function nextAllowedLead(exclude, { credits = false, company = null } = {}) {
+    const mode = savingModeOf(teamScope.getStore());
+    const base = roster().filter(model => !exclude.has(model.id) && leadUsable(model) && (mode === 'normal' || canOrchestrate(model)));
+    const allowed = base.filter(model => allowedBySavingMode(mode, model));
+    if (!allowed.length) return lowestClassLead(base);
+    const roomy = roomyLeads(allowed);
+    const pool = credits || !company ? roomy : (roomy.filter(model => (model.providerId || model.provider) !== company).length ? roomy.filter(model => (model.providerId || model.provider) !== company) : roomy);
+    return leadRanking(pool, plansLive)[0] || null;
+  }
   function leadModel() {
+    return constrainLead(selectLead());
+  }
+  function selectLead() {
     const list = roster();
     if (leadId()) {
       const picked = list.find(item => item.id === leadId());
@@ -1919,8 +2036,14 @@ function createOrchestrator(options) {
       item.quotaWindows = quotaWindows(item, plansLive);
       item.quotaLimit = { ...limitFor(item), custom: Boolean(store.quotaLimits && store.quotaLimits[item.id]), source: limitSource(item), pool: item.quotaPoolId || item.plan || null };
       item.lowQuota = isLow(item);
-      // Light, default or premium: what Team filters by and what the lead's parts are matched against.
-      item.weight = ['premium', 'default', 'light'][leadTier(item)] || 'default';
+      // Light, default or premium: the line-up class, unless Team set a weight for this model.
+      const rankedTier = leadTier(item);
+      const ranked = ['premium', 'default', 'light'][rankedTier] || 'default';
+      const override = savingMode.teamWeight(store.modelWeights?.[item.id]);
+      item.leadTier = rankedTier;
+      item.weight = override || ranked;
+      item.weightSource = override ? 'team' : 'lineup';
+      item.modelClass = savingMode.modelClass(item, rankedTier);
       const used = usedOf(store.usage, item.id);
       const resolved = withModelRoles({ ...item, used, remaining: Math.max(0, item.limit - used) }, permissions);
       resolved.enabled = ROLE_IDS.some(role => resolved.roles[role]);
@@ -1937,6 +2060,8 @@ function createOrchestrator(options) {
   function researchModel(modelId) {
     const worker = roster().find(model => model.id === modelId);
     if (!worker) throw new Error('Requested research model is not in the roster: ' + modelId);
+    const mode = savingModeOf(teamScope.getStore());
+    if (!allowedBySavingMode(mode, worker)) throw new Error(savingModeError(worker, mode, worker.leadTier));
     if (!permitsAssignment(worker, { kind: 'research' })) throw new Error('The requested model is not enabled for the Worker role: ' + modelId);
     if (!worker.enabled || worker.available === false) throw new Error('Requested research model is disabled or unavailable: ' + modelId);
     if (!adapterFor(worker)?.sourceProtectedResearch) throw new Error('Source-protected research is not supported by the requested adapter: ' + worker.provider);
@@ -2239,6 +2364,7 @@ function createOrchestrator(options) {
           // The crew already worked on this goal (a job was made from it): it is not a plan ready to start.
           goalStarted: Boolean(latest && (item.tasks || []).some(task => task && task.revision_id === latest.id)),
           chatMode: chatModeOf(item.project.id),
+          savingMode: savingModeOf(item.project.id),
           notes: clone(item.home?.notes || []),
           stateArt: latest && latest.state ? latest.state : '',
           open: clone((latest && latest.open) || []),
@@ -2438,7 +2564,7 @@ function createOrchestrator(options) {
         // Unapproved or paused work has no reason to inspect its source on every poll.
         const facts = existing && existing.status !== 'RUNNING' && row.facts?.folder === linkedWorkspace(item.project.folder) ? row.facts : inspect(item.project.folder); row.facts = facts;
         const parts = job.proposedSubTasks?.length ? job.proposedSubTasks.map(sub => ({ ...sub, modelId: job.goldModel && assignmentRole(sub) === 'worker' ? job.goldModel.id : sub.assignedModelId, slice: sub.title }))
-          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive, low: isLow }), job, facts);
+          : dispatchPlan(pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive, low: isLow, savingMode: savingModeOf(id) }), job, facts);
         return bridge.advance(item, job, parts);
       } catch (error) { row.status = 'blocked_no_worker'; row.doing = error.message; row.next = error.message; return row; }
     }
@@ -2463,7 +2589,7 @@ function createOrchestrator(options) {
     }
     const open = job && job.source === 'chat' ? [] : latest && Array.isArray(latest.open) ? latest.open : [];
     const stallMs = Number.isFinite(opts.stallMs) && opts.stallMs >= 0 ? opts.stallMs : 90 * 1000;
-    const worker = pickWorker(roster(), { job, usage: store.usage, facts: row.facts, skip: row.tried, plans: plansLive , low: isLow });
+    const worker = pickWorker(roster(), { job, usage: store.usage, facts: row.facts, skip: row.tried, plans: plansLive, low: isLow, savingMode: savingModeOf(id) });
 
     if (job && row.jobId && (row.jobId !== job.id || (row.jobFingerprint && row.jobFingerprint !== jobFingerprint(job)))) {
       row.approved = false;
@@ -2561,7 +2687,8 @@ function createOrchestrator(options) {
     }
     const facts = inspect(item.project.folder);
     row.facts = facts;
-    const workers = pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive , low: isLow });
+    const workers = pickWorkers(roster(), { job, usage: store.usage, facts, plans: plansLive, low: isLow, savingMode: savingModeOf(id) });
+    if (savingModeOf(id) === 'ultra-safe' && workers.length > 1) noteOnce(id, 'verify-light:ultra-safe', savingMode.verifyLightNote('ultra-safe'));
     if (facts && facts.error) {
       row.status = 'blocked_no_folder';
       row.doing = `Cannot inspect ${item.project.name}: ${facts.error}.`;
@@ -2785,6 +2912,49 @@ function createOrchestrator(options) {
     const saved = projectId ? store.chatModes[projectId] : null;
     return saved === 'talk' || saved === 'plan' ? saved : chatMode.DEFAULT;
   }
+  // One project, one saving mode. Changing it never stops work that is already running.
+  async function setSavingMode(projectId, mode) {
+    const next = savingMode.normalize(mode);
+    if (!next) return { ok: false, reason: 'Unknown saving mode.' };
+    const plan = await opts.readPlan();
+    if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
+    store.savingModes ||= {};
+    store.savingModes[projectId] = next;
+    note(projectId, savingMode.changedSentence(next, 'en'));
+    persist();
+    return { ok: true, savingMode: next, snapshot: await tick(projectId) };
+  }
+  async function setModelWeight(modelId, weight) {
+    const clearing = weight == null || weight === '' || weight === 'lineup';
+    const next = clearing ? null : savingMode.teamWeight(weight);
+    if (!clearing && !next) return { ok: false, reason: 'Unknown model weight.' };
+    if (!roster().some(model => model.id === modelId)) return { ok: false, reason: 'Model not found.' };
+    store.modelWeights ||= {};
+    if (!next) delete store.modelWeights[modelId];
+    else store.modelWeights[modelId] = next;
+    persist();
+    return { ok: true, modelId, weight: next };
+  }
+  store.savingModes = store.savingModes && typeof store.savingModes === 'object' && !Array.isArray(store.savingModes) ? store.savingModes : {};
+  let savingRepaired = false;
+  for (const [id, mode] of Object.entries(store.savingModes)) {
+    const next = savingMode.persisted(mode);
+    if (store.savingModes[id] !== next) savingRepaired = true;
+    store.savingModes[id] = next;
+  }
+  store.modelWeights = store.modelWeights && typeof store.modelWeights === 'object' && !Array.isArray(store.modelWeights) ? store.modelWeights : {};
+  for (const [id, weight] of Object.entries(store.modelWeights)) {
+    const next = savingMode.teamWeight(weight);
+    if (next) {
+      if (store.modelWeights[id] !== next) savingRepaired = true;
+      store.modelWeights[id] = next;
+    } else {
+      delete store.modelWeights[id];
+      savingRepaired = true;
+    }
+  }
+  // A damaged mode or weight is dropped before the next crash can save it back.
+  if (savingRepaired) persist();
   async function setAutonomy(projectId, enabled) {
     const plan = await opts.readPlan();
     if (!notebookProjects(plan).some(item => item.project.id === projectId)) return { ok: false, reason: 'project not found' };
@@ -2866,8 +3036,11 @@ function createOrchestrator(options) {
     // offered it, unless no other model has the role.
     const settings = autoSwitch();
     const roomy = list => settings.enabled ? list.filter(model => !lowQuota(model, plansLive, limitFor)) : list;
-    const builders = roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' })));
-    const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE }))));
+    const mode = savingModeOf(projectId);
+    const inMode = model => allowedBySavingMode(mode, model);
+    const builders = roomy(roster().filter(model => usable(model) && inMode(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement', ...(mode === 'normal' ? {} : { savingMode: mode }) })));
+    const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && inMode(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE, ...(mode === 'normal' ? {} : { savingMode: mode }) }))));
+    if (mode === 'ultra-safe' && verifiers.length) noteOnce(projectId, 'verify-light:' + mode, savingMode.verifyLightNote(mode));
     // With a single model that can build there is no crew to split the work among: no lead call.
     if (builders.length < 2 || !verifiers.length) return false;
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
@@ -2900,7 +3073,13 @@ function createOrchestrator(options) {
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     // A model under its quota limit would be moved off at once: it is offered only when no other model can take the step.
     const roomy = list => list.filter(model => !isLow(model));
-    const candidates = subs.map(sub => { const list = roomy(roster().filter(model => usable(model) && permitsAssignment(model, sub))); return assignmentRole(sub) === 'verifier' ? ableToVerify(list) : list; });
+    const mode = savingModeOf(projectId);
+    const candidates = subs.map(sub => {
+      const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
+      const list = roomy(roster().filter(model => usable(model) && allowedBySavingMode(mode, model) && permitsAssignment(model, job)));
+      return assignmentRole(sub) === 'verifier' ? ableToVerify(list) : list;
+    });
+    if (mode === 'ultra-safe' && subs.some(sub => assignmentRole(sub) === 'verifier') && candidates.some(list => list.length)) noteOnce(projectId, 'verify-light:' + mode, savingMode.verifyLightNote(mode));
     // With one allowed model per slice the user's roles already decide the crew: no lead call.
     if (candidates.some(list => !list.length) || candidates.every(list => list.length === 1)) return;
     // The lead's last answer in this project's chat, where it may have proposed the crew.
@@ -2978,13 +3157,33 @@ function createOrchestrator(options) {
     const title = sub?.title ? `"${String(sub.title).slice(0, 80)}"` : 'this step';
     const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(sub)] || 'Build';
     // A Gold step uses exactly the model the user chose: it never waits for, or switches to, another one.
-    if (sub?.goldModel && assignmentRole(sub) === 'worker') return { waiting: false, message: `The Gold model ${worker?.label || sub.goldModel.id || sub.assignedModelId} cannot take ${title}: it is disabled or under its quota threshold, and a Gold step never switches model. Wait for its quota, or turn Gold off.` };
+    const mode = stepSavingMode(projectOfSub(sub), sub, false);
+    const projectId = projectOfSub(sub);
+    if (sub?.goldModel && assignmentRole(sub) === 'worker') {
+      if (mode !== 'normal' && worker && !allowedBySavingMode(mode, worker)) {
+        const message = `Stopped: ${savingMode.label(mode)} leaves out the Gold model ${worker.label || worker.id} on ${title}. A Gold step never switches model. Change the saving mode, or turn Gold off.`;
+        noteOnce(projectId, 'gold:' + (sub.id || '') + ':' + mode, message);
+        return { waiting: false, message };
+      }
+      return { waiting: false, message: `The Gold model ${worker?.label || sub.goldModel.id || sub.assignedModelId} cannot take ${title}: it is disabled or under its quota threshold, and a Gold step never switches model. Wait for its quota, or turn Gold off.` };
+    }
+    const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
     const crew = roster().filter(model => model.enabled && model.available !== false && model.providerEnabled !== false && permitsAssignment(model, sub) && (sub?.type === 'AUDIT' || model.capabilities?.canCode !== false));
-    if (!crew.length) return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
+    const allowed = crew.filter(model => allowedBySavingMode(mode, model) && permitsAssignment(model, job));
+    if (!allowed.length) {
+      if (mode !== 'normal' && crew.length) {
+        const leftOut = crew.filter(model => !allowedBySavingMode(mode, model)).map(model => model.label || model.id);
+        const underLimit = crew.filter(model => allowedBySavingMode(mode, model) && (isLow(model) || usagePolicy(model, plansLive).blocked)).map(model => model.label || model.id);
+        const message = savingMode.blockedReason({ mode, title: sub?.title, role, leftOut, underLimit });
+        noteOnce(projectId, 'blocked:' + (sub?.id || '') + ':' + mode, message);
+        return { waiting: false, message };
+      }
+      return { waiting: false, message: `No model in your crew can take ${title}: give a model the ${role} role in Team, or choose one in the step's menu.` };
+    }
     const settings = autoSwitch();
-    const unread = crew.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
-    const low = crew.filter(model => lowQuota(model, plansLive, limitFor) || usagePolicy(model, plansLive).blocked);
-    if (low.length + unread.length < crew.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
+    const unread = allowed.filter(model => quotaLeft(model, plansLive) === null && usagePolicy(model, plansLive).state === 'unread');
+    const low = allowed.filter(model => lowQuota(model, plansLive, limitFor) || usagePolicy(model, plansLive).blocked);
+    if (low.length + unread.length < allowed.length) return { waiting: false, message: `Could not start ${title} on ${worker?.label || sub?.assignedModelId || 'its model'}. Choose another model in the step's menu.` };
     const resetOf = model => {
       const plan = plansLive.find(item => item && item.id === (model.quotaPoolId || model.plan));
       const times = [plan?.resetAt, ...(plan?.windows || []).map(window => window?.resetAt)].map(value => Date.parse(value)).filter(value => Number.isFinite(value) && value > Date.now());
@@ -2992,8 +3191,10 @@ function createOrchestrator(options) {
       const at = new Date(Math.min(...times));
       return at - Date.now() < 86400000 ? `, back at ${at.toISOString().slice(11, 16)} UTC` : `, back on ${at.toISOString().slice(0, 10)}`;
     };
-    const parts = crew.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
-    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}. The step starts by itself as soon as a model of your crew has quota above its limit, or when you add one in Team.` };
+    const parts = allowed.map(model => { const left = quotaLeft(model, plansLive); return `${model.label || model.id} ${left === null ? 'quota not read yet' : left + '% left'}${resetOf(model)}`; });
+    const leftOut = mode === 'normal' ? [] : crew.filter(model => !allowedBySavingMode(mode, model)).map(model => model.label || model.id);
+    const aside = leftOut.length ? ` ${savingMode.label(mode)} leaves out ${leftOut.join(', ')}.` : '';
+    return { waiting: true, message: `Waiting for quota: ${parts.join('; ')}.${aside} The step starts by itself as soon as a model of your crew has quota above its limit, or when you add one in Team.` };
   }
 
   // The general quota limit: 35% left on the 5-hour window and on the weekly one, unless the user set
@@ -3067,7 +3268,8 @@ function createOrchestrator(options) {
   const quotaSwitchedAt = new Map();
   // Same order as a quota switch: another company first, quota that is read before quota that is not, then the most left above the limit.
   function bestAboveQuota(step, models) {
-    const fits = candidate => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+    const mode = stepSavingMode(projectOfSub(step.sub), step.sub, false);
+    const fits = candidate => allowedBySavingMode(mode, candidate) && permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
     return models
       .filter(model => model.id !== step.modelId && model.enabled && model.available !== false && model.providerEnabled !== false && fits(model))
       .map(model => ({ model, left: quotaLeft(model, plansLive) }))
@@ -3092,7 +3294,11 @@ function createOrchestrator(options) {
             .map(sub => ({ subTaskId: sub.id, modelId: sub.assignedModelId, sub,
               // The companies of the work's other steps: the switch avoids them when it can.
               avoidProviders: (row.subTasks || []).filter(other => other.id !== sub.id).map(other => { const used = models.find(model => model.id === other.assignedModelId); return used?.providerId || used?.provider || other.provider; }).filter(Boolean) }));
-          const eligible = (candidate, step) => permitsAssignment(candidate, step.sub) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+          const eligible = (candidate, step) => {
+            const mode = stepSavingMode(row.id, step.sub, false);
+            const job = mode === 'normal' ? step.sub : { ...step.sub, savingMode: mode };
+            return allowedBySavingMode(mode, candidate) && permitsAssignment(candidate, job) && (step.sub.type === 'AUDIT' || candidate.capabilities?.canCode !== false) && !usagePolicy(candidate, plansLive).blocked;
+          };
           const switches = quotaSwitches({ running, models, plans: plansLive, thresholdPercent: limitFor, eligible });
           // A step still waiting its turn (Verify, usually) moves too, so it never starts on a model under its
           // limit and the card shows who will really do it. With nobody above the limit it stays and waits.
@@ -3110,10 +3316,11 @@ function createOrchestrator(options) {
             const current = models.find(model => model.id === step.modelId);
             if (!current || !isLow(current)) continue;
             const role = { worker: 'Build', verifier: 'Verify', reviewer: 'Review' }[assignmentRole(step.sub)] || 'Build';
+            const stepMode = stepSavingMode(row.id, step.sub, false);
             const others = models.filter(model => model.id !== current.id && model.enabled && model.available !== false && model.providerEnabled !== false);
             const why = others.map(model => {
               const policy = usagePolicy(model, plansLive);
-              const reason = !permitsAssignment(model, step.sub) ? `no ${role} role in this project` : policy.blocked ? (policy.reason || 'its quota rule blocks it')
+              const reason = !allowedBySavingMode(stepMode, model) ? `left out by ${savingMode.label(stepMode)}` : !permitsAssignment(model, step.sub) ? `no ${role} role in this project` : policy.blocked ? (policy.reason || 'its quota rule blocks it')
                 : isLow(model) ? 'under its limit' : !eligible(model, step) ? 'cannot do this step' : '';
               return reason ? `${model.label || model.id}: ${reason}` : '';
             }).filter(Boolean).slice(0, 8);
@@ -3211,6 +3418,10 @@ function createOrchestrator(options) {
     if (order.action === 'model') return setModelEnabled(order.id, order.enabled);
     if (order.action === 'lead') return setOrchestrator(order.id);
     if (order.action === 'reject') return { ok: false, reason: 'Pipeline is not available.' };
+    if (order.action === 'saving-mode') {
+      if (!order.projectId) return { ok: false, reason: 'project not found' };
+      return setSavingMode(order.projectId, order.savingMode);
+    }
     if (order.action === 'mode') {
       if (order.chatMode && order.projectId) {
         const set = await setChatMode(order.projectId, order.chatMode, { approval: order.mode === 'auto' ? 'auto' : order.mode === 'manual' ? 'manual' : null });
@@ -3369,6 +3580,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         answer = `${who}: ${order.label || order.id} is now ${order.enabled ? 'on' : 'off'}.`;
       } else if (acted.ok && order.action === 'lead') {
         answer = `${who}: orchestrator lead is now ${order.label || order.id}.`;
+      } else if (acted.ok && order.action === 'saving-mode') {
+        const lang = /modalit/i.test(q) ? 'it' : 'en';
+        answer = `${who}: ${savingMode.changedSentence(order.savingMode, lang)}`;
       } else if (acted.ok && order.action === 'mode') {
         answer = `${who}: mode is now ${chatMode.label(order.chatMode || (order.mode === 'auto' ? 'auto' : 'plan'))}.`;
       } else if (acted.ok && order.action === 'endGrill') {
@@ -3475,10 +3689,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             if (credits) { noteCredits(refusedLead.id, spoken.answer || spoken.error); persist(); }
             const company = refusedLead.providerId || refusedLead.provider;
             // The quota limits hold for the lead too: a model under its limit is taken only when no other can lead.
-            const usable = roomyLeads(roster().filter(model => !triedLeads.has(model.id) && leadUsable(model)));
             // Quota is shared by a company, so another company first; missing credits are the model's own.
-            const pool = credits ? usable : (usable.filter(model => (model.providerId || model.provider) !== company).length ? usable.filter(model => (model.providerId || model.provider) !== company) : usable);
-            const next = leadRanking(pool, plansLive)[0];
+            // The saving mode limits the list. With nobody allowed, the lowest class that can still answer is kept.
+            const next = nextAllowedLead(triedLeads, { credits, company });
             if (!next) break;
             switchLead(refusedLead, next, (refusedLead.label || refusedLead.id) + (credits ? ' needs usage credits.' : ' is out of quota.'));
             triedLeads.add(next.id);
@@ -3493,7 +3706,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
             note((row && row.id) || projectId, (lead.label || lead.id) + ' failed to answer (' + spoken.failure + '). Retrying once.');
             spoken = await askThis(lead);
             if (died(spoken) && askCurrent(token)) {
-              const next = leadRanking(roomyLeads(roster().filter(model => model.id !== lead.id && leadUsable(model))), plansLive)[0];
+              const next = nextAllowedLead(new Set([lead.id]));
               if (next) {
                 switchLead(lead, next, (lead.label || lead.id) + ' failed to answer twice (' + spoken.failure + ').');
                 invokedLead = next; refusedLead = next; triedLeads.add(next.id);
@@ -3530,6 +3743,11 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           if (chatModeOf((row && row.id) || projectId) === 'talk') {
             if (chatMode.suggestedGoal(answer)) answer = chatMode.withoutSuggestion(answer);
             envelope.actions = [];
+          }
+          const modeNow = savingModeOf((row && row.id) || projectId);
+          if (modeNow !== 'normal' && invokedLead && !allowedBySavingMode(modeNow, invokedLead)) {
+            const fallbackText = savingMode.leadFallbackNote(modeNow, invokedLead);
+            if (noteOnce((row && row.id) || projectId, 'lead-answer:' + modeNow, fallbackText) && answer && !answer.includes(fallbackText)) answer += '\n\n' + fallbackText;
           }
           // Crew changes are allowed in any message; research still needs the user's explicit request.
           if (Array.isArray(envelope.actions) && envelope.actions.length <= 3) {
@@ -4226,7 +4444,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if (prFixes.has(key)) return { ok: true, started: false, reason: `#${number} is already being fixed.` };
     if ([...prFixes.keys()].some(other => other.startsWith(projectId + '#'))) return { ok: false, reason: 'A fix is already running.' };
     // Taken before the notebook is read, so two clicks cannot both pass the check.
+    // The mode is the one in force at the click. A change while the copy is prepared waits for the next step.
     prFixes.set(key, { startedAt: now(), text: '' });
+    const modeAtStart = savingModeOf(projectId);
     let item;
     try {
       item = notebookProjects(await opts.readPlan()).find(entry => entry.project.id === projectId);
@@ -4253,17 +4473,25 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       let keepLocal = false;
       const noteKept = result => { if (result && result.kept) keepLocal = true; return result; };
       try {
-        fix = await pr.prepareFix(item.project.folder, number, worktree);
+        fix = await pr.prepareFix(item.project.folder, number, worktree, opts.runCommand);
         if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
         if (!fix.conflicts.length && !fix.failing.length) {
           const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
+        const mode = modeAtStart;
         const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false
           && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan) && !isLow(model)
-          && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement' });
+          && allowedBySavingMode(mode, model)
+          && permitsAssignment(model, { type: 'IMPLEMENTATION', title: 'Implement', ...(mode === 'normal' ? {} : { savingMode: mode }) });
         const model = leadQuality(roster().filter(usable))[0];
-        if (!model) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`);
+        if (!model) {
+          const leftOut = roster().filter(item => item.enabled && item.available !== false && !allowedBySavingMode(mode, item)).map(item => item.label || item.id);
+          const underLimit = roster().filter(item => item.enabled && allowedBySavingMode(mode, item) && isLow(item)).map(item => item.label || item.id);
+          const why = mode === 'normal' ? `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`
+            : `Pull request #${number} was not fixed: ${savingMode.blockedReason({ mode, title: 'pull request #' + number, role: 'Build', leftOut, underLimit })}`;
+          return done('PR_FIX_FAILED', why);
+        }
         const started = `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`;
         prFixes.set(key, { startedAt: (prFixes.get(key) || {}).startedAt || now(), text: started });
         markPullRequestFix(projectId, number, 'started', started);
@@ -4365,7 +4593,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { works, fixes, fixing };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
-module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };
+module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

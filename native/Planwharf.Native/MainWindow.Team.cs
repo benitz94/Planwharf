@@ -12,8 +12,17 @@ namespace Planwharf.Native;
 public sealed partial class MainWindow
 {
     string accountSignInCommand = "";
-    void TeamPanel(TeamView team, string name)
+    void TeamPanel(TeamView team, string name, string savingMode)
     {
+        var modes = new SavingModeBar();
+        modes.Show(savingMode);
+        modes.Bind(async mode =>
+        {
+            if (api == null || projectId == null) return;
+            var id = projectId;
+            await DoAsync(() => api.SetSavingModeAsync(id, mode), Strings.T("Saved."));
+        });
+        side.Children.Add(modes);
         // Which project this team is for, in a soft green box.
         side.Children.Add(new Border { Background = Palette.AccentSoft, CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 8), Margin = new Thickness(0, 0, 0, 6),
             Child = new DockPanel { Children = { Look.Icon("folder", 16).With(i => { i.VerticalAlignment = VerticalAlignment.Top; i.Margin = new Thickness(0, 1, 8, 0); DockPanel.SetDock(i, Dock.Left); }),

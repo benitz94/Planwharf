@@ -8,6 +8,7 @@ The Telegram bot speaks like a ship's crew: you are the captain, the project is 
 writes in English or Italian, like the app (**Settings → Look → Language**).
 
 Messages carry only the project name, the goal, the state, the times and the names of the models: never code, file names or paths.
+Alerts and `/status` also name the project's saving mode: **Saving: Normal**, **Safe** or **Ultra safe** (in Italian, **Risparmio: Normale**, **Sicura** or **Ultra sicura**).
 
 ## Examples
 
@@ -89,6 +90,6 @@ At the bottom of the chat the bot keeps three buttons: **📊 Status**, **⏹ St
 
 | Command | What it does |
 |---|---|
-| `/status` | The state of each project: who is working, the step, the time left, and the mode (Talk or Plan; in Italian Chat or Piano) |
+| `/status` | The state of each project: who is working, the step, the time left, the chat mode (Talk or Plan; in Italian Chat or Piano), and the saving mode (Normal, Safe or Ultra safe; in Italian Normale, Sicura or Ultra sicura) |
 | `/stop <project>` | Stops the crew, after you answer "yes" |
 | `/resume <project>` | Resumes the work from its checkpoint |
