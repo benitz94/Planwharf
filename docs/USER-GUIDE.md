@@ -40,7 +40,7 @@ The same choice can be typed: `mode normal`, `mode safe`, `mode ultra safe`, or 
 
 | On screen | Job |
 | --- | --- |
-| Lead (menu at the top) | Talks with you, plans, picks who does each step. The menu lists the leads from the most capable down; if the lead runs out of quota, or does not answer, the next one takes over. The quota limits hold for the lead too: a model under its limit takes over only when no other can lead. |
+| Lead (menu at the top) | Talks with you, plans, picks who does each step. The menu lists the leads from the most capable down; if the lead runs out of quota, or does not answer, the next one takes over. The quota limits hold for the lead too: a model under its limit takes over only when no other can lead. The **Lead** button on each model says whether it may lead this project: switch it off and the model is left out of the menu and of every hand-over. |
 | Build | Writes the code and its tests. |
 | Verify | Checks the builder's work independently and fixes what fails. A strong model is preferred: a light one verifies only when nobody else can. |
 | Bench | Available, but never used until you give it a role. |

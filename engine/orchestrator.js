@@ -1214,6 +1214,7 @@ function createOrchestrator(options) {
           quotaLimits: parsed.quotaLimits && typeof parsed.quotaLimits === 'object' ? parsed.quotaLimits : {},
           creditsNeeded: parsed.creditsNeeded && typeof parsed.creditsNeeded === 'object' ? parsed.creditsNeeded : {},
           poolLimits: parsed.poolLimits && typeof parsed.poolLimits === 'object' ? parsed.poolLimits : {},
+          notLead: Array.isArray(parsed.notLead) ? parsed.notLead.filter(item => typeof item === 'string') : [],
           chatModes: parsed.chatModes && typeof parsed.chatModes === 'object' && !Array.isArray(parsed.chatModes) ? parsed.chatModes : {},
           savingModes: parsed.savingModes && typeof parsed.savingModes === 'object' && !Array.isArray(parsed.savingModes) ? parsed.savingModes : {},
           modelWeights: parsed.modelWeights && typeof parsed.modelWeights === 'object' && !Array.isArray(parsed.modelWeights) ? parsed.modelWeights : {},
@@ -1231,7 +1232,7 @@ function createOrchestrator(options) {
           accountModelRoles: parsed.accountModelRoles || {},
           projectTeams: parsed.projectTeams && typeof parsed.projectTeams === 'object' && !Array.isArray(parsed.projectTeams)
             ? Object.fromEntries(Object.entries(parsed.projectTeams).filter(([, team]) => team && typeof team === 'object' && team.roles && typeof team.roles === 'object')
-              .map(([id, team]) => [id, { orchestratorId: typeof team.orchestratorId === 'string' ? team.orchestratorId : null, roles: team.roles }]))
+              .map(([id, team]) => [id, { orchestratorId: typeof team.orchestratorId === 'string' ? team.orchestratorId : null, roles: team.roles, ...(Array.isArray(team.notLead) ? { notLead: team.notLead.filter(item => typeof item === 'string') } : {}) }]))
             : {},
           accountBindings: parsed.accountBindings || {},
           lastAccountKeys: parsed.lastAccountKeys || {},
@@ -1269,6 +1270,10 @@ function createOrchestrator(options) {
   const inTeam = (projectId, fn) => typeof projectId === 'string' && projectId ? teamScope.run(projectId, fn) : fn();
   const teamKey = (scope, id) => (scope || '-') + '|' + id;
   const leadId = () => { const team = teamFor(); return team ? team.orchestratorId || null : store.orchestratorId || null; };
+  // Which models may lead: every one the owner has not switched off with the Lead button in Team. The menu
+  // and every hand-over (quota, refusal, a lead that does not answer) choose only among them.
+  const notLead = () => { const team = teamFor(); const list = team ? team.notLead : store.notLead; return Array.isArray(list) ? list : []; };
+  const leadAllowed = id => !notLead().includes(id);
   function savingModeOf(projectId) {
     return savingMode.persisted(projectId ? store.savingModes?.[projectId] : null);
   }
@@ -1307,7 +1312,7 @@ function createOrchestrator(options) {
     if (!teamFor(projectId)) {
       // A new project team starts as a copy of the shared team.
       const list = teamScope.exit(() => roster());
-      store.projectTeams[projectId] = { orchestratorId: store.orchestratorId || null, roles: Object.fromEntries(list.map(item => [teamKey(item.accountScope, item.id), { ...item.roles }])) };
+      store.projectTeams[projectId] = { orchestratorId: store.orchestratorId || null, roles: Object.fromEntries(list.map(item => [teamKey(item.accountScope, item.id), { ...item.roles }])), notLead: [...(store.notLead || [])] };
     }
     return store.projectTeams[projectId];
   }
@@ -1869,7 +1874,7 @@ function createOrchestrator(options) {
   // Any model able to lead counts, not only one with the lead role (in a team only the chosen lead has it);
   // a model on the bench (no role at all) is left out, as the user chose.
   function leadUsable(model) {
-    return Boolean(model) && roleEligibility(model).orchestrator !== false && canOrchestrate({ ...model, roles: { ...model.roles, orchestrator: true } })
+    return Boolean(model) && leadAllowed(model.id) && roleEligibility(model).orchestrator !== false && canOrchestrate({ ...model, roles: { ...model.roles, orchestrator: true } })
       && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan)
       && !refusals.activeRefusal(store, model.id, Date.parse(now()));
   }
@@ -2051,6 +2056,7 @@ function createOrchestrator(options) {
       if (refused) Object.assign(resolved, { available: false, unavailableReason: refusalSentence(refused) });
       // A model the plan no longer includes ("requires usage credits") is not a quota that comes back in a
       // few hours: it is left out of the lead and the crew until Look for models again checks it.
+      resolved.leadAllowed = leadAllowed(item.id);
       if (creditsMarked(item.id)) Object.assign(resolved, { available: false, neverUsable: true, creditsNeeded: true,
         unavailableReason: 'Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.' });
       return resolved;
@@ -2473,7 +2479,7 @@ function createOrchestrator(options) {
     // Every model that can lead now, best first: the lead menu follows this order.
     // The menu is by importance, not by today's quota. A model that is out of quota stays in its
     // place; Planwharf picks the first one that can actually lead when the work starts.
-    view.leadOrder = leadQuality(roster().filter(item => canOrchestrate({ ...item, roles: { ...item.roles, orchestrator: true } }))).map(item => item.id);
+    view.leadOrder = leadQuality(roster().filter(item => (leadAllowed(item.id) || item.id === view.orchestratorId) && canOrchestrate({ ...item, roles: { ...item.roles, orchestrator: true } }))).map(item => item.id);
     view.leadBackups = leadRanking(roster().filter(item => item.id !== view.orchestratorId && leadUsable(item) && !isLow(item)), plansLive).slice(0, 5).map(item => item.id);
     view.usageAlerts = view.providers.filter(provider => ['warning', 'limit', 'unread'].includes(provider.usagePolicy.state)).map(provider => ({ providerId: provider.id, label: provider.label, ...provider.usagePolicy }));
     const researchRows = store.researches.map(record => ({ id: record.projectId, name: record.projectName, status: record.status,
@@ -3839,6 +3845,22 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     };
   }
 
+  // The Lead button of a model in Team: whether it may lead this project (the menu and every hand-over).
+  async function setLeadAllowed(id, allowed, projectId) {
+    if (typeof id !== 'string' || !id.trim() || typeof allowed !== 'boolean') return { ok: false, reason: 'invalid data' };
+    const apply = async () => {
+      if (!roster().some(item => item.id === id)) return { ok: false, reason: 'model not present' };
+      if (!allowed && leadId() === id) return { ok: false, reason: 'This model is the lead now: choose another lead first.' };
+      const team = teamFor();
+      const list = new Set(notLead());
+      if (allowed) list.delete(id); else list.add(id);
+      if (team) team.notLead = [...list]; else store.notLead = [...list];
+      persist();
+      return { ok: true, snapshot: await tick() };
+    };
+    if (projectId) { ensureTeam(projectId); return inTeam(projectId, apply); }
+    return apply();
+  }
   async function setOrchestrator(id, projectId) {
     if (projectId) {
       ensureTeam(projectId);
@@ -4609,7 +4631,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { works, fixes, fixing };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { setLeadAllowed, clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

@@ -9,6 +9,8 @@ public sealed record TeamModel(string Id, string Label, string Provider, int? Qu
     public bool Enabled { get; init; } = true;
     // On the bench: no role at all in this project.
     public bool Bench { get; init; }
+    // Whether the owner lets this model lead the project (the Lead button); on unless switched off.
+    public bool LeadAllowed { get; init; } = true;
     public bool CanBuild { get; init; } = true;
     public bool CanVerify { get; init; } = true;
     public bool CanReview { get; init; } = true;
@@ -79,6 +81,7 @@ public static class TeamViews
                 S(model["id"]) == lead, B(roles?["worker"]), B(roles?["verifier"]), false, Eligible(model, "orchestrator"))
             {
                 Enabled = model["enabled"] is not JsonValue enabled || !enabled.TryGetValue<bool>(out var on) || on,
+                LeadAllowed = model["leadAllowed"] is not JsonValue leadAllowed || !leadAllowed.TryGetValue<bool>(out var mayLead) || mayLead,
                 // On the bench with none of lead, Build and Verify. Review is not a role.
                 Bench = !new[] { "orchestrator", "worker", "verifier" }.Any(role => B(roles?[role])),
                 CanBuild = Eligible(model, "worker"), CanVerify = Eligible(model, "verifier"), CanReview = false,
@@ -117,7 +120,7 @@ public static class TeamViews
     public static List<TeamModel> Leads(TeamView team)
     {
         int Rank(TeamModel model) { var at = team.LeadOrder.ToList().IndexOf(model.Id); return at < 0 ? int.MaxValue : at; }
-        return team.Models.Where(model => model.CanLead && model.Available && model.PlanStatus is not ("expired" or "not signed in")).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
+        return team.Models.Where(model => model.CanLead && (model.LeadAllowed || model.Lead) && model.Available && model.PlanStatus is not ("expired" or "not signed in")).Select((model, i) => (model, i)).OrderBy(x => Rank(x.model)).ThenBy(x => x.i).Select(x => x.model).ToList();
     }
 
     static int? Pct(JsonNode? node) => node is JsonValue value && value.TryGetValue<double>(out var number) ? (int)Math.Round(number) : null;
