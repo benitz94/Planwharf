@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **23 of 72** | 72 |
 | JavaScript engine lines ported | **about 1,856 of 14,000** (13%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies); next: clearer screens (job 31), the pipeline (jobs 32 to 34), the sandbox sheet (job 35) and step outcomes (job 36), then phase 3 | 0 to 8 |
-| C# engine tests | 603, plus 247 comparison cases with the JavaScript | |
+| C# engine tests | 627, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
 `browser-settings`, `invocations`, `model-policy`, `model-roles`, `models`, `notebook-file`,
@@ -62,6 +62,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 29 | #196 | Per-project saving modes: Normal, Safe and Ultra safe limit the lead and the crew to the allowed model classes, from the next step | Waiting for review, not pushed |
 | 30 | #200 | Add to the running work: while work runs, an agreed addition appends one Build step before Verify and starts on an allowed model; Verify reruns after; stopped work resumes with it | Verified independently, not pushed. The work plan now records the new step. A second click does not start it twice. Ultra safe keeps a flagship off the extra step. |
 | 31 | — | Clearer screens: Work finished shows three lines first with details closed; plain step lines and lead summaries with fallbacks; joined events; larger higher-contrast text; simpler Team cards and everyday Settings first | Verified independently, not pushed. A corrupt lead line or summary is ignored. Failed and Verify reports do not hide what was built. Repeated events join only when they sit together. A later check: `tickStep` fallback no longer depends on `prepare()`/git (that path failed under a parallel `node --test` load), and the pull-request title test now runs on Windows with a `gh.exe` stub; verified edge, recovery and revision-direction PR title cases. |
+| 32 | #? | Build pipeline part 1: queue, intake with author questions, spec with acceptance tests, file-backed job state in attempts store, and owner-approved manifest handoff to AcceptanceGate | Built PipelineIntake.cs in C# and 19 tests in PipelineIntakeTests.cs; verified defaults, label boundary, quoted requests, local list, source failure, withdraw/edit before and after approval, intake wait/questions, rejection, scope/ratings, bad manifest, owner approval, candidate folder isolation, chat goal isolation, and concurrency |
 
 ## Improvements found while Planwharf worked on itself
 
