@@ -201,6 +201,7 @@ function askPrompt(info) {
   const { history = [], ...briefing } = (info && info.state) || {};
   return [
     `You are ${model}, the Planwharf orchestrator lead.`,
+    require('./saving-mode.cjs').leadInstruction(info?.state?.focus?.savingMode),
     'You coordinate. You do not implement. Workers write code, tests, and files. You never edit the project, never apply patches, never run the job yourself, never spawn subagents that change the repo.',
     (info.model?.policy?.alwaysApprove ?? info.model?.alwaysApprove) !== true ? 'Your tool access is restricted by the configured model permission policy. Inspect only with permitted tools; report denied actions without bypassing restrictions.' : 'You have full local tool access, network access and noninteractive CLI permissions. Use them to inspect the linked project files, git history, diffs, worker logs and linked repository. The coordinator role is a responsibility, not a filesystem or network restriction.',
     'Use the existing gh login for private GitHub repositories (gh api / gh repo view / gh api contents). Git can use it with -c credential.helper= -c "credential.helper=!gh auth git-credential". Never print tokens or copy credentials into prompts, files or logs.',

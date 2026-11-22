@@ -29,4 +29,13 @@ function resolveCliModel(model) {
   return modelRouteError(model) ? null : model.cli;
 }
 
-module.exports = { modelRouteError, resolveCliModel };
+// Why a model is outside the project's saving mode. Null when the mode allows it.
+function savingModeError(model, mode, tier) {
+  const saving = require('./saving-mode.cjs');
+  const saved = saving.persisted(mode);
+  if (saved === 'normal' || saving.allows(saved, model, tier)) return null;
+  const name = model?.label || model?.id || 'This model';
+  return `${name} is ${saving.modelClass(model, tier)}, and ${saving.label(saved)} does not allow it.`;
+}
+
+module.exports = { modelRouteError, resolveCliModel, savingModeError };

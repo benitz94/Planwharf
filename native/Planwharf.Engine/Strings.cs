@@ -712,6 +712,14 @@ public static class Strings
         ["A conversation with the lead. Nothing starts."] = "Una conversazione con il coordinatore. Non parte nulla.",
         ["The lead shapes a goal. You press Let the crew do it."] = "Il coordinatore definisce un obiettivo. Premi Affida il lavoro alla squadra.",
         ["Write below. This is a conversation with the lead. Nothing starts."] = "Scrivi qui sotto. \u00c8 una conversazione con il coordinatore. Non parte nulla.",
+        ["Normal"] = "Normale",
+        ["Safe"] = "Sicura",
+        ["Ultra safe"] = "Ultra sicura",
+        ["Saving"] = "Risparmio",
+        ["Today's model picking. Flagship, mid and light models can work."] = "La scelta dei modelli di oggi. Possono lavorare i modelli di punta, medi e leggeri.",
+        ["No flagship models. Mid and light only, for the lead and the crew."] = "Nessun modello di punta. Solo medi e leggeri, per il coordinatore e la squadra.",
+        ["Light models only, for the lead and the crew."] = "Solo modelli leggeri, per il coordinatore e la squadra.",
+        ["It applies from the next step."] = "Vale dal prossimo passo.",
     };
     static readonly Dictionary<string, string> English = Italian.Keys.ToDictionary(key => key, key => key, StringComparer.Ordinal);
 

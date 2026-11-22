@@ -448,10 +448,11 @@ public static class ModelPolicy
     public static JsonArray QuotaSwitches(JsonArray? running = null, JsonArray? models = null, JsonArray? plans = null, JsonNode? limit = null, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null) =>
         QuotaSwitches(running, models, plans, _ => limit ?? AutoSwitchDefault(), enabled, eligible);
 
-    public static JsonArray QuotaSwitches(JsonArray? running, JsonArray? models, JsonArray? plans, Func<JsonObject, JsonNode?> limitFor, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null)
+    public static JsonArray QuotaSwitches(JsonArray? running, JsonArray? models, JsonArray? plans, Func<JsonObject, JsonNode?> limitFor, bool enabled = true, Func<JsonObject, JsonObject, bool>? eligible = null, Func<JsonObject, bool>? allowed = null)
     {
         if (!enabled) return new JsonArray();
         eligible ??= static (_, _) => true;
+        allowed ??= static _ => true;
         running ??= new JsonArray();
         models ??= new JsonArray();
         plans ??= new JsonArray();
@@ -479,7 +480,7 @@ public static class ModelPolicy
             // A company the other steps of the work do not use comes first, so build and check stay independent;
             // then quota that is read before quota that is not, then the most quota left.
             var ranked = models.OfType<JsonObject>()
-                .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)))
+                .Where(model => !PropEquals(model, "id", current, "id") && EligibleModel(model, candidate => eligible(candidate, step)) && allowed(model))
                 .Select(model => (Model: model, Left: QuotaLeft(model, plans)))
                 .Where(row => !LowQuota(row.Model, plans, limitFor) && !Blocked(UsagePolicy(row.Model, plans)))
                 .Select(row => (row.Model, row.Left, SameAccount: row.Left is not null && IsSameModelAccount(row.Model), Shared: Avoids(step, JsOr(row.Model, "providerId", "provider"))))

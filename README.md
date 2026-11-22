@@ -29,7 +29,7 @@ reviewed before it is merged.
 
 | So far | |
 |---|---|
-| Jobs done by Planwharf on itself | **27**, from the first C# modules to the acceptance gate and the chat modes |
+| Jobs done by Planwharf on itself | **29**, from the first C# modules to the Pull requests panel and the saving modes |
 | C# engine | **23 of 72 modules** ported, 603 tests, 247 cases compared with the JavaScript result by result |
 | Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |

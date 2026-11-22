@@ -68,8 +68,8 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 25 | Protocol and pipeline | Build Planwharf's own MCP tools for workers, as `native/porting/jobs/18-mcp-protocol.md` says (the sheet of job 18) | `feat/mcp-build` | Done (#172) |
 | 26 | Protocol and pipeline | Build the acceptance tests and the gate, as `native/porting/jobs/19-gate.md` says (the sheet of job 19) | `feat/gate-build` | Done (#179) |
 | 27 | Native app | Three chat modes, one click apart: **Talk** (only talk with the lead, to think ideas through), **Plan** (the lead shapes a goal for the crew; you start it) and **Auto** (the crew starts by itself). Sheet below; the switch makes room for a fourth position, Pipeline, added by job 34 | `feat/chat-modes` | Done (#186); Auto removed afterwards, Talk and Plan remain |
-| 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | Done, verified independently, not pushed |
-| 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no flagship models of the AI companies: only their mid and light models) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | To do |
+| 28 | Native app | **Pull requests**, a panel like Team, Progress and Usage in place of the Check PRs button: the open pull requests with their checks and conflicts, the history of merged and closed ones to analyse, and Fix in the background per pull request. Sheet below | `feat/pr-panel` | Done (#193) |
+| 29 | Native app and engine | **Saving modes**, per project: **Normal** (as today: Planwharf picks the models), **Safe** (no flagship models of the AI companies: only their mid and light models) and **Ultra safe** (light models only), for the lead and the crew. Sheet below | `feat/saving-modes` | Done (#196) |
 | 30 | Native app and engine | **Add to this work**: while the crew works, an addition agreed in the chat becomes one more step of the running work, before Verify, instead of waiting for the next goal. Sheet below | `feat/add-to-work` | To do |
 | 31 | Native app | **Clearer screens**: Work finished says first what was done, whether it works and what to do now; steps and events in plain words, the technical text in the details; larger, higher-contrast text; Team and Settings with everyday and advanced parts; new screenshots and a README that shows the app right after the diagram. Sheet below | `feat/clearer-screens` | To do |
 | 32 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | To do |
@@ -498,6 +498,8 @@ checks), paging, the numbers of the summary, the link from a pull request to its
 panel draws the three states, the fix shows while it runs, and the filters change the list.
 
 ## Job 29. Saving modes: Normal, Safe, Ultra safe
+
+**Status.** Done, waiting for review. Not pushed.
 
 **Why.** The owner wants to spend fewer tokens and less quota when the work allows it, with one choice,
 instead of changing the roles of every model in Team.

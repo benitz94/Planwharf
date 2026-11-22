@@ -67,6 +67,9 @@ Short commands are handled by Planwharf itself, without calling a model:
 | `mode talk`, `modalità chat` | Selects Talk. |
 | `mode plan` | Selects Plan. |
 | `mode manual` | Selects Plan, and approvals stay manual until you start the crew. |
+| `mode normal`, `modalità normale` | Saving mode Normal: today's model picking. |
+| `mode safe`, `modalità sicura` | Saving mode Safe: mid and light models only. |
+| `mode ultra safe`, `modalità ultra sicura` | Saving mode Ultra safe: light models only. |
 
 Anything else goes to the lead.
 

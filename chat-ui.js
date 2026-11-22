@@ -208,13 +208,41 @@
     }
     return latest > seen[row.id];
   }
+  const SAVING_LABELS = {
+    en: { normal: 'Normal', safe: 'Safe', 'ultra-safe': 'Ultra safe' },
+    it: { normal: 'Normale', safe: 'Sicura', 'ultra-safe': 'Ultra sicura' }
+  };
+  const SAVING_HINTS = {
+    en: {
+      normal: "Today's model picking. Flagship, mid and light models can work.",
+      safe: 'No flagship models. Mid and light only, for the lead and the crew.',
+      'ultra-safe': 'Light models only, for the lead and the crew.'
+    },
+    it: {
+      normal: 'La scelta dei modelli di oggi. Possono lavorare i modelli di punta, medi e leggeri.',
+      safe: 'Nessun modello di punta. Solo medi e leggeri, per il coordinatore e la squadra.',
+      'ultra-safe': 'Solo modelli leggeri, per il coordinatore e la squadra.'
+    }
+  };
+  function savingModeId(row) {
+    const mode = String(row?.savingMode || 'normal').trim().toLowerCase();
+    return Object.hasOwn(SAVING_LABELS.en, mode) ? mode : 'normal';
+  }
+  function savingLabel(mode) {
+    const lang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    return SAVING_LABELS[lang][savingModeId({ savingMode: mode })];
+  }
+  function savingBeside(row) {
+    const name = row?.name || '';
+    return name ? `${name} · ${savingLabel(savingModeId(row))}` : savingLabel(savingModeId(row));
+  }
   function renderProjects() {
     const rows = state.orchestra?.projects || [];
     $('project-list').innerHTML = rows.length ? rows.map(row => {
       const status = projectStatus(row), work = workingNow(row);
       const icon = work ? `<span class="tile p-running spinning" aria-hidden="true">${ic('lead')}</span>` : tile('folder', 'p-' + (status.kind || 'idle'));
       const news = hasNews(row) ? '<span class="news-dot" role="img" aria-label="New activity" title="Something happened here since you last looked"></span>' : '';
-      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${icon}<span class="name-wrap"><span class="name">${escape(row.name)}</span><span class="sub">${escape(work ? workingText(work) : status.text)}</span></span>${news}</button>`;
+      return `<button type="button" class="project-item ${status.kind}" data-project="${escape(row.id)}" aria-current="${row.id === state.projectId}">${icon}<span class="name-wrap"><span class="name">${escape(savingBeside(row))}</span><span class="sub">${escape(work ? workingText(work) : status.text)}</span></span>${news}</button>`;
     }).join('') : '<p class="muted small">No projects yet.</p>';
     // The compass in the logo turns while anything is being worked on.
     const busy = rows.some(row => workingNow(row));
@@ -223,7 +251,7 @@
   }
   function renderHeader() {
     const row = project();
-    $('project-title').textContent = row ? row.name : 'Welcome';
+    $('project-title').textContent = row ? savingBeside(row) : 'Welcome';
     const status = projectStatus(row), work = workingNow(row);
     const pill = $('project-status'); pill.textContent = work ? workingText(work) : status.text; pill.className = 'pill ' + (work ? 'running' : status.kind);
     document.title = state.windowTitle || (row ? `${row.name} · Planwharf` : 'Planwharf');
@@ -428,7 +456,9 @@
     const tail = friendly.length ? friendly.join('\n') : String(row.workerTail || '').trim().split('\n').slice(-6).join('\n');
     const who = modelLabel(running?.modelId) || row.workerLabel || 'the crew';
     const waiting = subs.find(sub => String(sub.status).toUpperCase() === 'PENDING' && sub.waitingFor)?.waitingFor || '';
-    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>Crew at work${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${waiting ? `<p class="small">${ic('clock')}${escape(waiting)}</p>` : ''}${steps}
+    const saving = savingLabel(savingModeId(row));
+    const crewHead = (String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'Squadra al lavoro' : 'Crew at work') + ' · ' + saving;
+    return `<div class="card crew live"><h3 class="head"><span class="tile t-accent live-tile" aria-hidden="true"><span class="pulse"></span></span><span>${escape(crewHead)}${since ? ` · ${since}` : ''}</span></h3><p>${escape(mega.title || '')}</p>${bar}${waiting ? `<p class="small">${ic('clock')}${escape(waiting)}</p>` : ''}${steps}
       ${tail ? `<details class="preview" open><summary>What ${escape(who)} is doing</summary><pre>${escape(tail)}</pre></details>` : ''}</div>`;
   }
 
@@ -657,7 +687,11 @@
     const active = shown.filter(model => !onBench(model));
     const bench = shown.filter(onBench);
     const row = project();
-    return `${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
+    const saving = row ? savingModeId(row) : 'normal';
+    const savingLang = String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'it' : 'en';
+    const savingChoices = ['normal', 'safe', 'ultra-safe'].map(id => `<button type="button" class="chip" data-saving-mode="${id}" aria-pressed="${saving === id}">${escape(savingLabel(id))}</button>`).join('');
+    const savingBox = row ? `<div class="section">${head('clock', 't-accent', savingLang === 'it' ? 'Risparmio' : 'Saving')}<div class="chips">${savingChoices}</div><p class="explain">${escape(SAVING_HINTS[savingLang][saving])} ${escape(savingLang === 'it' ? 'Vale dal prossimo passo.' : 'It applies from the next step.')}</p></div>` : '';
+    return `${savingBox}${row ? `<p class="team-scope">${ic('folder')}<span>Team for <b>${escape(row.name)}</b>. Each project has its own team; changes here apply only to this project.</span></p>` : ''}
       <div class="section">${head('lead', 'r-lead', 'Lead')}<p class="explain">Talks with you, plans the work and picks who does what.</p>
         <select data-lead-select aria-label="Lead"><option value="">Choose your lead…</option>${leads.map(model => `<option value="${escape(model.id)}" ${current?.id === model.id ? 'selected' : ''}>${escape(model.label)}</option>`).join('')}</select>${leadBackupsLine()}</div>
       ${filterBar(offered, shown)}
@@ -1209,6 +1243,7 @@
   document.addEventListener('click', event => {
     const target = event.target.closest('button, a');
     if (!target) return;
+    if (target.dataset.savingMode) { const row = project(); if (row) act(() => post('/api/orchestrator/saving-mode', { projectId: row.id, mode: target.dataset.savingMode }), String(document.documentElement.lang || '').toLowerCase().startsWith('it') ? 'Salvato.' : 'Saved.'); return; }
     if (target.dataset.project) { state.projectId = target.dataset.project; store.set('project', state.projectId); state.threadSig = ''; state.confirm = null; $('projects-panel').classList.remove('open'); state.sideSig = ''; render(); refresh({ tick: false }); if (state.panel === 'pulls') loadPulls(); return; }
     if (target.dataset.panel) { if (target.classList.contains('tab')) openPanel(target.dataset.panel); else { state.panel = target.dataset.panel; store.set('panel', state.panel); render(); } return; }
     if (target.id === 'side-close') { state.panel = null; store.set('panel', null); render(); return; }

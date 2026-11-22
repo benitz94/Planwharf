@@ -82,7 +82,48 @@ public static class ModelRoles
             var providerKey = Truthy(Prop(model, "providerId")) ? "providerId" : "provider";
             if (!StrictEquals(model, "id", gold, "id") || !StrictEquals(model, providerKey, gold, "provider") || !StrictEquals(model, "cli", gold, "cli")) return false;
         }
+        // A saving mode on the job limits the class. Jobs without one keep today's roles.
+        var modeNode = Prop(job, "savingMode");
+        if (modeNode is JsonValue modeValue && modeValue.GetValueKind() == JsonValueKind.String)
+        {
+            var mode = modeValue.GetValue<string>();
+            if (mode is "safe" or "ultra-safe" && !SavingAllows(model, mode)) return false;
+        }
         return resolved["roles"]![role]!.GetValue<bool>();
+    }
+
+    // Team weight wins. Otherwise leadTier: 0 flagship, 1 mid, 2 light. Normal allows every class.
+    static bool SavingAllows(JsonObject model, string mode)
+    {
+        var cls = ModelClass(model);
+        if (mode == "ultra-safe") return cls == "light";
+        if (mode == "safe") return cls is "mid" or "light";
+        return true;
+    }
+
+    static string ModelClass(JsonObject model)
+    {
+        if (Prop(model, "weightSource") is JsonValue source && source.GetValueKind() == JsonValueKind.String && source.GetValue<string>() == "team"
+            && Prop(model, "weight") is JsonValue weight && weight.GetValueKind() == JsonValueKind.String)
+        {
+            var name = weight.GetValue<string>();
+            if (name == "premium") return "flagship";
+            if (name == "light") return "light";
+            if (name == "default") return "mid";
+        }
+        if (Prop(model, "leadTier") is JsonValue tier && tier.TryGetValue<int>(out var rank))
+        {
+            if (rank == 0) return "flagship";
+            if (rank == 2) return "light";
+            if (rank == 1) return "mid";
+        }
+        if (Prop(model, "weight") is JsonValue fallback && fallback.GetValueKind() == JsonValueKind.String)
+        {
+            var name = fallback.GetValue<string>();
+            if (name == "premium") return "flagship";
+            if (name == "light") return "light";
+        }
+        return "mid";
     }
 
     // Property of an object, or null. JavaScript undefined and JSON null both count as missing for ?. and ??.

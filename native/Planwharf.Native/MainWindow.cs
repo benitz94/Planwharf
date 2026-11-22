@@ -291,7 +291,7 @@ public sealed partial class MainWindow : Window
             if (badge != null) badge.IsVisible = false;
             return;
         }
-        title.Text = view.Name;
+        title.Text = SavingModes.Beside(view.Name, view.SavingMode);
         var workingNow = WorkingNow(view.Id);
         badgeText.Text = workingNow is { } work ? ChatViews.WorkingText(work.Who, work.Since, DateTimeOffset.UtcNow) : view.Status;
         // Green while working or when the goal is reached, as the chat page's badge.
@@ -410,12 +410,13 @@ public sealed partial class MainWindow : Window
         return new Border { BorderBrush = Palette.Warn, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18, 14), Child = panel };
     }
 
-    Control WorkCard(string projectId, WorkView work, TeamView team, CardData card)
+    Control WorkCard(string projectId, WorkView work, TeamView team, CardData card, string savingMode = SavingModes.Normal)
     {
         var done = work.Status == "COMPLETE";
         var stopped = !done && IsStopped(work);
         var proposal = work.Status == "READY_FOR_APPROVAL";
-        var heading = done ? Strings.T("Work finished") : stopped ? Strings.T("Work stopped") : proposal ? Strings.T("The lead proposes this work") : Strings.T("Crew at work") + (card.Since.Length > 0 ? " · " + card.Since : "");
+        var live = Strings.T("Crew at work") + " \u00b7 " + SavingModes.Label(savingMode) + (card.Since.Length > 0 ? " \u00b7 " + card.Since : "");
+        var heading = done ? Strings.T("Work finished") : stopped ? Strings.T("Work stopped") : proposal ? Strings.T("The lead proposes this work") : live;
         var (icon, tone, soft) = done ? ("check", Palette.Accent, Palette.AccentSoft) : stopped ? ("alert", Palette.Warn, Palette.WarnSoft) : proposal ? ("lead", Palette.Lead, Palette.LeadSoft) : ("rocket", Palette.Accent, Palette.AccentSoft);
         var panel = new StackPanel { Spacing = 8, Children = { Look.Head(icon, tone, soft, heading, 17) } };
         panel.Children.Add(Line(stopped && work.NextAction.Length > 0 ? work.NextAction : work.Title));
@@ -795,7 +796,7 @@ public sealed partial class MainWindow : Window
         var team = TeamViews.Team(snapshot);
         var row = (snapshot["projects"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => item["id"]?.GetValue<string>() == projectId);
         var folder = row?["folder"]?.GetValue<string>() ?? "";
-        var sig = sideMode + projectId + folder + projectsRoot + (sideMode == "settings" ? SettingsSignature() : "") + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available + m.Bench + m.Enabled + m.UnavailableReason)) + string.Join(",", team.Providers);
+        var sig = sideMode + projectId + (view?.SavingMode ?? "") + folder + projectsRoot + (sideMode == "settings" ? SettingsSignature() : "") + team.LeadId + string.Join(",", team.Models.Select(m => m.Id + m.Build + m.Verify + m.Review + m.QuotaLeft + m.Available + m.Bench + m.Enabled + m.UnavailableReason)) + string.Join(",", team.Providers);
         if (sideMode == "team") sig += snapshot["projectToolSettings"]?[projectId ?? ""]?.ToJsonString();
         var progress = sideMode == "progress" && projectId != null ? PanelViews.Progress(snapshot, projectId, view?.Status ?? "") : null;
         var usage = sideMode == "usage" ? PanelViews.Usage(snapshot) : null;
@@ -811,7 +812,7 @@ public sealed partial class MainWindow : Window
         side.Children.Clear();
         switch (sideMode)
         {
-            case "team": TeamPanel(team, view?.Name ?? ""); break;
+            case "team": TeamPanel(team, view?.Name ?? "", view?.SavingMode ?? SavingModes.Normal); break;
             case "progress" when progress != null: ProgressSide(progress); break;
             case "usage" when usage != null: UsageSide(usage); break;
             case "files" when files != null: FilesSide(files, folder); break;
