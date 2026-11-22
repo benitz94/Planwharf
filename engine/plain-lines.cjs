@@ -43,6 +43,9 @@ function sentences(text, count) {
 
 function shortLine(text, max = LINE_MAX) { return clip(flat(text), max); }
 
+// A list from the store: missing or the wrong type is empty, so a corrupt snapshot still reads.
+function list(value) { return Array.isArray(value) ? value : []; }
+
 // The line shown for a step: the lead's line, or else the first sentence of its title.
 function stepLine(sub) {
   if (!sub || typeof sub !== 'object') return { line: '', from: 'none' };
@@ -59,8 +62,8 @@ function stepLine(sub) {
 function workSummary(mega, results = [], subTasks = []) {
   const lead = clip(sentences(mega && mega.leadSummary, 2), SUMMARY_MAX);
   if (lead) return { summary: lead, from: 'lead' };
-  const verify = new Set((subTasks || []).filter(sub => sub && typeof sub.title === 'string' && sub.title.startsWith(VERIFY_PREFIX)).map(sub => sub.id));
-  const built = (results || []).filter(result => result && result.status === 'COMPLETE' && !verify.has(result.subTaskId) && flat(result.summary));
+  const verify = new Set(list(subTasks).filter(sub => sub && typeof sub.title === 'string' && sub.title.startsWith(VERIFY_PREFIX)).map(sub => sub.id));
+  const built = list(results).filter(result => result && result.status === 'COMPLETE' && !verify.has(result.subTaskId) && flat(result.summary));
   const said = built.length ? firstSentence(built.at(-1).summary) : '';
   if (said) return { summary: clip(said, SUMMARY_MAX), from: 'fallback' };
   const title = clip(firstSentence(mega && (mega.title || mega.goal)), SUMMARY_MAX);
@@ -100,7 +103,7 @@ function readSummary(text) {
 // What the native app reads with a work row: the summary and one line per step, each with its source.
 function forWork(mega, subTasks = [], results = []) {
   const { summary, from } = workSummary(mega, results, subTasks);
-  return { summary, summaryFrom: from, steps: (subTasks || []).filter(Boolean).map(sub => ({ id: sub.id, ...stepLine(sub) })) };
+  return { summary, summaryFrom: from, steps: list(subTasks).filter(Boolean).map(sub => ({ id: sub.id, ...stepLine(sub) })) };
 }
 
 module.exports = { LINE_MAX, SUMMARY_MAX, SPLIT_LINE_ASK, SUMMARY_ASK, flat, clip, firstSentence, shortLine, stepLine, workSummary, readSplitLines, readSummary, forWork };

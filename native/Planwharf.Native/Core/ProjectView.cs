@@ -137,10 +137,13 @@ public static class ProjectViews
                 var role = S(sub["type"]) == "AUDIT" ? "Review" : S(sub["type"]) == "RESEARCH" ? "Research" : S(sub["title"]).StartsWith(VerifyPrefix) ? "Verify" : "Build";
                 var rawTitle = S(sub["title"]);
                 var instruction = S(sub["detail"]) is { Length: > 0 } detail ? detail : rawTitle;
-                var leadLine = S(sub["plainLine"]) is { Length: > 0 } pl ? pl : S(sub["leadLine"]) is { Length: > 0 } ll ? ll : S(sub["line"]);
-                var line = leadLine.Length > 0 ? leadLine
-                    : rawTitle.StartsWith(VerifyPrefix) ? Strings.T("Checks the whole work and runs the tests.")
-                    : FirstSentence(rawTitle) is { Length: > 0 } first ? first : rawTitle;
+                var line = S(sub["plainLine"]);
+                if (line.Length == 0)
+                {
+                    var (fallback, _) = PlainLines.StepLine(sub);
+                    line = fallback;
+                }
+                if (line == "Checks the whole work and runs the tests.") line = Strings.T(line);
                 return new WorkStep(S(sub["id"]),
                     role,
                     Label(S(sub["assignedModelId"])),
@@ -155,10 +158,9 @@ public static class ProjectViews
             var plainFrom = S(row["plain"]?["summaryFrom"]);
             if (plainSummary.Length == 0)
             {
-                var leadSum = S(mega["leadSummary"]);
-                if (leadSum.Length > 0) { plainSummary = leadSum; plainFrom = "lead"; }
-                else if (results.Count > 0) { plainSummary = FirstSentence(results.Last()); plainFrom = "fallback"; }
-                else { plainSummary = S(mega["title"]) is { Length: > 0 } t ? FirstSentence(t) : S(mega["goal"]); plainFrom = "fallback"; }
+                var (summary, from) = PlainLines.WorkSummary(mega, row["results"] as JsonArray, row["subTasks"] as JsonArray);
+                plainSummary = summary;
+                plainFrom = from;
             }
             work = new WorkView(S(mega["title"]), S(mega["status"]).ToUpperInvariant(), steps.Count(step => step.Status == "done"), steps.Count, steps, results)
             {

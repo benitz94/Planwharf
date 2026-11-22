@@ -53,12 +53,16 @@ public static class PlainLines
 
     public static string ShortLine(string? text, int max = LineMax) => Clip(Flat(text), max);
 
+    // A string field from the store. A missing value or the wrong type is empty, so a corrupt snapshot still reads.
+    static string Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
+
     public static (string Line, string From) StepLine(JsonObject? sub)
     {
         if (sub is null) return ("", "none");
-        var lead = ShortLine(sub["leadLine"]?.GetValue<string>() ?? sub["line"]?.GetValue<string>());
+        var lead = ShortLine(Text(sub["leadLine"]));
+        if (lead.Length == 0) lead = ShortLine(Text(sub["line"]));
         if (lead.Length > 0) return (lead, "lead");
-        var title = sub["title"]?.GetValue<string>() ?? "";
+        var title = Text(sub["title"]);
         if (title.StartsWith(VerifyPrefix, StringComparison.Ordinal)) return ("Checks the whole work and runs the tests.", "fallback");
         var fallback = Clip(FirstSentence(title), LineMax);
         return (fallback, fallback.Length > 0 ? "fallback" : "none");
@@ -66,26 +70,26 @@ public static class PlainLines
 
     public static (string Summary, string From) WorkSummary(JsonObject? mega, JsonArray? results, JsonArray? subTasks)
     {
-        var lead = Clip(Sentences(mega?["leadSummary"]?.GetValue<string>(), 2), SummaryMax);
+        var lead = Clip(Sentences(Text(mega?["leadSummary"]), 2), SummaryMax);
         if (lead.Length > 0) return (lead, "lead");
 
         var verify = new HashSet<string>((subTasks ?? [])
             .OfType<JsonObject>()
-            .Where(sub => (sub["title"]?.GetValue<string>() ?? "").StartsWith(VerifyPrefix, StringComparison.Ordinal))
-            .Select(sub => sub["id"]?.GetValue<string>() ?? "")
+            .Where(sub => Text(sub["title"]).StartsWith(VerifyPrefix, StringComparison.Ordinal))
+            .Select(sub => Text(sub["id"]))
             .Where(id => id.Length > 0));
 
         var built = (results ?? [])
             .OfType<JsonObject>()
-            .Where(r => r["status"]?.GetValue<string>() == "COMPLETE"
-                && !verify.Contains(r["subTaskId"]?.GetValue<string>() ?? "")
-                && Flat(r["summary"]?.GetValue<string>()).Length > 0)
+            .Where(r => Text(r["status"]) == "COMPLETE"
+                && !verify.Contains(Text(r["subTaskId"]))
+                && Flat(Text(r["summary"])).Length > 0)
             .ToList();
 
-        var said = built.Count > 0 ? FirstSentence(built[^1]["summary"]?.GetValue<string>()) : "";
+        var said = built.Count > 0 ? FirstSentence(Text(built[^1]["summary"])) : "";
         if (said.Length > 0) return (Clip(said, SummaryMax), "fallback");
 
-        var title = Clip(FirstSentence(mega?["title"]?.GetValue<string>() ?? mega?["goal"]?.GetValue<string>()), SummaryMax);
+        var title = Clip(FirstSentence(Text(mega?["title"]).Length > 0 ? Text(mega?["title"]) : Text(mega?["goal"])), SummaryMax);
         return (title, title.Length > 0 ? "fallback" : "none");
     }
 }
