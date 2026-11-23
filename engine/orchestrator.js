@@ -13,6 +13,7 @@ const { planExhausted, emptyPlans } = require('./planUsage.js');
 const { createRepositoryInspector } = require('./repository.cjs');
 const { modelRouteError, savingModeError } = require('./model-routing.cjs');
 const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
+const decisionsInboxModule = require('./decisions-inbox.cjs');
 const worktrees = require('./worktrees.cjs');
 const { estimate: estimateTimeLeft } = require('./time-left.cjs');
 const stepOutcomes = require('./step-outcomes.cjs');
@@ -1349,6 +1350,8 @@ function createOrchestrator(options) {
 
   const bridge = createExecutionBridge({ store, attempts, dir, rowFor: (id, megaTaskId) => store.researches.find(record => record.megaTaskId === megaTaskId) || entry(id), inspect, spawnWorker: opts.spawnWorker,
     isProcessAlive: opts.isProcessAlive, killWorker: opts.killWorker, models: roster,
+    isAutoDecide: (projId, item) => decisionsInboxModule.isAutoDecide(projId, store, item?.project),
+    leadLabel: projId => projectLeadLabel(projId, leadModel()),
     explainNoWorker: (worker, sub) => explainNoWorker(worker, sub),
     freezeSavingMode: (projectId, sub) => stepSavingMode(projectId, sub, true),
     resolveWorker: (worker, sub) => {
@@ -2312,6 +2315,9 @@ function createOrchestrator(options) {
       sessions: clone(store.sessions),
       workerHistory: clone(store.workerHistory),
       mode: store.mode === 'auto' ? 'auto' : 'manual',
+      autoDecide: clone(store.autoDecide || {}),
+      defaultAutoDecide: Boolean(store.defaultAutoDecide),
+      decisionsInbox: decisionsInboxModule.collectDecisions({ projects, execution: store.execution, pipelineJobs: store.pipelineJobs || [], settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide } }),
       autonomy: clone(store.autonomy),
       grillPropose: store.grillPropose !== false,
       grillKind: store.grillPropose === false ? 'off' : (store.grillKind === 'docs' ? 'docs' : 'me'),
@@ -4693,8 +4699,38 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const fixing = [...prFixes.entries()].filter(([key]) => key.startsWith(projectId + '#')).map(([key, value]) => ({ number: Number(key.slice(projectId.length + 1)), startedAt: value && value.startedAt || null, text: value && value.text || '' }));
     return { works, fixes, fixing };
   }
-  function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { stepOutcomes: () => dir ? stepOutcomes.readStepOutcomes(dir) : [], setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  function answerDecision(projectId, decisionId, answer) {
+    if (decisionId && String(decisionId).startsWith('pipeline:')) {
+      return decisionsInboxModule.answerDecision(store.execution, projectId, decisionId, answer, { pipelineJobs: store.pipelineJobs || [] });
+    }
+    return bridge.answerDecision(projectId, decisionId, answer);
+  }
+  function delegateDecision(projectId, decisionId) {
+    if (decisionId && String(decisionId).startsWith('pipeline:')) {
+      return decisionsInboxModule.delegateDecision(store.execution, projectId, decisionId, { pipelineJobs: store.pipelineJobs || [], leadLabel: projectLeadLabel(projectId, leadModel()) });
+    }
+    return bridge.delegateDecision(projectId, decisionId, projectLeadLabel(projectId, leadModel()));
+  }
+  function setDecisionAuto(projectId, enabled) {
+    store.autoDecide = store.autoDecide || {};
+    store.autoDecide[projectId] = Boolean(enabled);
+    persist();
+    return { ok: true, autoDecide: store.autoDecide };
+  }
+  function setDefaultDecisionAuto(enabled) {
+    store.defaultAutoDecide = Boolean(enabled);
+    persist();
+    return { ok: true, defaultAutoDecide: store.defaultAutoDecide };
+  }
+  async function decisionsInbox() {
+    return decisionsInboxModule.collectDecisions({
+      projects: notebookProjects(await opts.readPlan()),
+      execution: store.execution,
+      pipelineJobs: store.pipelineJobs || [],
+      settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide }
+    });
+  }
+  return { stepOutcomes: () => dir ? stepOutcomes.readStepOutcomes(dir) : [], setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, delegateDecision, setDecisionAuto, setDefaultDecisionAuto, decisionsInbox, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

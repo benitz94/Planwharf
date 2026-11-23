@@ -595,6 +595,9 @@ function createPhoneNotifier({
   getSnapshot,
   onStopProject,
   onResumeProject,
+  onAnswerDecision,
+  onDelegateDecision,
+  getDecisions,
   fetchImpl = globalThis.fetch,
   apiBaseUrl = 'https://api.telegram.org',
   ntfyServerUrl = 'https://ntfy.sh',
@@ -680,14 +683,19 @@ function createPhoneNotifier({
     return getPublicSettings();
   }
 
-  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, savingMode }) {
+  async function sendAlert({ type, projectId, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, savingMode, decisionId, suggestion, breaks }) {
     const fresh = loadPhoneSettings(storeDir);
+    const isIt = fresh.language === 'it';
+    let alertDetail = detail;
+    if (breaks && !detail?.includes('break') && !detail?.includes('rompere')) {
+      alertDetail = alertDetail ? `${alertDetail}\n⚠️ ${isIt ? 'Potrebbe rompere qualcosa' : 'Could break something'}` : `⚠️ ${isIt ? 'Potrebbe rompere qualcosa' : 'Could break something'}`;
+    }
     const ntfyPromise = (async () => {
       if (fresh.ntfy.enabled && fresh.ntfy.topic) {
         const safeTitle = `Planwharf: ${sanitizeText(projectName)}`;
         const priority = type === 'failed' ? 'high' : type === 'needs_owner' ? 'urgent' : 'default';
         const tags = type === 'failed' ? ['warning'] : type === 'needs_owner' ? ['bell'] : ['white_check_mark'];
-        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, savingMode, language: fresh.language });
+        const plainMsg = formatAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail: alertDetail, savingMode, language: fresh.language });
         return await sendNtfyAlert({
           topic: fresh.ntfy.topic,
           serverUrl: fresh.ntfy.serverUrl || ntfyServerUrl,
@@ -703,11 +711,27 @@ function createPhoneNotifier({
 
     const tgPromise = (async () => {
       if (fresh.telegram.enabled && fresh.telegramToken && fresh.telegram.pairedChatId) {
-        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail, step, crew, savingMode, language: fresh.language });
+        const tgMsg = formatTelegramAlertMessage({ type, projectName, goalTitle, durationMinutes, timeLeft, detail: alertDetail, step, crew, savingMode, language: fresh.language });
+        let replyMarkup = undefined;
+        if (decisionId && projectId) {
+          replyMarkup = {
+            inline_keyboard: [[
+              {
+                text: `✅ ${suggestion ? (isIt ? `Accetta: ${suggestion}` : `Accept: ${suggestion}`) : (isIt ? 'Accetta' : 'Accept')}`,
+                callback_data: `decide_suggest:${projectId}:${decisionId}`
+              },
+              {
+                text: isIt ? '🤖 Lascia decidere al lead' : '🤖 Let the lead decide',
+                callback_data: `decide_lead:${projectId}:${decisionId}`
+              }
+            ]]
+          };
+        }
         return await sendTelegramMessage({
           token: fresh.telegramToken,
           chatId: fresh.telegram.pairedChatId,
           text: tgMsg,
+          replyMarkup,
           parseMode: 'HTML',
           apiBaseUrl,
           fetchImpl
@@ -761,7 +785,11 @@ function createPhoneNotifier({
       const now = { __lead: crew?.lead || '' };
       for (const item of [...(crew?.build || []), ...(crew?.verify || [])]) now[item.id] = item.name;
       crewBefore.set(p.id, now);
-      const detail = alertType === 'restarted' ? 'The same step started again.' : '';
+      const openDecs = Array.isArray(p.openDecisions) && p.openDecisions.length
+        ? p.openDecisions
+        : ((snapshot?.decisionsInbox?.open || []).filter(d => d.projectId === p.id));
+      const firstDec = openDecs.length ? openDecs[0] : null;
+      const detail = alertType === 'restarted' ? 'The same step started again.' : (alertType === 'needs_owner' && firstDec?.text ? firstDec.text : '');
       await sendAlert({
         type: alertType,
         projectId: p.id,
@@ -771,13 +799,19 @@ function createPhoneNotifier({
         detail,
         step: p.step,
         crew,
-        savingMode: p.savingMode
+        savingMode: p.savingMode,
+        decisionId: alertType === 'needs_owner' ? firstDec?.id : undefined,
+        suggestion: alertType === 'needs_owner' ? firstDec?.suggestion : undefined,
+        breaks: alertType === 'needs_owner' ? Boolean(firstDec?.breaks) : undefined
       });
     }
   }
 
   async function processTelegramMessage(msg) {
-    return enqueue('commands', () => handleTelegramMessage(msg));
+    return enqueue('commands', () => {
+      if (msg && msg.callback_query) return handleCallback(msg.callback_query);
+      return handleTelegramMessage(msg);
+    });
   }
 
   async function handleTelegramMessage(msg) {
@@ -787,6 +821,7 @@ function createPhoneNotifier({
     const text = (rawText === '📊 Status' || rawText === '📊 Stato') ? '/status'
       : (rawText === '⏹ Stop' || rawText === '⏹ Ferma') ? '/stop'
       : (rawText === '▶️ Resume' || rawText === '▶️ Riprendi') ? '/resume'
+      : (rawText === '❓ Decisions' || rawText === '❓ Decisioni') ? '/decisions'
       : rawText;
     if (!text) {
       if (msg.document || msg.photo || msg.video || msg.voice || msg.audio || msg.sticker) {
@@ -953,6 +988,68 @@ function createPhoneNotifier({
     if (command === '/status' || command === '/stato' || command.startsWith('/status ') || command.startsWith('/stato ')) {
       const statusText = formatStatusMessage(projects, lang);
       await sendTelegramMessage({ token, chatId, text: statusText, replyMarkup: statusKeyboard(projects, lang), apiBaseUrl, fetchImpl });
+      return;
+    }
+
+    if (command === '/decisions' || command === '/decisioni' || command.startsWith('/decisions ') || command.startsWith('/decisioni ')) {
+      let openDecisions = [];
+      if (typeof getDecisions === 'function') {
+        try {
+          const res = await getDecisions();
+          openDecisions = res?.open || [];
+        } catch {}
+      } else if (snapshot?.decisionsInbox?.open) {
+        openDecisions = snapshot.decisionsInbox.open;
+      } else if (Array.isArray(snapshot?.projects)) {
+        for (const p of snapshot.projects) {
+          if (Array.isArray(p.openDecisions)) {
+            for (const d of p.openDecisions) {
+              openDecisions.push({ ...d, projectId: p.id, projectName: p.name || p.id });
+            }
+          }
+        }
+      }
+
+      if (openDecisions.length === 0) {
+        const noneText = lang === 'it' ? 'Nessuna decisione in attesa.' : 'No decisions waiting.';
+        await sendTelegramMessage({ token, chatId, text: noneText, replyMarkup: mainKeyboard(), apiBaseUrl, fetchImpl });
+        return;
+      }
+
+      const isIt = lang === 'it';
+      for (const d of openDecisions) {
+        const proj = escapeHtml(d.projectName || d.projectId || 'Project');
+        const work = escapeHtml(d.workTitle || d.workId || '');
+        const text = escapeHtml(d.text || '');
+        const sug = escapeHtml(d.suggestion || '');
+        const breakWarn = d.breaks ? (isIt ? ' ⚠️ <b>Potrebbe rompere qualcosa</b>' : ' ⚠️ <b>Could break something</b>') : '';
+
+        let block = `🚢 <b>${proj}</b>${work ? ` · ${work}` : ''}\n❓ ${text}${breakWarn}`;
+        if (sug) block += `\n💡 <i>${isIt ? 'Suggerimento' : 'Suggestion'}: ${sug}</i>`;
+
+        const buttons = [
+          [
+            {
+              text: `✅ ${d.suggestion ? (isIt ? `Accetta: ${d.suggestion}` : `Accept: ${d.suggestion}`) : (isIt ? 'Accetta' : 'Accept')}`,
+              callback_data: `decide_suggest:${d.projectId}:${d.id}`
+            },
+            {
+              text: isIt ? '🤖 Lascia decidere al lead' : '🤖 Let the lead decide',
+              callback_data: `decide_lead:${d.projectId}:${d.id}`
+            }
+          ]
+        ];
+
+        await sendTelegramMessage({
+          token,
+          chatId,
+          text: block,
+          replyMarkup: { inline_keyboard: buttons },
+          parseMode: 'HTML',
+          apiBaseUrl,
+          fetchImpl
+        });
+      }
       return;
     }
 
@@ -1166,6 +1263,79 @@ function createPhoneNotifier({
     }
     if (verb === 'resume') {
       await handleTelegramMessage({ chat: { id: chatId }, text: `/resume ${id}` });
+      return;
+    }
+    if (verb === 'decide_suggest') {
+      const parts = data.split(':');
+      const projId = parts[1];
+      const decId = parts.slice(2).join(':');
+      if (!projId || !decId) return;
+      const lang = languageOrDefault(loadPhoneSettings(storeDir).language);
+      const isIt = lang === 'it';
+      let err = null;
+      if (typeof onAnswerDecision === 'function') {
+        try {
+          const res = await onAnswerDecision(projId, decId, 'accepted');
+          if (res && res.ok === false) err = res.reason;
+        } catch (e) {
+          err = e.message;
+        }
+      }
+      if (err) {
+        const errMsg = isIt && err.includes('already started')
+          ? '⚠️ Il passo che richiede questa decisione è già iniziato.'
+          : `⚠️ ${err}`;
+        await sendTelegramMessage({
+          token, chatId,
+          text: errMsg,
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl, fetchImpl
+        });
+        return;
+      }
+      await sendTelegramMessage({
+        token, chatId,
+        text: isIt ? '✅ Decisione accettata con il suggerimento.' : '✅ Decision accepted with suggestion.',
+        replyMarkup: mainKeyboard(),
+        apiBaseUrl, fetchImpl
+      });
+      return;
+    }
+    if (verb === 'decide_lead') {
+      const parts = data.split(':');
+      const projId = parts[1];
+      const decId = parts.slice(2).join(':');
+      if (!projId || !decId) return;
+      const lang = languageOrDefault(loadPhoneSettings(storeDir).language);
+      const isIt = lang === 'it';
+      let err = null;
+      if (typeof onDelegateDecision === 'function') {
+        try {
+          const res = await onDelegateDecision(projId, decId);
+          if (res && res.ok === false) err = res.reason;
+        } catch (e) {
+          err = e.message;
+        }
+      }
+      if (err) {
+        const errMsg = isIt && err.includes('already started')
+          ? '⚠️ Il passo che richiede questa decisione è già iniziato.'
+          : `⚠️ ${err}`;
+        await sendTelegramMessage({
+          token, chatId,
+          text: errMsg,
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl, fetchImpl
+        });
+        return;
+      }
+      await sendTelegramMessage({
+        token, chatId,
+        text: isIt ? '🤖 Decisione affidata al lead.' : '🤖 Let the lead decide.',
+        replyMarkup: mainKeyboard(),
+        apiBaseUrl, fetchImpl
+      });
+      return;
     }
   }
 

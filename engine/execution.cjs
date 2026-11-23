@@ -227,8 +227,30 @@ function createExecutionBridge(options) {
       const text = parts[0];
       const suggestion = (parts.find(part => part.toLowerCase().startsWith('suggestion:')) || '').slice('suggestion:'.length).trim();
       const breaks = /breaks:\s*yes/i.test(raw);
-      // A decision that cannot break anything is answered with the suggestion, so the owner is not asked.
-      data.decisions.push({ id: result.resultId + ':' + data.decisions.length, projectId: mega.projectId, megaTaskId: mega.id, text, suggestion, breaks, at: now(), answer: breaks ? '' : (suggestion || 'accepted') });
+      const isAuto = typeof options.isAutoDecide === 'function'
+        ? options.isAutoDecide(mega.projectId, item)
+        : Boolean(item?.project?.autoDecide || store?.autoDecide?.[mega.projectId] || store?.defaultAutoDecide);
+      const dec = {
+        id: result.resultId + ':' + data.decisions.length,
+        projectId: mega.projectId,
+        megaTaskId: mega.id,
+        text,
+        suggestion,
+        breaks,
+        at: now(),
+        answer: breaks ? '' : (suggestion || 'accepted'),
+        answeredBy: breaks ? null : 'system',
+        answeredAt: breaks ? null : now()
+      };
+      if (isAuto) {
+        const leadLabel = typeof options.leadLabel === 'function' ? options.leadLabel(mega.projectId) : 'Lead';
+        dec.answer = suggestion || 'yes';
+        dec.answeredBy = `Decided by ${leadLabel}`;
+        dec.autoReason = suggestion ? `Followed recommended suggestion: ${suggestion}` : 'Safe default accepted.';
+        dec.answeredAt = now();
+        event(mega.projectId, 'DECISION_AUTO_ANSWERED', `${dec.answeredBy}: ${text} -> ${dec.answer}`, { megaTaskId: mega.id, decisionId: dec.id, breaks });
+      }
+      data.decisions.push(dec);
     }
     part.validatedResultStatus = result.status; part.recordedSubTaskStatus = sub.status;
     sub.completedAt = result.status === 'COMPLETE' ? now() : null;
@@ -1022,15 +1044,31 @@ function createExecutionBridge(options) {
 
     return { ok: true, subTask: newSub, megaTask: mega };
   }
-  function answerDecision(projectId, decisionId, answer) {
-    const decision = data.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+  function answerDecision(projectId, decisionId, answer, who = 'owner') {
+    const decision = data.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
     if (!decision) return { ok: false, reason: 'Decision not found.' };
-    decision.answer = String(answer || '').trim();
+    const subs = subtasks({ id: decision.megaTaskId });
+    if (decision.answer && subs.some(s => s && (s.status === 'RUNNING' || s.status === 'COMPLETE'))) {
+      return { ok: false, reason: 'The step that needs this decision has already started.' };
+    }
+    const val = String(answer || '').trim();
+    decision.answer = (val === 'accepted' && decision.suggestion) ? decision.suggestion : (val || 'yes');
+    decision.answeredBy = who === 'owner' ? 'owner' : who;
     decision.answeredAt = now();
-    persist();
-    return { ok: true };
+    if (typeof persist === 'function') persist();
+    return { ok: true, decision };
   }
-  return { replan, propose, approve, advance, appendAddition, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision };
+  function delegateDecision(projectId, decisionId, leadLabel = 'Lead') {
+    const decision = data.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
+    if (!decision) return { ok: false, reason: 'Decision not found.' };
+    decision.answer = String(decision.suggestion || 'yes').trim();
+    decision.answeredBy = `Decided by ${leadLabel}`;
+    decision.autoReason = decision.suggestion ? `Followed recommended suggestion: ${decision.suggestion}` : 'Safe default accepted.';
+    decision.answeredAt = now();
+    if (typeof persist === 'function') persist();
+    return { ok: true, decision };
+  }
+  return { replan, propose, approve, advance, appendAddition, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision, delegateDecision };
 }
 function stepTimesFile(dir) { return path.join(dir, 'step-times.jsonl'); }
 function readStepTimes(dir) {

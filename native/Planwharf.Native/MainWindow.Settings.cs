@@ -265,6 +265,24 @@ public sealed partial class MainWindow
         mode.IsCheckedChanged += async (_, _) => { if ((mode.IsChecked == true) != auto) await DoAsync(() => api!.SetModeAsync(mode.IsChecked == true ? "auto" : "manual"), Strings.T("Saved.")); };
         adv.Children.Add(mode);
 
+        var defaultAutoDecide = snapshot?["defaultAutoDecide"] is JsonValue dad && dad.TryGetValue<bool>(out var dadFlag) && dadFlag;
+        var autoDecideToggle = new ToggleSwitch
+        {
+            OnContent = Strings.T("Let the lead decide new decisions by default"),
+            OffContent = Strings.T("Let the lead decide new decisions by default"),
+            IsChecked = defaultAutoDecide
+        };
+        autoDecideToggle.IsCheckedChanged += async (_, _) =>
+        {
+            if (api == null) return;
+            var wanted = autoDecideToggle.IsChecked == true;
+            if (wanted != defaultAutoDecide)
+            {
+                await DoAsync(() => api.SetDefaultDecisionAutoAsync(wanted), Strings.T("Saved."));
+            }
+        };
+        adv.Children.Add(autoDecideToggle);
+
         if (autoSwitch != null)
         {
             var enabled = autoSwitch["enabled"] is not JsonValue e || !e.TryGetValue<bool>(out var flag) || flag;

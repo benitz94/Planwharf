@@ -79,7 +79,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | Done (#208) |
 | 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | Done (#209) |
 | 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | Done, waiting for review |
-| 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | To do |
+| 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done, waiting for review |
 | 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | To do |
 | 41 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/41-sheet` | To do |
 | 42 | 4. | Port them, as sheet 41 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/42-phase4` | To do |
@@ -697,6 +697,8 @@ flow without knowing the words.
 you" for a stage waiting for the owner, and the picture when the queue is empty; English and Italian.
 
 ## Job 39. One inbox for decisions
+
+**Status.** Done, waiting for review. Not pushed.
 
 **Why.** Decisions only the owner can make appear under their own project. With several projects, or the
 pipeline running several jobs, the owner must look in each one. And sometimes the owner prefers the lead to
