@@ -80,7 +80,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | Done (#209) |
 | 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | Done, waiting for review |
 | 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done, waiting for review |
-| 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | To do |
+| 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | Done (#213) |
 | 41 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/41-sheet` | To do |
 | 42 | 4. | Port them, as sheet 41 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/42-phase4` | To do |
 | 43 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/43-sheet` | To do |
@@ -106,6 +106,9 @@ Rules for every job:
   cases again and change the C# in the same branch (porting rule 12).
 - The web app and Electron get no new features (they are being retired). A change there is allowed
   only where the job says so, to keep them working.
+- A sheet's own test checks the sheet only. It never requires the plan to say "Done, waiting for review", a
+  `#?` in the progress page, or the absence of files that a later job adds: those are true only on the
+  sheet's branch, and the test then fails on every later pull request.
 - Tests that do not depend on the computer (porting rule 11), and the full engine CI green:
   `node scripts/engineering/ci.cjs`.
 - English in code, comments, tests and commit messages.
@@ -725,3 +728,24 @@ choose.
 lead's choice and reason and the work goes on; a breaking decision under Auto is answered and highlighted;
 "Let the lead decide" on one decision; changing an answer before the step starts; the answered list. Native:
 the count in the top bar, the buttons, the Auto switch. Phone: /decisions and the two choices.
+
+## Job 40. First-level engine port (phase 3)
+
+**Status.** Done, waiting for review. Not pushed.
+
+**Why.** Phase 3 transitions the first level of Planwharf's engine core from JavaScript to C#,
+following the architecture and invariants specified in Job 37 (`native/porting/jobs/37-phase3-first-level.md`).
+
+**What.**
+
+1. Ported twenty-three Phase 3 engine modules to C# in `native/Planwharf.Engine`:
+   `Attempts`, `Claims`, `ProjectExport`, `ExecutionNext`, `ProviderCatalog`, `ProviderPolicy`,
+   `ModelRouting`, `Claude`, `ClaudeUsage`, `Repository`, `Supervisor`, `Activity`,
+   `ActivitySessions`, `ProviderRuntime`, `TimeLeft`, `PlanStatus`, `ProviderStatus`, `PushEmail`,
+   `TempCleanup`, `AccountFolders`, `PhoneVoice`, `PhoneActivation`, and `StepOutcomes`.
+2. Ported test coverage into `native/Planwharf.Engine.Tests`: 23 test suites exercising all invariants,
+   concurrency controls, error handling, filesystem locks, and recovery paths.
+3. Native AOT compliance: zero compiler warnings under Native AOT analyzers (`PublishAot=true`, `TreatWarningsAsErrors=true`).
+4. Parity verification: all parity invariant tests pass (`node engine/parity.test.cjs`), and all C# test suites pass.
+
+**Tests.** `dotnet build native/Planwharf.Engine -c Release`, `dotnet test native/Planwharf.Engine.Tests -c Release`, and `node engine/parity.test.cjs`.
