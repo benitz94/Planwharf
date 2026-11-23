@@ -216,27 +216,18 @@ public static class PipelineViews
             var decisionLabel = needsDecision ? Strings.T("Needs your decision") : null;
 
             // Elapsed time calculation
-            long totalMs = 0;
-            if (jobObj["reportedTimeMs"] is JsonValue timeVal && timeVal.TryGetValue<long>(out var tMs))
-            {
-                totalMs += tMs;
-            }
-
+            long totalMs = SafeGetLong(jobObj["reportedTimeMs"], 0);
             var elapsedTimeDisplay = totalMs > 0 ? FormatDuration(totalMs) : Strings.T("time not reported");
 
             // Tokens calculation
             string tokensDisplay = Strings.T("tokens not reported");
             if (jobObj["tokens"] is JsonObject tokensObj)
             {
-                var totalTokens = 0;
-                if (tokensObj["total"] is JsonValue totVal && totVal.TryGetValue<int>(out var tTot))
+                var totalTokens = SafeGetInt(tokensObj["total"], 0);
+                if (totalTokens <= 0)
                 {
-                    totalTokens = tTot;
-                }
-                else
-                {
-                    var inTok = tokensObj["input"]?.GetValue<int>() ?? 0;
-                    var outTok = tokensObj["output"]?.GetValue<int>() ?? 0;
+                    var inTok = SafeGetInt(tokensObj["input"], 0);
+                    var outTok = SafeGetInt(tokensObj["output"], 0);
                     totalTokens = inTok + outTok;
                 }
 
@@ -250,9 +241,9 @@ public static class PipelineViews
             string quotaDisplay = Strings.T("not reported");
             if (jobObj["quota"] is JsonObject quotaObj)
             {
-                var prov = quotaObj["providerId"]?.ToString() ?? quotaObj["provider"]?.ToString();
-                var mod = quotaObj["modelId"]?.ToString();
-                var unread = quotaObj["unread"]?.GetValue<bool>() == true || quotaObj["quotaUnread"]?.GetValue<bool>() == true;
+                var prov = (quotaObj["providerId"]?.ToString() ?? quotaObj["provider"]?.ToString())?.Trim();
+                var mod = quotaObj["modelId"]?.ToString()?.Trim();
+                var unread = SafeGetBool(quotaObj["unread"]) || SafeGetBool(quotaObj["quotaUnread"]);
 
                 if (!string.IsNullOrWhiteSpace(prov) && !string.IsNullOrWhiteSpace(mod))
                 {
@@ -263,6 +254,10 @@ public static class PipelineViews
                     else if (quotaObj["remainingPercent"] is JsonValue remV && remV.TryGetValue<int>(out var remPct))
                     {
                         quotaDisplay = $"{prov} · {mod} · {remPct}%";
+                    }
+                    else if (SafeGetInt(quotaObj["remainingPercent"], -1) is var rPct && rPct >= 0)
+                    {
+                        quotaDisplay = $"{prov} · {mod} · {rPct}%";
                     }
                     else
                     {
@@ -336,12 +331,51 @@ public static class PipelineViews
         if (!File.Exists(path)) return null;
         try
         {
-            return JsonNode.Parse(File.ReadAllText(path)) as JsonObject;
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            var text = reader.ReadToEnd();
+            return JsonNode.Parse(text) as JsonObject;
         }
         catch (Exception)
         {
             return null;
         }
+    }
+
+    public static int SafeGetInt(JsonNode? node, int fallback = 0)
+    {
+        if (node is null) return fallback;
+        if (node is JsonValue val)
+        {
+            if (val.TryGetValue<int>(out var i)) return i;
+            if (val.TryGetValue<string>(out var s) && int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+        }
+        return fallback;
+    }
+
+    public static long SafeGetLong(JsonNode? node, long fallback = 0)
+    {
+        if (node is null) return fallback;
+        if (node is JsonValue val)
+        {
+            if (val.TryGetValue<long>(out var l)) return l;
+            if (val.TryGetValue<string>(out var s) && long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+        }
+        return fallback;
+    }
+
+    public static bool SafeGetBool(JsonNode? node, bool fallback = false)
+    {
+        if (node is null) return fallback;
+        if (node is JsonValue val)
+        {
+            if (val.TryGetValue<bool>(out var b)) return b;
+            if (val.TryGetValue<string>(out var s) && bool.TryParse(s, out var parsed))
+                return parsed;
+        }
+        return fallback;
     }
 
     public static PipelineExplainerView GetWorkflowExplainer(string? projectName = null)
@@ -416,6 +450,8 @@ public static class PipelineViews
 
         static string FormatModelName(string? rawModelId, string? rawProvider)
         {
+            rawModelId = rawModelId?.Trim();
+            rawProvider = rawProvider?.Trim();
             if (string.IsNullOrWhiteSpace(rawModelId))
             {
                 if (!string.IsNullOrWhiteSpace(rawProvider))
@@ -430,9 +466,14 @@ public static class PipelineViews
             if (lower.Contains("codex") || lower.Contains("chatgpt") || lower.Contains("gpt")) return "Codex";
             if (lower.Contains("grok")) return "Grok";
             var parts = rawModelId.Split(['-', '_', '/', ':'], StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length > 0 && parts[0].Length > 0)
+            int partIdx = 0;
+            if (parts.Length > 1 && (parts[0].Equals("ollama", StringComparison.OrdinalIgnoreCase) || parts[0].Equals("local", StringComparison.OrdinalIgnoreCase)))
             {
-                return char.ToUpperInvariant(parts[0][0]) + parts[0][1..];
+                partIdx = 1;
+            }
+            if (parts.Length > partIdx && parts[partIdx].Length > 0)
+            {
+                return char.ToUpperInvariant(parts[partIdx][0]) + parts[partIdx][1..];
             }
             return rawModelId;
         }
@@ -506,28 +547,57 @@ public static class PipelineViews
                         }
                     }
                 }
+                if (currentTaskId == null && tasksArray != null && tasksArray.Count > 0)
+                {
+                    currentTaskIndex = totalTasks;
+                    var lastObj = tasksArray[^1] as JsonObject;
+                    currentTaskId = lastObj?["id"]?.ToString() ?? $"T{totalTasks}";
+                }
                 if (jobObj?["currentTaskId"]?.ToString() is string explicitTaskId && !string.IsNullOrWhiteSpace(explicitTaskId))
                 {
                     currentTaskId = explicitTaskId;
+                    if (tasksArray != null)
+                    {
+                        for (int i = 0; i < tasksArray.Count; i++)
+                        {
+                            var tObj = tasksArray[i] as JsonObject;
+                            var tId = tObj?["id"]?.ToString() ?? $"T{i + 1}";
+                            if (string.Equals(tId, explicitTaskId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                currentTaskIndex = i + 1;
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                var chosenObj = routingObj?["chosen"] as JsonObject;
+                var chosenObj = routingObj?["chosen"] as JsonObject ?? routingObj;
                 var builderNode = chosenObj?["builder"] as JsonObject;
-                var builderModel = FormatModelName(
-                    builderNode?["modelId"]?.ToString() ?? builderNode?["model"]?.ToString(),
-                    builderNode?["providerId"]?.ToString() ?? builderNode?["provider"]?.ToString());
+                var builderModel = builderNode is not null
+                    ? FormatModelName(
+                        builderNode["modelId"]?.ToString() ?? builderNode["model"]?.ToString(),
+                        builderNode["providerId"]?.ToString() ?? builderNode["provider"]?.ToString())
+                    : FormatModelName(chosenObj?["builder"]?.ToString(), null);
 
                 string? reviewerModel = null;
                 if (chosenObj != null)
                 {
                     foreach (var kvp in chosenObj)
                     {
-                        if (kvp.Key.StartsWith("reviewer", StringComparison.OrdinalIgnoreCase) && kvp.Value is JsonObject rObj)
+                        if (kvp.Key.StartsWith("reviewer", StringComparison.OrdinalIgnoreCase))
                         {
-                            reviewerModel = FormatModelName(
-                                rObj["modelId"]?.ToString() ?? rObj["model"]?.ToString(),
-                                rObj["providerId"]?.ToString() ?? rObj["provider"]?.ToString());
-                            break;
+                            if (kvp.Value is JsonObject rObj)
+                            {
+                                reviewerModel = FormatModelName(
+                                    rObj["modelId"]?.ToString() ?? rObj["model"]?.ToString(),
+                                    rObj["providerId"]?.ToString() ?? rObj["provider"]?.ToString());
+                                break;
+                            }
+                            if (kvp.Value is JsonValue rVal)
+                            {
+                                reviewerModel = FormatModelName(rVal.ToString(), null);
+                                break;
+                            }
                         }
                     }
                 }
@@ -544,12 +614,21 @@ public static class PipelineViews
                     {
                         currentRound = 1 + rr;
                     }
+                    else
+                    {
+                        var sCr = SafeGetInt(jobObj?[$"currentRound_{currentTaskId}"], 0);
+                        if (sCr > 0) currentRound = sCr;
+                    }
                 }
-                if (currentRound <= 1 && jobObj?["currentRound"] is JsonValue cVal && cVal.TryGetValue<int>(out var c))
+                if (currentRound <= 1)
                 {
-                    currentRound = c;
+                    var sC = SafeGetInt(jobObj?["currentRound"], 1);
+                    if (sC > 0) currentRound = sC;
                 }
-                int maxReviewRounds = routingObj?["maxReviewRounds"]?.GetValue<int>() ?? 3;
+                if (currentRound < 1) currentRound = 1;
+
+                int maxReviewRounds = SafeGetInt(routingObj?["maxReviewRounds"], 3);
+                if (maxReviewRounds < 1) maxReviewRounds = 1;
                 if (maxReviewRounds < currentRound) maxReviewRounds = currentRound;
 
                 var loopText = Strings.Format(Strings.T("round {0} of {1}"), currentRound, maxReviewRounds);
@@ -598,7 +677,7 @@ public static class PipelineViews
                 }
                 else
                 {
-                    var prNum = jobObj?["pullRequestNumber"]?.GetValue<int>() ?? 0;
+                    var prNum = SafeGetInt(jobObj?["pullRequestNumber"], 0);
                     activePlainWords = prNum > 0
                         ? Strings.Format(Strings.T("Pull request #{0} open"), prNum)
                         : Strings.T("Pull request open");
@@ -630,8 +709,10 @@ public static class PipelineViews
                     activeIndex = 3;
                     activePlainWords = Strings.T("Needs you: review rounds limit reached");
                     decisionPrompt = Strings.T("Needs you: review rounds limit reached");
-                    int cr = jobObj?["currentRound"]?.GetValue<int>() ?? 3;
-                    int mr = routingObj?["maxReviewRounds"]?.GetValue<int>() ?? 3;
+                    int cr = SafeGetInt(jobObj?["currentRound"], 3);
+                    int mr = SafeGetInt(routingObj?["maxReviewRounds"], 3);
+                    if (cr < 1) cr = 1;
+                    if (mr < cr) mr = cr;
                     reviewLoop = new PipelineReviewLoop(cr, mr, true, Strings.Format(Strings.T("round {0} of {1}"), cr, mr));
                 }
                 else if (reason.Contains("reviewer-quota"))
@@ -645,6 +726,12 @@ public static class PipelineViews
                     activeIndex = 3;
                     activePlainWords = Strings.T("Needs you: builder quota exhausted");
                     decisionPrompt = Strings.T("Needs you: builder quota exhausted");
+                }
+                else if (reason.Contains("quota"))
+                {
+                    activeIndex = 3;
+                    activePlainWords = Strings.T("Needs you: reviewer quota exhausted");
+                    decisionPrompt = Strings.T("Needs you: reviewer quota exhausted");
                 }
                 else if (reason.Contains("gate-returns"))
                 {
