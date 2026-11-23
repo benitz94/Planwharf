@@ -908,7 +908,15 @@ public sealed partial class MainWindow : Window
             card.Children.Add(checks);
         }
         if (pr.Conflicts) card.Children.Add(Line(Strings.T("Conflicts"), Palette.Danger, 14));
-        if (pr.FixStatus == "running") card.Children.Add(Line(Strings.T("Fixing in the background") + (pr.FixText.Length > 0 ? ". " + pr.FixText : "."), Palette.Text, 14));
+        if (pr.FixStatus == "running")
+        {
+            // While the fix runs, the card says who works on it, for how long, at which stage and what it did last.
+            var live = pr.Progress;
+            card.Children.Add(Line(Strings.T("Fixing in the background") + (live is { Model.Length: > 0 } ? " · " + live.Model : "") + (live is { Elapsed.Length: > 0 } ? " · " + live.Elapsed : ""), Palette.Accent, 14, FontWeight.SemiBold));
+            if (live is { Stage.Length: > 0 }) card.Children.Add(Line(Strings.T(live.Stage), Palette.Text, 13));
+            if (live is { Activity.Length: > 0 }) card.Children.Add(Explain(Strings.T("Now: ") + live.Activity));
+            else if (pr.FixText.Length > 0) card.Children.Add(Explain(pr.FixText));
+        }
         else if (pr.FixStatus == "fixed") card.Children.Add(Line(Strings.T("Planwharf fixed this in the background.") + (pr.FixText.Length > 0 ? " " + pr.FixText : ""), Palette.Accent, 14));
         else if (pr.FixStatus == "failed") card.Children.Add(Line(pr.FixText.Length > 0 ? pr.FixText : Strings.T("The fix failed."), Palette.Danger, 14));
         if (pr.Work != null)

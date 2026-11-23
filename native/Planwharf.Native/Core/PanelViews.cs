@@ -24,7 +24,13 @@ public sealed record FilesPanel(string? Message, string Branch, IReadOnlyList<Ch
 public sealed record PullCheck(string Name, string State);
 public sealed record PullStep(string Title, string Model);
 public sealed record PullWork(string Goal, string Started, string Finished, string Lead, IReadOnlyList<PullStep> Steps);
-public sealed record PullRequestRow(int Number, string Title, string Branch, string Url, string State, string Opened, string Updated, string When, string Duration, bool Conflicts, IReadOnlyList<PullCheck> Checks, bool ByPlanwharf, bool CanFix, string FixStatus, string FixText, PullWork? Work);
+public sealed record PullRequestRow(int Number, string Title, string Branch, string Url, string State, string Opened, string Updated, string When, string Duration, bool Conflicts, IReadOnlyList<PullCheck> Checks, bool ByPlanwharf, bool CanFix, string FixStatus, string FixText, PullWork? Work)
+{
+    // A fix in progress: who works on it, for how long, at which stage, and what it did last.
+    public PullFixProgress? Progress { get; init; }
+}
+
+public sealed record PullFixProgress(string Model, string Elapsed, string Stage, string Activity);
 public sealed record FailedCheck(string Name, int Count);
 public sealed record PullSummary(int Merged, string Median, int NeededFix, IReadOnlyList<FailedCheck> FailedChecks);
 public sealed record PullRequestPanel(string? Message, bool Missing, PullSummary Summary, IReadOnlyList<PullRequestRow> Items, bool More, string State, string Author);
@@ -152,7 +158,12 @@ public static class PanelViews
         var when = state == "merged" ? When(S(pr["mergedAt"]), zone) : state == "closed" ? When(S(pr["closedAt"]), zone) : When(S(pr["updatedAt"]), zone);
         return new PullRequestRow(pr["number"] is JsonValue number && number.TryGetValue<int>(out var n) ? n : 0, S(pr["title"]), S(pr["branch"]), S(pr["url"]), state,
             When(S(pr["openedAt"]), zone), When(S(pr["updatedAt"]), zone), when, N(pr["durationMs"]) is { } duration ? Span(duration) : "",
-            B(pr["conflicts"]), checks, B(pr["byPlanwharf"]), B(pr["canFix"]), S(pr["fixStatus"]), S(pr["fixText"]), work);
+            B(pr["conflicts"]), checks, B(pr["byPlanwharf"]), B(pr["canFix"]), S(pr["fixStatus"]), S(pr["fixText"]), work)
+        {
+            Progress = pr["fixProgress"] is JsonObject live ? new PullFixProgress(S(live["model"]),
+                DateTimeOffset.TryParse(S(live["startedAt"]), CultureInfo.InvariantCulture, DateTimeStyles.None, out var started) ? Span((DateTimeOffset.UtcNow - started).TotalMilliseconds) : "",
+                S(live["stage"]), S(live["activity"])) : null
+        };
     }
 
     // The list the panel draws. An unknown chip keeps the open list instead of hiding every row.

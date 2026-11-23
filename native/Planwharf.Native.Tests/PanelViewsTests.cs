@@ -221,6 +221,11 @@ public class PanelViewsTests
         var running = JsonNode.Parse("""{ "ok": true, "items": [ { "number": 12, "title": "Add the chart", "state": "open", "fixStatus": "running", "fixText": "Reading the failing check", "canFix": false, "conflicts": true } ] }""")!;
         var row = Assert.Single(PanelViews.PullRequests(running, TimeZoneInfo.Utc).Items);
         Assert.Equal(("running", "Reading the failing check", false), (row.FixStatus, row.FixText, row.CanFix));
+        Assert.Null(row.Progress);
+        var started = DateTimeOffset.UtcNow.AddMinutes(-4).ToString("o");
+        var live = JsonNode.Parse("{ \"ok\": true, \"items\": [ { \"number\": 12, \"title\": \"Add the chart\", \"state\": \"open\", \"fixStatus\": \"running\", \"canFix\": false, \"fixProgress\": { \"model\": \"Opus 5.5\", \"stage\": \"Working on the fix.\", \"activity\": \"Running npm test\", \"startedAt\": \"" + started + "\" } } ] }")!;
+        var progress = Assert.Single(PanelViews.PullRequests(live, TimeZoneInfo.Utc).Items).Progress!;
+        Assert.Equal(("Opus 5.5", "4 min", "Working on the fix.", "Running npm test"), (progress.Model, progress.Elapsed, progress.Stage, progress.Activity));
         Assert.Equal("under a minute", PanelViews.Span(1000));
         Assert.Equal("—", PanelViews.Span(null));
         Assert.Equal("—", PanelViews.Span(-1));

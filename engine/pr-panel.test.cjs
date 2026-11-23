@@ -129,6 +129,17 @@ test('a fix that is running is shown, and it is not offered again', async () => 
   assert.match(row.fixText, /fixing pull request #12/);
 });
 
+test('a running fix carries its progress: the model, the stage, what it did last and since when', async () => {
+  const panel = await pullRequestPanel({
+    folder: '/work', run: fake([]), now: NOW, state: 'open',
+    fixing: [{ number: 12, startedAt: day(0), text: 'Opus is fixing pull request #12.', model: 'Opus 5.5', stage: 'Working on the fix.', activity: 'Running npm test' }]
+  });
+  const row = panel.items.find(item => item.number === 12);
+  assert.deepEqual(row.fixProgress, { model: 'Opus 5.5', stage: 'Working on the fix.', activity: 'Running npm test', startedAt: day(0) });
+  const other = panel.items.find(item => item.number !== 12);
+  assert.equal(other.fixProgress, null, 'no progress where no fix runs');
+});
+
 test('without gh the panel says what to install and does not throw', async () => {
   const panel = await pullRequestPanel({
     folder: '/work', now: NOW,

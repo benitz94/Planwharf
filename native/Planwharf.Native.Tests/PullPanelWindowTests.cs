@@ -89,8 +89,17 @@ public class PullPanelWindowTests
             open["canFix"] = false;
             window.ShowPullRequests(running);
             window.UpdateLayout();
-            Assert.True(Has(window, "Fixing in the background. Reading the failing check"));
+            Assert.True(Has(window, "Fixing in the background"));
+            Assert.True(Has(window, "Reading the failing check"));
             Assert.False(Has(window, "Fix in the background"));
+
+            // While it runs the card says who, for how long, at which stage and what it did last.
+            open["fixProgress"] = JsonNode.Parse("{ \"model\": \"Opus 5.5\", \"stage\": \"Working on the fix.\", \"activity\": \"Running npm test\", \"startedAt\": \"" + DateTimeOffset.UtcNow.AddMinutes(-4).ToString("o") + "\" }");
+            window.ShowPullRequests(running);
+            window.UpdateLayout();
+            Assert.True(Has(window, "Fixing in the background · Opus 5.5 · 4 min"));
+            Assert.True(Has(window, "Working on the fix."));
+            Assert.True(Has(window, "Now: Running npm test"));
 
             window.ShowPullRequests(JsonNode.Parse("""{ "ok": false, "missing": true }""")!);
             window.UpdateLayout();
