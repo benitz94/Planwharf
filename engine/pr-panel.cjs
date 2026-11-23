@@ -51,7 +51,9 @@ function checkState(check) {
   const conclusion = String(check && (check.conclusion || check.state) || '').toUpperCase();
   const status = String(check && check.status || '').toUpperCase();
   if (conclusion === 'SUCCESS' || conclusion === 'NEUTRAL' || conclusion === 'SKIPPED') return 'green';
-  if (['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'].includes(conclusion)) return 'red';
+  // Cancelled or never started (GitHub had no free machine): not a fault in the code, it needs to run again.
+  if (['CANCELLED', 'STARTUP_FAILURE'].includes(conclusion)) return 'cancelled';
+  if (['FAILURE', 'TIMED_OUT', 'ACTION_REQUIRED', 'ERROR'].includes(conclusion)) return 'red';
   if (['IN_PROGRESS', 'QUEUED', 'PENDING', 'WAITING', 'REQUESTED', 'EXPECTED'].includes(status) || ['PENDING', 'EXPECTED'].includes(conclusion) || !conclusion) return 'running';
   return 'running';
 }
@@ -166,7 +168,7 @@ async function pullRequestPanel(options = {}) {
     const own = byPlanwharf(pr, works);
     const fix = fixOf(pr.number);
     const live = running(pr.number);
-    const red = pr.checks.some(check => check.state === 'red');
+    const red = pr.checks.some(check => check.state === 'red' || check.state === 'cancelled');
     return {
       number: pr.number, title: pr.title, branch: pr.branch, url: pr.url, state: pr.state,
       openedAt: pr.openedAt, updatedAt: pr.updatedAt, mergedAt: pr.mergedAt, closedAt: pr.closedAt,
@@ -207,4 +209,4 @@ async function pullRequestPanel(options = {}) {
   };
 }
 
-module.exports = { pullRequestPanel, PAGE, INSTALL, spawnRun };
+module.exports = { pullRequestPanel, PAGE, INSTALL, spawnRun, checkState };

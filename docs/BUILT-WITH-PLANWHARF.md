@@ -128,3 +128,5 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The crew's local checks passed while GitHub refused a blank line at the end of a file: the local run now checks the branch's commits as GitHub does | #205 |
 | A fix in the background showed no progress while it ran | #214 |
 | A pull request did not say which models led, built and verified the work | #216 |
+
+| A fix in the background could not be stopped; a check GitHub cancelled was shown as red, sent to a model, and reported as fixed with nothing changed | this pull request |

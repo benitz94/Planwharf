@@ -4569,8 +4569,18 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         fix = await pr.prepareFix(item.project.folder, number, worktree, opts.runCommand);
         if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
         if (stopped()) return done('PR_FIX_FAILED', stoppedText);
+        // Checks GitHub cancelled or could not start did not fail on the code: they run again, no model.
+        let rerunNote = '';
+        if ((fix.notRun || []).length) {
+          const again = await pr.rerunNotRun(item.project.folder, fix.notRun, opts.runCommand);
+          const names = fix.notRun.map(check => check.name).join(', ');
+          rerunNote = again.rerun ? `Ran again ${fix.notRun.length === 1 ? 'the check' : 'the checks'} GitHub had cancelled (no free machine, not a fault in the code): ${names}.`
+            : `GitHub cancelled ${names} (not a fault in the code), and running ${fix.notRun.length === 1 ? 'it' : 'them'} again was refused: use Re-run failed jobs on GitHub.`;
+          say('PR_FIX_STARTED', `Pull request #${number}: ${rerunNote}`);
+        }
         if (!fix.conflicts.length && !fix.failing.length) {
           const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
+          if (result.ok && !result.changed && rerunNote) return done('PR_FIX_COMPLETED', `Pull request #${number}: ${rerunNote} Nothing in the code needed changing.`);
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
         const mode = modeAtStart;
@@ -4637,6 +4647,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           const why = alive ? 'did not finish in time' : 'stopped before it finished';
           return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} ${why}. Nothing was pushed.`);
         }
+        // Red checks the model left as they were are not fixed, whatever it says.
+        if (result.ok && !result.changed && fix.failing.length && !fix.conflicts.length)
+          return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} changed nothing, and ${fix.failing.join(', ')} still ${fix.failing.length === 1 ? 'fails' : 'fail'}.`);
         done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok
           ? `${model.label || model.id} fixed pull request #${number}: ${result.reason}`
           : `Pull request #${number} was not fixed by ${model.label || model.id}: ${result.reason} Nothing was pushed.`);

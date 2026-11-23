@@ -819,6 +819,7 @@ public static class Strings
         ["Stop the fix of #{0}? The model stops and nothing is pushed."] = "Fermare la correzione della #{0}? Il modello si ferma e non viene pubblicato niente.",
         ["Stopping the fix of #{0}."] = "Fermo la correzione della #{0}.",
         ["Stopping."] = "Mi fermo.",
+        ["Not run"] = "Non eseguito",
         ["Write below. This is a conversation with the lead. Nothing starts."] = "Scrivi qui sotto. \u00c8 una conversazione con il coordinatore. Non parte nulla.",
         ["Normal"] = "Normale",
         ["Safe"] = "Sicura",

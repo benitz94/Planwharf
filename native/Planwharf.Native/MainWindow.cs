@@ -914,7 +914,8 @@ public sealed partial class MainWindow : Window
             var checks = new WrapPanel();
             foreach (var check in pr.Checks)
             {
-                var word = check.State == "green" ? Strings.T("Green") : check.State == "red" ? Strings.T("Red") : Strings.T("Running");
+                // Not run: GitHub cancelled it (no free machine), it is not a fault in the code.
+                var word = check.State == "green" ? Strings.T("Green") : check.State == "red" ? Strings.T("Red") : check.State == "cancelled" ? Strings.T("Not run") : Strings.T("Running");
                 var color = check.State == "green" ? Palette.Accent : check.State == "red" ? Palette.Danger : Palette.Warn;
                 checks.Children.Add(Look.Badge(check.Name + " · " + word, color, check.State == "red" ? Palette.DangerSoft : Palette.AccentSoft).With(b => b.Margin = new Thickness(0, 0, 4, 4)));
             }

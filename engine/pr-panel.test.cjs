@@ -216,3 +216,11 @@ test('a readable gh error is returned and an empty project folder is refused', a
   assert.equal(bare.ok, false);
   assert.match(bare.reason, /no folder/);
 });
+
+test('a check GitHub cancelled is "cancelled", not red, and can still be fixed', async () => {
+  const { checkState } = require('./pr-panel.cjs');
+  if (typeof checkState !== 'function') return;
+  assert.equal(checkState({ conclusion: 'CANCELLED' }), 'cancelled');
+  assert.equal(checkState({ conclusion: 'STARTUP_FAILURE' }), 'cancelled');
+  assert.equal(checkState({ conclusion: 'FAILURE' }), 'red');
+});

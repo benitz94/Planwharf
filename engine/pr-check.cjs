@@ -18,8 +18,17 @@ function run(folder, cmd, args) {
 
 // The same reds the panel shows: a failed check run, or an older commit status such as ci/circleci.
 const RED = ['FAILURE', 'TIMED_OUT', 'CANCELLED', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'ERROR'];
+// A check GitHub cancelled or could not start (no free machine, for example) did not fail on the code:
+// it needs to run again, not a model.
+const NOT_RUN = ['CANCELLED', 'STARTUP_FAILURE'];
+const conclusionOf = check => String(check && (check.conclusion || check.state) || '').toUpperCase();
+function notRunChecks(rollup) {
+  return (Array.isArray(rollup) ? rollup : []).filter(check => NOT_RUN.includes(conclusionOf(check)))
+    .map(check => ({ name: String(check && (check.name || check.context) || '').trim(), runId: (String(check && (check.detailsUrl || check.targetUrl) || '').match(/\/actions\/runs\/(\d+)/) || [])[1] || null }))
+    .filter(check => check.name);
+}
 function failingNames(rollup) {
-  return (Array.isArray(rollup) ? rollup : []).filter(check => RED.includes(String(check && (check.conclusion || check.state) || '').toUpperCase()))
+  return (Array.isArray(rollup) ? rollup : []).filter(check => RED.includes(conclusionOf(check)) && !NOT_RUN.includes(conclusionOf(check)))
     .map(check => String(check && (check.name || check.context) || '').trim()).filter(Boolean);
 }
 
@@ -74,7 +83,9 @@ async function prepareFix(folder, number, worktree, runCommand = run) {
   const branch = pr.headRefName, base = pr.baseRefName || 'main';
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch || '') || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(base)) return { ok: false, reason: 'The pull request branch has an unusual name.' };
   const failing = failingNames(pr.statusCheckRollup);
-  return prepareWorktree(folder, { branch, base, failing }, worktree, runCommand);
+  const notRun = notRunChecks(pr.statusCheckRollup);
+  const prepared = await prepareWorktree(folder, { branch, base, failing }, worktree, runCommand);
+  return prepared && prepared.ok ? { ...prepared, notRun } : prepared;
 }
 
 async function prepareWorktree(folder, { branch, base, failing = [] }, worktree, runCommand = run) {
@@ -125,4 +136,15 @@ async function removeWorktree(folder, worktree) {
   await run(folder, 'git', ['worktree', 'prune']);
 }
 
-module.exports = { listPrs, resolveConflicts, prepareFix, prepareWorktree, finishFix, removeWorktree };
+// Run again the checks GitHub cancelled, once per workflow run: only the jobs that did not pass.
+async function rerunNotRun(folder, notRun, runCommand = run) {
+  const runs = [...new Set((notRun || []).map(check => check.runId).filter(Boolean))];
+  const done = [];
+  for (const runId of runs) {
+    const result = await runCommand(folder, 'gh', ['run', 'rerun', runId, '--failed']);
+    if (result.status === 0) done.push(runId);
+  }
+  return { asked: runs.length, rerun: done.length };
+}
+
+module.exports = { listPrs, resolveConflicts, prepareFix, prepareWorktree, finishFix, removeWorktree, rerunNotRun, notRunChecks, failingNames };
