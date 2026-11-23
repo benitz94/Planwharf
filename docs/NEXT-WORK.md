@@ -509,7 +509,7 @@ panel draws the three states, the fix shows while it runs, and the filters chang
 
 ## Job 29. Saving modes: Normal, Safe, Ultra safe
 
-**Status.** Done (#213).
+**Status.** Done (#196).
 
 **Why.** The owner wants to spend fewer tokens and less quota when the work allows it, with one choice,
 instead of changing the roles of every model in Team.
@@ -580,7 +580,7 @@ Native: the button shows only under an addition while work runs, and one click c
 
 ## Job 31. Clearer screens
 
-**Status.** Done (#213).
+**Status.** Done (#202).
 
 **Why.** The look of Planwharf works (the dark theme, the mint green, the panels, the Crew at work card); the
 way it speaks does not always: some screens read like a report for a developer, not news for the captain.
@@ -702,7 +702,7 @@ you" for a stage waiting for the owner, and the picture when the queue is empty;
 
 ## Job 39. One inbox for decisions
 
-**Status.** Done (#213).
+**Status.** Done (#212).
 
 **Why.** Decisions only the owner can make appear under their own project. With several projects, or the
 pipeline running several jobs, the owner must look in each one. And sometimes the owner prefers the lead to
