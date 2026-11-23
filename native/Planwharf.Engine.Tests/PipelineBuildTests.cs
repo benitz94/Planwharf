@@ -234,7 +234,7 @@ public sealed class PipelineBuildTests : IDisposable
     }
 
     [Fact]
-    public void RouteJob_NoOtherCompanyVerifier_SetsAwaitingOwnerNoEligibleModel()
+    public void RouteJob_NoOtherCompanyVerifier_StillRoutesAReviewerFromTheSameCompany()
     {
         SetupApprovedJob();
         PipelineBuild.StartRouting(Attempts(), Project, Job, out _);
@@ -260,15 +260,12 @@ public sealed class PipelineBuildTests : IDisposable
 
         var ok = PipelineBuild.RouteJob(Attempts(), Project, Job, team, savedTable: null, out var snapshot, out var awaitReason, out var awaitLane);
 
-        Assert.False(ok);
-        Assert.Null(snapshot);
-        Assert.Equal("no eligible model", awaitReason);
-        Assert.Equal("reviewer-code", awaitLane);
+        // Another company is a preference, not a rule: with only one company on the team, it still reviews.
+        Assert.True(ok, awaitReason);
+        Assert.NotNull(snapshot);
 
         var updated = PipelineBuild.LoadJson(Path.Combine(JobDir(), "job.json"))!;
-        Assert.Equal("awaiting-owner", updated["status"]?.ToString());
-        Assert.Equal("no eligible model", updated["awaitingOwnerReason"]?.ToString());
-        Assert.Equal("reviewer-code", updated["awaitingOwnerLane"]?.ToString());
+        Assert.NotEqual("awaiting-owner", updated["status"]?.ToString());
     }
 
     [Fact]

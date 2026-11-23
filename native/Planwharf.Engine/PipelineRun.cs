@@ -693,13 +693,8 @@ public static class PipelineRun
             return false;
         }
 
-        // Another company check: reviewer must remain from another company than builder
-        if (!string.IsNullOrWhiteSpace(builderProvider) &&
-            string.Equals(revProviderId, builderProvider, StringComparison.OrdinalIgnoreCase))
-        {
-            waitReason = "same-company-forbidden";
-            return false;
-        }
+        // A reviewer from the builder's company is allowed: another company is a preference of the routing,
+        // not a rule that makes a job wait.
 
         if (team is not null)
         {

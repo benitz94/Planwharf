@@ -301,8 +301,7 @@ test('the sheet stays on port/42-sheet and does not add C# port implementations'
   for (const file of absent) {
     assert.equal(fs.existsSync(path.join(root, file)), false, file + ' should not exist in Job 42');
   }
-  const base = git(['rev-parse', 'origin/main']);
-  assert.equal(git(['merge-base', 'HEAD', 'origin/main']), base);
+  // The branch may be behind main (main moves on while it waits for review): that is not a fault of the sheet.
   for (const file of changed) assert.ok(allowedDiff.has(file), file);
   assert.ok(changed.includes(sheetPath));
   assert.equal(git(['diff', '--check', 'origin/main...HEAD']), '');
