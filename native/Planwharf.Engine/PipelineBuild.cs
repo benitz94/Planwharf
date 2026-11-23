@@ -653,23 +653,15 @@ public static class PipelineBuild
                 continue;
             }
 
-            // Another company check for reviewers
-            if (lane != "builder" && builderProviderId is not null)
-            {
-                if (string.Equals(c.ProviderId, builderProviderId, StringComparison.OrdinalIgnoreCase))
-                {
-                    dropped.Add(new DroppedCandidate(c.ProviderId, c.ModelId, "same provider as builder (another company required)"));
-                    continue;
-                }
-            }
-
             eligible.Add(c);
         }
 
         if (eligible.Count == 0) return null;
 
-        // Pick highest weight; tie uses earlier candidate in row
-        var best = eligible.OrderByDescending(c => c.Weight).First();
+        // A reviewer from another company than the builder is preferred, never required: with none free, any
+        // available model reviews. Then the highest weight; a tie keeps the earlier candidate in the row.
+        bool SameCompany(string providerId) => lane != "builder" && builderProviderId is not null && string.Equals(providerId, builderProviderId, StringComparison.OrdinalIgnoreCase);
+        var best = eligible.OrderBy(c => SameCompany(c.ProviderId) ? 1 : 0).ThenByDescending(c => c.Weight).First();
         return new ChosenLaneModel(best.ProviderId, best.ModelId, best.Weight);
     }
 
@@ -1419,17 +1411,14 @@ public static class PipelineBuild
             var candArr = rObj["candidates"] as JsonArray;
             if (candArr is null) continue;
 
-            foreach (var cNode in candArr)
+            // Another company than the builder first, then any other available model: a preference, not a rule.
+            bool SameCompany(string providerId) => lane != "builder" && builderProviderId is not null && string.Equals(providerId, builderProviderId, StringComparison.OrdinalIgnoreCase);
+            foreach (var cNode in candArr.OfType<JsonObject>().OrderBy(item => SameCompany(item["providerId"]?.ToString() ?? "") ? 1 : 0).ToList())
             {
                 if (cNode is not JsonObject cObj) continue;
                 var p = cObj["providerId"]?.ToString() ?? "";
                 var id = cObj["modelId"]?.ToString() ?? "";
                 var w = cObj["weight"]?.GetValue<int>() ?? 1;
-
-                if (lane != "builder" && builderProviderId is not null && string.Equals(p, builderProviderId, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue; // Must be another company!
-                }
 
                 if (modelOps.CheckModelQuotaAvailable(p, id))
                 {
