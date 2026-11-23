@@ -1,0 +1,223 @@
+[
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 90
+      }
+    ],
+    "result": {
+      "remaining": 90,
+      "band": "green",
+      "text": "90% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 75
+      }
+    ],
+    "result": {
+      "remaining": 75,
+      "band": "green",
+      "text": "75% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 60
+      }
+    ],
+    "result": {
+      "remaining": 60,
+      "band": "orange",
+      "text": "60% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 50
+      }
+    ],
+    "result": {
+      "remaining": 50,
+      "band": "orange",
+      "text": "50% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 40
+      }
+    ],
+    "result": {
+      "remaining": 40,
+      "band": "yellow",
+      "text": "40% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 25
+      }
+    ],
+    "result": {
+      "remaining": 25,
+      "band": "yellow",
+      "text": "25% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 10
+      }
+    ],
+    "result": {
+      "remaining": 10,
+      "band": "red",
+      "text": "10% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 1
+      }
+    ],
+    "result": {
+      "remaining": 1,
+      "band": "red",
+      "text": "1% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 0
+      }
+    ],
+    "result": {
+      "remaining": 0,
+      "band": "red",
+      "text": "0% REMAINING · EXHAUSTED"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": false
+      }
+    ],
+    "result": {
+      "remaining": null,
+      "band": "grey",
+      "text": "REMAINING UNREAD"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "pct": 30
+      }
+    ],
+    "result": {
+      "remaining": 70,
+      "band": "orange",
+      "text": "70% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": -5
+      }
+    ],
+    "result": {
+      "remaining": 0,
+      "band": "red",
+      "text": "0% REMAINING · EXHAUSTED"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 150
+      }
+    ],
+    "result": {
+      "remaining": 100,
+      "band": "green",
+      "text": "100% REMAINING"
+    }
+  },
+  {
+    "fn": "describe",
+    "args": [
+      null
+    ],
+    "result": {
+      "remaining": null,
+      "band": "grey",
+      "text": "REMAINING UNREAD"
+    }
+  },
+  {
+    "fn": "html",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 0
+      }
+    ],
+    "result": "<span class=\"quota-remaining quota-red\">0% REMAINING · EXHAUSTED</span>"
+  },
+  {
+    "fn": "html",
+    "args": [
+      {
+        "readable": false
+      }
+    ],
+    "result": "<span class=\"quota-remaining quota-grey\">REMAINING UNREAD</span>"
+  },
+  {
+    "fn": "html",
+    "args": [
+      {
+        "readable": true,
+        "leftPct": 80
+      }
+    ],
+    "result": "<span class=\"quota-remaining quota-green\">80% REMAINING</span>"
+  }
+]

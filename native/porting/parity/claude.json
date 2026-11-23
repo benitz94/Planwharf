@@ -1,0 +1,183 @@
+[
+  {
+    "fn": "claudeToolArgs",
+    "args": [
+      {}
+    ],
+    "result": [
+      "--no-session-persistence",
+      "--setting-sources",
+      "user",
+      "--settings",
+      "{\"disableAllHooks\":true,\"autoMemoryEnabled\":false}",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--no-chrome"
+    ]
+  },
+  {
+    "fn": "claudeToolArgs",
+    "args": [
+      {
+        "hooks": true
+      }
+    ],
+    "result": [
+      "--no-session-persistence",
+      "--setting-sources",
+      "user",
+      "--settings",
+      "{\"disableAllHooks\":false,\"autoMemoryEnabled\":false}",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--no-chrome"
+    ]
+  },
+  {
+    "fn": "claudeToolArgs",
+    "args": [
+      {
+        "mcp": true,
+        "browser": true,
+        "memory": true
+      }
+    ],
+    "result": [
+      "--no-session-persistence",
+      "--setting-sources",
+      "user",
+      "--settings",
+      "{\"disableAllHooks\":true,\"autoMemoryEnabled\":true}",
+      "--chrome"
+    ]
+  },
+  {
+    "fn": "claudeToolArgs",
+    "args": [
+      {
+        "hooks": true,
+        "mcp": true,
+        "browser": true,
+        "memory": true
+      }
+    ],
+    "result": [
+      "--no-session-persistence",
+      "--setting-sources",
+      "user",
+      "--settings",
+      "{\"disableAllHooks\":false,\"autoMemoryEnabled\":true}",
+      "--chrome"
+    ]
+  },
+  {
+    "fn": "claudeToolArgs",
+    "args": [
+      null
+    ],
+    "result": [
+      "--no-session-persistence",
+      "--setting-sources",
+      "user",
+      "--settings",
+      "{\"disableAllHooks\":true,\"autoMemoryEnabled\":false}",
+      "--strict-mcp-config",
+      "--mcp-config",
+      "{\"mcpServers\":{}}",
+      "--no-chrome"
+    ]
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      [
+        {
+          "resolvedModel": "claude-3-5-sonnet-20241022",
+          "displayName": "Sonnet"
+        }
+      ]
+    ],
+    "result": {
+      "ok": true,
+      "models": [
+        {
+          "cli": "claude-3-5-sonnet-20241022",
+          "label": "Sonnet",
+          "capabilities": {
+            "canCode": true,
+            "canUseTools": true,
+            "canInspectFilesystem": true,
+            "canOrchestrate": true,
+            "canResearch": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      [
+        {
+          "value": "claude-3-5-sonnet-20241022"
+        },
+        {
+          "resolvedModel": "claude-3-5-sonnet-20241022",
+          "displayName": "Named"
+        }
+      ]
+    ],
+    "result": {
+      "ok": true,
+      "models": [
+        {
+          "cli": "claude-3-5-sonnet-20241022",
+          "label": "Named",
+          "capabilities": {
+            "canCode": true,
+            "canUseTools": true,
+            "canInspectFilesystem": true,
+            "canOrchestrate": true,
+            "canResearch": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      [
+        {
+          "resolvedModel": "invalid_name"
+        }
+      ]
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Claude Code returned no exact model IDs. Aliases were not guessed."
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      []
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Claude Code returned no exact model IDs. Aliases were not guessed."
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      null
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Claude Code returned no model catalog."
+    }
+  }
+]

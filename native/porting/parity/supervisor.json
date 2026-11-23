@@ -1,0 +1,178 @@
+[
+  {
+    "fn": "label",
+    "args": [
+      "   "
+    ],
+    "result": "Supervisor"
+  },
+  {
+    "fn": "label",
+    "args": [
+      "My Custom Supervisor"
+    ],
+    "result": "My Custom Supervisor"
+  },
+  {
+    "fn": "label",
+    "args": [
+      null
+    ],
+    "result": "Supervisor"
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      null,
+      []
+    ],
+    "result": "Supervisor permission is required; Reviewer permission does not authorize advisory calls."
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      {
+        "roles": {
+          "supervisor": false
+        }
+      },
+      []
+    ],
+    "result": "Supervisor permission is required; Reviewer permission does not authorize advisory calls."
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      {
+        "roles": {
+          "supervisor": true
+        },
+        "adapter": "unknown"
+      },
+      []
+    ],
+    "result": "No verified no-tool Supervisor transport for this adapter. No fallback was used."
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      {
+        "roles": {
+          "supervisor": true
+        },
+        "adapter": "antigravity",
+        "enabled": false
+      },
+      []
+    ],
+    "result": "No verified no-tool Supervisor transport for this adapter. No fallback was used."
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      {
+        "roles": {
+          "supervisor": true
+        },
+        "adapter": "antigravity",
+        "enabled": true,
+        "available": true,
+        "providerEnabled": true
+      },
+      []
+    ],
+    "result": "No verified no-tool Supervisor transport for this adapter. No fallback was used."
+  },
+  {
+    "fn": "advisoryError",
+    "args": [
+      {
+        "roles": {
+          "supervisor": true
+        },
+        "adapter": "antigravity",
+        "enabled": true,
+        "available": true,
+        "providerEnabled": true,
+        "quotaPoolId": "p1"
+      },
+      [
+        {
+          "id": "p1",
+          "readable": true,
+          "exhausted": true
+        }
+      ]
+    ],
+    "result": "No verified no-tool Supervisor transport for this adapter. No fallback was used."
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      {
+        "projects": []
+      },
+      "missing"
+    ],
+    "error": "Select an existing project."
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      {
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Project 1",
+            "status": "needs_approval"
+          }
+        ]
+      },
+      "p1",
+      1700000000000
+    ],
+    "result": {
+      "projectId": "p1",
+      "name": "Project 1",
+      "status": "needs_approval",
+      "summary": "Project 1: a plan awaits your approval; workers have not started.",
+      "next": "",
+      "active": 0,
+      "workers": [],
+      "alerts": [],
+      "timeline": [],
+      "canPause": false,
+      "checkpointId": null
+    }
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      {
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Project 1",
+            "status": "complete",
+            "dispatch": []
+          }
+        ]
+      },
+      "p1",
+      1700000000000
+    ],
+    "result": {
+      "projectId": "p1",
+      "name": "Project 1",
+      "status": "complete",
+      "summary": "Project 1: the backend recorded completion; no workers are active.",
+      "next": "",
+      "active": 0,
+      "workers": [],
+      "alerts": [],
+      "timeline": [],
+      "canPause": false,
+      "checkpointId": null
+    }
+  }
+]

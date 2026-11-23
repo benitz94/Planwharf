@@ -24,7 +24,8 @@ public static class ClaudeUsage
             ["pct"] = null,
             ["leftPct"] = null,
             ["source"] = null,
-            ["reason"] = reason ?? "Not readable"
+            ["reason"] = reason ?? "Not readable",
+            ["windows"] = new JsonArray()
         };
         return PlanStatus.WithStatus("claude", resp);
     }

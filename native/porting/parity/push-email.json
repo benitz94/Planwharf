@@ -1,0 +1,30 @@
+[
+  {
+    "fn": "privateEmailRefused",
+    "args": [
+      "remote: error: GH007: Your push would contain a private email address"
+    ],
+    "result": true
+  },
+  {
+    "fn": "privateEmailRefused",
+    "args": [
+      "Everything up-to-date"
+    ],
+    "result": false
+  },
+  {
+    "fn": "privateEmailRefused",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "privateEmailRefused",
+    "args": [
+      null
+    ],
+    "result": false
+  }
+]

@@ -1,0 +1,4024 @@
+[
+  {
+    "fn": "example",
+    "args": [],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "C:\\project\\folder"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "\\\\server\\share\\project"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "/var/project"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "\"C:\\project\""
+    ],
+    "result": false
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "/C:"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "C:\\project\u0000bad"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      "C:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "isFolderPath",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "https://github.com/owner/repo"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "https://gitea.example.com/owner/repo"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "https://user:secret@github.com/owner/repo"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "git@github.com:owner/repo.git"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "https://github.com/owner/../repo"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      "https://github.com/owner/."
+    ],
+    "result": false
+  },
+  {
+    "fn": "isGithubUrl",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {
+        "timing": "deadline",
+        "deadlineAt": "2026-11-20T10:00:00.000Z"
+      }
+    ],
+    "result": {
+      "timing": "deadline",
+      "deadlineAt": "2026-11-20T10:00:00.000Z"
+    }
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {
+        "timing": "discretion"
+      }
+    ],
+    "result": {
+      "timing": "discretion"
+    }
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {
+        "timing": ""
+      }
+    ],
+    "result": {}
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {}
+    ],
+    "result": {}
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      null
+    ],
+    "result": {}
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {
+        "timing": "invalid"
+      }
+    ],
+    "error": "Choose a deadline or leave timing to the worker."
+  },
+  {
+    "fn": "taskTiming",
+    "args": [
+      {
+        "timing": "deadline",
+        "deadlineAt": "bad date"
+      }
+    ],
+    "error": "Set the task deadline."
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "p",
+          "name": "P"
+        },
+        "revisions": [],
+        "tasks": []
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 2,
+        "projects": []
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          },
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "validate",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          },
+          {
+            "schema": 1,
+            "project": {
+              "id": "p2",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "t2",
+                "projectId": "p2",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "validateProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "validateProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library",
+          "unknown": 1
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "validateProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library",
+          "folder": "bad\u0000folder"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "validateProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library",
+          "github": "http://insecure.url"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "createProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "New Project",
+        "direction": "Build something"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "schema": 1,
+          "project": {
+            "id": "new-project",
+            "name": "New Project"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "",
+              "createdAt": "2026-11-20T10:00:00.000Z",
+              "direction": "Build something",
+              "state": "",
+              "closed": [],
+              "open": []
+            }
+          ],
+          "tasks": []
+        }
+      ]
+    }
+  },
+  {
+    "fn": "createProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "Neighborhood library",
+        "direction": "Duplicate name"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "schema": 1,
+          "project": {
+            "id": "neighborhood-library",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "",
+              "createdAt": "2026-11-20T10:00:00.000Z",
+              "direction": "Duplicate name",
+              "state": "",
+              "closed": [],
+              "open": []
+            }
+          ],
+          "tasks": []
+        }
+      ]
+    }
+  },
+  {
+    "fn": "createProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "Project with place",
+        "direction": "Build with place",
+        "folder": "C:\\valid\\folder",
+        "github": "https://github.com/owner/repo"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "schema": 1,
+          "project": {
+            "id": "project-with-place",
+            "name": "Project with place",
+            "folder": "C:\\valid\\folder",
+            "github": "https://github.com/owner/repo"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "",
+              "createdAt": "2026-11-20T10:00:00.000Z",
+              "direction": "Build with place",
+              "state": "",
+              "closed": [],
+              "open": []
+            }
+          ],
+          "tasks": []
+        }
+      ]
+    }
+  },
+  {
+    "fn": "createProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "",
+        "direction": "No name"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Fill in name and goal."
+  },
+  {
+    "fn": "createProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "P",
+        "direction": "D",
+        "folder": "bad\u0000folder"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Folder must be an absolute path on this PC."
+  },
+  {
+    "fn": "restoreProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": "Restored",
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ],
+        "notes": [
+          {
+            "id": "n1",
+            "text": "Important",
+            "createdAt": "2026-11-20T10:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "folder": "C:\\restored"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "schema": 1,
+          "project": {
+            "id": "restored",
+            "name": "Restored",
+            "folder": "C:\\restored"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "restored",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "paused"
+            }
+          ],
+          "home": {
+            "notes": [
+              {
+                "id": "n1",
+                "text": "Important",
+                "createdAt": "2026-11-20T10:00:00.000Z"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fn": "restoreProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "name": ""
+      },
+      null,
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Export is missing a project name."
+  },
+  {
+    "fn": "setPlace",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "biblioteca",
+        "folder": "C:\\new\\folder",
+        "github": "https://github.com/owner/repo"
+      }
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library",
+        "folder": "C:\\new\\folder",
+        "github": "https://github.com/owner/repo"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "setPlace",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "biblioteca",
+        "folder": "C:\\new\\folder"
+      }
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library",
+            "folder": "C:\\new\\folder"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "fn": "setPlace",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "missing",
+        "folder": "C:\\folder"
+      }
+    ],
+    "error": "Project not found."
+  },
+  {
+    "fn": "resetProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "biblioteca",
+        "direction": "New fresh start"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "resetProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "missing",
+        "direction": "D"
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Project not found."
+  },
+  {
+    "fn": "removeProject",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "schema": 1,
+            "project": {
+              "id": "biblioteca",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "calendario",
+                "projectId": "biblioteca",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          },
+          {
+            "schema": 1,
+            "project": {
+              "id": "p2",
+              "name": "Neighborhood library"
+            },
+            "revisions": [
+              {
+                "id": 1,
+                "mode": "manual",
+                "title": "Starting point",
+                "createdAt": "2026-10-06T09:00:00+02:00",
+                "direction": "Open a small neighborhood library accessible to everyone.",
+                "state": "Two possible locations identified. Initial collection: 120 donated books.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location."
+                ],
+                "open": [
+                  "Which location should we choose?",
+                  "Who covers the first opening shift?"
+                ]
+              },
+              {
+                "id": 2,
+                "mode": "manual",
+                "title": "One location, a first step",
+                "createdAt": "2026-10-07T10:30:00+02:00",
+                "direction": "Open the library on Harbor Street for a one-month trial.",
+                "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+                "closed": [
+                  "Free borrowing for residents.",
+                  "Start with a single location.",
+                  "Use the Harbor Street location."
+                ],
+                "open": [
+                  "Who covers the first opening shift?",
+                  "Should we confirm Saturday morning opening?"
+                ]
+              }
+            ],
+            "tasks": [
+              {
+                "id": "t2",
+                "projectId": "p2",
+                "revision_id": 2,
+                "title": "Prepare the trial-month schedule",
+                "detail": "Define four shifts and collect volunteer availability.",
+                "status": "running"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "p2"
+      }
+    ],
+    "result": {
+      "schema": 2,
+      "projects": [
+        {
+          "schema": 1,
+          "project": {
+            "id": "biblioteca",
+            "name": "Neighborhood library"
+          },
+          "revisions": [
+            {
+              "id": 1,
+              "mode": "manual",
+              "title": "Starting point",
+              "createdAt": "2026-10-06T09:00:00+02:00",
+              "direction": "Open a small neighborhood library accessible to everyone.",
+              "state": "Two possible locations identified. Initial collection: 120 donated books.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location."
+              ],
+              "open": [
+                "Which location should we choose?",
+                "Who covers the first opening shift?"
+              ]
+            },
+            {
+              "id": 2,
+              "mode": "manual",
+              "title": "One location, a first step",
+              "createdAt": "2026-10-07T10:30:00+02:00",
+              "direction": "Open the library on Harbor Street for a one-month trial.",
+              "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+              "closed": [
+                "Free borrowing for residents.",
+                "Start with a single location.",
+                "Use the Harbor Street location."
+              ],
+              "open": [
+                "Who covers the first opening shift?",
+                "Should we confirm Saturday morning opening?"
+              ]
+            }
+          ],
+          "tasks": [
+            {
+              "id": "calendario",
+              "projectId": "biblioteca",
+              "revision_id": 2,
+              "title": "Prepare the trial-month schedule",
+              "detail": "Define four shifts and collect volunteer availability.",
+              "status": "running"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "fn": "removeProject",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "biblioteca"
+      }
+    ],
+    "error": "The notebook must keep at least one project."
+  },
+  {
+    "fn": "appendRevision",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "title": "Rev 3",
+        "direction": "Keep going",
+        "state": "Good",
+        "closed": [
+          "Done step"
+        ],
+        "open": [
+          "Next question"
+        ]
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        },
+        {
+          "id": 3,
+          "mode": "manual",
+          "title": "Rev 3",
+          "createdAt": "2026-11-20T10:00:00.000Z",
+          "direction": "Keep going",
+          "state": "Good",
+          "closed": [
+            "Done step"
+          ],
+          "open": [
+            "Next question"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "appendRevision",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "title": ""
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Fill in title, goal, and where it stands."
+  },
+  {
+    "fn": "startGrill",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "startGrill",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      "2026-11-20T10:00:00.000Z",
+      {
+        "replace": true
+      }
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        },
+        {
+          "id": 3,
+          "mode": "grill",
+          "title": "Grill me",
+          "createdAt": "2026-11-20T10:00:00.000Z",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Is this run the next slice of Neighborhood library: Open the library on Harbor Street for a one-month trial.? Recommended: yes.",
+            "Keep this local: existing files, no paid APIs. Recommended: yes.",
+            "Is the slice done when the work is on disk with tests, and nothing extra ships? Recommended: yes.",
+            "Is everything else out of scope until this slice is done? Recommended: yes."
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "startGrillDocs",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      [
+        "README.md",
+        "DESIGN.md"
+      ],
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "startGrillDocs",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      [],
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "No docs in the folder to grill with."
+  },
+  {
+    "fn": "grill",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "title": "Grill answer",
+        "answers": [
+          {
+            "question": "Who covers the first opening shift?",
+            "action": "close",
+            "answer": "Alice"
+          },
+          {
+            "question": "Should we confirm Saturday morning opening?",
+            "action": "keep",
+            "answer": ""
+          }
+        ]
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        },
+        {
+          "id": 3,
+          "mode": "grill",
+          "title": "Grill answer",
+          "createdAt": "2026-11-20T10:00:00.000Z",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location.",
+            "Who covers the first opening shift? → Alice"
+          ],
+          "open": [
+            "Should we confirm Saturday morning opening?"
+          ],
+          "responses": [
+            {
+              "question": "Who covers the first opening shift?",
+              "action": "close",
+              "answer": "Alice"
+            },
+            {
+              "question": "Should we confirm Saturday morning opening?",
+              "action": "keep",
+              "answer": ""
+            }
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "grill",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "title": "Double direction",
+        "answers": [
+          {
+            "question": "Who covers the first opening shift?",
+            "action": "direction",
+            "answer": "New direction 1"
+          },
+          {
+            "question": "Should we confirm Saturday morning opening?",
+            "action": "direction",
+            "answer": "New direction 2"
+          }
+        ]
+      },
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Choose only one new direction per round."
+  },
+  {
+    "fn": "importRevision",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      "{\"id\":3,\"mode\":\"import\",\"title\":\"Imported\",\"createdAt\":\"2026-11-20T10:00:00.000Z\",\"direction\":\"Dir\",\"state\":\"St\",\"closed\":[\"C\"],\"open\":[\"O\"]}",
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        },
+        {
+          "id": 3,
+          "mode": "import",
+          "title": "Imported",
+          "createdAt": "2026-11-20T10:00:00.000Z",
+          "direction": "Dir",
+          "state": "St",
+          "closed": [
+            "C"
+          ],
+          "open": [
+            "O"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "calendario",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Prepare the trial-month schedule",
+          "detail": "Define four shifts and collect volunteer availability.",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "importRevision",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      "{ invalid json",
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Invalid import JSON."
+  },
+  {
+    "fn": "importRevision",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      "{\"extraKey\":true}",
+      "2026-11-20T10:00:00.000Z"
+    ],
+    "error": "Import an object with title, goal, where it stands, decided decisions, and open questions."
+  },
+  {
+    "fn": "createTask",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "revision_id": 2,
+        "title": "Task 1",
+        "detail": "Do work"
+      }
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "task-1",
+          "projectId": "biblioteca",
+          "revision_id": 2,
+          "title": "Task 1",
+          "detail": "Do work",
+          "status": "running"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "createTask",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "revision_id": 2,
+        "title": "Task 2",
+        "detail": "Detail"
+      }
+    ],
+    "error": "This project already has a running task. No second task was created."
+  },
+  {
+    "fn": "createTask",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "revision_id": 2,
+        "title": "",
+        "detail": "No title"
+      }
+    ],
+    "error": "The task requires a title and an existing revision."
+  },
+  {
+    "fn": "removeTask",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "calendario"
+      }
+    ],
+    "result": {
+      "schema": 1,
+      "project": {
+        "id": "biblioteca",
+        "name": "Neighborhood library"
+      },
+      "revisions": [
+        {
+          "id": 1,
+          "mode": "manual",
+          "title": "Starting point",
+          "createdAt": "2026-10-06T09:00:00+02:00",
+          "direction": "Open a small neighborhood library accessible to everyone.",
+          "state": "Two possible locations identified. Initial collection: 120 donated books.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location."
+          ],
+          "open": [
+            "Which location should we choose?",
+            "Who covers the first opening shift?"
+          ]
+        },
+        {
+          "id": 2,
+          "mode": "manual",
+          "title": "One location, a first step",
+          "createdAt": "2026-10-07T10:30:00+02:00",
+          "direction": "Open the library on Harbor Street for a one-month trial.",
+          "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+          "closed": [
+            "Free borrowing for residents.",
+            "Start with a single location.",
+            "Use the Harbor Street location."
+          ],
+          "open": [
+            "Who covers the first opening shift?",
+            "Should we confirm Saturday morning opening?"
+          ]
+        }
+      ],
+      "tasks": []
+    }
+  },
+  {
+    "fn": "removeTask",
+    "args": [
+      {
+        "schema": 1,
+        "project": {
+          "id": "biblioteca",
+          "name": "Neighborhood library"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "mode": "manual",
+            "title": "Starting point",
+            "createdAt": "2026-10-06T09:00:00+02:00",
+            "direction": "Open a small neighborhood library accessible to everyone.",
+            "state": "Two possible locations identified. Initial collection: 120 donated books.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location."
+            ],
+            "open": [
+              "Which location should we choose?",
+              "Who covers the first opening shift?"
+            ]
+          },
+          {
+            "id": 2,
+            "mode": "manual",
+            "title": "One location, a first step",
+            "createdAt": "2026-10-07T10:30:00+02:00",
+            "direction": "Open the library on Harbor Street for a one-month trial.",
+            "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+            "closed": [
+              "Free borrowing for residents.",
+              "Start with a single location.",
+              "Use the Harbor Street location."
+            ],
+            "open": [
+              "Who covers the first opening shift?",
+              "Should we confirm Saturday morning opening?"
+            ]
+          }
+        ],
+        "tasks": [
+          {
+            "id": "calendario",
+            "projectId": "biblioteca",
+            "revision_id": 2,
+            "title": "Prepare the trial-month schedule",
+            "detail": "Define four shifts and collect volunteer availability.",
+            "status": "running"
+          }
+        ]
+      },
+      {
+        "id": "missing"
+      }
+    ],
+    "error": "Job not found."
+  },
+  {
+    "fn": "diff",
+    "args": [
+      {
+        "id": 1,
+        "mode": "manual",
+        "title": "Starting point",
+        "createdAt": "2026-10-06T09:00:00+02:00",
+        "direction": "Open a small neighborhood library accessible to everyone.",
+        "state": "Two possible locations identified. Initial collection: 120 donated books.",
+        "closed": [
+          "Free borrowing for residents.",
+          "Start with a single location."
+        ],
+        "open": [
+          "Which location should we choose?",
+          "Who covers the first opening shift?"
+        ]
+      },
+      {
+        "id": 2,
+        "mode": "manual",
+        "title": "One location, a first step",
+        "createdAt": "2026-10-07T10:30:00+02:00",
+        "direction": "Open the library on Harbor Street for a one-month trial.",
+        "state": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared.",
+        "closed": [
+          "Free borrowing for residents.",
+          "Start with a single location.",
+          "Use the Harbor Street location."
+        ],
+        "open": [
+          "Who covers the first opening shift?",
+          "Should we confirm Saturday morning opening?"
+        ]
+      }
+    ],
+    "result": [
+      {
+        "key": "direction",
+        "before": "Open a small neighborhood library accessible to everyone.",
+        "after": "Open the library on Harbor Street for a one-month trial."
+      },
+      {
+        "key": "state",
+        "before": "Two possible locations identified. Initial collection: 120 donated books.",
+        "after": "Harbor Street selected. 120 books cataloged. The trial schedule is being prepared."
+      },
+      {
+        "key": "closed",
+        "before": [
+          "Free borrowing for residents.",
+          "Start with a single location."
+        ],
+        "after": [
+          "Free borrowing for residents.",
+          "Start with a single location.",
+          "Use the Harbor Street location."
+        ]
+      },
+      {
+        "key": "open",
+        "before": [
+          "Which location should we choose?",
+          "Who covers the first opening shift?"
+        ],
+        "after": [
+          "Who covers the first opening shift?",
+          "Should we confirm Saturday morning opening?"
+        ]
+      }
+    ]
+  },
+  {
+    "fn": "diff",
+    "args": [
+      {
+        "closed": [
+          "Quale sede scegliere?"
+        ]
+      },
+      {
+        "open": [
+          "quale sede scegliere?"
+        ]
+      }
+    ],
+    "result": [
+      {
+        "key": "closed",
+        "before": [
+          "Quale sede scegliere?"
+        ]
+      },
+      {
+        "key": "open",
+        "after": [
+          "quale sede scegliere?"
+        ]
+      },
+      {
+        "key": "reopened",
+        "before": [],
+        "after": [
+          "Quale sede scegliere?"
+        ]
+      }
+    ]
+  },
+  {
+    "fn": "diff",
+    "args": [
+      {
+        "closed": [
+          "CITTÀ"
+        ]
+      },
+      {
+        "open": [
+          "città"
+        ]
+      }
+    ],
+    "result": [
+      {
+        "key": "closed",
+        "before": [
+          "CITTÀ"
+        ]
+      },
+      {
+        "key": "open",
+        "after": [
+          "città"
+        ]
+      },
+      {
+        "key": "reopened",
+        "before": [],
+        "after": [
+          "CITTÀ"
+        ]
+      }
+    ]
+  }
+]

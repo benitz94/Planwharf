@@ -141,7 +141,11 @@ public static class PlanStatus
 
             var updated = (JsonObject)plan.DeepClone();
             updated["planStatus"] = oldStatus;
-            updated["reason"] = old["reason"]?.GetValue<string>() ?? plan["reason"]?.GetValue<string>();
+            var reason = old["reason"]?.GetValue<string>() ?? plan["reason"]?.GetValue<string>();
+            if (reason != null)
+                updated["reason"] = reason;
+            else
+                updated.Remove("reason");
             merged.Add(updated);
         }
 

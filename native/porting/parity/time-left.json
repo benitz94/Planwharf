@@ -1,0 +1,226 @@
+[
+  {
+    "fn": "roleOf",
+    "args": [
+      {
+        "role": "build"
+      }
+    ],
+    "result": "Build"
+  },
+  {
+    "fn": "roleOf",
+    "args": [
+      {
+        "role": "reviewer"
+      }
+    ],
+    "result": "Review"
+  },
+  {
+    "fn": "roleOf",
+    "args": [
+      {
+        "type": "AUDIT"
+      }
+    ],
+    "result": "Review"
+  },
+  {
+    "fn": "roleOf",
+    "args": [
+      {
+        "type": "RESEARCH"
+      }
+    ],
+    "result": "Research"
+  },
+  {
+    "fn": "roleOf",
+    "args": [
+      {
+        "title": "Verify the work independently"
+      }
+    ],
+    "result": "Verify"
+  },
+  {
+    "fn": "roleOf",
+    "args": [
+      null
+    ],
+    "result": "Build"
+  },
+  {
+    "fn": "stepRecord",
+    "args": [
+      {
+        "role": "build",
+        "model": "gpt-5",
+        "startedAt": "2026-11-23T10:00:00Z",
+        "endedAt": "2026-11-23T10:20:00Z",
+        "status": "COMPLETE",
+        "files": 3
+      }
+    ],
+    "result": {
+      "role": "Build",
+      "model": "gpt-5",
+      "files": 3,
+      "minutes": 20,
+      "outcome": "done"
+    }
+  },
+  {
+    "fn": "stepRecord",
+    "args": [
+      {
+        "role": "verify",
+        "model": "claude-3-5",
+        "startedAt": "2026-11-23T10:00:00Z",
+        "endedAt": "2026-11-23T10:05:00Z",
+        "status": "FAILED"
+      }
+    ],
+    "result": {
+      "role": "Verify",
+      "model": "claude-3-5",
+      "files": 0,
+      "minutes": 5,
+      "outcome": "failed"
+    }
+  },
+  {
+    "fn": "stepRecord",
+    "args": [
+      {
+        "role": "build",
+        "modelChange": true
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "stepRecord",
+    "args": [
+      {}
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseHistory",
+    "args": [
+      "{\"role\":\"Build\",\"model\":\"m1\",\"files\":1,\"minutes\":10,\"outcome\":\"done\"}\n{\"role\":\"Verify\",\"model\":\"m2\",\"files\":0,\"minutes\":5,\"outcome\":\"failed\"}"
+    ],
+    "result": [
+      {
+        "role": "Build",
+        "model": "m1",
+        "files": 1,
+        "minutes": 10,
+        "outcome": "done"
+      },
+      {
+        "role": "Verify",
+        "model": "m2",
+        "files": 0,
+        "minutes": 5,
+        "outcome": "failed"
+      }
+    ]
+  },
+  {
+    "fn": "parseHistory",
+    "args": [
+      ""
+    ],
+    "result": []
+  },
+  {
+    "fn": "parseHistory",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "historyText",
+    "args": [
+      [
+        {
+          "role": "Build",
+          "model": "m1",
+          "files": 1,
+          "minutes": 10,
+          "outcome": "done"
+        }
+      ]
+    ],
+    "result": "{\"role\":\"Build\",\"model\":\"m1\",\"files\":1,\"minutes\":10,\"outcome\":\"done\"}\n"
+  },
+  {
+    "fn": "historyText",
+    "args": [
+      []
+    ],
+    "result": ""
+  },
+  {
+    "fn": "historyText",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "estimate",
+    "args": [
+      {
+        "steps": [
+          {
+            "id": "s1",
+            "status": "RUNNING",
+            "startedAt": "2026-11-23T10:00:00Z",
+            "role": "Build"
+          }
+        ],
+        "history": [
+          {
+            "role": "Build",
+            "minutes": 20
+          }
+        ],
+        "now": "2026-11-23T10:05:00Z"
+      }
+    ],
+    "result": {
+      "minutes": 15,
+      "endsAt": "2026-11-23T10:20:00.000Z",
+      "sure": "rough",
+      "longerThanUsual": false
+    }
+  },
+  {
+    "fn": "estimate",
+    "args": [
+      {
+        "steps": [
+          {
+            "id": "s1",
+            "status": "COMPLETE"
+          }
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "estimate",
+    "args": [
+      {
+        "steps": []
+      }
+    ],
+    "result": null
+  }
+]

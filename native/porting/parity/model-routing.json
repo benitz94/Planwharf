@@ -1,0 +1,159 @@
+[
+  {
+    "fn": "modelRouteError",
+    "args": [
+      null
+    ],
+    "result": "Model configuration is required"
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "available": false,
+        "unavailableReason": "Not enabled"
+      }
+    ],
+    "result": "Not enabled"
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "unsupported",
+        "cli": "gpt-4"
+      }
+    ],
+    "result": "Provider/model mismatch: unsupported provider adapter unsupported"
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "   "
+      }
+    ],
+    "result": "Provider/model mismatch: an exact nonempty CLI model ID is required for codex"
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "gpt-5\u0000bad"
+      }
+    ],
+    "result": "Provider/model mismatch: an exact nonempty CLI model ID is required for codex"
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "gpt-5"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "claude-3",
+        "modelRouting": "configured"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "claude-3"
+      }
+    ],
+    "result": "Provider/model mismatch: codex/claude-3. Set modelRouting to \"configured\" only when this exact CLI supports the model."
+  },
+  {
+    "fn": "modelRouteError",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "gpt-5",
+        "modelRouting": "invalid"
+      }
+    ],
+    "result": "Invalid modelRouting: expected \"configured\" or an omitted value"
+  },
+  {
+    "fn": "resolveCliModel",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "gpt-5"
+      }
+    ],
+    "result": "gpt-5"
+  },
+  {
+    "fn": "resolveCliModel",
+    "args": [
+      {
+        "adapter": "codex",
+        "cli": "bad\u0000"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "savingModeError",
+    "args": [
+      {
+        "label": "Claude Opus",
+        "weight": "flagship"
+      },
+      "safe",
+      0
+    ],
+    "result": "Claude Opus is flagship, and Safe does not allow it."
+  },
+  {
+    "fn": "savingModeError",
+    "args": [
+      {
+        "label": "Claude Haiku",
+        "weight": "light"
+      },
+      "safe",
+      2
+    ],
+    "result": null
+  },
+  {
+    "fn": "savingModeError",
+    "args": [
+      {
+        "label": "Claude Sonnet",
+        "weight": "mid"
+      },
+      "ultra-safe",
+      1
+    ],
+    "result": "Claude Sonnet is mid, and Ultra safe does not allow it."
+  },
+  {
+    "fn": "savingModeError",
+    "args": [
+      {
+        "label": "Claude Sonnet",
+        "weight": "mid"
+      },
+      "normal",
+      1
+    ],
+    "result": null
+  }
+]

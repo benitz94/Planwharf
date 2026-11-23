@@ -58,6 +58,22 @@ public static class ProviderCatalog
         return $"{toolName} is not installed on this computer. {hint}";
     }
 
+    static JsonObject? GetAdapterCapabilities(string? adapter)
+    {
+        if (adapter == "claude" || adapter == "codex" || adapter == "grok" || adapter == "antigravity")
+        {
+            return new JsonObject
+            {
+                ["canCode"] = true,
+                ["canResearch"] = adapter != "claude",
+                ["canUseTools"] = true,
+                ["canInspectFilesystem"] = true,
+                ["supportsStreaming"] = true
+            };
+        }
+        return null;
+    }
+
     public static CatalogResult LoadCatalog(JsonNode? config)
     {
         bool explicitCatalog = config is JsonObject;
@@ -159,7 +175,18 @@ public static class ProviderCatalog
                 model["reviewerEligible"] = revElig;
                 model["providerCatalog"] = explicitCatalog || original["providerCatalog"]?.GetValue<bool>() == true;
 
-                var caps = origCaps != null ? (JsonObject)origCaps.DeepClone() : new JsonObject();
+                var adapterCaps = GetAdapterCapabilities(adapter);
+                var caps = new JsonObject();
+                if (adapterCaps != null)
+                {
+                    foreach (var kvp in adapterCaps)
+                        caps[kvp.Key] = kvp.Value?.DeepClone();
+                }
+                if (origCaps != null)
+                {
+                    foreach (var kvp in origCaps)
+                        caps[kvp.Key] = kvp.Value?.DeepClone();
+                }
                 caps["orchestratorEligible"] = orchElig;
                 caps["workerEligible"] = workerElig;
                 caps["reviewerEligible"] = revElig;
@@ -173,6 +200,8 @@ public static class ProviderCatalog
                         model["kind"] = "default";
                     if (model["cost"] == null)
                         model["cost"] = 1;
+                    if (model["limit"] == null)
+                        model["limit"] = 9007199254740991L;
                 }
 
                 models.Add(model);
@@ -205,14 +234,16 @@ public static class ProviderCatalog
 
             bool available = provider["available"]?.GetValue<bool>() != false && rows.Any(m => m["available"]?.GetValue<bool>() != false);
 
-            bool enabled = provider["enabled"]?.GetValue<bool>() != false;
-            if (settings?["providerEnabled"] is JsonObject pe && pe.ContainsKey(pId) && pe[pId] != null)
-                enabled = pe[pId]!.GetValue<bool>();
-
             bool installed = !rows.Any(m => m["notInstalled"]?.GetValue<bool>() == true);
 
             var view = (JsonObject)provider.DeepClone();
-            view["enabled"] = enabled;
+            if (settings?["providerEnabled"] is JsonObject pe && pe.ContainsKey(pId) && pe[pId] != null)
+                view["enabled"] = pe[pId]!.GetValue<bool>();
+            else if (provider.ContainsKey("enabled") && provider["enabled"] != null)
+                view["enabled"] = provider["enabled"]!.GetValue<bool>();
+            else
+                view.Remove("enabled");
+
             view["available"] = available;
             view["installed"] = installed;
             view["installHint"] = installed ? null : NotInstalledReason(provider);
@@ -226,14 +257,26 @@ public static class ProviderCatalog
             view["quotaReadable"] = remaining != null;
             view["remainingPercent"] = remaining != null ? JsonValue.Create(remaining.Value) : null;
             view["resetAt"] = pool?["resetAt"]?.GetValue<string>();
-            view["quota"] = pool != null ? (JsonObject)pool.DeepClone() : new JsonObject
+
+            if (pool != null)
             {
-                ["id"] = poolId,
-                ["label"] = provider["label"]?.GetValue<string>(),
-                ["readable"] = false,
-                ["leftPct"] = null,
-                ["exhausted"] = false
-            };
+                view["quota"] = (JsonObject)pool.DeepClone();
+            }
+            else
+            {
+                var q = new JsonObject
+                {
+                    ["id"] = poolId,
+                    ["readable"] = false,
+                    ["leftPct"] = null,
+                    ["exhausted"] = false
+                };
+                if (provider.ContainsKey("label") && provider["label"] != null)
+                    q["label"] = provider["label"]!.GetValue<string>();
+                view["quota"] = q;
+            }
+
+            view["showAll"] = (settings?["catalogVisibility"] as JsonObject)?[pId]?.GetValue<bool>() == true;
             view["models"] = new JsonArray(rows.Select(r => (JsonNode)r.DeepClone()).ToArray());
 
             result.Add(view);

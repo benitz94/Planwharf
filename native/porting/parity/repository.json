@@ -1,0 +1,171 @@
+[
+  {
+    "fn": "githubRepo",
+    "args": [
+      "https://github.com/foo/bar.git"
+    ],
+    "result": "foo/bar"
+  },
+  {
+    "fn": "githubRepo",
+    "args": [
+      "git@github.com:foo/bar.git"
+    ],
+    "result": "foo/bar"
+  },
+  {
+    "fn": "githubRepo",
+    "args": [
+      "https://github.com/foo/bar/"
+    ],
+    "result": "foo/bar"
+  },
+  {
+    "fn": "githubRepo",
+    "args": [
+      "https://gitlab.com/foo/bar"
+    ],
+    "result": null
+  },
+  {
+    "fn": "githubRepo",
+    "args": [
+      ""
+    ],
+    "result": null
+  },
+  {
+    "fn": "githubRepo",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      "https://github.com/foo/bar.git"
+    ],
+    "result": {
+      "provider": "github",
+      "repository": "foo/bar",
+      "origin": "https://github.com",
+      "baseUrl": "https://github.com",
+      "url": "https://github.com/foo/bar"
+    }
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      "https://gitea.example.com/org/repo.git"
+    ],
+    "result": {
+      "provider": "gitea",
+      "repository": "org/repo",
+      "origin": "https://gitea.example.com",
+      "baseUrl": "https://gitea.example.com",
+      "url": "https://gitea.example.com/org/repo"
+    }
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      "https://gitea.example.com/sub/path/org/repo"
+    ],
+    "result": {
+      "provider": "gitea",
+      "repository": "org/repo",
+      "origin": "https://gitea.example.com",
+      "baseUrl": "https://gitea.example.com/sub/path",
+      "url": "https://gitea.example.com/sub/path/org/repo"
+    }
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      "ftp://gitea.example.com/org/repo"
+    ],
+    "result": null
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      "https://gitea.example.com/org/repo?query=1"
+    ],
+    "result": null
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      ""
+    ],
+    "result": null
+  },
+  {
+    "fn": "repositoryAddress",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "cleanError",
+    "args": [
+      "error at https://user:pass@github.com/foo/bar"
+    ],
+    "result": "error at https://[redacted]@github.com/foo/bar"
+  },
+  {
+    "fn": "cleanError",
+    "args": [
+      "failed with token ghp_1234567890abcdefghijklmnopqrstuvwxyzAB"
+    ],
+    "result": "failed with token [redacted]"
+  },
+  {
+    "fn": "cleanError",
+    "args": [
+      "short clean error"
+    ],
+    "result": "short clean error"
+  },
+  {
+    "fn": "cleanError",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "relation",
+    "args": [
+      0,
+      0
+    ],
+    "result": "in-sync"
+  },
+  {
+    "fn": "relation",
+    "args": [
+      2,
+      0
+    ],
+    "result": "ahead"
+  },
+  {
+    "fn": "relation",
+    "args": [
+      0,
+      3
+    ],
+    "result": "behind"
+  },
+  {
+    "fn": "relation",
+    "args": [
+      1,
+      1
+    ],
+    "result": "diverged"
+  }
+]

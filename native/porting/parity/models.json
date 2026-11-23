@@ -1,0 +1,225 @@
+[
+  {
+    "fn": "getEnabledModels",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": true
+        },
+        {
+          "id": "m2",
+          "enabled": false,
+          "available": true
+        },
+        {
+          "id": "m3",
+          "enabled": true,
+          "available": false
+        },
+        null
+      ]
+    ],
+    "result": [
+      {
+        "id": "m1",
+        "enabled": true,
+        "available": true
+      }
+    ]
+  },
+  {
+    "fn": "getEnabledModels",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "setModelEnabled",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": false,
+          "available": true
+        },
+        {
+          "id": "m2",
+          "enabled": true,
+          "available": false
+        },
+        null
+      ],
+      "m1",
+      true
+    ],
+    "result": [
+      {
+        "id": "m1",
+        "enabled": true,
+        "available": true
+      },
+      {
+        "id": "m2",
+        "enabled": true,
+        "available": false
+      },
+      null
+    ]
+  },
+  {
+    "fn": "setModelEnabled",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": false
+        }
+      ],
+      "m1",
+      true
+    ],
+    "result": [
+      {
+        "id": "m1",
+        "enabled": false,
+        "available": false
+      }
+    ]
+  },
+  {
+    "fn": "setModelEnabled",
+    "args": [
+      null,
+      "m1",
+      true
+    ],
+    "result": []
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": true
+        }
+      ],
+      "m1"
+    ],
+    "result": {
+      "ok": true,
+      "reason": null
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": false,
+          "available": true
+        }
+      ],
+      "m1"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "no model enabled"
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": true
+        }
+      ],
+      "m2"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "model not present"
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": true
+        },
+        {
+          "id": "m2",
+          "enabled": false,
+          "available": true
+        }
+      ],
+      "m2"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "model disabled"
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": false
+        }
+      ],
+      "m1"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "no model enabled"
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "enabled": true,
+          "available": true
+        },
+        {
+          "id": "m2",
+          "enabled": true,
+          "available": false
+        }
+      ],
+      "m2"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "model disabled"
+    }
+  },
+  {
+    "fn": "validateWorkerClaim",
+    "args": [
+      null,
+      "m1"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "no model enabled"
+    }
+  }
+]

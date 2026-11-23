@@ -1,0 +1,133 @@
+[
+  {
+    "fn": "sanitize",
+    "args": [
+      "Bearer sk-ant-api03-abcdef12345678901234"
+    ],
+    "result": "Bearer [REDACTED]"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      "sk-1234567890abcdef123456"
+    ],
+    "result": "[REDACTED]"
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      {
+        "credentials": "secret",
+        "auth": "token",
+        "password": "123",
+        "secret": "abc",
+        "env": "x",
+        "thinking": "thought",
+        "normal": "hello"
+      }
+    ],
+    "result": {
+      "normal": "hello"
+    }
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      [
+        {
+          "apiKey": "secret"
+        },
+        {
+          "text": "Bearer my-token-here"
+        },
+        42
+      ]
+    ],
+    "result": [
+      {},
+      {
+        "text": "Bearer [REDACTED]"
+      },
+      42
+    ]
+  },
+  {
+    "fn": "sanitize",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "continueFrom",
+    "args": [
+      {
+        "megaTasks": [
+          {
+            "id": "m1",
+            "status": "PAUSED",
+            "currentCheckpointId": "cp1"
+          }
+        ]
+      }
+    ],
+    "result": {
+      "action": "resume",
+      "megaTaskId": "m1",
+      "checkpointId": "cp1"
+    }
+  },
+  {
+    "fn": "continueFrom",
+    "args": [
+      {
+        "megaTasks": [
+          {
+            "id": "m2",
+            "status": "READY_FOR_APPROVAL"
+          }
+        ]
+      }
+    ],
+    "result": {
+      "action": "approve",
+      "megaTaskId": "m2"
+    }
+  },
+  {
+    "fn": "continueFrom",
+    "args": [
+      {
+        "megaTasks": [
+          {
+            "id": "m3",
+            "status": "COMPLETE"
+          }
+        ]
+      }
+    ],
+    "result": {
+      "action": null
+    }
+  },
+  {
+    "fn": "continueFrom",
+    "args": [
+      {
+        "megaTasks": []
+      }
+    ],
+    "result": {
+      "action": null
+    }
+  },
+  {
+    "fn": "continueFrom",
+    "args": [
+      null
+    ],
+    "result": {
+      "action": null
+    }
+  }
+]
