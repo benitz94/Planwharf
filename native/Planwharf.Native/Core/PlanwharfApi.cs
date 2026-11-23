@@ -117,6 +117,16 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetCompanyNoLimitAsync(string pool) => PostAsync("/api/models/quota-limit", new { pool, none = true });
     public Task<JsonNode?> ResetCompanyLimitAsync(string pool) => PostAsync("/api/models/quota-limit", new { pool, reset = true });
 
+    public Task<JsonNode> DecisionsAsync() => GetAsync("/api/decisions");
+    public Task<JsonNode?> AnswerDecisionAsync(string projectId, string decisionId, string answer) =>
+        PostAsync("/api/decisions/answer", new { projectId, decisionId, answer });
+    public Task<JsonNode?> DelegateDecisionAsync(string projectId, string decisionId) =>
+        PostAsync("/api/decisions/delegate", new { projectId, decisionId });
+    public Task<JsonNode?> SetDecisionAutoAsync(string projectId, bool enabled) =>
+        PostAsync("/api/decisions/auto", new { projectId, enabled });
+    public Task<JsonNode?> SetDefaultDecisionAutoAsync(bool defaultEnabled) =>
+        PostAsync("/api/decisions/auto", new { defaultEnabled });
+
     public Task<JsonNode> SkillsAsync() => GetAsync("/api/skills");
     public Task<JsonNode?> OpenSkillsAsync(string cli, string what) => PostAsync("/api/skills/open", new { cli, what });
 

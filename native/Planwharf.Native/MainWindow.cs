@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
     readonly TextBlock now = new() { FontSize = 12, Foreground = Palette.Muted, Margin = new Thickness(0, 0, 0, 8) };
     readonly TextBlock sideTitle = new() { FontSize = 17, FontWeight = FontWeight.Bold, Foreground = Palette.Text, VerticalAlignment = VerticalAlignment.Center };
     // The panels on the right, as in the chat page.
-    static (string Mode, string Label, string Icon)[] Panels => [("team", Strings.T("Team"), "team"), ("progress", Strings.T("Progress"), "progress"), ("usage", Strings.T("Usage"), "usage"), ("files", Strings.T("Files"), "file"), ("pulls", Strings.T("Pull requests"), "git"), ("settings", Strings.T("Settings"), "settings")];
+    static (string Mode, string Label, string Icon)[] Panels => [("team", Strings.T("Team"), "team"), ("progress", Strings.T("Progress"), "progress"), ("usage", Strings.T("Usage"), "usage"), ("files", Strings.T("Files"), "file"), ("pulls", Strings.T("Pull requests"), "git"), ("decisions", Strings.T("Decisions"), "check"), ("settings", Strings.T("Settings"), "settings")];
     readonly Dictionary<string, ToggleButton> sideButtons = Panels.ToDictionary(panel => panel.Mode, panel => { var tab = Look.Tab(panel.Label, panel.Icon); tab.Margin = new Thickness(6, 0, 0, 0); return tab; });
     readonly Dictionary<string, (JsonNode? Json, string? Error)> repoRaw = new();
     readonly StackPanel side = new() { Spacing = 10, Margin = new Thickness(16) };
@@ -54,6 +54,7 @@ public sealed partial class MainWindow : Window
     string pullState = "open", pullAuthor = "all";
     int pullOffset;
     int pullGeneration;
+    JsonNode? decisionsPayload;
     readonly Dictionary<string, string> gitBusy = new();
     readonly Dictionary<string, (bool Ok, string Text)> gitSaid = new();
     readonly Dictionary<string, string> commitMessages = new();
@@ -254,6 +255,7 @@ public sealed partial class MainWindow : Window
         if (mode == "files" && projectId != null && !repoRaw.ContainsKey(projectId)) _ = LoadRepoAsync(projectId, CurrentWorkId(), false);
         if (mode == "usage") _ = LoadProviderStatusAsync();
         if (mode == "pulls" && pullPayload == null) _ = LoadPullsAsync(false);
+        if (mode == "decisions" && decisionsPayload == null) _ = LoadDecisionsAsync(false);
         sidePanel.IsVisible = mode != null;
         Render();
     }
@@ -278,8 +280,12 @@ public sealed partial class MainWindow : Window
         var projects = ProjectViews.Projects(snapshot);
         if (projectId == null || projects.All(p => p.Id != projectId)) projectId = projects.FirstOrDefault()?.Id;
         RenderProjects(projects);
+        var openCount = snapshot["decisionsInbox"]?["openCount"]?.GetValue<int?>()
+            ?? (snapshot["decisionsInbox"]?["open"] as JsonArray)?.Count
+            ?? (decisionsPayload?["openCount"]?.GetValue<int?>() ?? (decisionsPayload?["open"] as JsonArray)?.Count ?? 0);
+        UpdateDecisionsTab(openCount);
         CheckTimedStop();
-        var view = ProjectViews.Project(snapshot, projectId);
+        var view = ProjectViews.Project(snapshot!, projectId);
         RenderFooter(view);
         if (view == null)
         {
@@ -695,21 +701,65 @@ public sealed partial class MainWindow : Window
         var box = Look.Field(new TextBox { Watermark = Strings.T("Or write your answer") });
         var yes = Small(Strings.T("Yes"), true);
         var no = Small(Strings.T("No"), false);
+        var letLead = Look.Button(Strings.T("Let the lead decide"), "bot", Look.Kind.Small);
         async Task Answer(string value)
         {
             if (api == null || projectId == null) return;
-            yes.IsEnabled = no.IsEnabled = false;
+            yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = false;
             try { await api.PostAsync("/api/decisions/answer", new { projectId, decisionId = id, answer = value }); await RefreshAsync(readOnly: true); }
-            catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; yes.IsEnabled = no.IsEnabled = true; }
+            catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = true; }
+        }
+        async Task Delegate()
+        {
+            if (api == null || projectId == null) return;
+            yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = false;
+            try { await api.PostAsync("/api/decisions/delegate", new { projectId, decisionId = id }); await RefreshAsync(readOnly: true); }
+            catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = true; }
         }
         yes.Click += async (_, _) => await Answer("yes");
         no.Click += async (_, _) => await Answer("no");
+        letLead.Click += async (_, _) => await Delegate();
         var send = Small(Strings.T("Send"), false);
         send.Click += async (_, _) => { if ((box.Text ?? "").Trim().Length > 0) await Answer(box.Text!.Trim()); };
         var card = new StackPanel { Spacing = 6, Children = { Line(text, Palette.Text, 14) } };
         if (suggestion.Length > 0) card.Children.Add(Line(Strings.Format("Suggestion: {0}", suggestion), Palette.Muted, 14));
-        card.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, box, send } });
+        card.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, letLead, box, send } });
         return card;
+    }
+
+    void UpdateDecisionsTab(int openCount)
+    {
+        if (!sideButtons.TryGetValue("decisions", out var btn)) return;
+        var text = openCount > 0 ? Strings.Format("{0} ({1})", Strings.T("Decisions"), openCount) : Strings.T("Decisions");
+        if (btn.Content is StackPanel sp && sp.Children.OfType<TextBlock>().FirstOrDefault() is { } tb)
+        {
+            tb.Text = text;
+        }
+        else
+        {
+            btn.Content = Look.Label(text, "check");
+        }
+    }
+
+    // For the window tests: the decisions inbox as the server would report it.
+    public void ShowDecisions(JsonNode payload)
+    {
+        decisionsPayload = payload;
+        sideSig = null;
+        var openCount = payload["openCount"]?.GetValue<int?>() ?? (payload["open"] as JsonArray)?.Count ?? 0;
+        UpdateDecisionsTab(openCount);
+        if (sideMode == "decisions") Render();
+    }
+
+    async Task LoadDecisionsAsync(bool force)
+    {
+        if (api == null) return;
+        try
+        {
+            var res = await api.DecisionsAsync();
+            ShowDecisions(res);
+        }
+        catch { }
     }
 
 
@@ -941,6 +991,7 @@ public sealed partial class MainWindow : Window
         sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) + string.Join(",", u.Outcomes) : "";
         sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
         sig += pulls is { } pr ? pullNotice + pullState + pullAuthor + pr.Message + pr.More + pr.Summary.Merged + pr.Summary.Median + pr.Summary.NeededFix + string.Join(",", pr.Summary.FailedChecks.Select(item => item.Name + item.Count)) + string.Join(",", pr.Items.Select(item => item.Number + item.State + item.FixStatus + item.FixText + item.CanFix + item.Conflicts + string.Join("/", item.Checks.Select(check => check.Name + check.State)))) : "";
+        sig += sideMode == "decisions" ? (decisionsPayload?.ToJsonString() ?? snapshot?["decisionsInbox"]?.ToJsonString() ?? "") : "";
         if (sig == sideSig) return;
         sideSig = sig;
         side.Children.Clear();
@@ -951,8 +1002,240 @@ public sealed partial class MainWindow : Window
             case "usage" when usage != null: UsageSide(usage); break;
             case "files" when files != null: FilesSide(files, folder); break;
             case "pulls" when pulls != null: PullsSide(pulls); break;
+            case "decisions": DecisionsSide(); break;
             default: SettingsPanel(folder, view?.Name ?? ""); break;
         }
+    }
+
+    void DecisionsSide()
+    {
+        var inbox = DecisionsInboxView.FromJson(decisionsPayload ?? snapshot?["decisionsInbox"]);
+
+        side.Children.Add(Explain(Strings.T("Every open decision of every project and pipeline job in one place.")));
+
+        var isAuto = false;
+        if (projectId != null && snapshot?["autoDecide"]?[projectId] is JsonValue val && val.TryGetValue<bool>(out var autoVal))
+        {
+            isAuto = autoVal;
+        }
+        else if (snapshot?["defaultAutoDecide"] is JsonValue defVal && defVal.TryGetValue<bool>(out var defAuto))
+        {
+            isAuto = defAuto;
+        }
+
+        var autoToggle = new ToggleSwitch
+        {
+            OnContent = Strings.T("Let the lead decide new decisions"),
+            OffContent = Strings.T("Let the lead decide new decisions"),
+            IsChecked = isAuto
+        };
+        autoToggle.IsCheckedChanged += async (_, _) =>
+        {
+            if (api == null || projectId == null) return;
+            var wanted = autoToggle.IsChecked == true;
+            try
+            {
+                await api.SetDecisionAutoAsync(projectId, wanted);
+                await RefreshAsync(readOnly: true);
+            }
+            catch (Exception ex)
+            {
+                hint.Text = ex.Message;
+                hint.Foreground = Palette.Danger;
+            }
+        };
+        side.Children.Add(new StackPanel
+        {
+            Spacing = 4,
+            Children =
+            {
+                autoToggle,
+                Explain(Strings.T("When on, the lead decides each new decision itself so work continues."))
+            }
+        });
+
+        side.Children.Add(SettingsHead(Strings.Format("{0} ({1})", Strings.T("Open"), inbox.OpenCount)));
+        if (inbox.Open.Count == 0)
+        {
+            side.Children.Add(Line(Strings.T("No decisions waiting"), Palette.Muted, 14));
+        }
+        else
+        {
+            foreach (var dec in inbox.Open)
+            {
+                side.Children.Add(OpenDecisionCard(dec));
+            }
+        }
+
+        if (inbox.Answered.Count > 0)
+        {
+            var answeredPanel = new StackPanel { Spacing = 8 };
+            foreach (var dec in inbox.Answered)
+            {
+                answeredPanel.Children.Add(AnsweredDecisionCard(dec));
+            }
+            var fold = Fold(Strings.Format("{0} ({1})", Strings.T("Answered decisions"), inbox.Answered.Count), answeredPanel);
+            fold.IsExpanded = true;
+            side.Children.Add(fold);
+        }
+    }
+
+    Control OpenDecisionCard(DecisionItem dec)
+    {
+        var panel = new StackPanel { Spacing = 6 };
+
+        var projectWork = $"{dec.ProjectName} · {dec.WorkTitle}";
+        panel.Children.Add(Line(projectWork, Palette.Muted, 13, FontWeight.SemiBold));
+
+        panel.Children.Add(Line(dec.Text, Palette.Text, 15, FontWeight.SemiBold));
+
+        if (dec.Breaks)
+        {
+            var breakBadge = new Border
+            {
+                Background = Palette.DangerSoft,
+                BorderBrush = Palette.Danger,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 4),
+                Child = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 6,
+                    Children =
+                    {
+                        Look.Icon("alert", 14, Palette.Danger),
+                        Line(Strings.T("Could break something"), Palette.Danger, 13, FontWeight.Bold)
+                    }
+                }
+            };
+            panel.Children.Add(breakBadge);
+        }
+
+        if (!string.IsNullOrWhiteSpace(dec.Suggestion))
+        {
+            panel.Children.Add(Line(Strings.Format("Suggestion: {0}", dec.Suggestion), Palette.Muted, 14));
+        }
+
+        var yes = Small(Strings.T("Yes"), true);
+        var no = Small(Strings.T("No"), false);
+        var letLead = Look.Button(Strings.T("Let the lead decide"), "bot", Look.Kind.Small);
+        var customBox = Look.Field(new TextBox { Watermark = Strings.T("Or write your answer"), MinWidth = 140 });
+        var sendBtn = Small(Strings.T("Send"), false);
+
+        async Task Answer(string val)
+        {
+            if (api == null) return;
+            yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = sendBtn.IsEnabled = false;
+            try
+            {
+                await api.AnswerDecisionAsync(dec.ProjectId, dec.Id, val);
+                await RefreshAsync(readOnly: true);
+                if (sideMode == "decisions") await LoadDecisionsAsync(false);
+            }
+            catch (Exception ex)
+            {
+                hint.Text = ex.Message;
+                hint.Foreground = Palette.Danger;
+                yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = sendBtn.IsEnabled = true;
+            }
+        }
+
+        async Task Delegate()
+        {
+            if (api == null) return;
+            yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = sendBtn.IsEnabled = false;
+            try
+            {
+                await api.DelegateDecisionAsync(dec.ProjectId, dec.Id);
+                await RefreshAsync(readOnly: true);
+                if (sideMode == "decisions") await LoadDecisionsAsync(false);
+            }
+            catch (Exception ex)
+            {
+                hint.Text = ex.Message;
+                hint.Foreground = Palette.Danger;
+                yes.IsEnabled = no.IsEnabled = letLead.IsEnabled = sendBtn.IsEnabled = true;
+            }
+        }
+
+        yes.Click += async (_, _) => await Answer("yes");
+        no.Click += async (_, _) => await Answer("no");
+        letLead.Click += async (_, _) => await Delegate();
+        sendBtn.Click += async (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(customBox.Text)) await Answer(customBox.Text.Trim());
+        };
+
+        var buttonsRow1 = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { yes, no, letLead } };
+        var buttonsRow2 = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { customBox, sendBtn } };
+
+        panel.Children.Add(buttonsRow1);
+        panel.Children.Add(buttonsRow2);
+
+        return Look.Card(panel, dec.Breaks ? Palette.Danger : Palette.Line, padding: 12);
+    }
+
+    Control AnsweredDecisionCard(DecisionItem dec)
+    {
+        var panel = new StackPanel { Spacing = 6 };
+
+        var projectWork = Strings.Format("{0} · {1}", dec.ProjectName, dec.WorkTitle);
+        panel.Children.Add(Line(projectWork, Palette.Muted, 13));
+
+        panel.Children.Add(Line(dec.Text, Palette.Text, 14, FontWeight.SemiBold));
+
+        if (dec.Breaks)
+        {
+            panel.Children.Add(Line("⚠️ " + Strings.T("Could break something"), Palette.Danger, 13, FontWeight.Bold));
+        }
+
+        string answeredText;
+        if (dec.AnsweredBy != null && dec.AnsweredBy.StartsWith("Decided by", StringComparison.OrdinalIgnoreCase))
+        {
+            answeredText = Strings.Format("Decided by {0}", dec.AnsweredBy.Substring("Decided by".Length).Trim());
+            if (!string.IsNullOrWhiteSpace(dec.AutoReason))
+            {
+                answeredText += "\n" + Strings.Format("Reason: {0}", dec.AutoReason);
+            }
+        }
+        else
+        {
+            answeredText = Strings.T("Answered by you") + ": " + dec.Answer;
+        }
+
+        panel.Children.Add(Line(answeredText, Palette.Accent, 14));
+
+        if (!string.IsNullOrWhiteSpace(dec.AnsweredAt))
+        {
+            panel.Children.Add(Line(dec.AnsweredAt, Palette.Muted, 12));
+        }
+
+        if (!dec.StepStarted)
+        {
+            var changeBox = Look.Field(new TextBox { Watermark = Strings.T("Change answer"), MinWidth = 140 });
+            var changeBtn = Small(Strings.T("Send"), false);
+            changeBtn.Click += async (_, _) =>
+            {
+                if (api == null || string.IsNullOrWhiteSpace(changeBox.Text)) return;
+                changeBtn.IsEnabled = false;
+                try
+                {
+                    await api.AnswerDecisionAsync(dec.ProjectId, dec.Id, changeBox.Text.Trim());
+                    await RefreshAsync(readOnly: true);
+                    if (sideMode == "decisions") await LoadDecisionsAsync(false);
+                }
+                catch (Exception ex)
+                {
+                    hint.Text = ex.Message;
+                    hint.Foreground = Palette.Danger;
+                    changeBtn.IsEnabled = true;
+                }
+            };
+            panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { changeBox, changeBtn } });
+        }
+
+        return Look.Card(panel, Palette.Line, padding: 12);
     }
 
     // A line of a status list: a small round label, then the text (as .status-list in the chat page).

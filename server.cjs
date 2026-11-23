@@ -369,7 +369,10 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
     storeDir,
     getSnapshot: () => orchestra.snapshot(),
     onStopProject: projectId => enqueue(() => orchestra.stop(projectId)),
-    onResumeProject: projectId => enqueue(() => orchestra.resume(projectId))
+    onResumeProject: projectId => enqueue(() => orchestra.resume(projectId)),
+    onAnswerDecision: (projectId, decisionId, answer) => enqueue(() => orchestra.answerDecision(projectId, decisionId, answer)),
+    onDelegateDecision: (projectId, decisionId) => enqueue(() => orchestra.delegateDecision(projectId, decisionId)),
+    getDecisions: () => orchestra.decisionsInbox()
   });
   let modelsChecking = true;
   const initialModelsSync = syncAccounts().then(() => refreshModels ? providerModels.refresh(true) : undefined).catch(() => {}).finally(() => { modelsChecking = false; });
@@ -729,11 +732,35 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         })();
         return json(200, result);
       }
+      if (request.method === 'GET' && pathname === '/api/decisions') {
+        const inbox = typeof orchestra.decisionsInbox === 'function'
+          ? await orchestra.decisionsInbox()
+          : { open: [], answered: [], openCount: 0 };
+        return json(200, { ok: true, ...inbox });
+      }
       if (request.method === 'POST' && pathname === '/api/decisions/answer') {
         const input = await body(request);
         const result = orchestra.answerDecision(input && input.projectId, input && input.decisionId, input && input.answer);
         if (!result.ok) throw new RequestError(400, result.reason);
         return json(200, result);
+      }
+      if (request.method === 'POST' && pathname === '/api/decisions/delegate') {
+        const input = await body(request);
+        const result = orchestra.delegateDecision(input && input.projectId, input && input.decisionId);
+        if (!result.ok) throw new RequestError(400, result.reason);
+        return json(200, result);
+      }
+      if (request.method === 'POST' && pathname === '/api/decisions/auto') {
+        const input = await body(request);
+        if (input && typeof input.projectId === 'string') {
+          const result = orchestra.setDecisionAuto(input.projectId, input.enabled);
+          return json(200, result);
+        }
+        if (input && typeof input.defaultEnabled === 'boolean') {
+          const result = orchestra.setDefaultDecisionAuto(input.defaultEnabled);
+          return json(200, result);
+        }
+        throw new RequestError(400, 'Invalid data.');
       }
       if (request.method === 'GET' && pathname === '/api/prs') {
         const projectId = loc.searchParams.get('projectId');
