@@ -85,7 +85,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done (#212) |
 | 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | Done (#213) |
 | 41 | 2 and 3. | **Comparison with the JavaScript for jobs 24 and 40**: record the comparison cases the sheets 23 and 37 asked for and the ports left out, fix the C# where it differs, and make CI refuse a port without them. Sheet below | `port/41-parity` | Done (#217) |
-| 42 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/42-sheet` | To do |
+| 42 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03. [Sheet](../native/porting/jobs/42-phase4-processes-providers.md); the port is job 43 and waits for review | `port/42-sheet` | Sheet done (#219) |
 | 43 | 4. | Port them, as sheet 42 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/43-phase4` | To do |
 | 44 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/44-sheet` | To do |
 | 45 | 5. | Port them, as sheet 44 says. Then **stop**: the owner approves the orchestrator split | `port/45-phase5` | To do |
@@ -111,7 +111,7 @@ Rules for every job:
 - The web app and Electron get no new features (they are being retired). A change there is allowed
   only where the job says so, to keep them working.
 - A sheet's own test checks the sheet only. It never requires the plan to say "Done, waiting for review", a
-  `#?` in the progress page, or the absence of files that a later job adds: those are true only on the
+  `#?` in the progress page, the branch to be on top of the latest `main`, or the absence of files that a later job adds: those are true only on the
   sheet's branch, and the test then fails on every later pull request.
 - Tests that do not depend on the computer (porting rule 11), and the full engine CI green:
   `node scripts/engineering/ci.cjs`.
