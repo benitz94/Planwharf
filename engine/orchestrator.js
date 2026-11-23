@@ -15,6 +15,7 @@ const { modelRouteError, savingModeError } = require('./model-routing.cjs');
 const { createExecutionBridge, readStepTimes } = require('./execution.cjs');
 const worktrees = require('./worktrees.cjs');
 const { estimate: estimateTimeLeft } = require('./time-left.cjs');
+const stepOutcomes = require('./step-outcomes.cjs');
 const { renameWithRetry } = require('./atomic-rename.cjs');
 const refusals = require('./provider-refusal.cjs');
 const projectChecks = require('./project-checks.cjs');
@@ -2493,6 +2494,9 @@ function createOrchestrator(options) {
     view.interventions = collectInterventions(view.projects);
     ledger?.reconcile(view, opts.isProcessAlive);
     view.aiUsage = ledger?.view() || { orchestrator: [], workers: [], recent: [] };
+    const stepOutcomesList = dir ? stepOutcomes.readStepOutcomes(dir) : [];
+    view.stepOutcomes = stepOutcomes.outcomesSummary(stepOutcomesList);
+    view.aiUsage.stepOutcomes = view.stepOutcomes;
     view.supervisor = supervisor.observe(view);
     return view;
   }
@@ -4690,7 +4694,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { works, fixes, fixing };
   }
   function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  return { setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { stepOutcomes: () => dir ? stepOutcomes.readStepOutcomes(dir) : [], setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

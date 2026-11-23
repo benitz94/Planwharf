@@ -15,7 +15,10 @@ public sealed record ProgressPanel(string Status, string Next, IReadOnlyList<Pro
 }
 public sealed record QuotaWindow(string Name, int LeftPct, string Resets);
 public sealed record QuotaPlan(string Label, string? Note, IReadOnlyList<QuotaWindow> Windows);
-public sealed record UsagePanel(IReadOnlyList<QuotaPlan> Plans, IReadOnlyList<(string Model, string Text)> Lead, IReadOnlyList<(string Model, string Text)> Crew);
+public sealed record UsagePanel(IReadOnlyList<QuotaPlan> Plans, IReadOnlyList<(string Model, string Text)> Lead, IReadOnlyList<(string Model, string Text)> Crew, IReadOnlyList<(string Model, string Text)>? Outcomes = null)
+{
+    public IReadOnlyList<(string Model, string Text)> Outcomes { get; init; } = Outcomes ?? [];
+}
 public sealed record ChangedFile(string Kind, string Path);
 public sealed record FilesPanel(string? Message, string Branch, IReadOnlyList<ChangedFile> Files, int Total, string CheckedAt);
 public sealed record PullCheck(string Name, string State);
@@ -87,7 +90,19 @@ public static class PanelViews
         static string Time(double? ms) => ms is not { } value ? "—" : value >= 60000 ? Strings.Format("{0} min", Math.Round(value / 60000)) : Strings.Format("{0} s", Math.Round(value / 1000));
         IReadOnlyList<(string, string)> Rows(string key) => (snapshot["aiUsage"]?[key] as JsonArray ?? []).OfType<JsonObject>()
             .Select(row => (S(row["model"]), $"{N(row["calls"]) ?? 0} · {Time(N(row["durationMs"]))} · {(N(row["outputTokens"]) is { } tokens ? tokens.ToString("#,0", Strings.Culture) + Strings.T(" out") : Strings.T("not reported"))}")).ToList();
-        return new UsagePanel(plans, Rows("orchestrator"), Rows("workers"));
+        IReadOnlyList<(string, string)> OutcomeRows()
+        {
+            var outcomes = (snapshot["stepOutcomes"] as JsonArray ?? snapshot["aiUsage"]?["stepOutcomes"] as JsonArray ?? []).OfType<JsonObject>();
+            return outcomes.Select(row =>
+            {
+                var model = S(row["model"]);
+                var steps = (int)(N(row["steps"]) ?? 0);
+                var accepted = (int)(N(row["accepted"]) ?? 0);
+                var fixedCount = (int)(N(row["fixed"]) ?? 0);
+                return (model, Strings.Format("{0} steps · {1} accepted · {2} fixed by Verify", steps, accepted, fixedCount));
+            }).ToList();
+        }
+        return new UsagePanel(plans, Rows("orchestrator"), Rows("workers"), OutcomeRows());
     }
 
     static readonly Dictionary<string, string> Kinds = new() { ["M"] = "changed", ["A"] = "added", ["D"] = "deleted", ["R"] = "renamed", ["??"] = "new", ["U"] = "conflict" };

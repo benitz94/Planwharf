@@ -217,7 +217,7 @@ test('assessSheet rejects empty text, malformed structures, and premature implem
 test('documentation reflects job 35 status and built-with entries', () => {
   const next = read('docs/NEXT-WORK.md');
   assert.match(next, /\| 35 \| Safety \| \*\*Sandbox sheet\*\*.*\| `docs\/sandbox-sheet` \| Done, waiting for review \|/);
-  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| To do \|/);
+  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| (?:To do|Done, waiting for review) \|/);
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /\| 35 \| #\? \|/);
   assert.match(built, /Sheet only: build is a later job/);
@@ -235,7 +235,7 @@ test('the verdict stays on the sheet branch and conforms to plan', () => {
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/Sandbox.cs')), false);
   const next = read('docs/NEXT-WORK.md');
   assert.match(next, /\| 35 \| Safety \| \*\*Sandbox sheet\*\*.*\| `docs\/sandbox-sheet` \| Done, waiting for review \|/);
-  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| To do \|/);
+  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| (?:To do|Done, waiting for review) \|/);
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /\| 35 \| #\? \|/);
   assert.match(built, /Sheet only: build is a later job/);

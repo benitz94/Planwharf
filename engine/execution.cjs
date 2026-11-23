@@ -37,6 +37,7 @@ const { adapterFor } = require('./provider-adapters.cjs');
 const { checkpointDiff } = require('./project-history.cjs');
 const { refusalReason } = require('./provider-refusal.cjs');
 const timeLeft = require('./time-left.cjs');
+const stepOutcomes = require('./step-outcomes.cjs');
 const worktrees = require('./worktrees.cjs');
 const clone = value => structuredClone(value);
 const fingerprint = job => crypto.createHash('sha256').update(JSON.stringify([job.id, job.title, job.detail, job.revision_id || null, ...(job.goldModel ? [job.goldModel] : [])])).digest('hex');
@@ -247,6 +248,68 @@ function createExecutionBridge(options) {
         startedAt: part.startedAt, endedAt: sub.finishedAt, status: result.status, modelChange: Boolean(result.modelChange)
       }));
     } catch { /* the step result is already saved */ }
+    try {
+      let tokens = null;
+      if (part.structuredResultPath) {
+        try { tokens = JSON.parse(fs.readFileSync(part.structuredResultPath + '.usage.json', 'utf8')); } catch {}
+      }
+      const role = stepRole(sub);
+      const isSwitch = Boolean(result.modelChange);
+      if (isSwitch) {
+        appendStepOutcome(dir, {
+          model: sub.assignedModelId, role, size: sub.size, kind: sub.type || mega.kind,
+          switch: true, refusal: null, accepted: false, fixed: 0,
+          startedAt: part.startedAt, endedAt: sub.finishedAt, quota: tokens
+        });
+      } else if (result.status !== 'COMPLETE') {
+        appendStepOutcome(dir, {
+          model: sub.assignedModelId, role, size: sub.size, kind: sub.type || mega.kind,
+          switch: false, refusal: null, accepted: false, fixed: 0,
+          tests: result.tests, testsReported: result.testsReported, testsPassed: result.testsPassed,
+          startedAt: part.startedAt, endedAt: sub.finishedAt, quota: tokens
+        });
+      } else if (role === 'Verify') {
+        const filesFixed = Array.isArray(result.filesChanged) ? result.filesChanged.length : 0;
+        const accepted = filesFixed === 0;
+        appendStepOutcome(dir, {
+          model: sub.assignedModelId, role: 'Verify', size: sub.size, kind: sub.type || mega.kind,
+          accepted, fixed: filesFixed,
+          tests: result.tests, testsReported: result.testsReported, testsPassed: result.testsPassed,
+          switch: false, refusal: null,
+          startedAt: part.startedAt, endedAt: sub.finishedAt, quota: tokens
+        });
+        mega.recordedOutcomeSubIds = [...(mega.recordedOutcomeSubIds || []), sub.id];
+        for (const bSub of (data.subTasks || []).filter(s => s.megaTaskId === mega.id && stepRole(s) === 'Build' && s.status === 'COMPLETE')) {
+          if (mega.recordedOutcomeSubIds.includes(bSub.id)) continue;
+          mega.recordedOutcomeSubIds.push(bSub.id);
+          const bRes = data.results.filter(r => r.subTaskId === bSub.id && r.status === 'COMPLETE').at(-1) || data.results.filter(r => r.subTaskId === bSub.id).at(-1);
+          const bPart = (rowFor(mega.projectId, mega.id).dispatch || []).filter(p => p.subTaskId === bSub.id).at(-1);
+          let bTokens = null;
+          if (bPart?.structuredResultPath) {
+            try { bTokens = JSON.parse(fs.readFileSync(bPart.structuredResultPath + '.usage.json', 'utf8')); } catch {}
+          }
+          appendStepOutcome(dir, {
+            model: bSub.assignedModelId, role: 'Build', size: bSub.size, kind: bSub.type || mega.kind,
+            accepted, fixed: filesFixed,
+            tests: bRes?.tests, testsReported: bRes?.testsReported, testsPassed: bRes?.testsPassed,
+            switch: false, refusal: null,
+            startedAt: bPart?.startedAt, endedAt: bSub.finishedAt, quota: bTokens
+          });
+        }
+      } else {
+        const hasVerify = (data.subTasks || []).some(s => s.megaTaskId === mega.id && stepRole(s) === 'Verify');
+        if (!hasVerify) {
+          mega.recordedOutcomeSubIds = [...(mega.recordedOutcomeSubIds || []), sub.id];
+          appendStepOutcome(dir, {
+            model: sub.assignedModelId, role, size: sub.size, kind: sub.type || mega.kind,
+            accepted: true, fixed: 0,
+            tests: result.tests, testsReported: result.testsReported, testsPassed: result.testsPassed,
+            switch: false, refusal: null,
+            startedAt: part.startedAt, endedAt: sub.finishedAt, quota: tokens
+          });
+        }
+      }
+    } catch { /* the step result is already saved */ }
   }
   // A provider that refused the slice for credits or quota did no work: close that attempt,
   // put the model on cooldown, and give the slice to another eligible model.
@@ -255,6 +318,13 @@ function createExecutionBridge(options) {
     let text = ''; try { text = fs.readFileSync(part.logPath, 'utf8'); } catch {}
     const reason = refusalReason(text);
     if (!reason) return false;
+    try {
+      appendStepOutcome(dir, {
+        model: sub.assignedModelId, role: stepRole(sub), size: sub.size, kind: sub.type || mega.kind,
+        refusal: reason, switch: false, accepted: false, fixed: 0,
+        startedAt: part.startedAt, endedAt: now()
+      });
+    } catch {}
     options.onRefusal(sub.assignedModelId, reason);
     const next = options.replacement(sub, [sub.assignedModelId]);
     if (!next) return false;
@@ -298,6 +368,13 @@ function createExecutionBridge(options) {
     const next = options.replacement(sub, [sub.assignedModelId, ...(sub.noVerdictFrom || [])]);
     if (!next) return false;
     const from = sub.assignedModelId;
+    try {
+      appendStepOutcome(dir, {
+        model: from, role: stepRole(sub), size: sub.size, kind: sub.type || mega.kind,
+        switch: true, refusal: null, accepted: false, fixed: 0,
+        startedAt: part.startedAt, endedAt: now()
+      });
+    } catch {}
     Object.assign(sub, { status: 'PENDING', noVerdictTries: 2, noVerdictFrom: [...(sub.noVerdictFrom || []), from], fallbackFrom: from, assignedModelId: next.id, proposedProvider: next.provider, proposedCli: next.cli, resultId: null });
     event(mega.projectId, 'MODEL_NO_VERDICT_SWITCH', from + ' ended without a result twice. Reassigned to ' + next.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: next.id });
     persist();
@@ -500,6 +577,25 @@ function createExecutionBridge(options) {
       catch (error) { mega.nextAction = `Completed; worktree cleanup needs attention: ${error.message}`; }
     }
     event(mega.projectId, 'MEGATASK_COMPLETED', `Completed ${mega.title}. ${mega.repoAfter.disposition}.`, { megaTaskId: mega.id });
+    try {
+      for (const s of (data.subTasks || []).filter(sub => sub.megaTaskId === mega.id && sub.status === 'COMPLETE')) {
+        if (mega.recordedOutcomeSubIds?.includes(s.id)) continue;
+        mega.recordedOutcomeSubIds = [...(mega.recordedOutcomeSubIds || []), s.id];
+        const sRes = data.results.filter(r => r.subTaskId === s.id && r.status === 'COMPLETE').at(-1) || data.results.filter(r => r.subTaskId === s.id).at(-1);
+        const sPart = (rowFor(mega.projectId, mega.id).dispatch || []).filter(p => p.subTaskId === s.id).at(-1);
+        let sTokens = null;
+        if (sPart?.structuredResultPath) {
+          try { sTokens = JSON.parse(fs.readFileSync(sPart.structuredResultPath + '.usage.json', 'utf8')); } catch {}
+        }
+        appendStepOutcome(dir, {
+          model: s.assignedModelId, role: stepRole(s), size: s.size, kind: s.type || mega.kind,
+          accepted: true, fixed: 0,
+          tests: sRes?.tests, testsReported: sRes?.testsReported, testsPassed: sRes?.testsPassed,
+          switch: false, refusal: null,
+          startedAt: sPart?.startedAt, endedAt: s.finishedAt, quota: sTokens
+        });
+      }
+    } catch { /* safe */ }
     try {
       const summary = data.results.filter(result => result.megaTaskId === mega.id && result.status === 'COMPLETE').map(result => result.summary).filter(Boolean).slice(-3).join(' ') || mega.title;
       planFile.finish(item.project.folder, { summary, pushed: planFile.pushed(item.project.folder) });
@@ -947,6 +1043,9 @@ function appendStepTime(dir, record) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(stepTimesFile(dir), timeLeft.historyText(timeLeft.remember(readStepTimes(dir), record)));
 }
+function stepOutcomesFile(dir) { return stepOutcomes.outcomesFile(dir); }
+function readStepOutcomes(dir) { return stepOutcomes.readStepOutcomes(dir); }
+function appendStepOutcome(dir, record) { return stepOutcomes.appendStepOutcome(dir, record); }
 // The line that announces the lead's split. The last step is the check of the whole when it waits for
 // every other step; the rest is built, with or without its own files.
 function splitSummary(subs, label, why = '') {
@@ -957,4 +1056,4 @@ function splitSummary(subs, label, why = '') {
   return `${shape}${checked ? ' and a check of the whole' : ''}: ${subs.map(sub => `${sub.title} (${label(sub.assignedModelId)})`).join(' · ')}.${why ? ' Why: ' + why : ''}`;
 }
 function noVerdictPlan(tries) { return tries >= 2 ? 'stop' : tries === 1 ? 'switch' : 'retry-same'; }
-module.exports = { createExecutionBridge, splitSummary, repoState, readStepTimes, appendStepTime, deliveredWithoutVerdict, noVerdictPlan };
+module.exports = { createExecutionBridge, splitSummary, repoState, readStepTimes, appendStepTime, readStepOutcomes, appendStepOutcome, stepOutcomesFile, deliveredWithoutVerdict, noVerdictPlan };
