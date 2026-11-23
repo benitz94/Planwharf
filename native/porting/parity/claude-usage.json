@@ -1,0 +1,183 @@
+[
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {
+        "five_hour": {
+          "utilization": 25,
+          "resets_at": "2026-11-23T22:00:00.000Z"
+        }
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": true,
+      "exhausted": false,
+      "pct": 25,
+      "leftPct": 75,
+      "resetAt": "2026-11-23T22:00:00.000Z",
+      "source": "Claude subscription OAuth usage",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 25,
+          "leftPct": 75,
+          "resetAt": "2026-11-23T22:00:00.000Z"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {
+        "five_hour": {
+          "utilization": 80
+        },
+        "seven_day": {
+          "utilization": 50
+        }
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": true,
+      "exhausted": false,
+      "pct": 80,
+      "leftPct": 20,
+      "resetAt": null,
+      "source": "Claude subscription OAuth usage",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 80,
+          "leftPct": 20,
+          "resetAt": null
+        },
+        {
+          "name": "weekly",
+          "pct": 50,
+          "leftPct": 50,
+          "resetAt": null
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {
+        "five_hour": {
+          "utilization": 100
+        }
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": true,
+      "exhausted": true,
+      "pct": 100,
+      "leftPct": 0,
+      "resetAt": null,
+      "source": "Claude subscription OAuth usage",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 100,
+          "leftPct": 0,
+          "resetAt": null
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {
+        "five_hour": {
+          "utilization": -5
+        }
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Claude usage response contains an invalid quota window.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {
+        "five_hour": {
+          "utilization": 50,
+          "resets_at": "invalid-date"
+        }
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Claude usage response contains an invalid quota window.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      {}
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Claude usage response contains no numeric subscription quota windows.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseClaudeUsage",
+    "args": [
+      null
+    ],
+    "result": {
+      "id": "Claude",
+      "label": "Claude",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Claude usage response contains no numeric subscription quota windows.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  }
+]

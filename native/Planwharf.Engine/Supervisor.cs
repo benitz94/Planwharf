@@ -345,21 +345,24 @@ public sealed class Supervisor
         var timelineArr = new JsonArray();
         foreach (var t in projTimeline) timelineArr.Add((JsonNode)t);
 
-        return new JsonObject
+        var resultObj = new JsonObject
         {
             ["projectId"] = projectId,
             ["name"] = rowName,
-            ["status"] = st,
-            ["megaTaskId"] = megaTaskId,
-            ["summary"] = summaryStr,
-            ["next"] = row["next"]?.ToString() ?? "",
-            ["active"] = activeCount,
-            ["workers"] = workers,
-            ["alerts"] = alerts,
-            ["timeline"] = timelineArr,
-            ["canPause"] = activeCount > 0 && !string.IsNullOrEmpty(megaTaskId) && st == "watching",
-            ["checkpointId"] = row["checkpointId"]?.ToString()
+            ["status"] = st
         };
+        if (row.ContainsKey("megaTaskId"))
+            resultObj["megaTaskId"] = row["megaTaskId"]?.ToString();
+        resultObj["summary"] = summaryStr;
+        resultObj["next"] = row["next"]?.ToString() ?? "";
+        resultObj["active"] = activeCount;
+        resultObj["workers"] = workers;
+        resultObj["alerts"] = alerts;
+        resultObj["timeline"] = timelineArr;
+        resultObj["canPause"] = activeCount > 0 && !string.IsNullOrEmpty(megaTaskId) && st == "watching";
+        resultObj["checkpointId"] = row["checkpointId"]?.ToString();
+
+        return resultObj;
     }
 
     public JsonObject Observe(JsonObject snapshot)

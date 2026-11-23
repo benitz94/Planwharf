@@ -1,0 +1,122 @@
+[
+  {
+    "fn": "assignmentSession",
+    "args": [
+      {
+        "projectId": "p1",
+        "row": {
+          "id": "p1"
+        },
+        "part": {
+          "projectId": "p1",
+          "subTaskId": "s1"
+        },
+        "execution": {}
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "assignmentSession",
+    "args": [
+      {
+        "projectId": "p1",
+        "row": {
+          "id": "p1",
+          "megaTaskId": "m1"
+        },
+        "part": {
+          "projectId": "p1",
+          "subTaskId": "s1",
+          "megaTaskId": "m1",
+          "role": "worker",
+          "providerId": "codex",
+          "cli": "gpt-5"
+        },
+        "execution": {
+          "megaTasks": [
+            {
+              "id": "m1",
+              "projectId": "p1"
+            }
+          ],
+          "subTasks": [
+            {
+              "id": "s1",
+              "megaTaskId": "m1"
+            }
+          ]
+        }
+      }
+    ],
+    "result": {
+      "id": "p1:m1:unrecorded-0",
+      "projectId": "p1",
+      "jobId": null,
+      "megaTaskId": "m1",
+      "subTaskId": "s1",
+      "attemptId": null,
+      "recordedSessionId": null,
+      "role": "worker",
+      "provider": "codex",
+      "adapter": "codex",
+      "model": "gpt-5",
+      "modelId": null,
+      "startedAt": null,
+      "completedAt": null,
+      "reportedResultAt": null,
+      "processState": "unknown",
+      "state": "unknown",
+      "historical": false,
+      "validatedResultStatus": null,
+      "recordedResultStatus": null,
+      "exitCode": null,
+      "capabilities": {
+        "configuredAdapter": "codex",
+        "expectedFormat": "plain",
+        "detailedEventsExpected": false,
+        "liveDeliveryVerified": false,
+        "validatedResults": false
+      },
+      "latestActivity": null,
+      "latestConfirmedActivity": null,
+      "reportedOutcomes": [],
+      "technicalEvidence": {
+        "entries": [],
+        "truncated": false,
+        "warnings": [
+          "No supported original technical evidence is retained for this assignment.",
+          "Only the supplied retained assignment tail is available; earlier source records may be absent.",
+          "Reported output and zero exit codes do not establish validated success."
+        ]
+      },
+      "events": [],
+      "warnings": [
+        "Exact attempt identity was not retained for this assignment.",
+        "No readable assignment output is retained in this view.",
+        "No matching backend-validated structured result is recorded."
+      ]
+    }
+  },
+  {
+    "fn": "assignmentSession",
+    "args": [
+      {
+        "projectId": "p2",
+        "part": {
+          "projectId": "p1"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "assignmentSession",
+    "args": [
+      {
+        "projectId": null
+      }
+    ],
+    "result": null
+  }
+]

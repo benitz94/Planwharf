@@ -1,0 +1,376 @@
+[
+  {
+    "fn": "notInstalledReason",
+    "args": [
+      {
+        "adapter": "claude"
+      }
+    ],
+    "result": "Claude Code is not installed on this computer. Install it with npm install -g @anthropic-ai/claude-code, then run claude once to sign in."
+  },
+  {
+    "fn": "notInstalledReason",
+    "args": [
+      {
+        "adapter": "codex"
+      }
+    ],
+    "result": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in."
+  },
+  {
+    "fn": "notInstalledReason",
+    "args": [
+      {
+        "adapter": "grok"
+      }
+    ],
+    "result": "The Grok CLI is not installed on this computer. Install the Grok CLI and sign in, then look for models again."
+  },
+  {
+    "fn": "notInstalledReason",
+    "args": [
+      {
+        "adapter": "antigravity"
+      }
+    ],
+    "result": "Antigravity is not installed on this computer. Install Antigravity and sign in, then look for models again."
+  },
+  {
+    "fn": "notInstalledReason",
+    "args": [
+      {
+        "adapter": "custom",
+        "label": "My Tool"
+      }
+    ],
+    "result": "My Tool is not installed on this computer. Install it and sign in, then look for models again."
+  },
+  {
+    "fn": "providerConfiguration",
+    "args": [
+      {
+        "baseUrl": "https://api.example",
+        "maxTurns": 10,
+        "otherField": "ignored"
+      }
+    ],
+    "result": {
+      "baseUrl": "https://api.example",
+      "maxTurns": 10
+    }
+  },
+  {
+    "fn": "providerConfiguration",
+    "args": [
+      {
+        "yoloArgs": [
+          "--yolo"
+        ],
+        "requestTimeoutMs": 5000
+      }
+    ],
+    "result": {
+      "requestTimeoutMs": 5000,
+      "yoloArgs": [
+        "--yolo"
+      ]
+    }
+  },
+  {
+    "fn": "loadCatalog",
+    "args": [
+      {
+        "schema": 3,
+        "providers": [
+          {
+            "id": "codex",
+            "adapter": "codex",
+            "models": [
+              {
+                "id": "m1",
+                "cli": "gpt-5"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "result": {
+      "providers": [
+        {
+          "id": "codex",
+          "adapter": "codex",
+          "models": [
+            {
+              "id": "m1",
+              "cli": "gpt-5",
+              "providerId": "codex",
+              "provider": "codex",
+              "adapter": "codex",
+              "quotaPoolId": "codex",
+              "plan": "codex",
+              "orchestratorEligible": true,
+              "workerEligible": true,
+              "reviewerEligible": true,
+              "providerCatalog": true,
+              "capabilities": {
+                "canCode": true,
+                "canResearch": true,
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "supportsStreaming": true,
+                "orchestratorEligible": true,
+                "workerEligible": true,
+                "reviewerEligible": true
+              },
+              "providerConfig": {},
+              "kind": "default",
+              "cost": 1,
+              "limit": 9007199254740991
+            }
+          ],
+          "label": "codex",
+          "quotaPoolId": "codex",
+          "enabled": true,
+          "source": "codex"
+        }
+      ],
+      "models": [
+        {
+          "id": "m1",
+          "cli": "gpt-5",
+          "providerId": "codex",
+          "provider": "codex",
+          "adapter": "codex",
+          "quotaPoolId": "codex",
+          "plan": "codex",
+          "orchestratorEligible": true,
+          "workerEligible": true,
+          "reviewerEligible": true,
+          "providerCatalog": true,
+          "capabilities": {
+            "canCode": true,
+            "canResearch": true,
+            "canUseTools": true,
+            "canInspectFilesystem": true,
+            "supportsStreaming": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "reviewerEligible": true
+          },
+          "providerConfig": {},
+          "kind": "default",
+          "cost": 1,
+          "limit": 9007199254740991
+        }
+      ]
+    }
+  },
+  {
+    "fn": "loadCatalog",
+    "args": [
+      [
+        {
+          "id": "m1",
+          "provider": "codex",
+          "cli": "gpt-5"
+        }
+      ]
+    ],
+    "result": {
+      "providers": [
+        {
+          "id": "codex",
+          "label": "ChatGPT",
+          "quotaPoolId": "ChatGPT",
+          "adapter": "codex",
+          "enabled": true,
+          "models": [
+            {
+              "id": "m1",
+              "provider": "codex",
+              "cli": "gpt-5",
+              "providerId": "codex",
+              "adapter": "codex",
+              "quotaPoolId": "ChatGPT",
+              "plan": "ChatGPT",
+              "orchestratorEligible": true,
+              "workerEligible": true,
+              "reviewerEligible": true,
+              "providerCatalog": false,
+              "capabilities": {
+                "canCode": true,
+                "canResearch": true,
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "supportsStreaming": true,
+                "orchestratorEligible": true,
+                "workerEligible": true,
+                "reviewerEligible": true
+              },
+              "providerConfig": {}
+            }
+          ],
+          "source": "codex"
+        }
+      ],
+      "models": [
+        {
+          "id": "m1",
+          "provider": "codex",
+          "cli": "gpt-5",
+          "providerId": "codex",
+          "adapter": "codex",
+          "quotaPoolId": "ChatGPT",
+          "plan": "ChatGPT",
+          "orchestratorEligible": true,
+          "workerEligible": true,
+          "reviewerEligible": true,
+          "providerCatalog": false,
+          "capabilities": {
+            "canCode": true,
+            "canResearch": true,
+            "canUseTools": true,
+            "canInspectFilesystem": true,
+            "supportsStreaming": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "reviewerEligible": true
+          },
+          "providerConfig": {}
+        }
+      ]
+    }
+  },
+  {
+    "fn": "loadCatalog",
+    "args": [
+      {
+        "schema": 2
+      }
+    ],
+    "error": "Invalid provider catalog: expected schema 3 providers."
+  },
+  {
+    "fn": "loadCatalog",
+    "args": [
+      {
+        "schema": 3,
+        "providers": [
+          {
+            "id": "dup"
+          },
+          {
+            "id": "dup"
+          }
+        ]
+      }
+    ],
+    "error": "Provider IDs must be nonempty and unique."
+  },
+  {
+    "fn": "providerViews",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "adapter": "codex",
+          "quotaPoolId": "codex",
+          "enabled": true,
+          "available": true
+        }
+      ],
+      [
+        {
+          "id": "m1",
+          "providerId": "p1",
+          "enabled": true,
+          "available": true
+        }
+      ],
+      [
+        {
+          "id": "codex",
+          "readable": true,
+          "leftPct": 80
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "adapter": "codex",
+        "quotaPoolId": "codex",
+        "enabled": true,
+        "available": true,
+        "installed": true,
+        "installHint": null,
+        "availability": "AVAILABLE",
+        "quotaReadable": true,
+        "remainingPercent": 80,
+        "resetAt": null,
+        "quota": {
+          "id": "codex",
+          "readable": true,
+          "leftPct": 80
+        },
+        "showAll": false,
+        "models": [
+          {
+            "id": "m1",
+            "providerId": "p1",
+            "enabled": true,
+            "available": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "fn": "providerViews",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "adapter": "codex",
+          "quotaPoolId": "codex"
+        }
+      ],
+      [
+        {
+          "id": "m1",
+          "providerId": "p1",
+          "notInstalled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "adapter": "codex",
+        "quotaPoolId": "codex",
+        "available": true,
+        "installed": false,
+        "installHint": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in.",
+        "availability": "NOT_INSTALLED",
+        "quotaReadable": false,
+        "remainingPercent": null,
+        "resetAt": null,
+        "quota": {
+          "id": "codex",
+          "readable": false,
+          "leftPct": null,
+          "exhausted": false
+        },
+        "showAll": false,
+        "models": [
+          {
+            "id": "m1",
+            "providerId": "p1",
+            "notInstalled": true
+          }
+        ]
+      }
+    ]
+  }
+]

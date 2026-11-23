@@ -1,0 +1,160 @@
+[
+  {
+    "fn": "providerEnvironment",
+    "args": [
+      "claude",
+      {
+        "FOO": "bar"
+      },
+      "win32"
+    ],
+    "result": {
+      "FOO": "bar"
+    }
+  },
+  {
+    "fn": "providerEnvironment",
+    "args": [
+      "codex",
+      {
+        "FOO": "bar"
+      },
+      "linux"
+    ],
+    "result": {
+      "FOO": "bar"
+    }
+  },
+  {
+    "fn": "providerEnvironment",
+    "args": [
+      "grok",
+      {
+        "A": "1"
+      },
+      "win32"
+    ],
+    "result": {
+      "A": "1"
+    }
+  },
+  {
+    "fn": "accountEnvironment",
+    "args": [
+      "claude",
+      {
+        "settingsFolder": "C:\\custom\\claude"
+      },
+      {
+        "CLAUDE_CODE_OAUTH_TOKEN": "token",
+        "ANTHROPIC_API_KEY": "key",
+        "KEEP": "val"
+      },
+      "win32"
+    ],
+    "result": {
+      "KEEP": "val",
+      "CLAUDE_CONFIG_DIR": "C:\\custom\\claude"
+    }
+  },
+  {
+    "fn": "accountEnvironment",
+    "args": [
+      "codex",
+      {
+        "settingsFolder": "C:\\custom\\codex"
+      },
+      {
+        "OPENAI_API_KEY": "key",
+        "KEEP": "val"
+      },
+      "linux"
+    ],
+    "result": {
+      "KEEP": "val",
+      "CODEX_HOME": "C:\\custom\\codex"
+    }
+  },
+  {
+    "fn": "accountEnvironment",
+    "args": [
+      "claude",
+      null,
+      {
+        "KEEP": "val"
+      },
+      "linux"
+    ],
+    "result": {
+      "KEEP": "val"
+    }
+  },
+  {
+    "fn": "launchSpec",
+    "args": [
+      {
+        "provider": "claude",
+        "adapter": "claude",
+        "cli": "claude-3-5-sonnet",
+        "policy": {
+          "alwaysApprove": "bad"
+        }
+      },
+      "C:\\proj",
+      "prompt"
+    ],
+    "error": "Invalid alwaysApprove model policy."
+  },
+  {
+    "fn": "launchSpec",
+    "args": [
+      {
+        "provider": "claude",
+        "adapter": "claude",
+        "cli": "claude-3-5-sonnet",
+        "policy": {
+          "alwaysApprove": false
+        }
+      },
+      "C:\\proj",
+      "prompt",
+      false,
+      true
+    ],
+    "error": "Research source protection is not supported by the requested adapter: claude"
+  },
+  {
+    "fn": "launchSpec",
+    "args": [
+      {
+        "provider": "antigravity",
+        "adapter": "antigravity",
+        "cli": "gemini-2.0",
+        "policy": {
+          "alwaysApprove": false
+        }
+      },
+      "C:\\proj",
+      "prompt"
+    ],
+    "error": "PERMISSION_MODE_UNSUPPORTED: Antigravity has no verified unattended approval bridge. Enable Always approve / YOLO explicitly or select another adapter."
+  },
+  {
+    "fn": "launchSpec",
+    "args": [
+      {
+        "provider": "claude",
+        "adapter": "claude",
+        "cli": "claude-3-5-sonnet",
+        "policy": {
+          "alwaysApprove": false
+        }
+      },
+      "C:\\proj",
+      "prompt",
+      false,
+      false
+    ],
+    "error": "PERMISSION_NEEDED: claude needs your OK to work in the project folder without asking each time. Allow it in Team > AI tools, or choose another model for this step."
+  }
+]

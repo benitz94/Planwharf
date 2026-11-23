@@ -66,7 +66,7 @@ public static class Claude
             var existing = models.FirstOrDefault(m => m["cli"]?.GetValue<string>() == cli);
             if (existing != null)
             {
-                if (row["value"]?.GetValue<string>() != "default" && row["displayName"]?.GetValue<string>() is string dn && !string.IsNullOrEmpty(dn))
+                if (row["value"]?.GetValue<string>() != "default" && row.ContainsKey("displayName") && row["displayName"] is JsonValue jv && jv.TryGetValue<string>(out var dn))
                     existing["label"] = dn;
                 continue;
             }

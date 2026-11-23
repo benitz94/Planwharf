@@ -1,0 +1,266 @@
+[
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "READY_FOR_APPROVAL"
+      },
+      {}
+    ],
+    "result": "Review the proposed slices and approve this MegaTask."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "READY_FOR_APPROVAL",
+        "nextAction": "Custom approval"
+      },
+      {}
+    ],
+    "result": "Custom approval"
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "COMPLETE"
+      },
+      {
+        "results": [
+          {
+            "megaTaskId": "m1",
+            "status": "COMPLETE",
+            "nextAction": "Done!"
+          }
+        ]
+      }
+    ],
+    "result": "Done!"
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "COMPLETE"
+      },
+      {}
+    ],
+    "result": "Review completed evidence."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "RUNNING"
+      },
+      {
+        "subTasks": [
+          {
+            "megaTaskId": "m1",
+            "id": "s1",
+            "title": "Build task",
+            "status": "RUNNING"
+          }
+        ]
+      }
+    ],
+    "result": "Work in progress: Build task (s1)."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "RUNNING"
+      },
+      {
+        "subTasks": [
+          {
+            "megaTaskId": "m1",
+            "id": "s2",
+            "title": "Next task",
+            "status": "PENDING"
+          }
+        ]
+      }
+    ],
+    "result": "Next SubTask: Next task (s2)."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "RUNNING"
+      },
+      {
+        "subTasks": [
+          {
+            "megaTaskId": "m1",
+            "id": "s2",
+            "title": "Task 2",
+            "status": "PENDING",
+            "dependencies": [
+              "s1"
+            ]
+          },
+          {
+            "megaTaskId": "m1",
+            "id": "s1",
+            "title": "Task 1",
+            "status": "PENDING"
+          }
+        ]
+      }
+    ],
+    "result": "Next SubTask: Task 1 (s1)."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "PAUSED",
+        "currentCheckpointId": "cp1"
+      },
+      {
+        "checkpoints": [
+          {
+            "id": "cp1",
+            "megaTaskId": "m1",
+            "projectId": "p1",
+            "nextAction": "Resume action"
+          }
+        ]
+      }
+    ],
+    "result": "Review remaining work and resume this checkpoint."
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      {
+        "id": "m1",
+        "status": "FAILED"
+      },
+      {
+        "subTasks": [
+          {
+            "megaTaskId": "m1",
+            "id": "s1",
+            "title": "Failed task",
+            "status": "FAILED"
+          }
+        ],
+        "results": [
+          {
+            "megaTaskId": "m1",
+            "subTaskId": "s1",
+            "blockers": [
+              "Missing token"
+            ]
+          }
+        ]
+      }
+    ],
+    "result": "Resolve blockers: Missing token"
+  },
+  {
+    "fn": "executionNext",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "homeNext",
+    "args": [
+      {
+        "project": {
+          "folder": "bad/folder"
+        }
+      },
+      null,
+      null
+    ],
+    "result": "Relink the project folder on this PC."
+  },
+  {
+    "fn": "homeNext",
+    "args": [
+      {
+        "project": {
+          "folder": "C:\\valid",
+          "id": "p1"
+        }
+      },
+      {
+        "canResume": true
+      },
+      null
+    ],
+    "result": "Relink the project folder on this PC."
+  },
+  {
+    "fn": "homeNext",
+    "args": [
+      {
+        "project": {
+          "folder": "C:\\valid",
+          "id": "p1"
+        }
+      },
+      {
+        "status": "needs_approval"
+      },
+      null
+    ],
+    "result": "Relink the project folder on this PC."
+  },
+  {
+    "fn": "homeNext",
+    "args": [
+      {
+        "project": {
+          "folder": "C:\\valid",
+          "id": "p1"
+        },
+        "revisions": [
+          {
+            "open": [
+              "Question?"
+            ]
+          }
+        ]
+      },
+      null,
+      null
+    ],
+    "result": "Relink the project folder on this PC."
+  },
+  {
+    "fn": "homeNext",
+    "args": [
+      {
+        "project": {
+          "folder": "C:\\valid",
+          "id": "p1"
+        },
+        "revisions": [
+          {
+            "open": []
+          }
+        ]
+      },
+      null,
+      null
+    ],
+    "result": "Relink the project folder on this PC."
+  }
+]

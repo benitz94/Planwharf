@@ -1,0 +1,367 @@
+[
+  {
+    "fn": "statusFrom",
+    "args": [
+      "claude",
+      {
+        "readable": true
+      }
+    ],
+    "result": "active"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "claude",
+      {
+        "reason": "subscription has expired"
+      }
+    ],
+    "result": "expired"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "claude",
+      {
+        "reason": "not logged in"
+      }
+    ],
+    "result": "not signed in"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "claude",
+      {
+        "reason": "connection reset"
+      }
+    ],
+    "result": "unknown"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "codex",
+      {
+        "reason": "your plan has expired"
+      }
+    ],
+    "result": "expired"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "codex",
+      {
+        "reason": "sign in with codex"
+      }
+    ],
+    "result": "not signed in"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "grok",
+      {
+        "reason": "plan is expired"
+      }
+    ],
+    "result": "expired"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "antigravity@user",
+      {
+        "reason": "subscription is inactive"
+      }
+    ],
+    "result": "expired"
+  },
+  {
+    "fn": "statusFrom",
+    "args": [
+      "custom",
+      {
+        "reason": "not logged in"
+      }
+    ],
+    "result": "unknown"
+  },
+  {
+    "fn": "withStatus",
+    "args": [
+      "claude",
+      {
+        "id": "Claude",
+        "readable": true
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "readable": true,
+      "planStatus": "active"
+    }
+  },
+  {
+    "fn": "withStatus",
+    "args": [
+      "claude",
+      {
+        "id": "Claude",
+        "readable": false,
+        "reason": "subscription expired"
+      }
+    ],
+    "result": {
+      "id": "Claude",
+      "readable": false,
+      "reason": "subscription expired",
+      "planStatus": "expired"
+    }
+  },
+  {
+    "fn": "blockedStatus",
+    "args": [
+      {
+        "planStatus": "expired"
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "blockedStatus",
+    "args": [
+      {
+        "planStatus": "not signed in"
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "blockedStatus",
+    "args": [
+      {
+        "planStatus": "active"
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "blockedStatus",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "providerError",
+    "args": [
+      "claude",
+      "subscription has expired",
+      "Claude"
+    ],
+    "result": {
+      "planStatus": "expired",
+      "reason": "Claude plan expired."
+    }
+  },
+  {
+    "fn": "providerError",
+    "args": [
+      "claude",
+      "login expired",
+      "Claude"
+    ],
+    "result": {
+      "planStatus": "not signed in",
+      "reason": "Claude is not signed in."
+    }
+  },
+  {
+    "fn": "providerError",
+    "args": [
+      "claude",
+      "timeout",
+      "Claude"
+    ],
+    "result": null
+  },
+  {
+    "fn": "notePlanRefusal",
+    "args": [
+      [
+        {
+          "id": "pool-1",
+          "planStatus": "active"
+        }
+      ],
+      {
+        "quotaPoolId": "pool-1",
+        "adapter": "claude"
+      },
+      "subscription expired"
+    ],
+    "result": {
+      "plans": [
+        {
+          "id": "pool-1",
+          "planStatus": "expired",
+          "readable": false,
+          "exhausted": false,
+          "leftPct": null,
+          "pct": null,
+          "windows": [],
+          "reason": "pool-1 plan expired."
+        }
+      ],
+      "status": "expired"
+    }
+  },
+  {
+    "fn": "notePlanRefusal",
+    "args": [
+      [],
+      {
+        "quotaPoolId": "pool-2",
+        "adapter": "claude"
+      },
+      "not logged in"
+    ],
+    "result": {
+      "plans": [
+        {
+          "id": "pool-2",
+          "planStatus": "not signed in",
+          "readable": false,
+          "exhausted": false,
+          "leftPct": null,
+          "pct": null,
+          "windows": [],
+          "reason": "pool-2 plan not signed in."
+        }
+      ],
+      "status": "not signed in"
+    }
+  },
+  {
+    "fn": "notePlanRefusal",
+    "args": [
+      [
+        {
+          "id": "pool-1"
+        }
+      ],
+      {
+        "quotaPoolId": "pool-1",
+        "adapter": "claude"
+      },
+      "other error"
+    ],
+    "result": {
+      "plans": [
+        {
+          "id": "pool-1"
+        }
+      ],
+      "status": null
+    }
+  },
+  {
+    "fn": "notePlanRefusal",
+    "args": [
+      [],
+      null,
+      "subscription expired"
+    ],
+    "result": {
+      "plans": [],
+      "status": null
+    }
+  },
+  {
+    "fn": "mergePlans",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "planStatus": "expired"
+        }
+      ],
+      []
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "planStatus": "expired",
+        "readable": false,
+        "exhausted": false,
+        "leftPct": null,
+        "pct": null,
+        "windows": []
+      }
+    ]
+  },
+  {
+    "fn": "mergePlans",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "planStatus": "active"
+        }
+      ],
+      []
+    ],
+    "result": []
+  },
+  {
+    "fn": "mergePlans",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "planStatus": "expired"
+        }
+      ],
+      [
+        {
+          "id": "p1",
+          "planStatus": "unknown"
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "planStatus": "expired"
+      }
+    ]
+  },
+  {
+    "fn": "mergePlans",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "planStatus": "expired"
+        }
+      ],
+      [
+        {
+          "id": "p1",
+          "readable": true,
+          "planStatus": "active"
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "readable": true,
+        "planStatus": "active"
+      }
+    ]
+  }
+]

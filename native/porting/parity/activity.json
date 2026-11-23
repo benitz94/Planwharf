@@ -1,0 +1,260 @@
+[
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {
+        "adapter": "antigravity"
+      }
+    ],
+    "result": {
+      "configuredAdapter": "antigravity",
+      "expectedFormat": "stream-json",
+      "detailedEventsExpected": true,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {
+        "adapter": "claude"
+      }
+    ],
+    "result": {
+      "configuredAdapter": "claude",
+      "expectedFormat": "stream-json",
+      "detailedEventsExpected": true,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {
+        "adapter": "codex",
+        "lead": true
+      }
+    ],
+    "result": {
+      "configuredAdapter": "codex",
+      "expectedFormat": "json",
+      "detailedEventsExpected": true,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {
+        "adapter": "codex",
+        "lead": false
+      }
+    ],
+    "result": {
+      "configuredAdapter": "codex",
+      "expectedFormat": "plain",
+      "detailedEventsExpected": false,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {
+        "adapter": "api"
+      }
+    ],
+    "result": {
+      "configuredAdapter": "api",
+      "expectedFormat": "planwharf-api-bridge",
+      "detailedEventsExpected": true,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityCapabilities",
+    "args": [
+      {}
+    ],
+    "result": {
+      "configuredAdapter": "unknown",
+      "expectedFormat": "unknown",
+      "detailedEventsExpected": false,
+      "liveDeliveryVerified": false,
+      "validatedResults": false
+    }
+  },
+  {
+    "fn": "activityMessages",
+    "args": [
+      "Worker connected. Starting the assigned task."
+    ],
+    "result": [
+      "Worker update: Worker connected. Starting the assigned task."
+    ]
+  },
+  {
+    "fn": "activityMessages",
+    "args": [
+      "Test output: 5 passed"
+    ],
+    "result": [
+      "Test output: Test output: 5 passed"
+    ]
+  },
+  {
+    "fn": "activityMessages",
+    "args": [
+      "Hit an error: fatal error occurred"
+    ],
+    "result": [
+      "Hit an error: Hit an error: fatal error occurred"
+    ]
+  },
+  {
+    "fn": "activityMessages",
+    "args": [
+      ""
+    ],
+    "result": []
+  },
+  {
+    "fn": "interpretActivity",
+    "args": [
+      "Worker connected. Starting the assigned task.",
+      null,
+      true
+    ],
+    "result": "Worker update: Worker connected. Starting the assigned task."
+  },
+  {
+    "fn": "interpretActivity",
+    "args": [
+      "Worker connected. Starting the assigned task.",
+      null,
+      false
+    ],
+    "result": "Stopped. Last recorded action: Worker update: Worker connected. Starting the assigned task."
+  },
+  {
+    "fn": "interpretActivity",
+    "args": [
+      "",
+      null,
+      true
+    ],
+    "result": "Worker is running. Waiting for a readable activity update."
+  },
+  {
+    "fn": "interpretActivity",
+    "args": [
+      "",
+      null,
+      false
+    ],
+    "result": ""
+  },
+  {
+    "fn": "workerReport",
+    "args": [
+      "{\"type\":\"result\",\"result\":\"Final output text\"}"
+    ],
+    "result": "Final output text"
+  },
+  {
+    "fn": "workerReport",
+    "args": [
+      "{\"item\":{\"type\":\"agent_message\",\"text\":\"Agent response text\"}}"
+    ],
+    "result": "Agent response text"
+  },
+  {
+    "fn": "workerReport",
+    "args": [
+      "invalid json text"
+    ],
+    "result": ""
+  },
+  {
+    "fn": "activityEvents",
+    "args": [
+      "{\"type\":\"thread.started\"}\n{\"item\":{\"type\":\"command_execution\",\"command\":\"dotnet test\"}}"
+    ],
+    "result": [
+      {
+        "provider": "unknown",
+        "adapter": "unknown",
+        "model": "",
+        "protocol": "item-events",
+        "classification": "unknown",
+        "provenance": "observed",
+        "state": "observed",
+        "validated": false,
+        "friendly": "Worker connected. Starting the assigned task.",
+        "technical": {
+          "protocol": "item-events",
+          "eventType": "thread.started"
+        }
+      },
+      {
+        "provider": "unknown",
+        "adapter": "unknown",
+        "model": "",
+        "protocol": "item-events",
+        "classification": "test",
+        "provenance": "observed",
+        "state": "observed",
+        "validated": false,
+        "friendly": "Running tests.",
+        "technical": {
+          "protocol": "item-events",
+          "eventType": ""
+        }
+      }
+    ]
+  },
+  {
+    "fn": "activityEvents",
+    "args": [
+      "{\"event\":\"init\"}\n{\"step_update\":{\"step_type\":\"tool\",\"tool_name\":\"read_file\",\"parameters\":{\"path\":\"foo.txt\"}}}"
+    ],
+    "result": [
+      {
+        "provider": "unknown",
+        "adapter": "unknown",
+        "model": "",
+        "protocol": "antigravity-result",
+        "classification": "unknown",
+        "provenance": "observed",
+        "state": "observed",
+        "validated": false,
+        "friendly": "Worker connected. Starting the assigned task.",
+        "technical": {
+          "protocol": "antigravity-result",
+          "eventType": "init"
+        }
+      },
+      {
+        "provider": "unknown",
+        "adapter": "unknown",
+        "model": "",
+        "protocol": "antigravity-step",
+        "classification": "read",
+        "provenance": "observed",
+        "state": "observed",
+        "validated": false,
+        "friendly": "Reading foo.txt.",
+        "technical": {
+          "protocol": "antigravity-step",
+          "eventType": "",
+          "tool": "read_file"
+        }
+      }
+    ]
+  }
+]

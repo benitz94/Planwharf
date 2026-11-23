@@ -6,13 +6,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const cases = require('./cases.cjs');
 
+const PATH_MAP = {
+  plan: path.join(__dirname, '..', '..', '..', 'plan.js'),
+  quota: path.join(__dirname, '..', '..', '..', 'quota.js'),
+  models: path.join(__dirname, '..', '..', '..', 'models.js')
+};
+
 // Functions that take a callback get one that accepts everything; JSON has no functions.
 const CALL = {
   'model-policy': { resolveUsageFallback: (fn, args) => fn(...args, () => true) }
 };
 
 function record(moduleName) {
-  const mod = require(path.join(__dirname, '..', '..', '..', 'engine', moduleName + '.cjs'));
+  const modPath = PATH_MAP[moduleName] || path.join(__dirname, '..', '..', '..', 'engine', moduleName + '.cjs');
+  const mod = require(modPath);
   return cases[moduleName].map(([fn, args]) => {
     let out;
     try {

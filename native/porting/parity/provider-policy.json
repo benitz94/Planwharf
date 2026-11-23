@@ -1,0 +1,146 @@
+[
+  {
+    "fn": "validateProviderPolicy",
+    "args": [
+      {
+        "minRemainingPercent": 20,
+        "warningRemainingPercent": 30
+      }
+    ],
+    "result": {
+      "minRemainingPercent": 20,
+      "warningRemainingPercent": 30,
+      "fallbackProviderId": null,
+      "alwaysApprove": false
+    }
+  },
+  {
+    "fn": "validateProviderPolicy",
+    "args": [
+      {
+        "fallbackProviderId": "other"
+      }
+    ],
+    "result": {
+      "minRemainingPercent": null,
+      "warningRemainingPercent": null,
+      "fallbackProviderId": "other",
+      "alwaysApprove": false
+    }
+  },
+  {
+    "fn": "validateProviderPolicy",
+    "args": [
+      {
+        "alwaysApprove": true
+      }
+    ],
+    "result": {
+      "minRemainingPercent": null,
+      "warningRemainingPercent": null,
+      "fallbackProviderId": null,
+      "alwaysApprove": true
+    }
+  },
+  {
+    "fn": "validateProviderPolicy",
+    "args": [
+      {
+        "unknown": 1
+      }
+    ],
+    "error": "Invalid provider policy fields."
+  },
+  {
+    "fn": "validateProviderPolicy",
+    "args": [
+      {
+        "fallbackProviderId": ""
+      }
+    ],
+    "error": "Fallback must be an explicit provider ID or null."
+  },
+  {
+    "fn": "providerPolicyFor",
+    "args": [
+      {
+        "id": "p1"
+      },
+      [],
+      {
+        "providerPolicies": {
+          "p1": {
+            "minRemainingPercent": 15
+          }
+        }
+      }
+    ],
+    "result": {
+      "policy": {
+        "minRemainingPercent": 15,
+        "warningRemainingPercent": null,
+        "fallbackProviderId": null,
+        "alwaysApprove": false
+      },
+      "source": "saved"
+    }
+  },
+  {
+    "fn": "providerPolicyFor",
+    "args": [
+      {
+        "id": "p1",
+        "policy": {
+          "warningRemainingPercent": 40
+        }
+      },
+      []
+    ],
+    "error": "Warning remaining quota must be higher than the stop threshold."
+  },
+  {
+    "fn": "providerPolicyFor",
+    "args": [
+      {
+        "id": "p1"
+      },
+      [
+        {
+          "id": "m1",
+          "providerId": "p1",
+          "policy": {
+            "minRemainingPercent": 25
+          },
+          "alwaysApprove": true
+        }
+      ]
+    ],
+    "result": {
+      "policy": {
+        "minRemainingPercent": 25,
+        "warningRemainingPercent": null,
+        "fallbackProviderId": null,
+        "alwaysApprove": true
+      },
+      "source": "legacy"
+    }
+  },
+  {
+    "fn": "providerPolicyFor",
+    "args": [
+      {
+        "id": "p1"
+      },
+      []
+    ],
+    "result": {
+      "policy": {
+        "minRemainingPercent": null,
+        "warningRemainingPercent": null,
+        "fallbackProviderId": null,
+        "alwaysApprove": false
+      },
+      "source": "default"
+    }
+  }
+]
