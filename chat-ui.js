@@ -1118,6 +1118,8 @@
     const seconds = ms => Number.isFinite(ms) ? (ms >= 60000 ? Math.round(ms / 60000) + ' min' : Math.round(ms / 1000) + ' s') : '—';
     const tokens = row => Number.isFinite(row.outputTokens) ? `${row.outputTokens.toLocaleString()} out` : 'not reported';
     const rows = list => (list || []).map(row => `<span>${escape(row.model)}</span><span class="v">${row.calls} · ${seconds(row.durationMs)} · ${escape(tokens(row))}</span>`).join('');
+    const outcomes = state.orchestra?.stepOutcomes || usage.stepOutcomes || [];
+    const outcomeRows = (outcomes || []).map(row => `<span>${escape(row.model)}</span><span class="v">${row.steps} steps · ${row.accepted} accepted · ${row.fixed} fixed by Verify</span>`).join('');
     // Each limit the provider reports (5-hour, weekly, ...) gets its own bar and reset time.
     const windowName = name => ({ '5-hour': '5 hours', weekly: 'Week' })[name] || String(name || 'Limit').replace(/[_-]+/g, ' ').replace(/^./, c => c.toUpperCase());
     const resetText = at => {
@@ -1136,6 +1138,7 @@
     return `<div class="section">${head('usage', 't-accent', 'Quota left')}${plans.length ? plans.map(plan => `<div class="member"><div class="info"><div class="label">${escape(plan.label)}</div>${limits(plan)}</div></div>`).join('') : '<p class="muted small">No provider reports quota.</p>'}</div>
       <div class="section">${head('lead', 'r-lead', 'Lead calls')}<div class="kv">${rows(usage.orchestrator) || '<span class="muted small">None yet.</span>'}</div></div>
       <div class="section">${head('build', 'r-build', 'Crew work')}<div class="kv">${rows(usage.workers) || '<span class="muted small">None yet.</span>'}</div></div>
+      ${outcomes.length ? `<div class="section">${head('progress', 't-accent', 'Step outcomes')}<div class="kv">${outcomeRows}</div></div>` : ''}
       <p class="small muted">Calls · time · output tokens. A provider that does not report tokens shows “not reported”, never a guess.</p>`;
   }
 

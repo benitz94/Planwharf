@@ -938,7 +938,7 @@ public sealed partial class MainWindow : Window
         var files = sideMode == "files" ? PanelViews.Files(raw.Json, folder, raw.Error) : null;
         var pulls = sideMode == "pulls" ? PanelViews.PullRequests(pullPayload) : null;
         sig += progress is { } p ? p.Status + p.Next + p.TimeLeft + string.Join(",", p.Steps) + string.Join(",", p.Recent) : "";
-        sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) : "";
+        sig += usage is { } u ? string.Join(",", u.Plans.Select(plan => plan.Label + plan.Note + string.Join("", plan.Windows))) + string.Join(",", u.Lead) + string.Join(",", u.Crew) + string.Join(",", u.Outcomes) : "";
         sig += files is { } f ? f.Message + f.Branch + f.CheckedAt + f.Total + string.Join(",", f.Files) : "";
         sig += pulls is { } pr ? pullNotice + pullState + pullAuthor + pr.Message + pr.More + pr.Summary.Merged + pr.Summary.Median + pr.Summary.NeededFix + string.Join(",", pr.Summary.FailedChecks.Select(item => item.Name + item.Count)) + string.Join(",", pr.Items.Select(item => item.Number + item.State + item.FixStatus + item.FixText + item.CanFix + item.Conflicts + string.Join("/", item.Checks.Select(check => check.Name + check.State)))) : "";
         if (sig == sideSig) return;
@@ -1040,6 +1040,17 @@ public sealed partial class MainWindow : Window
             if (rows.Count == 0) section.Children.Add(Explain(Strings.T("None yet.")));
             // As .kv: the model on the left, the numbers on the right.
             foreach (var (model, text) in rows)
+            {
+                var value = new TextBlock { Text = text, Foreground = Palette.Text, FontSize = 14, Margin = new Thickness(12, 0, 0, 0), TextAlignment = TextAlignment.Right };
+                DockPanel.SetDock(value, Dock.Right);
+                section.Children.Add(new DockPanel { Children = { value, new TextBlock { Text = model, Foreground = Palette.Text, FontSize = 14, TextTrimming = TextTrimming.CharacterEllipsis } } });
+            }
+            side.Children.Add(section);
+        }
+        if (panel.Outcomes.Count > 0)
+        {
+            var section = Look.Section("progress", Palette.Accent, Palette.AccentSoft, Strings.T("Step outcomes"));
+            foreach (var (model, text) in panel.Outcomes)
             {
                 var value = new TextBlock { Text = text, Foreground = Palette.Text, FontSize = 14, Margin = new Thickness(12, 0, 0, 0), TextAlignment = TextAlignment.Right };
                 DockPanel.SetDock(value, Dock.Right);

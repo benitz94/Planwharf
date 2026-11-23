@@ -109,6 +109,28 @@ public class PanelViewsTests
     }
 
     [Fact]
+    public void Usage_shows_step_outcomes_summary()
+    {
+        var snapshot = JsonNode.Parse("""
+        {
+          "plans": [],
+          "aiUsage": {
+            "orchestrator": [],
+            "workers": [],
+            "stepOutcomes": [
+              { "model": "Sonnet 4.6", "steps": 5, "accepted": 4, "fixed": 1 },
+              { "model": "Opus 4.6", "steps": 2, "accepted": 2, "fixed": 0 }
+            ]
+          }
+        }
+        """)!;
+        var usage = PanelViews.Usage(snapshot);
+        Assert.Equal(2, usage.Outcomes.Count);
+        Assert.Equal(("Sonnet 4.6", "5 steps · 4 accepted · 1 fixed by Verify"), usage.Outcomes[0]);
+        Assert.Equal(("Opus 4.6", "2 steps · 2 accepted · 0 fixed by Verify"), usage.Outcomes[1]);
+    }
+
+    [Fact]
     public void Files_name_each_change_and_say_why_when_nothing_can_be_listed()
     {
         var repo = JsonNode.Parse("""{ "checkedAt": "2026-11-12T09:30:00Z", "local": { "exists": true, "git": true, "branch": "main", "uncommitted": 5, "changes": [" M src/app.js", "?? notes.md", "D  old.txt", "R  a.js -> b.js"] } }""");

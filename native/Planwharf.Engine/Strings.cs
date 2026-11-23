@@ -348,6 +348,8 @@ public static class Strings
         ["{0}% left"] = "{0}% residua",
         ["Lead calls"] = "Chiamate del coordinatore",
         ["Crew work"] = "Lavoro della squadra",
+        ["Step outcomes"] = "Risultati dei passaggi",
+        ["{0} steps · {1} accepted · {2} fixed by Verify"] = "{0} passaggi · {1} accettati · {2} corretti da Verifica",
         ["None yet."] = "Ancora nessuno.",
         ["Calls \u00b7 time \u00b7 output tokens. A provider that does not report tokens shows \"not reported\", never a guess."] = "Chiamate \u00b7 tempo \u00b7 token di output. Se un fornitore non comunica i token viene mostrato \"non comunicati\", mai una stima.",
         ["Not yet saved in Git"] = "Non ancora salvato in Git",
