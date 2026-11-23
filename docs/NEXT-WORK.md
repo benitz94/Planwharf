@@ -16,8 +16,8 @@ jobs itself, one at a time, in the order below; each one is reviewed before it i
 4. Create the job's branch (its name is in the list) from the refreshed `origin/main`, whatever branch
    the folder is on: `git fetch origin`, then `git switch -c <branch> origin/main`.
 5. **A job with a sheet:** plan it as its sheet says (the sheets are in `native/porting/jobs/` and in
-   the sections at the end of this file): build, then an independent verification by a model of
-   another company.
+   the sections at the end of this file): build, then a verification by another available
+   model (of another company when one is free: a preference, not a requirement).
    **A job without a sheet yet:** the job is only to write its sheet, in `native/porting/jobs/`, with the
    shape of `04-briefing-refusals-autonomy.md`: the modules of that phase still to port, their tests,
    what to watch, the comparison cases, the check and the files allowed. Read each module and its tests
@@ -26,6 +26,9 @@ jobs itself, one at a time, in the order below; each one is reviewed before it i
    is a row of its own ("Port them…", "Build…").
 6. In the same branch, change the job's status in the list below to **"Done, waiting for review"**,
    so that once merged, the next reading starts from the next job.
+   Also, before you start, turn every earlier row that still says "Done, waiting for review" and whose
+   branch is merged into `main` (`gh pr list --state merged --head <branch>`) into "Done (#N)", with its pull
+   request number, here and in the progress page (`#?` → `#N`), in the same branch.
 7. Commit on the branch. Do not push and do not merge: the owner pushes with `git push -u origin HEAD`
    and asks for a review.
 8. Stop and ask the owner when a phase says so, when the two engines cannot be kept equal, or when a job
@@ -78,10 +81,10 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 35 | Safety | **Sandbox sheet**: how each worker runs isolated on Linux, macOS and Windows (what it can read and write, the network, the commands that need the owner's OK), built on what the AI tools already offer. Sheet only; the build is a job of its own after review. Sheet below | `docs/sandbox-sheet` | Done (#207) |
 | 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | Done (#208) |
 | 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | Done (#209) |
-| 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | Done, waiting for review |
-| 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done, waiting for review |
+| 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | Done (#211) |
+| 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done (#212) |
 | 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | Done (#213) |
-| 41 | 2 and 3. | **Comparison with the JavaScript for jobs 24 and 40**: record the comparison cases the sheets 23 and 37 asked for and the ports left out, fix the C# where it differs, and make CI refuse a port without them. Sheet below | `port/41-parity` | Done, waiting for review |
+| 41 | 2 and 3. | **Comparison with the JavaScript for jobs 24 and 40**: record the comparison cases the sheets 23 and 37 asked for and the ports left out, fix the C# where it differs, and make CI refuse a port without them. Sheet below | `port/41-parity` | Done (#217) |
 | 42 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/42-sheet` | To do |
 | 43 | 4. | Port them, as sheet 42 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/43-phase4` | To do |
 | 44 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/44-sheet` | To do |

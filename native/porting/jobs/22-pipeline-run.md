@@ -1,5 +1,7 @@
 # Job 22: pipeline run
 
+> **Update (owner, 23 November 2026):** a reviewer from another company is a **preference**, not a rule. The routing tries another company first; with none free, any available model reviews, and a job never waits only for that.
+
 **Goal.** After this sheet is reviewed, run several pipeline jobs at once, each
 in its own worktree, and only as many as the quota allows. Show those jobs in
 the native pipeline view (stages, time, and quota per job). The owner merges
