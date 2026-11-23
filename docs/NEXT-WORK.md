@@ -77,7 +77,7 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 34 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | Done, waiting for review |
 | 35 | Safety | **Sandbox sheet**: how each worker runs isolated on Linux, macOS and Windows (what it can read and write, the network, the commands that need the owner's OK), built on what the AI tools already offer. Sheet only; the build is a job of its own after review. Sheet below | `docs/sandbox-sheet` | Done, waiting for review |
 | 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | Done, waiting for review |
-| 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | To do |
+| 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation`, `step-outcomes`. [Sheet](../native/porting/jobs/37-phase3-first-level.md); the port is job 38 and waits for review | `port/37-sheet` | Done, waiting for review |
 | 38 | 3. | Port them, as sheet 37 says | `port/38-phase3` | To do |
 | 39 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/39-sheet` | To do |
 | 40 | 4. | Port them, as sheet 39 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/40-phase4` | To do |
@@ -648,3 +648,28 @@ the benchmarks, after the port.
 
 **Tests.** One line per finished step with every field; a step that was switched or refused is recorded as
 such; no path or code in the file; the summary counts match the lines.
+
+## Job 37. Phase 3 first-level porting specification sheet
+
+**Why.** Phase 3 transitions the first level of Planwharf's engine core from JavaScript to C#, building on
+the zero-dependency modules ported in Phase 2. The twenty-three modules cover task claims and attempts,
+project export and resumption, provider catalogs and routing, execution supervision and activity reporting,
+git repository inspection, quota status, time estimation, and the phone interface. A comprehensive specification
+sheet is required before the port begins to lock down module mappings, parity cases, Native AOT constraints,
+and concurrency boundaries.
+
+**What.** A detailed specification sheet in `native/porting/jobs/37-phase3-first-level.md` detailing:
+1. Module mappings for all 23 modules (`attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`,
+   `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`,
+   `activity-sessions`, `provider-runtime`, `time-left`, `plan-status`, `provider-status`, `push-email`,
+   `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation`, `step-outcomes`) from Node.js/CJS to
+   `Planwharf.Engine` C# classes.
+2. Test coverage requirements and target test files in `native/Planwharf.Engine.Tests/`.
+3. Parity comparison cases for pure data functions joining `native/porting/parity/cases.cjs` and integration
+   test requirements for disk-, process-, and network-dependent subsystems.
+4. Execution watch-points covering Native AOT zero-reflection serialization, process argument vectors, atomic
+   file operations, dead-PID lock reclaims, and platform-specific behaviors on Windows, Linux, and macOS.
+The build itself is Job 38 (`port/38-phase3`) following review.
+
+**Tests.** Verification checks: `node native/porting/parity/record.cjs`, `node engine/parity.test.cjs`,
+`dotnet build native/Planwharf.Engine`, and `dotnet test native/Planwharf.Engine.Tests`.
