@@ -10,7 +10,26 @@ const { check } = require('../native/porting/parity/record.cjs');
 
 function checkRequired(requiredPath, parityDir, parityTestsCsPath) {
   const errors = [];
-  const required = JSON.parse(fs.readFileSync(requiredPath, 'utf8'));
+  if (!fs.existsSync(requiredPath)) {
+    errors.push(`Missing required configuration file: ${requiredPath}`);
+    return errors;
+  }
+  if (!fs.existsSync(parityTestsCsPath)) {
+    errors.push(`Missing ParityTests.cs file: ${parityTestsCsPath}`);
+    return errors;
+  }
+  let required;
+  try {
+    required = JSON.parse(fs.readFileSync(requiredPath, 'utf8'));
+  } catch (err) {
+    errors.push(`Invalid JSON in required file ${requiredPath}: ${err.message}`);
+    return errors;
+  }
+  if (!required || typeof required !== 'object' || Array.isArray(required)) {
+    errors.push(`Invalid format in required file: expected an object mapping module names to specs`);
+    return errors;
+  }
+
   const parityTestsSource = fs.readFileSync(parityTestsCsPath, 'utf8');
 
   for (const [moduleName, spec] of Object.entries(required)) {
@@ -89,6 +108,43 @@ test('the parity guard detects missing files, too few cases, and unwired ports',
     fs.writeFileSync(fakeCsPath, '["other-mod/fn"]');
     const unwiredErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
     assert.match(unwiredErrors.join('\n'), /Function unwired-mod\/unwiredFn in unwired-mod\.json is not wired in ParityTests\.cs/);
+
+    // 4. Missing required configuration file
+    const noReqErrors = checkRequired(path.join(tmp, 'nonexistent-required.json'), fakeParityDir, fakeCsPath);
+    assert.match(noReqErrors.join('\n'), /Missing required configuration file/);
+
+    // 5. Missing ParityTests.cs file
+    const noCsErrors = checkRequired(fakeRequiredPath, fakeParityDir, path.join(tmp, 'Nonexistent.cs'));
+    assert.match(noCsErrors.join('\n'), /Missing ParityTests\.cs file/);
+
+    // 6. Corrupted JSON in required configuration file
+    fs.writeFileSync(fakeRequiredPath, '{ invalid json');
+    const corruptReqErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(corruptReqErrors.join('\n'), /Invalid JSON in required file/);
+
+    // 7. Non-object required configuration file
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify(['not', 'an', 'object']));
+    const nonObjReqErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(nonObjReqErrors.join('\n'), /Invalid format in required file/);
+
+    // 8. Corrupted JSON in parity module file
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'corrupt-mod': { minCases: 1 } }));
+    fs.writeFileSync(path.join(tmp, 'corrupt-mod.json'), '{ broken-json');
+    const corruptModErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(corruptModErrors.join('\n'), /Invalid JSON in parity file: corrupt-mod\.json/);
+
+    // 9. Non-array content in parity module file
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'obj-mod': { minCases: 2 } }));
+    fs.writeFileSync(path.join(tmp, 'obj-mod.json'), JSON.stringify({ not: 'an array' }));
+    const nonArrayErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(nonArrayErrors.join('\n'), /Module obj-mod has only 0 parity cases, requires at least 2/);
+
+    // 10. Spec as plain number
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'num-spec': 3 }));
+    fs.writeFileSync(path.join(tmp, 'num-spec.json'), JSON.stringify([{ fn: 'fn1', args: [] }]));
+    fs.writeFileSync(fakeCsPath, '["num-spec/fn1"]');
+    const numSpecErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(numSpecErrors.join('\n'), /Module num-spec has only 1 parity cases, requires at least 3/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

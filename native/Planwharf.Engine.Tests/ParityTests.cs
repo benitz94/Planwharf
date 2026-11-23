@@ -28,10 +28,14 @@ public class ParityTests
         foreach (var file in Directory.GetFiles(Folder, "*.json").OrderBy(file => file, StringComparer.Ordinal))
         {
             if (string.Equals(Path.GetFileName(file), "required.json", StringComparison.OrdinalIgnoreCase)) continue;
-            var node = JsonNode.Parse(File.ReadAllText(file));
-            if (node is not JsonArray arr) continue;
-            var count = arr.Count;
-            for (var i = 0; i < count; i++) data.Add(Path.GetFileNameWithoutExtension(file), i);
+            try
+            {
+                var node = JsonNode.Parse(File.ReadAllText(file));
+                if (node is not JsonArray arr) continue;
+                var count = arr.Count;
+                for (var i = 0; i < count; i++) data.Add(Path.GetFileNameWithoutExtension(file), i);
+            }
+            catch (JsonException) { }
         }
         return data;
     }
@@ -46,7 +50,10 @@ public class ParityTests
         if (!Ports.TryGetValue($"{module}/{fn}", out var port)) throw new Xunit.Sdk.XunitException($"No C# port is wired for {module}/{fn}: add it to ParityTests.Ports.");
         JsonNode? result = null; string? error = null;
         try { result = port(args); }
-        catch (InvalidOperationException failure) { error = failure.Message; }
+        catch (Exception failure) when (failure is not Xunit.Sdk.XunitException)
+        {
+            error = failure.InnerException?.Message ?? failure.Message;
+        }
         var where = $"{module}/{fn} case {index}: {args.ToJsonString()}";
         if (recorded["error"] is JsonNode expectedError)
         {
@@ -56,6 +63,156 @@ public class ParityTests
         }
         Assert.True(error == null, $"{where}\nThe C# fails with \"{error}\", the JavaScript returned {recorded["result"]?.ToJsonString() ?? "null"}.");
         Assert.True(Same(recorded["result"], result), $"{where}\nJavaScript: {recorded["result"]?.ToJsonString() ?? "null"}\nC#:         {result?.ToJsonString() ?? "null"}");
+    }
+
+    public static List<string> ValidateParityDirectory(JsonObject required, string parityDir, IReadOnlySet<string> wiredPorts)
+    {
+        var errors = new List<string>();
+        foreach (var (moduleName, spec) in required)
+        {
+            var minCases = spec is JsonObject obj && obj.TryGetPropertyValue("minCases", out var mc) && mc is JsonValue mv && mv.TryGetValue<int>(out var val)
+                ? val
+                : (spec is JsonValue v && v.TryGetValue<int>(out var num) ? num : 1);
+            var moduleFile = Path.Combine(parityDir, $"{moduleName}.json");
+            if (!File.Exists(moduleFile))
+            {
+                errors.Add($"Missing parity file: {moduleName}.json");
+                continue;
+            }
+
+            JsonArray? casesArr = null;
+            try
+            {
+                casesArr = JsonNode.Parse(File.ReadAllText(moduleFile)) as JsonArray;
+            }
+            catch (JsonException ex)
+            {
+                errors.Add($"Invalid JSON in {moduleName}.json: {ex.Message}");
+                continue;
+            }
+
+            if (casesArr == null || casesArr.Count < minCases)
+            {
+                errors.Add($"Module {moduleName} has only {casesArr?.Count ?? 0} cases, requires at least {minCases}");
+            }
+
+            if (casesArr != null)
+            {
+                var fns = casesArr.Select(c => c?["fn"]?.GetValue<string>()).Where(f => !string.IsNullOrEmpty(f)).Distinct();
+                foreach (var fn in fns)
+                {
+                    if (!wiredPorts.Contains($"{moduleName}/{fn}"))
+                    {
+                        errors.Add($"Function {moduleName}/{fn} is not wired in ParityTests.Ports");
+                    }
+                }
+            }
+        }
+        return errors;
+    }
+
+    [Fact]
+    public void Every_required_port_has_parity_cases_and_wiring()
+    {
+        var requiredFile = Path.Combine(Folder, "required.json");
+        Assert.True(File.Exists(requiredFile), "required.json must exist in native/porting/parity");
+        var required = JsonNode.Parse(File.ReadAllText(requiredFile))!.AsObject();
+        var wired = new HashSet<string>(Ports.Keys, StringComparer.Ordinal);
+        var errors = ValidateParityDirectory(required, Folder, wired);
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void Parity_guard_validates_module_requirements_and_wiring()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "pw-parity-guard-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Missing file
+            var req = new JsonObject { ["missing-mod"] = new JsonObject { ["minCases"] = 5 } };
+            var errors = ValidateParityDirectory(req, tempDir, new HashSet<string>());
+            Assert.Contains(errors, e => e.Contains("Missing parity file: missing-mod.json"));
+
+            // Too few cases
+            File.WriteAllText(Path.Combine(tempDir, "short-mod.json"), "[{\"fn\":\"testFn\",\"args\":[]}]");
+            req["short-mod"] = new JsonObject { ["minCases"] = 5 };
+            errors = ValidateParityDirectory(req, tempDir, new HashSet<string> { "short-mod/testFn" });
+            Assert.Contains(errors, e => e.Contains("Module short-mod has only 1 cases, requires at least 5"));
+
+            // Invalid JSON
+            File.WriteAllText(Path.Combine(tempDir, "corrupt-mod.json"), "{ invalid-json }");
+            req["corrupt-mod"] = new JsonObject { ["minCases"] = 1 };
+            errors = ValidateParityDirectory(req, tempDir, new HashSet<string>());
+            Assert.Contains(errors, e => e.Contains("Invalid JSON in corrupt-mod.json"));
+
+            // Non-array JSON
+            File.WriteAllText(Path.Combine(tempDir, "obj-mod.json"), "{\"not\":\"an array\"}");
+            req["obj-mod"] = new JsonObject { ["minCases"] = 1 };
+            errors = ValidateParityDirectory(req, tempDir, new HashSet<string>());
+            Assert.Contains(errors, e => e.Contains("Module obj-mod has only 0 cases, requires at least 1"));
+
+            // Unwired function
+            File.WriteAllText(Path.Combine(tempDir, "unwired-mod.json"), "[{\"fn\":\"unwiredFn\",\"args\":[]}]");
+            req["unwired-mod"] = new JsonObject { ["minCases"] = 1 };
+            errors = ValidateParityDirectory(req, tempDir, new HashSet<string>());
+            Assert.Contains(errors, e => e.Contains("Function unwired-mod/unwiredFn is not wired"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Parity_ports_and_comparisons_are_thread_safe_under_concurrency()
+    {
+        var sampleModules = new[] { "quota", "models", "time-left", "phone-voice", "step-outcomes", "plan-status" };
+        Parallel.ForEach(sampleModules, new ParallelOptions { MaxDegreeOfParallelism = 4 }, mod =>
+        {
+            var file = Path.Combine(Folder, $"{mod}.json");
+            var cases = JsonNode.Parse(File.ReadAllText(file))!.AsArray();
+            for (var i = 0; i < cases.Count; i++)
+            {
+                The_CSharp_port_gives_the_JavaScript_result(mod, i);
+            }
+        });
+    }
+
+    [Fact]
+    public void Same_json_comparison_handles_edge_cases()
+    {
+        // Null comparisons
+        Assert.True(Same(null, null));
+        Assert.False(Same(null, new JsonObject()));
+        Assert.False(Same(new JsonObject(), null));
+
+        // Objects
+        var o1 = new JsonObject { ["a"] = 1, ["b"] = "text" };
+        var o2 = new JsonObject { ["b"] = "text", ["a"] = 1 };
+        var o3 = new JsonObject { ["a"] = 1, ["b"] = "different" };
+        var o4 = new JsonObject { ["a"] = 1 };
+        Assert.True(Same(o1, o2));
+        Assert.False(Same(o1, o3));
+        Assert.False(Same(o1, o4));
+
+        // Arrays
+        var a1 = new JsonArray { 1, "two", true };
+        var a2 = new JsonArray { 1, "two", true };
+        var a3 = new JsonArray { 1, "two", false };
+        var a4 = new JsonArray { 1, "two" };
+        Assert.True(Same(a1, a2));
+        Assert.False(Same(a1, a3));
+        Assert.False(Same(a1, a4));
+
+        // Numbers (integers and floats with identical value)
+        Assert.True(Same(JsonValue.Create(42), JsonValue.Create(42.0)));
+        Assert.False(Same(JsonValue.Create(42), JsonValue.Create(43)));
+
+        // Mismatched value kinds
+        Assert.False(Same(JsonValue.Create(1), JsonValue.Create("1")));
+        Assert.False(Same(JsonValue.Create(true), JsonValue.Create(1)));
+        Assert.False(Same(new JsonObject(), new JsonArray()));
     }
 
     static JsonObject? Obj(JsonArray args, int i) => i < args.Count ? args[i]?.DeepClone() as JsonObject : null;
