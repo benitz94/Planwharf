@@ -222,6 +222,8 @@ public class PanelViewsTests
         var row = Assert.Single(PanelViews.PullRequests(running, TimeZoneInfo.Utc).Items);
         Assert.Equal(("running", "Reading the failing check", false), (row.FixStatus, row.FixText, row.CanFix));
         Assert.Null(row.Progress);
+        var cancelled = JsonNode.Parse("""{ "ok": true, "items": [ { "number": 218, "title": "Verify", "state": "open", "canFix": true, "checks": [ { "name": "build (macos-latest, osx-x64)", "state": "cancelled" } ] } ] }""")!;
+        Assert.Equal("cancelled", Assert.Single(Assert.Single(PanelViews.PullRequests(cancelled, TimeZoneInfo.Utc).Items).Checks).State);
         var started = DateTimeOffset.UtcNow.AddMinutes(-4).ToString("o");
         var live = JsonNode.Parse("{ \"ok\": true, \"items\": [ { \"number\": 12, \"title\": \"Add the chart\", \"state\": \"open\", \"fixStatus\": \"running\", \"canFix\": false, \"fixProgress\": { \"model\": \"Opus 5.5\", \"stage\": \"Working on the fix.\", \"activity\": \"Running npm test\", \"startedAt\": \"" + started + "\" } } ] }")!;
         var progress = Assert.Single(PanelViews.PullRequests(live, TimeZoneInfo.Utc).Items).Progress!;

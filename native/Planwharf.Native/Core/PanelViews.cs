@@ -151,7 +151,7 @@ public static class PanelViews
     static PullRequestRow Row(JsonObject pr, TimeZoneInfo? zone)
     {
         var state = S(pr["state"]) is "merged" or "closed" ? S(pr["state"]) : "open";
-        var checks = (pr["checks"] as JsonArray ?? []).OfType<JsonObject>().Select(check => new PullCheck(S(check["name"]), S(check["state"]) is "green" or "red" or "running" ? S(check["state"]) : "running")).ToList();
+        var checks = (pr["checks"] as JsonArray ?? []).OfType<JsonObject>().Select(check => new PullCheck(S(check["name"]), S(check["state"]) is "green" or "red" or "running" or "cancelled" ? S(check["state"]) : "running")).ToList();
         var workNode = pr["work"] as JsonObject;
         PullWork? work = workNode == null ? null : new PullWork(S(workNode["goal"]), When(S(workNode["startedAt"]), zone), When(S(workNode["completedAt"]), zone), S(workNode["lead"]),
             (workNode["steps"] as JsonArray ?? []).OfType<JsonObject>().Select(step => new PullStep(S(step["title"]), S(step["model"]))).ToList());

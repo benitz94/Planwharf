@@ -4566,6 +4566,8 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const megaTaskId = 'pr-' + number;
     const worktree = path.join(dir, 'worktrees', projectId, megaTaskId, fixId);
     const say = (type, text) => { bridge.event(projectId, type, text, { pullRequest: number }); persist(); };
+    const stopped = () => Boolean(prFixes.get(key)?.stopRequested);
+    const stoppedText = `Pull request #${number}: you stopped the fix. Nothing was pushed.`;
     const done = (type, text) => {
       markPullRequestFix(projectId, number, type === 'PR_FIX_COMPLETED' ? 'fixed' : 'failed', text);
       say(type, text);
@@ -4578,8 +4580,19 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       try {
         fix = await pr.prepareFix(item.project.folder, number, worktree, opts.runCommand);
         if (!fix.ok) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${fix.reason}`);
+        if (stopped()) return done('PR_FIX_FAILED', stoppedText);
+        // Checks GitHub cancelled or could not start did not fail on the code: they run again, no model.
+        let rerunNote = '';
+        if ((fix.notRun || []).length) {
+          const again = await pr.rerunNotRun(item.project.folder, fix.notRun, opts.runCommand);
+          const names = fix.notRun.map(check => check.name).join(', ');
+          rerunNote = again.rerun ? `Ran again ${fix.notRun.length === 1 ? 'the check' : 'the checks'} GitHub had cancelled (no free machine, not a fault in the code): ${names}.`
+            : `GitHub cancelled ${names} (not a fault in the code), and running ${fix.notRun.length === 1 ? 'it' : 'them'} again was refused: use Re-run failed jobs on GitHub.`;
+          say('PR_FIX_STARTED', `Pull request #${number}: ${rerunNote}`);
+        }
         if (!fix.conflicts.length && !fix.failing.length) {
           const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
+          if (result.ok && !result.changed && rerunNote) return done('PR_FIX_COMPLETED', `Pull request #${number}: ${rerunNote} Nothing in the code needed changing.`);
           return done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok ? `Pull request #${number}: ${result.changed ? 'merged ' + fix.base + ' and pushed to ' + fix.branch : 'nothing needed changing'}.` : `Pull request #${number} was not fixed: ${result.reason}`);
         }
         const mode = modeAtStart;
@@ -4619,22 +4632,24 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           structuredResultPath: path.join(results, 'result.json'), exitPath: path.join(results, 'exit.json'), logPath: path.join(results, 'worker.log'),
           worker: model, job: { kind: 'build', title: `Fix pull request #${number}`, detail: work.join('\n\n') }, slice: `Fix pull request #${number}` };
         launched = opts.spawnWorker(info);
-        if (prFixes.has(key)) prFixes.get(key).logPath = info.logPath;
+        if (prFixes.has(key)) Object.assign(prFixes.get(key), { logPath: info.logPath, pid: launched?.pid || null });
         if (!launched?.pid) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} did not start.`);
         const limit = Date.now() + 90 * 60 * 1000;
-        while (Date.now() < limit && !fs.existsSync(info.exitPath)) {
+        while (Date.now() < limit && !fs.existsSync(info.exitPath) && !stopped()) {
           if (typeof opts.isProcessAlive === 'function' && !opts.isProcessAlive(launched.pid)) break;
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
         // A refusal leaves the folder as it was: note it and let the next model try.
         let said = ''; try { said = fs.readFileSync(info.logPath, 'utf8').slice(-20000); } catch { /* no log */ }
         const refused = refusals.refusalReason(said);
-        if (!refused) break;
+        if (!refused || stopped()) break;
         noteCredits(model.id, refused);
         refusals.recordRefusal(store, model.id, refused, now());
         persist();
         say('PR_FIX_STARTED', `${model.label || model.id} refused the work (${String(refused).slice(0, 160)}); the next model takes over.`);
         }
+        // The owner pressed Stop: nothing is checked or pushed, and the copy of the folder goes away.
+        if (stopped()) return done('PR_FIX_FAILED', stoppedText);
         if (prFixes.has(key)) Object.assign(prFixes.get(key), { stage: 'Checking the result and pushing.', logPath: null });
         const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
         // The worker was started because checks or conflicts were still wrong. If it
@@ -4644,6 +4659,9 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           const why = alive ? 'did not finish in time' : 'stopped before it finished';
           return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} ${why}. Nothing was pushed.`);
         }
+        // Red checks the model left as they were are not fixed, whatever it says.
+        if (result.ok && !result.changed && fix.failing.length && !fix.conflicts.length)
+          return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} changed nothing, and ${fix.failing.join(', ')} still ${fix.failing.length === 1 ? 'fails' : 'fail'}.`);
         done(result.ok ? 'PR_FIX_COMPLETED' : 'PR_FIX_FAILED', result.ok
           ? `${model.label || model.id} fixed pull request #${number}: ${result.reason}`
           : `Pull request #${number} was not fixed by ${model.label || model.id}: ${result.reason} Nothing was pushed.`);
@@ -4665,6 +4683,15 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       }
     });
     return { ok: true, started: true };
+  }
+  // Stop on a fix in the background: the running model is ended and nothing is pushed.
+  function stopPullRequestFix(projectId, number) {
+    const entry = prFixes.get(projectId + '#' + number);
+    if (!entry) return { ok: false, reason: `No fix of #${number} is running.` };
+    entry.stopRequested = true;
+    entry.stage = 'Stopping.';
+    if (entry.pid && typeof opts.killWorker === 'function') { try { opts.killWorker(entry.pid); } catch { /* the wait notices the stop anyway */ } }
+    return { ok: true };
   }
   // The panel keeps one short line. A long remote refusal must not cut off the sentence that says the commit is still on this computer.
   function clipFixNote(text) {
@@ -4749,7 +4776,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide }
     });
   }
-  return { stepOutcomes: () => dir ? stepOutcomes.readStepOutcomes(dir) : [], setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, delegateDecision, setDecisionAuto, setDefaultDecisionAuto, decisionsInbox, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
+  return { stopPullRequestFix, stepOutcomes: () => dir ? stepOutcomes.readStepOutcomes(dir) : [], setLeadAllowed, addToWork, clearCreditsNeeded, answerDecision, delegateDecision, setDecisionAuto, setDefaultDecisionAuto, decisionsInbox, fixPullRequest, rememberPullRequest, pullRequestContext, withTeam: (projectId, fn) => inTeam(projectId, fn), tick, archiveProject, setProjectTools, activitySessionPage, supervisorRequest, checkpointForUpdate, refreshRepositories: async () => refreshRepositoryMetadata(await opts.readPlan()), shutdown, bindAccount, invalidateAccountCache, approve, startAutoTask, resume, stop, resetWork, changeCrew, quotaWatchTick, autoSwitch, setAutoSwitch, setQuotaLimit, stopWorker, pauseAfterCurrent, setFocus, executionView: bridge.view, restoreImported, prepareForNewTask, setMode, setChatMode, setSavingMode, setModelWeight, setAutonomy, autonomyTick, setGrillPropose, skipGrill, docsFor, inspectRepository, setModelEnabled, setModelRoles, setRoleForAll, setRolesForMany, setGoldModel, setModelPolicy, setProviderPolicy, setCatalogSettings, setOrchestrator, ask, abortAsk, dispatchResearch, approveResearch, stopResearch, resumeResearch, researchReport, pidFor, snapshot: async projectId => { refreshResearch(); return snapshot(await opts.readPlan(), projectId); } };
 }
 
 module.exports = { clipSummary, openDecisionsOf, ableToVerify, refusalSentence, leadQuality, leadRanking, leadTier, jobFingerprint, createOrchestrator, pickWorker, pickWorkers, normalizeModels, jobKind, defaultInspect, jobFromFacts, planLines, dispatchPlan, listDocs, collectDocs, grillDone, tailLog, lastActivity, interpretActivity, progressKey, sliceCount, answerQuestion, parseOrder, looksLikeWork, looksLikeQuestion, packState, canOrchestrate, usageOf, planExhausted, ORCH_NAME, LABELS, stepOf, pipelineOf, crewOf, PIPELINE_STEPS, parseGrillQuestions, grillPrompt };

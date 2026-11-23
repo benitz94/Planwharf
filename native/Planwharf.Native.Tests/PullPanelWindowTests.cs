@@ -100,6 +100,7 @@ public class PullPanelWindowTests
             Assert.True(Has(window, "Fixing in the background · Opus 5.5 · 4 min"));
             Assert.True(Has(window, "Working on the fix."));
             Assert.True(Has(window, "Now: Running npm test"));
+            Assert.True(Has(window, "Stop the fix"), "a running fix can be stopped");
 
             window.ShowPullRequests(JsonNode.Parse("""{ "ok": false, "missing": true }""")!);
             window.UpdateLayout();

@@ -340,7 +340,7 @@ test.describe('pull request fix edges', { concurrency: false }, () => {
     } finally { restore(); }
   });
 
-  test('a worker that stops without a result is not called fixed, and one that finishes with nothing to do is', async () => {
+  test('a worker that stops without a result, or finishes having changed nothing while a check fails, is not called fixed', async () => {
     const { root, remote, folder } = setup();
     const dir = path.join(root, 'data');
     const tip = git(remote, 'rev-parse', 'feat/x');
@@ -373,8 +373,9 @@ test.describe('pull request fix edges', { concurrency: false }, () => {
       assert.equal((await orchestra.fixPullRequest('biblioteca', 8)).started, true);
       const finished = await settle(orchestra, 'biblioteca');
       const row = finished.fixes.find(item => item.number === 8);
-      assert.equal(row.result, 'fixed');
-      assert.match(row.text, /Nothing needed changing/);
+      // The check still fails and nothing changed: that is not a fix, whatever the model says.
+      assert.equal(row.result, 'failed');
+      assert.match(row.text, /changed nothing, and ci\/circleci still fails/);
       assert.equal(git(remote, 'rev-parse', 'feat/x'), tip);
     } finally { restore(); }
   });

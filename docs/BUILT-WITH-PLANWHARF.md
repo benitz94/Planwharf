@@ -142,3 +142,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A fix in the background showed no progress while it ran | #214 |
 | A pull request did not say which models led, built and verified the work | #216 |
 | When the Verify model refused (quota), Verify went to the model that had built the work, which then could not call itself independent and stopped the work; "Verify by another company" was a rule in the plan and the pipeline, now only a preference | #218 |
+| A fix in the background could not be stopped; a check GitHub cancelled was shown as red, sent to a model, and reported as fixed with nothing changed | #220 |
