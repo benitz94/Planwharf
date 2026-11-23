@@ -860,3 +860,52 @@ Job 38 is authorized to touch only:
 6. `docs/NEXT-WORK.md` and `docs/BUILT-WITH-PLANWHARF.md`: Progress updates.
 
 The JavaScript files in `engine/*.cjs` and `engine/*.js` remain the immutable specification and must not be altered (Rule 1).
+
+---
+
+## 10. Open Design Decisions
+
+The following design decisions are documented for the owner's review prior to starting Job 38:
+
+1. **Supervisor auto-review execution**: Whether supervisor background auto-review should invoke an asynchronous thread pool worker or queue a pending review slice in the project durable plan.
+2. **Phone voice synthesis API integration**: Whether PhoneVoice in C# should integrate system text-to-speech APIs or remain strictly a message formatter for mobile notification channels (Telegram, ntfy).
+3. **ClaudeUsage OAuth token refresh mechanism**: Whether ClaudeUsage in Phase 3 should refresh expired OAuth access tokens via the Anthropic endpoint using stored refresh tokens, or defer token refresh to CLI auth login as done in Node.
+4. **Attempts store partitioning**: Whether attempts store should maintain a unified root ledger under the Planwharf data folder or partition records per project directory.
+
+---
+
+## 11. Files Allowed for This Sheet Job (Job 37)
+
+`native/porting/jobs/37-phase3-first-level.md`, `engine/job37-sheet.test.cjs`, `docs/NEXT-WORK.md`, and `docs/BUILT-WITH-PLANWHARF.md`.
+
+No Phase 3 C# implementation files on this branch:
+- No `native/Planwharf.Engine/Attempts.cs`
+- No `native/Planwharf.Engine/Claims.cs`
+- No `native/Planwharf.Engine/ProjectExport.cs`
+- No `native/Planwharf.Engine/ExecutionNext.cs`
+- No `native/Planwharf.Engine/ProviderCatalog.cs`
+- No `native/Planwharf.Engine/ProviderPolicy.cs`
+- No `native/Planwharf.Engine/ModelRouting.cs`
+- No `native/Planwharf.Engine/Claude.cs`
+- No `native/Planwharf.Engine/ClaudeUsage.cs`
+- No `native/Planwharf.Engine/Repository.cs`
+- No `native/Planwharf.Engine/Supervisor.cs`
+- No `native/Planwharf.Engine/Activity.cs`
+- No `native/Planwharf.Engine/ActivitySessions.cs`
+- No `native/Planwharf.Engine/ProviderRuntime.cs`
+- No `native/Planwharf.Engine/TimeLeft.cs`
+- No `native/Planwharf.Engine/PlanStatus.cs`
+- No `native/Planwharf.Engine/ProviderStatus.cs`
+- No `native/Planwharf.Engine/PushEmail.cs`
+- No `native/Planwharf.Engine/TempCleanup.cs`
+- No `native/Planwharf.Engine/AccountFolders.cs`
+- No `native/Planwharf.Engine/PhoneVoice.cs`
+- No `native/Planwharf.Engine/PhoneActivation.cs`
+- No `native/Planwharf.Engine/StepOutcomes.cs`
+
+---
+
+## 12. Hand Over
+
+Job 37 commits on `port/37-sheet` and stops. It does not push and does not merge.
+Job 38 implements the 23 modules on `port/38-phase3` following owner review of this specification sheet.
