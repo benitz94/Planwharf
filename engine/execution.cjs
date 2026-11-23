@@ -282,8 +282,8 @@ function createExecutionBridge(options) {
         for (const bSub of (data.subTasks || []).filter(s => s.megaTaskId === mega.id && stepRole(s) === 'Build' && s.status === 'COMPLETE')) {
           if (mega.recordedOutcomeSubIds.includes(bSub.id)) continue;
           mega.recordedOutcomeSubIds.push(bSub.id);
-          const bRes = data.results.find(r => r.subTaskId === bSub.id);
-          const bPart = (rowFor(mega.projectId, mega.id).dispatch || []).find(p => p.subTaskId === bSub.id);
+          const bRes = data.results.filter(r => r.subTaskId === bSub.id && r.status === 'COMPLETE').at(-1) || data.results.filter(r => r.subTaskId === bSub.id).at(-1);
+          const bPart = (rowFor(mega.projectId, mega.id).dispatch || []).filter(p => p.subTaskId === bSub.id).at(-1);
           let bTokens = null;
           if (bPart?.structuredResultPath) {
             try { bTokens = JSON.parse(fs.readFileSync(bPart.structuredResultPath + '.usage.json', 'utf8')); } catch {}
@@ -368,6 +368,13 @@ function createExecutionBridge(options) {
     const next = options.replacement(sub, [sub.assignedModelId, ...(sub.noVerdictFrom || [])]);
     if (!next) return false;
     const from = sub.assignedModelId;
+    try {
+      appendStepOutcome(dir, {
+        model: from, role: stepRole(sub), size: sub.size, kind: sub.type || mega.kind,
+        switch: true, refusal: null, accepted: false, fixed: 0,
+        startedAt: part.startedAt, endedAt: now()
+      });
+    } catch {}
     Object.assign(sub, { status: 'PENDING', noVerdictTries: 2, noVerdictFrom: [...(sub.noVerdictFrom || []), from], fallbackFrom: from, assignedModelId: next.id, proposedProvider: next.provider, proposedCli: next.cli, resultId: null });
     event(mega.projectId, 'MODEL_NO_VERDICT_SWITCH', from + ' ended without a result twice. Reassigned to ' + next.id + '.', { megaTaskId: mega.id, subTaskId: sub.id, fromModelId: from, modelId: next.id });
     persist();
@@ -574,8 +581,8 @@ function createExecutionBridge(options) {
       for (const s of (data.subTasks || []).filter(sub => sub.megaTaskId === mega.id && sub.status === 'COMPLETE')) {
         if (mega.recordedOutcomeSubIds?.includes(s.id)) continue;
         mega.recordedOutcomeSubIds = [...(mega.recordedOutcomeSubIds || []), s.id];
-        const sRes = data.results.find(r => r.subTaskId === s.id);
-        const sPart = (rowFor(mega.projectId, mega.id).dispatch || []).find(p => p.subTaskId === s.id);
+        const sRes = data.results.filter(r => r.subTaskId === s.id && r.status === 'COMPLETE').at(-1) || data.results.filter(r => r.subTaskId === s.id).at(-1);
+        const sPart = (rowFor(mega.projectId, mega.id).dispatch || []).filter(p => p.subTaskId === s.id).at(-1);
         let sTokens = null;
         if (sPart?.structuredResultPath) {
           try { sTokens = JSON.parse(fs.readFileSync(sPart.structuredResultPath + '.usage.json', 'utf8')); } catch {}

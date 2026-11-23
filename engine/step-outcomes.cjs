@@ -41,7 +41,12 @@ function canonicalClass(cls) {
 function resolveModelMeta(model) {
   if (model && typeof model === 'object') {
     const company = model.companyId || model.company || model.providerId || model.provider || 'unknown';
-    const cls = savingMode ? savingMode.modelClass(model) : model.class || 'mid';
+    let cls = model.class || (savingMode ? savingMode.modelClass(model) : null);
+    if (!cls || cls === 'mid') {
+      const id = String(model.id || model.name || model.cli || '').toLowerCase();
+      if (id.includes('opus') || id.includes('luna') || id.includes('business') || id.includes('pro')) cls = 'flagship';
+      else if (id.includes('haiku') || id.includes('mini') || id.includes('flash-lite') || id.includes('sol')) cls = 'light';
+    }
     return { company, class: canonicalClass(cls) };
   }
   const id = String(model || '').toLowerCase();
@@ -60,15 +65,16 @@ function resolveModelMeta(model) {
 
 function stripPathsAndCode(value) {
   if (value == null) return null;
-  const text = String(value);
-  // Remove file paths and code snippets
-  if (/[\\/]/.test(text) || text.includes('`') || text.includes('{') || text.includes('}')) {
-    return text.replace(/[A-Za-z]:\\[^\s]+/g, '')
-      .replace(/(?:^|\s)(?:\.{1,2}\/|[a-zA-Z0-9_-]+\/)[^\s]+/g, '')
-      .replace(/`[^`]*`/g, '')
-      .trim();
-  }
-  return text;
+  let text = String(value);
+  text = text.replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '')
+    .replace(/\{[^{}]*\}/g, '')
+    .replace(/[A-Za-z]:[\\/][^\s'"]+/g, '')
+    .replace(/\\\\[^\s'"]+/g, '')
+    .replace(/(?:^|\s)\/[^\s'"]+/g, '')
+    .replace(/(?:^|\s)(?:\.{1,2}[\\/]|[a-zA-Z0-9_.-]+[\\/])[^\s'"]+/g, '')
+    .replace(/(?:^|\s)[a-zA-Z0-9_.-]+\.(?:cjs|mjs|js|jsx|ts|tsx|cs|py|rb|go|rs|cpp|c|h|java|php|sh|bat|cmd|ps1|json|ya?ml|toml|xml|html?|css|sql)(?=[\s.,:;!?]|$)/gi, '');
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 function stepOutcomeRecord({
@@ -91,20 +97,25 @@ function stepOutcomeRecord({
   endedAt,
   quota
 } = {}) {
-  const modelId = String(model || '').trim();
-  if (!modelId) return null;
+  let modelId = '';
+  if (model && typeof model === 'object') {
+    modelId = String(model.id || model.name || model.cli || '').trim();
+  } else {
+    modelId = String(model || '').trim();
+  }
+  if (!modelId || modelId === '[object Object]') return null;
 
   const resolvedRole = canonicalRole(role);
   const inferred = resolveModelMeta(model);
   const resolvedClass = modelClass ? canonicalClass(modelClass) : inferred.class;
   const resolvedCompany = String(company || '').trim() || inferred.company;
-  const resolvedKind = String(kind || 'implementation').trim();
+  const resolvedKind = stripPathsAndCode(String(kind || 'implementation').trim()) || 'implementation';
   const resolvedSize = (size !== undefined && size !== null && size !== '')
-    ? (typeof size === 'number' && Number.isFinite(size) ? size : String(size).slice(0, 40))
+    ? (typeof size === 'number' && Number.isFinite(size) ? (size >= 0 ? size : 0) : (stripPathsAndCode(String(size).slice(0, 40)) || 'normal'))
     : 'normal';
 
   const switched = Boolean(isSwitch || modelChange);
-  const refusedReason = refusal ? stripPathsAndCode(String(refusal).slice(0, 200)) : null;
+  const refusedReason = refusal ? (stripPathsAndCode(String(refusal).slice(0, 200)) || null) : null;
 
   // Verify acceptance / fix
   let isAccepted = false;
@@ -137,6 +148,7 @@ function stepOutcomeRecord({
     reported = Number.isFinite(Number(testsReported)) ? Math.max(0, Math.round(Number(testsReported))) : 0;
     passed = Number.isFinite(Number(testsPassed)) ? Math.max(0, Math.round(Number(testsPassed))) : 0;
   }
+  reported = Math.max(reported, passed);
 
   // Duration
   let duration = null;
@@ -189,9 +201,13 @@ function appendStepOutcome(dir, record) {
   if (!dir || !record) return null;
   const clean = stepOutcomeRecord(record);
   if (!clean) return null;
-  fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(outcomesFile(dir), JSON.stringify(clean) + '\n', 'utf8');
-  return clean;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(outcomesFile(dir), JSON.stringify(clean) + '\n', 'utf8');
+    return clean;
+  } catch {
+    return null;
+  }
 }
 
 function readStepOutcomes(dir) {
