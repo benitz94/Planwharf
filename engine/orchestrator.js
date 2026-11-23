@@ -2317,7 +2317,7 @@ function createOrchestrator(options) {
       mode: store.mode === 'auto' ? 'auto' : 'manual',
       autoDecide: clone(store.autoDecide || {}),
       defaultAutoDecide: Boolean(store.defaultAutoDecide),
-      decisionsInbox: decisionsInboxModule.collectDecisions({ projects, execution: store.execution, settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide } }),
+      decisionsInbox: decisionsInboxModule.collectDecisions({ projects, execution: store.execution, pipelineJobs: store.pipelineJobs || [], settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide } }),
       autonomy: clone(store.autonomy),
       grillPropose: store.grillPropose !== false,
       grillKind: store.grillPropose === false ? 'off' : (store.grillKind === 'docs' ? 'docs' : 'me'),
@@ -4699,8 +4699,18 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     const fixing = [...prFixes.entries()].filter(([key]) => key.startsWith(projectId + '#')).map(([key, value]) => ({ number: Number(key.slice(projectId.length + 1)), startedAt: value && value.startedAt || null, text: value && value.text || '' }));
     return { works, fixes, fixing };
   }
-  function answerDecision(projectId, decisionId, answer) { return bridge.answerDecision(projectId, decisionId, answer); }
-  function delegateDecision(projectId, decisionId) { return bridge.delegateDecision(projectId, decisionId, projectLeadLabel(projectId, leadModel())); }
+  function answerDecision(projectId, decisionId, answer) {
+    if (decisionId && String(decisionId).startsWith('pipeline:')) {
+      return decisionsInboxModule.answerDecision(store.execution, projectId, decisionId, answer, { pipelineJobs: store.pipelineJobs || [] });
+    }
+    return bridge.answerDecision(projectId, decisionId, answer);
+  }
+  function delegateDecision(projectId, decisionId) {
+    if (decisionId && String(decisionId).startsWith('pipeline:')) {
+      return decisionsInboxModule.delegateDecision(store.execution, projectId, decisionId, { pipelineJobs: store.pipelineJobs || [], leadLabel: projectLeadLabel(projectId, leadModel()) });
+    }
+    return bridge.delegateDecision(projectId, decisionId, projectLeadLabel(projectId, leadModel()));
+  }
   function setDecisionAuto(projectId, enabled) {
     store.autoDecide = store.autoDecide || {};
     store.autoDecide[projectId] = Boolean(enabled);
@@ -4716,6 +4726,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return decisionsInboxModule.collectDecisions({
       projects: notebookProjects(await opts.readPlan()),
       execution: store.execution,
+      pipelineJobs: store.pipelineJobs || [],
       settings: { autoDecide: store.autoDecide, defaultAutoDecide: store.defaultAutoDecide }
     });
   }

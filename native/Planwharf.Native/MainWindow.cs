@@ -280,9 +280,8 @@ public sealed partial class MainWindow : Window
         var projects = ProjectViews.Projects(snapshot);
         if (projectId == null || projects.All(p => p.Id != projectId)) projectId = projects.FirstOrDefault()?.Id;
         RenderProjects(projects);
-        var openCount = snapshot["decisionsInbox"]?["openCount"]?.GetValue<int?>()
-            ?? (snapshot["decisionsInbox"]?["open"] as JsonArray)?.Count
-            ?? (decisionsPayload?["openCount"]?.GetValue<int?>() ?? (decisionsPayload?["open"] as JsonArray)?.Count ?? 0);
+        var openCount = (snapshot?["decisionsInbox"]?["openCount"] is JsonValue ocVal && ocVal.TryGetValue<int>(out var oc) ? oc : (snapshot?["decisionsInbox"]?["open"] as JsonArray)?.Count)
+            ?? (decisionsPayload?["openCount"] is JsonValue dpVal && dpVal.TryGetValue<int>(out var dpc) ? dpc : (decisionsPayload?["open"] as JsonArray)?.Count ?? 0);
         UpdateDecisionsTab(openCount);
         CheckTimedStop();
         var view = ProjectViews.Project(snapshot!, projectId);
@@ -746,7 +745,7 @@ public sealed partial class MainWindow : Window
     {
         decisionsPayload = payload;
         sideSig = null;
-        var openCount = payload["openCount"]?.GetValue<int?>() ?? (payload["open"] as JsonArray)?.Count ?? 0;
+        var openCount = (payload?["openCount"] is JsonValue v && v.TryGetValue<int>(out var c) ? c : (payload?["open"] as JsonArray)?.Count) ?? 0;
         UpdateDecisionsTab(openCount);
         if (sideMode == "decisions") Render();
     }

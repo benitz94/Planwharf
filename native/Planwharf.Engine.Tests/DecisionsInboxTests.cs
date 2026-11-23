@@ -91,5 +91,58 @@ public class DecisionsInboxTests
         Assert.Equal(0, objEmpty.OpenCount);
         Assert.Empty(objEmpty.Open);
         Assert.Empty(objEmpty.Answered);
+
+        var nonObj = DecisionsInboxView.FromJson(JsonValue.Create("not an object"));
+        Assert.Equal(0, nonObj.OpenCount);
+        Assert.Empty(nonObj.Open);
+        Assert.Empty(nonObj.Answered);
+    }
+
+    [Fact]
+    public void FromJson_handles_string_and_numeric_booleans_and_malformed_items()
+    {
+        var json = JsonNode.Parse("""
+        {
+          "openCount": "7",
+          "open": [
+            null,
+            "corrupt_string_item",
+            {
+              "id": "dec-str",
+              "projectId": "p1",
+              "breaks": "true",
+              "isPipeline": "true",
+              "stepStarted": "false"
+            },
+            {
+              "id": "dec-num",
+              "projectId": "p2",
+              "breaks": 1,
+              "isPipeline": 0,
+              "stepStarted": 1
+            }
+          ],
+          "answered": [
+            null
+          ]
+        }
+        """);
+
+        var view = DecisionsInboxView.FromJson(json);
+        Assert.Equal(7, view.OpenCount);
+        Assert.Equal(2, view.Open.Count);
+        Assert.Empty(view.Answered);
+
+        var first = view.Open[0];
+        Assert.Equal("dec-str", first.Id);
+        Assert.True(first.Breaks);
+        Assert.True(first.IsPipeline);
+        Assert.False(first.StepStarted);
+
+        var second = view.Open[1];
+        Assert.Equal("dec-num", second.Id);
+        Assert.True(second.Breaks);
+        Assert.False(second.IsPipeline);
+        Assert.True(second.StepStarted);
     }
 }

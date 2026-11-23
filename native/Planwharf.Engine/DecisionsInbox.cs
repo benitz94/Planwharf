@@ -34,6 +34,27 @@ public sealed record DecisionsInboxView(
         var openList = new List<DecisionItem>();
         var answeredList = new List<DecisionItem>();
 
+        static bool BoolVal(JsonNode? node)
+        {
+            if (node is JsonValue val)
+            {
+                if (val.TryGetValue<bool>(out var b)) return b;
+                if (val.TryGetValue<string>(out var s) && bool.TryParse(s, out var sb)) return sb;
+                if (val.TryGetValue<int>(out var i)) return i != 0;
+            }
+            return false;
+        }
+
+        static int IntVal(JsonNode? node, int fallback)
+        {
+            if (node is JsonValue val)
+            {
+                if (val.TryGetValue<int>(out var i)) return i;
+                if (val.TryGetValue<string>(out var s) && int.TryParse(s, out var si)) return si;
+            }
+            return fallback;
+        }
+
         void ParseList(JsonArray? arr, List<DecisionItem> target)
         {
             if (arr == null) return;
@@ -45,16 +66,16 @@ public sealed record DecisionsInboxView(
                 var projectName = itemObj["projectName"]?.ToString() ?? projectId;
                 var workId = itemObj["workId"]?.ToString() ?? "";
                 var workTitle = itemObj["workTitle"]?.ToString() ?? workId;
-                var isPipeline = itemObj["isPipeline"]?.GetValue<bool?>() ?? false;
+                var isPipeline = BoolVal(itemObj["isPipeline"]);
                 var text = itemObj["text"]?.ToString() ?? "";
                 var suggestion = itemObj["suggestion"]?.ToString() ?? "";
-                var breaks = itemObj["breaks"]?.GetValue<bool?>() ?? false;
+                var breaks = BoolVal(itemObj["breaks"]);
                 var at = itemObj["at"]?.ToString() ?? "";
                 var answer = itemObj["answer"]?.ToString() ?? "";
                 var answeredAt = itemObj["answeredAt"]?.ToString();
                 var answeredBy = itemObj["answeredBy"]?.ToString();
                 var autoReason = itemObj["autoReason"]?.ToString();
-                var stepStarted = itemObj["stepStarted"]?.GetValue<bool?>() ?? false;
+                var stepStarted = BoolVal(itemObj["stepStarted"]);
 
                 target.Add(new DecisionItem(
                     id, projectId, projectName, workId, workTitle, isPipeline,
@@ -65,7 +86,7 @@ public sealed record DecisionsInboxView(
         ParseList(obj["open"] as JsonArray, openList);
         ParseList(obj["answered"] as JsonArray, answeredList);
 
-        var openCount = obj["openCount"]?.GetValue<int?>() ?? openList.Count;
+        var openCount = IntVal(obj["openCount"], openList.Count);
         return new DecisionsInboxView(openList, answeredList, openCount);
     }
 }

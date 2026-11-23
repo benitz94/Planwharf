@@ -1045,26 +1045,27 @@ function createExecutionBridge(options) {
     return { ok: true, subTask: newSub, megaTask: mega };
   }
   function answerDecision(projectId, decisionId, answer, who = 'owner') {
-    const decision = data.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+    const decision = data.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
     if (!decision) return { ok: false, reason: 'Decision not found.' };
     const subs = subtasks({ id: decision.megaTaskId });
-    if (decision.answer && subs.some(s => s.status === 'RUNNING' || s.status === 'COMPLETE')) {
+    if (decision.answer && subs.some(s => s && (s.status === 'RUNNING' || s.status === 'COMPLETE'))) {
       return { ok: false, reason: 'The step that needs this decision has already started.' };
     }
-    decision.answer = String(answer || '').trim();
+    const val = String(answer || '').trim();
+    decision.answer = (val === 'accepted' && decision.suggestion) ? decision.suggestion : (val || 'yes');
     decision.answeredBy = who === 'owner' ? 'owner' : who;
     decision.answeredAt = now();
-    persist();
+    if (typeof persist === 'function') persist();
     return { ok: true, decision };
   }
   function delegateDecision(projectId, decisionId, leadLabel = 'Lead') {
-    const decision = data.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+    const decision = data.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
     if (!decision) return { ok: false, reason: 'Decision not found.' };
     decision.answer = String(decision.suggestion || 'yes').trim();
     decision.answeredBy = `Decided by ${leadLabel}`;
     decision.autoReason = decision.suggestion ? `Followed recommended suggestion: ${decision.suggestion}` : 'Safe default accepted.';
     decision.answeredAt = now();
-    persist();
+    if (typeof persist === 'function') persist();
     return { ok: true, decision };
   }
   return { replan, propose, approve, advance, appendAddition, stop, stopWorker, resume, view, find, target, observe, event, reconcile, paint, checkpointForUpdate, restore, reassign, reassignRemaining, dropWork, answerDecision, delegateDecision };

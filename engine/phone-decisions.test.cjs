@@ -182,3 +182,132 @@ test('alert with decisionId carries the two choices and break highlight', async 
   assert.equal(sent[0].reply_markup.inline_keyboard[0][1].text, '🤖 Let the lead decide');
   assert.ok(sent[0].text.includes('Could break something'));
 });
+
+test('checkTransitions detects waiting_on_you and attaches decisionId and break warning', async () => {
+  const dir = makeTempDir();
+  const sent = [];
+
+  savePhoneSettings(dir, {
+    telegram: { enabled: true, pairedChatId: '12345' },
+    language: 'it'
+  }, 'token');
+
+  const fakeFetch = async (url, opts) => {
+    if (url.includes('/sendMessage')) {
+      sent.push(JSON.parse(opts.body));
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) };
+  };
+
+  let snapStatus = 'watching';
+  const openDecs = [
+    {
+      id: 'dec-hot',
+      projectId: 'proj-1',
+      text: 'Ripristinare il backup del database?',
+      suggestion: 'sì',
+      breaks: true
+    }
+  ];
+
+  const notifier = createPhoneNotifier({
+    storeDir: dir,
+    getSnapshot: async () => ({
+      projects: [
+        {
+          id: 'proj-1',
+          name: 'Core DB',
+          status: snapStatus,
+          goal: 'Migrazione dati',
+          openDecisions: snapStatus === 'waiting_on_you' ? openDecs : []
+        }
+      ]
+    }),
+    fetchImpl: fakeFetch
+  });
+
+  // First check establishes baseline
+  await notifier.checkTransitions();
+  assert.equal(sent.length, 0);
+
+  // Transition to waiting_on_you
+  snapStatus = 'waiting_on_you';
+  await notifier.checkTransitions();
+
+  assert.equal(sent.length, 1);
+  assert.ok(sent[0].text.includes('Potrebbe rompere qualcosa'));
+  assert.ok(sent[0].text.includes('Ripristinare il backup'));
+  assert.ok(sent[0].reply_markup?.inline_keyboard);
+  assert.equal(sent[0].reply_markup.inline_keyboard[0][0].callback_data, 'decide_suggest:proj-1:dec-hot');
+  assert.equal(sent[0].reply_markup.inline_keyboard[0][1].callback_data, 'decide_lead:proj-1:dec-hot');
+});
+
+test('callback query error handling when step already started (English and Italian)', async () => {
+  const dir = makeTempDir();
+  const sent = [];
+
+  savePhoneSettings(dir, {
+    telegram: { enabled: true, pairedChatId: '12345' },
+    language: 'it'
+  }, 'token');
+
+  const fakeFetch = async (url, opts) => {
+    if (url.includes('/sendMessage')) {
+      sent.push(JSON.parse(opts.body));
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true, result: {} }) };
+  };
+
+  const notifier = createPhoneNotifier({
+    storeDir: dir,
+    onAnswerDecision: async () => ({
+      ok: false,
+      reason: 'The step that needs this decision has already started.'
+    }),
+    onDelegateDecision: async () => ({
+      ok: false,
+      reason: 'The step that needs this decision has already started.'
+    }),
+    fetchImpl: fakeFetch
+  });
+
+  // Callback query answering in Italian with started step
+  await notifier.processTelegramMessage({
+    callback_query: {
+      id: 'cb-err-1',
+      data: 'decide_suggest:p1:d1',
+      message: { chat: { id: 12345 }, message_id: 10 }
+    }
+  });
+
+  assert.equal(sent.length, 1);
+  assert.ok(sent[0].text.includes('già iniziato'));
+
+  // Switch to English and test delegation error
+  savePhoneSettings(dir, {
+    telegram: { enabled: true, pairedChatId: '12345' },
+    language: 'en'
+  }, 'token');
+
+  await notifier.processTelegramMessage({
+    callback_query: {
+      id: 'cb-err-2',
+      data: 'decide_lead:p1:d1',
+      message: { chat: { id: 12345 }, message_id: 11 }
+    }
+  });
+
+  assert.equal(sent.length, 2);
+  assert.ok(sent[1].text.includes('already started'));
+
+  // Malformed callback data handled safely
+  await notifier.processTelegramMessage({
+    callback_query: {
+      id: 'cb-malformed',
+      data: 'decide_suggest:',
+      message: { chat: { id: 12345 }, message_id: 12 }
+    }
+  });
+  // No extra sent message, no throw
+  assert.equal(sent.length, 2);
+});

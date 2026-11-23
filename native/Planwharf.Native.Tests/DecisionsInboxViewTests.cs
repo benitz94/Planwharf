@@ -166,4 +166,101 @@ public class DecisionsInboxViewTests
             window.Close();
         }
     }
+
+    [AvaloniaFact]
+    public void When_step_started_change_answer_box_is_hidden()
+    {
+        var payload = JsonNode.Parse("""
+        {
+          "openCount": 0,
+          "open": [],
+          "answered": [
+            {
+              "id": "dec-locked",
+              "projectId": "weather",
+              "projectName": "Weather dashboard",
+              "workId": "MT-1",
+              "workTitle": "Add forecast page",
+              "isPipeline": false,
+              "text": "Cache weather data for 15 minutes?",
+              "suggestion": "15 minutes",
+              "breaks": false,
+              "at": "2026-11-23T10:00:00Z",
+              "answer": "15 minutes",
+              "answeredAt": "2026-11-23T10:01:00Z",
+              "answeredBy": "Decided by Lead",
+              "stepStarted": true
+            }
+          ]
+        }
+        """);
+
+        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
+        window.Show();
+        try
+        {
+            window.Show(SampleState.Working());
+            window.ShowDecisions(payload!);
+            window.OpenSide("decisions");
+            window.UpdateLayout();
+
+            // When stepStarted is true, Change answer box must be hidden (locked)
+            Assert.False(Has(window, "Change answer"));
+            Assert.True(Has(window, "Cache weather data for 15 minutes?"));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Empty_decisions_inbox_displays_no_decisions_waiting()
+    {
+        var emptyPayload = JsonNode.Parse("""
+        {
+          "openCount": 0,
+          "open": [],
+          "answered": []
+        }
+        """);
+
+        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
+        window.Show();
+        try
+        {
+            window.Show(SampleState.Working());
+            window.ShowDecisions(emptyPayload!);
+            window.OpenSide("decisions");
+            window.UpdateLayout();
+
+            // Top bar tab shows Decisions without count badge
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Decisions");
+            Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), block => (block.Text ?? "").StartsWith("Decisions ("));
+
+            // Side panel shows empty state
+            Assert.True(Has(window, "No decisions waiting"));
+
+            // Check in Italian
+            var prev = Strings.CurrentLanguage;
+            try
+            {
+                Strings.CurrentLanguage = "it";
+                window.ShowDecisions(emptyPayload!);
+                window.OpenSide("decisions");
+                window.UpdateLayout();
+
+                Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Decisioni");
+                Assert.True(Has(window, "Nessuna decisione in attesa"));
+            }
+            finally
+            {
+                Strings.CurrentLanguage = prev;
+            }
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
 }

@@ -10,7 +10,7 @@ function nowIso() {
 
 function isStepStarted(subTasks = [], megaTaskId) {
   if (!megaTaskId || !Array.isArray(subTasks)) return false;
-  return subTasks.some(sub => sub.megaTaskId === megaTaskId && (sub.status === 'RUNNING' || sub.status === 'COMPLETE'));
+  return subTasks.some(sub => sub && sub.megaTaskId === megaTaskId && (sub.status === 'RUNNING' || sub.status === 'COMPLETE'));
 }
 
 function isAutoDecide(projectId, settings = {}, projectData = null) {
@@ -27,6 +27,7 @@ function isAutoDecide(projectId, settings = {}, projectData = null) {
 }
 
 function autoDecideDecision(decision, { leadLabel = 'Lead', reason = null, now = nowIso } = {}) {
+  if (!decision) return null;
   const chosen = String(decision.suggestion || 'yes').trim();
   const autoReason = reason || (decision.suggestion ? `Followed recommended suggestion: ${decision.suggestion}` : 'Safe default accepted.');
   decision.answer = chosen;
@@ -40,7 +41,7 @@ function autoDecideDecision(decision, { leadLabel = 'Lead', reason = null, now =
 function collectDecisions({ projects = [], execution = {}, pipelineJobs = [], settings = {}, now = nowIso } = {}) {
   const allDecisions = [];
   const projectMap = new Map();
-  for (const p of projects) {
+  for (const p of (projects || [])) {
     if (p && p.id) {
       projectMap.set(p.id, p);
     } else if (p && p.project && p.project.id) {
@@ -48,14 +49,15 @@ function collectDecisions({ projects = [], execution = {}, pipelineJobs = [], se
     }
   }
 
-  const megaTasks = Array.isArray(execution.megaTasks) ? execution.megaTasks : [];
-  const subTasks = Array.isArray(execution.subTasks) ? execution.subTasks : [];
-  const decisions = Array.isArray(execution.decisions) ? execution.decisions : [];
+  const megaTasks = Array.isArray(execution?.megaTasks) ? execution.megaTasks : [];
+  const subTasks = Array.isArray(execution?.subTasks) ? execution.subTasks : [];
+  const decisions = Array.isArray(execution?.decisions) ? execution.decisions : [];
 
   for (const d of decisions) {
+    if (!d) continue;
     const project = projectMap.get(d.projectId);
     const projectName = project?.name || d.projectId || 'Project';
-    const mega = megaTasks.find(m => m.id === d.megaTaskId);
+    const mega = megaTasks.find(m => m && m.id === d.megaTaskId);
     const workTitle = mega?.title || mega?.goal || d.megaTaskId || 'Work';
     const stepStarted = isStepStarted(subTasks, d.megaTaskId);
 
@@ -78,7 +80,7 @@ function collectDecisions({ projects = [], execution = {}, pipelineJobs = [], se
     });
   }
 
-  for (const job of pipelineJobs) {
+  for (const job of (pipelineJobs || [])) {
     if (!job) continue;
     const project = projectMap.get(job.projectId);
     const projectName = project?.name || job.projectId || 'Pipeline';
@@ -112,12 +114,14 @@ function collectDecisions({ projects = [], execution = {}, pipelineJobs = [], se
 
   function sortComparator(a, b) {
     // Breaking decisions come first
-    if (a.breaks !== b.breaks) {
-      return a.breaks ? -1 : 1;
+    if (Boolean(a?.breaks) !== Boolean(b?.breaks)) {
+      return a?.breaks ? -1 : 1;
     }
-    // Newest first
-    const timeA = new Date(a.answeredAt || a.at || 0).getTime();
-    const timeB = new Date(b.answeredAt || b.at || 0).getTime();
+    // Newest first, with NaN resilience
+    const rawA = a?.answeredAt || a?.at || 0;
+    const rawB = b?.answeredAt || b?.at || 0;
+    const timeA = Number.isNaN(new Date(rawA).getTime()) ? 0 : new Date(rawA).getTime();
+    const timeB = Number.isNaN(new Date(rawB).getTime()) ? 0 : new Date(rawB).getTime();
     return timeB - timeA;
   }
 
@@ -132,11 +136,23 @@ function collectDecisions({ projects = [], execution = {}, pipelineJobs = [], se
   };
 }
 
-function delegateDecision(execution, projectId, decisionId, { leadLabel = 'Lead', reason = null, now = nowIso } = {}) {
+function delegateDecision(execution, projectId, decisionId, { pipelineJobs = [], leadLabel = 'Lead', reason = null, now = nowIso } = {}) {
+  if (decisionId && String(decisionId).startsWith('pipeline:')) {
+    const parts = String(decisionId).split(':');
+    const jobId = parts[1];
+    const qId = parts.slice(2).join(':');
+    const job = (pipelineJobs || []).find(j => j && (jobId ? j.id === jobId : j.projectId === projectId));
+    const question = job && Array.isArray(job.questions) ? job.questions.find(q => q && q.id === qId) : null;
+    if (!question) {
+      return { ok: false, reason: 'Pipeline decision not found.' };
+    }
+    autoDecideDecision(question, { leadLabel, reason, now });
+    return { ok: true, decision: question };
+  }
   if (!execution || !Array.isArray(execution.decisions)) {
     return { ok: false, reason: 'Execution state not available.' };
   }
-  const decision = execution.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+  const decision = execution.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
   if (!decision) {
     return { ok: false, reason: 'Decision not found.' };
   }
@@ -144,18 +160,38 @@ function delegateDecision(execution, projectId, decisionId, { leadLabel = 'Lead'
   return { ok: true, decision };
 }
 
-function answerDecision(execution, projectId, decisionId, answer, { who = 'owner', subTasks = [], now = nowIso } = {}) {
+function answerDecision(execution, projectId, decisionId, answer, { pipelineJobs = [], who = 'owner', subTasks = [], now = nowIso } = {}) {
+  if (decisionId && String(decisionId).startsWith('pipeline:')) {
+    const parts = String(decisionId).split(':');
+    const jobId = parts[1];
+    const qId = parts.slice(2).join(':');
+    const job = (pipelineJobs || []).find(j => j && (jobId ? j.id === jobId : j.projectId === projectId));
+    const question = job && Array.isArray(job.questions) ? job.questions.find(q => q && q.id === qId) : null;
+    if (!question) {
+      return { ok: false, reason: 'Pipeline decision not found.' };
+    }
+    const stepStarted = job.status === 'specifying' || job.status === 'building' || job.status === 'merged';
+    if (question.answer && stepStarted) {
+      return { ok: false, reason: 'The step that needs this decision has already started.' };
+    }
+    const val = String(answer || '').trim();
+    question.answer = (val === 'accepted' && question.suggestion) ? question.suggestion : (val || 'yes');
+    question.answeredBy = who === 'owner' ? 'owner' : who;
+    question.answeredAt = typeof now === 'function' ? now() : now;
+    return { ok: true, decision: question };
+  }
   if (!execution || !Array.isArray(execution.decisions)) {
     return { ok: false, reason: 'Execution state not available.' };
   }
-  const decision = execution.decisions.find(item => item.projectId === projectId && item.id === decisionId);
+  const decision = execution.decisions.find(item => item && item.projectId === projectId && item.id === decisionId);
   if (!decision) {
     return { ok: false, reason: 'Decision not found.' };
   }
   if (decision.answer && isStepStarted(subTasks, decision.megaTaskId)) {
     return { ok: false, reason: 'The step that needs this decision has already started.' };
   }
-  decision.answer = String(answer || '').trim();
+  const val = String(answer || '').trim();
+  decision.answer = (val === 'accepted' && decision.suggestion) ? decision.suggestion : (val || 'yes');
   decision.answeredBy = who === 'owner' ? 'owner' : who;
   decision.answeredAt = typeof now === 'function' ? now() : now;
   return { ok: true, decision };

@@ -168,3 +168,88 @@ test('isAutoDecide checks project settings, fallback to global default', () => {
   assert.equal(isAutoDecide('p1', {}, { autoDecide: true }), true);
   assert.equal(isAutoDecide('p1', {}, { autoDecide: false }), false);
 });
+
+test('collectDecisions handles malformed or null items, corrupt timestamps, and sorts breaking first', () => {
+  const collected = collectDecisions({
+    projects: [null, { id: 'p1', name: 'Project 1' }, undefined],
+    execution: {
+      megaTasks: [null, { id: 'm1', projectId: 'p1', title: 'Task 1' }],
+      subTasks: [null, { megaTaskId: 'm1', status: 'PENDING' }],
+      decisions: [
+        null,
+        { id: 'd-normal', projectId: 'p1', megaTaskId: 'm1', text: 'Normal?', breaks: false, at: 'invalid-date', answer: '' },
+        { id: 'd-break', projectId: 'p1', megaTaskId: 'm1', text: 'Break?', breaks: true, at: null, answer: '' }
+      ]
+    },
+    pipelineJobs: [null, { id: 'pipe1', projectId: 'p1', questions: [null, { id: 'q1', text: 'Q1?', breaks: false, at: undefined }] }]
+  });
+
+  assert.equal(collected.open.length, 3);
+  assert.equal(collected.openCount, 3);
+  // Breaking decision is first despite invalid dates
+  assert.equal(collected.open[0].id, 'd-break');
+  assert.equal(collected.open[0].breaks, true);
+});
+
+test('pipeline decisions can be answered and delegated, and reject changes once step started', () => {
+  const pipelineJobs = [
+    {
+      id: 'pipe-intake',
+      projectId: 'proj-x',
+      status: 'intake',
+      questions: [
+        { id: 'q-a', text: 'Include unit tests?', suggestion: 'yes', breaks: false, answer: '' },
+        { id: 'q-b', text: 'Target architecture?', suggestion: 'arm64', breaks: true, answer: '' }
+      ]
+    },
+    {
+      id: 'pipe-building',
+      projectId: 'proj-x',
+      status: 'building',
+      questions: [
+        { id: 'q-c', text: 'Use staging DB?', suggestion: 'staging', breaks: false, answer: 'staging' }
+      ]
+    }
+  ];
+
+  // Delegate q-a to lead
+  const delRes = delegateDecision({}, 'proj-x', 'pipeline:pipe-intake:q-a', { pipelineJobs, leadLabel: 'Claude Sonnet' });
+  assert.equal(delRes.ok, true);
+  assert.equal(pipelineJobs[0].questions[0].answer, 'yes');
+  assert.equal(pipelineJobs[0].questions[0].answeredBy, 'Decided by Claude Sonnet');
+
+  // Answer q-b with 'accepted' -> adopts suggestion 'arm64'
+  const ansRes = answerDecision({}, 'proj-x', 'pipeline:pipe-intake:q-b', 'accepted', { pipelineJobs });
+  assert.equal(ansRes.ok, true);
+  assert.equal(pipelineJobs[0].questions[1].answer, 'arm64');
+
+  // Attempting to change an answered question in a building pipeline job is rejected
+  const rejRes = answerDecision({}, 'proj-x', 'pipeline:pipe-building:q-c', 'prod', { pipelineJobs });
+  assert.equal(rejRes.ok, false);
+  assert.match(rejRes.reason, /already started/);
+});
+
+test('concurrent and error paths for answerDecision and delegateDecision', () => {
+  const execution = {
+    decisions: [
+      { id: 'dec-concurrent', projectId: 'p1', megaTaskId: 'm1', text: 'Port number?', suggestion: '8080', breaks: false, answer: '' }
+    ]
+  };
+
+  // Missing decision returns error
+  assert.equal(answerDecision(execution, 'p1', 'nonexistent', 'val').ok, false);
+  assert.equal(delegateDecision(execution, 'p1', 'nonexistent').ok, false);
+
+  // Missing execution returns error
+  assert.equal(answerDecision(null, 'p1', 'dec-concurrent', 'val').ok, false);
+  assert.equal(delegateDecision(undefined, 'p1', 'dec-concurrent').ok, false);
+
+  // Safe whitespace trimming and empty suggestion fallback
+  const dNoSug = { id: 'no-sug', projectId: 'p1', megaTaskId: 'm1', text: 'Confirm?', suggestion: '', breaks: false };
+  autoDecideDecision(dNoSug, { leadLabel: 'Lead' });
+  assert.equal(dNoSug.answer, 'yes');
+
+  // Trimming in answerDecision
+  answerDecision(execution, 'p1', 'dec-concurrent', '   3000   ');
+  assert.equal(execution.decisions[0].answer, '3000');
+});

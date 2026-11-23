@@ -785,7 +785,11 @@ function createPhoneNotifier({
       const now = { __lead: crew?.lead || '' };
       for (const item of [...(crew?.build || []), ...(crew?.verify || [])]) now[item.id] = item.name;
       crewBefore.set(p.id, now);
-      const detail = alertType === 'restarted' ? 'The same step started again.' : '';
+      const openDecs = Array.isArray(p.openDecisions) && p.openDecisions.length
+        ? p.openDecisions
+        : ((snapshot?.decisionsInbox?.open || []).filter(d => d.projectId === p.id));
+      const firstDec = openDecs.length ? openDecs[0] : null;
+      const detail = alertType === 'restarted' ? 'The same step started again.' : (alertType === 'needs_owner' && firstDec?.text ? firstDec.text : '');
       await sendAlert({
         type: alertType,
         projectId: p.id,
@@ -795,7 +799,10 @@ function createPhoneNotifier({
         detail,
         step: p.step,
         crew,
-        savingMode: p.savingMode
+        savingMode: p.savingMode,
+        decisionId: alertType === 'needs_owner' ? firstDec?.id : undefined,
+        suggestion: alertType === 'needs_owner' ? firstDec?.suggestion : undefined,
+        breaks: alertType === 'needs_owner' ? Boolean(firstDec?.breaks) : undefined
       });
     }
   }
@@ -1262,10 +1269,29 @@ function createPhoneNotifier({
       const parts = data.split(':');
       const projId = parts[1];
       const decId = parts.slice(2).join(':');
+      if (!projId || !decId) return;
       const lang = languageOrDefault(loadPhoneSettings(storeDir).language);
       const isIt = lang === 'it';
+      let err = null;
       if (typeof onAnswerDecision === 'function') {
-        try { await onAnswerDecision(projId, decId, 'accepted'); } catch {}
+        try {
+          const res = await onAnswerDecision(projId, decId, 'accepted');
+          if (res && res.ok === false) err = res.reason;
+        } catch (e) {
+          err = e.message;
+        }
+      }
+      if (err) {
+        const errMsg = isIt && err.includes('already started')
+          ? '⚠️ Il passo che richiede questa decisione è già iniziato.'
+          : `⚠️ ${err}`;
+        await sendTelegramMessage({
+          token, chatId,
+          text: errMsg,
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl, fetchImpl
+        });
+        return;
       }
       await sendTelegramMessage({
         token, chatId,
@@ -1279,10 +1305,29 @@ function createPhoneNotifier({
       const parts = data.split(':');
       const projId = parts[1];
       const decId = parts.slice(2).join(':');
+      if (!projId || !decId) return;
       const lang = languageOrDefault(loadPhoneSettings(storeDir).language);
       const isIt = lang === 'it';
+      let err = null;
       if (typeof onDelegateDecision === 'function') {
-        try { await onDelegateDecision(projId, decId); } catch {}
+        try {
+          const res = await onDelegateDecision(projId, decId);
+          if (res && res.ok === false) err = res.reason;
+        } catch (e) {
+          err = e.message;
+        }
+      }
+      if (err) {
+        const errMsg = isIt && err.includes('already started')
+          ? '⚠️ Il passo che richiede questa decisione è già iniziato.'
+          : `⚠️ ${err}`;
+        await sendTelegramMessage({
+          token, chatId,
+          text: errMsg,
+          replyMarkup: mainKeyboard(),
+          apiBaseUrl, fetchImpl
+        });
+        return;
       }
       await sendTelegramMessage({
         token, chatId,
