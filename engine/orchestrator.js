@@ -1401,7 +1401,18 @@ function createOrchestrator(options) {
     replacement: (sub, exclude) => {
       const mode = stepSavingMode(projectOfSub(sub), sub, false);
       const job = mode === 'normal' ? sub : { ...sub, savingMode: mode };
-      return pickWorker(roster(), { job, usage: store.usage, skip: exclude, plans: plansLive, low: isLow, savingMode: mode });
+      // Verify checks somebody else's work: a replacement never takes a model that built a step of the same
+      // work, and a company that did not build comes first. With nobody else, the step waits.
+      let list = roster(), skip = [...(exclude || [])];
+      if (assignmentRole(sub) === 'verifier' && sub?.megaTaskId) {
+        const built = (store.execution.subTasks || []).filter(other => other && other.megaTaskId === sub.megaTaskId && other.id !== sub.id && assignmentRole(other) !== 'verifier')
+          .flatMap(other => [other.assignedModelId, other.fallbackFrom]).filter(Boolean);
+        const companies = new Set(built.map(id => { const model = list.find(item => item.id === id); return model && (model.companyId || model.providerId || model.provider); }).filter(Boolean));
+        skip = [...skip, ...built];
+        const companyOf = model => model.companyId || model.providerId || model.provider;
+        list = [...list.filter(model => !companies.has(companyOf(model))), ...list.filter(model => companies.has(companyOf(model)))];
+      }
+      return pickWorker(list, { job, usage: store.usage, skip, plans: plansLive, low: isLow, savingMode: mode });
     },
     now, persist, sessionId, leadId: () => leadModel()?.id || null });
 
