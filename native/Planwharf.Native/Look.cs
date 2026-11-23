@@ -54,6 +54,8 @@ static class Look
         ["git"] = """<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-3 5.5-7 5.5"/>""",
         ["close"] = """<path d="M6 6l12 12M18 6L6 18"/>""",
         ["chevron"] = """<path d="M9 6l6 6-6 6"/>""",
+        ["pipeline"] = """<path d="M3 12h18M16 7l5 5-5 5"/><circle cx="7" cy="12" r="3"/><circle cx="14" cy="12" r="3"/>""",
+        ["loop"] = """<path d="M21 12a9 9 0 1 1-3.2-6.9L21 8"/><path d="M21 3v5h-5"/>""",
     };
 
     static readonly Regex Element = new(@"<(path|circle|rect)\s+([^>]*?)/>");

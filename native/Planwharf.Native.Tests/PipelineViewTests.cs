@@ -277,4 +277,21 @@ public sealed class PipelineViewTests : IDisposable
         Assert.Equal("Intake", view.Jobs[0].StageDetails[0].StageName);
         Assert.Equal("Valid intake", view.Jobs[0].StageDetails[0].Summary);
     }
+
+    [Fact]
+    public void View_ReadProjectView_PopulatesStageStripAndExplainer()
+    {
+        WriteJob(ProjectAlpha, Job1, "building");
+        var view = PipelineViews.ReadProjectView(Attempts(), ProjectAlpha);
+
+        Assert.Single(view.Jobs);
+        Assert.NotNull(view.Explainer);
+        Assert.Equal(7, view.Explainer.Stages.Count);
+
+        var strip = view.Jobs[0].Strip;
+        Assert.NotNull(strip);
+        Assert.Equal(7, strip.Stages.Count);
+        Assert.Equal(PipelineStageStatus.Active, strip.Stages[3].Status);
+        Assert.Equal(PipelineStageNames.BuildAndReview, strip.Stages[3].Id);
+    }
 }
