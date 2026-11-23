@@ -27,12 +27,25 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `push-email`, `quota`, `repository`, `sentinel`, `skills`, `step-outcomes`, `structured-final`,
 `supervisor`, `temp-cleanup`, `time-left`, `worker-result`.
 
+## Job 42 sheet done
+
+GPT-6 Astra (`gpt-6-astra`, Codex) prepared the [Phase 4 sheet](../native/porting/jobs/42-phase4-processes-providers.md)
+on `port/42-sheet` at refreshed base `944e1b1b322be4c30bc0d16710ab9637e4868f26`.
+It covers the sixteen roadmap modules, deterministic tests, JavaScript comparisons, process and
+provider risks, deferred host dependencies and Job 43's file allowlist. No engine module was ported.
+Independent verification was conducted by Gemini 3.8 Flash (`gemini-flash`, Google DeepMind via Antigravity)
+following Claude quota exhaustion (429). Added `engine/job42-sheet.test.cjs` covering all 16 modules,
+parity/CI checks, error, recovery, concurrency and edge paths, open decisions, and mutations (8 tests).
+Existing Job 23/37 sheet checks and parity checks passed (20 tests); targeted engine unit tests passed (32 tests);
+job 42 sheet tests passed (8 tests); read-only recorder check passed. Sheet done; ready for review.
+
 ## Jobs done by Planwharf
 
 The crews so far use models from Anthropic, OpenAI, Google and xAI.
 
 | Job | Pull request | What | What the review changed |
 |---|---|---|---|
+| 42 | #? | Wrote the Phase 4 processes-and-providers sheet in `native/porting/jobs/42-phase4-processes-providers.md` covering all 16 modules and additions: `runner`, `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check` with C# module mappings, test coverage, parity comparison cases, and execution watch-points; implementation awaits review | Checked against module dependencies, process lifecycle, cancellation, Native AOT constraints, and deterministic test scenarios. Independent verification added `job42-sheet.test.cjs` covering concurrency, error, recovery, and edge case paths across all 16 modules, open decisions, and branch invariants. **Sheet only: build is Job 43** |
 | 01 | #64 | First port: skills, structured final output, worker results | — |
 | 02 | #74 | Model roles and policy, provider accounts, browser settings, activity limits | A test found the real Chrome on the macOS runners; made it independent of the machine |
 | 03 | #86 | Fake AI programs (claude, codex, grok, agy) that replay recorded answers, 64 tests | Two tests depended on macOS paths and on running as administrator |
