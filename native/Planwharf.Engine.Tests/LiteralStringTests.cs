@@ -20,7 +20,20 @@ public sealed class LiteralStringTests
         "URI malformed", "Invalid time value", "store.refusals is not an object",
         "C:\\Projects\\my-website", "~/Projects/my-website", "C:\\Projects", "~/Projects",
         "https://github.com/you/my-website", "https://api.deepseek.com/v1", "DeepSeek",
-        "DEEPSEEK_API_KEY", "deepseek-chat", "qwen2.5:3b"
+        "DEEPSEEK_API_KEY", "deepseek-chat", "qwen2.5:3b",
+        "Invalid account folder.", "Invalid account folders file.", "Account folders file is busy.", "This AI tool does not support another account.",
+        "attempt store directory required", "attempt store locked",
+        "Import a Planwharf project export (schema 1).",
+        "Invalid provider catalog: expected schema 3 providers.", "Provider IDs must be nonempty and unique.", "Model IDs must be nonempty and unique.",
+        "Invalid provider policy fields.", "Fallback must be an explicit provider ID or null.",
+        "Research source protection is not supported by the requested adapter: ", "Invalid alwaysApprove model policy.",
+        "PERMISSION_MODE_UNSUPPORTED: Antigravity has no verified unattended approval bridge. Enable Always approve / YOLO explicitly or select another adapter.",
+        "PERMISSION_NEEDED: {provider} needs your OK to work in the project folder without asking each time. Allow it in Team > AI tools, or choose another model for this step.",
+        "Invalid Supervisor storage", "Select an existing project.", "Select an eligible Supervisor model; no substitution is allowed.",
+        "Select a Supervisor before enabling anomaly analysis.", "This alert is no longer active for the selected project.",
+        "A Supervisor answer is already in progress.", "Enter a question of at most 8000 characters.", "Supervisor review handler not configured.",
+        "Supervisor returned no answer.",
+        "removeTempDir only removes folders inside the temp directory"
     };
 
     internal static IEnumerable<string> FindUnlocalized(string source)

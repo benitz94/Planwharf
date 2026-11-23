@@ -13,16 +13,19 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **23 of 72** | 72 |
-| JavaScript engine lines ported | **about 1,856 of 14,000** (13%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), the pipeline (jobs 32 to 34), the phase 3 sheet (job 37), the pipeline drawn (job 38), the decisions inbox (job 39); next: the port of phase 3 (job 40) | 0 to 8 |
-| C# engine tests | 709, plus 247 comparison cases with the JavaScript | |
+| Engine modules ported to C# | **46 of 72** | 72 |
+| JavaScript engine lines ported | **about 4,723 of 14,000** (34%) | all; the orchestrator alone is about 3,800 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), the pipeline (jobs 32 to 34), the phase 3 sheet (job 37), the pipeline drawn (job 38), the decisions inbox (job 39), phase 3 (job 40); next: processes and providers sheet (job 41) | 0 to 8 |
+| C# engine tests | 827, plus 247 comparison cases with the JavaScript | |
 
-Ported so far: `activity-events`, `activity-evidence`, `atomic-rename`, `autonomy`, `briefing`,
-`browser-settings`, `invocations`, `model-policy`, `model-roles`, `models`, `notebook-file`,
-`plan`, `project-checks`, `project-history`, `project-workspace`, `provider-accounts`,
-`provider-diagnostics`, `provider-refusal`, `quota`, `sentinel`, `skills`, `structured-final`,
-`worker-result`.
+Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
+`atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`, `claims`, `claude`,
+`claude-usage`, `execution-next`, `invocations`, `model-policy`, `model-roles`, `model-routing`,
+`models`, `notebook-file`, `phone-activation`, `phone-voice`, `plan`, `plan-status`, `project-checks`,
+`project-export`, `project-history`, `project-workspace`, `provider-accounts`, `provider-catalog`,
+`provider-diagnostics`, `provider-policy`, `provider-refusal`, `provider-runtime`, `provider-status`,
+`push-email`, `quota`, `repository`, `sentinel`, `skills`, `step-outcomes`, `structured-final`,
+`supervisor`, `temp-cleanup`, `time-left`, `worker-result`.
 
 ## Jobs done by Planwharf
 
@@ -70,6 +73,7 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | 37 | #209 | Wrote the Phase 3 first-level engine porting sheet in `native/porting/jobs/37-phase3-first-level.md` covering all 23 modules and additions: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation`, and `step-outcomes` with C# module mappings, test coverage, parity comparison cases, and execution watch-points; implementation awaits review | Checked against module dependencies, Native AOT serialization constraints, process argument vector safety, atomic locking invariants, and existing test suites. Independent verification added `job37-sheet.test.cjs` covering concurrency, error, recovery, and edge case paths across all 23 modules, open decisions, and branch invariants. **Sheet only: build is Job 40** |
 | 38 | #? | The pipeline you can see: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works | Built visual pipeline stages strip (Request → Questions → Spec and tests → Build ⇄ Review → Checks → Pull request → Merged), plain-words active stage highlighter, review loop counter indicator (e.g. 'round 2 of 3'), owner intervention points ('Needs you'), workflow explainer diagram drawn from job files at zero token cost, English and Italian translations in Strings.cs, and comprehensive unit and headless view tests in PipelineStripTests.cs and PipelineViewTests.cs |
 | 39 | #? | One inbox for decisions: cross-project and pipeline decisions inbox in the top bar with pending count, Auto mode for lead decisions with break highlighting, per-decision lead delegation, phone /decisions support, English and Italian translations | Built decisions inbox module in engine (`decisions-inbox.cjs`) aggregating open and answered decisions across all projects and pipeline jobs, Auto mode per-project and globally in Settings, per-decision lead delegation ('Let the lead decide'), step start locking, phone /decisions command and decision alert actions with break highlighting, Italian translations in Strings.cs, C# engine models and parser in DecisionsInbox.cs, native UI panel and top bar tab in MainWindow.cs, and automated tests in decisions-inbox.test.cjs, phone-decisions.test.cjs, DecisionsInboxTests.cs, and DecisionsInboxViewTests.cs |
+| 40 | #? | Ported twenty-three Phase 3 engine modules to C#: attempts, claims, project-export, execution-next, provider-catalog, provider-policy, model-routing, claude, claude-usage, repository, supervisor, activity, activity-sessions, provider-runtime, time-left, plan-status, provider-status, push-email, temp-cleanup, account-folders, phone-voice, phone-activation, step-outcomes | Built 23 C# modules in Planwharf.Engine and 23 xUnit test suites in Planwharf.Engine.Tests; zero compiler warnings under Native AOT analyzers (PublishAot=true, TreatWarningsAsErrors=true); full parity verification passing |
 
 ## Improvements found while Planwharf worked on itself
 
