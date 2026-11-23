@@ -1,5 +1,7 @@
 # Job 21: pipeline build
 
+> **Update (owner, 23 November 2026):** a reviewer from another company is a **preference**, not a rule. The routing tries another company first; with none free, any available model reviews, and a job never waits only for that.
+
 **Goal.** After this sheet is reviewed, build the pipeline stages that follow an
 approved spec: routing by risk and parts touched, one worktree and one branch
 per job, build and review in pairs with rounds, calls into the job 19 gate, and
