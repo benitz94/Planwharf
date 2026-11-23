@@ -2395,7 +2395,7 @@ function createOrchestrator(options) {
           megaTask: row.megaTask || null,
           subTasks: (row.subTasks || []).map(sub => ({ ...sub, plainLine: plainLines.stepLine(sub).line })),
           plain: plainLines.forWork(row.megaTask, row.subTasks, row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId) : []),
-          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, status: result.status, summary: clipSummary(result.summary), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
+          results: row.megaTaskId ? store.execution.results.filter(result => result.megaTaskId === row.megaTaskId).map(result => ({ subTaskId: result.subTaskId, ...(result.assignedModelId ? { modelId: result.assignedModelId } : {}), status: result.status, summary: clipSummary(result.summary), testsReported: Array.isArray(result.tests) ? result.tests.length : 0, ...(result.modelChange ? { modelChange: true } : {}) })) : [],
           checkpointId: row.checkpoint?.id || null,
           resumableCheckpoints: bridge.view(item.project.id).checkpoints.filter(cp => ['PAUSED', 'FAILED'].includes(bridge.target(item.project.id, cp.megaTaskId).status)),
           modelId: row.modelId,

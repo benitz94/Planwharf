@@ -459,3 +459,16 @@ console.log('verify-4: concurrency, roundtrip, edge cases passed');
   assert.equal(planFile.pullRequestTitle('Fix the login page.', ['Check the work']), 'Fix the login page');
   console.log('pull request titles passed');
 }
+
+// --- Pull request crew: who led, built and verified, with takeovers ---
+{
+  const models = [{ id: 'opus', label: 'Opus 5.5' }, { id: 'gem', label: 'Gemini 3.8' }, { id: 'astra', label: 'GPT-6 Astra' }];
+  const row = { leadLabel: 'Grok 4.7',
+    subTasks: [{ id: 'a', title: 'Port quota', assignedModelId: 'gem' }, { id: 'v', title: 'Verify the work independently against the job', assignedModelId: 'astra' }],
+    results: [{ subTaskId: 'a', modelId: 'opus' }, { subTaskId: 'a', modelId: 'gem' }, { subTaskId: 'v', modelId: 'astra' }] };
+  assert.equal(planFile.crewSection(row, models), '## Crew\n\n- Lead: Grok 4.7\n- Build: Opus 5.5 → Gemini 3.8 (Port quota)\n- Verify: GPT-6 Astra');
+  // A step with no result yet still names its model; nothing known gives no section.
+  assert.equal(planFile.crewSection({ subTasks: [{ id: 'a', title: 'Build', assignedModelId: 'opus' }] }, models), '## Crew\n\n- Build: Opus 5.5 (Build)');
+  assert.equal(planFile.crewSection({}, models), '');
+  console.log('pull request crew passed');
+}

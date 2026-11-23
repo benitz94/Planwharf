@@ -139,6 +139,26 @@ function pullRequestTitle(goal, stepTitles = []) {
   return (fuller || short).slice(0, 120);
 }
 
+// Who did the work, for the pull request: the lead, and each step with every model that worked on it, in
+// order ("Opus 5.5 → Gemini 3.8" when one took over). Labels only: no paths, no account.
+function crewSection(row = {}, models = []) {
+  const label = id => (models.find(model => model && model.id === id) || {}).label || id || '';
+  const lead = row.leadLabel || (Array.isArray(row.crew) ? row.crew : []).find(member => member && member.role === 'Orchestrator')?.name || '';
+  const lines = [];
+  if (lead) lines.push(`- Lead: ${lead}`);
+  for (const sub of Array.isArray(row.subTasks) ? row.subTasks : []) {
+    if (!sub) continue;
+    const who = [];
+    for (const result of Array.isArray(row.results) ? row.results : []) if (result && result.subTaskId === sub.id && result.modelId && !who.includes(label(result.modelId))) who.push(label(result.modelId));
+    const last = label(sub.assignedModelId);
+    if (last && who[who.length - 1] !== last) who.push(last);
+    if (!who.length) continue;
+    const role = /^Verify the work independently/i.test(String(sub.title || '')) ? 'Verify' : 'Build';
+    lines.push(`- ${role}: ${who.join(' → ')}${role === 'Build' && sub.title ? ' (' + String(sub.title).split(/\r?\n/)[0].slice(0, 80) + ')' : ''}`);
+  }
+  return lines.length ? '## Crew\n\n' + lines.join('\n') : '';
+}
+
 function shortSha(sha) { return String(sha || '').slice(0, 7); }
 
 function remoteDefault(folder) {
@@ -431,6 +451,6 @@ function finish(folder, spec = {}) {
 }
 
 module.exports = { isNoise,
-  EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, pullRequestTitle, shortGoal,
+  EXCLUDE_LINE, RULES, isGit, dirtyMessage, namedBranch, branchName, pullRequestTitle, crewSection, shortGoal,
   prepare, writePlan, read, parse, tickStep, finish, commitNote, currentBranch, pushed, planPath
 };
