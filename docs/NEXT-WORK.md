@@ -74,17 +74,19 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 31 | Native app | **Clearer screens**: Work finished says first what was done, whether it works and what to do now; steps and events in plain words, the technical text in the details; larger, higher-contrast text; Team and Settings with everyday and advanced parts; new screenshots and a README that shows the app right after the diagram. Sheet below | `feat/clearer-screens` | Done (#202) |
 | 32 | Protocol and pipeline | Build pipeline part 1: queue, intake, spec, job state, as `native/porting/jobs/20-pipeline-intake.md` says (the sheet of job 20) | `feat/pipeline-intake-build` | Done (#203) |
 | 33 | Protocol and pipeline | Build pipeline part 2: routing, build and review in pairs, a pull request per job, as `native/porting/jobs/21-pipeline-build.md` says (the sheet of job 21) | `feat/pipeline-build-build` | Done (#204) |
-| 34 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | Done, waiting for review |
-| 35 | Safety | **Sandbox sheet**: how each worker runs isolated on Linux, macOS and Windows (what it can read and write, the network, the commands that need the owner's OK), built on what the AI tools already offer. Sheet only; the build is a job of its own after review. Sheet below | `docs/sandbox-sheet` | Done, waiting for review |
-| 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | Done, waiting for review |
+| 34 | Protocol and pipeline | Build pipeline part 3: several jobs at once, the pipeline view, the merge option, as `native/porting/jobs/22-pipeline-run.md` says (the sheet of job 22); and switching between Chat and Pipeline as [the design](DESIGN-PIPELINE.md#switching-between-the-two) says: the Pipeline position of the switch, Send to the pipeline, Take it to the chat, both running at once. Tests: switch back and forth with work running in each, and after a restart | `feat/pipeline-run-build` | Done (#206) |
+| 35 | Safety | **Sandbox sheet**: how each worker runs isolated on Linux, macOS and Windows (what it can read and write, the network, the commands that need the owner's OK), built on what the AI tools already offer. Sheet only; the build is a job of its own after review. Sheet below | `docs/sandbox-sheet` | Done (#207) |
+| 36 | Engine | **Step outcomes**: for every finished step, keep the model, the kind of work, its size, whether Verify accepted it or had to fix it, the tests, the time and the quota used, as the base for choosing models by results later. Sheet below | `feat/step-outcomes` | Done (#208) |
 | 37 | 3. First level | Write the sheet: `attempts`, `claims`, `project-export`, `execution-next`, `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`, and the modules added after the plan: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation` (split in two jobs if it is too large) | `port/37-sheet` | To do |
-| 38 | 3. | Port them, as sheet 37 says | `port/38-phase3` | To do |
-| 39 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/39-sheet` | To do |
-| 40 | 4. | Port them, as sheet 39 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/40-phase4` | To do |
-| 41 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/41-sheet` | To do |
-| 42 | 5. | Port them, as sheet 41 says. Then **stop**: the owner approves the orchestrator split | `port/42-phase5` | To do |
-| 43 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/43-sheets` | To do |
-| 44+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/44-…` | To do |
+| 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | To do |
+| 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | To do |
+| 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | To do |
+| 41 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/41-sheet` | To do |
+| 42 | 4. | Port them, as sheet 41 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/42-phase4` | To do |
+| 43 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/43-sheet` | To do |
+| 44 | 5. | Port them, as sheet 43 says. Then **stop**: the owner approves the orchestrator split | `port/44-phase5` | To do |
+| 45 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/45-sheets` | To do |
+| 46+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/46-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 | — | After the port | **Benchmarks**, repeated on small, medium and large tasks: reliability, defects, time and quota, Planwharf against each AI tool alone; no saving claimed that the numbers do not show | — | To do |
@@ -648,3 +650,51 @@ the benchmarks, after the port.
 
 **Tests.** One line per finished step with every field; a step that was switched or refused is recorded as
 such; no path or code in the file; the summary counts match the lines.
+
+## Job 38. The pipeline you can see
+
+**Why.** The pipeline view of job 34 lists the jobs with their stage written as a word. The owner must see the
+flow without knowing the words.
+
+**What.**
+
+1. **The stages as a strip**, the same for every job: Request → Questions → Spec and tests → Build ⇄ Review →
+   Checks → Pull request → Merged. Done stages are ticked, the current one is lit and says what is happening
+   in plain words ("Gemini is reviewing task 2 of 3"), the next ones are grey. A round back from Review to
+   Build shows as the loop arrow with its count ("round 2 of 3"); a stage waiting for the owner is marked
+   "Needs you" and opens the decision.
+2. **One picture of how it works**: in the panel when the queue is empty and behind a "How it works" link
+   otherwise, and in the user guide. The same strip with one plain sentence per stage, and where the owner
+   steps in (answers the questions, approves the spec, merges the pull request).
+3. The strip is drawn by the app from the job files, never by a model, so it costs no tokens.
+
+**Tests.** The strip shows the right stage for each job status, the loop count after a review round, "Needs
+you" for a stage waiting for the owner, and the picture when the queue is empty; English and Italian.
+
+## Job 39. One inbox for decisions
+
+**Why.** Decisions only the owner can make appear under their own project. With several projects, or the
+pipeline running several jobs, the owner must look in each one. And sometimes the owner prefers the lead to
+choose.
+
+**What.**
+
+1. **Decisions** in the top bar, next to Pull requests, with the number waiting: every open decision of every
+   project and pipeline job, newest first, each with its project, the work it belongs to, the question in
+   plain words, the suggestion, whether a wrong choice could break something, and the buttons to answer (as
+   under the work today). Answered ones move to "Answered", with who answered and when.
+2. **Auto**, per project (and a general default in Settings): the lead decides each new decision itself. It
+   chooses, writes one line saying why, and the work goes on; the inbox shows it as "Decided by <lead>" with
+   the reason, and the owner can change the answer until the step that needs it starts. A decision marked
+   "could break something" is decided by the lead too, but it is listed first and highlighted, and the phone
+   says so, so the owner can look.
+3. **One click per decision** to let the lead decide only that one ("Let the lead decide"), whatever the
+   project setting.
+4. The phone: "/decisions" lists the open ones; each alert that needs the owner carries the same two choices
+   (the suggestion, or let the lead decide).
+5. English and Italian; the user guide describes the inbox and Auto.
+
+**Tests.** Engine: decisions from two projects and a pipeline job appear in one list; Auto answers with the
+lead's choice and reason and the work goes on; a breaking decision under Auto is answered and highlighted;
+"Let the lead decide" on one decision; changing an answer before the step starts; the answered list. Native:
+the count in the top bar, the buttons, the Auto switch. Phone: /decisions and the two choices.
