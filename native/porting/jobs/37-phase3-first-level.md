@@ -4,7 +4,7 @@
 with their test coverage, comparison parity cases, data structures, and execution watch-points,
 following [native/porting/README.md](../README.md) (rules 1 to 12) and [PLAN.md](../PLAN.md) (phase 3).
 This document is the deliverable of Job 37. It specifies the architecture, interfaces, and invariants;
-Job 38 (`port/38-phase3`) implements the port following owner review. The JavaScript stays the specification.
+Job 40 (`port/40-phase3`) implements the port following owner review. The JavaScript stays the specification.
 
 ---
 
@@ -831,7 +831,7 @@ All test files belong to namespace `Planwharf.Engine.Tests` in `native/Planwharf
 
 ## 8. Verification Plan & CI Commands
 
-When Job 38 implements this specification, verification must confirm that all 23 modules compile with zero warnings and pass both parity comparisons and native test suites.
+When Job 40 implements this specification, verification must confirm that all 23 modules compile with zero warnings and pass both parity comparisons and native test suites.
 
 ```sh
 # 1. Record JavaScript reference cases
@@ -849,9 +849,9 @@ dotnet test native/Planwharf.Engine.Tests -c Release
 
 ---
 
-## 9. Permitted File Scope for Implementation (Job 38)
+## 9. Permitted File Scope for Implementation (Job 40)
 
-Job 38 is authorized to touch only:
+Job 40 is authorized to touch only:
 1. `native/Planwharf.Engine/*.cs`: The 23 C# module implementations.
 2. `native/Planwharf.Engine.Tests/*Tests.cs`: The corresponding xUnit test files.
 3. `native/Planwharf.Engine.Tests/ParityTests.cs`: Wiring of the new Phase 3 module functions into `ParityTests.Ports`.
@@ -865,7 +865,7 @@ The JavaScript files in `engine/*.cjs` and `engine/*.js` remain the immutable sp
 
 ## 10. Open Design Decisions
 
-The following design decisions are documented for the owner's review prior to starting Job 38:
+The following design decisions are documented for the owner's review prior to starting Job 40:
 
 1. **Supervisor auto-review execution**: Whether supervisor background auto-review should invoke an asynchronous thread pool worker or queue a pending review slice in the project durable plan.
 2. **Phone voice synthesis API integration**: Whether PhoneVoice in C# should integrate system text-to-speech APIs or remain strictly a message formatter for mobile notification channels (Telegram, ntfy).
@@ -908,4 +908,4 @@ No Phase 3 C# implementation files on this branch:
 ## 12. Hand Over
 
 Job 37 commits on `port/37-sheet` and stops. It does not push and does not merge.
-Job 38 implements the 23 modules on `port/38-phase3` following owner review of this specification sheet.
+Job 40 implements the 23 modules on `port/40-phase3` following owner review of this specification sheet.

@@ -214,14 +214,14 @@ test('assessSheet rejects empty text, malformed structures, and premature implem
   assert.ok(assessSheet('The sandbox is implemented in full.').length > 0);
 });
 
-test('documentation reflects job 35 status and built-with entries', () => {
+test('documentation names job 35 as the sandbox sheet, whatever its status now', () => {
+  // The plan and the progress page move on after the review: only the job's place is checked, not a status
+  // that is true only on the job's own branch.
   const next = read('docs/NEXT-WORK.md');
-  assert.match(next, /\| 35 \| Safety \| \*\*Sandbox sheet\*\*.*\| `docs\/sandbox-sheet` \| Done, waiting for review \|/);
-  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| (?:To do|Done, waiting for review) \|/);
+  assert.match(next, /\| 35 \| Safety \| \*\*Sandbox sheet\*\*.*\| `docs\/sandbox-sheet` \| [^|]+ \|/);
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 35 \| #\? \|/);
+  assert.match(built, /\| 35 \| (?:#\?|#\d+) \|/);
   assert.match(built, /Sheet only: build is a later job/);
-  assert.doesNotMatch(built, /\| 35 \| #\d+/);
 });
 
 test('the verdict stays on the sheet branch and conforms to plan', () => {
@@ -233,13 +233,4 @@ test('the verdict stays on the sheet branch and conforms to plan', () => {
   assert.ok(changed.includes(sheetPath));
   assert.equal(git(['diff', '--check', 'origin/main...HEAD']), '');
   assert.equal(fs.existsSync(path.join(root, 'native/Planwharf.Engine/Sandbox.cs')), false);
-  const next = read('docs/NEXT-WORK.md');
-  assert.match(next, /\| 35 \| Safety \| \*\*Sandbox sheet\*\*.*\| `docs\/sandbox-sheet` \| Done, waiting for review \|/);
-  assert.match(next, /\| 36 \| Engine \| \*\*Step outcomes\*\*.*\| `feat\/step-outcomes` \| (?:To do|Done, waiting for review) \|/);
-  const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 35 \| #\? \|/);
-  assert.match(built, /Sheet only: build is a later job/);
-  assert.doesNotMatch(built, /\| 35 \| #\d+/);
-  const branch = git(['branch', '--show-current']);
-  if (branch) assert.equal(branch, 'docs/sandbox-sheet');
 });

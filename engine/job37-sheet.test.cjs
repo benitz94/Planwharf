@@ -269,14 +269,14 @@ test('assessSheet rejects empty text, malformed structures, and premature implem
   assert.ok(assessSheet('# Specification\nNo decisions here.').length > 0);
 });
 
-test('documentation reflects job 37 status and built-with entries', () => {
+test('documentation names job 37 as the phase 3 sheet and points to its port, whatever the status now', () => {
+  // The plan and the progress page move on after the review: only the job's place and its port are checked.
   const next = read('docs/NEXT-WORK.md');
-  assert.match(next, /\| 37 \| 3\. First level \| Write the sheet:.*\| `port\/37-sheet` \| Done, waiting for review \|/);
-  assert.match(next, /\| 38 \| 3\. \| Port them, as sheet 37 says \| `port\/38-phase3` \| To do \|/);
+  assert.match(next, /\| 37 \| 3\. First level \| Write the sheet:.*\| `port\/37-sheet` \| [^|]+ \|/);
+  assert.match(next, /\| \d+ \| 3\. \| Port them, as sheet 37 says \| `port\/\d+-phase3` \| [^|]+ \|/);
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
-  assert.match(built, /\| 37 \| #\? \|/);
-  assert.match(built, /Sheet only: build is Job 38/);
-  assert.doesNotMatch(built, /\| 37 \| #\d+/);
+  assert.match(built, /\| 37 \| (?:#\?|#\d+) \|/);
+  assert.match(built, /Sheet only: build is Job \d+/);
 });
 
 test('the sheet stays on port/37-sheet and does not add C# port implementations', () => {
