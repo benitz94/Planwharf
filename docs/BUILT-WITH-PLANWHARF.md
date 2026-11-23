@@ -126,4 +126,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The owner could not choose which models may lead: every eligible model could take over | #199 |
 | The crew's local checks passed while GitHub refused a blank line at the end of a file: the local run now checks the branch's commits as GitHub does | #205 |
 | A fix in the background showed no progress while it ran | #214 |
-| A pull request did not say which models led, built and verified the work | this pull request |
+| A pull request did not say which models led, built and verified the work | #216 |
