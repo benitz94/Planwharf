@@ -722,7 +722,8 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
             const steps = (row.subTasks || []).map(sub => sub && sub.title);
             const title = (said || require('./engine/plan-file.cjs').pullRequestTitle(goal, steps) || branch).slice(0, 120);
             const done = (row.results || []).filter(result => result && result.summary && !result.modelChange).map(result => '- ' + String(result.summary).split(/\r?\n/)[0].slice(0, 300));
-            const prBody = [goal ? `## Goal\n\n${goal}` : '', done.length ? `## What was done\n\n${done.join('\n')}` : '', 'Opened by Planwharf from the push button.'].filter(Boolean).join('\n\n');
+            const crew = require('./engine/plan-file.cjs').crewSection(row, state.models || []);
+            const prBody = [goal ? `## Goal\n\n${goal}` : '', done.length ? `## What was done\n\n${done.join('\n')}` : '', crew, 'Opened by Planwharf from the push button.'].filter(Boolean).join('\n\n');
             const created = await gh(['pr', 'create', '--base', defaultBranch || 'main', '--head', branch, '--title', title, '--body', prBody]);
             if (created.status === 0) prUrl = created.stdout.trim();
           }
