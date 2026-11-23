@@ -107,6 +107,9 @@ Rules for every job:
   cases again and change the C# in the same branch (porting rule 12).
 - The web app and Electron get no new features (they are being retired). A change there is allowed
   only where the job says so, to keep them working.
+- A sheet's own test checks the sheet only. It never requires the plan to say "Done, waiting for review", a
+  `#?` in the progress page, or the absence of files that a later job adds: those are true only on the
+  sheet's branch, and the test then fails on every later pull request.
 - Tests that do not depend on the computer (porting rule 11), and the full engine CI green:
   `node scripts/engineering/ci.cjs`.
 - English in code, comments, tests and commit messages.
@@ -506,7 +509,7 @@ panel draws the three states, the fix shows while it runs, and the filters chang
 
 ## Job 29. Saving modes: Normal, Safe, Ultra safe
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#213).
 
 **Why.** The owner wants to spend fewer tokens and less quota when the work allows it, with one choice,
 instead of changing the roles of every model in Team.
@@ -577,7 +580,7 @@ Native: the button shows only under an addition while work runs, and one click c
 
 ## Job 31. Clearer screens
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#213).
 
 **Why.** The look of Planwharf works (the dark theme, the mint green, the panels, the Crew at work card); the
 way it speaks does not always: some screens read like a report for a developer, not news for the captain.
@@ -699,7 +702,7 @@ you" for a stage waiting for the owner, and the picture when the queue is empty;
 
 ## Job 39. One inbox for decisions
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#213).
 
 **Why.** Decisions only the owner can make appear under their own project. With several projects, or the
 pipeline running several jobs, the owner must look in each one. And sometimes the owner prefers the lead to
@@ -726,6 +729,27 @@ choose.
 lead's choice and reason and the work goes on; a breaking decision under Auto is answered and highlighted;
 "Let the lead decide" on one decision; changing an answer before the step starts; the answered list. Native:
 the count in the top bar, the buttons, the Auto switch. Phone: /decisions and the two choices.
+
+## Job 40. First-level engine port (phase 3)
+
+**Status.** Done (#213).
+
+**Why.** Phase 3 transitions the first level of Planwharf's engine core from JavaScript to C#,
+following the architecture and invariants specified in Job 37 (`native/porting/jobs/37-phase3-first-level.md`).
+
+**What.**
+
+1. Ported twenty-three Phase 3 engine modules to C# in `native/Planwharf.Engine`:
+   `Attempts`, `Claims`, `ProjectExport`, `ExecutionNext`, `ProviderCatalog`, `ProviderPolicy`,
+   `ModelRouting`, `Claude`, `ClaudeUsage`, `Repository`, `Supervisor`, `Activity`,
+   `ActivitySessions`, `ProviderRuntime`, `TimeLeft`, `PlanStatus`, `ProviderStatus`, `PushEmail`,
+   `TempCleanup`, `AccountFolders`, `PhoneVoice`, `PhoneActivation`, and `StepOutcomes`.
+2. Ported test coverage into `native/Planwharf.Engine.Tests`: 23 test suites exercising all invariants,
+   concurrency controls, error handling, filesystem locks, and recovery paths.
+3. Native AOT compliance: zero compiler warnings under Native AOT analyzers (`PublishAot=true`, `TreatWarningsAsErrors=true`).
+4. Parity verification: all parity invariant tests pass (`node engine/parity.test.cjs`), and all C# test suites pass.
+
+**Tests.** `dotnet build native/Planwharf.Engine -c Release`, `dotnet test native/Planwharf.Engine.Tests -c Release`, and `node engine/parity.test.cjs`.
 
 ## Job 41. Comparison with the JavaScript for jobs 24 and 40
 

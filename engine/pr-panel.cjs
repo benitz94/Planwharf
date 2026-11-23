@@ -176,6 +176,7 @@ async function pullRequestPanel(options = {}) {
       neededFix: Boolean(fix),
       fixStatus: live ? 'running' : fix && fix.result === 'fixed' ? 'fixed' : fix && fix.result === 'failed' ? 'failed' : null,
       fixText: live && live.text ? String(live.text) : fix && fix.text ? String(fix.text) : '',
+      fixProgress: live ? { model: String(live.model || ''), stage: String(live.stage || ''), activity: String(live.activity || ''), startedAt: live.startedAt || null } : null,
       canFix: pr.state === 'open' && (pr.conflicts || red) && !live
     };
   });

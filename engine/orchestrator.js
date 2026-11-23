@@ -4536,7 +4536,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     if ([...prFixes.keys()].some(other => other.startsWith(projectId + '#'))) return { ok: false, reason: 'A fix is already running.' };
     // Taken before the notebook is read, so two clicks cannot both pass the check.
     // The mode is the one in force at the click. A change while the copy is prepared waits for the next step.
-    prFixes.set(key, { startedAt: now(), text: '' });
+    prFixes.set(key, { startedAt: now(), text: '', stage: 'Merging the base branch and reading the failing checks.' });
     const modeAtStart = savingModeOf(projectId);
     let item;
     try {
@@ -4591,7 +4591,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         }
         tried.add(model.id);
         const started = `${model.label || model.id} is fixing pull request #${number} in the background, on ${fix.branch}.`;
-        prFixes.set(key, { startedAt: (prFixes.get(key) || {}).startedAt || now(), text: started });
+        prFixes.set(key, { startedAt: (prFixes.get(key) || {}).startedAt || now(), text: started, model: model.label || model.id, stage: 'Working on the fix.' });
         markPullRequestFix(projectId, number, 'started', started);
         say('PR_FIX_STARTED', started);
         const work = [];
@@ -4607,6 +4607,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
           structuredResultPath: path.join(results, 'result.json'), exitPath: path.join(results, 'exit.json'), logPath: path.join(results, 'worker.log'),
           worker: model, job: { kind: 'build', title: `Fix pull request #${number}`, detail: work.join('\n\n') }, slice: `Fix pull request #${number}` };
         launched = opts.spawnWorker(info);
+        if (prFixes.has(key)) prFixes.get(key).logPath = info.logPath;
         if (!launched?.pid) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${model.label || model.id} did not start.`);
         const limit = Date.now() + 90 * 60 * 1000;
         while (Date.now() < limit && !fs.existsSync(info.exitPath)) {
@@ -4622,6 +4623,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         persist();
         say('PR_FIX_STARTED', `${model.label || model.id} refused the work (${String(refused).slice(0, 160)}); the next model takes over.`);
         }
+        if (prFixes.has(key)) Object.assign(prFixes.get(key), { stage: 'Checking the result and pushing.', logPath: null });
         const result = noteKept(await pr.finishFix(item.project.folder, worktree, fix, number));
         // The worker was started because checks or conflicts were still wrong. If it
         // never wrote a result and changed nothing, that is not a finished fix.
@@ -4696,7 +4698,12 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       steps: (store.execution.subTasks || []).filter(sub => sub && sub.megaTaskId === mega.id).map(sub => ({ title: sub.title || '', model: name(sub.assignedModelId) }))
     }));
     const fixes = (store.pullRequestFixes || []).filter(item => item && item.projectId === projectId).map(item => ({ number: item.number, result: item.result, text: item.text || '', at: item.at || null }));
-    const fixing = [...prFixes.entries()].filter(([key]) => key.startsWith(projectId + '#')).map(([key, value]) => ({ number: Number(key.slice(projectId.length + 1)), startedAt: value && value.startedAt || null, text: value && value.text || '' }));
+    // A fix in progress says who works on it, at which stage, for how long, and what it did last (read from
+    // the worker's own log, as the Crew at work card does).
+    const fixing = [...prFixes.entries()].filter(([key]) => key.startsWith(projectId + '#')).map(([key, value]) => ({
+      number: Number(key.slice(projectId.length + 1)), startedAt: value && value.startedAt || null, text: value && value.text || '',
+      model: value && value.model || '', stage: value && value.stage || '',
+      activity: value && value.logPath ? clipSummary(interpretActivity(tailLog(value.logPath, 8000), null, true) || '') : '' }));
     return { works, fixes, fixing };
   }
   function answerDecision(projectId, decisionId, answer) {
