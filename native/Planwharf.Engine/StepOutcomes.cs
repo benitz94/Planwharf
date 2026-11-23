@@ -1,5 +1,6 @@
 // Port of engine/step-outcomes.cjs.
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -270,8 +271,23 @@ public static class StepOutcomes
         {
             Directory.CreateDirectory(dir);
             var file = OutcomesFile(dir);
-            File.AppendAllText(file, clean.ToJsonString() + "\n");
-            return clean;
+            var bytes = Encoding.UTF8.GetBytes(clean.ToJsonString() + "\n");
+            var deadline = Environment.TickCount64 + 5000;
+            while (true)
+            {
+                try
+                {
+                    using var stream = new FileStream(file, FileMode.Append, FileAccess.Write, FileShare.None);
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Flush(true);
+                    return clean;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    if (Environment.TickCount64 >= deadline) return null;
+                    Thread.Sleep(15);
+                }
+            }
         }
         catch
         {
@@ -288,7 +304,10 @@ public static class StepOutcomes
         var list = new List<JsonObject>();
         try
         {
-            foreach (var raw in File.ReadAllLines(file))
+            using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            string? raw;
+            while ((raw = reader.ReadLine()) != null)
             {
                 var line = raw.Trim();
                 if (string.IsNullOrEmpty(line)) continue;

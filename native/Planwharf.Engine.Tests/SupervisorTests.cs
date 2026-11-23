@@ -245,4 +245,80 @@ public class SupervisorTests
             try { Directory.Delete(tempDir, true); } catch { }
         }
     }
+
+    [Fact]
+    public void Supervisor_CorruptedStateOnDisk_RecoversToEmptyState()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "pw-sup-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var file = Path.Combine(tempDir, "supervisor.json");
+            File.WriteAllText(file, "{ corrupted json syntax ");
+
+            var supervisor = new Supervisor(tempDir);
+            var snap = CreateSnapshot();
+            var view = supervisor.View(snap);
+
+            Assert.NotNull(view);
+            Assert.Equal("Supervisor", view["name"]?.ToString());
+            Assert.False(view["configured"]?.GetValue<bool>());
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task Supervisor_Ask_EmptyQuestion_ThrowsInvalidOperationException()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "pw-sup-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var supervisor = new Supervisor(tempDir);
+            var snap = CreateSnapshot();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => supervisor.Ask(snap, "a", "   "));
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public void Supervisor_IgnoreAlert_MarksAlertAsIgnored()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "pw-sup-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var supervisor = new Supervisor(tempDir);
+            var snap = CreateSnapshot();
+            ((JsonObject)((JsonArray)snap["projects"]!)[0]!)["status"] = "complete";
+
+            supervisor.Observe(snap);
+            var viewBefore = supervisor.View(snap);
+            var projABefore = ((JsonArray)viewBefore["projects"]!)[0] as JsonObject;
+            var alertsBefore = projABefore!["alerts"] as JsonArray;
+            Assert.NotEmpty(alertsBefore!);
+
+            var alertId = alertsBefore![0]!["id"]!.ToString();
+            supervisor.Ignore("a", alertId);
+
+            var viewAfter = supervisor.View(snap);
+            var projAAfter = ((JsonArray)viewAfter["projects"]!)[0] as JsonObject;
+            var alertsAfter = projAAfter!["alerts"] as JsonArray;
+            var alert = alertsAfter!.FirstOrDefault(a => a?["id"]?.ToString() == alertId) as JsonObject;
+            Assert.NotNull(alert);
+            Assert.True(alert["ignored"]?.GetValue<bool>());
+            Assert.NotNull(alert["ignoredAt"]);
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+    }
 }

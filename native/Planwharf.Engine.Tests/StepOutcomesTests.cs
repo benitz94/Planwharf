@@ -94,4 +94,44 @@ public class StepOutcomesTests : IDisposable
         var text = StepOutcomes.SummaryText(m1);
         Assert.Equal("2 steps \u00b7 1 accepted as they were \u00b7 1 fixed by Verify", text);
     }
+
+    [Fact]
+    public async Task AppendStepOutcome_ConcurrentAppends_PreservesAllRecordsWithoutCorruption()
+    {
+        var tasks = new List<Task>();
+        for (int i = 0; i < 5; i++)
+        {
+            int idx = i;
+            tasks.Add(Task.Run(() =>
+            {
+                var record = new JsonObject
+                {
+                    ["model"] = $"model-{idx}",
+                    ["role"] = "Build",
+                    ["accepted"] = true,
+                    ["fixed"] = 0
+                };
+                StepOutcomes.AppendStepOutcome(_testDir, record);
+            }));
+        }
+
+        await Task.WhenAll(tasks);
+
+        var outcomes = StepOutcomes.ReadStepOutcomes(_testDir);
+        Assert.Equal(5, outcomes.Count);
+    }
+
+    [Fact]
+    public void OutcomesSummary_EmptyList_ReturnsEmpty()
+    {
+        var summary = StepOutcomes.OutcomesSummary(new List<JsonObject>());
+        Assert.Empty(summary);
+    }
+
+    [Fact]
+    public void StripPathsAndCode_NullOrEmpty_ReturnsOriginal()
+    {
+        Assert.Null(StepOutcomes.StripPathsAndCode(null));
+        Assert.Equal("", StepOutcomes.StripPathsAndCode(""));
+    }
 }

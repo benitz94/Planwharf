@@ -71,4 +71,121 @@ public class ClaudeUsageTests
         Assert.Equal(80.0, results[0]["leftPct"]?.GetValue<double>());
         Assert.Equal(80.0, results[1]["leftPct"]?.GetValue<double>());
     }
+
+    [Fact]
+    public async Task ReadClaudeAuthAsync_CredentialsFile_ExtractsAccessTokenAndExpiry()
+    {
+        var tempHome = Path.Combine(Path.GetTempPath(), "pw_claude_auth_" + Guid.NewGuid().ToString("N"));
+        var claudeDir = Path.Combine(tempHome, ".claude");
+        Directory.CreateDirectory(claudeDir);
+        try
+        {
+            var creds = new JsonObject
+            {
+                ["claudeAiOauth"] = new JsonObject
+                {
+                    ["accessToken"] = "sk-ant-oauth-token-12345",
+                    ["expiresAt"] = DateTimeOffset.UtcNow.AddHours(2).ToUnixTimeMilliseconds()
+                }
+            };
+            File.WriteAllText(Path.Combine(claudeDir, ".credentials.json"), creds.ToJsonString());
+
+            var auth = await ClaudeUsage.ReadClaudeAuthAsync(home: tempHome);
+            Assert.NotNull(auth);
+            Assert.Equal("sk-ant-oauth-token-12345", auth.Token);
+            Assert.NotNull(auth.ExpiresAt);
+        }
+        finally
+        {
+            try { Directory.Delete(tempHome, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task ReadClaudeAuthAsync_ExpiredOrOversized_ReturnsNull()
+    {
+        var tempHome = Path.Combine(Path.GetTempPath(), "pw_claude_auth_exp_" + Guid.NewGuid().ToString("N"));
+        var claudeDir = Path.Combine(tempHome, ".claude");
+        Directory.CreateDirectory(claudeDir);
+        try
+        {
+            // Expired credentials
+            var creds = new JsonObject
+            {
+                ["claudeAiOauth"] = new JsonObject
+                {
+                    ["accessToken"] = "expired-token",
+                    ["expiresAt"] = 1000 // In the past
+                }
+            };
+            var credFile = Path.Combine(claudeDir, ".credentials.json");
+            File.WriteAllText(credFile, creds.ToJsonString());
+
+            var auth = await ClaudeUsage.ReadClaudeAuthAsync(home: tempHome);
+            Assert.Null(auth);
+
+            // Oversized credentials (> 65536 bytes)
+            var bigData = "{\"claudeAiOauth\":{\"accessToken\":\"token\",\"pad\":\"" + new string('x', 70000) + "\"}}";
+            File.WriteAllText(credFile, bigData);
+            var bigAuth = await ClaudeUsage.ReadClaudeAuthAsync(home: tempHome);
+            Assert.Null(bigAuth);
+        }
+        finally
+        {
+            try { Directory.Delete(tempHome, true); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task CreateClaudeUsageReader_RateLimited429_AppliesRetryAfterHeader()
+    {
+        Task<ClaudeAuthInfo?> ReadAuth() => Task.FromResult<ClaudeAuthInfo?>(new ClaudeAuthInfo("test-token", DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeMilliseconds()));
+
+        Task<HttpResponseMessage> FetchImpl(string url, HttpRequestMessage req)
+        {
+            var resp = new HttpResponseMessage(System.Net.HttpStatusCode.TooManyRequests);
+            resp.Headers.Add("retry-after", "60");
+            return Task.FromResult(resp);
+        }
+
+        var reader = ClaudeUsage.CreateClaudeUsageReader(ReadAuth, FetchImpl);
+        var res = await reader();
+
+        Assert.False(res["readable"]?.GetValue<bool>());
+        Assert.Contains("rate limited", res["reason"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateClaudeUsageReader_Unauthorized401_ReturnsUnreadLoginExpired()
+    {
+        Task<ClaudeAuthInfo?> ReadAuth() => Task.FromResult<ClaudeAuthInfo?>(new ClaudeAuthInfo("test-token", DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeMilliseconds()));
+
+        Task<HttpResponseMessage> FetchImpl(string url, HttpRequestMessage req)
+        {
+            var resp = new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
+            return Task.FromResult(resp);
+        }
+
+        var reader = ClaudeUsage.CreateClaudeUsageReader(ReadAuth, FetchImpl);
+        var res = await reader();
+
+        Assert.False(res["readable"]?.GetValue<bool>());
+        Assert.Contains("login expired", res["reason"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void ParseClaudeUsage_InvalidOrNoWindows_ReturnsUnread()
+    {
+        var empty = ClaudeUsage.ParseClaudeUsage(new JsonObject());
+        Assert.False(empty["readable"]?.GetValue<bool>());
+        Assert.Contains("no numeric subscription quota windows", empty["reason"]?.GetValue<string>());
+
+        var invalidUtil = new JsonObject
+        {
+            ["five_hour"] = new JsonObject { ["utilization"] = 150.0 }
+        };
+        var invalid = ClaudeUsage.ParseClaudeUsage(invalidUtil);
+        Assert.False(invalid["readable"]?.GetValue<bool>());
+        Assert.Contains("invalid quota window", invalid["reason"]?.GetValue<string>());
+    }
 }

@@ -227,4 +227,81 @@ public class AttemptsTests : IDisposable
         Assert.True(claimed["ok"]?.GetValue<bool>());
         Assert.Equal("attempt-1", claimed["attempt"]!["id"]?.GetValue<string>());
     }
+
+    [Fact]
+    public void WithLock_Concurrency_ContendedWritersAcquireOrTimeoutAt5000ms()
+    {
+        var lockFile = Path.Combine(_testDir, "attempts.lock");
+        // Hold lock briefly to test that a contended writer spins and acquires
+        var fs = new FileStream(lockFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            fs.Dispose();
+            try { File.Delete(lockFile); } catch { }
+        });
+
+        var engine = AttemptEngine.Create(_testDir);
+        var candidates = new JsonArray { new JsonObject { ["id"] = "m1", ["enabled"] = true } };
+        var claimed = engine.Claim(new JsonObject
+        {
+            ["taskId"] = "t1",
+            ["projectId"] = "p1",
+            ["modelId"] = "m1",
+            ["candidates"] = candidates
+        });
+        Assert.True(claimed["ok"]?.GetValue<bool>());
+    }
+
+    [Fact]
+    public async Task Claim_ConcurrentThreads_AllocatesUniqueIncrementalIdsWithoutCorruptingStore()
+    {
+        var engine = AttemptEngine.Create(_testDir);
+        var tasks = new List<Task<JsonObject>>();
+
+        for (int i = 0; i < 5; i++)
+        {
+            int idx = i;
+            tasks.Add(Task.Run(() =>
+            {
+                var candidates = new JsonArray { new JsonObject { ["id"] = "m1", ["enabled"] = true } };
+                return engine.Claim(new JsonObject
+                {
+                    ["taskId"] = $"task-{idx}",
+                    ["projectId"] = $"proj-{idx}",
+                    ["modelId"] = "m1",
+                    ["candidates"] = candidates
+                });
+            }));
+        }
+
+        var results = await Task.WhenAll(tasks);
+        Assert.All(results, r => Assert.True(r["ok"]?.GetValue<bool>()));
+
+        var ids = results.Select(r => r["attempt"]!["id"]!.GetValue<string>()).ToHashSet();
+        Assert.Equal(5, ids.Count);
+
+        var attempts = engine.GetAttempts();
+        Assert.Equal(5, attempts.Count);
+    }
+
+    [Fact]
+    public void CloseAndAttach_EdgeCases_ReturnsExpectedErrors()
+    {
+        var engine = AttemptEngine.Create(_testDir);
+
+        // Close null or invalid
+        Assert.False(engine.CloseAttempt(null)["ok"]?.GetValue<bool>());
+        Assert.False(engine.CloseAttempt(new JsonObject())["ok"]?.GetValue<bool>());
+        Assert.Equal("attempt not found", engine.CloseAttempt(new JsonObject { ["attemptId"] = "non-existent" })["reason"]?.GetValue<string>());
+
+        // Attach null or invalid
+        Assert.False(engine.AttachResult(null)["ok"]?.GetValue<bool>());
+        Assert.False(engine.AttachResult(new JsonObject { ["attemptId"] = "att-1" })["ok"]?.GetValue<bool>());
+        Assert.Equal("attempt not found", engine.AttachResult(new JsonObject { ["attemptId"] = "non-existent", ["resultPath"] = "/path" })["reason"]?.GetValue<string>());
+
+        // GetResult null or missing
+        Assert.Null(engine.GetResult(""));
+        Assert.Null(engine.GetResult("missing"));
+    }
 }

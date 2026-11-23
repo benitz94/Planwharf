@@ -10,6 +10,11 @@ public class TempCleanupTests
     {
         var nonTemp = Path.Combine(Directory.GetCurrentDirectory(), "forbidden_test_dir");
         await Assert.ThrowsAsync<InvalidOperationException>(() => TempCleanup.RemoveTempDirAsync(nonTemp));
+
+        // Sibling path escape attempt: e.g. /tmp-evil
+        var tempRoot = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var siblingEscape = tempRoot + "-evil";
+        await Assert.ThrowsAsync<InvalidOperationException>(() => TempCleanup.RemoveTempDirAsync(siblingEscape));
     }
 
     [Fact]

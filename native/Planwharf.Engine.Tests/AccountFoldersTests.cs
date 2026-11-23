@@ -66,4 +66,51 @@ public class AccountFoldersTests : IDisposable
         Assert.Single(list);
         Assert.Equal(account.Id, list[0].Id);
     }
+
+    [Fact]
+    public void WithLock_StaleLockFileFromDeadPid_ReclaimsAndCompletes()
+    {
+        var file = Path.Combine(_testDir, "accounts.json");
+        var lockFile = file + ".lock";
+
+        // Create a stale lock from a dead PID (e.g. 999999)
+        File.WriteAllText(lockFile, "999999:" + Guid.NewGuid().ToString("N"));
+
+        var account = AccountFolders.AddAccount(file, _testDir, "claude", "claude");
+        Assert.NotNull(account);
+        Assert.False(File.Exists(lockFile)); // lock was cleaned up
+    }
+
+    [Fact]
+    public async Task AddAccount_ConcurrentCalls_SerializesAndPreservesBoth()
+    {
+        var file = Path.Combine(_testDir, "accounts.json");
+
+        var task1 = Task.Run(() => AccountFolders.AddAccount(file, _testDir, "claude", "claude"));
+        var task2 = Task.Run(() => AccountFolders.AddAccount(file, _testDir, "codex", "codex"));
+
+        var results = await Task.WhenAll(task1, task2);
+        Assert.Equal(2, results.Length);
+
+        var list = AccountFolders.ReadAccounts(file, _testDir);
+        Assert.Equal(2, list.Count);
+        Assert.Contains(list, a => a.Adapter == "claude");
+        Assert.Contains(list, a => a.Adapter == "codex");
+    }
+
+    [Fact]
+    public void CommandFor_UnsafeChars_ThrowsInvalidOperationException()
+    {
+        Assert.Throws<InvalidOperationException>(() => AccountFolders.CommandFor("claude", ""));
+        Assert.Throws<InvalidOperationException>(() => AccountFolders.CommandFor("claude", "folder\nwith\nnewlines"));
+        Assert.Throws<InvalidOperationException>(() => AccountFolders.CommandFor("claude", "folder\0nullbyte"));
+    }
+
+    [Fact]
+    public void ReadAccounts_NonExistentFile_ReturnsEmptyList()
+    {
+        var nonExistent = Path.Combine(_testDir, "non_existent.json");
+        var list = AccountFolders.ReadAccounts(nonExistent, _testDir);
+        Assert.Empty(list);
+    }
 }
