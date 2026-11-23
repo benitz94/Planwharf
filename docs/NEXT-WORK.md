@@ -81,12 +81,13 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 38 | Native app | **The pipeline you can see**: each pipeline job drawn as a strip of its stages, the current one lit and said in plain words, review rounds as a loop, the owner's steps marked; and one picture of how the pipeline works. Sheet below | `feat/pipeline-drawn` | Done, waiting for review |
 | 39 | Native app and engine | **One inbox for decisions**: every decision waiting for the owner, from every project and pipeline job, in one place, with an **Auto** choice that lets the lead decide. Sheet below | `feat/decisions-inbox` | Done, waiting for review |
 | 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | Done (#213) |
-| 41 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/41-sheet` | To do |
-| 42 | 4. | Port them, as sheet 41 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/42-phase4` | To do |
-| 43 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/43-sheet` | To do |
-| 44 | 5. | Port them, as sheet 43 says. Then **stop**: the owner approves the orchestrator split | `port/44-phase5` | To do |
-| 45 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/45-sheets` | To do |
-| 46+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/46-…` | To do |
+| 41 | 2 and 3. | **Comparison with the JavaScript for jobs 24 and 40**: record the comparison cases the sheets 23 and 37 asked for and the ports left out, fix the C# where it differs, and make CI refuse a port without them. Sheet below | `port/41-parity` | To do |
+| 42 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03 | `port/42-sheet` | To do |
+| 43 | 4. | Port them, as sheet 42 says. Then **stop**: the owner tests on Windows with the real AI programs | `port/43-phase4` | To do |
+| 44 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/44-sheet` | To do |
+| 45 | 5. | Port them, as sheet 44 says. Then **stop**: the owner approves the orchestrator split | `port/45-phase5` | To do |
+| 46 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/46-sheets` | To do |
+| 47+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/47-…` | To do |
 | — | 7. The native app runs the C# engine | First as an option for at least one release, then the default; Node leaves the zip | — | To do |
 | — | 8. Removal | **Stop first:** a full comparison of the native app with the web app and Electron, in the code and on screen (pictures of both with sample data), and the list of what the native app still lacks, with a proposal; the owner decides. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together | — | To do |
 | — | After the port | **Benchmarks**, repeated on small, medium and large tasks: reliability, defects, time and quota, Planwharf against each AI tool alone; no saving claimed that the numbers do not show | — | To do |
@@ -508,7 +509,7 @@ panel draws the three states, the fix shows while it runs, and the filters chang
 
 ## Job 29. Saving modes: Normal, Safe, Ultra safe
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#196).
 
 **Why.** The owner wants to spend fewer tokens and less quota when the work allows it, with one choice,
 instead of changing the roles of every model in Team.
@@ -579,7 +580,7 @@ Native: the button shows only under an addition while work runs, and one click c
 
 ## Job 31. Clearer screens
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#202).
 
 **Why.** The look of Planwharf works (the dark theme, the mint green, the panels, the Crew at work card); the
 way it speaks does not always: some screens read like a report for a developer, not news for the captain.
@@ -701,7 +702,7 @@ you" for a stage waiting for the owner, and the picture when the queue is empty;
 
 ## Job 39. One inbox for decisions
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#212).
 
 **Why.** Decisions only the owner can make appear under their own project. With several projects, or the
 pipeline running several jobs, the owner must look in each one. And sometimes the owner prefers the lead to
@@ -731,7 +732,7 @@ the count in the top bar, the buttons, the Auto switch. Phone: /decisions and th
 
 ## Job 40. First-level engine port (phase 3)
 
-**Status.** Done, waiting for review. Not pushed.
+**Status.** Done (#213).
 
 **Why.** Phase 3 transitions the first level of Planwharf's engine core from JavaScript to C#,
 following the architecture and invariants specified in Job 37 (`native/porting/jobs/37-phase3-first-level.md`).
@@ -749,3 +750,32 @@ following the architecture and invariants specified in Job 37 (`native/porting/j
 4. Parity verification: all parity invariant tests pass (`node engine/parity.test.cjs`), and all C# test suites pass.
 
 **Tests.** `dotnet build native/Planwharf.Engine -c Release`, `dotnet test native/Planwharf.Engine.Tests -c Release`, and `node engine/parity.test.cjs`.
+
+## Job 41. Comparison with the JavaScript for jobs 24 and 40
+
+**Why.** The comparison cases (the same inputs given to the JavaScript and to the C# port, with the same
+results expected) are how we know the C# engine behaves exactly like the JavaScript one. There are 247 of
+them, for the 11 modules of the first jobs. Sheet 23 asked for cases for `plan`, `quota` and `models`; sheet 37
+marked about sixteen of its modules "Parity JSON" (`project-export`, `execution-next`, `provider-catalog`,
+`provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `activity`, `provider-runtime`,
+`time-left`, `plan-status`, `push-email`, `phone-voice`, and the parity parts of `supervisor`,
+`activity-sessions`, `step-outcomes`). Jobs 24 and 40 ported the modules with their own tests, but recorded no
+comparison case. Without them, the differences would show only when the app switches to the C# engine
+(phase 7).
+
+**What.**
+
+1. For every module above, cases in `native/porting/parity/cases.cjs` as the sheets say (fixed times, no
+   clock, no network), recorded with `node native/porting/parity/record.cjs` into
+   `native/porting/parity/<module>.json`, and wired in `ParityTests` so the C# port must return the same.
+   Cover the ordinary cases, the edges the sheets name, and the error results.
+2. Where the C# differs, fix the C# (the JavaScript stays the specification). A difference that cannot be
+   removed is named in the sheet and asked to the owner, never hidden by changing the case.
+3. **A guard, so it cannot happen again:** `native/porting/parity/required.json` lists every ported module that
+   must have comparison cases, with the least number of cases; a check in CI fails when a listed module has no
+   `<module>.json`, fewer cases, or no wiring in `ParityTests`. From now on a port job adds its modules to that
+   list in the same pull request, and Verify checks it.
+4. Update the progress page: the number of comparison cases and the modules they cover.
+
+**Tests.** The new parity JSON files and `ParityTests` pass on Windows, macOS and Linux; the guard fails on a
+listed module with no file, too few cases, or no wiring (tested with a temporary copy).

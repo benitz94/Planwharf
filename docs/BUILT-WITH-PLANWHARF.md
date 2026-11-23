@@ -15,7 +15,7 @@ numbers below.
 |---|---|---|
 | Engine modules ported to C# | **46 of 72** | 72 |
 | JavaScript engine lines ported | **about 4,723 of 14,000** (34%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39); next: phase 4, processes and providers (job 41) | 0 to 8 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39); next: the comparison cases for jobs 24 and 40 (job 41), then phase 4 | 0 to 8 |
 | C# engine tests | 848, plus 247 comparison cases with the JavaScript | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
