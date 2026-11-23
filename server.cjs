@@ -793,6 +793,13 @@ function createServer({ phase2 = true, planFile = path.join(__dirname, 'plan.jso
         const result = await require('./engine/pr-check.cjs').resolveConflicts(folder, number);
         return json(result.ok ? 200 : 409, result);
       }
+      // Stop on a fix in the background: the model is ended, nothing is pushed.
+      if (request.method === 'POST' && pathname === '/api/prs/fix/stop') {
+        const input = await body(request);
+        if (!input || typeof input.projectId !== 'string' || !Number.isInteger(input.number)) throw new RequestError(400, 'Project and pull request number required.');
+        const result = orchestra.stopPullRequestFix(input.projectId, input.number);
+        return json(result.ok ? 200 : 409, result);
+      }
       // Fixes a pull request in the background (conflicts and failing checks), with no work in the chat.
       if (request.method === 'POST' && pathname === '/api/prs/fix') {
         const input = await body(request);

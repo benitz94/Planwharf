@@ -838,6 +838,19 @@ public sealed partial class MainWindow : Window
         else Render();
     }
 
+    async Task StopFixAsync(int number)
+    {
+        if (api == null || projectId == null) return;
+        if (!await Confirm(Strings.Format("Stop the fix of #{0}? The model stops and nothing is pushed.", number), Strings.T("Stop the fix"))) return;
+        try
+        {
+            await api.PostAsync("/api/prs/fix/stop", new { projectId, number });
+            hint.Text = Strings.Format("Stopping the fix of #{0}.", number); hint.Foreground = Palette.Warn;
+            await LoadPullsAsync(false);
+        }
+        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
+    }
+
     async Task FixPullAsync(int number)
     {
         if (api == null || projectId == null) return;
@@ -939,6 +952,13 @@ public sealed partial class MainWindow : Window
             var fix = Look.Button(Strings.T("Fix in the background"), null, Look.Kind.Small);
             var number = pr.Number; fix.Click += async (_, _) => await FixPullAsync(number);
             row.Children.Add(fix);
+        }
+        if (pr.FixStatus == "running")
+        {
+            // The owner can stop a fix that takes too long: the model is ended and nothing is pushed.
+            var stop = Look.Button(Strings.T("Stop the fix"), null, Look.Kind.Small);
+            var number = pr.Number; stop.Click += async (_, _) => await StopFixAsync(number);
+            row.Children.Add(stop);
         }
         card.Children.Add(row);
         return new Border { Background = Palette.Card, BorderBrush = Palette.Line, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(10), Child = card };
