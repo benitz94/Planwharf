@@ -121,3 +121,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The bench, the limit and the Tools folds of the Team panel closed by themselves each time a model was picked | #198 |
 | The owner could not choose which models may lead: every eligible model could take over | #199 |
 | The crew's local checks passed while GitHub refused a blank line at the end of a file: the local run now checks the branch's commits as GitHub does | #205 |
+| A fix in the background showed no progress while it ran | this pull request |
