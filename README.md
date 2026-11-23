@@ -29,7 +29,7 @@ reviewed before it is merged.
 
 | So far | |
 |---|---|
-| Jobs done by Planwharf on itself | **36**, from the first C# modules to the whole pipeline, the sandbox sheet and the step outcomes |
+| Jobs done by Planwharf on itself | **37**, from the first C# modules to the whole pipeline and the phase 3 sheet |
 | C# engine | **23 of 72 modules** ported, 709 tests, 247 cases compared with the JavaScript result by result |
 | Improvements found by using Planwharf on itself, and fixed | **31** |
 | Companies in the crew so far | Anthropic, OpenAI, Google and xAI |
