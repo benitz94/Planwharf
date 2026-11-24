@@ -38,6 +38,19 @@ public sealed class PlanwharfApi(string address)
     public Task<JsonNode?> SetAutonomyAsync(string projectId, bool enabled) => PostAsync("/api/orchestrator/autonomy", new { projectId, enabled });
     public Task<JsonNode?> StopAsync(string projectId) => PostAsync("/api/orchestrator/stop", new { projectId });
     public Task<JsonNode?> ResumeAsync(string projectId) => PostAsync("/api/orchestrator/resume", new { projectId });
+    // Resume answers 409 with requiresConfirmation when the files or the plan changed since the work stopped
+    // (the crew's own commits count): the reply is returned, not thrown, so the app can ask the owner.
+    public async Task<JsonNode?> ResumeOrAskAsync(string projectId, bool confirmChanges)
+    {
+        using var content = new StringContent(JsonSerializer.Serialize(confirmChanges ? (object)new { projectId, confirmChanges = true } : new { projectId }));
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        using var response = await http.PostAsync("/api/orchestrator/resume", content);
+        var text = await response.Content.ReadAsStringAsync();
+        var json = string.IsNullOrWhiteSpace(text) ? null : JsonNode.Parse(text);
+        if ((int)response.StatusCode == 409 && json?["requiresConfirmation"]?.GetValue<bool>() == true) return json;
+        if (!response.IsSuccessStatusCode) throw new InvalidOperationException(json?["error"]?.GetValue<string>() ?? json?["reason"]?.GetValue<string>() ?? Strings.Format("Request failed ({0}).", (int)response.StatusCode));
+        return json;
+    }
     // Closes stopped work so a new goal can start; the files in the project folder stay as they are.
     public Task<JsonNode?> DropWorkAsync(string projectId) => PostAsync("/api/orchestrator/reset", new { projectId });
     public Task<JsonNode?> ApproveAsync(string projectId, string megaTaskId) => PostAsync("/api/orchestrator/approve", new { projectId, megaTaskId });
