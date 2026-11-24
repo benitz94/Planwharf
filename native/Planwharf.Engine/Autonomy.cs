@@ -444,6 +444,7 @@ public static class Autonomy
         parts.Add(PlainLines.SplitLineAsk);
         parts.Add("Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.");
         parts.Add("Each model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.");
+        parts.Add("Spread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.");
         parts.Add("Also name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.");
 
         var builderDescs = new List<string>();
@@ -646,6 +647,61 @@ public static class Autonomy
         ["normal"] = ["default", "light"],
         ["heavy"] = ["premium", "default", "light"]
     };
+
+    // After the weights, no model and no company takes more than its share of the parts while another
+    // model of an allowed weight has room. The lead's choice stays when it is within its share.
+    public static JsonObject SpreadParts(JsonArray? parts, JsonArray? builders)
+    {
+        var list = (builders ?? new JsonArray()).OfType<JsonObject>().Where(model => model["id"] is JsonValue id && id.TryGetValue<string>(out var text) && text.Length > 0).ToList();
+        static string Id(JsonObject model) => model["id"]!.GetValue<string>();
+        static string CompanyOf(JsonObject model) => model["provider"] is JsonValue provider && provider.TryGetValue<string>(out var text) && text.Length > 0 ? text : Id(model);
+        static double Left(JsonObject model) => model["left"] is JsonValue left && left.GetValueKind() == JsonValueKind.Number ? left.GetValue<double>() : 50;
+        var modelLoad = new Dictionary<string, int>();
+        var companyLoad = new Dictionary<string, int>();
+        int Get(Dictionary<string, int> map, string key) => map.TryGetValue(key, out var value) ? value : 0;
+        var moved = new JsonArray();
+        var outParts = new JsonArray();
+        var all = (parts ?? new JsonArray()).OfType<JsonObject>().ToList();
+        var total = parts?.Count ?? 0;
+        foreach (var part in all)
+        {
+            var rawSize = part["size"] is JsonValue sizeValue && sizeValue.TryGetValue<string>(out var sizeText) ? sizeText : "";
+            var size = SIZES.Contains(rawSize) ? rawSize : "normal";
+            var named = part["model"] is JsonValue modelValue && modelValue.TryGetValue<string>(out var modelText) ? modelText : null;
+            var allowed = list.Where(model => model["tier"] is JsonValue tier && tier.TryGetValue<string>(out var tierText) && ALLOWED_TIERS[size].Contains(tierText)).ToList();
+            var current = allowed.FirstOrDefault(model => Id(model) == named);
+            var chosen = named;
+            if (allowed.Count > 1)
+            {
+                var companies = allowed.Select(CompanyOf).Distinct().Count();
+                var modelShare = (int)Math.Ceiling((double)total / allowed.Count);
+                var companyShare = (int)Math.Ceiling((double)total / companies);
+                bool Fits(JsonObject model) => Get(modelLoad, Id(model)) < modelShare && Get(companyLoad, CompanyOf(model)) < companyShare;
+                if (current is null || !Fits(current))
+                {
+                    var ranked = allowed.OrderBy(model => Get(companyLoad, CompanyOf(model))).ThenBy(model => Get(modelLoad, Id(model))).ThenByDescending(Left).ToList();
+                    chosen = Id(ranked.FirstOrDefault(Fits) ?? ranked[0]);
+                }
+            }
+            var key = chosen ?? "undefined";
+            modelLoad[key] = Get(modelLoad, key) + 1;
+            var picked = list.FirstOrDefault(model => Id(model) == chosen);
+            if (picked is not null) companyLoad[CompanyOf(picked)] = Get(companyLoad, CompanyOf(picked)) + 1;
+            if (chosen != named)
+            {
+                var move = new JsonObject { ["title"] = part["title"]?.DeepClone(), ["size"] = size };
+                if (part.ContainsKey("model")) move["from"] = part["model"]?.DeepClone();
+                move["to"] = chosen;
+                move["spread"] = true;
+                moved.Add((JsonNode)move);
+                var changed = (JsonObject)part.DeepClone();
+                changed["model"] = chosen;
+                outParts.Add((JsonNode)changed);
+            }
+            else outParts.Add(part.DeepClone());
+        }
+        return new JsonObject { ["parts"] = outParts, ["moved"] = moved };
+    }
 
     public static JsonObject FitWeights(JsonArray? parts, JsonArray? builders)
     {
