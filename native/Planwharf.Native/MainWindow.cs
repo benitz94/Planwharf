@@ -434,7 +434,7 @@ public sealed partial class MainWindow : Window
 
             // --- Line 2: Does it work ---
             var rawResults = (work.Row?["results"] as JsonArray ?? []).OfType<JsonObject>().ToList();
-            var problems = rawResults.Where(result => Str(result["status"]) is "FAILED" or "BLOCKED" && result["modelChange"]?.GetValue<bool>() != true).ToList();
+            var problems = WorkDetails.OpenProblems(rawResults);
             var verifyStep = work.Steps.FirstOrDefault(s => s.Role == "Verify");
             var auto = snapshot?["autonomy"]?[projectId];
             var stop = auto?["stopReason"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : Str(work.Row?["stopReason"]);
