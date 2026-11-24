@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **46 of 72** | 72 |
 | JavaScript engine lines ported | **about 4,723 of 14,000** (34%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39); next: phase 4 | 0 to 8 |
-| C# engine tests | 1209, plus 602 comparison cases with the JavaScript across 31 modules | |
+| C# engine tests | 1214, plus 607 comparison cases with the JavaScript across 31 modules | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`, `claims`, `claude`,
@@ -145,3 +145,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A fix in the background could not be stopped; a check GitHub cancelled was shown as red, sent to a model, and reported as fixed with nothing changed | #220 |
 | The app said "stopped while starting" when an earlier engine was still running on the same data; it now connects to it, or says how to close a stuck one | #221 |
 | The lead split the work without seeing the sheet the goal named (it was told not to read files), so a sixteen-module port went to one worker, who did one module; a step that stopped part way then waited for an alert instead of going back to the lead. The lead now reads the sheet and splits the rest again | #223 |
+| The lead's reasons were never shown: "did not split the work", which model a part moved to and the error that stopped the crew stayed in an internal log, and the stop read only "autonomy error". One reply with a model it may not use, or more than ten parts, threw the whole split away; one error ended the crew | #? |

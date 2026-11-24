@@ -38,16 +38,24 @@ test('a split that breaks the rules is refused, and the work keeps its usual pla
   const ok = { title: 'A', detail: 'Do A.', files: ['a.cs'], dependsOn: [], size: 'normal', model: 'opus' };
   const allowed = { builders: builders.map(m => m.id), verifiers: verifiers.map(m => m.id) };
   const read = parts => autonomy.parseSplit(JSON.stringify({ parts, verify: 'sol', why: 'x' }), allowed);
-  assert.equal(read([{ ...ok, model: 'nobody' }]), null, 'a model not allowed to build');
   assert.equal(read([{ ...ok, files: [] }]), null, 'a part with no files');
   assert.equal(read([{ ...ok, files: ['../outside.cs'] }]), null, 'a file outside the project');
   assert.equal(read([{ ...ok, files: ['/etc/passwd'] }]), null, 'an absolute path');
   assert.equal(read([{ ...ok, dependsOn: [0] }]), null, 'a part that waits for itself');
-  assert.equal(read([{ ...ok, size: 'huge' }]), null, 'an unknown size');
-  assert.equal(read(Array.from({ length: 11 }, () => ok)), null, 'more than 10 parts');
   assert.equal(read([]), null, 'no part');
-  assert.equal(autonomy.parseSplit(JSON.stringify({ parts: [ok], verify: 'haiku', why: 'x' }), allowed), null, 'a check by a model not allowed to verify');
+  assert.equal(read(Array.from({ length: 31 }, () => ok)), null, 'more than 30 parts');
   assert.equal(autonomy.parseSplit('I would split it in three.', allowed), null, 'no JSON');
+});
+
+test('a split with a wrong model, size or verifier is kept: Planwharf picks them instead of dropping the split', () => {
+  const ok = { title: 'A', detail: 'Do A.', files: ['a.cs'], dependsOn: [], size: 'normal', model: 'opus' };
+  const allowed = { builders: builders.map(m => m.id), verifiers: verifiers.map(m => m.id) };
+  const split = autonomy.parseSplit(JSON.stringify({ parts: [{ ...ok, model: 'nobody', size: 'huge' }, ...Array.from({ length: 15 }, (_, i) => ({ ...ok, files: ['m' + i + '.cs'] }))], verify: 'haiku', why: 'x' }), allowed);
+  assert.equal(split.parts.length, 16, 'sixteen parts are allowed; ten run at once');
+  assert.equal(split.parts[0].model, '', 'a model not allowed is left for Planwharf to pick');
+  assert.equal(split.parts[0].size, 'normal');
+  assert.equal(split.verify, 'sol', 'a verifier not allowed becomes the first allowed one');
+  assert.equal(autonomy.fitWeights(split.parts, builders).parts[0].model, 'luna', 'the weight picks a model for it: a normal part, and no default model, goes light');
 });
 
 test('light parts go to light models: a part given to a heavier model moves to a lighter one', () => {

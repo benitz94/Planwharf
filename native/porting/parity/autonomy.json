@@ -641,7 +641,7 @@
         ]
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   },
   {
     "fn": "fitWeights",
@@ -885,7 +885,7 @@
         ]
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Port as sheet 42 says\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 40% quota left)\nProject files (1):\njobs/42-port.md\nDocument the goal names, jobs/42-port.md (start only; read the rest in the project folder):\n<<<\nModules: a, b, c\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project Proj. Goal: Port as sheet 42 says\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 40% quota left)\nProject files (1):\njobs/42-port.md\nDocument the goal names, jobs/42-port.md (start only; read the rest in the project folder):\n<<<\nModules: a, b, c\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   },
   {
     "fn": "namedDocuments",
@@ -926,5 +926,294 @@
       []
     ],
     "result": []
+  },
+  {
+    "fn": "parseSplit",
+    "args": [
+      "{\"parts\":[{\"title\":\"T1\",\"detail\":\"D1\",\"files\":[\"a.js\"],\"size\":\"huge\",\"model\":\"nobody\"},{\"title\":\"T2\",\"detail\":\"D2\",\"files\":[\"b.js\"],\"size\":\"light\",\"model\":\"m1\"}],\"verify\":\"x\",\"why\":\"ok\"}",
+      {
+        "builders": [
+          "m1"
+        ],
+        "verifiers": [
+          "v1",
+          "v2"
+        ]
+      }
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "T1",
+          "detail": "D1",
+          "files": [
+            "a.js"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": ""
+        },
+        {
+          "title": "T2",
+          "detail": "D2",
+          "files": [
+            "b.js"
+          ],
+          "dependsOn": [],
+          "size": "light",
+          "model": "m1"
+        }
+      ],
+      "verify": "v1",
+      "why": "ok"
+    }
+  },
+  {
+    "fn": "parseSplit",
+    "args": [
+      "{\"parts\":[{\"title\":\"P0\",\"detail\":\"D\",\"files\":[\"f0.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P1\",\"detail\":\"D\",\"files\":[\"f1.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P2\",\"detail\":\"D\",\"files\":[\"f2.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P3\",\"detail\":\"D\",\"files\":[\"f3.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P4\",\"detail\":\"D\",\"files\":[\"f4.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P5\",\"detail\":\"D\",\"files\":[\"f5.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P6\",\"detail\":\"D\",\"files\":[\"f6.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P7\",\"detail\":\"D\",\"files\":[\"f7.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P8\",\"detail\":\"D\",\"files\":[\"f8.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P9\",\"detail\":\"D\",\"files\":[\"f9.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P10\",\"detail\":\"D\",\"files\":[\"f10.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P11\",\"detail\":\"D\",\"files\":[\"f11.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P12\",\"detail\":\"D\",\"files\":[\"f12.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P13\",\"detail\":\"D\",\"files\":[\"f13.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P14\",\"detail\":\"D\",\"files\":[\"f14.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P15\",\"detail\":\"D\",\"files\":[\"f15.cs\"],\"size\":\"normal\",\"model\":\"m1\"}],\"verify\":\"v1\"}",
+      {
+        "builders": [
+          "m1"
+        ],
+        "verifiers": [
+          "v1"
+        ]
+      }
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "P0",
+          "detail": "D",
+          "files": [
+            "f0.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P1",
+          "detail": "D",
+          "files": [
+            "f1.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P2",
+          "detail": "D",
+          "files": [
+            "f2.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P3",
+          "detail": "D",
+          "files": [
+            "f3.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P4",
+          "detail": "D",
+          "files": [
+            "f4.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P5",
+          "detail": "D",
+          "files": [
+            "f5.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P6",
+          "detail": "D",
+          "files": [
+            "f6.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P7",
+          "detail": "D",
+          "files": [
+            "f7.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P8",
+          "detail": "D",
+          "files": [
+            "f8.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P9",
+          "detail": "D",
+          "files": [
+            "f9.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P10",
+          "detail": "D",
+          "files": [
+            "f10.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P11",
+          "detail": "D",
+          "files": [
+            "f11.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P12",
+          "detail": "D",
+          "files": [
+            "f12.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P13",
+          "detail": "D",
+          "files": [
+            "f13.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P14",
+          "detail": "D",
+          "files": [
+            "f14.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        },
+        {
+          "title": "P15",
+          "detail": "D",
+          "files": [
+            "f15.cs"
+          ],
+          "dependsOn": [],
+          "size": "normal",
+          "model": "m1"
+        }
+      ],
+      "verify": "v1",
+      "why": ""
+    }
+  },
+  {
+    "fn": "parseSplit",
+    "args": [
+      "{\"parts\":[{\"title\":\"P0\",\"detail\":\"D\",\"files\":[\"f0.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P1\",\"detail\":\"D\",\"files\":[\"f1.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P2\",\"detail\":\"D\",\"files\":[\"f2.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P3\",\"detail\":\"D\",\"files\":[\"f3.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P4\",\"detail\":\"D\",\"files\":[\"f4.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P5\",\"detail\":\"D\",\"files\":[\"f5.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P6\",\"detail\":\"D\",\"files\":[\"f6.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P7\",\"detail\":\"D\",\"files\":[\"f7.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P8\",\"detail\":\"D\",\"files\":[\"f8.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P9\",\"detail\":\"D\",\"files\":[\"f9.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P10\",\"detail\":\"D\",\"files\":[\"f10.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P11\",\"detail\":\"D\",\"files\":[\"f11.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P12\",\"detail\":\"D\",\"files\":[\"f12.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P13\",\"detail\":\"D\",\"files\":[\"f13.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P14\",\"detail\":\"D\",\"files\":[\"f14.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P15\",\"detail\":\"D\",\"files\":[\"f15.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P16\",\"detail\":\"D\",\"files\":[\"f16.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P17\",\"detail\":\"D\",\"files\":[\"f17.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P18\",\"detail\":\"D\",\"files\":[\"f18.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P19\",\"detail\":\"D\",\"files\":[\"f19.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P20\",\"detail\":\"D\",\"files\":[\"f20.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P21\",\"detail\":\"D\",\"files\":[\"f21.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P22\",\"detail\":\"D\",\"files\":[\"f22.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P23\",\"detail\":\"D\",\"files\":[\"f23.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P24\",\"detail\":\"D\",\"files\":[\"f24.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P25\",\"detail\":\"D\",\"files\":[\"f25.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P26\",\"detail\":\"D\",\"files\":[\"f26.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P27\",\"detail\":\"D\",\"files\":[\"f27.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P28\",\"detail\":\"D\",\"files\":[\"f28.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P29\",\"detail\":\"D\",\"files\":[\"f29.cs\"],\"size\":\"normal\",\"model\":\"m1\"},{\"title\":\"P30\",\"detail\":\"D\",\"files\":[\"f30.cs\"],\"size\":\"normal\",\"model\":\"m1\"}],\"verify\":\"v1\"}",
+      {
+        "builders": [
+          "m1"
+        ],
+        "verifiers": [
+          "v1"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "fitWeights",
+    "args": [
+      [
+        {
+          "title": "T",
+          "size": "normal",
+          "model": ""
+        }
+      ],
+      [
+        {
+          "id": "light-m",
+          "tier": "light",
+          "left": 90
+        },
+        {
+          "id": "heavy-m",
+          "tier": "premium"
+        }
+      ]
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "T",
+          "size": "normal",
+          "model": "light-m"
+        }
+      ],
+      "moved": [
+        {
+          "title": "T",
+          "size": "normal",
+          "from": "",
+          "to": "light-m"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "splitPrompt",
+    "args": [
+      {
+        "name": "P",
+        "goal": "G",
+        "builders": [],
+        "verifiers": [],
+        "files": []
+      }
+    ],
+    "result": "Autonomous planning for project P. Goal: G\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: \nModels allowed to verify: \nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   }
 ]
