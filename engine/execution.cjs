@@ -189,7 +189,13 @@ function createExecutionBridge(options) {
     const all = subtasks(mega);
     const earlier = new Set(), queue = [...(sub.dependencies || [])];
     while (queue.length) { const id = queue.pop(); if (earlier.has(id)) continue; earlier.add(id); queue.push(...(all.find(other => other.id === id)?.dependencies || [])); }
-    const scope = [...sub.scope, ...all.filter(other => earlier.has(other.id) && other.status === 'COMPLETE').flatMap(other => other.scope || [])].map(slash);
+    // Work that continues a stopped one may also change what the stopped work finished (its parts are
+    // over), unless a part of this work that does not come before it owns the file.
+    const continued = data.megaTasks.filter(other => other.projectId === mega.projectId && other.id !== mega.id && String(other.status).toUpperCase() === 'CANCELLED').map(other => other.id);
+    const finishedBefore = data.results.filter(item => item.status === 'COMPLETE' && continued.includes(item.megaTaskId)).flatMap(item => item.filesChanged || []).map(slash);
+    const busy = all.filter(other => other.id !== sub.id && !earlier.has(other.id)).flatMap(other => other.scope || []).map(slash);
+    const scope = [...sub.scope, ...all.filter(other => earlier.has(other.id) && other.status === 'COMPLETE').flatMap(other => other.scope || []),
+      ...finishedBefore.filter(file => !inScope(file, busy))].map(slash);
     const outside = new Set((result.filesChanged || []).map(slash).filter(file => file && !inScope(file, scope)));
     const others = all.filter(other => other.id !== sub.id);
     // Only when no other part worked while this one did can a changed file be put down to this part.
@@ -203,6 +209,10 @@ function createExecutionBridge(options) {
         catch { outside.add('(commit inspection unavailable)'); }
       }
     }
+    // The scope keeps two workers off the same file at the same time. A part that waits for others (the
+    // one that wires them together) runs when they are done: only a file of a part that may still be
+    // working, or is still to start, is a conflict for it. Its own list may leave out files nobody owns.
+    if (earlier.size) for (const file of [...outside]) if (!inScope(file, busy)) outside.delete(file);
     if (!outside.size) { delete sub.scopeViolation; return result; }
     sub.scopeViolation = [...outside].slice(0, 20);
     return { ...result, status: 'BLOCKED', blockers: [...(result.blockers || []), `Changed files outside its scope: ${sub.scopeViolation.join(', ')}.`],
@@ -461,6 +471,11 @@ function createExecutionBridge(options) {
       && sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE' && (!(mega.worktreeParts || []).some(part => part.subId === id) || mega.integratedSubIds?.includes(id))));
     return ready.length > 1 ? ready : [];
   }
+  function startable(mega) {
+    const subs = subtasks(mega);
+    return subs.some(sub => sub.status === 'PENDING' && stepRole(sub) === 'Build'
+      && sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE'));
+  }
   function allIntegrated(mega) { return !mega.activeGroup?.length && (mega.worktreeParts || []).every(part => mega.integratedSubIds?.includes(part.subId)); }
   function integrateParts(item, mega) {
     const group = mega.activeGroup || [];
@@ -682,7 +697,9 @@ function createExecutionBridge(options) {
         reconcile(mega);
         if (mega.status === 'RUNNING' && !deadlineDue(mega)) {
           if (subs.every(sub => sub.status === 'COMPLETE') && allIntegrated(mega)) complete(item, mega);
-          else if (subs.some(sub => sub.status === 'BLOCKED') && !subs.some(sub => sub.status === 'RUNNING')) checkpoint(item, job, mega, 'blocked worker');
+          // A blocked part does not abandon the parts that do not need it: the work stops only when nothing
+          // else can start (the next round launches them; the scheduler starts at most ten at a time).
+          else if (subs.some(sub => sub.status === 'BLOCKED') && !subs.some(sub => sub.status === 'RUNNING') && !startable(mega)) checkpoint(item, job, mega, 'blocked worker');
         }
       }
     }

@@ -3239,18 +3239,24 @@ function createOrchestrator(options) {
     settings.continued = [...(settings.continued || []), megaTaskId].slice(-50);
     const results = (view.execution?.results || []).filter(result => result.megaTaskId === megaTaskId);
     const changed = results.some(result => Array.isArray(result.filesChanged) && result.filesChanged.length);
-    settings.stalls = changed ? 0 : (settings.stalls || 0) + 1;
+    // The same step stopped for the same reason as last time is no progress, whatever other files changed.
+    const subs = (view.execution?.subTasks || []).filter(sub => sub.megaTaskId === megaTaskId);
+    const stop = results.filter(result => result.status !== 'COMPLETE').map(result => `${subs.find(sub => sub.id === result.subTaskId)?.title || ''}: ${String((result.blockers || [])[0] || result.summary || '').replace(/\(.*\)/g, '').slice(0, 200)}`).sort().join(' | ');
+    const repeated = Boolean(stop) && stop === settings.lastStop;
+    before.lastStop = settings.lastStop;
+    settings.lastStop = stop;
+    settings.stalls = changed && !repeated ? 0 : (settings.stalls || 0) + 1;
     persist();
     // An error on the way leaves the stop as it was, so the next try hears about it again.
     try { return await continueWith(); }
-    catch (error) { settings.continued = before.continued; settings.stalls = before.stalls; persist(); throw error; }
+    catch (error) { settings.continued = before.continued; settings.stalls = before.stalls; settings.lastStop = before.lastStop; persist(); throw error; }
     async function continueWith() {
       const reason = row.checkpoint?.reason === 'worker failure' ? 'a step failed' : 'a step stopped blocked or part way';
       if (settings.stalls >= 2) {
         const blocker = results.flatMap(result => result.blockers || []).map(String).find(Boolean) || results.at(-1)?.summary || 'no result was recorded';
         const decisions = store.execution && Array.isArray(store.execution.decisions) ? store.execution.decisions : null;
         if (decisions) decisions.push({ id: 'no-progress-' + megaTaskId, kind: 'no-progress', projectId, megaTaskId, breaks: true, at: now(), answer: '',
-          text: `The crew stopped twice without changing any file. Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
+          text: `The crew made no progress twice in a row (no file changed, or the same step stopped for the same reason). Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
           suggestion: 'Continue: split the remaining work into smaller parts and try other models' });
         note(projectId, 'The crew made no progress twice in a row. Planwharf stopped and asks you in Decisions how to continue.');
         return stopAutonomy(projectId, settings, 'NO_PROGRESS');

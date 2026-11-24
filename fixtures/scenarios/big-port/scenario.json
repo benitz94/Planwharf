@@ -1,0 +1,25 @@
+{
+  "name": "Big port",
+  "goal": "Port them, as sheet 42 says. Then stop.",
+  "sheet": "42-phase4.md",
+  "modules": [
+    "runner",
+    "provider-models",
+    "external-adapters",
+    "api-agent",
+    "provider-connections",
+    "antigravity",
+    "plan-usage",
+    "plan-file",
+    "phone",
+    "phone-ollama",
+    "phone-handover",
+    "phone-handover-live",
+    "phone-activation-check",
+    "pr-check",
+    "worktrees",
+    "provider-adapters"
+  ],
+  "integration": "parity/required.json",
+  "about": "A job the size of job 43: sixteen modules to port in parallel, one part that wires them together, then Verify. Used by engine/rehearsal-big-port.test.cjs with fake models; the benchmarks can run it with real ones."
+}
