@@ -39,3 +39,9 @@ planwharf/continue-job-43-from-refreshed-main-pres
 No push or merge. Files outside the goal are not touched.
 
 ## Done
+
+Goal: Continue Job 43 from refreshed `main`, preserving `0045080`: resolve the sheet’s scope decisions, complete the remaining ports and comparisons, run the required tests and Native AOT checks, and obtain independent verification. Commit without pushing or merging, then stop for the owner’s Windows test.
+Summary: Integrated parallel parts 14 and 16 into the Job 43 continuation branch and committed as b791ce2 in the project folder. All deliverables from the two part worktrees were uncommitted on disk, so artifacts were imported byte-for-byte in order: Part 14 (Runner.cs, RunnerTests.cs) and Part 16 (ScenarioParityTests.cs). All 14 part branches and worktrees remain retained untouched. Focused Release tests pass: Runner 23, ScenarioParity 109 (including 6 mutation tests). FakeCli tests pass: 64. Release Engine build succeeded with zero warnings and zero errors; 103 scenario parity checks matched across 6 files; job 42 sheet and parity tests passed (11). Full Engine test suite passed 1,597 tests, with 1 pre-existing failure in LiteralStringTests (flagging Worktrees.cs and PhoneHandoverLive.cs exception literals). No push or merge performed. Integrated the recovered Antigravity cases, ten pure comparison surfaces, generated fixtures, manifest-driven six-module scenario floors, and documentation. Committed the scoped changes as 7a83edf without pushing or merging. Delivered on disk: the step committed before the process ended, with no result file.
+Branch: planwharf/continue-job-43-from-refreshed-main-pres
+Pushed: no
+

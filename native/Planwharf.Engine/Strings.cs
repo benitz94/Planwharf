@@ -865,6 +865,12 @@ public static class Strings
         ["Runs custom commands before or after a model acts."] = "Esegue comandi personalizzati prima o dopo le azioni del modello.",
         ["Keeps notes between sessions so models remember past context."] = "Conserva note tra le sessioni per ricordare il contesto passato.",
         ["Lets models use external MCP tools configured on your machine."] = "Consente ai modelli di usare strumenti MCP esterni configurati sul computer.",
+        ["Invalid worktree branch"] = "Branch del worktree non valido",
+        ["Invalid worktree identity"] = "Identità del worktree non valida",
+        ["Worktree destination is occupied"] = "La destinazione del worktree è occupata",
+        ["Worktree cleanup path escaped its work"] = "Il percorso di pulizia del worktree è uscito dal proprio ambito",
+        ["Worktree has recoverable changes: {0}"] = "Il worktree ha modifiche recuperabili: {0}",
+        ["HttpJson is required"] = "HttpJson è obbligatorio",
     };
     static readonly Dictionary<string, string> English = Italian.Keys.ToDictionary(key => key, key => key, StringComparer.Ordinal);
 

@@ -225,7 +225,7 @@ public static class PhoneHandoverLive
 
     public static async Task<LiveHandoverResult> RunLiveHandoverAsync(LiveHandoverOptions options)
     {
-        var http = options.HttpJson ?? throw new InvalidOperationException("HttpJson is required");
+        var http = options.HttpJson ?? throw new InvalidOperationException(Strings.T("HttpJson is required"));
         var wait = options.WaitImpl ?? (ms => Task.Delay(ms));
 
         var appNode = await http($"{options.InstalledAddress}/api/app", HttpMethod.Get, null);

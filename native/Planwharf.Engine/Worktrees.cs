@@ -65,7 +65,7 @@ public sealed class Worktrees
     public string BranchFor(string workBranch, long index)
     {
         if (index < 1 || index > 9007199254740991 || workBranch is null || !Regex.IsMatch(workBranch, @"\A[-A-Za-z0-9_./]+\z", RegexOptions.ECMAScript))
-            throw new InvalidOperationException("Invalid worktree branch");
+            throw new InvalidOperationException(Strings.T("Invalid worktree branch"));
         var branch = $"{workBranch}--part-{index}";
         GitBranchName(branch);
         return branch;
@@ -74,14 +74,14 @@ public sealed class Worktrees
     public void GitBranchName(string branch)
     {
         if (Probe(null, "check-ref-format", "--branch", branch).Status != 0)
-            throw new InvalidOperationException("Invalid worktree branch");
+            throw new InvalidOperationException(Strings.T("Invalid worktree branch"));
     }
 
     public static string WorktreePath(string dir, string projectId, string megaId, string subId)
     {
         foreach (var id in new[] { projectId, megaId, subId })
             if (id is null || !Regex.IsMatch(id, @"\A[A-Za-z0-9_-]{1,100}\z", RegexOptions.ECMAScript))
-                throw new InvalidOperationException("Invalid worktree identity");
+                throw new InvalidOperationException(Strings.T("Invalid worktree identity"));
         return Path.Combine(dir, "worktrees", projectId, megaId, subId);
     }
 
@@ -97,7 +97,7 @@ public sealed class Worktrees
             var registered = records.Any(record => record.StartsWith("worktree ", StringComparison.Ordinal)
                 && ProjectWorkspace.LinkedWorkspace(record[9..].Split('\n')[0]) == ProjectWorkspace.LinkedWorkspace(destination));
             if (!registered || Git(destination, "branch", "--show-current") != branch)
-                throw new InvalidOperationException("Worktree destination is occupied");
+                throw new InvalidOperationException(Strings.T("Worktree destination is occupied"));
             return new Part(destination, branch, subId);
         }
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -160,13 +160,13 @@ public sealed class Worktrees
             GitBranchName(part.Branch);
             if (!ProjectWorkspace.Within(root, destination)
                 || destination != WorktreePath(dir, projectId, megaId, part.SubId))
-                throw new InvalidOperationException("Worktree cleanup path escaped its work");
+                throw new InvalidOperationException(Strings.T("Worktree cleanup path escaped its work"));
             if (Directory.Exists(destination) || File.Exists(destination))
             {
                 var dirty = Git(destination, "status", "--porcelain");
                 // Completion keeps uncommitted work for the owner. Drop this work removes it.
                 if (dirty.Length > 0 && !discardBranches)
-                    throw new InvalidOperationException($"Worktree has recoverable changes: {destination}");
+                    throw new InvalidOperationException(Strings.Format("Worktree has recoverable changes: {0}", destination));
                 if (discardBranches) Git(folder, "worktree", "remove", "--force", "--force", destination);
                 else Git(folder, "worktree", "remove", destination);
             }
