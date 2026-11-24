@@ -454,7 +454,7 @@
         }
       }
     ],
-    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: Goal\nRecorded results:\n- COMPLETE: ok\nPlanwharf ran `test` in the project folder just now: PASSED in 1 s. Output tail:\n```\nok\n```\nThis run is fresh evidence. Do not run commands or edit files yourself: decide from the goal, the results and this run.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: Goal\nRecorded results:\n- COMPLETE: ok\nPlanwharf ran `test` in the project folder just now: PASSED in 1 s. Output tail:\n```\nok\n```\nThis run is fresh evidence: do not run the tests again. Do not edit files. Inspect the project folder (files, git log, git diff) when the results leave a doubt.\nA worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
   },
   {
     "fn": "evaluationPrompt",
@@ -465,7 +465,7 @@
         "results": []
       }
     ],
-    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: not recorded\nRecorded results:\n- none recorded\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: not recorded\nRecorded results:\n- none recorded\nA worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
   },
   {
     "fn": "nudgePrompt",
@@ -510,7 +510,7 @@
         "said": "Suggest crew."
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Goal\nYou told the user in the chat, before this work started:\n<<<\nSuggest crew.\n>>>\nIf you proposed a crew there, keep that crew unless one of its models is not allowed below; if you choose differently, say why in \"why\".\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build\n   Allowed: a (A, provider p1)\n2. Verify\n   Allowed: b (B, provider p2)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nDo not run commands or read files: decide from this message only.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYou told the user in the chat, before this work started:\n<<<\nSuggest crew.\n>>>\nIf you proposed a crew there, keep that crew unless one of its models is not allowed below; if you choose differently, say why in \"why\".\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build\n   Allowed: a (A, provider p1)\n2. Verify\n   Allowed: b (B, provider p2)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nYou may inspect the project to judge the slices; do not change anything.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
   },
   {
     "fn": "parseDecision",
@@ -641,7 +641,7 @@
         ]
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSplit the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nDo not run commands or read files: decide from this message only.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   },
   {
     "fn": "fitWeights",
@@ -736,5 +736,195 @@
       }
     ],
     "result": null
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true
+        },
+        "row": {
+          "status": "checkpointed",
+          "megaTaskId": "m1",
+          "checkpoint": {
+            "reason": "blocked worker"
+          },
+          "megaTask": {
+            "pauseRequested": true
+          }
+        }
+      }
+    ],
+    "result": {
+      "type": "continue",
+      "megaTaskId": "m1"
+    }
+  },
+  {
+    "fn": "nextStep",
+    "args": [
+      {
+        "mode": "auto",
+        "sessionId": "s1",
+        "settings": {
+          "enabled": true,
+          "sessionId": "s1",
+          "started": true,
+          "continued": [
+            "m1"
+          ]
+        },
+        "row": {
+          "status": "checkpointed",
+          "megaTaskId": "m1",
+          "checkpoint": {
+            "reason": "worker failure"
+          }
+        },
+        "alerts": []
+      }
+    ],
+    "result": {
+      "type": "none",
+      "reason": "idle"
+    }
+  },
+  {
+    "fn": "continuePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Port the modules",
+        "reason": "a step stopped blocked or part way",
+        "results": [
+          {
+            "status": "BLOCKED",
+            "summary": "Ported 1 of 16 modules.",
+            "filesChanged": [
+              "a.cs",
+              "a.test.cs"
+            ],
+            "blockers": [
+              "The full port is not complete"
+            ]
+          }
+        ]
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask stopped before the goal was met (a step stopped blocked or part way).\nGoal: Port the modules\nRecorded results:\n- BLOCKED: Ported 1 of 16 modules. Files changed: a.cs, a.test.cs. Blockers: The full port is not complete\nInspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.\nPut in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "continuePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "results": []
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask stopped before the goal was met (a step did not finish).\nGoal: not recorded\nRecorded results:\n- none recorded\nInspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.\nPut in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "evaluationPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "results": [
+          {
+            "status": "COMPLETE",
+            "summary": "ok",
+            "filesChanged": [
+              "x.js"
+            ],
+            "blockers": [
+              "minor"
+            ]
+          }
+        ]
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: Goal\nRecorded results:\n- COMPLETE: ok Files changed: x.js. Blockers: minor\nA worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "splitPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Port as sheet 42 says",
+        "builders": [
+          {
+            "id": "a",
+            "label": "A",
+            "provider": "p1",
+            "tier": "light"
+          }
+        ],
+        "verifiers": [
+          {
+            "id": "b",
+            "label": "B",
+            "provider": "p2",
+            "tier": "premium",
+            "left": 40
+          }
+        ],
+        "files": [
+          "jobs/42-port.md"
+        ],
+        "documents": [
+          {
+            "path": "jobs/42-port.md",
+            "text": "Modules: a, b, c",
+            "clipped": true
+          }
+        ]
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: Port as sheet 42 says\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 40% quota left)\nProject files (1):\njobs/42-port.md\nDocument the goal names, jobs/42-port.md (start only; read the rest in the project folder):\n<<<\nModules: a, b, c\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+  },
+  {
+    "fn": "namedDocuments",
+    "args": [
+      "Port, as sheet 42 says, the modules; see docs/NEXT-WORK.md and README.md",
+      [
+        "native/porting/jobs/42-phase4.md",
+        "native/porting/jobs/4-x.md",
+        "docs/NEXT-WORK.md",
+        "README.md",
+        "other/42-copy.txt"
+      ]
+    ],
+    "result": [
+      "docs/NEXT-WORK.md",
+      "README.md",
+      "native/porting/jobs/42-phase4.md"
+    ]
+  },
+  {
+    "fn": "namedDocuments",
+    "args": [
+      "Job 7 and job 9",
+      [
+        "a/07-seven.md",
+        "b/9-nine.md",
+        "c/9-nine-again.md"
+      ]
+    ],
+    "result": [
+      "a/07-seven.md"
+    ]
+  },
+  {
+    "fn": "namedDocuments",
+    "args": [
+      "nothing here",
+      []
+    ],
+    "result": []
   }
 ]

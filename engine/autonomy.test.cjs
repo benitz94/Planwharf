@@ -24,11 +24,41 @@ test('a user pause or stop is never overridden, even with an active alert', () =
   for (const row of [{ status: 'checkpointed', megaTaskId: 'm1' }, { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason: 'stop' } }, { status: 'watching', megaTaskId: 'm1', megaTask: { pauseRequested: true } }]) assert.equal(step(on(), row, { alerts }).type, 'none');
 });
 
-test('a slice that ends blocked or failed reaches the lead instead of waiting forever', () => {
-  const alerts = [{ key: 'result-25', title: 'An assignment did not finish successfully', message: 'm' }];
+test('a slice that ends blocked or failed goes back to the lead at once, without waiting for an alert', () => {
   for (const reason of ['blocked worker', 'worker failure']) {
-    assert.equal(step(on(), { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason } }, { alerts }).type, 'nudge');
+    // A failed MegaTask also asks to pause: that is not the owner's pause.
+    for (const megaTask of [undefined, { pauseRequested: true }]) {
+      assert.deepEqual(step(on(), { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason }, megaTask }), { type: 'continue', megaTaskId: 'm1' });
+    }
+    // Once the lead has heard about it, the same stop is not sent again; an alert can still nudge.
+    const alerts = [{ key: 'result-25', title: 'An assignment did not finish successfully', message: 'm' }];
+    assert.equal(step(on({ continued: ['m1'] }), { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason } }, { alerts }).type, 'nudge');
   }
+});
+
+test('the lead sees the documents a goal names and may read the project to size the work', () => {
+  const { splitPrompt, namedDocuments, readDocuments } = require('./autonomy.cjs');
+  const files = ['native/porting/jobs/42-phase4.md', 'native/porting/jobs/4-other.md', 'docs/NEXT-WORK.md', 'src/a.js'];
+  assert.deepEqual(namedDocuments('Port, as sheet 42 says, the sixteen modules (see docs/NEXT-WORK.md)', files), ['docs/NEXT-WORK.md', 'native/porting/jobs/42-phase4.md']);
+  assert.deepEqual(namedDocuments('Fix the button', files), []);
+  const docs = readDocuments('/p', ['a.md', 'missing.md', 'big.md'], file => {
+    if (file.endsWith('missing.md')) throw new Error('ENOENT');
+    return file.endsWith('big.md') ? 'x'.repeat(20000) : 'Modules: one, two, three';
+  });
+  assert.deepEqual(docs.map(doc => [doc.path, doc.text.length, doc.clipped]), [['a.md', 24, false], ['big.md', 12000, true]]);
+  const text = splitPrompt({ name: 'P', goal: 'Port as sheet 42 says', builders: [], verifiers: [], files, documents: docs });
+  assert.match(text, /Document the goal names, a\.md:\n<<<\nModules: one, two, three\n>>>/);
+  assert.match(text, /big\.md \(start only; read the rest in the project folder\)/);
+  assert.match(text, /not by the length of the goal line/);
+  assert.doesNotMatch(text, /Do not run commands or read files|decide from this message only|A small job stays one part/);
+});
+
+test('the lead is told what a stopped step did, so it names only the rest of the work', () => {
+  const { continuePrompt } = require('./autonomy.cjs');
+  const text = continuePrompt({ name: 'P', goal: 'Port 16 modules', reason: 'a step stopped blocked or part way', results: [{ status: 'BLOCKED', summary: 'Ported 1 of 16.', filesChanged: ['a.cs'], blockers: ['The full port is not complete'] }] });
+  assert.match(text, /stopped before the goal was met \(a step stopped blocked or part way\)/);
+  assert.match(text, /- BLOCKED: Ported 1 of 16\. Files changed: a\.cs\. Blockers: The full port is not complete/);
+  assert.match(text, /complete remaining work/);
 });
 
 test('the MegaTask cap stops approval and reports the limit', () => {

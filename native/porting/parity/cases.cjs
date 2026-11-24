@@ -333,7 +333,16 @@ module.exports = {
     ['splitPrompt', [{ name: 'Proj', goal: 'Goal', builders: [{ id: 'a', label: 'A', provider: 'p1', tier: 'light', left: 50 }], verifiers: [{ id: 'b', label: 'B', provider: 'p2', tier: 'premium' }], files: ['a.js', 'b.js'] }]],
     ['fitWeights', [[{ title: 'T', size: 'light', model: 'heavy-m' }], [{ id: 'light-m', tier: 'light', left: 90 }, { id: 'heavy-m', tier: 'premium' }]]],
     ['parseSplit', ['{"parts":[{"title":"T1","detail":"D1","files":["a.js"],"size":"normal","model":"m1"},{"title":"T2","detail":"D2","files":["a.js","b.js"],"size":"normal","model":"m1"}],"verify":"v1","why":"ok"}', { builders: ['m1'], verifiers: ['v1'] }]],
-    ['parseSplit', ['not json', { builders: [], verifiers: [] }]]
+    ['parseSplit', ['not json', { builders: [], verifiers: [] }]],
+    ['nextStep', [{ mode: 'auto', sessionId: 's1', settings: { enabled: true, sessionId: 's1', started: true }, row: { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason: 'blocked worker' }, megaTask: { pauseRequested: true } } }]],
+    ['nextStep', [{ mode: 'auto', sessionId: 's1', settings: { enabled: true, sessionId: 's1', started: true, continued: ['m1'] }, row: { status: 'checkpointed', megaTaskId: 'm1', checkpoint: { reason: 'worker failure' } }, alerts: [] }]],
+    ['continuePrompt', [{ name: 'Proj', goal: 'Port the modules', reason: 'a step stopped blocked or part way', results: [{ status: 'BLOCKED', summary: 'Ported 1 of 16 modules.', filesChanged: ['a.cs', 'a.test.cs'], blockers: ['The full port is not complete'] }] }]],
+    ['continuePrompt', [{ name: 'Proj', results: [] }]],
+    ['evaluationPrompt', [{ name: 'Proj', goal: 'Goal', results: [{ status: 'COMPLETE', summary: 'ok', filesChanged: ['x.js'], blockers: ['minor'] }] }]],
+    ['splitPrompt', [{ name: 'Proj', goal: 'Port as sheet 42 says', builders: [{ id: 'a', label: 'A', provider: 'p1', tier: 'light' }], verifiers: [{ id: 'b', label: 'B', provider: 'p2', tier: 'premium', left: 40 }], files: ['jobs/42-port.md'], documents: [{ path: 'jobs/42-port.md', text: 'Modules: a, b, c', clipped: true }] }]],
+    ['namedDocuments', ['Port, as sheet 42 says, the modules; see docs/NEXT-WORK.md and README.md', ['native/porting/jobs/42-phase4.md', 'native/porting/jobs/4-x.md', 'docs/NEXT-WORK.md', 'README.md', 'other/42-copy.txt']]],
+    ['namedDocuments', ['Job 7 and job 9', ['a/07-seven.md', 'b/9-nine.md', 'c/9-nine-again.md']]],
+    ['namedDocuments', ['nothing here', []]]
   ],
   plan: [
     ['example', []],

@@ -30,7 +30,10 @@ function nextStep({ mode, sessionId, settings, row, alerts = [], now = Date.now(
   if (!row) return none('no-project');
   // A checkpoint saved because a worker failed or stopped blocked is not the user's pause: the lead hears about it.
   const workEnded = row.status === 'checkpointed' && WORK_ENDED.has(row.checkpoint?.reason);
-  if ((row.status === 'checkpointed' && !workEnded) || row.status === 'paused' || row.megaTask?.pauseRequested) return none('user-paused');
+  if ((row.status === 'checkpointed' && !workEnded) || row.status === 'paused' || (row.megaTask?.pauseRequested && !workEnded)) return none('user-paused');
+  // Work that ended blocked or failed goes back to the lead at once, with its results: the lead names the
+  // rest of the work and the crew carries on. It never waits for an alert to notice it.
+  if (workEnded && row.megaTaskId && !(settings.continued || []).includes(row.megaTaskId)) return { type: 'continue', megaTaskId: row.megaTaskId };
   if (row.status === 'needs_approval' && row.megaTaskId) {
     if (settings.approved.includes(row.megaTaskId)) return none('already-approved');
     if (settings.approved.length >= LIMITS.maxMegaTasks) return { type: 'limit', reason: 'MEGATASK_LIMIT' };
@@ -61,7 +64,7 @@ function checksText(checks) {
   if (!checks) return ['Planwharf found no recognised test entry point (package.json test script or test files) in the project folder.'];
   const verdict = checks.timedOut ? 'TIMED OUT' : checks.exitCode === 0 ? 'PASSED' : `FAILED (exit ${checks.exitCode})`;
   return [`Planwharf ran \`${checks.label}\` in the project folder just now: ${verdict} in ${checks.seconds} s. Output tail:`, '```', checks.output || '(no output)', '```',
-    'This run is fresh evidence. Do not run commands or edit files yourself: decide from the goal, the results and this run.'];
+    'This run is fresh evidence: do not run the tests again. Do not edit files. Inspect the project folder (files, git log, git diff) when the results leave a doubt.'];
 }
 
 // True when the evidence is clear enough to end without asking the lead.
@@ -71,9 +74,27 @@ function cleanFinish(results, checks) {
   return list.every(result => result.status === 'COMPLETE' && !(Array.isArray(result.blockers) && result.blockers.length));
 }
 
+function resultLines(results) {
+  return (results || []).slice(-6).map(result => {
+    const files = Array.isArray(result.filesChanged) && result.filesChanged.length ? ` Files changed: ${result.filesChanged.slice(0, 20).join(', ')}.` : '';
+    const blockers = Array.isArray(result.blockers) && result.blockers.length ? ` Blockers: ${result.blockers.slice(0, 3).map(item => String(item).slice(0, 300)).join(' | ')}` : '';
+    return `- ${result.status}: ${result.summary || 'no summary'}${files}${blockers}`;
+  });
+}
 function evaluationPrompt({ name, goal, results, checks }) {
-  const lines = (results || []).slice(-6).map(result => `- ${result.status}: ${result.summary || 'no summary'}`);
-  return [`Autonomous review of project ${name}. The current MegaTask finished.`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']), ...checksText(checks), leadInstructions()].join('\n');
+  const lines = resultLines(results);
+  return [`Autonomous review of project ${name}. The current MegaTask finished.`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']), ...checksText(checks),
+    'A worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.', leadInstructions()].join('\n');
+}
+
+// Work that stopped part way (a step blocked, failed or reported partial) goes back to the lead with its
+// results. The lead names the rest of the work; Planwharf prepares it and the lead splits it again.
+function continuePrompt({ name, goal, results, reason }) {
+  const lines = resultLines(results);
+  return [`Autonomous review of project ${name}. The current MegaTask stopped before the goal was met (${reason || 'a step did not finish'}).`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']),
+    'Inspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.',
+    'Put in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.',
+    leadInstructions()].join('\n');
 }
 
 // Text comes from backend-detected facts, so no model runs to raise a nudge.
@@ -126,7 +147,7 @@ function assignmentPrompt({ name, goal, slices, candidates, said }) {
     'The MegaTask has these slices, run in order. Each lists the models allowed to take it:',
     ...slices.map((slice, index) => `${index + 1}. ${slice}\n   Allowed: ${candidates[index].map(worker => `${worker.id} (${worker.label}, provider ${worker.provider})`).join('; ')}`),
     'Choose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.',
-    'Do not run commands or read files: decide from this message only.',
+    'You may inspect the project to judge the slices; do not change anything.',
     'Reply with one JSON object and nothing else: {"assign":["worker id for slice 1", "..."],"why":"one sentence"}.'].join('\n');
 }
 
@@ -146,7 +167,7 @@ function parseAssignment(text, count, allowed) {
 // is refused and the work keeps its usual plan (build, then verify).
 const MAX_PARTS = 10;
 const SIZES = ['light', 'normal', 'heavy'];
-function splitPrompt({ name, goal, builders, verifiers, files, said }) {
+function splitPrompt({ name, goal, builders, verifiers, files, said, documents }) {
   const earlier = typeof said === 'string' && said.trim() ? said.trim() : '';
   const quoted = earlier.length > 2500 ? '…' + earlier.slice(-2499) : earlier;
   const describe = model => `${model.id} (${model.label}, provider ${model.provider}, ${model.tier}${Number.isFinite(model.left) ? `, ${model.left}% quota left` : ', quota not reported'})`;
@@ -154,7 +175,8 @@ function splitPrompt({ name, goal, builders, verifiers, files, said }) {
   return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
     ...(quoted ? [`You told the user in the chat, before this work started:\n<<<\n${quoted}\n>>>`] : []),
     `Your crew can work in parallel: up to ${MAX_PARTS} workers at the same time, all in the same project folder.`,
-    'Split the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.',
+    'Size the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.',
+    'Split the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.',
     'For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).',
     SPLIT_LINE_ASK,
     'Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.',
@@ -163,7 +185,8 @@ function splitPrompt({ name, goal, builders, verifiers, files, said }) {
     'Models allowed to build: ' + builders.map(describe).join('; '),
     'Models allowed to verify: ' + verifiers.map(describe).join('; '),
     ...(listed.length ? [`Project files (${listed.length}${(files || []).length > listed.length ? ' of ' + files.length : ''}):\n${listed.join('\n')}`] : []),
-    'Do not run commands or read files: decide from this message only.',
+    ...(documents || []).map(doc => `Document the goal names, ${doc.path}${doc.clipped ? ' (start only; read the rest in the project folder)' : ''}:\n<<<\n${doc.text}\n>>>`),
+    'You may read any project file to size the work (the project folder is open to you); do not change anything.',
     'Reply with one JSON object and nothing else: {"parts":[{"title":"","detail":"","files":["relative/path"],"dependsOn":[],"size":"normal","model":"id"}],"verify":"id","why":"one sentence"}'].join('\n');
 }
 
@@ -227,4 +250,39 @@ function parseSplit(text, { builders, verifiers }) {
   return { parts, verify: parsed.verify, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 
-module.exports = { fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+// The project documents a goal points to, for the lead to size the work by: a path written in the goal
+// (`docs/plan.md` or its file name), or a numbered sheet or job (`sheet 42`, `job 42`) that matches
+// exactly one numbered Markdown file. Only files in the project's own list are returned.
+const DOC_LIMIT = 12000, DOCS_LIMIT = 30000;
+function namedDocuments(goal, files) {
+  const text = String(goal || '');
+  const list = (files || []).map(file => String(file).replace(/\\/g, '/'));
+  const found = [];
+  const add = file => { if (file && !found.includes(file) && found.length < 4) found.push(file); };
+  for (const file of list) {
+    const base = file.split('/').pop();
+    if (text.includes(file) || (/\.(md|txt)$/i.test(base) && base.length > 6 && text.includes(base))) add(file);
+  }
+  for (const match of text.matchAll(/\b(?:sheet|job|foglio|lavoro)\s+(\d{1,3})\b/gi)) {
+    const pattern = new RegExp(`(^|/)0*${match[1]}-[^/]*\\.md$`, 'i');
+    const sheets = list.filter(file => pattern.test(file));
+    if (sheets.length === 1) add(sheets[0]);
+  }
+  return found;
+}
+function readDocuments(folder, names, read) {
+  let room = DOCS_LIMIT;
+  const out = [];
+  for (const name of names) {
+    if (room <= 0) break;
+    let text;
+    try { text = read(require('node:path').join(folder, name)); } catch { continue; }
+    if (typeof text !== 'string' || !text.trim()) continue;
+    const limit = Math.min(DOC_LIMIT, room);
+    out.push({ path: name, text: text.slice(0, limit), clipped: text.length > limit });
+    room -= Math.min(text.length, limit);
+  }
+  return out;
+}
+
+module.exports = { namedDocuments, readDocuments, continuePrompt, fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
