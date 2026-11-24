@@ -183,6 +183,7 @@ function splitPrompt({ name, goal, builders, verifiers, files, said, documents }
     SPLIT_LINE_ASK,
     'Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.',
     'Each model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company\'s shared quota fast: keep premium models for heavy parts.',
+    'Spread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.',
     'Also name "verify": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.',
     'Models allowed to build: ' + builders.map(describe).join('; '),
     'Models allowed to verify: ' + verifiers.map(describe).join('; '),
@@ -218,6 +219,39 @@ function fitWeights(parts, builders) {
     }
     load.set(chosen, (load.get(chosen) || 0) + 1);
     if (chosen !== part.model) moved.push({ title: part.title, size, from: part.model, to: chosen });
+    return chosen === part.model ? part : { ...part, model: chosen };
+  });
+  return { parts: out, moved };
+}
+
+// After the weights, no model and no company takes more than its share of the parts while another
+// model of an allowed weight has room: a part goes to the least busy company, then the least busy model.
+// The lead's choice stays when it is within its share.
+function spreadParts(parts, builders) {
+  const list = (builders || []).filter(model => model && model.id);
+  const companyOf = model => model.provider || model.id;
+  const modelLoad = new Map(), companyLoad = new Map();
+  const moved = [];
+  const total = (parts || []).length;
+  const out = (parts || []).map(part => {
+    const size = SIZES.includes(part.size) ? part.size : 'normal';
+    const allowed = list.filter(model => ALLOWED[size].includes(model.tier));
+    const current = allowed.find(model => model.id === part.model);
+    let chosen = part.model;
+    if (allowed.length > 1) {
+      const companies = new Set(allowed.map(companyOf));
+      const modelShare = Math.ceil(total / allowed.length), companyShare = Math.ceil(total / companies.size);
+      const fits = model => (modelLoad.get(model.id) || 0) < modelShare && (companyLoad.get(companyOf(model)) || 0) < companyShare;
+      if (!current || !fits(current)) {
+        const ranked = [...allowed].sort((a, b) => ((companyLoad.get(companyOf(a)) || 0) - (companyLoad.get(companyOf(b)) || 0))
+          || ((modelLoad.get(a.id) || 0) - (modelLoad.get(b.id) || 0)) || ((b.left ?? 50) - (a.left ?? 50)));
+        chosen = (ranked.find(fits) || ranked[0]).id;
+      }
+    }
+    const model = list.find(item => item.id === chosen);
+    modelLoad.set(chosen, (modelLoad.get(chosen) || 0) + 1);
+    if (model) companyLoad.set(companyOf(model), (companyLoad.get(companyOf(model)) || 0) + 1);
+    if (chosen !== part.model) moved.push({ title: part.title, size, from: part.model, to: chosen, spread: true });
     return chosen === part.model ? part : { ...part, model: chosen };
   });
   return { parts: out, moved };
@@ -291,4 +325,4 @@ function readDocuments(folder, names, read) {
   return out;
 }
 
-module.exports = { MAX_SPLIT_PARTS, namedDocuments, readDocuments, continuePrompt, fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+module.exports = { spreadParts, MAX_SPLIT_PARTS, namedDocuments, readDocuments, continuePrompt, fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };

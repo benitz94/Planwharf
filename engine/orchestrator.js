@@ -3128,10 +3128,13 @@ function createOrchestrator(options) {
     }
     if (!split) { note(projectId, `The lead did not split the work in a usable way (${problem}); it keeps one build step.`); return false; }
     // Light parts on light models: the strong ones and their quota stay for the heavy work.
-    const fitted = autonomy.fitWeights(split.parts, builders.map(describe));
+    const weighed = autonomy.fitWeights(split.parts, builders.map(describe));
+    // Then no model and no company takes more than its share while others have room.
+    const spread = autonomy.spreadParts(weighed.parts, builders.map(describe));
+    const fitted = { parts: spread.parts, moved: [...weighed.moved.filter(move => !spread.moved.some(other => other.title === move.title)), ...spread.moved.map(move => ({ ...move, from: weighed.moved.find(other => other.title === move.title)?.from ?? move.from }))] };
     split.parts = fitted.parts;
     const label = id => roster().find(model => model.id === id)?.label || id;
-    for (const move of fitted.moved) note(projectId, move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.` : `Planwharf gave "${move.title}" to ${label(move.to)}: the lead named a model that may not build it.`);
+    for (const move of fitted.moved) note(projectId, move.spread && move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: spreading the parts over models and companies.` : move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.` : `Planwharf gave "${move.title}" to ${label(move.to)}: the lead named a model that may not build it.`);
     // The chat says it too, in the line that announces the split.
     if (fitted.moved.length) split.why = `${split.why || ''} Planwharf gave lighter models the lighter parts: ${fitted.moved.map(move => `"${move.title}" to ${label(move.to)}`).join(', ')}.`.trim();
     // The check of the whole uses the same instructions as the usual verify step.
