@@ -588,7 +588,9 @@ public sealed class RunnerTests
             {
                 var runPsi = OperatingSystem.IsWindows()
                     ? new ProcessStartInfo("cmd.exe", ["/c", "exit 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true }
-                    : new ProcessStartInfo("sh", ["-c", "exit 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
+                    // Like a real AI program, it reads the prompt first: a process that exits before the runner
+                    // has written it is a failed launch, and a fast computer could make the test fail.
+                    : new ProcessStartInfo("sh", ["-c", "cat > /dev/null; exit 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
                 return Process.Start(runPsi)!;
             });
 
