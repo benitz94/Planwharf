@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "module": "provider-adapters",
+  "scenarios": [
+    {
+      "name": "success",
+      "input": {
+        "mode": "success"
+      },
+      "requests": [
+        {
+          "kind": "fetch",
+          "url": "https://chatgpt.com/backend-api/codex/models?client_version=0.162.1",
+          "headers": {
+            "Authorization": "<REDACTED>",
+            "ChatGPT-Account-Id": "fake-account"
+          },
+          "timeoutMs": 10000
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "status": 200,
+          "body": {
+            "models": [
+              {
+                "slug": "gpt-exact",
+                "display_name": "Exact"
+              }
+            ]
+          }
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "auth.json": "{\"tokens\":{\"access_token\":\"<REDACTED>\",\"account_id\":\"fake-account\"}}"
+      },
+      "result": {
+        "ok": true,
+        "models": [
+          {
+            "cli": "gpt-exact",
+            "label": "Exact",
+            "capabilities": {
+              "canUseTools": true,
+              "canCode": true,
+              "canOrchestrate": true,
+              "canResearch": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-auth",
+      "input": {
+        "mode": "missing-auth"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Codex authentication unavailable."
+      }
+    },
+    {
+      "name": "http-error",
+      "input": {
+        "mode": "http-error"
+      },
+      "requests": [
+        {
+          "kind": "fetch",
+          "url": "https://chatgpt.com/backend-api/codex/models?client_version=0.162.1",
+          "headers": {
+            "Authorization": "<REDACTED>",
+            "ChatGPT-Account-Id": "fake-account"
+          },
+          "timeoutMs": 10000
+        }
+      ],
+      "replies": [
+        {
+          "ok": false,
+          "status": 401,
+          "body": {
+            "models": [
+              {
+                "slug": "gpt-exact",
+                "display_name": "Exact"
+              }
+            ]
+          }
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "auth.json": "{\"tokens\":{\"access_token\":\"<REDACTED>\",\"account_id\":\"fake-account\"}}"
+      },
+      "result": {
+        "ok": false,
+        "reason": "Codex model catalog HTTP 401"
+      }
+    },
+    {
+      "name": "malformed",
+      "input": {
+        "mode": "malformed"
+      },
+      "requests": [
+        {
+          "kind": "fetch",
+          "url": "https://chatgpt.com/backend-api/codex/models?client_version=0.162.1",
+          "headers": {
+            "Authorization": "<REDACTED>",
+            "ChatGPT-Account-Id": "fake-account"
+          },
+          "timeoutMs": 10000
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "status": 200,
+          "body": {}
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "auth.json": "{\"tokens\":{\"access_token\":\"<REDACTED>\",\"account_id\":\"fake-account\"}}"
+      },
+      "result": {
+        "ok": false,
+        "reason": "Codex returned an invalid model catalog."
+      }
+    },
+    {
+      "name": "identity",
+      "input": {
+        "mode": "identity"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "auth.json": "{\"tokens\":{\"access_token\":\"<REDACTED>\",\"account_id\":\"fake-account\"}}"
+      },
+      "result": {
+        "provider": "custom",
+        "model": "gpt-exact",
+        "accountKey": "fake-account"
+      }
+    },
+    {
+      "name": "registration",
+      "input": {
+        "mode": "registration"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "auth.json": "{\"tokens\":{\"access_token\":\"<REDACTED>\",\"account_id\":\"fake-account\"}}"
+      },
+      "error": "Adapter ID must be unique."
+    },
+    {
+      "name": "missing-method",
+      "input": {
+        "mode": "missing-method"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "error": "Adapter requires execute"
+    },
+    {
+      "name": "missing-regex",
+      "input": {
+        "mode": "missing-regex"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "error": "Adapter requires exact nativeModel validation."
+    },
+    {
+      "name": "registered",
+      "input": {
+        "mode": "registered"
+      },
+      "requests": [
+        {
+          "method": "discover",
+          "args": [
+            {
+              "id": "fixture"
+            }
+          ]
+        }
+      ],
+      "replies": [
+        {
+          "ok": true
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "frozen": true,
+        "reply": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "name": "unknown-adapter",
+      "input": {
+        "mode": "unknown-adapter"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "found": false
+      }
+    },
+    {
+      "name": "account-identity",
+      "input": {
+        "mode": "account-identity"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "provider": "fixture",
+        "model": "gpt-exact",
+        "accountKey": "fake-account"
+      }
+    }
+  ]
+}

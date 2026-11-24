@@ -146,3 +146,27 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The app said "stopped while starting" when an earlier engine was still running on the same data; it now connects to it, or says how to close a stuck one | #221 |
 | The lead split the work without seeing the sheet the goal named (it was told not to read files), so a sixteen-module port went to one worker, who did one module; a step that stopped part way then waited for an alert instead of going back to the lead. The lead now reads the sheet and splits the rest again | #223 |
 | The lead's reasons were never shown: "did not split the work", which model a part moved to and the error that stopped the crew stayed in an internal log, and the stop read only "autonomy error". One reply with a model it may not use, or more than ten parts, threw the whole split away; one error ended the crew. Now all of it is in Progress, the split is kept and the error retried | #224 |
+
+
+### Job 43 partial integration — attempt 83 (24 November 2026)
+
+Integrated parts 3, 4, 8, 9, 10, 11 and 15 in that order on the continuation
+branch. Their branch heads all remained at `156a998`; deliverables were uncommitted
+in their registered worktrees, so the 21 explicitly listed source/test/recorder
+artifacts were copied byte-for-byte. Source worktrees and all part branches were
+retained. The existing reviewed sheet changes from attempts 74/75 were preserved.
+
+Focused Release tests passed: Antigravity 30, ExternalAdapters/ProviderConnections 51,
+Worktrees 15, PlanFile 16, PrCheck 23 and PhoneOllama 12. The Release engine build
+passed with zero warnings/errors; sheet/parity guards passed 11 tests. The recorder
+self-test/check matched 103 scenarios. Full Release Engine tests: 1,360 passed,
+1 failed, zero skipped. `LiteralStringTests.Every_native_source_file_uses_resources_for_presentation_literals`
+flags six exception literals in `Worktrees.cs` (branch twice, identity, occupied
+destination, escaped cleanup path and recoverable changes). The owning worker must
+reconcile that guard with exact source messages; integration did not weaken it.
+
+This is partial integration, not Job 43 acceptance. Remaining ports, shared pure
+comparisons, C# scenario replay, engineering CI, FakeCli checks, Native AOT publish,
+configured independent verification and the owner's real-program Windows test remain
+for downstream slices. The skills update check was unavailable (GitHub HTTP 403 rate
+limit); no skills were installed. No push, branch deletion or merge was performed.
