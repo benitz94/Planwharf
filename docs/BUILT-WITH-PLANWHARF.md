@@ -192,3 +192,26 @@ Integration of all 10 parallel parts is complete. Downstream slices own shared c
 recovery, C# scenario replay, FakeCli checks, Native AOT publish, independent verification
 and the owner's Windows test. The startup skills update check was unavailable (GitHub HTTP 403
 rate limit); no updates installed. No push or merge performed.
+
+
+### Job 43 parallel parts integration — attempt 93 (24 November 2026)
+
+Integrated parts 7 and 13 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-7`,
+`--part-13`) on the continuation branch. Part branch heads remained at `20c9aa1`; deliverables
+were uncommitted in their registered worktrees, so the 10 source and test artifacts
+(`ProviderAdapters.cs`, `ProviderModels.cs`, `ProviderAdaptersTests.cs`, `ProviderModelsTests.cs`,
+`PhoneHandover.cs`, `PhoneHandoverLive.cs`, `PhoneActivationCheck.cs`, `PhoneHandoverTests.cs`,
+`PhoneHandoverLiveTests.cs`, `PhoneActivationCheckTests.cs`) were copied byte-for-byte. All source
+worktrees and part branches were retained untouched.
+
+Focused Release tests passed: ProviderAdapters/ProviderModels 16, PhoneHandover/PhoneHandoverLive/PhoneActivationCheck 36.
+The Release engine build succeeded with zero warnings and zero errors; sheet/parity guards passed 11 tests.
+The recorder check matched all 103 scenarios across 6 files. Full Release Engine tests: 1,465 passed,
+1 failed, zero skipped. The single failure is in `LiteralStringTests` (flagging pre-existing `Worktrees.cs`
+exception literals and `PhoneHandoverLive.cs` "HttpJson is required" literal); all unit tests in the
+test suites pass.
+
+Downstream slices own Runner (ST-14), C# scenario replay (ST-16), full integration with shared comparison
+recovery (ST-17), Native AOT publish, independent verification (ST-18) and the owner's Windows test.
+The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
+No push or merge performed.
