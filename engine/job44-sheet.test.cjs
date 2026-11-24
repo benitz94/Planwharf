@@ -12,6 +12,13 @@ const requirements = {
     /`scope-check\.test\.cjs`/, /`home-containment\.test\.cjs`/,
   ],
   lifecycle: [
+    /addition kill failure still resets Verify/i,
+    /addition to paused work immediately resumes/i,
+    /first answer remains allowed after work starts/i,
+    /delegation has no started-work guard/i,
+    /result write failure and persist failure/i, /dead\/live\/reused PID after restart/i,
+    /failed kill leaves assignment unchanged/i, /retains recoverable branches/i,
+    /Completed steps and preexisting dirty files survive/i,
     /no launch before durable approval/i, /exact provider\/model IDs/i,
     /missing\/invalid result cannot become `COMPLETE`/i, /concurrent shared-folder edits/i,
     /never double-collect/i, /failure to kill/i, /two simultaneous additions/i,
@@ -19,11 +26,16 @@ const requirements = {
     /decision after work started/i,
   ],
   home: [
+    /5-second timeout and 8 MiB buffer/i, /2,000 paths and 8 MiB/i,
+    /observation-only operations/i, /inspection must never dispatch work/i,
     /rejects inherited\/redirected Git metadata/i, /each parent realpath/i,
     /symlink\/junction/i, /plan exclusion/i, /nonancestor/i,
     /stale row versus durable MegaTask/i, /rather than a false change count/i,
   ],
   parity: [
+    /async values must never be passed to the synchronous pure recorder/i,
+    /preserve existing floors/i, /two new floors independently enforced/i,
+    /asserted final state, not just an asserted throw/i,
     /\*\*Pure parity\.\*\*/, /\*\*Scenario parity\.\*\*/,
     /`native\/porting\/parity\/cases\.cjs`/, /`ParityTests\.Ports`/,
     /`native\/porting\/parity\/scenarios\.cjs`/, /`ScenarioParityTests\.cs`/,
@@ -55,6 +67,26 @@ function assess(text) {
 
 test('Job 44 specifies mappings, risks, parity, ownership and review boundaries', () => {
   assert.deepEqual(assess(sheet), []);
+});
+
+test('every durable requirement detects its own omission, including error and recovery paths', () => {
+  for (const [group, checks] of Object.entries(requirements)) {
+    for (const check of checks) {
+      const broken = sheet.replace(new RegExp(check.source, check.flags + 'g'), '');
+      assert.notEqual(broken, sheet, `mutation must change ${group}: ${check}`);
+      assert.ok(assess(broken).some(error => error === `${group}: ${check}`),
+        `omission escaped ${group}: ${check}`);
+    }
+  }
+});
+
+test('empty and truncated sheets fail and interleaved assessments stay independent', async () => {
+  for (const text of ['', null, undefined, sheet.slice(0, sheet.indexOf('## Comparison'))]) {
+    assert.ok(assess(text).length, 'incomplete specification must fail');
+  }
+  const results = await Promise.all(Array.from({ length: 20 }, (_, index) =>
+    Promise.resolve().then(() => assess(index % 2 ? '' : sheet))));
+  results.forEach((errors, index) => assert.equal(errors.length === 0, index % 2 === 0));
 });
 
 test('representative omissions fail their own requirement group', () => {
