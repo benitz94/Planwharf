@@ -240,6 +240,7 @@ public sealed partial class MainWindow
         }
         chips.Children.Add(RoleChip(model, Strings.T("Build"), "worker", model.Build, model.CanBuild, Strings.T("Writes the code and tests.")));
         chips.Children.Add(RoleChip(model, Strings.T("Verify"), "verifier", model.Verify, model.CanVerify, Strings.T("Checks the work independently and fixes what fails.")));
+        if (!model.Bench) chips.Children.Add(NoLimitChip(model));
         if (!model.Bench)
         {
             var bench = Look.Chip(Strings.T("Bench"), null, Palette.Muted, Palette.Surface2, false);
@@ -303,6 +304,13 @@ public sealed partial class MainWindow
         var none = Small(Strings.T("No limit"));
         none.Click += async (_, _) => await DoAsync(() => api!.SetNoQuotaLimitAsync(model.Id), Strings.Format("{0} has no quota limit now.", model.Label));
         Add(none);
+        if (model.Pool.Length > 0 && !(model.LimitNone && model.LimitSource == "company"))
+        {
+            var noneForAll = Small(Strings.Format("No limit for all {0}", company));
+            ToolTip.SetTip(noneForAll, Strings.Format("Every {0} model without a limit of its own works until the quota is spent", company));
+            noneForAll.Click += async (_, _) => await DoAsync(() => api!.SetCompanyNoLimitAsync(model.Pool), Strings.Format("All {0} models have no quota limit now.", company));
+            Add(noneForAll);
+        }
         if (model.LimitSource == "model")
         {
             var reset = Small(model.Pool.Length > 0 ? Strings.Format("Use the {0} limit", company) : Strings.T("Use the general limit"));
@@ -325,6 +333,23 @@ public sealed partial class MainWindow
         fold.IsExpanded = folds.TryGetValue(limitKey, out var limitOpen) && limitOpen;
         fold.Toggled += opened => folds[limitKey] = opened;
         return fold;
+    }
+
+    // No limit only removes the quota threshold: the model is not preferred, it simply keeps working until its
+    // company reports the quota spent. On: no limit (its own, or its company's). Off: back to the limit it follows.
+    Control NoLimitChip(TeamModel model)
+    {
+        var company = model.Provider.Length > 0 ? model.Provider : model.Pool;
+        var chip = Look.Chip(Strings.T("No limit"), null, Palette.Warn, Palette.WarnSoft, model.LimitNone);
+        chip.IsEnabled = model.Available;
+        var forCompany = model.LimitNone && model.LimitSource == "company";
+        ToolTip.SetTip(chip, forCompany ? Strings.Format("No limit for all {0}. Click to give them back their limit.", company)
+            : model.LimitNone ? Strings.T("Works until the quota is spent. Click to give it back its limit.")
+            : Strings.T("Work until the quota is spent, ignoring the limit. It is not preferred to the other models."));
+        chip.Click += async (_, _) => await DoAsync(
+            () => forCompany ? api!.ResetCompanyLimitAsync(model.Pool) : model.LimitNone ? api!.ResetQuotaLimitAsync(model.Id) : api!.SetNoQuotaLimitAsync(model.Id),
+            forCompany ? Strings.Format("{0} follows the general limit.", company) : model.LimitNone ? Strings.Format("{0} has its limit again.", model.Label) : Strings.Format("{0} has no quota limit now.", model.Label));
+        return chip;
     }
 
     Control RoleChip(TeamModel model, string label, string role, bool on, bool eligible, string help)
