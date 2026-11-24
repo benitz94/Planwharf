@@ -106,10 +106,10 @@ test('a part with no scope (the check of the whole) may change any file', t => {
   assert.equal(sub('Port skills').status, 'COMPLETE');
 });
 
-test('a part that waits for others may change their finished files, and nothing else', t => {
+test('a part that waits for others may change their finished files and files nobody owns, not a file of a part that may still work', t => {
   const integrate = { modelId: 'a', slice: 'Integrate and validate', dependsOn: [0, 1], scope: ['notes.md'] };
   const { bridge, item, job, parts, sub, results } = fixture(t, { extra: [integrate],
-    work: info => /Integrate/.test(info.job.title) ? ['notes.md', 'src/quota.cs', 'src/skills.cs'] : info.worker.id === 'a' ? ['src/quota.cs'] : ['src/skills.cs'] });
+    work: info => /Integrate/.test(info.job.title) ? ['notes.md', 'src/quota.cs', 'src/skills.cs', 'tests/quota.tests.cs'] : info.worker.id === 'a' ? ['src/quota.cs'] : ['src/skills.cs'] });
   for (let round = 0; round < 6; round += 1) bridge.advance(item, job, parts);
   assert.equal(sub('Port quota').status, 'COMPLETE');
   assert.equal(sub('Integrate and validate').status, 'COMPLETE', JSON.stringify(results('Integrate and validate').map(result => result.summary)));

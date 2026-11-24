@@ -62,7 +62,7 @@ public static class ProjectViews
         ["NO_LEAD_AVAILABLE"] = Strings.T("The crew stopped: no lead is available. Choose a lead with quota in Team."),
         ["LEAD_FAILED"] = Strings.T("The crew stopped: the lead could not answer"), ["START_UNAVAILABLE"] = Strings.T("The crew could not start the work."),
         ["START_FAILED"] = Strings.T("The crew could not start the work"), ["NOTHING_STARTED"] = Strings.T("The crew started no work"),
-        ["APPROVAL_REFUSED"] = Strings.T("The work could not be approved"), ["AUTONOMY_ERROR"] = Strings.T("The crew stopped on an error"), ["NO_PROGRESS"] = Strings.T("The crew stopped twice without changing any file. Answer in Decisions how it should continue, and it starts again."),
+        ["APPROVAL_REFUSED"] = Strings.T("The work could not be approved"), ["AUTONOMY_ERROR"] = Strings.T("The crew stopped on an error"), ["NO_PROGRESS"] = Strings.T("The crew made no progress twice in a row. Answer in Decisions how it should continue, and it starts again."),
         ["TIME_LIMIT"] = Strings.T("The crew stopped: the time limit was reached.")
     };
 

@@ -153,7 +153,7 @@
     LEAD_FAILED: 'The crew stopped: the lead could not answer',
     START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',
     NOTHING_STARTED: 'The crew started no work', APPROVAL_REFUSED: 'The work could not be approved',
-    AUTONOMY_ERROR: 'The crew stopped on an error', NO_PROGRESS: 'The crew stopped twice without changing any file. Answer in Decisions how it should continue, and it starts again.', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
+    AUTONOMY_ERROR: 'The crew stopped on an error', NO_PROGRESS: 'The crew made no progress twice in a row. Answer in Decisions how it should continue, and it starts again.', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
   };
   function stopSentence(reason) {
     const code = String(reason || '').split(':')[0], detail = String(reason || '').slice(code.length + 1).trim();

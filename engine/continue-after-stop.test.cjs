@@ -103,7 +103,7 @@ test('two rounds with no file changed stop the crew and ask the owner in Decisio
     const inbox = await api('/api/decisions');
     const decision = inbox.open.find(item => item.projectId === projectId);
     assert.ok(decision, JSON.stringify(inbox));
-    assert.match(decision.text, /stopped twice without changing any file\. Last blocker: .*How should it continue\?/);
+    assert.match(decision.text, /made no progress twice in a row \(no file changed, or the same step stopped for the same reason\)\. Last blocker: .*How should it continue\?/);
     assert.ok(view.execution.timeline.some(event => event.projectId === projectId && event.type === 'NOTE' && /no progress twice in a row/.test(event.summary)), 'the stop is explained in Progress');
     const launched = run.launches.length;
     const answered = await api('/api/decisions/answer', { projectId, decisionId: decision.id, answer: 'Install the tool first, then port.' });

@@ -145,7 +145,7 @@ public static class Strings
         ["Stopped: work limit reached"] = "Fermo: limite di lavoro raggiunto",
         ["Stopped: the same work failed three times"] = "Fermo: lo stesso lavoro è fallito tre volte",
         ["Stopped: no progress twice"] = "Fermo: nessun progresso due volte",
-        ["The crew stopped twice without changing any file. Answer in Decisions how it should continue, and it starts again."] = "La ciurma si è fermata due volte senza cambiare nessun file. Rispondi in Decisioni come deve continuare e riparte.",
+        ["The crew made no progress twice in a row. Answer in Decisions how it should continue, and it starts again."] = "La ciurma non è andata avanti per due volte di fila. Rispondi in Decisioni come deve continuare e riparte.",
         ["Stopped: no lead available"] = "Fermo: nessun coordinatore disponibile",
         ["Stopped: the lead could not answer"] = "Fermo: il coordinatore non ha risposto",
         ["Stopped: could not start"] = "Fermo: avvio non riuscito",

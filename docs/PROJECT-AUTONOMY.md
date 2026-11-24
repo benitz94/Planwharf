@@ -18,7 +18,8 @@ Model text can only declare the goal reached or name an objective. It cannot app
 ## Limits
 
 - At most 20 approved MegaTasks per activation, and 3 Supervisor nudges per hour. Reaching the MegaTask limit stops autonomy and shows the reason.
-- Two stops in a row with no file changed are no progress. The crew stops (**Stopped: no progress twice**) and asks you in **Decisions** how to continue. Your answer starts it again from there.
+- A blocked part does not abandon the parts that do not need it: the work stops only when nothing else can start. Work that continues a stopped one may change what the stopped work finished.
+- Two stops in a row with no progress (no file changed, or the same step stopped for the same reason) are no progress. The crew stops (**Stopped: no progress twice**) and asks you in **Decisions** how to continue. Your answer starts it again from there.
 - An error inside Planwharf does not end the crew at once: it is shown in **Progress** and the step is tried again. Three in a row stop it (**Stopped: error**, with the message).
 - What Planwharf decides on its own (why the work was not split, which model a part moved to, why the crew stopped) is written in **Progress**.
 - **Pause** and **Stop** are always respected. A stopped or checkpointed project is not restarted.
