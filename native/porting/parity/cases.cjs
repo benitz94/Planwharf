@@ -327,6 +327,7 @@ module.exports = {
     ['parseDecision', ['{"done":false,"next":null}']],
     ['parseDecision', ['invalid']],
     ['parseDecision', [null]],
+    ['parseDecision', ['{"done":false,"next":"Wire the parts together.","summary":"Ported sixteen modules. Tests pass. One part is left."}']],
     ['parseAssignment', ['{"assign":["b","a"],"why":"fast"}', 2, ['a', 'b']]],
     ['parseAssignment', ['{"assign":["a","b"]}', 2, [['a'], ['b']]]],
     ['parseAssignment', ['broken', 2, ['a']]],

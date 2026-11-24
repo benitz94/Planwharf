@@ -562,6 +562,18 @@
     "result": null
   },
   {
+    "fn": "parseDecision",
+    "args": [
+      "{\"done\":false,\"next\":\"Wire the parts together.\",\"summary\":\"Ported sixteen modules. Tests pass. One part is left.\"}"
+    ],
+    "result": {
+      "done": false,
+      "next": "Wire the parts together.",
+      "assumptions": [],
+      "summary": "Ported sixteen modules. Tests pass."
+    }
+  },
+  {
     "fn": "parseAssignment",
     "args": [
       "{\"assign\":[\"b\",\"a\"],\"why\":\"fast\"}",

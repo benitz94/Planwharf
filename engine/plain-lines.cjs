@@ -106,4 +106,4 @@ function forWork(mega, subTasks = [], results = []) {
   return { summary, summaryFrom: from, steps: list(subTasks).filter(Boolean).map(sub => ({ id: sub.id, ...stepLine(sub) })) };
 }
 
-module.exports = { LINE_MAX, SUMMARY_MAX, SPLIT_LINE_ASK, SUMMARY_ASK, flat, clip, firstSentence, shortLine, stepLine, workSummary, readSplitLines, readSummary, forWork };
+module.exports = { LINE_MAX, SUMMARY_MAX, SPLIT_LINE_ASK, SUMMARY_ASK, flat, clip, sentences, firstSentence, shortLine, stepLine, workSummary, readSplitLines, readSummary, forWork };
