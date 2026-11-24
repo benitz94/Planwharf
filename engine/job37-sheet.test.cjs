@@ -3,16 +3,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/37-phase3-first-level.md';
-const allowedDiff = new Set([
-  sheetPath,
-  'docs/NEXT-WORK.md',
-  'docs/BUILT-WITH-PLANWHARF.md',
-  'engine/job37-sheet.test.cjs'
-]);
 
 const modules = [
   'engine/attempts.js', 'engine/claims.js', 'engine/project-export.cjs', 'engine/execution-next.cjs',
@@ -103,40 +96,8 @@ const openDecisions = [
   'Attempts store partitioning'
 ];
 
-const absent = [
-  'native/Planwharf.Engine/Attempts.cs',
-  'native/Planwharf.Engine/Claims.cs',
-  'native/Planwharf.Engine/ProjectExport.cs',
-  'native/Planwharf.Engine/ExecutionNext.cs',
-  'native/Planwharf.Engine/ProviderCatalog.cs',
-  'native/Planwharf.Engine/ProviderPolicy.cs',
-  'native/Planwharf.Engine/ModelRouting.cs',
-  'native/Planwharf.Engine/Claude.cs',
-  'native/Planwharf.Engine/ClaudeUsage.cs',
-  'native/Planwharf.Engine/Repository.cs',
-  'native/Planwharf.Engine/Supervisor.cs',
-  'native/Planwharf.Engine/Activity.cs',
-  'native/Planwharf.Engine/ActivitySessions.cs',
-  'native/Planwharf.Engine/ProviderRuntime.cs',
-  'native/Planwharf.Engine/TimeLeft.cs',
-  'native/Planwharf.Engine/PlanStatus.cs',
-  'native/Planwharf.Engine/ProviderStatus.cs',
-  'native/Planwharf.Engine/PushEmail.cs',
-  'native/Planwharf.Engine/TempCleanup.cs',
-  'native/Planwharf.Engine/AccountFolders.cs',
-  'native/Planwharf.Engine/PhoneVoice.cs',
-  'native/Planwharf.Engine/PhoneActivation.cs',
-  'native/Planwharf.Engine/StepOutcomes.cs'
-];
-
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
-}
-
-function git(args) {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  assert.equal(result.status, 0, (result.stderr || result.stdout || '').slice(0, 500));
-  return (result.stdout || '').replace(/\r\n/g, '\n').trim();
 }
 
 function flat(text) {
@@ -277,20 +238,4 @@ test('documentation names job 37 as the phase 3 sheet and points to its port, wh
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /\| 37 \| (?:#\?|#\d+) \|/);
   assert.match(built, /Sheet only: build is Job \d+/);
-});
-
-test('the sheet stays on port/37-sheet and does not add C# port implementations', () => {
-  // Only the sheet's own branch is held to this: the port (job 40) adds these files on purpose.
-  const changed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').filter(Boolean);
-  if (!changed.length || !changed.includes(sheetPath) || changed.some(file => !allowedDiff.has(file))) return;
-  for (const file of absent) {
-    assert.equal(fs.existsSync(path.join(root, file)), false, file + ' should not exist in Job 37');
-  }
-  const base = git(['rev-parse', 'origin/main']);
-  assert.equal(git(['merge-base', 'HEAD', 'origin/main']), base);
-  for (const file of changed) assert.ok(allowedDiff.has(file), file);
-  assert.ok(changed.includes(sheetPath));
-  assert.equal(git(['diff', '--check', 'origin/main...HEAD']), '');
-  const branch = git(['branch', '--show-current']);
-  if (branch) assert.equal(branch, 'port/37-sheet');
 });

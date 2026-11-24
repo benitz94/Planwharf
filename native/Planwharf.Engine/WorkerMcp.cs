@@ -435,8 +435,15 @@ public static class WorkerMcp
     {
         if (!ValidToken(token)) return null;
         var path = SessionPath(root, token);
-        if (!File.Exists(path)) return null;
-        return JsonNode.Parse(File.ReadAllText(path, Encoding.UTF8)) as JsonObject;
+        // On Windows a read can meet the moment Save replaces the file (a sharing violation): it tries again
+        // for up to two seconds, as Save does for the rename.
+        var deadline = Environment.TickCount64 + 2000;
+        while (true)
+        {
+            if (!File.Exists(path)) return null;
+            try { return JsonNode.Parse(File.ReadAllText(path, Encoding.UTF8)) as JsonObject; }
+            catch (IOException) when (Environment.TickCount64 < deadline) { Thread.Sleep(25); }
+        }
     }
 
     internal static string Dir(string root) => Path.Combine(Path.GetFullPath(root), "sessions");

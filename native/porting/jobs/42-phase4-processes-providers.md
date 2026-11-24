@@ -715,3 +715,9 @@ Verification actions:
   the Job 43 allowlist, so six nested scenario floors cannot be honestly wired until scope changes.
 - No source implementation, scenario execution, C# build/test, Native AOT publish or live provider
   operation was part of this review. Only the sheet was edited.
+
+## Update (owner, 24 November 2026): the real-program test is in phase 7
+
+The native app runs the Node engine until phase 7, so the C# modules of this phase cannot be tried with the real
+AI programs before then. The owner's real-program test above moves to phase 7, while the C# engine is an option
+in the app. Job 43 does not stop for it, and job 44 does not start with it.
