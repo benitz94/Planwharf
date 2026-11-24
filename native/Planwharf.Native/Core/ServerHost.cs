@@ -8,7 +8,9 @@ namespace Planwharf.Native.Core;
 // The engine is not changed: the window only talks to http://127.0.0.1:<port>/.
 public sealed class ServerHost : IAsyncDisposable
 {
-    static readonly Regex AddressLine = new(@"^(http://127\.0\.0\.1:\d+)\s*$", RegexOptions.Multiline);
+    // The address the engine prints, also when one is already running on this data ("Planwharf already
+    // running: http://…", for example after an update or a window closed without Quit): the app connects to it.
+    static readonly Regex AddressLine = new(@"^(?:Planwharf already running: )?(http://127\.0\.0\.1:\d+)\s*$", RegexOptions.Multiline);
 
     Process? process;
     StreamWriter? log;
@@ -86,7 +88,19 @@ public sealed class ServerHost : IAsyncDisposable
         process = new Process { StartInfo = info, EnableRaisingEvents = true };
         process.OutputDataReceived += (_, e) => { if (e.Data == null) return; lock (output) { writer.WriteLine(e.Data); output.AppendLine(e.Data); if (ReadAddress(output.ToString()) is { } address) found.TrySetResult(address); } };
         process.ErrorDataReceived += (_, e) => { if (e.Data != null) lock (output) writer.WriteLine(e.Data); };
-        process.Exited += (_, _) => found.TrySetException(new InvalidOperationException(Strings.Format("Planwharf stopped while starting. See {0}.", LogFile)));
+        // A launcher that found an engine already running prints its address and ends: read all it said first.
+        process.Exited += (_, _) =>
+        {
+            try { process?.WaitForExit(); } catch { /* already gone */ }
+            lock (output)
+            {
+                if (ReadAddress(output.ToString()) is { } running) found.TrySetResult(running);
+                // An earlier engine still holds this data but does not answer: say what to do, not only where the log is.
+                else if (output.ToString().Contains("is not responding", StringComparison.Ordinal))
+                    found.TrySetException(new InvalidOperationException(Strings.T("An earlier Planwharf is stuck and still holds your data. Close it: in Task Manager, Details, end node.exe (Planwharf's engine), then open Planwharf again.")));
+                else found.TrySetException(new InvalidOperationException(Strings.Format("Planwharf stopped while starting. See {0}.", LogFile)));
+            }
+        };
         try { process.Start(); }
         catch (Exception error) { throw new InvalidOperationException(Strings.Format("Node.js could not start ({0}). Install Node.js 18 or newer.", error.Message), error); }
         process.BeginOutputReadLine(); process.BeginErrorReadLine();
@@ -103,6 +117,11 @@ public sealed class ServerHost : IAsyncDisposable
         {
             try { using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) }; await http.PostAsync(Address + "/api/app/quit", new StringContent("{}", System.Text.Encoding.UTF8, "application/json")); } catch { }
             if (!process.WaitForExit(10000)) try { process.Kill(entireProcessTree: true); process.WaitForExit(5000); } catch { }
+        }
+        else if (Address != null)
+        {
+            // Connected to an engine that was already running: it is asked to quit too, so it does not stay behind.
+            try { using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) }; await http.PostAsync(Address + "/api/app/quit", new StringContent("{}", System.Text.Encoding.UTF8, "application/json")); } catch { }
         }
         process?.Dispose(); process = null;
         lock (this) { log?.Dispose(); log = null; }

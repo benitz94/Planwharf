@@ -113,6 +113,7 @@ The crew commits on the work's branch and never pushes: every worker runs with a
 | A model is missing | Sign in to that tool, check it is **On** in Team, then **Look for models again**. A hidden model may have an expired plan. |
 | No model can take a step | Give a model the role the step needs (Build or Verify), and check its quota and limit. |
 | A quota shows a reason instead of a number | The provider did not report it; Planwharf does not guess. |
+| "An earlier Planwharf is stuck" at start | A Planwharf engine from before (after an update, or a window closed without Quit) still holds your data. In Task Manager, Details, end `node.exe`, then open Planwharf again. An engine that still answers is reused by itself. |
 | The push is refused | The message under the card says why; a private email is fixed by itself when the GitHub CLI (`gh`) is signed in. |
 
 More: [the chat view](CHAT-VIEW.md) · [FAQ](FAQ.md) · [technical reference](REFERENCE.md) · [Built with Planwharf](BUILT-WITH-PLANWHARF.md).
