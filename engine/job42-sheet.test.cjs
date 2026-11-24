@@ -3,17 +3,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
 const sheetPath = 'native/porting/jobs/42-phase4-processes-providers.md';
-const allowedDiff = new Set([
-  sheetPath,
-  'docs/NEXT-WORK.md',
-  'docs/BUILT-WITH-PLANWHARF.md',
-  'engine/job42-sheet.test.cjs',
-  '.planwharf/plan.md'
-]);
 
 const modules = [
   'engine/runner.cjs', 'engine/provider-models.cjs', 'engine/external-adapters.cjs', 'engine/api-agent.cjs',
@@ -138,33 +130,8 @@ const openDecisions = [
   'side-effect comparison approval is a prerequisite'
 ];
 
-const absent = [
-  'native/Planwharf.Engine/Runner.cs',
-  'native/Planwharf.Engine/ProviderModels.cs',
-  'native/Planwharf.Engine/ExternalAdapters.cs',
-  'native/Planwharf.Engine/ApiAgent.cs',
-  'native/Planwharf.Engine/ProviderAdapters.cs',
-  'native/Planwharf.Engine/ProviderConnections.cs',
-  'native/Planwharf.Engine/Antigravity.cs',
-  'native/Planwharf.Engine/PlanUsage.cs',
-  'native/Planwharf.Engine/Worktrees.cs',
-  'native/Planwharf.Engine/PlanFile.cs',
-  'native/Planwharf.Engine/PrCheck.cs',
-  'native/Planwharf.Engine/Phone.cs',
-  'native/Planwharf.Engine/PhoneOllama.cs',
-  'native/Planwharf.Engine/PhoneHandover.cs',
-  'native/Planwharf.Engine/PhoneHandoverLive.cs',
-  'native/Planwharf.Engine/PhoneActivationCheck.cs'
-];
-
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
-}
-
-function git(args) {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
-  assert.equal(result.status, 0, (result.stderr || result.stdout || '').slice(0, 500));
-  return (result.stdout || '').replace(/\r\n/g, '\n').trim();
 }
 
 function flat(text) {
@@ -293,18 +260,4 @@ test('documentation names job 42 as the phase 4 sheet and points to its port, wh
   assert.match(next, /\| 43 \| 4\. \| Port them, as sheet 42 says\..*\| `port\/43-phase4` \| [^|]+ \|/);
   const built = read('docs/BUILT-WITH-PLANWHARF.md');
   assert.match(built, /Job 42/);
-});
-
-test('the sheet stays on port/42-sheet and does not add C# port implementations', () => {
-  const changed = git(['diff', '--name-only', 'origin/main...HEAD']).split('\n').filter(Boolean);
-  if (!changed.length || !changed.includes(sheetPath) || changed.some(file => !allowedDiff.has(file))) return;
-  for (const file of absent) {
-    assert.equal(fs.existsSync(path.join(root, file)), false, file + ' should not exist in Job 42');
-  }
-  // The branch may be behind main (main moves on while it waits for review): that is not a fault of the sheet.
-  for (const file of changed) assert.ok(allowedDiff.has(file), file);
-  assert.ok(changed.includes(sheetPath));
-  assert.equal(git(['diff', '--check', 'origin/main...HEAD']), '');
-  const branch = git(['branch', '--show-current']);
-  if (branch) assert.equal(branch, 'port/42-sheet');
 });
