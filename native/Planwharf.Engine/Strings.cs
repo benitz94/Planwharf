@@ -602,6 +602,7 @@ public static class Strings
         ["Quota limit of {0} saved."] = "Limite di quota di {0} salvato.",
         ["Only this model"] = "Solo questo modello",
         ["No limit"] = "Nessun limite",
+        ["The project changed since the work stopped, usually by the crew's own commits. Resume from the files as they are now?"] = "Il progetto è cambiato da quando il lavoro si è fermato, di solito per i commit della ciurma. Riprendere dai file come sono adesso?",
         ["No limit for all {0}. Click to give them back their limit."] = "Nessun limite per tutti i modelli {0}. Clic per ridare loro il limite.",
         ["Works until the quota is spent. Click to give it back its limit."] = "Lavora finché la quota non è finita. Clic per ridargli il limite.",
         ["Work until the quota is spent, ignoring the limit. It is not preferred to the other models."] = "Lavora finché la quota non è finita, ignorando il limite. Non viene preferito agli altri modelli.",
