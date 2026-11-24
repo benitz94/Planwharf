@@ -820,6 +820,7 @@ public static class Strings
         ["Stopping the fix of #{0}."] = "Fermo la correzione della #{0}.",
         ["Stopping."] = "Mi fermo.",
         ["Not run"] = "Non eseguito",
+        ["An earlier Planwharf is stuck and still holds your data. Close it: in Task Manager, Details, end node.exe (Planwharf's engine), then open Planwharf again."] = "Un Planwharf precedente \u00e8 bloccato e tiene ancora i tuoi dati. Chiudilo: in Gestione attivit\u00e0, Dettagli, termina node.exe (il motore di Planwharf), poi riapri Planwharf.",
         ["Write below. This is a conversation with the lead. Nothing starts."] = "Scrivi qui sotto. \u00c8 una conversazione con il coordinatore. Non parte nulla.",
         ["Normal"] = "Normale",
         ["Safe"] = "Sicura",

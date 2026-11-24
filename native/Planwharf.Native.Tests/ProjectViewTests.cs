@@ -7,8 +7,12 @@ namespace Planwharf.Native.Tests;
 public class ProjectViewTests
 {
     [Fact]
-    public void Reads_the_server_address_line() =>
+    public void Reads_the_server_address_line()
+    {
         Assert.Equal("http://127.0.0.1:4173", ServerHost.ReadAddress("Planwharf starting\nhttp://127.0.0.1:4173\n"));
+        // An engine already running on the same data: the app connects to it instead of failing.
+        Assert.Equal("http://127.0.0.1:4173", ServerHost.ReadAddress("Planwharf already running: http://127.0.0.1:4173\n"));
+    }
 
     [Fact]
     public void Lists_the_project_used_last_first()
