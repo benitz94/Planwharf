@@ -170,7 +170,9 @@ public class ClaudeUsageTests
         var res = await reader();
 
         Assert.False(res["readable"]?.GetValue<bool>());
-        Assert.Contains("login expired", res["reason"]?.GetValue<string>());
+        Assert.Contains("refused the saved login", res["reason"]?.GetValue<string>());
+        // A refused token at the usage service does not keep the Claude models out.
+        Assert.Equal("unknown", res["planStatus"]?.GetValue<string>());
     }
 
     [Fact]

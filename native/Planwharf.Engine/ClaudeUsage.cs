@@ -25,9 +25,11 @@ public static class ClaudeUsage
             ["leftPct"] = null,
             ["source"] = null,
             ["reason"] = reason ?? "Not readable",
-            ["windows"] = new JsonArray()
+            ["windows"] = new JsonArray(),
+            // A failed read never says the login is gone: only Anthropic's own answer can.
+            ["planStatus"] = "unknown"
         };
-        return PlanStatus.WithStatus("claude", resp);
+        return resp;
     }
 
     public static JsonObject ParseClaudeUsage(JsonObject? body)
@@ -204,7 +206,7 @@ public static class ClaudeUsage
                                 }
                             }
                             result = Unread((int)resp.StatusCode == 401
-                                ? "Claude subscription login expired. Open Claude Code to refresh it."
+                                ? "Claude usage could not be read: the usage service refused the saved login. Claude Code renews it when it runs; Claude models are not stopped for this."
                                 : (int)resp.StatusCode == 429
                                 ? "Claude usage endpoint is rate limited. A later refresh will retry; previous quota is not treated as current."
                                 : $"Claude usage HTTP {(int)resp.StatusCode}.");
