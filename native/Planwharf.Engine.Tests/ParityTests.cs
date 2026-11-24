@@ -164,6 +164,90 @@ public class ParityTests
         }
     }
 
+    public static readonly Dictionary<string, int> ExpectedScenarioFloors = new()
+    {
+        ["provider-models"] = 19,
+        ["provider-adapters"] = 11,
+        ["api-agent"] = 27,
+        ["worktrees"] = 16,
+        ["pr-check"] = 18,
+        ["phone-activation-check"] = 12
+    };
+
+    public static Dictionary<string, int> LoadScenarioFloors(string parityDir)
+    {
+        var required = JsonNode.Parse(File.ReadAllText(Path.Combine(parityDir, "required.json"))) as JsonObject;
+        var configured = required?["runner"]?["scenarioFloors"] as JsonObject;
+        return configured?.Where(pair => pair.Value is JsonValue value && value.TryGetValue<int>(out _))
+            .ToDictionary(pair => pair.Key, pair => pair.Value!.GetValue<int>(), StringComparer.Ordinal)
+            ?? new Dictionary<string, int>(StringComparer.Ordinal);
+    }
+
+    public static List<string> ValidateScenarioFloors(IReadOnlyDictionary<string, int> floors, string scenariosDir)
+    {
+        var errors = new List<string>();
+        foreach (var (module, minCases) in floors)
+        {
+            var file = Path.Combine(scenariosDir, $"{module}.json");
+            if (!File.Exists(file))
+            {
+                errors.Add($"Missing scenario fixture: {module}.json");
+                continue;
+            }
+            try
+            {
+                var node = JsonNode.Parse(File.ReadAllText(file)) as JsonObject;
+                var arr = node?["scenarios"] as JsonArray;
+                var count = arr?.Count ?? 0;
+                if (count < minCases)
+                {
+                    errors.Add($"Scenario module {module} has only {count} scenarios, requires at least {minCases}");
+                }
+            }
+            catch (JsonException ex)
+            {
+                errors.Add($"Invalid JSON in scenario fixture {module}.json: {ex.Message}");
+            }
+        }
+        return errors;
+    }
+
+    [Fact]
+    public void Scenario_floors_are_enforced_and_fail_on_missing_coverage()
+    {
+        var scenariosDir = Path.Combine(Folder, "scenarios");
+        Assert.True(Directory.Exists(scenariosDir), "scenarios directory must exist");
+        var floors = LoadScenarioFloors(Folder);
+        Assert.Equal(ExpectedScenarioFloors, floors);
+        var errors = ValidateScenarioFloors(floors, scenariosDir);
+        Assert.Empty(errors);
+
+        // Guard mutation checks: demonstrate that lowered scenario count or missing fixture causes failure
+        var tempDir = Path.Combine(Path.GetTempPath(), "pw-scen-guard-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Missing scenario fixture fails
+            var missingErrors = ValidateScenarioFloors(new Dictionary<string, int> { ["provider-models"] = 19 }, tempDir);
+            Assert.Contains(missingErrors, e => e.Contains("Missing scenario fixture: provider-models.json"));
+
+            // Too few scenarios fails
+            var fixture = new JsonObject
+            {
+                ["schema"] = 1,
+                ["module"] = "provider-models",
+                ["scenarios"] = new JsonArray { new JsonObject { ["name"] = "s1" } }
+            };
+            File.WriteAllText(Path.Combine(tempDir, "provider-models.json"), fixture.ToJsonString());
+            var shortErrors = ValidateScenarioFloors(new Dictionary<string, int> { ["provider-models"] = 19 }, tempDir);
+            Assert.Contains(shortErrors, e => e.Contains("has only 1 scenarios, requires at least 19"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
     [Fact]
     public void Parity_ports_and_comparisons_are_thread_safe_under_concurrency()
     {
@@ -224,6 +308,57 @@ public class ParityTests
     // One entry per ported function: how to call the C# with the recorded JavaScript arguments.
     static readonly Dictionary<string, Func<JsonArray, JsonNode?>> Ports = new()
     {
+        ["antigravity/poolOf"] = a => Antigravity.PoolOf(Node(a, 0), Node(a, 1)),
+        ["antigravity/parseUsage"] = a => Antigravity.ParseUsage(Node(a, 0)),
+        ["antigravity/parseModels"] = a => Antigravity.ParseModels(Node(a, 0)?.GetValue<string>()),
+        ["runner/parseArgs"] = a =>
+        {
+            var arr = Arr(a, 0)!.Select(x => x?.GetValue<string>() ?? "").ToArray();
+            var opts = Runner.ParseArgs(arr);
+            var o = new JsonObject
+            {
+                ["folder"] = opts.Folder,
+                ["result"] = opts.Result,
+                ["title"] = opts.Title,
+                ["detail"] = opts.Detail,
+                ["worker"] = opts.Worker,
+                ["attempt"] = opts.Attempt,
+                ["slice"] = opts.Slice
+            };
+            if (!string.IsNullOrEmpty(opts.LinkedFolder)) o["linkedFolder"] = opts.LinkedFolder;
+            if (opts.Model != null) o["model"] = opts.Model.DeepClone();
+            if (!string.IsNullOrEmpty(opts.Kind)) o["kind"] = opts.Kind;
+            return o;
+        },
+        ["runner/dropThinkingPrefix"] = a => (JsonNode)JsonValue.Create(Runner.DropThinkingPrefix(Text(a, 0), Text(a, 1)))!,
+        ["runner/toolRequestRule"] = a => (JsonNode)JsonValue.Create(Runner.ToolRequestRule(Obj(a, 0)))!,
+        ["runner/cliModelOf"] = a => (JsonNode?)JsonValue.Create(Runner.CliModelOf(Obj(a, 0))),
+        ["runner/parseAskLine"] = a =>
+        {
+            var accObj = Obj(a, 0)!;
+            var acc = new Runner.AskAccumulator
+            {
+                ExpectedModel = accObj["expectedModel"]?.GetValue<string>(),
+                Answer = accObj["answer"]?.GetValue<string>() ?? "",
+                Thinking = accObj["thinking"]?.GetValue<string>() ?? "",
+                Ms = accObj["ms"] is JsonValue mv && mv.TryGetValue<long>(out var msv) ? msv : null
+            };
+            Runner.ParseAskLine(acc, Node(a, 1));
+            var outObj = new JsonObject();
+            foreach (var (k, v) in accObj) outObj[k] = v?.DeepClone();
+            outObj["answer"] = acc.Answer;
+            outObj["thinking"] = acc.Thinking;
+            if (acc.Ms.HasValue) outObj["ms"] = acc.Ms.Value;
+            if (acc.ModelSeen) outObj["modelSeen"] = true;
+            if (acc.ResultSeen) outObj["resultSeen"] = true;
+            if (acc.Failure != null) outObj["failure"] = acc.Failure;
+            if (acc.Error != null) outObj["error"] = acc.Error;
+            if (acc.Tokens != null) outObj["tokens"] = acc.Tokens.DeepClone();
+            return outObj;
+        },
+        ["external-adapters/apiConfig"] = a => ExternalAdapters.ApiConfig(Obj(a, 0)),
+        ["external-adapters/apiHeaders"] = a => ExternalAdapters.ApiHeaders(Obj(a, 0)!, Obj(a, 1)!.ToDictionary(p => p.Key, p => p.Value?.GetValue<string>() ?? "")),
+        ["provider-connections/connection"] = a => ProviderConnections.Connection(Node(a, 0)),
         ["model-policy/migratePolicy"] = a => ModelPolicy.MigratePolicy(Node(a, 0)),
         ["model-policy/validatePolicy"] = a => ModelPolicy.ValidatePolicy(Node(a, 0)),
         ["model-policy/usagePolicy"] = a => ModelPolicy.UsagePolicy(Obj(a, 0)!, Arr(a, 1)),
@@ -454,6 +589,92 @@ public class ParityTests
         ["step-outcomes/stepOutcomeRecord"] = a => StepOutcomes.StepOutcomeRecord(Obj(a, 0)),
         ["step-outcomes/outcomesSummary"] = a => new JsonArray(StepOutcomes.OutcomesSummary(a.Count > 0 && a[0] is JsonArray ar ? ar.OfType<JsonObject>().ToList() : null).Select(r => (JsonNode)r.DeepClone()).ToArray()),
         ["step-outcomes/summaryText"] = a => (JsonNode?)JsonValue.Create(StepOutcomes.SummaryText(Obj(a, 0))),
+        ["planUsage/unreadPlan"] = a => PlanUsage.UnreadPlan(Text(a, 0)!, Text(a, 1)),
+        ["planUsage/emptyPlans"] = _ => PlanUsage.EmptyPlans(),
+        ["planUsage/windowOf"] = a => PlanUsage.WindowOf(Node(a, 0), Text(a, 1)!),
+        ["planUsage/planExhausted"] = a => (JsonNode)JsonValue.Create(PlanUsage.PlanExhausted(Node(a, 0), Text(a, 1)!))!,
+        ["planUsage/parseGrokCredits"] = a => PlanUsage.ParseGrokCredits(Node(a, 0)),
+        ["planUsage/parseChatGptUsage"] = a => PlanUsage.ParseChatGptUsage(Node(a, 0)),
+        ["plan-file/isNoise"] = a => (JsonNode)JsonValue.Create(PlanFile.IsNoise(Text(a, 0) ?? ""))!,
+        ["plan-file/dirtyMessage"] = a => (JsonNode)JsonValue.Create(PlanFile.DirtyMessage(Arr(a, 0)?.Select(x => x?.GetValue<string>() ?? "").ToList() ?? []))!,
+        ["plan-file/namedBranch"] = a => (JsonNode?)JsonValue.Create(PlanFile.NamedBranch(Text(a, 0))),
+        ["plan-file/branchName"] = a => (JsonNode)JsonValue.Create(PlanFile.BranchName(Text(a, 0), Text(a, 1)))!,
+        ["plan-file/pullRequestTitle"] = a => (JsonNode)JsonValue.Create(PlanFile.PullRequestTitle(Text(a, 0), Arr(a, 1)?.Select(x => x?.GetValue<string>() ?? "").ToList()))!,
+        ["plan-file/crewSection"] = a =>
+        {
+            var cr = Obj(a, 0);
+            var row = cr is null ? null : new PlanFile.CrewRow(
+                cr["leadLabel"]?.GetValue<string>() ?? "",
+                (cr["crew"] as JsonArray)?.Select(m => new PlanFile.CrewMember(m?["role"]?.GetValue<string>() ?? "", m?["name"]?.GetValue<string>() ?? "")).ToList(),
+                (cr["subTasks"] as JsonArray)?.Select(s => new PlanFile.CrewSubTask(s?["id"]?.GetValue<string>() ?? "", s?["title"]?.GetValue<string>() ?? "", s?["assignedModelId"]?.GetValue<string>() ?? "")).ToList(),
+                (cr["results"] as JsonArray)?.Select(r => new PlanFile.CrewResult(r?["subTaskId"]?.GetValue<string>() ?? "", r?["modelId"]?.GetValue<string>() ?? "")).ToList());
+            var models = Arr(a, 1)?.Select(m => new PlanFile.CrewModel(m?["id"]?.GetValue<string>() ?? "", m?["label"]?.GetValue<string>() ?? "")).ToList();
+            return (JsonNode)JsonValue.Create(PlanFile.CrewSection(row, models))!;
+        },
+        ["plan-file/shortGoal"] = a => (JsonNode)JsonValue.Create(PlanFile.ShortGoal(Text(a, 0)))!,
+        ["plan-file/parse"] = a =>
+        {
+            var p = PlanFile.Parse(Text(a, 0));
+            return new JsonObject
+            {
+                ["goal"] = p.Goal,
+                ["base"] = p.Base,
+                ["branch"] = p.Branch,
+                ["rules"] = p.Rules,
+                ["done"] = p.Done,
+                ["steps"] = new JsonArray(p.Steps.Select(s => (JsonNode)new JsonObject
+                {
+                    ["line"] = s.Label,
+                    ["done"] = s.Done,
+                    ["commit"] = s.Commit
+                }).ToArray())
+            };
+        },
+        ["phone/alertForStatus"] = a => (JsonNode?)JsonValue.Create(Phone.AlertForStatus(Text(a, 0), Text(a, 1))),
+        ["phone/alertForStep"] = a => (JsonNode?)JsonValue.Create(Phone.AlertForStep(Node(a, 0), Node(a, 1))),
+        ["phone/crewOfProject"] = a => Phone.CrewOfProject(Node(a, 0), Node(a, 1), Obj(a, 2)),
+        ["phone/escapeHtml"] = a => (JsonNode)JsonValue.Create(Phone.EscapeHtml(Text(a, 0)))!,
+        ["phone/formatProgressBar"] = a => (JsonNode)JsonValue.Create(Phone.FormatProgressBar(Node(a, 0), Node(a, 1)))!,
+        ["phone/sanitizeText"] = a => (JsonNode)JsonValue.Create(Phone.SanitizeText(Text(a, 0)))!,
+        ["phone/sanitizeGoalTitle"] = a => (JsonNode)JsonValue.Create(Phone.SanitizeGoalTitle(Text(a, 0)))!,
+        ["phone/formatDuration"] = a => (JsonNode?)JsonValue.Create(Phone.FormatDuration(a.Count > 0 && a[0] is JsonValue v && v.TryGetValue<double>(out var d) ? d : null)),
+        ["phone/formatAlertMessage"] = a => (JsonNode)JsonValue.Create(Phone.FormatAlertMessage(Obj(a, 0)!))!,
+        ["phone/formatTelegramAlertMessage"] = a => (JsonNode)JsonValue.Create(Phone.FormatTelegramAlertMessage(Obj(a, 0)!))!,
+        ["phone/maskToken"] = a => (JsonNode?)JsonValue.Create(Phone.MaskToken(Text(a, 0))),
+        ["phone/formatStatusMessage"] = a => (JsonNode)JsonValue.Create(Phone.FormatStatusMessage(Node(a, 0), Text(a, 1)))!,
+        ["phone/matchProject"] = a => Phone.MatchProject(Node(a, 0), Text(a, 1)),
+        ["phone-ollama/defaultOllamaSettings"] = _ =>
+        {
+            var s = PhoneOllama.DefaultSettings();
+            return new JsonObject { ["enabled"] = s.Enabled, ["baseUrl"] = s.BaseUrl, ["model"] = s.Model };
+        },
+        ["phone-ollama/normalizeOllamaSettings"] = a =>
+        {
+            var s = PhoneOllama.NormalizeSettings(Node(a, 0));
+            return new JsonObject { ["enabled"] = s.Enabled, ["baseUrl"] = s.BaseUrl, ["model"] = s.Model };
+        },
+        ["phone-ollama/escapeHtml"] = a => (JsonNode)JsonValue.Create(PhoneOllama.EscapeHtml(Text(a, 0)))!,
+        ["phone-ollama/withCaptain"] = a => (JsonNode)JsonValue.Create(PhoneOllama.WithCaptain(Text(a, 0), Text(a, 1)))!,
+        ["phone-ollama/isClearMemory"] = a => (JsonNode)JsonValue.Create(PhoneOllama.IsClearMemory(Text(a, 0)))!,
+        ["phone-ollama/isBareConfirmation"] = a => (JsonNode)JsonValue.Create(PhoneOllama.IsBareConfirmation(Text(a, 0)))!,
+        ["phone-ollama/projectFacts"] = a => PhoneOllama.ProjectFacts(Node(a, 0)),
+        ["phone-ollama/buildReplyMessages"] = a =>
+        {
+            var opts = Obj(a, 0);
+            return PhoneOllama.BuildReplyMessages(
+                opts?["question"]?.GetValue<string>(),
+                opts?["projects"],
+                opts?["history"],
+                null,
+                opts?["model"]?.GetValue<string>(),
+                opts?["language"]?.GetValue<string>()
+            );
+        },
+        ["phone-ollama/unavailableReply"] = a => (JsonNode)JsonValue.Create(PhoneOllama.UnavailableReply(Text(a, 0), Text(a, 1)))!,
+        ["phone-handover/handoverPlan"] = a => PhoneHandover.HandoverPlan(Obj(a, 0)).ToJsonObject(),
+        ["phone-handover/exchangeEvidence"] = a => PhoneHandover.ExchangeEvidence(Obj(a, 0)),
+        ["phone-handover-live/redact"] = a => (JsonNode)JsonValue.Create(PhoneHandoverLive.Redact(Text(a, 0)))!,
+        ["phone-handover-live/projectsFromPlan"] = a => PhoneHandoverLive.ProjectsFromPlan(Node(a, 0)),
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

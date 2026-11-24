@@ -1,0 +1,482 @@
+[
+  {
+    "fn": "alertForStatus",
+    "args": [
+      "idle",
+      "running"
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStatus",
+    "args": [
+      "running",
+      "done"
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStatus",
+    "args": [
+      "running",
+      "failed"
+    ],
+    "result": "failed"
+  },
+  {
+    "fn": "alertForStatus",
+    "args": [
+      "running",
+      "blocked"
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStatus",
+    "args": [
+      "running",
+      "running"
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStatus",
+    "args": [
+      null,
+      "running"
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStep",
+    "args": [
+      {
+        "index": 0,
+        "title": "Old"
+      },
+      {
+        "index": 1,
+        "title": "New"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStep",
+    "args": [
+      {
+        "index": 1,
+        "title": "Same"
+      },
+      {
+        "index": 1,
+        "title": "Same"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStep",
+    "args": [
+      null,
+      {
+        "index": 0,
+        "title": "Start"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "alertForStep",
+    "args": [
+      null,
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "crewOfProject",
+    "args": [
+      {
+        "running": true,
+        "models": [
+          {
+            "id": "m1",
+            "role": "build"
+          }
+        ]
+      },
+      [
+        {
+          "id": "m1",
+          "label": "Model 1",
+          "provider": "claude"
+        }
+      ],
+      {}
+    ],
+    "result": {
+      "lead": "",
+      "leadFrom": "",
+      "build": [],
+      "verify": []
+    }
+  },
+  {
+    "fn": "crewOfProject",
+    "args": [
+      null,
+      null,
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      "<script>alert(\"xss\")</script> & \"quotes\""
+    ],
+    "result": "&lt;script&gt;alert(\"xss\")&lt;/script&gt; &amp; \"quotes\""
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      "Clean text"
+    ],
+    "result": "Clean text"
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "formatProgressBar",
+    "args": [
+      2,
+      5
+    ],
+    "result": "■■□□□ 2/5"
+  },
+  {
+    "fn": "formatProgressBar",
+    "args": [
+      0,
+      5
+    ],
+    "result": "□□□□□ 0/5"
+  },
+  {
+    "fn": "formatProgressBar",
+    "args": [
+      5,
+      5
+    ],
+    "result": "■■■■■ 5/5"
+  },
+  {
+    "fn": "formatProgressBar",
+    "args": [
+      null,
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "sanitizeText",
+    "args": [
+      "Normal text"
+    ],
+    "result": "Normal text"
+  },
+  {
+    "fn": "sanitizeText",
+    "args": [
+      "Text with <HTML> & entities"
+    ],
+    "result": "Text with <HTML> & entities"
+  },
+  {
+    "fn": "sanitizeText",
+    "args": [
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "sanitizeText",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "sanitizeGoalTitle",
+    "args": [
+      "A clear goal"
+    ],
+    "result": "A clear goal"
+  },
+  {
+    "fn": "sanitizeGoalTitle",
+    "args": [
+      "Goal with <b>tags</b> & \"quotes\""
+    ],
+    "result": "Goal with <b>tags</b> & \"quotes\""
+  },
+  {
+    "fn": "sanitizeGoalTitle",
+    "args": [
+      ""
+    ],
+    "result": "Work"
+  },
+  {
+    "fn": "formatDuration",
+    "args": [
+      12.5
+    ],
+    "result": "13m"
+  },
+  {
+    "fn": "formatDuration",
+    "args": [
+      0.2
+    ],
+    "result": "0m"
+  },
+  {
+    "fn": "formatDuration",
+    "args": [
+      65
+    ],
+    "result": "1h 5m"
+  },
+  {
+    "fn": "formatDuration",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "maskToken",
+    "args": [
+      "1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+    ],
+    "result": "1234...ew11"
+  },
+  {
+    "fn": "maskToken",
+    "args": [
+      "short"
+    ],
+    "result": "***"
+  },
+  {
+    "fn": "maskToken",
+    "args": [
+      ""
+    ],
+    "result": null
+  },
+  {
+    "fn": "maskToken",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "formatAlertMessage",
+    "args": [
+      {
+        "status": "done",
+        "goal": "Fix login",
+        "language": "en",
+        "projectName": "MyProject",
+        "duration": 15
+      }
+    ],
+    "result": "Planwharf: MyProject\nGoal: Work\nStatus: Updated\nThe project changed.\nSaving: Normal"
+  },
+  {
+    "fn": "formatAlertMessage",
+    "args": [
+      {
+        "status": "failed",
+        "goal": "Deploy",
+        "language": "it",
+        "projectName": "Progetto",
+        "error": "Build error"
+      }
+    ],
+    "result": "Planwharf: Progetto\nObiettivo: Work\nStato: Aggiornato\nIl progetto è cambiato.\nRisparmio: Normale"
+  },
+  {
+    "fn": "formatAlertMessage",
+    "args": [
+      {
+        "status": "blocked",
+        "goal": "Review",
+        "language": "en",
+        "reason": "Waiting for decision"
+      }
+    ],
+    "result": "Planwharf: Project\nGoal: Work\nStatus: Updated\nThe project changed.\nSaving: Normal"
+  },
+  {
+    "fn": "formatTelegramAlertMessage",
+    "args": [
+      {
+        "status": "done",
+        "goal": "Fix login",
+        "language": "en",
+        "projectName": "MyProject",
+        "duration": 15
+      }
+    ],
+    "result": "🏴‍☠️ <b>AHOY, CAPTAIN!</b>\n🧭 News from the deck.\n🚢 <b>MyProject</b>\n🎯 Work\n🧭 Updated •\n<b>Saving:</b> Normal\n🦜 I'll keep you posted, Captain!"
+  },
+  {
+    "fn": "formatTelegramAlertMessage",
+    "args": [
+      {
+        "status": "failed",
+        "goal": "Deploy",
+        "language": "it",
+        "projectName": "Progetto",
+        "error": "Build error"
+      }
+    ],
+    "result": "🏴‍☠️ <b>AHOY, CAPITANO!</b>\n🧭 Notizie dal ponte.\n🚢 <b>Progetto</b>\n🎯 Work\n🧭 Aggiornato •\n<b>Risparmio:</b> Normale\n🦜 Ti tengo aggiornato, Capitano!"
+  },
+  {
+    "fn": "formatStatusMessage",
+    "args": [
+      [
+        {
+          "name": "P1",
+          "status": "running",
+          "goal": "Goal 1",
+          "step": 2,
+          "totalSteps": 5
+        }
+      ],
+      "en"
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Status</b>\nHere is where every project stands.\n\n<b>P1</b>\n• <b>Status:</b> running\n<b>Mode:</b> Plan\n<b>Saving:</b> Normal"
+  },
+  {
+    "fn": "formatStatusMessage",
+    "args": [
+      [
+        {
+          "name": "P1",
+          "status": "idle",
+          "goal": "Idle project"
+        }
+      ],
+      "it"
+    ],
+    "result": "🏴‍☠️ Ahoy, Capitano!\n\n<b>Stato del porto</b>\nEcco a che punto è ogni progetto.\n\n<b>P1</b>\n⚪ <b>Stato:</b> A riposo\n<b>Modalità:</b> Piano\n<b>Risparmio:</b> Normale"
+  },
+  {
+    "fn": "formatStatusMessage",
+    "args": [
+      [],
+      "en"
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Status</b>\nNo projects in port.\nWhen a project is running, its step appears here."
+  },
+  {
+    "fn": "matchProject",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "name": "Alpha"
+        },
+        {
+          "id": "p2",
+          "name": "Beta"
+        }
+      ],
+      "alpha"
+    ],
+    "result": {
+      "id": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "matchProject",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "name": "Alpha"
+        },
+        {
+          "id": "p2",
+          "name": "Alpha Two"
+        }
+      ],
+      "alpha"
+    ],
+    "result": {
+      "id": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "matchProject",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "name": "Alpha"
+        },
+        {
+          "id": "p2",
+          "name": "Beta"
+        }
+      ],
+      "gamma"
+    ],
+    "result": null
+  },
+  {
+    "fn": "matchProject",
+    "args": [
+      [],
+      "query"
+    ],
+    "result": null
+  },
+  {
+    "fn": "matchProject",
+    "args": [
+      [
+        {
+          "id": "p1",
+          "name": "Alpha"
+        }
+      ],
+      ""
+    ],
+    "result": {
+      "id": "p1",
+      "name": "Alpha"
+    }
+  }
+]

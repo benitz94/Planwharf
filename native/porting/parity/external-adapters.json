@@ -1,0 +1,266 @@
+[
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.openai.com/v1",
+        "apiProtocol": "openai"
+      }
+    ],
+    "result": {
+      "baseUrl": "https://api.openai.com/v1",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 90000
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "http://127.0.0.1:8000/v1"
+      }
+    ],
+    "result": {
+      "baseUrl": "http://127.0.0.1:8000/v1",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 90000
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.anthropic.com",
+        "apiProtocol": "anthropic",
+        "authEnv": "KEY",
+        "maxOutputTokens": 8192,
+        "maxTurns": 50,
+        "requestTimeoutMs": 120000
+      }
+    ],
+    "result": {
+      "baseUrl": "https://api.anthropic.com",
+      "authEnv": "KEY",
+      "apiProtocol": "anthropic",
+      "maxOutputTokens": 8192,
+      "maxTurns": 50,
+      "requestTimeoutMs": 120000
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "http://localhost:8080"
+      }
+    ],
+    "result": {
+      "baseUrl": "http://localhost:8080",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 90000
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://example.invalid:443/v1"
+      }
+    ],
+    "result": {
+      "baseUrl": "https://example.invalid/v1",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 90000
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "ftp://bad"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: use HTTPS, or HTTP on loopback, without credentials or query parameters."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com?query=1"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: use HTTPS, or HTTP on loopback, without credentials or query parameters."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com#fragment"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: use HTTPS, or HTTP on loopback, without credentials or query parameters."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://user:pass@api.example.com"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: use HTTPS, or HTTP on loopback, without credentials or query parameters."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "http://192.168.1.1:8000"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: use HTTPS, or HTTP on loopback, without credentials or query parameters."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com",
+        "maxOutputTokens": -1
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: invalid maxOutputTokens"
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com",
+        "maxTurns": 0
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: invalid maxTurns"
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com",
+        "requestTimeoutMs": 500
+      }
+    ],
+    "result": {
+      "baseUrl": "https://api.example.com",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 500
+    }
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com",
+        "apiProtocol": "invalid-protocol"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: apiProtocol must be openai or anthropic."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      {
+        "baseUrl": "https://api.example.com",
+        "authEnv": "invalid env!"
+      }
+    ],
+    "error": "API_CONFIGURATION_INVALID: authEnv must name an environment variable."
+  },
+  {
+    "fn": "apiConfig",
+    "args": [
+      null
+    ],
+    "error": "API_CONFIGURATION_INVALID: baseUrl is required."
+  },
+  {
+    "fn": "apiHeaders",
+    "args": [
+      {
+        "apiProtocol": "openai",
+        "authEnv": "FIXTURE_KEY"
+      },
+      {
+        "FIXTURE_KEY": "test-key"
+      }
+    ],
+    "result": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer test-key"
+    }
+  },
+  {
+    "fn": "apiHeaders",
+    "args": [
+      {
+        "apiProtocol": "anthropic",
+        "authEnv": "FIXTURE_KEY"
+      },
+      {
+        "FIXTURE_KEY": "test-key"
+      }
+    ],
+    "result": {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+      "x-api-key": "test-key"
+    }
+  },
+  {
+    "fn": "apiHeaders",
+    "args": [
+      {
+        "apiProtocol": "openai",
+        "authEnv": "true"
+      },
+      {
+        "true": "key-for-true"
+      }
+    ],
+    "result": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer key-for-true"
+    }
+  },
+  {
+    "fn": "apiHeaders",
+    "args": [
+      {
+        "apiProtocol": "openai",
+        "authEnv": "MISSING_KEY"
+      },
+      {
+        "OTHER": "val"
+      }
+    ],
+    "error": "PROVIDER_AUTHENTICATION_FAILED: API key environment variable is not set: MISSING_KEY"
+  },
+  {
+    "fn": "apiHeaders",
+    "args": [
+      {
+        "apiProtocol": "openai"
+      },
+      {}
+    ],
+    "result": {
+      "Content-Type": "application/json"
+    }
+  }
+]

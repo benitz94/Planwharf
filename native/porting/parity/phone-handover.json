@@ -1,0 +1,116 @@
+[
+  {
+    "fn": "handoverPlan",
+    "args": [
+      {
+        "folder": "/test/dir",
+        "sourceExecutable": "/bin/node"
+      }
+    ],
+    "result": {
+      "allowed": false,
+      "blocker": "A recoverable backup of the plan, phone settings and bot token is required before polling pauses. The updated native build is missing. No bot token is available, so the paired bot cannot be verified. The installed listener address was not recorded, so polling cannot be restored.",
+      "pause": null,
+      "build": "",
+      "restore": "re-enable telegram polling on the installed listener"
+    }
+  },
+  {
+    "fn": "handoverPlan",
+    "args": [
+      {
+        "installed": {
+          "path": "/bin/same"
+        },
+        "updatedBuild": "/bin/same",
+        "backupOk": false,
+        "tokenPresent": false
+      }
+    ],
+    "result": {
+      "allowed": false,
+      "blocker": "A recoverable backup of the plan, phone settings and bot token is required before polling pauses. The updated build is the process that is already polling. No bot token is available, so the paired bot cannot be verified. The installed listener address was not recorded, so polling cannot be restored.",
+      "pause": null,
+      "build": "/bin/same",
+      "restore": "re-enable telegram polling on the installed listener"
+    }
+  },
+  {
+    "fn": "handoverPlan",
+    "args": [
+      {}
+    ],
+    "result": {
+      "allowed": false,
+      "blocker": "A recoverable backup of the plan, phone settings and bot token is required before polling pauses. The updated native build is missing. No bot token is available, so the paired bot cannot be verified. The installed listener address was not recorded, so polling cannot be restored.",
+      "pause": null,
+      "build": "",
+      "restore": "re-enable telegram polling on the installed listener"
+    }
+  },
+  {
+    "fn": "exchangeEvidence",
+    "args": [
+      {
+        "outbound": {
+          "text": "outbound msg",
+          "messageId": 10,
+          "updateId": 20
+        },
+        "inbound": {
+          "text": "inbound msg"
+        },
+        "reply": {
+          "text": "reply msg"
+        }
+      }
+    ],
+    "result": {
+      "outbound": {
+        "messageId": 10,
+        "updateId": 20,
+        "text": "outbound msg"
+      },
+      "inbound": {
+        "messageId": null,
+        "updateId": null,
+        "text": "inbound msg"
+      },
+      "reply": {
+        "messageId": null,
+        "updateId": null,
+        "text": "reply msg"
+      }
+    }
+  },
+  {
+    "fn": "exchangeEvidence",
+    "args": [
+      {}
+    ],
+    "result": {
+      "outbound": null,
+      "inbound": null,
+      "reply": null
+    }
+  },
+  {
+    "fn": "exchangeEvidence",
+    "args": [
+      {
+        "outbound": {
+          "text": "token 1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+        }
+      }
+    ],
+    "result": {
+      "outbound": {
+        "messageId": null,
+        "updateId": null,
+        "text": "token [redacted]"
+      },
+      "inbound": null,
+      "reply": null
+    }
+  }
+]

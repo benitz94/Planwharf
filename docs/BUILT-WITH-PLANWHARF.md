@@ -237,3 +237,28 @@ Downstream slice ST-17 owns full integration with shared comparison recovery, Na
 followed by independent verification (ST-18) and the owner's Windows test.
 The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
 No push or merge performed.
+
+
+### Job 43 shared parity integration — attempt 100 (24 November 2026)
+
+Recovered the Antigravity comparison surface from commit `0045080` and added the ten
+approved pure comparison surfaces for Runner, ExternalAdapters, ProviderConnections,
+PlanUsage, PlanFile, Phone, PhoneOllama, PhoneHandover and PhoneHandoverLive. Added
+recorded fixtures and delegates without changing the sixteen port implementations.
+The six scenario floors are executable in `ParityTests`: provider-models 19,
+provider-adapters 11, api-agent 27, worktrees 16, pr-check 18 and
+phone-activation-check 12. Existing top-level parity floors were preserved.
+
+Observed validation: recorder and scenario checks passed; the 11 JavaScript sheet/parity
+tests passed; Release Engine build passed with zero warnings; the focused ParityTests
+run passed 984 tests; engineering CI passed; FakeCli build and 64 tests passed. The full
+Engine suite passed 1,859 tests and failed one localization guard, listing the existing
+`PhoneHandoverLive.cs` `HttpJson is required` literal and six `Worktrees.cs` literals.
+Those implementation files are outside this slice and were not changed. The documented
+Native AOT publish reached the linker and failed because the Windows platform linker/
+Visual Studio C++ workload is absent; no toolchain was installed. No live provider was
+contacted. The C# floor guard reads the six floor values from `required.json`; its mutation
+controls reject missing and undersized fixtures. Independent verification also found two
+scenario assertion-strength limitations in the existing `ScenarioParityTests.cs` outside
+this slice's write scope. The owner's real-program Windows hand test remains required
+before Job 43 acceptance; no cross-platform CI result is claimed.

@@ -1,0 +1,368 @@
+[
+  {
+    "fn": "defaultOllamaSettings",
+    "args": [],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "normalizeOllamaSettings",
+    "args": [
+      {
+        "enabled": true,
+        "url": "http://127.0.0.1:11434",
+        "model": "qwen2.5:3b"
+      }
+    ],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "normalizeOllamaSettings",
+    "args": [
+      {
+        "url": "http://localhost:11434/subpath"
+      }
+    ],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "normalizeOllamaSettings",
+    "args": [
+      {
+        "url": "http://remote.host:11434",
+        "model": "invalid model!!"
+      }
+    ],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "normalizeOllamaSettings",
+    "args": [
+      null
+    ],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "normalizeOllamaSettings",
+    "args": [
+      {}
+    ],
+    "result": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:11434",
+      "model": "qwen2.5:3b"
+    }
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      "<b>Bold</b> & \"entities\""
+    ],
+    "result": "&lt;b&gt;Bold&lt;/b&gt; &amp; \"entities\""
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      "Plain"
+    ],
+    "result": "Plain"
+  },
+  {
+    "fn": "escapeHtml",
+    "args": [
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "withCaptain",
+    "args": [
+      "System ready.",
+      "en"
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!\n\nSystem ready."
+  },
+  {
+    "fn": "withCaptain",
+    "args": [
+      "Tutto pronto.",
+      "it"
+    ],
+    "result": "🏴‍☠️ Ahoy, Capitano!\n\nTutto pronto."
+  },
+  {
+    "fn": "withCaptain",
+    "args": [
+      "",
+      null
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!"
+  },
+  {
+    "fn": "isClearMemory",
+    "args": [
+      "/dimentica"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isClearMemory",
+    "args": [
+      "/dimentica@harbor_bot"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isClearMemory",
+    "args": [
+      "/forget"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isClearMemory",
+    "args": [
+      "hello"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isClearMemory",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "isBareConfirmation",
+    "args": [
+      "SÌ!"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isBareConfirmation",
+    "args": [
+      "si"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isBareConfirmation",
+    "args": [
+      "YES"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isBareConfirmation",
+    "args": [
+      "no"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isBareConfirmation",
+    "args": [
+      "maybe"
+    ],
+    "result": false
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      [
+        {
+          "name": "Proj1",
+          "goal": "Build app",
+          "status": "running",
+          "step": {
+            "step": 2,
+            "total": 5
+          },
+          "timeLeft": {
+            "minutes": 10
+          }
+        }
+      ]
+    ],
+    "result": [
+      {
+        "name": "Proj1",
+        "goal": "Build app",
+        "status": "running",
+        "step": "2/5",
+        "minutes": 10,
+        "waiting": false
+      }
+    ]
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      []
+    ],
+    "result": []
+  },
+  {
+    "fn": "projectFacts",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "buildReplyMessages",
+    "args": [
+      {
+        "question": "How is it going?",
+        "projects": [
+          {
+            "name": "Proj1",
+            "status": "running",
+            "goal": "Testing"
+          }
+        ],
+        "history": [],
+        "language": "en"
+      }
+    ],
+    "result": [
+      {
+        "role": "system",
+        "content": "You are Captain, Planwharf's harbor companion.\nReply in the user's language, in at most 4 short sentences.\nSpeak as a Captain-facing harbor companion.\nUse only the project facts below. Do not invent files, paths, commands, or actions.\nYou cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.\nIf the facts do not answer the question, say so.\nSpeak warmly, like a first mate helping a captain who does not write code. Say what the progress means in everyday words. When something goes wrong, say what the captain can do next. Technical details stay out unless the captain asks.\nThe local model answering this message is qwen2.5:3b. Do not claim another name.\nFacts:\nProj1: running; goal Testing"
+      },
+      {
+        "role": "user",
+        "content": "How is it going?"
+      }
+    ]
+  },
+  {
+    "fn": "buildReplyMessages",
+    "args": [
+      {
+        "question": "Stato?",
+        "projects": [
+          {
+            "name": "Proj1",
+            "status": "done",
+            "goal": "Finito"
+          }
+        ],
+        "history": [
+          {
+            "role": "user",
+            "content": "Ciao"
+          }
+        ],
+        "language": "it"
+      }
+    ],
+    "result": [
+      {
+        "role": "system",
+        "content": "You are Captain, Planwharf's harbor companion.\nReply in the user's language, in at most 4 short sentences.\nSpeak as a Captain-facing harbor companion.\nUse only the project facts below. Do not invent files, paths, commands, or actions.\nYou cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.\nIf the facts do not answer the question, say so.\nThe captain selected Italian. Answer in Italian. Parla con parole semplici, come un nostromo che aiuta un capitano che non scrive codice. Spiega l'avanzamento come passi, non come codice. Se qualcosa non va, di' cosa può fare il capitano. I dettagli tecnici restano fuori finché il capitano non li chiede.\nThe local model answering this message is qwen2.5:3b. Do not claim another name.\nFacts:\nProj1: done; goal Finito"
+      },
+      {
+        "role": "user",
+        "content": ""
+      },
+      {
+        "role": "user",
+        "content": "Stato?"
+      }
+    ]
+  },
+  {
+    "fn": "buildReplyMessages",
+    "args": [
+      {
+        "question": "Only question"
+      }
+    ],
+    "result": [
+      {
+        "role": "system",
+        "content": "You are Captain, Planwharf's harbor companion.\nReply in the user's language, in at most 4 short sentences.\nSpeak as a Captain-facing harbor companion.\nUse only the project facts below. Do not invent files, paths, commands, or actions.\nYou cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.\nIf the facts do not answer the question, say so.\nSpeak warmly, like a first mate helping a captain who does not write code. Say what the progress means in everyday words. When something goes wrong, say what the captain can do next. Technical details stay out unless the captain asks.\nThe local model answering this message is qwen2.5:3b. Do not claim another name.\nFacts: no projects."
+      },
+      {
+        "role": "user",
+        "content": "Only question"
+      }
+    ]
+  },
+  {
+    "fn": "buildReplyMessages",
+    "args": [
+      {}
+    ],
+    "result": [
+      {
+        "role": "system",
+        "content": "You are Captain, Planwharf's harbor companion.\nReply in the user's language, in at most 4 short sentences.\nSpeak as a Captain-facing harbor companion.\nUse only the project facts below. Do not invent files, paths, commands, or actions.\nYou cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.\nIf the facts do not answer the question, say so.\nSpeak warmly, like a first mate helping a captain who does not write code. Say what the progress means in everyday words. When something goes wrong, say what the captain can do next. Technical details stay out unless the captain asks.\nThe local model answering this message is qwen2.5:3b. Do not claim another name.\nFacts: no projects."
+      },
+      {
+        "role": "user",
+        "content": ""
+      }
+    ]
+  },
+  {
+    "fn": "buildReplyMessages",
+    "args": [],
+    "result": [
+      {
+        "role": "system",
+        "content": "You are Captain, Planwharf's harbor companion.\nReply in the user's language, in at most 4 short sentences.\nSpeak as a Captain-facing harbor companion.\nUse only the project facts below. Do not invent files, paths, commands, or actions.\nYou cannot stop, resume, or change work. Tell the captain to use /status, /stop, or /resume for that.\nIf the facts do not answer the question, say so.\nSpeak warmly, like a first mate helping a captain who does not write code. Say what the progress means in everyday words. When something goes wrong, say what the captain can do next. Technical details stay out unless the captain asks.\nThe local model answering this message is qwen2.5:3b. Do not claim another name.\nFacts: no projects."
+      },
+      {
+        "role": "user",
+        "content": ""
+      }
+    ]
+  },
+  {
+    "fn": "unavailableReply",
+    "args": [
+      "en",
+      "HTTP 500"
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Companion Offline</b>\n⚠️ The local model is not answering right now. It refused the question.\nDeck commands still work:\n• /status\n• /stop &lt;project&gt;\n• /resume &lt;project&gt;\nAsk for technical details with /details."
+  },
+  {
+    "fn": "unavailableReply",
+    "args": [
+      "it",
+      "Timeout"
+    ],
+    "result": "🏴‍☠️ Ahoy, Capitano!\n\n<b>Compagno di porto assente</b>\n⚠️ Il modello locale non risponde in questo momento. L'aiutante su questo computer non ha risposto.\nI comandi di coperta funzionano ancora:\n• /status\n• /stop &lt;progetto&gt;\n• /resume &lt;progetto&gt;\nChiedi i dettagli tecnici con /details."
+  },
+  {
+    "fn": "unavailableReply",
+    "args": [
+      null,
+      null
+    ],
+    "result": "🏴‍☠️ Ahoy, Captain!\n\n<b>Harbor Companion Offline</b>\n⚠️ The local model is not answering right now. The helper on this computer did not answer.\nDeck commands still work:\n• /status\n• /stop &lt;project&gt;\n• /resume &lt;project&gt;\nAsk for technical details with /details."
+  }
+]

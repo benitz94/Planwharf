@@ -1,0 +1,314 @@
+[
+  {
+    "fn": "isNoise",
+    "args": [
+      "?? .planwharf/plan.md"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isNoise",
+    "args": [
+      "?? cache/__pycache__/file.pyc"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isNoise",
+    "args": [
+      "M src/main.rs"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isNoise",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "dirtyMessage",
+    "args": [
+      [
+        "file1.txt",
+        "file2.txt"
+      ]
+    ],
+    "result": "Commit or stash the changes in the folder first: e1.txt, e2.txt, then press Let the crew do it again."
+  },
+  {
+    "fn": "dirtyMessage",
+    "args": [
+      []
+    ],
+    "result": "Commit or stash the changes in the folder first: , then press Let the crew do it again."
+  },
+  {
+    "fn": "namedBranch",
+    "args": [
+      "Fix login on `feat/auth`"
+    ],
+    "result": "feat/auth"
+  },
+  {
+    "fn": "namedBranch",
+    "args": [
+      "Implement work on branch `fix/issue-12` today"
+    ],
+    "result": "fix/issue-12"
+  },
+  {
+    "fn": "namedBranch",
+    "args": [
+      "No branch here"
+    ],
+    "result": null
+  },
+  {
+    "fn": "namedBranch",
+    "args": [
+      ""
+    ],
+    "result": null
+  },
+  {
+    "fn": "namedBranch",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "branchName",
+    "args": [
+      "Fix login",
+      null
+    ],
+    "result": "planwharf/fix-login"
+  },
+  {
+    "fn": "branchName",
+    "args": [
+      "Fix login",
+      "custom-branch"
+    ],
+    "result": "custom-branch"
+  },
+  {
+    "fn": "branchName",
+    "args": [
+      "Implement job 26 on `feat/gate`",
+      null
+    ],
+    "result": "feat/gate"
+  },
+  {
+    "fn": "branchName",
+    "args": [
+      null,
+      null
+    ],
+    "result": "planwharf/work"
+  },
+  {
+    "fn": "pullRequestTitle",
+    "args": [
+      "Implement job 26 on `feat/gate`",
+      [
+        "Step 1",
+        "Step 2"
+      ]
+    ],
+    "result": "Implement job 26"
+  },
+  {
+    "fn": "pullRequestTitle",
+    "args": [
+      "Simple goal",
+      []
+    ],
+    "result": "Simple goal"
+  },
+  {
+    "fn": "pullRequestTitle",
+    "args": [
+      "",
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "crewSection",
+    "args": [
+      {
+        "leadLabel": "Lead GPT-4o"
+      },
+      [
+        {
+          "id": "gpt-4o",
+          "label": "GPT-4o",
+          "provider": "codex"
+        }
+      ]
+    ],
+    "result": "## Crew\n\n- Lead: Lead GPT-4o"
+  },
+  {
+    "fn": "crewSection",
+    "args": [
+      {
+        "leadLabel": "Lead",
+        "subTasks": [
+          {
+            "id": "build",
+            "title": "Build the feature",
+            "assignedModelId": "m2"
+          },
+          {
+            "id": "verify",
+            "title": "Verify the work independently",
+            "assignedModelId": "m1"
+          }
+        ],
+        "results": [
+          {
+            "subTaskId": "build",
+            "modelId": "m1"
+          },
+          {
+            "subTaskId": "build",
+            "modelId": "m2"
+          }
+        ]
+      },
+      [
+        {
+          "id": "m1",
+          "label": "Model One"
+        },
+        {
+          "id": "m2",
+          "label": "Model Two"
+        }
+      ]
+    ],
+    "result": "## Crew\n\n- Lead: Lead\n- Build: Model One → Model Two (Build the feature)\n- Verify: Model One"
+  },
+  {
+    "fn": "crewSection",
+    "args": [
+      {
+        "leadLabel": "Lead Claude"
+      },
+      []
+    ],
+    "result": "## Crew\n\n- Lead: Lead Claude"
+  },
+  {
+    "fn": "crewSection",
+    "args": [],
+    "result": ""
+  },
+  {
+    "fn": "shortGoal",
+    "args": [
+      "Fix login bug in auth system"
+    ],
+    "result": "fix-login-bug-in-auth-system"
+  },
+  {
+    "fn": "shortGoal",
+    "args": [
+      "A very long goal with special characters !@#$% and punctuation..."
+    ],
+    "result": "a-very-long-goal-with-special-characters"
+  },
+  {
+    "fn": "shortGoal",
+    "args": [
+      ""
+    ],
+    "result": "work"
+  },
+  {
+    "fn": "shortGoal",
+    "args": [
+      null
+    ],
+    "result": "work"
+  },
+  {
+    "fn": "parse",
+    "args": [
+      "# Work plan\n\n## Goal\n\nFix it\n\n## Base\n\norigin/main 1234567\n\n## Branch\n\nfeat/fix\n\n## Steps\n\n- [ ] Step 1\n- [x] Step 2 — 0045080\n\n## Rules\n\nNo push\n\n## Done\n\nFinished"
+    ],
+    "result": {
+      "goal": "Fix it",
+      "base": "origin/main 1234567",
+      "branch": "feat/fix",
+      "rules": "No push",
+      "done": "Finished",
+      "steps": [
+        {
+          "line": "- [ ] Step 1",
+          "done": false,
+          "commit": ""
+        },
+        {
+          "line": "- [x] Step 2 — 0045080",
+          "done": true,
+          "commit": "0045080"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parse",
+    "args": [
+      "# Work plan\r\n\r\n## Goal\r\n\r\nCRLF Goal\r\n\r\n## Base\r\n\r\nbase\r\n\r\n## Branch\r\n\r\nbranch\r\n\r\n## Steps\r\n\r\n- [ ] Step 1\r\n\r\n## Rules\r\n\r\nRules\r\n\r\n## Done\r\n\r\n"
+    ],
+    "result": {
+      "goal": "CRLF Goal",
+      "base": "base",
+      "branch": "branch",
+      "rules": "Rules",
+      "done": "",
+      "steps": [
+        {
+          "line": "- [ ] Step 1",
+          "done": false,
+          "commit": ""
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parse",
+    "args": [
+      ""
+    ],
+    "result": {
+      "goal": "",
+      "base": "",
+      "branch": "",
+      "rules": "",
+      "done": "",
+      "steps": []
+    }
+  },
+  {
+    "fn": "parse",
+    "args": [
+      null
+    ],
+    "result": {
+      "goal": "",
+      "base": "",
+      "branch": "",
+      "rules": "",
+      "done": "",
+      "steps": []
+    }
+  }
+]

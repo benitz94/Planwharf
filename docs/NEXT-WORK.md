@@ -96,6 +96,16 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | After the port | **Benchmarks**, repeated on small, medium and large tasks: reliability, defects, time and quota, Planwharf against each AI tool alone; no saving claimed that the numbers do not show | — | To do |
 | — | After the port | **Models chosen by results**: the step outcomes of job 36 and the benchmarks rank the models per kind of work, once there are enough examples; the owner's roles and limits still decide | — | To do |
 
+Job 43 implementation checkpoint (24 November 2026): the sixteen native ports, ten pure
+comparison surfaces, recovered Antigravity cases, and six scenario replay floors are on
+the continuation branch and pass their focused checks. Engineering CI, the Release Engine
+build, the 984-case ParityTests run, and FakeCli's 64 tests passed. The full Engine suite
+has one localization-guard failure in `PhoneHandoverLive.cs` and `Worktrees.cs`, outside
+the integration slice. Native AOT is blocked by the missing Windows platform linker/C++
+workload. Keep Job 43 as `To do` until independent verification and the owner's Windows
+real-program hand test are complete; do not claim cross-platform CI from these Windows
+results.
+
 Every phase ends with the review done, CI green on Windows, macOS and Linux, and the comparison showing
 no difference for its modules. Until phase 7 Planwharf keeps running on the Node engine.
 

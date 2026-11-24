@@ -1,4 +1,18 @@
 {
+  "antigravity": { "minCases": 36 },
+  "runner": {
+    "minCases": 30,
+    "scenarioFloors": {
+      "provider-models": 19,
+      "provider-adapters": 11,
+      "api-agent": 27,
+      "worktrees": 16,
+      "pr-check": 18,
+      "phone-activation-check": 12
+    }
+  },
+  "external-adapters": { "minCases": 20 },
+  "provider-connections": { "minCases": 15 },
   "model-policy": { "minCases": 20 },
   "model-roles": { "minCases": 10 },
   "structured-final": { "minCases": 5 },
@@ -29,5 +43,11 @@
   "provider-runtime": { "minCases": 8 },
   "time-left": { "minCases": 10 },
   "phone-voice": { "minCases": 15 },
-  "step-outcomes": { "minCases": 12 }
+  "step-outcomes": { "minCases": 12 },
+  "planUsage": { "minCases": 25 },
+  "plan-file": { "minCases": 25 },
+  "phone": { "minCases": 40 },
+  "phone-ollama": { "minCases": 25 },
+  "phone-handover": { "minCases": 5 },
+  "phone-handover-live": { "minCases": 5 }
 }
