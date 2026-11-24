@@ -7,7 +7,8 @@ const { createHash } = require('node:crypto');
 const { unreadPlan } = require('./planUsage.js');
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 const MAX_BYTES = 65536;
-const unread = reason => require('./plan-status.cjs').withStatus('claude', unreadPlan('Claude', reason));
+// A failed read never says the login is gone (see unreadPlan): only Anthropic's own answer can.
+const unread = reason => unreadPlan('Claude', reason);
 
 function parseClaudeUsage(body) {
   const windows = [];
@@ -74,7 +75,7 @@ function createClaudeUsageReader({ readAuth = readClaudeAuth, fetchImpl = fetch,
             }
           } else await response.body?.cancel();
           const planError = require('./plan-status.cjs').providerError('claude', failureText, 'Claude');
-          result = planError ? { ...unread(planError.reason), planStatus: planError.planStatus } : unread(response.status === 401 ? 'Claude subscription login expired. Open Claude Code to refresh it.'
+          result = planError ? { ...unread(planError.reason), planStatus: planError.planStatus } : unread(response.status === 401 ? 'Claude usage could not be read: the usage service refused the saved login. Claude Code renews it when it runs; Claude models are not stopped for this.'
             : response.status === 429 ? 'Claude usage endpoint is rate limited. A later refresh will retry; previous quota is not treated as current.'
             : 'Claude usage HTTP ' + response.status + '.');
         } else {

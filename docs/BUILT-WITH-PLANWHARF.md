@@ -150,3 +150,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The "No limit" switch of a model was hidden in a fold, and a whole company could not be set to no limit from the app. Now a chip on the card and a company button | #226 |
 | The last part of job 43, which wires the others together, was stopped for changing the files of the parts it waited for, after they had finished. It may now change them | #227 |
 | Every lead reply with a summary stopped the crew on "sentences is not a function": autonomy used a helper that its module did not export; the error was hidden behind "autonomy error" until #224 | #228 |
+| Grok's usage service refused a saved token, and Planwharf wrote "Grok login expired" and kept every Grok model out of the crew while grok was signed in; the same could happen to Claude and ChatGPT. A failed read now stops nothing | #229 |
