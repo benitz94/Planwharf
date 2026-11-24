@@ -78,4 +78,14 @@ public class WorkDetailsTests
         Assert.Equal(new RepoView(true, 2, 0, null), WorkDetails.Repo(JsonNode.Parse("""{ "local": { "git": true, "changes": [" M a", "?? b"] } }""")));
         Assert.False(WorkDetails.Repo(JsonNode.Parse("""{ "local": { "git": false } }""")).Git);
     }
+
+    [Fact]
+    public void A_step_blocked_then_finished_is_not_a_failed_check()
+    {
+        JsonObject Result(string step, string status, string summary) => new() { ["subTaskId"] = step, ["status"] = status, ["summary"] = summary };
+        var results = new[] { Result("wire", "BLOCKED", "Stopped: changed files outside its scope"), Result("port", "COMPLETE", "Ported"), Result("wire", "COMPLETE", "Wired"), Result("check", "COMPLETE", "Checked") };
+        Assert.Empty(WorkDetails.OpenProblems(results));
+        var still = new[] { Result("wire", "COMPLETE", "Wired"), Result("check", "FAILED", "Tests fail") };
+        Assert.Equal("Tests fail", WorkDetails.OpenProblems(still).Single()["summary"]!.GetValue<string>());
+    }
 }
