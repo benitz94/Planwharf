@@ -154,3 +154,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | A rehearsal of job 43 with fake models (sixteen modules, a part that wires them, Verify) found three more faults before the real run: one blocked part abandoned the parts not yet started, the part that wires continued work was stopped for touching the finished files, and the same stop could repeat until the work limit | #230 |
 | Resume in the native app did nothing after the crew had committed: the engine asked to confirm that the files had changed, and the app never showed the question nor sent the answer | #231 |
 | Work finished said "Verification failed" for job 43 because of a step's earlier stop, although that step was resumed and finished and the check of the whole passed | #232 |
+| The work plan Planwharf writes (.planwharf/plan.md) ended with a blank line, so a crew pull request that carried it failed GitHub's patch check (job 43) | #? |
