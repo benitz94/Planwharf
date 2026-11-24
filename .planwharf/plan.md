@@ -2,37 +2,22 @@
 
 ## Goal
 
-Continue Job 43 from refreshed `main`, preserving `0045080`: resolve the sheet’s scope decisions, complete the remaining ports and comparisons, run the required tests and Native AOT checks, and obtain independent verification. Commit without pushing or merging, then stop for the owner’s Windows test.
+Write Job 44’s phase 5 specification sheet from refreshed `main` on `port/44-sheet`, covering `execution.cjs`, `project-home`, and the proposed orchestrator split, with tests, parity requirements and allowed files. Obtain independent verification, update the progress documents, commit without pushing or merging, and stop for the owner’s review.
 
 ## Base
 
-origin/main 156a998
+origin/main 0154fc6
 
 ## Branch
 
-planwharf/continue-job-43-from-refreshed-main-pres
+port/44-sheet
 
 ## Steps
 
-- [x] Build (GPT-6.1 Sol): Resolve and document Job 43 scope — not committed
-- [x] Build (GPT-6 Sol): Review scope and interface contracts — not committed
-- [x] Build (GPT-6.1 Sol): Recover and validate preserved Antigravity port — planwharf/continue-job-43-from-refreshed-main-pres--part-3 156a998
-- [x] Build (GPT-6.1 Sol): Port external adapter configuration and connections — planwharf/continue-job-43-from-refreshed-main-pres--part-4 156a998
-- [x] Build (GPT-6.1 Sol): Port API agent execution — 9e2c091
-- [x] Build (GPT-6 Sol): Port account-aware quota usage — planwharf/continue-job-43-from-refreshed-main-pres--part-6 9e2c091
-- [x] Build (GPT-6.1 Sol): Port provider registry and model discovery — planwharf/continue-job-43-from-refreshed-main-pres--part-5 9e2c091
-- [x] Build (GPT-6 Sol): Port worktree lifecycle — planwharf/continue-job-43-from-refreshed-main-pres--part-8 156a998
-- [x] Build (GPT-6 Sol): Port work plan lifecycle — planwharf/continue-job-43-from-refreshed-main-pres--part-9 156a998
-- [x] Build (GPT-6 Sol): Port pull request repair primitives — planwharf/continue-job-43-from-refreshed-main-pres--part-10 156a998
-- [x] Build (GPT-6 Sol): Port phone Ollama support — planwharf/continue-job-43-from-refreshed-main-pres--part-11 156a998
-- [x] Build (GPT-6.1 Sol): Port phone notifier and command processing — planwharf/continue-job-43-from-refreshed-main-pres--part-12 9e2c091
-- [x] Build (GPT-6.1 Sol): Port phone handover and activation services — 20c9aa1
-- [x] Build (GPT-6.1 Sol): Port Runner lifecycle and process tests — planwharf/continue-job-43-from-refreshed-main-pres--part-13 20c9aa1
-- [x] Build (GPT-6.1 Sol): Build deterministic JavaScript scenario recorder — planwharf/continue-job-43-from-refreshed-main-pres--part-15 156a998
-- [x] Build (GPT-6 Sol): Replay six-module scenarios against C# — planwharf/continue-job-43-from-refreshed-main-pres--part-7 20c9aa1
-- [x] Build (GPT-6.1 Sol): Integrate comparisons, validate and commit — edf14b9
-- [x] Build (Codex): Integrate comparisons, validate and commit — committed; independent verification and Windows hand test remain
-- [x] Verify (claude-sonnet-4-6) — planwharf/continue-job-43-from-refreshed-main-pres--part-16 edf14b9
+- [x] Build (GPT-6 Sol) — not committed
+- [x] Build (GPT-6.1 Terra) — not committed
+- [x] Build (Gemini 3.8 Flash (High)) — committed; independent verification remains
+- [x] Verify (Codex gpt-6.1-sol, attempt-106) — reviewed 1f05291; added specification corrections and omission checks
 
 ## Rules
 
@@ -40,7 +25,7 @@ No push or merge. Files outside the goal are not touched.
 
 ## Done
 
-Goal: Continue Job 43 from refreshed `main`, preserving `0045080`: resolve the sheet’s scope decisions, complete the remaining ports and comparisons, run the required tests and Native AOT checks, and obtain independent verification. Commit without pushing or merging, then stop for the owner’s Windows test.
-Summary: Integrated parallel parts 14 and 16 into the Job 43 continuation branch and committed as b791ce2 in the project folder. All deliverables from the two part worktrees were uncommitted on disk, so artifacts were imported byte-for-byte in order: Part 14 (Runner.cs, RunnerTests.cs) and Part 16 (ScenarioParityTests.cs). All 14 part branches and worktrees remain retained untouched. Focused Release tests pass: Runner 23, ScenarioParity 109 (including 6 mutation tests). FakeCli tests pass: 64. Release Engine build succeeded with zero warnings and zero errors; 103 scenario parity checks matched across 6 files; job 42 sheet and parity tests passed (11). Full Engine test suite passed 1,597 tests, with 1 pre-existing failure in LiteralStringTests (flagging Worktrees.cs and PhoneHandoverLive.cs exception literals). No push or merge performed. Integrated the recovered Antigravity cases, ten pure comparison surfaces, generated fixtures, manifest-driven six-module scenario floors, and documentation. Committed the scoped changes as 7a83edf without pushing or merging. Delivered on disk: the step committed before the process ended, with no result file.
-Branch: planwharf/continue-job-43-from-refreshed-main-pres
+Goal: Write Job 44’s phase 5 specification sheet from refreshed `main` on `port/44-sheet`, covering `execution.cjs`, `project-home`, and the proposed orchestrator split, with tests, parity requirements and allowed files. Obtain independent verification, update the progress documents, commit without pushing or merging, and stop for the owner’s review.
+Summary: Added durable sheet requirements and omission/mutation controls; inspected source and relevant tests. No concrete sheet correction made. Checks establish documentation coverage, not port correctness. Integrated Job 44 specification sheet deliverable and progress documentation; updated docs/NEXT-WORK.md, docs/BUILT-WITH-PLANWHARF.md, native/porting/PLAN.md, and .planwharf/plan.md; ran all checks (git diff --check, Job 44 tests, sheet/parity checks, read-only recorder checks, and engineering CI); committed on port/44-sheet as 1f05291 without push or merge. Reserved independent verification for claude-sonnet-4-6. Independently reviewed Job 44 against requirements and relevant JavaScript paths using Codex gpt-6.1-sol. Added exhaustive omission and incomplete/interleaved assessment tests, corrected four lifecycle specification exceptions, corrected verifier attribution, repaired committed sheet EOF whitespace, updated progress evidence and committed 38f0890 on port/44-sheet. No runtime change, push or merge. Working tree clean. Full line-by-line orchestrator analysis remains explicitly deferred to Job 46; this review does not claim port correctness.
+Branch: port/44-sheet
 Pushed: no
