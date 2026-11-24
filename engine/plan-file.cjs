@@ -286,8 +286,10 @@ function writePlan(folder, spec) {
     steps,
     done: spec.done != null ? spec.done : (same ? previous.done : '')
   });
-  fs.writeFileSync(planPath(folder), text);
-  return text;
+  // One newline at the end: a blank last line fails the patch check of a pull request that carries it.
+  const ended = text.replace(/\n*$/, '\n');
+  fs.writeFileSync(planPath(folder), ended);
+  return ended;
 }
 
 function branchExists(folder, name) {
@@ -411,7 +413,7 @@ function tickStep(folder, spec = {}) {
   if (index < 0) return false;
   const commit = spec.commit || 'not committed';
   lines[index] = lines[index].replace('- [ ]', '- [x]') + ` — ${commit}`;
-  fs.writeFileSync(file, lines.join('\n'));
+  fs.writeFileSync(file, lines.join('\n').replace(/\n*$/, '\n'));
   return true;
 }
 
