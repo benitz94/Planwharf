@@ -52,7 +52,7 @@ public static class ProjectViews
         ["GOAL_REACHED"] = Strings.T("Goal reached"), ["LEAD_UNCONFIRMED"] = Strings.T("Finished: check the result"), ["UNREADABLE_LEAD_DECISION"] = Strings.T("Finished: check the result"),
         ["MEGATASK_LIMIT"] = Strings.T("Stopped: work limit reached"), ["REPEATED_FAILURE"] = Strings.T("Stopped: the same work failed three times"), ["NO_LEAD_AVAILABLE"] = Strings.T("Stopped: no lead available"), ["LEAD_FAILED"] = Strings.T("Stopped: the lead could not answer"),
         ["START_UNAVAILABLE"] = Strings.T("Stopped: could not start"), ["START_FAILED"] = Strings.T("Stopped: could not start"), ["NOTHING_STARTED"] = Strings.T("Stopped: no work started"),
-        ["APPROVAL_REFUSED"] = Strings.T("Stopped: work not approved"), ["AUTONOMY_ERROR"] = Strings.T("Stopped: error"), ["TIME_LIMIT"] = Strings.T("Stopped: time limit reached")
+        ["APPROVAL_REFUSED"] = Strings.T("Stopped: work not approved"), ["AUTONOMY_ERROR"] = Strings.T("Stopped: error"), ["NO_PROGRESS"] = Strings.T("Stopped: no progress twice"), ["TIME_LIMIT"] = Strings.T("Stopped: time limit reached")
     };
     static Dictionary<string, string> StopSentences => new()
     {
@@ -62,7 +62,7 @@ public static class ProjectViews
         ["NO_LEAD_AVAILABLE"] = Strings.T("The crew stopped: no lead is available. Choose a lead with quota in Team."),
         ["LEAD_FAILED"] = Strings.T("The crew stopped: the lead could not answer"), ["START_UNAVAILABLE"] = Strings.T("The crew could not start the work."),
         ["START_FAILED"] = Strings.T("The crew could not start the work"), ["NOTHING_STARTED"] = Strings.T("The crew started no work"),
-        ["APPROVAL_REFUSED"] = Strings.T("The work could not be approved"), ["AUTONOMY_ERROR"] = Strings.T("The crew stopped on an error"),
+        ["APPROVAL_REFUSED"] = Strings.T("The work could not be approved"), ["AUTONOMY_ERROR"] = Strings.T("The crew stopped on an error"), ["NO_PROGRESS"] = Strings.T("The crew stopped twice without changing any file. Answer in Decisions how it should continue, and it starts again."),
         ["TIME_LIMIT"] = Strings.T("The crew stopped: the time limit was reached.")
     };
 

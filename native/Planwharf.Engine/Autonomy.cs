@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Planwharf.Engine;
 
@@ -117,10 +118,13 @@ public static class Autonomy
         var checkpointReason = TryString(checkpoint?["reason"]);
         var workEnded = status == "checkpointed" && checkpointReason is not null && WORK_ENDED.Contains(checkpointReason);
         var megaTask = row["megaTask"] as JsonObject;
-        if ((status == "checkpointed" && !workEnded) || status == "paused" || (megaTask is not null && Truthy(megaTask, "pauseRequested")))
+        if ((status == "checkpointed" && !workEnded) || status == "paused" || (megaTask is not null && Truthy(megaTask, "pauseRequested") && !workEnded))
             return None("user-paused");
 
         var hasMegaId = row.TryGetPropertyValue("megaTaskId", out var megaId) && TruthyNode(megaId);
+        // Work that ended blocked or failed goes back to the lead at once, with its results.
+        if (workEnded && hasMegaId && !(Truthy(settings, "continued") && Includes(settings, "continued", megaId, "includes")))
+            return new JsonObject { ["type"] = "continue", ["megaTaskId"] = megaId!.DeepClone() };
         if (status == "needs_approval" && hasMegaId)
         {
             if (Includes(settings, "approved", megaId, "includes")) return None("already-approved");
@@ -202,7 +206,7 @@ public static class Autonomy
             "```",
             output,
             "```",
-            "This run is fresh evidence. Do not run commands or edit files yourself: decide from the goal, the results and this run."
+            "This run is fresh evidence: do not run the tests again. Do not edit files. Inspect the project folder (files, git log, git diff) when the results leave a doubt."
         };
     }
 
@@ -230,20 +234,7 @@ public static class Autonomy
         var checks = checksNode as JsonObject;
         var isNullChecks = checksNode is null && options.ContainsKey("checks");
 
-        var lines = new List<string>();
-        if (results is not null)
-        {
-            var count = results.Count;
-            var start = Math.Max(0, count - 6);
-            for (var i = start; i < count; i++)
-            {
-                if (results[i] is JsonObject r)
-                {
-                    var summary = Truthy(r, "summary") ? JsText(r, "summary") : "no summary";
-                    lines.Add($"- {JsText(r, "status")}: {summary}");
-                }
-            }
-        }
+        var lines = ResultLines(results);
 
         var parts = new List<string>
         {
@@ -260,8 +251,89 @@ public static class Autonomy
             parts.AddRange(ChecksText(checks, checksNode is null));
         }
 
+        parts.Add("A worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.");
         parts.Add(LeadInstructions());
         return string.Join("\n", parts);
+    }
+
+    static List<string> ResultLines(JsonArray? results)
+    {
+        var lines = new List<string>();
+        if (results is null) return lines;
+        for (var i = Math.Max(0, results.Count - 6); i < results.Count; i++)
+        {
+            if (results[i] is not JsonObject r) continue;
+            var summary = Truthy(r, "summary") ? JsText(r, "summary") : "no summary";
+            var files = r["filesChanged"] is JsonArray changed && changed.Count > 0
+                ? $" Files changed: {string.Join(", ", changed.Take(20).Select(item => JsText(item, true)))}." : "";
+            var blockers = r["blockers"] is JsonArray blocked && blocked.Count > 0
+                ? $" Blockers: {string.Join(" | ", blocked.Take(3).Select(item => Clip(JsText(item, true), 300)))}" : "";
+            lines.Add($"- {JsText(r, "status")}: {summary}{files}{blockers}");
+        }
+        return lines;
+    }
+
+    static string Clip(string text, int length) => text.Length <= length ? text : text[..length];
+
+    // Work that stopped part way goes back to the lead with its results; the lead names the rest.
+    public static string ContinuePrompt(JsonObject options)
+    {
+        var lines = ResultLines(options["results"] as JsonArray);
+        var reason = Truthy(options, "reason") ? JsText(options, "reason") : "a step did not finish";
+        var parts = new List<string>
+        {
+            $"Autonomous review of project {JsText(options, "name")}. The current MegaTask stopped before the goal was met ({reason}).",
+            $"Goal: {(Truthy(options, "goal") ? JsText(options, "goal") : "not recorded")}",
+            "Recorded results:"
+        };
+        if (lines.Count > 0) parts.AddRange(lines);
+        else parts.Add("- none recorded");
+        parts.Add("Inspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.");
+        parts.Add("Put in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.");
+        parts.Add(LeadInstructions());
+        return string.Join("\n", parts);
+    }
+
+    const int DOC_LIMIT = 12000, DOCS_LIMIT = 30000;
+
+    // The project documents a goal points to: a path written in the goal (or its file name), or a numbered
+    // sheet or job ("sheet 42") matching exactly one numbered Markdown file. Only listed files are returned.
+    public static List<string> NamedDocuments(string? goal, IEnumerable<string>? files)
+    {
+        var text = goal ?? "";
+        var list = (files ?? Enumerable.Empty<string>()).Select(file => file.Replace('\\', '/')).ToList();
+        var found = new List<string>();
+        void Add(string file) { if (!found.Contains(file) && found.Count < 4) found.Add(file); }
+        foreach (var file in list)
+        {
+            var name = file.Split('/')[^1];
+            if (text.Contains(file, StringComparison.Ordinal) || (Regex.IsMatch(name, @"\.(md|txt)$", RegexOptions.IgnoreCase) && name.Length > 6 && text.Contains(name, StringComparison.Ordinal))) Add(file);
+        }
+        foreach (Match match in Regex.Matches(text, @"\b(?:sheet|job|foglio|lavoro)\s+(\d{1,3})\b", RegexOptions.IgnoreCase))
+        {
+            var pattern = new Regex($@"(^|/)0*{match.Groups[1].Value}-[^/]*\.md$", RegexOptions.IgnoreCase);
+            var sheets = list.Where(file => pattern.IsMatch(file)).ToList();
+            if (sheets.Count == 1) Add(sheets[0]);
+        }
+        return found;
+    }
+
+    // The text of those documents, clipped, for the split question.
+    public static JsonArray ReadDocuments(string folder, IEnumerable<string> names, Func<string, string?> read)
+    {
+        var room = DOCS_LIMIT;
+        var output = new JsonArray();
+        foreach (var name in names)
+        {
+            if (room <= 0) break;
+            string? text;
+            try { text = read(Path.Combine(folder, name)); } catch { continue; }
+            if (string.IsNullOrWhiteSpace(text)) continue;
+            var limit = Math.Min(DOC_LIMIT, room);
+            output.Add((JsonNode)new JsonObject { ["path"] = name, ["text"] = text.Length > limit ? text[..limit] : text, ["clipped"] = text.Length > limit });
+            room -= Math.Min(text.Length, limit);
+        }
+        return output;
     }
 
     public static string NudgePrompt(JsonObject options)
@@ -320,7 +392,7 @@ public static class Autonomy
         }
 
         parts.Add("Choose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.");
-        parts.Add("Do not run commands or read files: decide from this message only.");
+        parts.Add("You may inspect the project to judge the slices; do not change anything.");
         parts.Add("Reply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}.");
 
         return string.Join("\n", parts);
@@ -364,7 +436,8 @@ public static class Autonomy
         }
 
         parts.Add($"Your crew can work in parallel: up to {MAX_PARTS} workers at the same time, all in the same project folder.");
-        parts.Add("Split the work into parts only where that saves time. Parts that run at the same time must touch different files: two workers on one file overwrite each other. A small job stays one part.");
+        parts.Add("Size the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.");
+        parts.Add("Split the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.");
         parts.Add("For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).");
         parts.Add(PlainLines.SplitLineAsk);
         parts.Add("Files that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.");
@@ -387,7 +460,12 @@ public static class Autonomy
             parts.Add(header);
         }
 
-        parts.Add("Do not run commands or read files: decide from this message only.");
+        if (options["documents"] is JsonArray documents)
+        {
+            foreach (var doc in documents.OfType<JsonObject>())
+                parts.Add($"Document the goal names, {JsText(doc, "path")}{(Truthy(doc, "clipped") ? " (start only; read the rest in the project folder)" : "")}:\n<<<\n{JsText(doc, "text")}\n>>>");
+        }
+        parts.Add("You may read any project file to size the work (the project folder is open to you); do not change anything.");
         parts.Add("Reply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}");
 
         return string.Join("\n", parts);

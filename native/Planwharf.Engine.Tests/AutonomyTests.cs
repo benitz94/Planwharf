@@ -78,7 +78,8 @@ public class AutonomyTests
                 ["megaTaskId"] = "m1",
                 ["checkpoint"] = new JsonObject { ["reason"] = reason }
             };
-            Assert.Equal("nudge", Step(On(), row, alerts)["type"]!.GetValue<string>());
+            // The lead hears about it at once, without waiting for the alert.
+            Assert.Equal("continue", Step(On(), row, alerts)["type"]!.GetValue<string>());
         }
     }
 
@@ -449,5 +450,33 @@ public class AutonomyTests
             kinds[i] = Autonomy.NextStep("auto", "s1", settings, new JsonObject { ["status"] = "needs_approval", ["megaTaskId"] = "m" + i }, null, now: 1)["type"]!.GetValue<string>();
         });
         Assert.All(kinds, kind => Assert.Equal("approve", kind));
+    }
+
+    [Fact]
+    public void TheLeadSeesTheDocumentsTheGoalNamesClippedToTheirLimits()
+    {
+        var files = new[] { "native/porting/jobs/42-phase4.md", "native/porting/jobs/4-other.md", "docs/NEXT-WORK.md", "src/a.js" };
+        Assert.Equal(new[] { "docs/NEXT-WORK.md", "native/porting/jobs/42-phase4.md" }, Autonomy.NamedDocuments("Port, as sheet 42 says, the modules (see docs/NEXT-WORK.md)", files));
+        Assert.Empty(Autonomy.NamedDocuments("Fix the button", files));
+        var docs = Autonomy.ReadDocuments("/p", new[] { "a.md", "missing.md", "big.md" }, file =>
+            file.EndsWith("missing.md") ? throw new IOException("missing") : file.EndsWith("big.md") ? new string('x', 20000) : "Modules: one, two, three");
+        Assert.Equal(2, docs.Count);
+        Assert.Equal("a.md", docs[0]!["path"]!.GetValue<string>());
+        Assert.False(docs[0]!["clipped"]!.GetValue<bool>());
+        Assert.Equal(12000, docs[1]!["text"]!.GetValue<string>().Length);
+        Assert.True(docs[1]!["clipped"]!.GetValue<bool>());
+        var text = Autonomy.SplitPrompt(new JsonObject { ["name"] = "P", ["goal"] = "G", ["builders"] = new JsonArray(), ["verifiers"] = new JsonArray(), ["documents"] = docs });
+        Assert.Contains("Document the goal names, a.md:\n<<<\nModules: one, two, three\n>>>", text);
+        Assert.DoesNotContain("decide from this message only", text);
+    }
+
+    [Fact]
+    public void WorkThatEndedBlockedGoesBackToTheLeadOnce()
+    {
+        var settings = new JsonObject { ["enabled"] = true, ["sessionId"] = "s1", ["started"] = true };
+        var row = new JsonObject { ["status"] = "checkpointed", ["megaTaskId"] = "m1", ["checkpoint"] = new JsonObject { ["reason"] = "blocked worker" }, ["megaTask"] = new JsonObject { ["pauseRequested"] = true } };
+        Assert.Equal("continue", Autonomy.NextStep("auto", "s1", settings, row, null, now: 1)["type"]!.GetValue<string>());
+        settings["continued"] = new JsonArray("m1");
+        Assert.Equal("idle", Autonomy.NextStep("auto", "s1", settings, (JsonObject)row.DeepClone(), new JsonArray(), now: 1)["reason"]!.GetValue<string>());
     }
 }

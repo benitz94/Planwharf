@@ -143,7 +143,7 @@
     GOAL_REACHED: 'Goal reached', LEAD_UNCONFIRMED: 'Finished: check the result', UNREADABLE_LEAD_DECISION: 'Finished: check the result',
     MEGATASK_LIMIT: 'Stopped: work limit reached', REPEATED_FAILURE: 'Stopped: the same work failed three times', NO_LEAD_AVAILABLE: 'Stopped: no lead available', LEAD_FAILED: 'Stopped: the lead could not answer',
     START_UNAVAILABLE: 'Stopped: could not start', START_FAILED: 'Stopped: could not start', NOTHING_STARTED: 'Stopped: no work started',
-    APPROVAL_REFUSED: 'Stopped: work not approved', AUTONOMY_ERROR: 'Stopped: error', TIME_LIMIT: 'Stopped: time limit reached'
+    APPROVAL_REFUSED: 'Stopped: work not approved', AUTONOMY_ERROR: 'Stopped: error', NO_PROGRESS: 'Stopped: no progress twice', TIME_LIMIT: 'Stopped: time limit reached'
   };
   const STOP_SENTENCES = {
     LEAD_UNCONFIRMED: 'Work finished, but the lead did not confirm the goal. Check the result in the project folder.',
@@ -153,7 +153,7 @@
     LEAD_FAILED: 'The crew stopped: the lead could not answer',
     START_UNAVAILABLE: 'The crew could not start the work.', START_FAILED: 'The crew could not start the work',
     NOTHING_STARTED: 'The crew started no work', APPROVAL_REFUSED: 'The work could not be approved',
-    AUTONOMY_ERROR: 'The crew stopped on an error', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
+    AUTONOMY_ERROR: 'The crew stopped on an error', NO_PROGRESS: 'The crew stopped twice without changing any file. Answer in Decisions how it should continue, and it starts again.', TIME_LIMIT: 'The crew stopped: the time limit was reached.'
   };
   function stopSentence(reason) {
     const code = String(reason || '').split(':')[0], detail = String(reason || '').slice(code.length + 1).trim();
