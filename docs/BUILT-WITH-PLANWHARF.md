@@ -215,3 +215,25 @@ Downstream slices own Runner (ST-14), C# scenario replay (ST-16), full integrati
 recovery (ST-17), Native AOT publish, independent verification (ST-18) and the owner's Windows test.
 The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
 No push or merge performed.
+
+
+### Job 43 parallel parts integration — attempt 98 (24 November 2026)
+
+Integrated parts 14 and 16 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-14`,
+`--part-16`) on the continuation branch. Part branch heads remained at `edf14b9`; deliverables
+were uncommitted in their registered worktrees, so the 3 source and test artifacts
+(`Runner.cs`, `RunnerTests.cs`, `ScenarioParityTests.cs`) were copied byte-for-byte. All source
+worktrees and part branches were retained untouched.
+
+Focused Release tests passed: Runner 23, ScenarioParity 109 (including 6 mutation validation tests).
+FakeCli tests passed: 64. The Release engine build succeeded with zero warnings and zero errors;
+sheet/parity guards passed 11 tests. Parity fixture record check passed with zero drift. The scenario
+recorder check matched all 103 scenarios across 6 files. Full Release Engine tests: 1,597 passed,
+1 failed, zero skipped. The single failure is in `LiteralStringTests` (flagging pre-existing `Worktrees.cs`
+and `PhoneHandoverLive.cs` exception literals); all unit and parity tests pass.
+
+Integration of parallel parts 14 and 16 completes all parallel implementation and scenario replay parts.
+Downstream slice ST-17 owns full integration with shared comparison recovery, Native AOT publish,
+followed by independent verification (ST-18) and the owner's Windows test.
+The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
+No push or merge performed.
