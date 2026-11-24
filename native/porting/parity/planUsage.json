@@ -1,0 +1,598 @@
+[
+  {
+    "fn": "unreadPlan",
+    "args": [
+      "ChatGPT",
+      "Usage not loaded yet."
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Usage not loaded yet.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "unreadPlan",
+    "args": [
+      "Grok",
+      null
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Not readable",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "unreadPlan",
+    "args": [
+      "Gemini",
+      "Custom failure"
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Custom failure",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "emptyPlans",
+    "args": [],
+    "result": [
+      {
+        "id": "ChatGPT",
+        "label": "ChatGPT",
+        "readable": false,
+        "exhausted": false,
+        "pct": null,
+        "leftPct": null,
+        "source": null,
+        "reason": "Usage not loaded yet.",
+        "windows": [],
+        "planStatus": "unknown"
+      },
+      {
+        "id": "Grok",
+        "label": "Grok",
+        "readable": false,
+        "exhausted": false,
+        "pct": null,
+        "leftPct": null,
+        "source": null,
+        "reason": "Usage not loaded yet.",
+        "windows": [],
+        "planStatus": "unknown"
+      },
+      {
+        "id": "Gemini",
+        "label": "Gemini",
+        "readable": false,
+        "exhausted": false,
+        "pct": null,
+        "leftPct": null,
+        "source": null,
+        "reason": "Usage not loaded yet.",
+        "windows": [],
+        "planStatus": "unknown"
+      }
+    ]
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": 50,
+        "reset_at": 1700000000
+      },
+      "5-hour"
+    ],
+    "result": {
+      "name": "5-hour",
+      "pct": 50,
+      "leftPct": 50,
+      "resetAt": "2023-11-14T22:13:20.000Z",
+      "seconds": null
+    }
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": 0,
+        "reset_at": "2026-11-24T12:00:00Z"
+      },
+      "weekly"
+    ],
+    "result": {
+      "name": "weekly",
+      "pct": 0,
+      "leftPct": 100,
+      "resetAt": null,
+      "seconds": null
+    }
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": 100,
+        "reset_after_seconds": 3600
+      },
+      "5-hour"
+    ],
+    "result": {
+      "name": "5-hour",
+      "pct": 100,
+      "leftPct": 0,
+      "resetAt": null,
+      "seconds": null
+    }
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": 120
+      },
+      "5-hour"
+    ],
+    "result": null
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": -5
+      },
+      "5-hour"
+    ],
+    "result": null
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {
+        "used_percent": "not-number"
+      },
+      "5-hour"
+    ],
+    "result": null
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      null,
+      "5-hour"
+    ],
+    "result": null
+  },
+  {
+    "fn": "windowOf",
+    "args": [
+      {},
+      "weekly"
+    ],
+    "result": null
+  },
+  {
+    "fn": "planExhausted",
+    "args": [
+      [
+        {
+          "id": "ChatGPT",
+          "exhausted": true
+        }
+      ],
+      "ChatGPT"
+    ],
+    "result": false
+  },
+  {
+    "fn": "planExhausted",
+    "args": [
+      [
+        {
+          "id": "ChatGPT",
+          "exhausted": false
+        }
+      ],
+      "ChatGPT"
+    ],
+    "result": false
+  },
+  {
+    "fn": "planExhausted",
+    "args": [
+      [
+        {
+          "id": "Grok",
+          "exhausted": true
+        }
+      ],
+      "ChatGPT"
+    ],
+    "result": false
+  },
+  {
+    "fn": "planExhausted",
+    "args": [
+      [],
+      "ChatGPT"
+    ],
+    "result": false
+  },
+  {
+    "fn": "planExhausted",
+    "args": [
+      null,
+      "ChatGPT"
+    ],
+    "result": false
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {
+        "config": {
+          "creditUsagePercent": 40,
+          "currentPeriod": {
+            "end": "2026-11-24T12:00:00Z"
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": true,
+      "exhausted": false,
+      "pct": 40,
+      "leftPct": 60,
+      "source": "grok",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "weekly",
+          "pct": 40,
+          "leftPct": 60,
+          "resetAt": "2026-11-24T12:00:00Z",
+          "start": null
+        }
+      ],
+      "products": []
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {
+        "config": {
+          "creditUsagePercent": 0
+        }
+      }
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": true,
+      "exhausted": false,
+      "pct": 0,
+      "leftPct": 100,
+      "source": "grok",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "weekly",
+          "pct": 0,
+          "leftPct": 100,
+          "resetAt": null,
+          "start": null
+        }
+      ],
+      "products": []
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {
+        "config": {
+          "creditUsagePercent": 100
+        }
+      }
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": true,
+      "exhausted": true,
+      "pct": 100,
+      "leftPct": 0,
+      "source": "grok",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "weekly",
+          "pct": 100,
+          "leftPct": 0,
+          "resetAt": null,
+          "start": null
+        }
+      ],
+      "products": []
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {
+        "config": {
+          "creditUsagePercent": 150
+        }
+      }
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage in Grok billing response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {
+        "config": {}
+      }
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage in Grok billing response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      null
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage in Grok billing response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseGrokCredits",
+    "args": [
+      {}
+    ],
+    "result": {
+      "id": "Grok",
+      "label": "Grok",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage in Grok billing response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      {
+        "rate_limit": {
+          "primary_window": {
+            "used_percent": 30,
+            "reset_at": 1700000000
+          },
+          "secondary_window": {
+            "used_percent": 10,
+            "reset_at": 1700000000
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": false,
+      "pct": 30,
+      "leftPct": 70,
+      "source": "chatgpt",
+      "planStatus": "active",
+      "reason": null,
+      "planType": null,
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 30,
+          "leftPct": 70,
+          "resetAt": "2023-11-14T22:13:20.000Z",
+          "seconds": null
+        },
+        {
+          "name": "weekly",
+          "pct": 10,
+          "leftPct": 90,
+          "resetAt": "2023-11-14T22:13:20.000Z",
+          "seconds": null
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      {
+        "rate_limit": {
+          "primary_window": {
+            "used_percent": 90,
+            "reset_at": 1700000000
+          }
+        },
+        "plan_type": "team"
+      }
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": false,
+      "pct": 90,
+      "leftPct": 10,
+      "source": "chatgpt",
+      "planStatus": "active",
+      "reason": null,
+      "planType": "team",
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 90,
+          "leftPct": 10,
+          "resetAt": "2023-11-14T22:13:20.000Z",
+          "seconds": null
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      {
+        "rate_limit": {
+          "primary_window": {
+            "used_percent": 100,
+            "reset_at": 1700000000
+          },
+          "limit_reached": true
+        }
+      }
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": true,
+      "exhausted": true,
+      "pct": 100,
+      "leftPct": 0,
+      "source": "chatgpt",
+      "planStatus": "active",
+      "reason": null,
+      "planType": null,
+      "windows": [
+        {
+          "name": "5-hour",
+          "pct": 100,
+          "leftPct": 0,
+          "resetAt": "2023-11-14T22:13:20.000Z",
+          "seconds": null
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      {
+        "rate_limit": {}
+      }
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage windows in ChatGPT response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      null
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage windows in ChatGPT response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  },
+  {
+    "fn": "parseChatGptUsage",
+    "args": [
+      {}
+    ],
+    "result": {
+      "id": "ChatGPT",
+      "label": "ChatGPT",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "No numeric usage windows in ChatGPT response.",
+      "windows": [],
+      "planStatus": "unknown"
+    }
+  }
+]

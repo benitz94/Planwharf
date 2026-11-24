@@ -1,0 +1,773 @@
+{
+  "schema": 1,
+  "module": "phone-activation-check",
+  "scenarios": [
+    {
+      "name": "blocked-no-token",
+      "input": {
+        "mode": "blocked-no-token"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "BLOCKED\nNo bot token is available, so a live Telegram exchange cannot start.\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "report.json": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "allowed",
+      "input": {
+        "mode": "allowed"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "listener",
+      "input": {
+        "mode": "listener"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "BLOCKED\nThe installed Planwharf listener is already polling Telegram (<ROOT>/installed/Planwharf.exe). A second getUpdates call would compete with it.\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: The installed Planwharf listener is already polling Telegram (<ROOT>/installed/Planwharf.exe). A second getUpdates call would compete with it.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": false,\n  \"blocker\": \"The installed Planwharf listener is already polling Telegram (<ROOT>/installed/Planwharf.exe). A second getUpdates call would compete with it.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [\n    {\n      \"path\": \"<ROOT>/installed/Planwharf.exe\",\n      \"pid\": 17\n    }\n  ],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "listeners.json": "[{\"path\":\"<ROOT>/installed/Planwharf.exe\",\"running\":true,\"pollsTelegram\":true,\"pid\":17}]",
+        "report.json": "{\n  \"allowed\": false,\n  \"blocker\": \"The installed Planwharf listener is already polling Telegram (<ROOT>/installed/Planwharf.exe). A second getUpdates call would compete with it.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [\n    {\n      \"path\": \"<ROOT>/installed/Planwharf.exe\",\n      \"pid\": 17\n    }\n  ],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: The installed Planwharf listener is already polling Telegram (<ROOT>/installed/Planwharf.exe). A second getUpdates call would compete with it.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "installed-model",
+      "input": {
+        "mode": "installed-model"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        },
+        {
+          "kind": "askOllama",
+          "options": {
+            "model": "qwen2.5:3b",
+            "timeoutMs": 60000,
+            "messages": [
+              {
+                "role": "system",
+                "content": "Reply with exactly one word: ready"
+              },
+              {
+                "role": "user",
+                "content": "ready?"
+              }
+            ]
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": [
+            "qwen2.5:3b"
+          ]
+        },
+        {
+          "ok": true,
+          "model": "qwen2.5:3b",
+          "text": "ready"
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply ok: true\nLocal model: qwen2.5:3b\nLocal reply:\nready\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": true,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"\",\n    \"text\": \"ready\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": true,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"\",\n    \"text\": \"ready\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply ok: true\nLocal model: qwen2.5:3b\nLocal reply:\nready\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "probe-failure",
+      "input": {
+        "mode": "probe-failure"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": false,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": false,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": false,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "local-failure",
+      "input": {
+        "mode": "local-failure"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        },
+        {
+          "kind": "askOllama",
+          "options": {
+            "model": "qwen2.5:3b",
+            "timeoutMs": 60000,
+            "messages": [
+              {
+                "role": "system",
+                "content": "Reply with exactly one word: ready"
+              },
+              {
+                "role": "user",
+                "content": "ready?"
+              }
+            ]
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": [
+            "qwen2.5:3b"
+          ]
+        },
+        {
+          "ok": false,
+          "model": "qwen2.5:3b",
+          "reason": "Synthetic local failure"
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply ok: false\nLocal model: qwen2.5:3b\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": false,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"Synthetic local failure\",\n    \"text\": \"\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": false,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"Synthetic local failure\",\n    \"text\": \"\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply ok: false\nLocal model: qwen2.5:3b\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "live",
+      "input": {
+        "mode": "live"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        },
+        {
+          "kind": "fetch",
+          "url": "https://api.telegram.org/bot<REDACTED>/getUpdates?offset=0&timeout=0"
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        },
+        {
+          "ok": true,
+          "result": [
+            {
+              "update_id": 1
+            }
+          ]
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: ran\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": true,\n    \"ok\": true,\n    \"updates\": 1,\n    \"reason\": \"\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": true,\n    \"ok\": true,\n    \"updates\": 1,\n    \"reason\": \"\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: ran\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "live-blocked",
+      "input": {
+        "mode": "live-blocked"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "BLOCKED\nNo bot token is available, so a live Telegram exchange cannot start.\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"blocked\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "report.json": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"blocked\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "report-collision",
+      "input": {
+        "mode": "report-collision"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        },
+        {
+          "kind": "askOllama",
+          "options": {
+            "model": "qwen2.5:3b",
+            "timeoutMs": 60000,
+            "messages": [
+              {
+                "role": "system",
+                "content": "Reply with exactly one word: ready"
+              },
+              {
+                "role": "user",
+                "content": "ready?"
+              }
+            ]
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": [
+            "qwen2.5:3b"
+          ]
+        },
+        {
+          "ok": true,
+          "model": "qwen2.5:3b",
+          "text": "ready"
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.txt",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply ok: true\nLocal model: qwen2.5:3b\nLocal reply:\nready\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.txt",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": true,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"\",\n    \"text\": \"ready\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "report.txt": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [\n      \"qwen2.5:3b\"\n    ],\n    \"installed\": true\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": {\n    \"ok\": true,\n    \"model\": \"qwen2.5:3b\",\n    \"reason\": \"\",\n    \"text\": \"ready\"\n  },\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "bad-listeners",
+      "input": {
+        "mode": "bad-listeners"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [
+        {
+          "stderr": "Expected property name or '}' in JSON at position 1 (line 1 column 2)\n"
+        }
+      ],
+      "fileEffects": [],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "listeners.json": "{"
+      },
+      "result": {
+        "exitCode": 1
+      }
+    },
+    {
+      "name": "backup-notebook",
+      "input": {
+        "mode": "backup-notebook"
+      },
+      "requests": [
+        {
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "stdout": "ALLOWED\nno blocker\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/backup",
+          "ok": true
+        },
+        {
+          "operation": "copyFile",
+          "path": "<ROOT>/attempts/telegram-bot.token",
+          "destination": "<ROOT>/backup/telegram-bot.token",
+          "ok": true
+        },
+        {
+          "operation": "copyFile",
+          "path": "<ROOT>/source/plan.json",
+          "destination": "<ROOT>/backup/plan.json",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/backup/manifest.json",
+          "content": "{\n  \"files\": [\n    {\n      \"name\": \"telegram-bot.token\",\n      \"sha256\": \"f06e194de9d2ad49576b401e6890ab835f65e522c25aaabb8a48e95a0186cfea\",\n      \"bytes\": 15\n    },\n    {\n      \"name\": \"plan.json\",\n      \"sha256\": \"6e4502107ec7de91e633b723adbbc5cab6dc64c917aa07ef2971b8d2763ce7f9\",\n      \"bytes\": 27\n    }\n  ]\n}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/isolated/.attempts-plan",
+          "ok": true
+        },
+        {
+          "operation": "copyFile",
+          "path": "<ROOT>/starter.json",
+          "destination": "<ROOT>/isolated/plan.json",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/isolated/.attempts-plan/phone-settings.json",
+          "content": "{\n  \"ntfy\": {\n    \"enabled\": false,\n    \"topic\": \"\",\n    \"serverUrl\": \"https://ntfy.sh\"\n  },\n  \"telegram\": {\n    \"enabled\": false,\n    \"startCode\": \"isolated-validation\",\n    \"pairedChatId\": null,\n    \"pairedUsername\": null,\n    \"updateOffset\": 0\n  },\n  \"ollama\": {\n    \"enabled\": true,\n    \"baseUrl\": \"http://127.0.0.1:11434\",\n    \"model\": \"qwen2.5:3b\"\n  }\n}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: telegram-bot.token, plan.json\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/report.json",
+          "content": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [\n    {\n      \"name\": \"telegram-bot.token\",\n      \"sha256\": \"f06e194de9d2ad49576b401e6890ab835f65e522c25aaabb8a48e95a0186cfea\",\n      \"bytes\": 15\n    },\n    {\n      \"name\": \"plan.json\",\n      \"sha256\": \"6e4502107ec7de91e633b723adbbc5cab6dc64c917aa07ef2971b8d2763ce7f9\",\n      \"bytes\": 27\n    }\n  ],\n  \"notebook\": \"<ROOT>/isolated\",\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "attempts/telegram-bot.token": "<REDACTED>",
+        "backup/manifest.json": "{\n  \"files\": [\n    {\n      \"name\": \"telegram-bot.token\",\n      \"sha256\": \"f06e194de9d2ad49576b401e6890ab835f65e522c25aaabb8a48e95a0186cfea\",\n      \"bytes\": 15\n    },\n    {\n      \"name\": \"plan.json\",\n      \"sha256\": \"6e4502107ec7de91e633b723adbbc5cab6dc64c917aa07ef2971b8d2763ce7f9\",\n      \"bytes\": 27\n    }\n  ]\n}\n",
+        "backup/plan.json": "{\"schema\":2,\"projects\":[]}\n",
+        "backup/telegram-bot.token": "<REDACTED>",
+        "isolated/.attempts-plan/phone-settings.json": "{\n  \"ntfy\": {\n    \"enabled\": false,\n    \"topic\": \"\",\n    \"serverUrl\": \"https://ntfy.sh\"\n  },\n  \"telegram\": {\n    \"enabled\": false,\n    \"startCode\": \"isolated-validation\",\n    \"pairedChatId\": null,\n    \"pairedUsername\": null,\n    \"updateOffset\": 0\n  },\n  \"ollama\": {\n    \"enabled\": true,\n    \"baseUrl\": \"http://127.0.0.1:11434\",\n    \"model\": \"qwen2.5:3b\"\n  }\n}\n",
+        "isolated/plan.json": "{\"schema\":2,\"projects\":[]}\n",
+        "report.json": "{\n  \"allowed\": true,\n  \"blocker\": \"\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [\n    {\n      \"name\": \"telegram-bot.token\",\n      \"sha256\": \"f06e194de9d2ad49576b401e6890ab835f65e522c25aaabb8a48e95a0186cfea\",\n      \"bytes\": 15\n    },\n    {\n      \"name\": \"plan.json\",\n      \"sha256\": \"6e4502107ec7de91e633b723adbbc5cab6dc64c917aa07ef2971b8d2763ce7f9\",\n      \"bytes\": 27\n    }\n  ],\n  \"notebook\": \"<ROOT>/isolated\",\n  \"build\": \"<ROOT>/build/Planwharf.exe\"\n}\n",
+        "report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: yes\nBlocker: none\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: telegram-bot.token, plan.json\nNative build: <ROOT>/build/Planwharf.exe\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+        "source/plan.json": "{\"schema\":2,\"projects\":[]}\n",
+        "starter.json": "{\"schema\":2,\"projects\":[]}\n"
+      },
+      "result": {
+        "exitCode": 0
+      }
+    },
+    {
+      "name": "concurrent-isolated-checks",
+      "input": {
+        "lanes": [
+          "one",
+          "two"
+        ]
+      },
+      "requests": [
+        {
+          "lane": "one",
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        },
+        {
+          "lane": "two",
+          "kind": "listInstalledModels",
+          "options": {
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": []
+        },
+        {
+          "ok": true,
+          "models": []
+        }
+      ],
+      "events": [
+        {
+          "lane": "one",
+          "stdout": "BLOCKED\nNo bot token is available, so a live Telegram exchange cannot start.\n"
+        },
+        {
+          "lane": "two",
+          "stdout": "BLOCKED\nNo bot token is available, so a live Telegram exchange cannot start.\n"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/one",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/one/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: not built\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/one/report.json",
+          "content": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"\"\n}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/two",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/two/report.md",
+          "content": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: not built\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/two/report.json",
+          "content": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"\"\n}\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "one/report.json": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"\"\n}\n",
+        "one/report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: not built\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n",
+        "two/report.json": "{\n  \"allowed\": false,\n  \"blocker\": \"No bot token is available, so a live Telegram exchange cannot start.\",\n  \"model\": \"qwen2.5:3b\",\n  \"installedListeners\": [],\n  \"probe\": {\n    \"ok\": true,\n    \"models\": [],\n    \"installed\": false\n  },\n  \"exchange\": {\n    \"ran\": false,\n    \"ok\": false,\n    \"updates\": 0,\n    \"reason\": \"not requested\"\n  },\n  \"local\": null,\n  \"backup\": [],\n  \"notebook\": null,\n  \"build\": \"\"\n}\n",
+        "two/report.md": "# Phone activation\n\nDefault model: qwen2.5:3b\nPaired-bot verification allowed: no\nBlocker: No bot token is available, so a live Telegram exchange cannot start.\nLocal model probe: not installed\nLive Telegram exchange: not run\nBackup files: none\nNative build: not built\n\nThis check does not call Telegram getUpdates while the installed listener is running, and it does not change the installed app.\nLocal model reply: not run\n"
+      },
+      "result": [
+        {
+          "lane": "one",
+          "exitCode": 0
+        },
+        {
+          "lane": "two",
+          "exitCode": 0
+        }
+      ]
+    }
+  ]
+}

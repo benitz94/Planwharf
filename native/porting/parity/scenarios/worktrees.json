@@ -1,0 +1,1408 @@
+{
+  "schema": 1,
+  "module": "worktrees",
+  "scenarios": [
+    {
+      "name": "ordered-merge",
+      "input": {
+        "mode": "ordered-merge"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part 2",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-2"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": "Synthetic merge failure"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": true
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "dirty-root",
+      "input": {
+        "mode": "dirty-root"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": " M root.txt",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "reason": "Work branch has uncommitted changes; integration is paused.",
+          "conflicts": []
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "dirty-part",
+      "input": {
+        "mode": "dirty-part"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": " M pending.txt",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "branch": "work--part-1",
+          "reason": "Part has uncommitted changes; integration is paused.",
+          "conflicts": []
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "conflict-abort",
+      "input": {
+        "mode": "conflict-abort"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part 2",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-2"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "-q",
+            "--verify",
+            "MERGE_HEAD"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--abort"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": "Synthetic merge failure"
+        },
+        {
+          "status": 0,
+          "stdout": "conflict.txt\n",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "branch": "work--part-2",
+          "conflicts": [
+            "conflict.txt"
+          ],
+          "reason": "Synthetic merge failure"
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "probe-failure",
+      "input": {
+        "mode": "probe-failure"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": "Synthetic probe failure"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "reason": "Synthetic probe failure",
+          "conflicts": []
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "merge-failure",
+      "input": {
+        "mode": "merge-failure"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part 2",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-2"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "-q",
+            "--verify",
+            "MERGE_HEAD"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": "Synthetic merge failure"
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "branch": "work--part-2",
+          "conflicts": [],
+          "reason": "Synthetic merge failure"
+        },
+        "recovery": null
+      }
+    },
+    {
+      "name": "recovery",
+      "input": {
+        "mode": "recovery"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part 2",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-2"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "-q",
+            "--verify",
+            "MERGE_HEAD"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--abort"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part é 1",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/part 2",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--no-ff",
+            "--no-edit",
+            "work--part-2"
+          ],
+          "cwd": "<ROOT>",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": "Synthetic merge failure"
+        },
+        {
+          "status": 0,
+          "stdout": "conflict.txt\n",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "result": {
+          "ok": false,
+          "branch": "work--part-2",
+          "conflicts": [
+            "conflict.txt"
+          ],
+          "reason": "Synthetic merge failure"
+        },
+        "recovery": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "name": "create",
+      "input": {
+        "mode": "create"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "show-ref",
+            "--verify",
+            "--quiet",
+            "refs/heads/work--part-1"
+          ],
+          "cwd": "<ROOT>/project é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "-b",
+            "work--part-1",
+            "<ROOT>/worktrees/project/MT/ST",
+            "work"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/worktrees/project/MT",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "result": {
+        "folder": "<ROOT>/worktrees/project/MT/ST",
+        "branch": "work--part-1",
+        "subId": "ST"
+      }
+    },
+    {
+      "name": "existing-branch",
+      "input": {
+        "mode": "existing-branch"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "show-ref",
+            "--verify",
+            "--quiet",
+            "refs/heads/work--part-1"
+          ],
+          "cwd": "<ROOT>/project é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "<ROOT>/worktrees/project/MT/ST",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/worktrees/project/MT",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "result": {
+        "folder": "<ROOT>/worktrees/project/MT/ST",
+        "branch": "work--part-1",
+        "subId": "ST"
+      }
+    },
+    {
+      "name": "reuse",
+      "input": {
+        "mode": "reuse"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "list",
+            "--porcelain",
+            "-z"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "branch",
+            "--show-current"
+          ],
+          "cwd": "<ROOT>/worktrees/project/MT/ST",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "worktree <ROOT>/worktrees/project/MT/ST\u0000",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "work--part-1",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "result": {
+        "folder": "<ROOT>/worktrees/project/MT/ST",
+        "branch": "work--part-1",
+        "subId": "ST"
+      }
+    },
+    {
+      "name": "occupied",
+      "input": {
+        "mode": "occupied"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "list",
+            "--porcelain",
+            "-z"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "error": "Worktree destination is occupied"
+    },
+    {
+      "name": "invalid-index",
+      "input": {
+        "mode": "invalid-index"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "error": "Invalid worktree branch"
+    },
+    {
+      "name": "invalid-identity",
+      "input": {
+        "mode": "invalid-identity"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "<ROOT>/project é",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "error": "Invalid worktree identity"
+    },
+    {
+      "name": "cleanup-dirty",
+      "input": {
+        "mode": "cleanup-dirty"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/worktrees/project/MT/ST",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": " M recoverable.txt",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "error": "Worktree has recoverable changes: <ROOT>/worktrees/project/MT/ST"
+    },
+    {
+      "name": "discard",
+      "input": {
+        "mode": "discard"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "check-ref-format",
+            "--branch",
+            "work--part-1"
+          ],
+          "cwd": null
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/worktrees/project/MT/ST",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "remove",
+            "--force",
+            "--force",
+            "<ROOT>/worktrees/project/MT/ST"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "branch",
+            "-D",
+            "work--part-1"
+          ],
+          "cwd": "<ROOT>/project é",
+          "timeout": 30000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": " M recoverable.txt",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": ""
+      },
+      "result": null
+    },
+    {
+      "name": "orphan-sweep-retains-live",
+      "input": {
+        "liveMegaIds": [
+          "live"
+        ]
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "rm",
+          "path": "<ROOT>/worktrees/project/orphan",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "removed": [
+          "project\\orphan"
+        ],
+        "liveRetained": true
+      }
+    }
+  ]
+}

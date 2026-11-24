@@ -1,0 +1,500 @@
+[
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "custom-api",
+        "label": "Custom API",
+        "adapter": "api",
+        "baseUrl": "https://api.example.com/v1",
+        "apiProtocol": "openai",
+        "authEnv": "KEY",
+        "modelIds": [
+          "model-a",
+          "model-b"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "result": {
+      "id": "custom-api",
+      "label": "Custom API",
+      "adapter": "api",
+      "quotaPoolId": "custom-api",
+      "enabled": true,
+      "policy": {
+        "alwaysApprove": false
+      },
+      "baseUrl": "https://api.example.com/v1",
+      "authEnv": "KEY",
+      "apiProtocol": "openai",
+      "maxOutputTokens": 4096,
+      "maxTurns": 30,
+      "requestTimeoutMs": 90000,
+      "models": [
+        {
+          "id": "custom-api:model-a",
+          "cli": "model-a",
+          "label": "model-a",
+          "enabled": true,
+          "orchestratorEligible": true,
+          "workerEligible": true,
+          "reviewerEligible": true,
+          "capabilities": {
+            "canCode": true,
+            "canUseTools": true,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        },
+        {
+          "id": "custom-api:model-b",
+          "cli": "model-b",
+          "label": "model-b",
+          "enabled": true,
+          "orchestratorEligible": true,
+          "workerEligible": true,
+          "reviewerEligible": true,
+          "capabilities": {
+            "canCode": true,
+            "canUseTools": true,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        }
+      ]
+    }
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "anthropic-api",
+        "label": "Anthropic",
+        "adapter": "api",
+        "baseUrl": "https://api.anthropic.com",
+        "apiProtocol": "anthropic",
+        "authEnv": "KEY",
+        "maxOutputTokens": 8192,
+        "maxTurns": 50,
+        "requestTimeoutMs": 120000,
+        "modelIds": [
+          "claude-custom"
+        ],
+        "toolsEnabled": false
+      }
+    ],
+    "result": {
+      "id": "anthropic-api",
+      "label": "Anthropic",
+      "adapter": "api",
+      "quotaPoolId": "anthropic-api",
+      "enabled": true,
+      "policy": {
+        "alwaysApprove": false
+      },
+      "baseUrl": "https://api.anthropic.com",
+      "authEnv": "KEY",
+      "apiProtocol": "anthropic",
+      "maxOutputTokens": 8192,
+      "maxTurns": 50,
+      "requestTimeoutMs": 120000,
+      "models": [
+        {
+          "id": "anthropic-api:claude-custom",
+          "cli": "claude-custom",
+          "label": "claude-custom",
+          "enabled": true,
+          "orchestratorEligible": false,
+          "workerEligible": false,
+          "reviewerEligible": false,
+          "capabilities": {
+            "canCode": false,
+            "canUseTools": false,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        }
+      ]
+    }
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "custom-cli",
+        "label": "Custom CLI",
+        "adapter": "configured-cli",
+        "cliCommand": "my-cli",
+        "cliArgs": [
+          "run",
+          "{model}"
+        ],
+        "yoloArgs": [],
+        "restrictedArgs": [],
+        "outputProtocol": "codex-jsonl",
+        "modelIds": [
+          "cli-model"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "result": {
+      "id": "custom-cli",
+      "label": "Custom CLI",
+      "adapter": "configured-cli",
+      "quotaPoolId": "custom-cli",
+      "enabled": true,
+      "policy": {
+        "alwaysApprove": false
+      },
+      "cliArgs": [
+        "run",
+        "{model}"
+      ],
+      "yoloArgs": [],
+      "restrictedArgs": [],
+      "cliCommand": "my-cli",
+      "outputProtocol": "codex-jsonl",
+      "models": [
+        {
+          "id": "custom-cli:cli-model",
+          "cli": "cli-model",
+          "label": "cli-model",
+          "enabled": true,
+          "orchestratorEligible": true,
+          "workerEligible": true,
+          "reviewerEligible": true,
+          "capabilities": {
+            "canCode": true,
+            "canUseTools": true,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        }
+      ]
+    }
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "custom-cli-2",
+        "label": "Custom CLI 2",
+        "adapter": "configured-cli",
+        "cliCommand": "my-cli",
+        "cliArgs": [
+          "--model",
+          "{model}"
+        ],
+        "yoloArgs": [
+          "--yolo"
+        ],
+        "restrictedArgs": [
+          "--restricted"
+        ],
+        "outputProtocol": "antigravity-jsonl",
+        "modelIds": [
+          "model-1",
+          "model-2"
+        ],
+        "toolsEnabled": false
+      }
+    ],
+    "result": {
+      "id": "custom-cli-2",
+      "label": "Custom CLI 2",
+      "adapter": "configured-cli",
+      "quotaPoolId": "custom-cli-2",
+      "enabled": true,
+      "policy": {
+        "alwaysApprove": false
+      },
+      "cliArgs": [
+        "--model",
+        "{model}"
+      ],
+      "yoloArgs": [
+        "--yolo"
+      ],
+      "restrictedArgs": [
+        "--restricted"
+      ],
+      "cliCommand": "my-cli",
+      "outputProtocol": "antigravity-jsonl",
+      "models": [
+        {
+          "id": "custom-cli-2:model-1",
+          "cli": "model-1",
+          "label": "model-1",
+          "enabled": true,
+          "orchestratorEligible": false,
+          "workerEligible": false,
+          "reviewerEligible": false,
+          "capabilities": {
+            "canCode": false,
+            "canUseTools": false,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        },
+        {
+          "id": "custom-cli-2:model-2",
+          "cli": "model-2",
+          "label": "model-2",
+          "enabled": true,
+          "orchestratorEligible": false,
+          "workerEligible": false,
+          "reviewerEligible": false,
+          "capabilities": {
+            "canCode": false,
+            "canUseTools": false,
+            "canResearch": false
+          },
+          "availabilityVerified": false,
+          "availabilityWarning": "Configured route; account access and model inference have not been verified."
+        }
+      ]
+    }
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {}
+    ],
+    "error": "Use a unique lowercase provider ID and a label."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      null
+    ],
+    "error": "Invalid connection fields. Store an environment variable name, never an API key."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "BAD_ID",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Use a unique lowercase provider ID and a label."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "",
+        "adapter": "api",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Use a unique lowercase provider ID and a label."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "adapter": "api",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Use a unique lowercase provider ID and a label."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "unsupported-adapter",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Unsupported connection adapter."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Provide unique exact model IDs without whitespace."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [
+          "duplicate",
+          "duplicate"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Provide unique exact model IDs without whitespace."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [
+          " "
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Provide unique exact model IDs without whitespace."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": "not-bool"
+      }
+    ],
+    "error": "Declare whether these models support tools."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "api",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true,
+        "unknownField": true
+      }
+    ],
+    "error": "Invalid connection fields. Store an environment variable name, never an API key."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "configured-cli",
+        "cliCommand": "",
+        "cliArgs": [
+          "{model}"
+        ],
+        "yoloArgs": [],
+        "restrictedArgs": [],
+        "outputProtocol": "codex-jsonl",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Provide a native CLI executable."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "configured-cli",
+        "cliCommand": "cli",
+        "cliArgs": [
+          "no-placeholder"
+        ],
+        "yoloArgs": [],
+        "restrictedArgs": [],
+        "outputProtocol": "codex-jsonl",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "CLI arguments must include {model}."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "configured-cli",
+        "cliCommand": "cli",
+        "cliArgs": [
+          "{model}"
+        ],
+        "yoloArgs": [],
+        "restrictedArgs": [],
+        "outputProtocol": "unsupported-proto",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "Select a supported structured output protocol."
+  },
+  {
+    "fn": "connection",
+    "args": [
+      {
+        "id": "good-id",
+        "label": "Label",
+        "adapter": "configured-cli",
+        "cliCommand": "cli",
+        "cliArgs": "not-array",
+        "yoloArgs": [],
+        "restrictedArgs": [],
+        "outputProtocol": "codex-jsonl",
+        "modelIds": [
+          "m1"
+        ],
+        "toolsEnabled": true
+      }
+    ],
+    "error": "cliArgs must be an explicit JSON array of arguments."
+  }
+]

@@ -1,0 +1,574 @@
+[
+  {
+    "fn": "parseArgs",
+    "args": [
+      [
+        "node",
+        "runner.cjs",
+        "--folder",
+        "f",
+        "--result",
+        "r.json",
+        "--title",
+        "t",
+        "--kind",
+        "audit"
+      ]
+    ],
+    "result": {
+      "folder": "f",
+      "result": "r.json",
+      "title": "t",
+      "detail": "",
+      "worker": "",
+      "attempt": "",
+      "slice": "",
+      "kind": "audit"
+    }
+  },
+  {
+    "fn": "parseArgs",
+    "args": [
+      [
+        "node",
+        "runner.cjs",
+        "--folder",
+        "f",
+        "--result",
+        "r.json",
+        "--detail",
+        "d",
+        "--worker",
+        "w",
+        "--attempt",
+        "a",
+        "--slice",
+        "s",
+        "--linked-folder",
+        "lf",
+        "--model-json",
+        "{\"id\":\"m1\",\"provider\":\"codex\",\"cli\":\"gpt-5\"}"
+      ]
+    ],
+    "result": {
+      "folder": "f",
+      "result": "r.json",
+      "title": "",
+      "detail": "d",
+      "worker": "w",
+      "attempt": "a",
+      "slice": "s",
+      "linkedFolder": "lf",
+      "model": {
+        "id": "m1",
+        "provider": "codex",
+        "cli": "gpt-5"
+      }
+    }
+  },
+  {
+    "fn": "parseArgs",
+    "args": [
+      [
+        "node",
+        "runner.cjs"
+      ]
+    ],
+    "result": {
+      "folder": "",
+      "result": "",
+      "title": "",
+      "detail": "",
+      "worker": "",
+      "attempt": "",
+      "slice": ""
+    }
+  },
+  {
+    "fn": "parseArgs",
+    "args": [
+      []
+    ],
+    "result": {
+      "folder": "",
+      "result": "",
+      "title": "",
+      "detail": "",
+      "worker": "",
+      "attempt": "",
+      "slice": ""
+    }
+  },
+  {
+    "fn": "parseArgs",
+    "args": [
+      [
+        "node",
+        "runner.cjs",
+        "--unknown"
+      ]
+    ],
+    "error": "Unknown argument: --unknown"
+  },
+  {
+    "fn": "dropThinkingPrefix",
+    "args": [
+      "Thinking Process:\n1. Think\n\nActual answer",
+      "Thinking Process:\n1. Think"
+    ],
+    "result": "Actual answer"
+  },
+  {
+    "fn": "dropThinkingPrefix",
+    "args": [
+      "Direct answer without prefix",
+      "Some thoughts"
+    ],
+    "result": "Direct answer without prefix"
+  },
+  {
+    "fn": "dropThinkingPrefix",
+    "args": [
+      "",
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "dropThinkingPrefix",
+    "args": [
+      null,
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "dropThinkingPrefix",
+    "args": [
+      "Only answer",
+      null
+    ],
+    "result": "Only answer"
+  },
+  {
+    "fn": "toolRequestRule",
+    "args": [
+      {
+        "mcp": true
+      }
+    ],
+    "result": "Project tools that are off for your model: browser, hooks, memory (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly \"TOOL REQUEST: <name>\" for one of these names. Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents."
+  },
+  {
+    "fn": "toolRequestRule",
+    "args": [
+      {}
+    ],
+    "result": "Project tools that are off for your model: mcp, browser, hooks, memory (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly \"TOOL REQUEST: <name>\" for one of these names. Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents."
+  },
+  {
+    "fn": "toolRequestRule",
+    "args": [
+      {
+        "mcp": true,
+        "browser": false,
+        "hooks": false,
+        "memory": false
+      }
+    ],
+    "result": "Project tools that are off for your model: browser, hooks, memory (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly \"TOOL REQUEST: <name>\" for one of these names. Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents."
+  },
+  {
+    "fn": "toolRequestRule",
+    "args": [
+      {
+        "mcp": true,
+        "browser": true,
+        "hooks": true,
+        "memory": true
+      }
+    ],
+    "result": "Project tools on for your model: MCP servers, browser, hooks and memory."
+  },
+  {
+    "fn": "toolRequestRule",
+    "args": [
+      {
+        "mcp": false,
+        "browser": false,
+        "hooks": false,
+        "memory": false
+      }
+    ],
+    "result": "Project tools that are off for your model: mcp, browser, hooks, memory (mcp = the user's own MCP servers, browser = Claude in Chrome for trying web pages, hooks = the user's Claude Code hooks, memory = Claude's notes between sessions). Only if the work clearly needs one of them, say in one sentence why, and end your answer with a last line of exactly \"TOOL REQUEST: <name>\" for one of these names. Planwharf then shows the user a button; only the user can turn the tool on. Never ask for subagents."
+  },
+  {
+    "fn": "cliModelOf",
+    "args": [
+      {
+        "id": "sonnet",
+        "provider": "claude",
+        "cli": "claude-3-5-sonnet"
+      }
+    ],
+    "result": "claude-3-5-sonnet"
+  },
+  {
+    "fn": "cliModelOf",
+    "args": [
+      {
+        "id": "gpt-4o",
+        "provider": "codex",
+        "cli": "gpt-4o"
+      }
+    ],
+    "result": "gpt-4o"
+  },
+  {
+    "fn": "cliModelOf",
+    "args": [
+      {
+        "id": "custom"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "cliModelOf",
+    "args": [
+      {}
+    ],
+    "result": null
+  },
+  {
+    "fn": "cliModelOf",
+    "args": [
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "assistant",
+        "message": {
+          "model": "claude-3-opus",
+          "content": [
+            {
+              "type": "text",
+              "text": "Hello"
+            }
+          ]
+        }
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "Hello",
+      "thinking": "",
+      "ms": 0,
+      "modelSeen": true
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "assistant",
+        "message": {
+          "model": "other-model",
+          "content": [
+            {
+              "type": "text",
+              "text": "Hello"
+            }
+          ]
+        }
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "Hello",
+      "thinking": "",
+      "ms": 0,
+      "failure": "PROVIDER_MODEL_IDENTITY_CHANGED",
+      "error": "PROVIDER_MODEL_IDENTITY_CHANGED: Claude Code returned a different model."
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "system",
+        "subtype": "init",
+        "model": "claude-3-opus"
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "",
+      "thinking": "",
+      "ms": 0,
+      "modelSeen": true
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "turn.failed",
+        "error": {
+          "message": "Rate limit exceeded"
+        }
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "",
+      "thinking": "",
+      "ms": 0,
+      "failure": "provider",
+      "error": "Rate limit exceeded"
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 100,
+          "output_tokens": 50,
+          "cached_input_tokens": 20
+        }
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "",
+      "thinking": "",
+      "ms": 0,
+      "tokens": {
+        "input": 100,
+        "output": 50,
+        "cachedInput": 20
+      }
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "Start: ",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "event": "step_update",
+        "step_update": {
+          "step_type": "agent_response",
+          "text_delta": "continued"
+        }
+      }
+    ],
+    "result": {
+      "answer": "Start: continued",
+      "thinking": "",
+      "ms": 0
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "Initial",
+        "ms": 0
+      },
+      {
+        "event": "step_update",
+        "step_update": {
+          "step_type": "tool",
+          "tool_name": "read_file"
+        }
+      }
+    ],
+    "result": {
+      "answer": "",
+      "thinking": "Initial\ntool: read_file",
+      "ms": 0
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "event": "result",
+        "result": {
+          "response": "Final response",
+          "duration_seconds": 3.5,
+          "status": "SUCCESS"
+        }
+      }
+    ],
+    "result": {
+      "answer": "Final response",
+      "thinking": "",
+      "ms": 3500
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "event": "result",
+        "result": {
+          "status": "DEADLINE_EXCEEDED",
+          "error": "Timed out"
+        }
+      }
+    ],
+    "result": {
+      "answer": "",
+      "thinking": "",
+      "ms": 0,
+      "failure": "DEADLINE_EXCEEDED",
+      "error": "Timed out"
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "expectedModel": "claude-3-opus",
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "duration_ms": 1200,
+        "result": "Done",
+        "usage": {
+          "input_tokens": 80,
+          "output_tokens": 40,
+          "cache_read_input_tokens": 10
+        }
+      }
+    ],
+    "result": {
+      "expectedModel": "claude-3-opus",
+      "answer": "Done",
+      "thinking": "",
+      "ms": 1200,
+      "resultSeen": true,
+      "tokens": {
+        "input": 80,
+        "output": 40,
+        "cachedInput": 10
+      }
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "Step 1",
+        "ms": 0
+      },
+      {
+        "type": "user",
+        "message": {
+          "content": [
+            {
+              "type": "tool_result",
+              "is_error": true,
+              "content": "permission denied"
+            }
+          ]
+        }
+      }
+    ],
+    "result": {
+      "answer": "",
+      "thinking": "Step 1\n  ↳ refused: permission denied",
+      "ms": 0
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      null
+    ],
+    "result": {
+      "answer": "",
+      "thinking": "",
+      "ms": 0
+    }
+  },
+  {
+    "fn": "parseAskLine",
+    "args": [
+      {
+        "answer": "",
+        "thinking": "",
+        "ms": 0
+      },
+      {}
+    ],
+    "result": {
+      "answer": "",
+      "thinking": "",
+      "ms": 0
+    }
+  }
+]

@@ -1,0 +1,1073 @@
+[
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "conversation_id": "",
+        "status": "SUCCESS",
+        "response": "Gemini Models\tWeekly Limit Remaining\t99%\t2026-10-17T14:13:40Z\nGemini Models\tFive Hour Limit Remaining\t98%\t2026-10-10T19:13:40Z\nClaude and GPT models\tWeekly Limit Remaining\t100%\t2026-10-17T14:15:53Z\nClaude and GPT models\tFive Hour Limit Remaining\t100%\t2026-10-10T19:15:53Z\n",
+        "duration_seconds": 0,
+        "num_turns": 0,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "thinking_tokens": 0,
+          "cache_read_tokens": 0,
+          "total_tokens": 0
+        },
+        "command": {
+          "name": "usage",
+          "data": {
+            "description": "Within each group, models share a weekly limit and a 5-hour limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. The 5-hour limit smooths out aggregate demand to fairly distribute global capacity across all users, while your weekly limit is tied directly to your individual tier.",
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "description": "Models within this group: Gemini Flash, Gemini Pro",
+                "buckets": [
+                  {
+                    "id": "gemini-weekly",
+                    "name": "Weekly Limit Remaining",
+                    "description": "You have used some of your weekly limit, it will fully refresh in 6 days, 23 hours.",
+                    "window": "weekly",
+                    "remaining_fraction": 0.989983320236206,
+                    "reset_time": "2026-10-17T14:13:40Z"
+                  },
+                  {
+                    "id": "gemini-5h",
+                    "name": "Five Hour Limit Remaining",
+                    "description": "You have used some of your 5-hour limit, it will fully refresh in 4 hours, 57 minutes.",
+                    "window": "5h",
+                    "remaining_fraction": 0.9797142744064331,
+                    "reset_time": "2026-10-10T19:13:40Z"
+                  }
+                ]
+              },
+              {
+                "name": "Claude and GPT models",
+                "description": "Models within this group: Claude Opus, Claude Sonnet, GPT-OSS",
+                "buckets": [
+                  {
+                    "id": "3p-weekly",
+                    "name": "Weekly Limit Remaining",
+                    "window": "weekly",
+                    "remaining_fraction": 1,
+                    "reset_time": "2026-10-17T14:15:53Z"
+                  },
+                  {
+                    "id": "3p-5h",
+                    "name": "Five Hour Limit Remaining",
+                    "window": "5h",
+                    "remaining_fraction": 1,
+                    "reset_time": "2026-10-10T19:15:53Z"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": false,
+      "pct": 2,
+      "leftPct": 98,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "weekly",
+          "pct": 1,
+          "leftPct": 99,
+          "remainingFraction": 0.989983320236206,
+          "resetAt": "2026-10-17T14:13:40Z"
+        },
+        {
+          "name": "5h",
+          "pct": 2,
+          "leftPct": 98,
+          "remainingFraction": 0.9797142744064331,
+          "resetAt": "2026-10-10T19:13:40Z"
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": true,
+          "exhausted": false,
+          "pct": 0,
+          "leftPct": 100,
+          "source": "agy /usage JSON",
+          "planStatus": "active",
+          "reason": null,
+          "windows": [
+            {
+              "name": "weekly",
+              "pct": 0,
+              "leftPct": 100,
+              "remainingFraction": 1,
+              "resetAt": "2026-10-17T14:15:53Z"
+            },
+            {
+              "name": "5h",
+              "pct": 0,
+              "leftPct": 100,
+              "remainingFraction": 1,
+              "resetAt": "2026-10-10T19:15:53Z"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "claude-opus-4-6-thinking",
+      "Gemini"
+    ],
+    "result": "Antigravity Claude/GPT"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "gpt-oss-120b-medium",
+      "Gemini"
+    ],
+    "result": "Antigravity Claude/GPT"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "gemini-3-flash",
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "gpt-6",
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "Claude-opus",
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "",
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      null,
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      123,
+      "Gemini"
+    ],
+    "result": "Gemini"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      [
+        "claude-opus"
+      ],
+      "Gemini"
+    ],
+    "result": "Antigravity Claude/GPT"
+  },
+  {
+    "fn": "poolOf",
+    "args": [
+      "gemini-flash",
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      null
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {}
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS"
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "ERROR",
+        "error": "unknown"
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "ERROR",
+        "error": "subscription expired"
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Gemini plan expired.",
+      "windows": [],
+      "planStatus": "expired"
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "ERROR",
+        "result": {
+          "error": {
+            "message": "subscription expired"
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Gemini plan expired.",
+      "windows": [],
+      "planStatus": "expired"
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "ERROR",
+        "result": {
+          "error": "sign in to agy"
+        },
+        "error": "ignored"
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Gemini is not signed in.",
+      "windows": [],
+      "planStatus": "not signed in"
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": []
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": "wrong shape"
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0.5,
+                    "window": "daily",
+                    "reset_time": "2026-11-24T10:00:00Z"
+                  }
+                ]
+              },
+              {
+                "name": "Claude and GPT models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": false,
+      "pct": 50,
+      "leftPct": 50,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "daily",
+          "pct": 50,
+          "leftPct": 50,
+          "remainingFraction": 0.5,
+          "resetAt": "2026-11-24T10:00:00Z"
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": true,
+          "exhausted": true,
+          "pct": 100,
+          "leftPct": 0,
+          "source": "agy /usage JSON",
+          "planStatus": "active",
+          "reason": null,
+          "windows": [
+            {
+              "pct": 100,
+              "leftPct": 0,
+              "remainingFraction": 0,
+              "resetAt": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "gemini models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0.0001
+                  },
+                  {
+                    "remaining_fraction": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": false,
+      "pct": 100,
+      "leftPct": 0,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "pct": 100,
+          "leftPct": 0,
+          "remainingFraction": 0.0001,
+          "resetAt": null
+        },
+        {
+          "pct": 0,
+          "leftPct": 100,
+          "remainingFraction": 1,
+          "resetAt": null
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": "0"
+                  },
+                  {
+                    "remaining_fraction": true
+                  },
+                  {
+                    "remaining_fraction": -1
+                  },
+                  {
+                    "remaining_fraction": 1.01
+                  },
+                  {},
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "error": "Cannot read properties of null (reading 'remaining_fraction')"
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0.0041,
+                    "name": "first"
+                  },
+                  {
+                    "remaining_fraction": 0.004,
+                    "name": "tightest"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": false,
+      "pct": 100,
+      "leftPct": 0,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": "first",
+          "pct": 100,
+          "leftPct": 0,
+          "remainingFraction": 0.0041,
+          "resetAt": null
+        },
+        {
+          "name": "tightest",
+          "pct": 100,
+          "leftPct": 0,
+          "remainingFraction": 0.004,
+          "resetAt": null
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0.125,
+                    "window": "",
+                    "name": null,
+                    "reset_time": false
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": false,
+      "pct": 87,
+      "leftPct": 13,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "name": null,
+          "pct": 87,
+          "leftPct": 13,
+          "remainingFraction": 0.125,
+          "resetAt": null
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models ",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0
+                  }
+                ]
+              },
+              {
+                "name": "Claude and GPT models",
+                "buckets": []
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": false,
+      "exhausted": false,
+      "pct": null,
+      "leftPct": null,
+      "source": null,
+      "reason": "Antigravity returned no numeric Gemini quota.",
+      "windows": [],
+      "planStatus": "unknown",
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseUsage",
+    "args": [
+      {
+        "status": "SUCCESS",
+        "command": {
+          "name": "usage",
+          "data": {
+            "groups": [
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 0
+                  }
+                ]
+              },
+              {
+                "name": "Gemini Models",
+                "buckets": [
+                  {
+                    "remaining_fraction": 1
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "result": {
+      "id": "Gemini",
+      "label": "Gemini",
+      "readable": true,
+      "exhausted": true,
+      "pct": 100,
+      "leftPct": 0,
+      "source": "agy /usage JSON",
+      "planStatus": "active",
+      "reason": null,
+      "windows": [
+        {
+          "pct": 100,
+          "leftPct": 0,
+          "remainingFraction": 0,
+          "resetAt": null
+        },
+        {
+          "pct": 0,
+          "leftPct": 100,
+          "remainingFraction": 1,
+          "resetAt": null
+        }
+      ],
+      "extraPlans": [
+        {
+          "id": "Antigravity Claude/GPT",
+          "label": "Antigravity Claude/GPT",
+          "readable": false,
+          "exhausted": false,
+          "pct": null,
+          "leftPct": null,
+          "source": null,
+          "reason": "Antigravity returned no numeric Antigravity Claude/GPT quota.",
+          "windows": [],
+          "planStatus": "unknown"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      ""
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Antigravity returned no exact model IDs. Configured routes remain unverified; no aliases were guessed."
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      null
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Antigravity returned no exact model IDs. Configured routes remain unverified; no aliases were guessed."
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "Opus latest"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "Antigravity returned no exact model IDs. Configured routes remain unverified; no aliases were guessed."
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "gemini-flash\nclaude-opus-4-6  Claude Opus 4.6\ngpt-oss-120b  GPT OSS"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "gemini-flash",
+        "claude-opus-4-6",
+        "gpt-oss-120b"
+      ],
+      "models": [
+        {
+          "cli": "gemini-flash"
+        },
+        {
+          "cli": "claude-opus-4-6",
+          "label": "Claude Opus 4.6"
+        },
+        {
+          "cli": "gpt-oss-120b",
+          "label": "GPT OSS"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "\u001b[32mclaude-opus-4-6\u001b[0m\nclaude-opus-4-6  First label\nclaude-opus-4-6  Changed label"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "claude-opus-4-6"
+      ],
+      "models": [
+        {
+          "cli": "claude-opus-4-6",
+          "label": "First label"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "gemini-flash\r\ngemini-flash  Flash\r\n_gemini-hidden\ngpt-oss-120b:high"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "gemini-flash",
+        "gpt-oss-120b:high"
+      ],
+      "models": [
+        {
+          "cli": "gemini-flash",
+          "label": "Flash"
+        },
+        {
+          "cli": "gpt-oss-120b:high"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "﻿gemini-flash  Flash\nclaude-opus  Opus"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "gemini-flash",
+        "claude-opus"
+      ],
+      "models": [
+        {
+          "cli": "gemini-flash",
+          "label": "Flash"
+        },
+        {
+          "cli": "claude-opus",
+          "label": "Opus"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "gemini-flash  Flash\ngemini-flash  Later label"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "gemini-flash"
+      ],
+      "models": [
+        {
+          "cli": "gemini-flash",
+          "label": "Flash"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "parseModels",
+    "args": [
+      "GEMINI-flash\ngemini-\nclaude-!\ngpt-oss-120b_medium"
+    ],
+    "result": {
+      "ok": true,
+      "ids": [
+        "gpt-oss-120b_medium"
+      ],
+      "models": [
+        {
+          "cli": "gpt-oss-120b_medium"
+        }
+      ]
+    }
+  }
+]

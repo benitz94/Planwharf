@@ -1,0 +1,1319 @@
+{
+  "schema": 1,
+  "module": "pr-check",
+  "scenarios": [
+    {
+      "name": "list",
+      "input": {
+        "mode": "list"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--json",
+            "number,title,mergeable,headRefName,statusCheckRollup,url"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "[{\"number\":7,\"title\":\"Fixture\",\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}]",
+          "stderr": "Synthetic failure"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "prs": [
+          {
+            "number": 7,
+            "title": "Fixture",
+            "branch": "feature",
+            "conflicts": false,
+            "failing": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "malformed-list",
+      "input": {
+        "mode": "malformed-list"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--json",
+            "number,title,mergeable,headRefName,statusCheckRollup,url"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{",
+          "stderr": "Synthetic failure"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Pull request list was not readable."
+      }
+    },
+    {
+      "name": "list-failure",
+      "input": {
+        "mode": "list-failure"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "list",
+            "--state",
+            "open",
+            "--json",
+            "number,title,mergeable,headRefName,statusCheckRollup,url"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 1,
+          "stdout": "[{\"number\":7,\"title\":\"Fixture\",\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}]",
+          "stderr": "Synthetic failure"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Synthetic failure"
+      }
+    },
+    {
+      "name": "resolve-clean",
+      "input": {
+        "mode": "resolve-clean"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "changed": false,
+        "reason": "No conflicts."
+      }
+    },
+    {
+      "name": "resolve-conflict",
+      "input": {
+        "mode": "resolve-conflict"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "checkout",
+            "7"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "origin/main",
+            "--no-edit"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "--abort"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"CONFLICTING\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Conflicts need a decision.",
+        "files": []
+      }
+    },
+    {
+      "name": "prepare",
+      "input": {
+        "mode": "prepare"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/feature:refs/remotes/origin/feature",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "--detach",
+            "<ROOT>/repair é",
+            "origin/feature"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "origin/main",
+            "--no-edit"
+          ],
+          "cwd": "<ROOT>/repair é"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "before",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "branch": "feature",
+        "base": "main",
+        "before": "before",
+        "conflicts": [],
+        "failing": [],
+        "notRun": []
+      }
+    },
+    {
+      "name": "closed",
+      "input": {
+        "mode": "closed"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"CLOSED\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "The pull request is not open."
+      }
+    },
+    {
+      "name": "unusual-branch",
+      "input": {
+        "mode": "unusual-branch"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"--bad\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "The pull request branch has an unusual name."
+      }
+    },
+    {
+      "name": "fetch-failure",
+      "input": {
+        "mode": "fetch-failure"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/feature:refs/remotes/origin/feature",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"mergeable\":\"MERGEABLE\",\"state\":\"OPEN\",\"statusCheckRollup\":[]}",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Could not fetch the pull request branch."
+      }
+    },
+    {
+      "name": "rerun",
+      "input": {
+        "mode": "rerun"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "run",
+            "rerun",
+            "12",
+            "--failed"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "run",
+            "rerun",
+            "13",
+            "--failed"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "asked": 2,
+        "rerun": 1
+      }
+    },
+    {
+      "name": "finish-noop",
+      "input": {
+        "mode": "finish-noop"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "grep",
+            "-l",
+            "-E",
+            "^(<<<<<<< |>>>>>>> )",
+            "--",
+            "."
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--git-dir"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/repair é"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": ".git",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "before",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "changed": false,
+        "reason": "Nothing needed changing."
+      }
+    },
+    {
+      "name": "push-refused",
+      "input": {
+        "mode": "push-refused"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "grep",
+            "-l",
+            "-E",
+            "^(<<<<<<< |>>>>>>> )",
+            "--",
+            "."
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--git-dir"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "push",
+            "origin",
+            "HEAD:refs/heads/feature"
+          ],
+          "cwd": "<ROOT>/repair é"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": ".git",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "after",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": "remote advanced"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "kept": true,
+        "reason": "The push was refused: remote advanced The commit is saved locally."
+      }
+    },
+    {
+      "name": "push-success",
+      "input": {
+        "mode": "push-success"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "grep",
+            "-l",
+            "-E",
+            "^(<<<<<<< |>>>>>>> )",
+            "--",
+            "."
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--git-dir"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "status",
+            "--porcelain"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "push",
+            "origin",
+            "HEAD:refs/heads/feature"
+          ],
+          "cwd": "<ROOT>/repair é"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": ".git",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "after",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": "remote advanced"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "changed": true,
+        "reason": "Pushed to feature."
+      }
+    },
+    {
+      "name": "markers",
+      "input": {
+        "mode": "markers"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>/repair é"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "grep",
+            "-l",
+            "-E",
+            "^(<<<<<<< |>>>>>>> )",
+            "--",
+            "."
+          ],
+          "cwd": "<ROOT>/repair é"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "bad.txt",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Conflict markers are left in: bad.txt."
+      }
+    },
+    {
+      "name": "concurrent-independent-repairs",
+      "input": {
+        "branches": [
+          "one",
+          "two"
+        ]
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/one:refs/remotes/origin/one",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/two:refs/remotes/origin/two",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "--detach",
+            "<ROOT>/one",
+            "origin/one"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "--detach",
+            "<ROOT>/two",
+            "origin/two"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/one"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/two"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "origin/main",
+            "--no-edit"
+          ],
+          "cwd": "<ROOT>/one"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "origin/main",
+            "--no-edit"
+          ],
+          "cwd": "<ROOT>/two"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "head-one",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "head-two",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": [
+        {
+          "ok": true,
+          "branch": "one",
+          "base": "main",
+          "before": "head-one",
+          "conflicts": [],
+          "failing": []
+        },
+        {
+          "ok": true,
+          "branch": "two",
+          "base": "main",
+          "before": "head-two",
+          "conflicts": [],
+          "failing": []
+        }
+      ]
+    },
+    {
+      "name": "prepare-failure-view",
+      "input": {
+        "stage": "view"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 1,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"state\":\"OPEN\"}",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Pull request not found."
+      }
+    },
+    {
+      "name": "prepare-failure-add",
+      "input": {
+        "stage": "add"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/feature:refs/remotes/origin/feature",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "--detach",
+            "<ROOT>/repair",
+            "origin/feature"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"state\":\"OPEN\"}",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Could not make a copy of the folder for the fix."
+      }
+    },
+    {
+      "name": "prepare-failure-merge",
+      "input": {
+        "stage": "merge"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "gh",
+          "args": [
+            "pr",
+            "view",
+            "7",
+            "--json",
+            "headRefName,baseRefName,mergeable,statusCheckRollup,state"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "fetch",
+            "origin",
+            "+refs/heads/feature:refs/remotes/origin/feature",
+            "+refs/heads/main:refs/remotes/origin/main"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "add",
+            "--detach",
+            "<ROOT>/repair",
+            "origin/feature"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "<ROOT>/repair"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "merge",
+            "origin/main",
+            "--no-edit"
+          ],
+          "cwd": "<ROOT>/repair"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "diff",
+            "--name-only",
+            "--diff-filter=U"
+          ],
+          "cwd": "<ROOT>/repair"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "remove",
+            "--force",
+            "<ROOT>/repair"
+          ],
+          "cwd": "<ROOT>"
+        },
+        {
+          "kind": "process",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ],
+          "cwd": "<ROOT>"
+        }
+      ],
+      "replies": [
+        {
+          "status": 0,
+          "stdout": "{\"headRefName\":\"feature\",\"baseRefName\":\"main\",\"state\":\"OPEN\"}",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "before",
+          "stderr": ""
+        },
+        {
+          "status": 1,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "status": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "The base branch could not be merged."
+      }
+    }
+  ]
+}
