@@ -22,6 +22,8 @@ public static class Autonomy
     }
 
     public const int MAX_PARTS = 10;
+    // A big job may have more parts than run at once: the rest start as earlier ones finish.
+    public const int MAX_SPLIT_PARTS = 30;
     const double HOUR_MS = 3600000;
     static readonly string[] SIZES = ["light", "normal", "heavy"];
     static readonly string[] WORK_ENDED = ["worker failure", "blocked worker"];
@@ -435,7 +437,7 @@ public static class Autonomy
             parts.Add($"You told the user in the chat, before this work started:\n<<<\n{quoted}\n>>>");
         }
 
-        parts.Add($"Your crew can work in parallel: up to {MAX_PARTS} workers at the same time, all in the same project folder.");
+        parts.Add($"Your crew can work in parallel: up to {MAX_PARTS} workers at the same time, all in the same project folder. You may give up to {MAX_SPLIT_PARTS} parts: the rest start as earlier ones finish.");
         parts.Add("Size the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.");
         parts.Add("Split the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.");
         parts.Add("For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).");
@@ -772,13 +774,16 @@ public static class Autonomy
         }
 
         if (parsed is null) return null;
-        if (parsed["parts"] is not JsonArray rawParts || rawParts.Count == 0 || rawParts.Count > MAX_PARTS) return null;
+        if (parsed["parts"] is not JsonArray rawParts || rawParts.Count == 0 || rawParts.Count > MAX_SPLIT_PARTS) return null;
         if (!options.TryGetPropertyValue("verifiers", out var verifiersNode))
-            throw new InvalidOperationException("Cannot read properties of undefined (reading 'includes')");
-        if (verifiersNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'includes')");
+            throw new InvalidOperationException("Cannot read properties of undefined (reading 'length')");
+        if (verifiersNode is null) throw new InvalidOperationException("Cannot read properties of null (reading 'length')");
 
-        var verify = parsed["verify"]?.GetValue<string>();
-        if (verify is null || !verifierIds.Contains(verify)) return null;
+        // A model the lead may not use, or an unknown size, does not throw the split away.
+        var verifierOrder = (verifiersNode as JsonArray)?.Select(item => item?.GetValue<string>()).OfType<string>().ToList() ?? new List<string>();
+        if (verifierOrder.Count == 0) return null;
+        var named = parsed["verify"] is JsonValue verifyValue && verifyValue.TryGetValue<string>(out var verifyText) ? verifyText : null;
+        var verify = named is not null && verifierIds.Contains(named) ? named : verifierOrder[0];
 
         var parts = new List<JsonObject>();
         for (var index = 0; index < rawParts.Count; index++)
@@ -788,9 +793,10 @@ public static class Autonomy
             var detail = part["detail"]?.GetValue<string>();
             if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(detail)) return null;
 
-            var model = part["model"]?.GetValue<string>();
-            var size = part["size"]?.GetValue<string>();
-            if (model is null || !builderIds.Contains(model) || size is null || !SIZES.Contains(size)) return null;
+            var namedModel = part["model"] is JsonValue modelValue && modelValue.TryGetValue<string>(out var modelText) ? modelText : null;
+            var model = namedModel is not null && builderIds.Contains(namedModel) ? namedModel : "";
+            var namedSize = part["size"] is JsonValue sizeValue && sizeValue.TryGetValue<string>(out var sizeText) ? sizeText : null;
+            var size = namedSize is not null && SIZES.Contains(namedSize) ? namedSize : "normal";
 
             if (part["files"] is not JsonArray filesArr || filesArr.Count == 0) return null;
             var files = new List<string>();

@@ -342,7 +342,12 @@ module.exports = {
     ['splitPrompt', [{ name: 'Proj', goal: 'Port as sheet 42 says', builders: [{ id: 'a', label: 'A', provider: 'p1', tier: 'light' }], verifiers: [{ id: 'b', label: 'B', provider: 'p2', tier: 'premium', left: 40 }], files: ['jobs/42-port.md'], documents: [{ path: 'jobs/42-port.md', text: 'Modules: a, b, c', clipped: true }] }]],
     ['namedDocuments', ['Port, as sheet 42 says, the modules; see docs/NEXT-WORK.md and README.md', ['native/porting/jobs/42-phase4.md', 'native/porting/jobs/4-x.md', 'docs/NEXT-WORK.md', 'README.md', 'other/42-copy.txt']]],
     ['namedDocuments', ['Job 7 and job 9', ['a/07-seven.md', 'b/9-nine.md', 'c/9-nine-again.md']]],
-    ['namedDocuments', ['nothing here', []]]
+    ['namedDocuments', ['nothing here', []]],
+    ['parseSplit', ['{"parts":[{"title":"T1","detail":"D1","files":["a.js"],"size":"huge","model":"nobody"},{"title":"T2","detail":"D2","files":["b.js"],"size":"light","model":"m1"}],"verify":"x","why":"ok"}', { builders: ['m1'], verifiers: ['v1', 'v2'] }]],
+    ['parseSplit', [JSON.stringify({ parts: Array.from({ length: 16 }, (_, i) => ({ title: 'P' + i, detail: 'D', files: ['f' + i + '.cs'], size: 'normal', model: 'm1' })), verify: 'v1' }), { builders: ['m1'], verifiers: ['v1'] }]],
+    ['parseSplit', [JSON.stringify({ parts: Array.from({ length: 31 }, (_, i) => ({ title: 'P' + i, detail: 'D', files: ['f' + i + '.cs'], size: 'normal', model: 'm1' })), verify: 'v1' }), { builders: ['m1'], verifiers: ['v1'] }]],
+    ['fitWeights', [[{ title: 'T', size: 'normal', model: '' }], [{ id: 'light-m', tier: 'light', left: 90 }, { id: 'heavy-m', tier: 'premium' }]]],
+    ['splitPrompt', [{ name: 'P', goal: 'G', builders: [], verifiers: [], files: [] }]]
   ],
   plan: [
     ['example', []],

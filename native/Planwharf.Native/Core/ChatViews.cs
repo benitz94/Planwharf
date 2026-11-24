@@ -32,7 +32,7 @@ public static class ChatViews
         var auto = snapshot["autonomy"]?[S(row["id"])];
         var stop = S(auto?["stopReason"]);
         if (B(auto?["enabled"]) && stop == "GOAL_REACHED") return new(Strings.T("Goal reached"), "done");
-        if (B(auto?["enabled"]) && stop.Length > 0) return new(StopLabels.GetValueOrDefault(stop, Strings.T("Stopped: ") + stop.Split(':')[0].Replace('_', ' ').ToLowerInvariant()), "attention");
+        if (B(auto?["enabled"]) && stop.Length > 0) return new(StopLabels.GetValueOrDefault(stop.Split(':')[0], Strings.T("Stopped: ") + stop.Split(':')[0].Replace('_', ' ').ToLowerInvariant()), "attention");
         if (B(auto?["enabled"])) return new(Strings.T("Crew working"), "running");
         var status = S(row["status"]) is { Length: > 0 } s ? s : "idle";
         if (Regex.IsMatch(status, "running|watching|dispatch")) return new(Strings.T("Working"), "running");

@@ -1469,10 +1469,13 @@ function createOrchestrator(options) {
     return { ok: true, archived: { at: record.at, reason, asks: record.state.asks.length, megaTasks: record.state.execution.megaTasks.length } };
   }
 
+  // A note is also written to the project's timeline, so the owner sees it in Progress: why the lead
+  // did not split the work, why the crew stopped, which error it met.
   function note(id, text) {
     const row = entry(id);
     const line = { at: now(), text };
     row.log = [line, ...(Array.isArray(row.log) ? row.log : [])].slice(0, 12);
+    try { if (id && store.execution && Array.isArray(store.execution.timeline)) bridge.event(id, 'NOTE', String(text).slice(0, 2000), {}); } catch { /* the note stays in the log */ }
   }
 
   // The goal the user approved, plus the crew steps, written before anyone starts.
@@ -3081,7 +3084,8 @@ function createOrchestrator(options) {
     try { mega = bridge.paint(bridge.target(projectId, megaTaskId)); } catch { return false; }
     const lead = leadModel();
     const subs = mega.subTasks || [];
-    if (!lead || typeof opts.askModel !== 'function' || !subs.length || subs.some(sub => sub.type !== 'IMPLEMENTATION' || sub.goldModel)) return false;
+    if (!lead || typeof opts.askModel !== 'function' || !subs.length) return false;
+    if (subs.some(sub => sub.type !== 'IMPLEMENTATION' || sub.goldModel)) { note(projectId, 'The work is not split: it has a Gold model or a step that is not a build.'); return false; }
     const usable = model => model.enabled && model.available !== false && model.providerEnabled !== false && model.capabilities?.canCode !== false && !usagePolicy(model, plansLive).blocked && !planExhausted(plansLive, model.quotaPoolId || model.plan);
     const tierName = model => ['premium', 'default', 'light'][leadTier(model)] || 'default';
     const describe = model => ({ id: model.id, label: model.label || model.id, provider: model.providerId || model.provider, tier: tierName(model), left: quotaLeft(model, plansLive) ?? undefined });
@@ -3095,7 +3099,7 @@ function createOrchestrator(options) {
     const verifiers = ableToVerify(roomy(roster().filter(model => usable(model) && inMode(model) && permitsAssignment(model, { type: 'IMPLEMENTATION', title: VERIFY_SLICE, ...(mode === 'normal' ? {} : { savingMode: mode }) }))));
     if (mode === 'ultra-safe' && verifiers.length) noteOnce(projectId, 'verify-light:' + mode, savingMode.verifyLightNote(mode));
     // With a single model that can build there is no crew to split the work among: no lead call.
-    if (builders.length < 2 || !verifiers.length) return false;
+    if (builders.length < 2 || !verifiers.length) { note(projectId, `The work is not split: ${builders.length < 2 ? 'fewer than two models can build now (roles, saving mode, quota limits)' : 'no model can verify now'}.`); return false; }
     const said = (store.asks || []).find(ask => ask && ask.projectId === projectId && !ask.diagnostic && typeof ask.answer === 'string' && ask.answer.trim())?.answer || '';
     // The lead sizes the work by what the goal points to: the sheets and plans it names are in the
     // question, and the project folder is open to the lead to read the rest.
@@ -3104,15 +3108,30 @@ function createOrchestrator(options) {
     const folder = linkedWorkspace(item.project.folder);
     const documents = folder ? autonomy.readDocuments(folder, autonomy.namedDocuments([goal, mega.goal, mega.title, ...subs.map(sub => sub.detail || '')].filter(Boolean).join('\n'), files), file => fs.readFileSync(file, 'utf8')) : [];
     const question = autonomy.splitPrompt({ name: item.project.name, goal, builders: builders.map(describe), verifiers: verifiers.map(describe), files, said, documents });
-    let spoken;
-    try { spoken = await opts.askModel({ question, model: lead, projectId, askKey: 'auto:' + projectId, folder, allowActions: false, state: attachWorkPlan(linkedWorkspace(item.project.folder), { name: item.project.name }) }); } catch { return false; }
-    const split = autonomy.parseSplit(spoken && typeof spoken === 'object' ? spoken.answer : spoken, { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) });
-    if (!split) { note(projectId, 'The lead did not split the work in a usable way; it keeps the usual plan.'); return false; }
+    // An unusable reply is asked again once, saying what was wrong, before the work keeps one build step.
+    const allowedIds = { builders: builders.map(model => model.id), verifiers: verifiers.map(model => model.id) };
+    let split = null, problem = '';
+    for (let round = 0; round < 2 && !split; round += 1) {
+      const ask = round === 0 ? question : `${question}\n\nYour previous reply could not be used (${problem}). Reply with only the JSON object: every part needs a title, a detail, files (paths relative to the project folder, never absolute or with ..), dependsOn with indexes of earlier parts only, a size and a model.`;
+      let spoken;
+      try { spoken = await opts.askModel({ question: ask, model: lead, projectId, askKey: 'auto:' + projectId, folder, allowActions: false, state: attachWorkPlan(folder, { name: item.project.name }) }); }
+      catch (error) { problem = 'the lead call failed: ' + error.message; continue; }
+      const text = spoken && typeof spoken === 'object' ? spoken.answer : spoken;
+      if (spoken?.failure) {
+        const refused = refusals.refusalReason(text);
+        if (refused) { refusals.recordRefusal(store, lead.id, refused, now()); noteCredits(lead.id, text); }
+        problem = 'the lead could not answer: ' + String(spoken.failure).slice(0, 200);
+        break;
+      }
+      split = autonomy.parseSplit(text, allowedIds);
+      if (!split) problem = /"parts"\s*:/.test(String(text || '')) ? 'a part broke a rule' : 'no JSON object with parts';
+    }
+    if (!split) { note(projectId, `The lead did not split the work in a usable way (${problem}); it keeps one build step.`); return false; }
     // Light parts on light models: the strong ones and their quota stay for the heavy work.
     const fitted = autonomy.fitWeights(split.parts, builders.map(describe));
     split.parts = fitted.parts;
     const label = id => roster().find(model => model.id === id)?.label || id;
-    for (const move of fitted.moved) note(projectId, `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.`);
+    for (const move of fitted.moved) note(projectId, move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.` : `Planwharf gave "${move.title}" to ${label(move.to)}: the lead named a model that may not build it.`);
     // The chat says it too, in the line that announces the split.
     if (fitted.moved.length) split.why = `${split.why || ''} Planwharf gave lighter models the lighter parts: ${fitted.moved.map(move => `"${move.title}" to ${label(move.to)}`).join(', ')}.`.trim();
     // The check of the whole uses the same instructions as the usual verify step.
@@ -3213,23 +3232,29 @@ function createOrchestrator(options) {
   // A round with no file changed is no progress: after two in a row the crew stops and asks the owner
   // in Decisions what to do, instead of trying the same thing again.
   async function continueAfterStop(projectId, item, settings, view, row, megaTaskId, goal) {
+    const before = { continued: settings.continued, stalls: settings.stalls };
     settings.continued = [...(settings.continued || []), megaTaskId].slice(-50);
     const results = (view.execution?.results || []).filter(result => result.megaTaskId === megaTaskId);
     const changed = results.some(result => Array.isArray(result.filesChanged) && result.filesChanged.length);
     settings.stalls = changed ? 0 : (settings.stalls || 0) + 1;
     persist();
-    const reason = row.checkpoint?.reason === 'worker failure' ? 'a step failed' : 'a step stopped blocked or part way';
-    if (settings.stalls >= 2) {
-      const blocker = results.flatMap(result => result.blockers || []).map(String).find(Boolean) || results.at(-1)?.summary || 'no result was recorded';
-      const decisions = store.execution && Array.isArray(store.execution.decisions) ? store.execution.decisions : null;
-      if (decisions) decisions.push({ id: 'no-progress-' + megaTaskId, kind: 'no-progress', projectId, megaTaskId, breaks: true, at: now(), answer: '',
-        text: `The crew stopped twice without changing any file. Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
-        suggestion: 'Continue: split the remaining work into smaller parts and try other models' });
-      note(projectId, 'The crew made no progress twice in a row. Planwharf stopped and asks you in Decisions how to continue.');
-      return stopAutonomy(projectId, settings, 'NO_PROGRESS');
+    // An error on the way leaves the stop as it was, so the next try hears about it again.
+    try { return await continueWith(); }
+    catch (error) { settings.continued = before.continued; settings.stalls = before.stalls; persist(); throw error; }
+    async function continueWith() {
+      const reason = row.checkpoint?.reason === 'worker failure' ? 'a step failed' : 'a step stopped blocked or part way';
+      if (settings.stalls >= 2) {
+        const blocker = results.flatMap(result => result.blockers || []).map(String).find(Boolean) || results.at(-1)?.summary || 'no result was recorded';
+        const decisions = store.execution && Array.isArray(store.execution.decisions) ? store.execution.decisions : null;
+        if (decisions) decisions.push({ id: 'no-progress-' + megaTaskId, kind: 'no-progress', projectId, megaTaskId, breaks: true, at: now(), answer: '',
+          text: `The crew stopped twice without changing any file. Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
+          suggestion: 'Continue: split the remaining work into smaller parts and try other models' });
+        note(projectId, 'The crew made no progress twice in a row. Planwharf stopped and asks you in Decisions how to continue.');
+        return stopAutonomy(projectId, settings, 'NO_PROGRESS');
+      }
+      note(projectId, `The work stopped before the goal was met (${reason}). The lead names the rest and the crew continues.`);
+      return askLeadDecision(projectId, item, settings, autonomy.continuePrompt({ name: item.project.name, goal, results, reason }), megaTaskId);
     }
-    note(projectId, `The work stopped before the goal was met (${reason}). The lead names the rest and the crew continues.`);
-    return askLeadDecision(projectId, item, settings, autonomy.continuePrompt({ name: item.project.name, goal, results, reason }), megaTaskId);
   }
   // Each project takes its own steps: a lead decision for one project (which can outlast several
   // monitoring intervals) never holds up another. A project still busy with its last step is skipped.
@@ -3458,8 +3483,14 @@ function createOrchestrator(options) {
       if (!store.autonomy[row.id]?.enabled || store.autonomy[row.id].preparing || autonomyBusy.has(row.id)) continue;
       autonomyBusy.add(row.id);
       steps.push((async () => {
-        try { await inTeam(row.id, () => runAutonomyStep(row, view)); }
-        catch (error) { stopAutonomy(row.id, store.autonomy[row.id], 'AUTONOMY_ERROR: ' + error.message); }
+        try { await inTeam(row.id, () => runAutonomyStep(row, view)); if (store.autonomy[row.id]?.errors) { store.autonomy[row.id].errors = 0; persist(); } }
+        catch (error) {
+          // One error does not end the crew: it is shown and the step is tried again. Three in a row stop it.
+          const settings = store.autonomy[row.id];
+          settings.errors = (settings.errors || 0) + 1;
+          if (settings.errors >= 3) stopAutonomy(row.id, settings, 'AUTONOMY_ERROR: ' + error.message);
+          else { note(row.id, `Planwharf met an error and tries again: ${error.message}`); persist(); }
+        }
         finally { autonomyBusy.delete(row.id); }
       })());
     }

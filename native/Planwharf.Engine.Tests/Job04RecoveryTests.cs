@@ -254,7 +254,7 @@ public class Job04RecoveryTests
         var split = Assert.Throws<InvalidOperationException>(() => Autonomy.ParseSplit(
             """{"parts":[{"title":"t","detail":"d","files":["a"],"size":"light","model":"b"}],"verify":"v"}""",
             new JsonObject()));
-        Assert.Equal("Cannot read properties of undefined (reading 'includes')", split.Message);
+        Assert.Equal("Cannot read properties of undefined (reading 'length')", split.Message);
 
         var weights = Assert.Throws<InvalidOperationException>(() => Autonomy.FitWeights(new JsonArray { null }, new JsonArray { new JsonObject { ["id"] = "a", ["tier"] = "light" } }));
         Assert.Equal("Cannot read properties of null (reading 'size')", weights.Message);

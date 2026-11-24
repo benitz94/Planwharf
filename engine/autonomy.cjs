@@ -166,6 +166,8 @@ function parseAssignment(text, count, allowed) {
 // change, and picks a model for each by its weight. Planwharf checks every rule; a reply that breaks one
 // is refused and the work keeps its usual plan (build, then verify).
 const MAX_PARTS = 10;
+// A big job may have more parts than run at once: the rest start as earlier ones finish.
+const MAX_SPLIT_PARTS = 30;
 const SIZES = ['light', 'normal', 'heavy'];
 function splitPrompt({ name, goal, builders, verifiers, files, said, documents }) {
   const earlier = typeof said === 'string' && said.trim() ? said.trim() : '';
@@ -174,7 +176,7 @@ function splitPrompt({ name, goal, builders, verifiers, files, said, documents }
   const listed = (files || []).slice(0, 400);
   return [`Autonomous planning for project ${name}. Goal: ${goal || 'not recorded'}`,
     ...(quoted ? [`You told the user in the chat, before this work started:\n<<<\n${quoted}\n>>>`] : []),
-    `Your crew can work in parallel: up to ${MAX_PARTS} workers at the same time, all in the same project folder.`,
+    `Your crew can work in parallel: up to ${MAX_PARTS} workers at the same time, all in the same project folder. You may give up to ${MAX_SPLIT_PARTS} parts: the rest start as earlier ones finish.`,
     'Size the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.',
     'Split the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.',
     'For each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).',
@@ -228,11 +230,15 @@ const overlaps = (a, b) => a.some(x => b.some(y => x === y || y.startsWith(x + '
 function parseSplit(text, { builders, verifiers }) {
   if (typeof text !== 'string') return null;
   const parsed = jsonObjects(text).filter(item => item && Array.isArray(item.parts)).at(-1);
-  if (!parsed || !parsed.parts.length || parsed.parts.length > MAX_PARTS || !verifiers.includes(parsed.verify)) return null;
+  if (!parsed || !parsed.parts.length || parsed.parts.length > MAX_SPLIT_PARTS || !verifiers.length) return null;
+  // A model the lead may not use, or an unknown size, does not throw the split away: Planwharf picks the
+  // model by the part's weight (an empty model here) and reads an unknown size as normal.
+  const verify = verifiers.includes(parsed.verify) ? parsed.verify : verifiers[0];
   const parts = [];
   for (const [index, part] of parsed.parts.entries()) {
     if (!part || typeof part.title !== 'string' || !part.title.trim() || typeof part.detail !== 'string' || !part.detail.trim()) return null;
-    if (!builders.includes(part.model) || !SIZES.includes(part.size)) return null;
+    const size = SIZES.includes(part.size) ? part.size : 'normal';
+    const model = builders.includes(part.model) ? part.model : '';
     if (!Array.isArray(part.files) || !part.files.length || !part.files.every(file => typeof file === 'string' && file.trim())) return null;
     const files = part.files.map(file => normalPath(file.trim()));
     // A scope stays inside the project folder: no absolute path, no way out.
@@ -240,14 +246,14 @@ function parseSplit(text, { builders, verifiers }) {
     const dependsOn = part.dependsOn === undefined ? [] : part.dependsOn;
     if (!Array.isArray(dependsOn) || !dependsOn.every(parent => Number.isInteger(parent) && parent >= 0 && parent < index)) return null;
     const line = typeof part.line === 'string' && part.line.trim() ? shortLine(part.line) : '';
-    parts.push({ title: part.title.trim().slice(0, 200), detail: part.detail.trim().slice(0, 12000), files, dependsOn: [...new Set(dependsOn)], size: part.size, model: part.model, ...(line ? { line } : {}) });
+    parts.push({ title: part.title.trim().slice(0, 200), detail: part.detail.trim().slice(0, 12000), files, dependsOn: [...new Set(dependsOn)], size, model, ...(line ? { line } : {}) });
   }
   // Parts that would change the same files are put in order, earlier first: they never run together.
   const before = index => { const seen = new Set(), queue = [...parts[index].dependsOn]; while (queue.length) { const next = queue.pop(); if (!seen.has(next)) { seen.add(next); queue.push(...parts[next].dependsOn); } } return seen; };
   for (let later = 1; later < parts.length; later += 1)
     for (let earlier = 0; earlier < later; earlier += 1)
       if (overlaps(parts[earlier].files, parts[later].files) && !before(later).has(earlier)) parts[later].dependsOn = [...parts[later].dependsOn, earlier].sort((a, b) => a - b);
-  return { parts, verify: parsed.verify, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
+  return { parts, verify, why: typeof parsed.why === 'string' ? parsed.why.slice(0, 300) : '' };
 }
 
 // The project documents a goal points to, for the lead to size the work by: a path written in the goal
@@ -285,4 +291,4 @@ function readDocuments(folder, names, read) {
   return out;
 }
 
-module.exports = { namedDocuments, readDocuments, continuePrompt, fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };
+module.exports = { MAX_SPLIT_PARTS, namedDocuments, readDocuments, continuePrompt, fitWeights, MAX_PARTS, splitPrompt, parseSplit, LIMITS, strictDecisionPrompt, cleanFinish, createSettings, pushGuardEnvironment, nextStep, evaluationPrompt, nudgePrompt, parseDecision, assignmentPrompt, parseAssignment };

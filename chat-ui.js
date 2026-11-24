@@ -164,7 +164,7 @@
     if (!row) return { text: '', kind: '' };
     const auto = autonomyOf(row.id);
     if (auto?.enabled && auto.stopReason === 'GOAL_REACHED') return { text: 'Goal reached', kind: 'done' };
-    if (auto?.enabled && auto.stopReason) return { text: STOP_REASONS[auto.stopReason] || 'Stopped: ' + auto.stopReason.split(':')[0].replace(/_/g, ' ').toLowerCase(), kind: 'attention' };
+    if (auto?.enabled && auto.stopReason) return { text: STOP_REASONS[auto.stopReason.split(':')[0]] || 'Stopped: ' + auto.stopReason.split(':')[0].replace(/_/g, ' ').toLowerCase(), kind: 'attention' };
     if (auto?.enabled) return { text: 'Crew working', kind: 'running' };
     const status = String(row.status || 'idle');
     if (/running|watching|dispatch/.test(status)) return { text: 'Working', kind: 'running' };

@@ -104,6 +104,7 @@ test('two rounds with no file changed stop the crew and ask the owner in Decisio
     const decision = inbox.open.find(item => item.projectId === projectId);
     assert.ok(decision, JSON.stringify(inbox));
     assert.match(decision.text, /stopped twice without changing any file\. Last blocker: .*How should it continue\?/);
+    assert.ok(view.execution.timeline.some(event => event.projectId === projectId && event.type === 'NOTE' && /no progress twice in a row/.test(event.summary)), 'the stop is explained in Progress');
     const launched = run.launches.length;
     const answered = await api('/api/decisions/answer', { projectId, decisionId: decision.id, answer: 'Install the tool first, then port.' });
     assert.equal(answered.ok, true, JSON.stringify(answered));
@@ -111,5 +112,28 @@ test('two rounds with no file changed stop the crew and ask the owner in Decisio
     assert.ok(run.launches.length > launched, 'the crew started again after the answer: ' + JSON.stringify(after.execution.timeline.filter(event => event.projectId === projectId).slice(-6).map(event => event.type + ' ' + event.summary)) + JSON.stringify(after.autonomy[projectId]));
     assert.equal(after.autonomy[projectId].stopReason ?? null, null);
     assert.ok(run.launches.slice(launched).some(launch => /Install the tool first, then port\./.test(JSON.stringify(launch.job))), 'the owner\'s answer reaches the new work');
+  } finally { await run.close(); }
+});
+
+test('an unusable split is asked again once, and what Planwharf decided is shown in Progress', async () => {
+  let splits = 0;
+  const run = harness({
+    worker: info => ({ status: 'COMPLETE', summary: 'Done by ' + info.worker.id }),
+    lead: info => {
+      if (!splitQuestion(info)) return '{"done":true,"next":null,"assumptions":[]}';
+      splits += 1;
+      // First a plan in prose, then the JSON object: sixteen parts with a model that may not build.
+      return splits === 1 ? 'I would port the sixteen modules in parallel.' : JSON.stringify({ why: 'One part per module.', verify: 'nobody', parts: Array.from({ length: 16 }, (_, i) => (
+        { title: 'Port module ' + i, detail: 'Port module ' + i + '.', files: ['src/m' + i + '.cs'], dependsOn: [], size: 'normal', model: i === 0 ? 'nobody' : 'a' })) });
+    } });
+  try {
+    const { projectId, until } = await run.start();
+    const view = await until(view => view.autonomy?.[projectId]?.stopReason);
+    const timeline = view.execution.timeline.filter(event => event.projectId === projectId);
+    assert.equal(view.autonomy[projectId].stopReason, 'GOAL_REACHED', JSON.stringify(timeline.map(event => event.type + ' ' + event.summary)));
+    assert.equal(splits, 2);
+    assert.match(run.asks.filter(splitQuestion)[1].question, /Your previous reply could not be used \(no JSON object with parts\)/);
+    assert.equal(run.launches.filter(launch => /^Port module/.test(launch.job.title)).length, 16, 'sixteen parts ran, ten at a time: ' + JSON.stringify(run.launches.map(launch => launch.job.title)) + JSON.stringify(timeline.map(event => event.type + ' ' + event.summary).slice(-12)));
+    assert.ok(timeline.some(event => event.type === 'NOTE' && /Planwharf gave "Port module 0" to .*: the lead named a model that may not build it\./.test(event.summary)), 'the note is in Progress');
   } finally { await run.close(); }
 });
