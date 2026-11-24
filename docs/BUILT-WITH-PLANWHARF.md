@@ -27,6 +27,14 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `push-email`, `quota`, `repository`, `sentinel`, `skills`, `step-outcomes`, `structured-final`,
 `supervisor`, `temp-cleanup`, `time-left`, `worker-result`.
 
+## Job 44 sheet done
+
+GPT-6 Sol (`gpt-6-sol`, Codex) prepared the [Phase 5 execution and project home sheet](../native/porting/jobs/44-phase5-execution.md)
+on `port/44-sheet` at refreshed base `0154fc69a892d9cea4f81c63123af16d5697a346`.
+It covers `execution.cjs`, `project-home.cjs`, and a proposed split of `engine/orchestrator.js` across five concerns (`OrchestratorTeamModels`, `OrchestratorJobBuilding`, `OrchestratorLeadQuestions`, `OrchestratorState`, `OrchestratorOrderParsing`), deterministic tests, pure and scenario parity requirements, lifecycle and project-home risks, deferred cases, and Job 45's file allowlist. No engine module was ported and no orchestrator code was split.
+GPT-6.1 Terra (`gpt-6.1-terra`, Codex) added `engine/job44-sheet.test.cjs` covering module/test mappings, execution lifecycle and project-home risks, pure and scenario parity requirements, future allowlists, all five orchestrator concerns, owner approval boundaries, and mutation controls (5 tests).
+Integrated by Gemini 3.8 Flash (`gemini-flash`, Google DeepMind via Antigravity). Tests passing: Job 44 sheet tests (5 tests), Job 23/37/42 sheet and parity checks (26 tests), read-only recorder check (`record.cjs --check`), scenario check (`scenarios.cjs --check`, 103 scenarios across 6 suites), and engineering CI (`node scripts/engineering/ci.cjs`). Independent verification remains pending for configured verifier Claude Sonnet 4.6 (`claude-sonnet-4-6`, Anthropic via Antigravity). Sheet done; waiting for owner review.
+
 ## Job 42 sheet done
 
 GPT-6 Astra (`gpt-6-astra`, Codex) prepared the [Phase 4 sheet](../native/porting/jobs/42-phase4-processes-providers.md)
@@ -45,6 +53,8 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 
 | Job | Pull request | What | What the review changed |
 |---|---|---|---|
+| 44 | #? | Wrote the Phase 5 execution and project home sheet in `native/porting/jobs/44-phase5-execution.md` covering `execution.cjs`, `project-home.cjs`, and an orchestrator split proposal across five concerns; implementation awaits review | Checked against module dependencies, lifecycle, error recovery, concurrency, project containment, Native AOT constraints, and pure/scenario parity requirements. Added `job44-sheet.test.cjs` covering all 5 proposed concerns, durable mappings, risks, parity, allowlists, and mutation controls (5 tests). **Sheet only: build is Job 45** |
+| 43 | #233 | Ported sixteen Phase 4 processes-and-providers modules to C#: `runner`, `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; recovered Antigravity parity surface, added ten pure comparison surfaces and six scenario floors | Built in parallel worktrees; 103 scenarios recorded across 6 modules; 984 pure parity tests; 109 scenario parity tests. Localization violation in LiteralStringTests recorded as pre-existing; Windows native publish toolchain (C++ linker) unavailable. Real-program Windows hand test moved to phase 7 (owner, 24 November 2026) |
 | 42 | #219 | Wrote the Phase 4 processes-and-providers sheet in `native/porting/jobs/42-phase4-processes-providers.md` covering all 16 modules and additions: `runner`, `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check` with C# module mappings, test coverage, parity comparison cases, and execution watch-points; implementation awaits review | Checked against module dependencies, process lifecycle, cancellation, Native AOT constraints, and deterministic test scenarios. Independent verification added `job42-sheet.test.cjs` covering concurrency, error, recovery, and edge case paths across all 16 modules, open decisions, and branch invariants. **Sheet only: build is Job 43** |
 | 01 | #64 | First port: skills, structured final output, worker results | — |
 | 02 | #74 | Model roles and policy, provider accounts, browser settings, activity limits | A test found the real Chrome on the macOS runners; made it independent of the machine |
