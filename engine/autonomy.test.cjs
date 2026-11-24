@@ -243,3 +243,9 @@ test('a restart turns autonomy off instead of resuming it', async () => {
     await second.shutdown();
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('a lead reply with a summary is read, not an error', () => {
+  const { parseDecision } = require('./autonomy.cjs');
+  assert.deepEqual(parseDecision('{"done":false,"next":"Wire the parts together.","assumptions":[],"summary":"Ported sixteen modules. Tests pass. One part is left."}'),
+    { done: false, next: 'Wire the parts together.', assumptions: [], summary: 'Ported sixteen modules. Tests pass.' });
+});

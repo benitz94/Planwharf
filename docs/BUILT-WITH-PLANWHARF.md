@@ -149,3 +149,4 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The lead split job 43 into 17 parts and gave 16 of them to its own company (GPT-6.1 Sol and GPT-6 Sol), leaving Grok, Gemini and the others idle. Planwharf now spreads the parts | #225 |
 | The "No limit" switch of a model was hidden in a fold, and a whole company could not be set to no limit from the app. Now a chip on the card and a company button | #226 |
 | The last part of job 43, which wires the others together, was stopped for changing the files of the parts it waited for, after they had finished. It may now change them | #227 |
+| Every lead reply with a summary stopped the crew on "sentences is not a function": autonomy used a helper that its module did not export; the error was hidden behind "autonomy error" until #224 | #228 |
