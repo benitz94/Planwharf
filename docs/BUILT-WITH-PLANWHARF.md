@@ -170,3 +170,25 @@ comparisons, C# scenario replay, engineering CI, FakeCli checks, Native AOT publ
 configured independent verification and the owner's real-program Windows test remain
 for downstream slices. The skills update check was unavailable (GitHub HTTP 403 rate
 limit); no skills were installed. No push, branch deletion or merge was performed.
+
+
+### Job 43 parallel parts integration — attempt 89 (24 November 2026)
+
+Integrated parts 5, 6 and 12 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-5`,
+`--part-6`, `--part-12`) on the continuation branch. Part branch heads remained at `9e2c091`;
+deliverables were uncommitted in their registered worktrees, so the 6 source and test
+artifacts (`ApiAgent.cs`, `ApiAgentTests.cs`, `PlanUsage.cs`, `PlanUsageTests.cs`,
+`Phone.cs`, `PhoneTests.cs`) were copied byte-for-byte. All source worktrees and part
+branches were retained untouched.
+
+Focused Release tests passed: ApiAgent 23, PlanUsage 18, Phone 12. The Release engine build
+succeeded with zero warnings and zero errors; sheet/parity guards passed 11 tests. The
+recorder self-test/check matched 103 scenarios. Full Release Engine tests: 1,413 passed,
+1 failed, zero skipped. The single failure is the pre-existing `Worktrees.cs` exception
+literal violation in `LiteralStringTests` identified in attempt 83; the three newly integrated
+modules introduced zero localization violations.
+
+Integration of all 10 parallel parts is complete. Downstream slices own shared comparison
+recovery, C# scenario replay, FakeCli checks, Native AOT publish, independent verification
+and the owner's Windows test. The startup skills update check was unavailable (GitHub HTTP 403
+rate limit); no updates installed. No push or merge performed.
