@@ -184,9 +184,14 @@ function createExecutionBridge(options) {
   // while other parts run; the shared folder is checked only when no other part worked concurrently.
   function scopeCheck(mega, sub, part, result) {
     if (result.status !== 'COMPLETE' || !Array.isArray(sub.scope) || !sub.scope.length) return result;
-    const scope = sub.scope.map(slash);
+    // A part that waits for others may also change their files: they are finished, so no one else works on
+    // them, and fixing or wiring them in is what an integration part is for.
+    const all = subtasks(mega);
+    const earlier = new Set(), queue = [...(sub.dependencies || [])];
+    while (queue.length) { const id = queue.pop(); if (earlier.has(id)) continue; earlier.add(id); queue.push(...(all.find(other => other.id === id)?.dependencies || [])); }
+    const scope = [...sub.scope, ...all.filter(other => earlier.has(other.id) && other.status === 'COMPLETE').flatMap(other => other.scope || [])].map(slash);
     const outside = new Set((result.filesChanged || []).map(slash).filter(file => file && !inScope(file, scope)));
-    const others = subtasks(mega).filter(other => other.id !== sub.id);
+    const others = all.filter(other => other.id !== sub.id);
     // Only when no other part worked while this one did can a changed file be put down to this part.
     const alone = !others.some(other => other.status === 'RUNNING' || (other.finishedAt && part.startedAt && other.finishedAt > part.startedAt));
     if (alone || part.branch) {
