@@ -374,14 +374,17 @@ public class ProviderModelsTests
             };
 
             var tcs = new TaskCompletionSource<JsonObject>();
+            // The invalidation must come while the discovery runs, as in the JavaScript, where it starts at once.
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var discovery = ProviderModels.CreateProviderModels(models, new ProviderModels.ProviderModelsOptions
             {
                 Providers = [provider],
                 CacheFile = cacheFile,
-                Discover = async _ => await tcs.Task
+                Discover = async _ => { started.TrySetResult(); return await tcs.Task; }
             });
 
             var pending = discovery.RefreshAsync(true);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => discovery.InvalidateAsync("fixture"));
             Assert.Contains("invalidation could not be persisted", ex.Message);

@@ -90,9 +90,27 @@ public class ScenarioParityTests
         }
     }
 
+    // The root as the engine sees it once links are followed: on macOS the temporary folder /var/... is a
+    // link to /private/var/..., and the engine resolves paths the way fs.realpathSync does.
+    public static string RealRootForTests(string path) => RealRoot(path);
+
+    static string RealRoot(string root)
+    {
+        var current = Path.GetPathRoot(root) ?? "";
+        foreach (var part in root[current.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, part);
+            var info = new DirectoryInfo(current);
+            if (info.Exists && info.LinkTarget is not null && info.ResolveLinkTarget(true) is { } target) current = target.FullName;
+        }
+        return current;
+    }
+
     public static JsonNode? Normalize(JsonNode? value, string root)
     {
         if (value == null) return null;
+        if (value is JsonValue linked && linked.TryGetValue<string>(out var text) && RealRoot(root) is var real && real != root && text.Contains(real))
+            value = JsonValue.Create(text.Replace(real, root));
         if (value is JsonValue jv && jv.TryGetValue<string>(out var s))
         {
             if (s.Contains(root) || s.Contains(root.Replace('\\', '/')))
@@ -348,7 +366,7 @@ public class ScenarioParityTests
             }
 
             if (actualError != null)
-                actualError = actualError.Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
+                actualError = actualError.Replace(RealRoot(root), root).Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
 
             var actualEffects = GetEffects(root);
             AssertOutcome(sc, actualResult, actualError, actualEffects, exchange);
@@ -381,7 +399,7 @@ public class ScenarioParityTests
             }
 
             if (actualError != null)
-                actualError = actualError.Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
+                actualError = actualError.Replace(RealRoot(root), root).Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
 
             var actualEffects = GetEffects(root);
             AssertOutcome(sc, actualResult, actualError, actualEffects, exchange);
@@ -415,7 +433,7 @@ public class ScenarioParityTests
             }
 
             if (actualError != null)
-                actualError = actualError.Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
+                actualError = actualError.Replace(RealRoot(root), root).Replace(root.Replace('\\', '/'), "<ROOT>").Replace(root, "<ROOT>").Replace('\\', '/');
 
             var actualEffects = GetEffects(root);
             AssertOutcome(sc, actualResult, actualError, actualEffects, exchange, events);

@@ -425,7 +425,8 @@ public sealed class RunnerTests
             var parsedInput = JsonNode.Parse(File.ReadAllText(spawned.InputPath));
             Assert.Equal("Do task", parsedInput?["title"]?.ToString());
             Assert.Equal("lead-worker", parsedInput?["worker"]?.ToString());
-            Assert.Equal(alpha, parsedInput?["folder"]?.ToString());
+            // The engine records the folder with links followed (/var is /private/var on macOS).
+            Assert.Equal(ScenarioParityTests.RealRootForTests(alpha), parsedInput?["folder"]?.ToString());
         }
         finally
         {
