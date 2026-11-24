@@ -641,7 +641,7 @@
         ]
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.js\nb.js\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   },
   {
     "fn": "fitWeights",
@@ -885,7 +885,7 @@
         ]
       }
     ],
-    "result": "Autonomous planning for project Proj. Goal: Port as sheet 42 says\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 40% quota left)\nProject files (1):\njobs/42-port.md\nDocument the goal names, jobs/42-port.md (start only; read the rest in the project folder):\n<<<\nModules: a, b, c\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project Proj. Goal: Port as sheet 42 says\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 40% quota left)\nProject files (1):\njobs/42-port.md\nDocument the goal names, jobs/42-port.md (start only; read the rest in the project folder):\n<<<\nModules: a, b, c\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
   },
   {
     "fn": "namedDocuments",
@@ -1214,6 +1214,368 @@
         "files": []
       }
     ],
-    "result": "Autonomous planning for project P. Goal: G\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: \nModels allowed to verify: \nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+    "result": "Autonomous planning for project P. Goal: G\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: \nModels allowed to verify: \nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+  },
+  {
+    "fn": "spreadParts",
+    "args": [
+      [
+        {
+          "title": "Port 0",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 1",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 2",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 3",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 4",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 5",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 6",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 7",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 8",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 9",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 10",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 11",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 12",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 13",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 14",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 15",
+          "size": "normal",
+          "model": "sol6"
+        }
+      ],
+      [
+        {
+          "id": "sol61",
+          "provider": "codex",
+          "tier": "default",
+          "left": 84
+        },
+        {
+          "id": "sol6",
+          "provider": "codex",
+          "tier": "default",
+          "left": 84
+        },
+        {
+          "id": "grok",
+          "provider": "grok",
+          "tier": "default"
+        },
+        {
+          "id": "gemini",
+          "provider": "gemini",
+          "tier": "default",
+          "left": 90
+        },
+        {
+          "id": "luna",
+          "provider": "codex",
+          "tier": "light",
+          "left": 20
+        }
+      ]
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "Port 0",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 1",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 2",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 3",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 4",
+          "size": "normal",
+          "model": "sol61"
+        },
+        {
+          "title": "Port 5",
+          "size": "normal",
+          "model": "sol6"
+        },
+        {
+          "title": "Port 6",
+          "size": "normal",
+          "model": "gemini"
+        },
+        {
+          "title": "Port 7",
+          "size": "normal",
+          "model": "grok"
+        },
+        {
+          "title": "Port 8",
+          "size": "normal",
+          "model": "gemini"
+        },
+        {
+          "title": "Port 9",
+          "size": "normal",
+          "model": "grok"
+        },
+        {
+          "title": "Port 10",
+          "size": "normal",
+          "model": "gemini"
+        },
+        {
+          "title": "Port 11",
+          "size": "normal",
+          "model": "grok"
+        },
+        {
+          "title": "Port 12",
+          "size": "normal",
+          "model": "gemini"
+        },
+        {
+          "title": "Port 13",
+          "size": "normal",
+          "model": "grok"
+        },
+        {
+          "title": "Port 14",
+          "size": "normal",
+          "model": "gemini"
+        },
+        {
+          "title": "Port 15",
+          "size": "normal",
+          "model": "grok"
+        }
+      ],
+      "moved": [
+        {
+          "title": "Port 6",
+          "size": "normal",
+          "from": "sol61",
+          "to": "gemini",
+          "spread": true
+        },
+        {
+          "title": "Port 7",
+          "size": "normal",
+          "from": "sol6",
+          "to": "grok",
+          "spread": true
+        },
+        {
+          "title": "Port 8",
+          "size": "normal",
+          "from": "sol61",
+          "to": "gemini",
+          "spread": true
+        },
+        {
+          "title": "Port 9",
+          "size": "normal",
+          "from": "sol6",
+          "to": "grok",
+          "spread": true
+        },
+        {
+          "title": "Port 10",
+          "size": "normal",
+          "from": "sol61",
+          "to": "gemini",
+          "spread": true
+        },
+        {
+          "title": "Port 11",
+          "size": "normal",
+          "from": "sol6",
+          "to": "grok",
+          "spread": true
+        },
+        {
+          "title": "Port 12",
+          "size": "normal",
+          "from": "sol61",
+          "to": "gemini",
+          "spread": true
+        },
+        {
+          "title": "Port 13",
+          "size": "normal",
+          "from": "sol6",
+          "to": "grok",
+          "spread": true
+        },
+        {
+          "title": "Port 14",
+          "size": "normal",
+          "from": "sol61",
+          "to": "gemini",
+          "spread": true
+        },
+        {
+          "title": "Port 15",
+          "size": "normal",
+          "from": "sol6",
+          "to": "grok",
+          "spread": true
+        }
+      ]
+    }
+  },
+  {
+    "fn": "spreadParts",
+    "args": [
+      [
+        {
+          "title": "a",
+          "size": "light",
+          "model": "luna"
+        },
+        {
+          "title": "b",
+          "size": "heavy",
+          "model": "x"
+        },
+        {
+          "title": "c",
+          "model": "luna"
+        }
+      ],
+      [
+        {
+          "id": "luna",
+          "provider": "codex",
+          "tier": "light"
+        },
+        {
+          "id": "opus",
+          "tier": "premium"
+        },
+        {
+          "id": "flash",
+          "provider": "gemini",
+          "tier": "light",
+          "left": 10
+        }
+      ]
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "a",
+          "size": "light",
+          "model": "luna"
+        },
+        {
+          "title": "b",
+          "size": "heavy",
+          "model": "opus"
+        },
+        {
+          "title": "c",
+          "model": "luna"
+        }
+      ],
+      "moved": [
+        {
+          "title": "b",
+          "size": "heavy",
+          "from": "x",
+          "to": "opus",
+          "spread": true
+        }
+      ]
+    }
+  },
+  {
+    "fn": "spreadParts",
+    "args": [
+      [
+        {
+          "title": "only",
+          "size": "normal",
+          "model": "a"
+        }
+      ],
+      []
+    ],
+    "result": {
+      "parts": [
+        {
+          "title": "only",
+          "size": "normal",
+          "model": "a"
+        }
+      ],
+      "moved": []
+    }
   }
 ]
