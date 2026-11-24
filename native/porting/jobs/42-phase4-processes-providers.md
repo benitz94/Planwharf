@@ -1,7 +1,8 @@
 # Job 42 (phase 4): processes and providers specification sheet
 
-**Status: Sheet done.** Job 43 implements this sheet on
-`port/43-phase4`; this branch contains documentation only. Stop before Job 43.
+**Status: Sheet done; Job 43 module contracts reviewed, with named acceptance gates blocked.**
+The original implementation branch name is `port/43-phase4`. The current authorized
+continuation is `planwharf/continue-job-43-from-refreshed-main-pres`; do not switch branches.
 
 ## Goal and evidence
 
@@ -204,7 +205,8 @@ remain `not committed`; recorded completion does not fabricate push or verificat
 ### 11. PrCheck
 
 Observed: `listPrs`, `resolveConflicts`, `prepareFix`, `prepareWorktree`, `finishFix`,
-`removeWorktree`; dependency ProjectWorkspace git environment, Git/gh, files and process host.
+`removeWorktree`, `rerunNotRun`, `notRunChecks`, `failingNames`; dependency ProjectWorkspace
+git environment, Git/gh, files and process host.
 Proposed: injected command runner for every entry point, preserving command/result order.
 Acceptance: both check conclusions and legacy status reds, malformed/closed PR, invalid branch,
 fetch/add/merge failures, detached repair worktree and preserved conflict list. Reject remaining
@@ -350,11 +352,9 @@ array ordering, JS coercion/rounding/regex and UTF-16 slicing. Mutated accumulat
 post-call state assertions. Registry and async services (`provider-models`, `provider-adapters`,
 `api-agent`, `worktrees`, `pr-check`, `phone-activation-check`) use deterministic scenario comparison
 through their module test files: same recorded requests, simulated replies, effects and final state
-on both sides. The current allowlist has no JavaScript scenario recorder or generated fixtures
-for these six modules; independently authored C# tests cannot prove this comparison. Therefore
-side-effect comparison approval is a prerequisite to Job 43: review must authorize a concrete
-recorder, fixture paths and replay/check command, or an explicit rule-12 exception. Until then,
-these six modules' comparison plan is blocked, not an approved exemption or completed coverage.
+on both sides. Historically, side-effect comparison approval is a prerequisite to Job 43.
+That prerequisite was satisfied by the owner decision below; the explicit allowlist now includes
+its recorder, six fixtures and replay test. This is not an approved exemption from rule 12.
 
 **Owner decision (24 November 2026): a scenario recorder is approved, not a rule-12 exception.** Job 43
 adds `native/porting/parity/scenarios.cjs`. For each of the six modules (`provider-models`,
@@ -366,17 +366,126 @@ URL with no secret), the reply given, the effects on files and git, and the fina
 `ScenarioParityTests` in `Planwharf.Engine.Tests` replays each file against the C# port with the same
 simulated replies and must produce the same requests, effects and result. The check command is
 `node native/porting/parity/scenarios.cjs --check` (fails when a recorded file differs from a fresh run) and
-`dotnet test --filter ScenarioParityTests`. `required.json` lists the six modules with a nonzero scenario
-floor. A scenario that cannot be made deterministic is named in the sheet and asked to the owner; it is
+`dotnet test --filter ScenarioParityTests`. The six nonzero scenario floors are an acceptance
+requirement, but their `required.json` wiring is blocked by the existing pure-parity guards below.
+A scenario that cannot be made deterministic is named in the sheet and asked to the owner; it is
 never dropped silently.
 `branchFor` invokes git check-ref-format, so it belongs to fixture tests, not the pure recorder.
+
+## Job 43 continuation decisions (24 November 2026)
+
+These implementation contracts were checked against the current JavaScript exports and existing
+C# seams in the dependent scope review. This is not new owner approval. Existing authorization covers the
+scenario recorder. The current base is refreshed `origin/main`
+`156a998148fceb74bb09957dad261c286bd73dda`. Historical evidence below remains historical.
+Inspect and recover only the relevant changes from `004508024cde3af7458709612cd2d0a7847ea5ac`:
+Antigravity.cs, AntigravityTests.cs, its three parity delegates, 36-case floor and
+`antigravity.json` generated from cases including `fixtures/antigravity-usage.json`.
+Do not restore that commit's `.planwharf/plan.md` or cherry-pick its whole work record.
+
+| Decision | Disposition for subsequent workers | Boundary and acceptance evidence |
+|---|---|---|
+| Worker/API executable hosting | Accept injected module services; defer production host wiring | No executable project, entry point, Node fallback, app/server wiring or detached-host claim. FakeCli proves a supplied launch contract only. Owner approval is required for deployable host packaging. |
+| Runner ChatMode defaults | Accept explicit prompt injection; block missing default prompt parity | Port Runner-owned prompt text exactly. For talk and work-running addition branches require supplied ChatMode text; never substitute an empty or guessed default. Missing dependency must fail before launch. No ChatMode.cs or prior-port modification is authorized. |
+| Phone unknown-field round trips | Accept unaffected formatting/notifier work; block conflicting settings persistence acceptance | Rules 4 and 5 conflict with observed source serialization. Do not choose a lossy or preserving divergence on the owner's behalf. Preserve raw input/output evidence in isolated tests; no personal stores. |
+| Provider dispatch and output protocol | Accept composition in new owning files | Compose providers.cjs facade inside ProviderAdapters; extended launch descriptor belongs to ExternalAdapters/Runner, with existing LaunchSpecResult wrapped unchanged. No seventeenth port or ProviderRuntime edit. |
+| Six-module comparison | Accept already approved recorder/replay and exact paths below; block manifest-floor wiring | Actual JS execution and C# replay must compare requests, replies, effects and final state; no static fixture validation presented as parity. The existing `required.json` guards require one top-level pure fixture and `ParityTests.Ports` wiring per entry. A reviewed scope revision must include `engine/parity.test.cjs` before six nested scenario floors can be added to that manifest. |
+
+Needs your decision: Should the native app run workers in a separate packaged program? | suggestion: defer production host wiring to a separately scoped job and accept tested module services now | breaks: no
+
+Needs your decision: May the missing Talk and running-work prompt defaults be ported in a later dependency job? | suggestion: require explicit injected text now and leave default prompt parity incomplete | breaks: no
+
+Needs your decision: Should phone settings keep fields the current JavaScript deletes? | suggestion: preserve unknown fields and unchanged raw bytes in a separately approved rule-4 divergence, with source behavior recorded | breaks: yes
+
+Only these affected acceptance claims are blocked. Other module ports, synthetic tests and
+scenario recording/replay continue. Independent scope review accepts the bounded service contracts
+above for their named files; it
+cannot manufacture approval for new hosts, prior-port changes or a settings divergence.
+Complete module parity requires all public exports, defaults and file contracts to be either
+proved equal or explicitly accepted as a divergence by the owner. Until prompt/settings decisions
+are resolved, report partial module parity. The scenario floor gate also remains blocked until its
+guard scope is reviewed; passing recorded/replayed fixtures alone is not that gate. Even complete module parity would not establish
+deployable lifecycle parity: detached launch, installed-app control and real host packaging remain
+deferred. Do not mark Job 43 fully complete merely because service tests pass.
+
+### Reviewed interface disposition
+
+Accepted for implementation in the named files: ExternalAdapters/ProviderConnections validation
+and launch descriptors; ProviderAdapters/ProviderModels registry and scoped discovery;
+ApiAgent's injected request/tool service; Worktrees/PlanFile/PrCheck command services;
+Antigravity/PlanUsage readers; PhoneOllama and PhoneHandover/Live/ActivationCheck injected
+services; Runner's process and explicit-prompt services; and Phone's notifier, known-field
+settings behavior and isolated persistence tests. Each still needs its source cases and tests.
+Blocked claims: Runner's unsupplied ChatMode defaults, Phone's unknown-field/byte-preserving
+round trip, deployable Runner/ApiAgent and live PhoneHandover host integration, and the six
+scenario floors in `required.json`. Those claims require the decisions or scope revision above;
+no worker may infer acceptance from a passing unit test. Existing `LaunchSpecResult` has no
+outputProtocol, so ExternalAdapters owns the wrapper and Runner consumes it without editing
+ProviderRuntime.cs. `PhoneActivation.cs` supplies existing activation primitives unchanged.
+
+### Shared interface contracts for the new files
+
+Keep public records/interfaces inside their owning allowed implementation file. Names below
+identify required seams; workers may select idiomatic type names but must agree their signatures
+before consumers compile. Use JsonNode/JsonObject for extensible JSON and CancellationToken for
+async operations; never introduce reflection or an implicit global production dependency.
+
+- ExternalAdapters owns a launch descriptor wrapping LaunchSpecResult plus outputProtocol,
+  structured-result requirement and explicit provider/model/account identity. Its environment,
+  executable lookup and HTTP delegates receive all inputs explicitly. ProviderConnections returns
+  validated JSON through Connection(JsonNode); it does not launch or verify availability.
+- ProviderAdapters owns the composed registry and dispatch delegates: executable, availability,
+  execute, environment, terminate, quota, discover and resultIdentity plus nativeModel validation.
+  Discovery accepts selected model/account context and cancellation, returning exact IDs and
+  verified/unread status. ProviderModels consumes that seam with caller clock and cache store;
+  account scope/generation travels with requests and must be checked before persistence/publication.
+- Runner owns process start/stream/exit/termination and host-launch seams. Launch input contains
+  command, separate argv, cwd, explicit environment, stdin and assigned result identity; receipt
+  contains PID/owned-tree identity and completion. Prompt dependency receives talk/addition mode
+  and returns exact text; tests supply source-derived text explicitly. ApiAgent exposes RunAgentAsync
+  with request JSON, event sink, HTTP, workspace/tool command dependencies and cancellation;
+  it returns completion without assuming stdin/main, process exit or a packaged executable.
+- Worktrees, PlanFile and PrCheck own argv-based command delegates with cwd, environment,
+  operation bounds (including an explicit absent bound), stdout/stderr/exit and cancellation.
+  Simulated requests retain ordering and exact non-force push targets; no source inspection invokes
+  lifecycle methods on this checkout. Antigravity/PlanUsage use injected lookup/process/HTTP,
+  home/account context and clock, preserving the source's deadlines and aggregation order.
+- Phone owns settings store, transport, snapshots, stop/resume/decision callbacks, clock and random
+  seams. Known-field behavior can be tested in disposable stores, but conflicting unknown-field
+  save behavior stays blocked pending decision. Raw JSON bytes, unknown top-level and nested
+  fields, whitespace/newline, corrupt stores and synthetic private token separation need evidence.
+  PhoneHandover/Live/ActivationCheck take explicit paths and pause/poll/build/stop/restore/report
+  callbacks; library calls never auto-run main or use installed personal paths.
+
+### Six-module scenario minimum coverage
+
+Each row requires success, boundary/error and recovery evidence; use deterministic barriers for
+concurrency rather than sleeps. The recorder owner reports exact scenario IDs/counts to integration;
+required.json floors must match approved nonzero counts, and removal of one must fail validation.
+
+| Module | Required scenarios beyond the module unit suites |
+|---|---|
+| provider-models | TTL boundary/forced refresh; same-scope failure retention; single-flight/catalog queue; scope switch-away-and-back with stale completion; restart invalidation; strict invalidation/rename failure. |
+| provider-adapters | Built-in and external dispatch; duplicate/missing contract and unknown provider; account-specific environment/result identity; unsupported research; missing auth and malformed/failed discovery. |
+| api-agent | Both protocols with tool-result continuation; model mismatch and malformed calls; advisory/lead denial; alwaysApprove gating; path/result identity escape; turn/byte boundary; tool-error continuation versus protocol rejection; cancellation cleanup. |
+| worktrees | Registered reuse and occupied/dirty refusal; ordered merges with retained earlier merge and active abort; explicit discard versus dirty retention; probe failure/hang; concurrent parts and Unicode paths. |
+| pr-check | Check/status parsing; detached prepare and no-op; markers/conflicts including post-abort limitation; command failure; non-force refusal kept:true; remote advancement/resume; independent folders. |
+| phone-activation-check | Actual script arguments, backup/notebook/token/model probe and optional live-exchange order; ALLOWED/BLOCKED and thrown error; report Markdown/JSON effects, redaction and collision. Handover restoration and the shared busy gate belong to PhoneHandover/PhoneHandoverLive tests, not this script's scenario floor. |
+
+For activation-check's unconditional main, execute only in an isolated controlled loader/subprocess
+with imports and process/fetch/filesystem replaced; assert no real executable/network invocation.
+Record ordered secret-free requests and supplied replies, normalized file/git effects and final
+result/error. Normalize only temporary paths, clock/random IDs; preserve meaningful argv, order,
+identity and error text. Replay consumes every reply exactly once, rejects unexpected requests and
+asserts every fixture ran. Mutate a request/effect/result and demonstrate nonzero comparison failure.
 
 ## Platform risks and decisions that remain open
 
 1. **Native worker/API host.** The engine is a net10.0 library; Node uses runner.cjs/api-agent.cjs
    as executable entry points. Proposed services accept a host-launch delegate and can be tested
-   using FakeCli; this does not establish a deployable detached host. Job 43 must resolve the native
-   host packaging/file scope before claiming full lifecycle parity. No Node fallback or app/server
+   using FakeCli; this does not establish a deployable detached host. Production host packaging/file
+   scope is deferred pending owner approval; Job 43 may prove the injected module boundary but
+   must not claim full lifecycle parity. No Node fallback or app/server
    integration is authorized by this sheet. Phase 7 remains direct in-process engine integration.
 2. **Dependency gaps.** `providers.cjs` is a dispatch facade outside the sixteen-name list. Compose
    its route validation/dispatch inside ProviderAdapters, reuse ProviderRuntime for built-ins;
@@ -415,8 +524,10 @@ Cross-platform tests must cover paths with spaces/non-ASCII, Windows case/drive/
 POSIX permissions and signals, line endings, UTF-8 split decoding, JS date/number/regex semantics,
 owner-only token ACLs versus Unix mode 0600, rename contention and two independent test stores.
 Windows/Linux ARM are supported targets; do not infer hand-tested ARM behavior from compilation.
-Reviewer must decide whether the explicit deferred host seams are acceptable for Job 43 or require
-a separate scoped host job. None of the blockers above is silently resolved by this draft.
+The dependent scope review accepted or blocked the service contracts in the disposition above.
+Owner-only choices remain questions; host packaging and the scenario manifest guard require
+separate scoped approval. No blocked
+prompt/settings default or deployed lifecycle is silently resolved by passing module tests.
 
 ## Check
 
@@ -431,15 +542,37 @@ Job 43 (requirements, not execution claims for this sheet):
 ```text
 node native/porting/parity/record.cjs
 node native/porting/parity/record.cjs --check
+node native/porting/parity/scenarios.cjs
+node native/porting/parity/scenarios.cjs --check
 node --test engine/parity.test.cjs
+node --test engine/job42-sheet.test.cjs
 node scripts/engineering/ci.cjs
 dotnet build native/Planwharf.Engine -c Release
 dotnet test native/Planwharf.Engine.Tests -c Release
 dotnet build native/Planwharf.FakeCli -c Release
 dotnet test native/Planwharf.FakeCli.Tests -c Release
+dotnet test native/Planwharf.Engine.Tests -c Release --filter ScenarioParityTests
+dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared
+git diff --check
 ```
 
-Require zero warnings, real assertions over each scenario, and Native app CI on Windows/macOS/Linux.
+Acceptance gates: focused owning-module tests pass first; pure and scenario fixture generation and
+--check pass; missing coverage/reply and meaningful mutation controls fail as intended; full checks
+above pass with zero warnings. Preserve existing 31-module floors and the recovered Antigravity
+36-case floor. The current `engine/parity.test.cjs` and `ParityTests.cs` treat every `required.json`
+entry as a top-level pure `<module>.json` with `fn` delegates. Nested scenario fixtures cannot be
+added there honestly under the present allowlist. A reviewed scope revision must add exactly
+`engine/parity.test.cjs` and permit its scenario-aware guard tests; `ParityTests.cs` is already
+allowed for the matching C# guard. Then integration must wire six nonzero scenario floors into
+executable validation, with removal/mutation rejection, rather than add unused manifest fields.
+Until that revision, report the manifest-floor gate blocked and do not mark Job 43 accepted.
+Native app CI on Windows/macOS/Linux requires observed results.
+The historical 0045080 publish failed because the Windows C++ platform linker was absent. Repeat
+the command into isolated attempt evidence; if the toolchain is still missing, report AOT blocked,
+not passed, and do not install tools. Build analyzers do not prove native publish or execution.
+Independent verification by the configured provider/model remains a separate acceptance gate;
+never substitute an unavailable model silently. Do not push, merge or begin Job 44. Integration
+alone owns the enumerated commit and progress updates, preserving concurrent workers' changes.
 After Job 43, stop for the owner's Windows hand test with real programs: exact invocation and account,
 lead/worker success, refusal, cancellation, descendants, result evidence, Unicode paths and restart.
 Fake results cannot attest real model availability, authentication, quota or OS sandbox protection.
@@ -449,6 +582,19 @@ Fake results cannot attest real model availability, authentication, quota or OS 
 - Exactly the sixteen C# implementation files and sixteen test files enumerated in **Port** above.
   Supporting interfaces/records belong inside those files, not a blanket engine-directory allowance.
 - `native/Planwharf.Engine.Tests/ParityTests.cs` for the specified comparison delegates.
+- `native/Planwharf.Engine.Tests/ScenarioParityTests.cs` for executable six-module replay.
+- `native/porting/parity/scenarios.cjs` and exactly these generated fixture paths:
+  `native/porting/parity/scenarios/provider-models.json`,
+  `native/porting/parity/scenarios/provider-adapters.json`,
+  `native/porting/parity/scenarios/api-agent.json`,
+  `native/porting/parity/scenarios/worktrees.json`,
+  `native/porting/parity/scenarios/pr-check.json`,
+  `native/porting/parity/scenarios/phone-activation-check.json`.
+  This reconciles the already approved recorder with the allowlist; it does not authorize source edits.
+- `native/Planwharf.Engine/Planwharf.Engine.csproj` and
+  `native/Planwharf.Engine.Tests/Planwharf.Engine.Tests.csproj` only for necessary approved
+  library/test wiring (for example fixture copying). Preserve AOT/warning settings, existing
+  references and target framework. No new package, executable output type or host project.
 - `native/porting/parity/cases.cjs`, `native/porting/parity/required.json`,
   `native/porting/parity/record.cjs` (only the planUsage mapping), and generated
   `runner.json`, `external-adapters.json`, `provider-connections.json`, `antigravity.json`,
@@ -457,12 +603,23 @@ Fake results cannot attest real model availability, authentication, quota or OS 
 - `native/Planwharf.FakeCli/Program.cs`, `native/Planwharf.FakeCli.Tests/FakeCliCoreTests.cs`,
   `native/Planwharf.FakeCli.Tests/FakeCliEdgeTests.cs` and
   `native/Planwharf.FakeCli.Tests/FakeCliRecoveryTests.cs` only if required process scenarios
-  exceed existing replay. No dependency or project-file change is implied.
+  exceed existing replay. No dependency or additional project-file change is implied.
 - `docs/NEXT-WORK.md`, `docs/BUILT-WITH-PLANWHARF.md`, `.planwharf/plan.md` for honest progress/evidence.
 
 Do not modify JavaScript engine modules/tests, app/server, workflows, packages, prior C# ports,
 personal data, historical evidence or other job sheets. New executable projects, host entry points,
 additional fake/test filenames or unlisted dependencies require a revised reviewed scope first.
+
+### Ownership and scope-review handoff
+
+This clarification slice changes only this sheet; it adds no implementation or test files.
+The dependent contract reviewer may correct this sheet only. Module workers own their table's
+implementation/test pair (the three phone handover services form one slice); Runner additionally
+owns only the four allowed FakeCli files. The recorder owns scenarios.cjs and the six scenario
+JSON files; replay owns ScenarioParityTests.cs. Integration alone owns shared pure parity files,
+required.json, the two named project files and progress documents. Do not edit another worker's
+file to resolve a failing seam: report the exact fixture/interface and let its owner correct it.
+No commit belongs to this clarification slice. Leave files on disk for review and integration.
 
 ## Scope and hand over
 
@@ -530,3 +687,31 @@ Verification actions:
    - All 8 tests passed (`node --test engine/job42-sheet.test.cjs`).
 3. Checked whitespace and formatting: `git diff --check` passed cleanly.
 4. Updated documentation to **Sheet done** in `docs/NEXT-WORK.md`, `docs/BUILT-WITH-PLANWHARF.md`, and `.planwharf/plan.md`.
+
+### Continuation scope validation (attempt 74, 2026-11-24)
+
+- Read the current plan and required porting documents; inspected 0045080 without restoring files.
+- `python .agents/check-updates.py`: passed; upstream updates and local differences reported,
+  with no installation or overwrite.
+- After the first scope edit, `node --test engine/job42-sheet.test.cjs`: 8 passed, zero failures.
+- After allowlist/gate reconciliation, `node --test engine/job42-sheet.test.cjs engine/parity.test.cjs`:
+  11 passed, zero failures, including existing omission/mutation controls.
+- `node native/porting/parity/record.cjs --check`: passed without fixture changes.
+- `git diff --check`: passed (Git reported only its working-copy LF-to-CRLF conversion notice).
+- No new test file is authorized in this slice. The existing sheet-test contracts were preserved;
+  implementation tests, scenario replay, C# builds, Native AOT publish and independent contract
+  review have not been run by this slice. These remain downstream gates, not completion claims.
+
+### Dependent contract review (attempt 75, 2026-11-24)
+
+- Inspected actual Runner, ApiAgent, registry, connection, Worktrees, PrCheck, Phone and
+  activation-check exports plus ProviderRuntime, PhoneActivation and other existing C# seams.
+  Accepted the injected service contracts in the disposition above. Assumed the owner's recorder
+  approval covers only its named files and that separate host/prompt/settings choices remain open.
+- Corrected the PrCheck export list and assigned activation-check scenarios to behavior actually
+  owned by its script. Handover restoration and busy-gate tests remain with their owning modules.
+- Found an exact manifest scope blocker: `engine/parity.test.cjs` and `ParityTests.cs` currently
+  interpret every `required.json` entry as pure top-level parity. `engine/parity.test.cjs` is not in
+  the Job 43 allowlist, so six nested scenario floors cannot be honestly wired until scope changes.
+- No source implementation, scenario execution, C# build/test, Native AOT publish or live provider
+  operation was part of this review. Only the sheet was edited.

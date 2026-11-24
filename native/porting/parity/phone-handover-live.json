@@ -1,0 +1,85 @@
+[
+  {
+    "fn": "redact",
+    "args": [
+      "telegram token: 1234567890:ABC-DEF1234ghIkl-zyx57W2v1u123ew11 in text"
+    ],
+    "result": "telegram token: [redacted] in text"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      "normal text without secrets"
+    ],
+    "result": "normal text without secrets"
+  },
+  {
+    "fn": "redact",
+    "args": [
+      ""
+    ],
+    "result": ""
+  },
+  {
+    "fn": "redact",
+    "args": [
+      null
+    ],
+    "result": ""
+  },
+  {
+    "fn": "projectsFromPlan",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha",
+            "status": "running",
+            "goal": "Do it"
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "id": "p1",
+        "name": "Alpha",
+        "status": "running",
+        "goal": "Do it"
+      }
+    ]
+  },
+  {
+    "fn": "projectsFromPlan",
+    "args": [
+      {
+        "schema": 2,
+        "projects": [
+          {
+            "id": "p2",
+            "name": "Beta",
+            "status": "done",
+            "direction": "Direct"
+          }
+        ]
+      }
+    ],
+    "result": [
+      {
+        "id": "p2",
+        "name": "Beta",
+        "status": "done",
+        "goal": "Direct"
+      }
+    ]
+  },
+  {
+    "fn": "projectsFromPlan",
+    "args": [
+      null
+    ],
+    "result": []
+  }
+]

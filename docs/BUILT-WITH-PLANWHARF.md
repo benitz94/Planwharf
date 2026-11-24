@@ -155,3 +155,119 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | Resume in the native app did nothing after the crew had committed: the engine asked to confirm that the files had changed, and the app never showed the question nor sent the answer | #231 |
 | Work finished said "Verification failed" for job 43 because of a step's earlier stop, although that step was resumed and finished and the check of the whole passed | #232 |
 | The work plan Planwharf writes (.planwharf/plan.md) ended with a blank line, so a crew pull request that carried it failed GitHub's patch check (job 43) | #234 |
+
+
+### Job 43 partial integration — attempt 83 (24 November 2026)
+
+Integrated parts 3, 4, 8, 9, 10, 11 and 15 in that order on the continuation
+branch. Their branch heads all remained at `156a998`; deliverables were uncommitted
+in their registered worktrees, so the 21 explicitly listed source/test/recorder
+artifacts were copied byte-for-byte. Source worktrees and all part branches were
+retained. The existing reviewed sheet changes from attempts 74/75 were preserved.
+
+Focused Release tests passed: Antigravity 30, ExternalAdapters/ProviderConnections 51,
+Worktrees 15, PlanFile 16, PrCheck 23 and PhoneOllama 12. The Release engine build
+passed with zero warnings/errors; sheet/parity guards passed 11 tests. The recorder
+self-test/check matched 103 scenarios. Full Release Engine tests: 1,360 passed,
+1 failed, zero skipped. `LiteralStringTests.Every_native_source_file_uses_resources_for_presentation_literals`
+flags six exception literals in `Worktrees.cs` (branch twice, identity, occupied
+destination, escaped cleanup path and recoverable changes). The owning worker must
+reconcile that guard with exact source messages; integration did not weaken it.
+
+This is partial integration, not Job 43 acceptance. Remaining ports, shared pure
+comparisons, C# scenario replay, engineering CI, FakeCli checks, Native AOT publish,
+configured independent verification and the owner's real-program Windows test remain
+for downstream slices. The skills update check was unavailable (GitHub HTTP 403 rate
+limit); no skills were installed. No push, branch deletion or merge was performed.
+
+
+### Job 43 parallel parts integration — attempt 89 (24 November 2026)
+
+Integrated parts 5, 6 and 12 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-5`,
+`--part-6`, `--part-12`) on the continuation branch. Part branch heads remained at `9e2c091`;
+deliverables were uncommitted in their registered worktrees, so the 6 source and test
+artifacts (`ApiAgent.cs`, `ApiAgentTests.cs`, `PlanUsage.cs`, `PlanUsageTests.cs`,
+`Phone.cs`, `PhoneTests.cs`) were copied byte-for-byte. All source worktrees and part
+branches were retained untouched.
+
+Focused Release tests passed: ApiAgent 23, PlanUsage 18, Phone 12. The Release engine build
+succeeded with zero warnings and zero errors; sheet/parity guards passed 11 tests. The
+recorder self-test/check matched 103 scenarios. Full Release Engine tests: 1,413 passed,
+1 failed, zero skipped. The single failure is the pre-existing `Worktrees.cs` exception
+literal violation in `LiteralStringTests` identified in attempt 83; the three newly integrated
+modules introduced zero localization violations.
+
+Integration of all 10 parallel parts is complete. Downstream slices own shared comparison
+recovery, C# scenario replay, FakeCli checks, Native AOT publish, independent verification
+and the owner's Windows test. The startup skills update check was unavailable (GitHub HTTP 403
+rate limit); no updates installed. No push or merge performed.
+
+
+### Job 43 parallel parts integration — attempt 93 (24 November 2026)
+
+Integrated parts 7 and 13 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-7`,
+`--part-13`) on the continuation branch. Part branch heads remained at `20c9aa1`; deliverables
+were uncommitted in their registered worktrees, so the 10 source and test artifacts
+(`ProviderAdapters.cs`, `ProviderModels.cs`, `ProviderAdaptersTests.cs`, `ProviderModelsTests.cs`,
+`PhoneHandover.cs`, `PhoneHandoverLive.cs`, `PhoneActivationCheck.cs`, `PhoneHandoverTests.cs`,
+`PhoneHandoverLiveTests.cs`, `PhoneActivationCheckTests.cs`) were copied byte-for-byte. All source
+worktrees and part branches were retained untouched.
+
+Focused Release tests passed: ProviderAdapters/ProviderModels 16, PhoneHandover/PhoneHandoverLive/PhoneActivationCheck 36.
+The Release engine build succeeded with zero warnings and zero errors; sheet/parity guards passed 11 tests.
+The recorder check matched all 103 scenarios across 6 files. Full Release Engine tests: 1,465 passed,
+1 failed, zero skipped. The single failure is in `LiteralStringTests` (flagging pre-existing `Worktrees.cs`
+exception literals and `PhoneHandoverLive.cs` "HttpJson is required" literal); all unit tests in the
+test suites pass.
+
+Downstream slices own Runner (ST-14), C# scenario replay (ST-16), full integration with shared comparison
+recovery (ST-17), Native AOT publish, independent verification (ST-18) and the owner's Windows test.
+The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
+No push or merge performed.
+
+
+### Job 43 parallel parts integration — attempt 98 (24 November 2026)
+
+Integrated parts 14 and 16 in order (`planwharf/continue-job-43-from-refreshed-main-pres--part-14`,
+`--part-16`) on the continuation branch. Part branch heads remained at `edf14b9`; deliverables
+were uncommitted in their registered worktrees, so the 3 source and test artifacts
+(`Runner.cs`, `RunnerTests.cs`, `ScenarioParityTests.cs`) were copied byte-for-byte. All source
+worktrees and part branches were retained untouched.
+
+Focused Release tests passed: Runner 23, ScenarioParity 109 (including 6 mutation validation tests).
+FakeCli tests passed: 64. The Release engine build succeeded with zero warnings and zero errors;
+sheet/parity guards passed 11 tests. Parity fixture record check passed with zero drift. The scenario
+recorder check matched all 103 scenarios across 6 files. Full Release Engine tests: 1,597 passed,
+1 failed, zero skipped. The single failure is in `LiteralStringTests` (flagging pre-existing `Worktrees.cs`
+and `PhoneHandoverLive.cs` exception literals); all unit and parity tests pass.
+
+Integration of parallel parts 14 and 16 completes all parallel implementation and scenario replay parts.
+Downstream slice ST-17 owns full integration with shared comparison recovery, Native AOT publish,
+followed by independent verification (ST-18) and the owner's Windows test.
+The startup skills update check succeeded (upstream updates reported for ECC and Matt Pocock skills; none installed).
+No push or merge performed.
+
+
+### Job 43 shared parity integration — attempt 100 (24 November 2026)
+
+Recovered the Antigravity comparison surface from commit `0045080` and added the ten
+approved pure comparison surfaces for Runner, ExternalAdapters, ProviderConnections,
+PlanUsage, PlanFile, Phone, PhoneOllama, PhoneHandover and PhoneHandoverLive. Added
+recorded fixtures and delegates without changing the sixteen port implementations.
+The six scenario floors are executable in `ParityTests`: provider-models 19,
+provider-adapters 11, api-agent 27, worktrees 16, pr-check 18 and
+phone-activation-check 12. Existing top-level parity floors were preserved.
+
+Observed validation: recorder and scenario checks passed; the 11 JavaScript sheet/parity
+tests passed; Release Engine build passed with zero warnings; the focused ParityTests
+run passed 984 tests; engineering CI passed; FakeCli build and 64 tests passed. The full
+Engine suite passed 1,859 tests and failed one localization guard, listing the existing
+`PhoneHandoverLive.cs` `HttpJson is required` literal and six `Worktrees.cs` literals.
+Those implementation files are outside this slice and were not changed. The documented
+Native AOT publish reached the linker and failed because the Windows platform linker/
+Visual Studio C++ workload is absent; no toolchain was installed. No live provider was
+contacted. The C# floor guard reads the six floor values from `required.json`; its mutation
+controls reject missing and undersized fixtures. Independent verification also found two
+scenario assertion-strength limitations in the existing `ScenarioParityTests.cs` outside
+this slice's write scope. The owner's real-program Windows hand test remains required
+before Job 43 acceptance; no cross-platform CI result is claimed.

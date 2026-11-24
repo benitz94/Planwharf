@@ -1,0 +1,1387 @@
+{
+  "schema": 1,
+  "module": "provider-models",
+  "scenarios": [
+    {
+      "name": "legacy-success",
+      "input": {
+        "mode": "success"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "grok-exact"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [
+            "grok-exact"
+          ],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "legacy-empty",
+      "input": {
+        "mode": "empty"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": []
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": false,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": "The active Grok login does not list the exact model grok-exact. No substitute was selected."
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "legacy-invalid",
+      "input": {
+        "mode": "invalid"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "bad",
+            null,
+            "grok-exact"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [
+            "grok-exact"
+          ],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "legacy-failure-recovery",
+      "input": {
+        "mode": "failure-recovery"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        },
+        {
+          "kind": "discover",
+          "call": 2
+        }
+      ],
+      "replies": [
+        {
+          "ok": false,
+          "reason": "Synthetic outage"
+        },
+        {
+          "ok": true,
+          "ids": [
+            "grok-exact"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [
+            "grok-exact"
+          ],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 2
+      }
+    },
+    {
+      "name": "legacy-ttl",
+      "input": {
+        "mode": "ttl"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "grok-exact"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [
+            "grok-exact"
+          ],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "legacy-single-flight",
+      "input": {
+        "mode": "single-flight"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "grok-exact"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "status": "current",
+          "checkedAt": "2023-11-14T22:13:20.000Z",
+          "reason": null,
+          "ids": [
+            "grok-exact"
+          ],
+          "preservingPreviousAvailability": false,
+          "checking": false
+        },
+        "models": [
+          {
+            "id": "exact",
+            "provider": "grok",
+            "cli": "grok-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "availabilityWarning": null,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "catalog-success",
+      "input": {
+        "mode": "success"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "catalog.json": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}"
+      },
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "current",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": null,
+              "preservingPreviousAvailability": false,
+              "ids": [
+                "gpt-exact",
+                "gpt-new"
+              ]
+            }
+          ],
+          "checking": false,
+          "status": "current"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true,
+            "notInstalled": false,
+            "catalogExcluded": false,
+            "unavailableReason": null,
+            "availabilityVerified": true,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": null
+          },
+          {
+            "cli": "gpt-new",
+            "capabilities": {},
+            "id": "fixture:gpt-new",
+            "providerId": "fixture",
+            "provider": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "plan": "fixture",
+            "label": "gpt-new",
+            "enabled": false,
+            "available": true,
+            "catalogExcluded": false,
+            "availabilityVerified": true,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": null,
+            "providerCatalog": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "providerConfig": {}
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "catalog-malformed",
+      "input": {
+        "mode": "malformed"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "models": [
+            {
+              "cli": ""
+            }
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "unread",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": "Provider returned an invalid model catalog; previous availability is retained.",
+              "preservingPreviousAvailability": true,
+              "ids": []
+            }
+          ],
+          "checking": false,
+          "status": "unread"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": "Provider returned an invalid model catalog; previous availability is retained."
+          }
+        ],
+        "calls": 1
+      }
+    },
+    {
+      "name": "catalog-restart",
+      "input": {
+        "mode": "restart"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        },
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 2
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        },
+        {
+          "ok": false,
+          "reason": "Synthetic outage"
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "catalog.json": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}"
+      },
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "unread",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": "Synthetic outage",
+              "preservingPreviousAvailability": true,
+              "ids": [
+                "gpt-exact",
+                "gpt-new"
+              ]
+            }
+          ],
+          "checking": false,
+          "status": "unread"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true,
+            "notInstalled": false,
+            "catalogExcluded": false,
+            "unavailableReason": null,
+            "availabilityVerified": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": "Synthetic outage"
+          },
+          {
+            "cli": "gpt-new",
+            "capabilities": {},
+            "id": "fixture:gpt-new",
+            "providerId": "fixture",
+            "provider": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "plan": "fixture",
+            "label": "gpt-new",
+            "enabled": false,
+            "available": true,
+            "catalogExcluded": false,
+            "availabilityVerified": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": "Synthetic outage",
+            "providerCatalog": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "providerConfig": {},
+            "notInstalled": false,
+            "unavailableReason": null
+          }
+        ],
+        "calls": 2
+      }
+    },
+    {
+      "name": "catalog-invalidate-recovery",
+      "input": {
+        "mode": "invalidate-recovery"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        },
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 2
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        },
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\"]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "catalog.json": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}"
+      },
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "current",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": null,
+              "preservingPreviousAvailability": false,
+              "ids": [
+                "gpt-exact",
+                "gpt-new"
+              ]
+            }
+          ],
+          "checking": false,
+          "status": "current"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true,
+            "notInstalled": false,
+            "catalogExcluded": false,
+            "unavailableReason": null,
+            "availabilityVerified": true,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": null
+          },
+          {
+            "cli": "gpt-new",
+            "capabilities": {},
+            "id": "fixture:gpt-new",
+            "providerId": "fixture",
+            "provider": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "plan": "fixture",
+            "label": "gpt-new",
+            "enabled": false,
+            "available": true,
+            "catalogExcluded": false,
+            "availabilityVerified": true,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": null,
+            "providerCatalog": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "providerConfig": {},
+            "unavailableReason": null,
+            "notInstalled": false
+          }
+        ],
+        "calls": 2
+      }
+    },
+    {
+      "name": "catalog-stale-generation",
+      "input": {
+        "mode": "stale-generation"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        },
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 2
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        },
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{},\"invalidatedScopes\":[\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\"]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "catalog.json": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}"
+      },
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "current",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": null,
+              "preservingPreviousAvailability": false,
+              "ids": [
+                "gpt-exact",
+                "gpt-new"
+              ]
+            }
+          ],
+          "checking": false,
+          "status": "current"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true,
+            "availabilityVerified": true,
+            "unavailableReason": null,
+            "availabilityWarning": null,
+            "notInstalled": false,
+            "catalogExcluded": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z"
+          },
+          {
+            "cli": "gpt-new",
+            "capabilities": {},
+            "id": "fixture:gpt-new",
+            "providerId": "fixture",
+            "provider": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "plan": "fixture",
+            "label": "gpt-new",
+            "enabled": false,
+            "available": true,
+            "catalogExcluded": false,
+            "availabilityVerified": true,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": null,
+            "providerCatalog": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "providerConfig": {}
+          }
+        ],
+        "calls": 2
+      }
+    },
+    {
+      "name": "catalog-rename-failure",
+      "input": {
+        "mode": "rename-failure"
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "account": {
+              "key": "fake-account"
+            },
+            "enabled": true
+          },
+          "call": 1
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-new"
+          ]
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": false,
+          "code": "EPERM"
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"schema\":1,\"catalogs\":{\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"models\":[{\"cli\":\"gpt-exact\",\"capabilities\":{}},{\"cli\":\"gpt-new\",\"capabilities\":{}}]}},\"invalidatedScopes\":[\"ff80832de92fd74091fc115ca51df42440f50d702a5ea84a79623f9938ab3851\"]}",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/catalog.json",
+          "ok": false,
+          "code": "EPERM"
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/catalog.json.00000000-0000-4000-8000-000000000001.tmp",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "error": "Provider access invalidation could not be persisted. Access remains blocked; retry before accepting the account change.",
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "unknown",
+              "checkedAt": null,
+              "ids": []
+            }
+          ],
+          "checking": false,
+          "status": "unread"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": false,
+            "enabled": true,
+            "notInstalled": false,
+            "catalogExcluded": false,
+            "unavailableReason": "Access requires fresh discovery for the current provider account or configuration.",
+            "availabilityVerified": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": "Provider account or configuration changed. Access requires fresh discovery for the current scope."
+          },
+          {
+            "cli": "gpt-new",
+            "capabilities": {},
+            "id": "fixture:gpt-new",
+            "providerId": "fixture",
+            "provider": "fixture",
+            "adapter": "codex",
+            "quotaPoolId": "fixture",
+            "plan": "fixture",
+            "label": "gpt-new",
+            "enabled": false,
+            "available": false,
+            "catalogExcluded": false,
+            "availabilityVerified": false,
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z",
+            "availabilityWarning": "Provider account or configuration changed. Access requires fresh discovery for the current scope.",
+            "providerCatalog": true,
+            "orchestratorEligible": true,
+            "workerEligible": true,
+            "providerConfig": {},
+            "unavailableReason": "Access requires fresh discovery for the current provider account or configuration."
+          }
+        ]
+      }
+    },
+    {
+      "name": "catalog-not-installed",
+      "input": {
+        "mode": "not-installed"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "not-installed",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in.",
+              "ids": [],
+              "preservingPreviousAvailability": false
+            }
+          ],
+          "checking": false,
+          "status": "current"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": false,
+            "enabled": true,
+            "notInstalled": true,
+            "availabilityVerified": false,
+            "unavailableReason": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in.",
+            "availabilityWarning": "Codex is not installed on this computer. Install it with npm install -g @openai/codex, then run codex once to sign in."
+          }
+        ],
+        "calls": 0
+      }
+    },
+    {
+      "name": "catalog-disabled",
+      "input": {
+        "mode": "disabled"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "disabled",
+              "checkedAt": null,
+              "ids": []
+            }
+          ],
+          "checking": false,
+          "status": "current"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": true,
+            "enabled": true
+          }
+        ],
+        "calls": 0
+      }
+    },
+    {
+      "name": "grok-list-exact-ids",
+      "input": {
+        "mode": "exact-ids"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "fake-grok",
+          "args": [
+            "models"
+          ],
+          "options": {
+            "windowsHide": true,
+            "timeout": 15000,
+            "maxBuffer": 1048576
+          }
+        }
+      ],
+      "replies": [
+        {
+          "error": null,
+          "stdout": "\u001b[32mgrok-exact grok-exact grok-2:fast\u001b[0m",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "ids": [
+          "grok-exact",
+          "grok-2:fast"
+        ]
+      }
+    },
+    {
+      "name": "grok-list-empty",
+      "input": {
+        "mode": "empty"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "fake-grok",
+          "args": [
+            "models"
+          ],
+          "options": {
+            "windowsHide": true,
+            "timeout": 15000,
+            "maxBuffer": 1048576
+          }
+        }
+      ],
+      "replies": [
+        {
+          "error": null,
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Grok CLI returned no exact model IDs for the active login."
+      }
+    },
+    {
+      "name": "grok-list-policy",
+      "input": {
+        "mode": "policy"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "fake-grok",
+          "args": [
+            "models"
+          ],
+          "options": {
+            "windowsHide": true,
+            "timeout": 15000,
+            "maxBuffer": 1048576
+          }
+        }
+      ],
+      "replies": [
+        {
+          "error": {
+            "code": 1
+          },
+          "stdout": "",
+          "stderr": "policy lock file is not accessible"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Grok CLI cannot access its managed policy lock file. Check the CLI permissions and sign-in, then refresh models."
+      }
+    },
+    {
+      "name": "grok-list-login",
+      "input": {
+        "mode": "login"
+      },
+      "requests": [
+        {
+          "kind": "process",
+          "command": "fake-grok",
+          "args": [
+            "models"
+          ],
+          "options": {
+            "windowsHide": true,
+            "timeout": 15000,
+            "maxBuffer": 1048576
+          }
+        }
+      ],
+      "replies": [
+        {
+          "error": {
+            "code": 1
+          },
+          "stdout": "",
+          "stderr": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "ok": false,
+        "reason": "Grok CLI could not list models for the active login. Check CLI sign-in and refresh models."
+      }
+    },
+    {
+      "name": "switch-away-and-back-rejects-old-generation",
+      "input": {
+        "accounts": [
+          "fake-A",
+          "fake-B",
+          "fake-A"
+        ]
+      },
+      "requests": [
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "account": {
+              "key": "fake-A"
+            },
+            "quotaPoolId": "fixture"
+          },
+          "call": 1
+        },
+        {
+          "kind": "discover",
+          "provider": {
+            "id": "fixture",
+            "adapter": "codex",
+            "account": {
+              "key": "fake-A"
+            },
+            "quotaPoolId": "fixture"
+          },
+          "call": 2
+        }
+      ],
+      "replies": [
+        {
+          "ok": true,
+          "ids": [
+            "gpt-exact",
+            "gpt-stale"
+          ]
+        },
+        {
+          "ok": false,
+          "reason": "Fresh authorization required"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "snapshot": {
+          "providers": [
+            {
+              "providerId": "fixture",
+              "label": "fixture",
+              "status": "unread",
+              "checkedAt": "2023-11-14T22:13:20.000Z",
+              "reason": "Fresh authorization required",
+              "preservingPreviousAvailability": false,
+              "ids": []
+            }
+          ],
+          "checking": false,
+          "status": "unread"
+        },
+        "models": [
+          {
+            "id": "exact",
+            "providerId": "fixture",
+            "cli": "gpt-exact",
+            "available": false,
+            "availabilityVerified": false,
+            "unavailableReason": "Access requires fresh discovery for the current provider account or configuration.",
+            "availabilityWarning": "Fresh authorization required",
+            "availabilityCheckedAt": "2023-11-14T22:13:20.000Z"
+          }
+        ],
+        "calls": 2
+      }
+    }
+  ]
+}
