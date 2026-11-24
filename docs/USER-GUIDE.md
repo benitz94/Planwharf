@@ -50,6 +50,7 @@ The same choice can be typed: `mode normal`, `mode safe`, `mode ultra safe`, or 
 Each model card shows its quota left (5-hour and weekly windows), its **weight** (light, default, premium: light parts of the work go to light models, heavy parts to strong ones), and:
 
 - **Limit and tools**: model limits and tools (MCP servers, browser, hooks, memory) are kept in a section that opens on demand to keep model cards simple. The general limit, 35% of both windows, is in **Settings**.
+- **No limit** (on the model card, next to the roles): the model ignores the quota limit and works until its company reports the quota spent. It only removes the limit: the model is not preferred to the others, and the parts are still spread over the crew. Click it again to give the model back its limit. **No limit for all …** in **Limit and tools** does the same for every model of a company that has no limit of its own.
 
 **Find models** filters by company, weight and state, with **All / None** to give or take a role for every model shown. **AI tools** turns each program on or off, and **Look for models again** rereads the models of the accounts signed in on this computer. Models of an expired plan or a signed-out account are hidden, with one line saying why. A model that answers it needs usage credits (outside your plan) is hidden for a day, and the lead and the crew move on to the next model. Where a program allows it (Claude Code, Codex), **Add another account** uses a second subscription of the same company before moving to another company.
 

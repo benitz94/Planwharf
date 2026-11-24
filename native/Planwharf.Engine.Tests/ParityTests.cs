@@ -415,6 +415,7 @@ public class ParityTests
         ["autonomy/parseAssignment"] = a => Autonomy.ParseAssignment(Text(a, 0), a[1]!.GetValue<int>(), Node(a, 2)),
         ["autonomy/splitPrompt"] = a => Autonomy.SplitPrompt(Obj(a, 0)!),
         ["autonomy/fitWeights"] = a => Autonomy.FitWeights(Arr(a, 0), Arr(a, 1)),
+        ["autonomy/spreadParts"] = a => Autonomy.SpreadParts(Arr(a, 0), Arr(a, 1)),
         ["autonomy/parseSplit"] = a => Autonomy.ParseSplit(Text(a, 0), Obj(a, 1)!),
         ["autonomy/continuePrompt"] = a => Autonomy.ContinuePrompt(Obj(a, 0)!),
         ["autonomy/namedDocuments"] = a => new JsonArray(Autonomy.NamedDocuments(Text(a, 0), Arr(a, 1)!.Select(item => item!.GetValue<string>())).Select(item => (JsonNode?)JsonValue.Create(item)).ToArray()),

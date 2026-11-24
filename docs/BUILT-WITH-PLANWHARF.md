@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **46 of 72** | 72 |
 | JavaScript engine lines ported | **about 4,723 of 14,000** (34%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39); next: phase 4 | 0 to 8 |
-| C# engine tests | 1214, plus 607 comparison cases with the JavaScript across 31 modules | |
+| C# engine tests | 1217, plus 610 comparison cases with the JavaScript across 31 modules | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`, `claims`, `claude`,
@@ -146,6 +146,14 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 | The app said "stopped while starting" when an earlier engine was still running on the same data; it now connects to it, or says how to close a stuck one | #221 |
 | The lead split the work without seeing the sheet the goal named (it was told not to read files), so a sixteen-module port went to one worker, who did one module; a step that stopped part way then waited for an alert instead of going back to the lead. The lead now reads the sheet and splits the rest again | #223 |
 | The lead's reasons were never shown: "did not split the work", which model a part moved to and the error that stopped the crew stayed in an internal log, and the stop read only "autonomy error". One reply with a model it may not use, or more than ten parts, threw the whole split away; one error ended the crew. Now all of it is in Progress, the split is kept and the error retried | #224 |
+| The lead split job 43 into 17 parts and gave 16 of them to its own company (GPT-6.1 Sol and GPT-6 Sol), leaving Grok, Gemini and the others idle. Planwharf now spreads the parts | #225 |
+| The "No limit" switch of a model was hidden in a fold, and a whole company could not be set to no limit from the app. Now a chip on the card and a company button | #226 |
+| The last part of job 43, which wires the others together, was stopped for changing the files of the parts it waited for, after they had finished. It may now change them | #227 |
+| Every lead reply with a summary stopped the crew on "sentences is not a function": autonomy used a helper that its module did not export; the error was hidden behind "autonomy error" until #224 | #228 |
+| Grok's usage service refused a saved token, and Planwharf wrote "Grok login expired" and kept every Grok model out of the crew while grok was signed in; the same could happen to Claude and ChatGPT. A failed read now stops nothing | #229 |
+| A rehearsal of job 43 with fake models (sixteen modules, a part that wires them, Verify) found three more faults before the real run: one blocked part abandoned the parts not yet started, the part that wires continued work was stopped for touching the finished files, and the same stop could repeat until the work limit | #230 |
+| Resume in the native app did nothing after the crew had committed: the engine asked to confirm that the files had changed, and the app never showed the question nor sent the answer | #231 |
+| Work finished said "Verification failed" for job 43 because of a step's earlier stop, although that step was resumed and finished and the check of the whole passed | #232 |
 
 
 ### Job 43 partial integration — attempt 83 (24 November 2026)

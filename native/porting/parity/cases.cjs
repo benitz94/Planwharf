@@ -436,6 +436,7 @@ module.exports = {
     ['parseDecision', ['{"done":false,"next":null}']],
     ['parseDecision', ['invalid']],
     ['parseDecision', [null]],
+    ['parseDecision', ['{"done":false,"next":"Wire the parts together.","summary":"Ported sixteen modules. Tests pass. One part is left."}']],
     ['parseAssignment', ['{"assign":["b","a"],"why":"fast"}', 2, ['a', 'b']]],
     ['parseAssignment', ['{"assign":["a","b"]}', 2, [['a'], ['b']]]],
     ['parseAssignment', ['broken', 2, ['a']]],
@@ -456,7 +457,10 @@ module.exports = {
     ['parseSplit', [JSON.stringify({ parts: Array.from({ length: 16 }, (_, i) => ({ title: 'P' + i, detail: 'D', files: ['f' + i + '.cs'], size: 'normal', model: 'm1' })), verify: 'v1' }), { builders: ['m1'], verifiers: ['v1'] }]],
     ['parseSplit', [JSON.stringify({ parts: Array.from({ length: 31 }, (_, i) => ({ title: 'P' + i, detail: 'D', files: ['f' + i + '.cs'], size: 'normal', model: 'm1' })), verify: 'v1' }), { builders: ['m1'], verifiers: ['v1'] }]],
     ['fitWeights', [[{ title: 'T', size: 'normal', model: '' }], [{ id: 'light-m', tier: 'light', left: 90 }, { id: 'heavy-m', tier: 'premium' }]]],
-    ['splitPrompt', [{ name: 'P', goal: 'G', builders: [], verifiers: [], files: [] }]]
+    ['splitPrompt', [{ name: 'P', goal: 'G', builders: [], verifiers: [], files: [] }]],
+    ['spreadParts', [Array.from({ length: 16 }, (_, i) => ({ title: 'Port ' + i, size: 'normal', model: i % 2 ? 'sol6' : 'sol61' })), [{ id: 'sol61', provider: 'codex', tier: 'default', left: 84 }, { id: 'sol6', provider: 'codex', tier: 'default', left: 84 }, { id: 'grok', provider: 'grok', tier: 'default' }, { id: 'gemini', provider: 'gemini', tier: 'default', left: 90 }, { id: 'luna', provider: 'codex', tier: 'light', left: 20 }]]],
+    ['spreadParts', [[{ title: 'a', size: 'light', model: 'luna' }, { title: 'b', size: 'heavy', model: 'x' }, { title: 'c', model: 'luna' }], [{ id: 'luna', provider: 'codex', tier: 'light' }, { id: 'opus', tier: 'premium' }, { id: 'flash', provider: 'gemini', tier: 'light', left: 10 }]]],
+    ['spreadParts', [[{ title: 'only', size: 'normal', model: 'a' }], []]]
   ],
   plan: [
     ['example', []],

@@ -434,7 +434,7 @@ public sealed partial class MainWindow : Window
 
             // --- Line 2: Does it work ---
             var rawResults = (work.Row?["results"] as JsonArray ?? []).OfType<JsonObject>().ToList();
-            var problems = rawResults.Where(result => Str(result["status"]) is "FAILED" or "BLOCKED" && result["modelChange"]?.GetValue<bool>() != true).ToList();
+            var problems = WorkDetails.OpenProblems(rawResults);
             var verifyStep = work.Steps.FirstOrDefault(s => s.Role == "Verify");
             var auto = snapshot?["autonomy"]?[projectId];
             var stop = auto?["stopReason"] is JsonValue value && value.TryGetValue<string>(out var text) ? text : Str(work.Row?["stopReason"]);
@@ -1399,6 +1399,14 @@ public sealed partial class MainWindow : Window
     static TextBlock Explain(string text) => new() { Text = text, Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap };
 
     // Runs a change, shows its outcome in the hint, and refreshes.
+    // What changed since the work stopped, in plain words, for the Resume question.
+    static string ResumeQuestion(JsonNode asked)
+    {
+        var changes = (asked["diff"]?["changes"] as JsonArray ?? new JsonArray()).Select(item => item?.ToString() ?? "").Where(text => text.Length > 0).Take(5).ToList();
+        return Strings.T("The project changed since the work stopped, usually by the crew's own commits. Resume from the files as they are now?")
+            + (changes.Count > 0 ? "\n\n" + string.Join("\n", changes.Select(text => "\u2022 " + text)) : "");
+    }
+
     async Task DoAsync(Func<Task> work, string done)
     {
         if (api == null) return;
@@ -1463,7 +1471,14 @@ public sealed partial class MainWindow : Window
                     try { await api.StopAsync(projectId); } catch { /* nothing running */ }
                     break;
                 case CrewAction.Approve when view.MegaTaskId != null: if (await EnsureOkAsync()) await api.ApproveAsync(projectId, view.MegaTaskId); break;
-                case CrewAction.Resume: if (await EnsureOkAsync()) await api.ResumeAsync(projectId); break;
+                case CrewAction.Resume:
+                    if (!await EnsureOkAsync()) break;
+                    // Files that changed since the work stopped (usually the crew's own commits) need the owner's OK.
+                    var asked = await api.ResumeOrAskAsync(projectId, false);
+                    if (asked?["requiresConfirmation"]?.GetValue<bool>() == true
+                        && await new ConfirmDialog(ResumeQuestion(asked), Strings.T("Resume")).ShowDialog<bool>(this))
+                        await api.ResumeOrAskAsync(projectId, true);
+                    break;
                 case CrewAction.StopWork: await api.StopAsync(projectId); break;
             }
         }

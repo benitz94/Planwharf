@@ -12,7 +12,7 @@ const { createExecutionBridge } = require('./execution.cjs');
 const git = (folder, ...args) => execFileSync('git', args, { cwd: folder, stdio: 'pipe' });
 
 // work(info) runs as the worker: it may write files and returns the files it reports as changed.
-function fixture(t, { work = () => [], dirtyBefore = [], clock } = {}) {
+function fixture(t, { work = () => [], dirtyBefore = [], clock, extra = [] } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-scope-check-')), folder = path.join(dir, 'project');
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   fs.mkdirSync(path.join(folder, 'src'), { recursive: true });
@@ -39,7 +39,7 @@ function fixture(t, { work = () => [], dirtyBefore = [], clock } = {}) {
       return { pid: 900000 + launches.length };
     },
     isProcessAlive: () => false, killWorker: () => true });
-  const parts = [{ modelId: 'a', slice: 'Port quota', dependsOn: [], scope: ['src/quota.cs'] }, { modelId: 'b', slice: 'Port skills', dependsOn: [], scope: ['src/skills.cs'] }];
+  const parts = [{ modelId: 'a', slice: 'Port quota', dependsOn: [], scope: ['src/quota.cs'] }, { modelId: 'b', slice: 'Port skills', dependsOn: [], scope: ['src/skills.cs'] }, ...extra];
   const mega = bridge.propose(item, job, parts);
   bridge.approve(item.project.id, mega.id);
   const run = () => { bridge.advance(item, job, parts); bridge.advance(item, job, parts); };
@@ -104,4 +104,19 @@ test('a part with no scope (the check of the whole) may change any file', t => {
   bridge.advance(item, job, []); bridge.advance(item, job, []);
   assert.equal(sub('Port quota').status, 'COMPLETE');
   assert.equal(sub('Port skills').status, 'COMPLETE');
+});
+
+test('a part that waits for others may change their finished files and files nobody owns, not a file of a part that may still work', t => {
+  const integrate = { modelId: 'a', slice: 'Integrate and validate', dependsOn: [0, 1], scope: ['notes.md'] };
+  const { bridge, item, job, parts, sub, results } = fixture(t, { extra: [integrate],
+    work: info => /Integrate/.test(info.job.title) ? ['notes.md', 'src/quota.cs', 'src/skills.cs', 'tests/quota.tests.cs'] : info.worker.id === 'a' ? ['src/quota.cs'] : ['src/skills.cs'] });
+  for (let round = 0; round < 6; round += 1) bridge.advance(item, job, parts);
+  assert.equal(sub('Port quota').status, 'COMPLETE');
+  assert.equal(sub('Integrate and validate').status, 'COMPLETE', JSON.stringify(results('Integrate and validate').map(result => result.summary)));
+  // A file of no part it waits for is still outside.
+  const strict = fixture(t, { extra: [{ modelId: 'a', slice: 'Integrate quota', dependsOn: [0], scope: ['notes.md'] }],
+    work: info => /Integrate/.test(info.job.title) ? ['notes.md', 'src/skills.cs'] : info.worker.id === 'a' ? ['src/quota.cs'] : ['src/skills.cs'] });
+  for (let round = 0; round < 6; round += 1) strict.bridge.advance(strict.item, strict.job, strict.parts);
+  assert.equal(strict.sub('Integrate quota').status, 'BLOCKED');
+  assert.deepEqual(strict.sub('Integrate quota').scopeViolation, ['src/skills.cs']);
 });

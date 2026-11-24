@@ -24,6 +24,23 @@ public static class WorkDetails
         DateTimeOffset.TryParse(from, CultureInfo.InvariantCulture, DateTimeStyles.None, out var a) && DateTimeOffset.TryParse(to, CultureInfo.InvariantCulture, DateTimeStyles.None, out var b) ? (b - a).TotalMilliseconds : null;
 
     // The same lines as work-summary.js, which the web and desktop chat use.
+    // The failed or blocked results that still stand: a step that stopped and then finished on a later try
+    // (Resume, another model) is not a failed check. Only the last result of each step counts.
+    public static List<JsonObject> OpenProblems(IEnumerable<JsonObject> results)
+    {
+        static string S(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : "";
+        var list = results.ToList();
+        var last = new Dictionary<string, JsonObject>();
+        var unkeyed = new List<JsonObject>();
+        foreach (var result in list)
+        {
+            var step = S(result["subTaskId"]);
+            if (step.Length > 0) last[step] = result; else unkeyed.Add(result);
+        }
+        return list.Where(result => (S(result["subTaskId"]) is var step && step.Length > 0 ? ReferenceEquals(last[step], result) : unkeyed.Contains(result))
+            && S(result["status"]) is "FAILED" or "BLOCKED" && result["modelChange"]?.GetValue<bool>() != true).ToList();
+    }
+
     public static IReadOnlyList<string> Summary(JsonObject row, string? stopReason, int? changedFiles, Func<string, string> modelLabel)
     {
         var subs = (row["subTasks"] as JsonArray ?? []).OfType<JsonObject>().ToList();

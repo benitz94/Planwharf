@@ -249,3 +249,20 @@ test('when the lead only picks the crew, a model under its limit is not offered 
     assert.equal(snap.models.find(item => item.id === 'b').neverUsable, false);
   } finally { await server.shutdown(); server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('the parts are spread over models and companies: a lead that picks its own company for every part does not drain it', () => {
+  const crew = [{ id: 'sol61', provider: 'codex', tier: 'default', left: 84 }, { id: 'sol6', provider: 'codex', tier: 'default', left: 84 },
+    { id: 'grok', provider: 'grok', tier: 'default' }, { id: 'gemini', provider: 'gemini', tier: 'default', left: 90 }];
+  const parts = Array.from({ length: 16 }, (_, i) => ({ title: 'Port ' + i, size: 'normal', model: i % 2 ? 'sol6' : 'sol61' }));
+  const { parts: spread, moved } = autonomy.spreadParts(parts, crew);
+  const byCompany = ['codex', 'grok', 'gemini'].map(company => spread.filter(part => crew.find(model => model.id === part.model).provider === company).length);
+  assert.deepEqual(byCompany, [6, 5, 5], 'each of the three companies takes about a third, whatever the lead chose');
+  assert.deepEqual(crew.map(model => spread.filter(part => part.model === model.id).length), [3, 3, 5, 5], 'every model works, none takes most of the parts');
+  assert.equal(spread[0].model, 'sol61', 'the lead\'s choice stays while it is within its share');
+  assert.ok(moved.every(move => move.spread));
+  assert.deepEqual(autonomy.spreadParts(parts, crew.slice(0, 2)).parts.map(part => part.model), parts.map(part => part.model), 'with one company only, its models share the work as the lead chose');
+  // Weights still hold: a light part only goes to a light model, even when that model is busy.
+  const light = autonomy.spreadParts([{ title: 'a', size: 'light', model: 'luna' }, { title: 'b', size: 'light', model: 'luna' }], [...crew, { id: 'luna', provider: 'codex', tier: 'light' }]);
+  assert.deepEqual(light.parts.map(part => part.model), ['luna', 'luna']);
+  assert.match(autonomy.splitPrompt({ name: 'P', goal: 'G', builders: [], verifiers: [], files: [] }), /Spread the parts over different models and companies/);
+});

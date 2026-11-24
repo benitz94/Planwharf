@@ -3128,10 +3128,13 @@ function createOrchestrator(options) {
     }
     if (!split) { note(projectId, `The lead did not split the work in a usable way (${problem}); it keeps one build step.`); return false; }
     // Light parts on light models: the strong ones and their quota stay for the heavy work.
-    const fitted = autonomy.fitWeights(split.parts, builders.map(describe));
+    const weighed = autonomy.fitWeights(split.parts, builders.map(describe));
+    // Then no model and no company takes more than its share while others have room.
+    const spread = autonomy.spreadParts(weighed.parts, builders.map(describe));
+    const fitted = { parts: spread.parts, moved: [...weighed.moved.filter(move => !spread.moved.some(other => other.title === move.title)), ...spread.moved.map(move => ({ ...move, from: weighed.moved.find(other => other.title === move.title)?.from ?? move.from }))] };
     split.parts = fitted.parts;
     const label = id => roster().find(model => model.id === id)?.label || id;
-    for (const move of fitted.moved) note(projectId, move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.` : `Planwharf gave "${move.title}" to ${label(move.to)}: the lead named a model that may not build it.`);
+    for (const move of fitted.moved) note(projectId, move.spread && move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: spreading the parts over models and companies.` : move.from ? `Planwharf moved "${move.title}" from ${label(move.from)} to ${label(move.to)}: ${move.size} part.` : `Planwharf gave "${move.title}" to ${label(move.to)}: the lead named a model that may not build it.`);
     // The chat says it too, in the line that announces the split.
     if (fitted.moved.length) split.why = `${split.why || ''} Planwharf gave lighter models the lighter parts: ${fitted.moved.map(move => `"${move.title}" to ${label(move.to)}`).join(', ')}.`.trim();
     // The check of the whole uses the same instructions as the usual verify step.
@@ -3236,18 +3239,24 @@ function createOrchestrator(options) {
     settings.continued = [...(settings.continued || []), megaTaskId].slice(-50);
     const results = (view.execution?.results || []).filter(result => result.megaTaskId === megaTaskId);
     const changed = results.some(result => Array.isArray(result.filesChanged) && result.filesChanged.length);
-    settings.stalls = changed ? 0 : (settings.stalls || 0) + 1;
+    // The same step stopped for the same reason as last time is no progress, whatever other files changed.
+    const subs = (view.execution?.subTasks || []).filter(sub => sub.megaTaskId === megaTaskId);
+    const stop = results.filter(result => result.status !== 'COMPLETE').map(result => `${subs.find(sub => sub.id === result.subTaskId)?.title || ''}: ${String((result.blockers || [])[0] || result.summary || '').replace(/\(.*\)/g, '').slice(0, 200)}`).sort().join(' | ');
+    const repeated = Boolean(stop) && stop === settings.lastStop;
+    before.lastStop = settings.lastStop;
+    settings.lastStop = stop;
+    settings.stalls = changed && !repeated ? 0 : (settings.stalls || 0) + 1;
     persist();
     // An error on the way leaves the stop as it was, so the next try hears about it again.
     try { return await continueWith(); }
-    catch (error) { settings.continued = before.continued; settings.stalls = before.stalls; persist(); throw error; }
+    catch (error) { settings.continued = before.continued; settings.stalls = before.stalls; settings.lastStop = before.lastStop; persist(); throw error; }
     async function continueWith() {
       const reason = row.checkpoint?.reason === 'worker failure' ? 'a step failed' : 'a step stopped blocked or part way';
       if (settings.stalls >= 2) {
         const blocker = results.flatMap(result => result.blockers || []).map(String).find(Boolean) || results.at(-1)?.summary || 'no result was recorded';
         const decisions = store.execution && Array.isArray(store.execution.decisions) ? store.execution.decisions : null;
         if (decisions) decisions.push({ id: 'no-progress-' + megaTaskId, kind: 'no-progress', projectId, megaTaskId, breaks: true, at: now(), answer: '',
-          text: `The crew stopped twice without changing any file. Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
+          text: `The crew made no progress twice in a row (no file changed, or the same step stopped for the same reason). Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
           suggestion: 'Continue: split the remaining work into smaller parts and try other models' });
         note(projectId, 'The crew made no progress twice in a row. Planwharf stopped and asks you in Decisions how to continue.');
         return stopAutonomy(projectId, settings, 'NO_PROGRESS');

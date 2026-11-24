@@ -17,9 +17,12 @@ function clipPct(value) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+// A usage read that fails says why, and nothing more: only the company's own answer (providerError) or a
+// real refusal of its program says the plan expired or the login is gone. A refused token at the usage
+// service is not proof: the program renews its login when it runs. Guessing here kept every model of
+// the company out of the crew (Grok on 2026-11-24, while the grok program was signed in).
 function unreadPlan(id, reason) {
-  const provider = id === 'ChatGPT' ? 'codex' : id === 'Grok' ? 'grok' : 'antigravity';
-  return require('./plan-status.cjs').withStatus(provider, {
+  return ({
     id,
     label: id,
     readable: false,
@@ -28,7 +31,8 @@ function unreadPlan(id, reason) {
     leftPct: null,
     source: null,
     reason: reason || 'Not readable',
-    windows: []
+    windows: [],
+    planStatus: 'unknown'
   });
 }
 
@@ -179,6 +183,9 @@ function form(pairs) {
   return Object.keys(pairs).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(pairs[key] || '')}`).join('&');
 }
 
+const GROK_REFUSED = 'Grok usage could not be read: the usage service refused the saved login. The grok program renews it when it runs; Grok models are not stopped for this.';
+const CHATGPT_REFUSED = 'ChatGPT usage could not be read: the usage service refused the saved login. Codex renews it when it runs; ChatGPT models are not stopped for this.';
+
 async function grokAccess(auth, fetchImpl, now) {
   if (!auth) return '';
   const exp = auth.expiresAt ? Date.parse(auth.expiresAt) : 0;
@@ -218,7 +225,7 @@ async function readGrok(home, fetchImpl, now) {
   if (!auth || (!auth.key && !auth.refresh)) return unreadPlan('Grok', 'Sign in with grok CLI to read weekly usage.');
   try {
     const token = await grokAccess(auth, fetchImpl, now);
-    if (!token) return unreadPlan('Grok', 'Grok login expired.');
+    if (!token) return unreadPlan('Grok', GROK_REFUSED);
     const res = await httpGet(fetchImpl, GROK_BILLING, {
       Authorization: 'Bearer ' + token,
       'x-grok-client-surface': 'grok-build',
@@ -227,7 +234,7 @@ async function readGrok(home, fetchImpl, now) {
     if (res.status === 200 && res.json) return parseGrokCredits(res.json);
     const planError = require('./plan-status.cjs').providerError('grok', res.json, 'Grok');
     if (planError) return { ...unreadPlan('Grok', planError.reason), planStatus: planError.planStatus };
-    return unreadPlan('Grok', res.status === 401 ? 'Grok login expired.' : `Grok usage HTTP ${res.status}.`);
+    return unreadPlan('Grok', res.status === 401 ? GROK_REFUSED : `Grok usage HTTP ${res.status}.`);
   } catch (err) {
     return unreadPlan('Grok', err && err.name === 'AbortError' ? 'Grok quota check timed out. CLI model access is checked separately.' : 'Grok quota service could not be reached. This does not mean the Grok CLI is unavailable.');
   }
@@ -238,7 +245,7 @@ async function readChatGpt(home, fetchImpl, authHome) {
   if (!auth || (!auth.access && !auth.refresh)) return unreadPlan('ChatGPT', 'Sign in with Codex / ChatGPT to read 5-hour and weekly usage.');
   try {
     let token = await chatgptAccess(auth, fetchImpl);
-    if (!token) return unreadPlan('ChatGPT', 'ChatGPT login expired.');
+    if (!token) return unreadPlan('ChatGPT', CHATGPT_REFUSED);
     let res = await httpGet(fetchImpl, CHATGPT_USAGE, {
       Authorization: 'Bearer ' + token,
       ...(auth.accountId ? { 'ChatGPT-Account-ID': auth.accountId } : {}),
@@ -258,7 +265,7 @@ async function readChatGpt(home, fetchImpl, authHome) {
     if (res.status === 200 && res.json) return parseChatGptUsage(res.json);
     const planError = require('./plan-status.cjs').providerError('codex', res.json, 'ChatGPT');
     if (planError) return { ...unreadPlan('ChatGPT', planError.reason), planStatus: planError.planStatus };
-    return unreadPlan('ChatGPT', res.status === 401 ? 'ChatGPT login expired.' : `ChatGPT usage HTTP ${res.status}.`);
+    return unreadPlan('ChatGPT', res.status === 401 ? CHATGPT_REFUSED : `ChatGPT usage HTTP ${res.status}.`);
   } catch (err) {
     return unreadPlan('ChatGPT', err && err.name === 'AbortError' ? 'ChatGPT usage timed out.' : 'ChatGPT usage unreachable.');
   }
