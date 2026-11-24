@@ -182,6 +182,16 @@ public class ScenarioParityTests
         return false;
     }
 
+    // The scenarios were recorded on Windows: a path there uses "\\". The separator is the computer's, not a
+    // difference between the JavaScript and the C#, so both sides are compared with "/".
+    private static JsonNode? Slashes(JsonNode? node) => node switch
+    {
+        JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(text.Replace('\\', '/')),
+        JsonObject obj => new JsonObject(obj.Select(pair => KeyValuePair.Create(pair.Key, Slashes(pair.Value)))),
+        JsonArray array => new JsonArray(array.Select(Slashes).ToArray()),
+        _ => node?.DeepClone()
+    };
+
     private static void AssertOutcome(JsonObject sc, JsonNode? actualResult, string? actualError, JsonObject actualEffects, Exchange exchange, List<JsonNode>? events = null)
     {
         if (actualError != null && !sc.ContainsKey("error"))
@@ -198,13 +208,13 @@ public class ScenarioParityTests
         else if (sc.TryGetPropertyValue("result", out var expResNode))
         {
             Assert.True(actualError == null, $"Expected result but got error: '{actualError}'");
-            Assert.True(Same(expResNode, actualResult),
+            Assert.True(Same(Slashes(expResNode), Slashes(actualResult)),
                 $"Result mismatch for {sc["name"]}:\nExpected: {expResNode?.ToJsonString()}\nActual:   {actualResult?.ToJsonString()}");
         }
 
         if (sc.TryGetPropertyValue("effects", out var expEffNode) && expEffNode is JsonObject expEff)
         {
-            Assert.True(Same(expEff, actualEffects),
+            Assert.True(Same(Slashes(expEff), Slashes(actualEffects)),
                 $"Effects mismatch for {sc["name"]}:\nExpected: {expEff.ToJsonString()}\nActual:   {actualEffects.ToJsonString()}");
         }
 
@@ -618,6 +628,9 @@ public class ScenarioParityTests
                 new() { ["id"] = "exact", ["providerId"] = "fixture", ["cli"] = "gpt-exact", ["available"] = false }
             };
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            // The account changes while the first discovery is running, as in the JavaScript, where it starts at
+            // once. Without waiting, a busy test run could switch the account before it started.
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             int calls = 0;
             var api = ProviderModels.CreateProviderModels(models, new ProviderModels.ProviderModelsOptions
             {
@@ -633,12 +646,13 @@ public class ScenarioParityTests
                         ["call"] = calls
                     };
                     var rep = exchange.Call(req);
-                    if (calls == 1) await release.Task;
+                    if (calls == 1) { started.TrySetResult(); await release.Task; }
                     return rep.AsObject();
                 }
             });
 
             var pending = api.RefreshAsync(true);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
             provider["account"]!["key"] = "fake-B"; await api.InvalidateAsync("fixture"); api.ObserveScope("fixture");
             provider["account"]!["key"] = "fake-A"; await api.InvalidateAsync("fixture"); api.ObserveScope("fixture");
             var next = api.RefreshAsync(true);

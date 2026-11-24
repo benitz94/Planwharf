@@ -86,8 +86,8 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | 40 | 3. | Port them, as sheet 37 says | `port/40-phase3` | Done (#213) |
 | 41 | 2 and 3. | **Comparison with the JavaScript for jobs 24 and 40**: record the comparison cases the sheets 23 and 37 asked for and the ports left out, fix the C# where it differs, and make CI refuse a port without them. Sheet below | `port/41-parity` | Done (#217) |
 | 42 | 4. Processes and providers | Write the sheet: `runner` (start and stop the AI programs, read their output, close process trees on Windows), `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, and the modules added after the plan: `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; the tests use the fake AI programs of job 03. [Sheet](../native/porting/jobs/42-phase4-processes-providers.md); the port is job 43 and waits for review | `port/42-sheet` | Sheet done (#219) |
-| 43 | 4. | Port them, as sheet 42 says. The six modules with side effects are compared with the scenario recorder the owner approved (see the decision in the sheet). Then **stop**: the owner tests on Windows with the real AI programs | `port/43-phase4` | To do |
-| 44 | 5. Execution | Write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/44-sheet` | To do |
+| 43 | 4. | Port them, as sheet 42 says. The six modules with side effects are compared with the scenario recorder the owner approved (see the decision in the sheet). The owner's Windows test with the real AI programs moved to the start of job 44 (owner, 24 November 2026) | `port/43-phase4` | Done (#233) |
+| 44 | 5. Execution | First the owner tests phase 4 on Windows with the real AI programs (Claude, Codex, Grok, Gemini start, answer and stop); what fails is fixed before the sheet. Then write the sheet: `execution.cjs`, `project-home`, and a proposal for splitting the orchestrator by concern (team and models, job building, the lead's questions, state, order parsing) | `port/44-sheet` | To do |
 | 45 | 5. | Port them, as sheet 44 says. Then **stop**: the owner approves the orchestrator split | `port/45-phase5` | To do |
 | 46 | 6. Orchestrator | Write the sheets for the orchestrator, one per part of the approved split | `port/46-sheets` | To do |
 | 47+ | 6. | One job per part, then one that puts them together and passes the orchestrator tests | `port/47-…` | To do |
@@ -96,15 +96,6 @@ Jobs are numbered in order; the porting jobs 01 to 04 come first.
 | — | After the port | **Benchmarks**, repeated on small, medium and large tasks: reliability, defects, time and quota, Planwharf against each AI tool alone; no saving claimed that the numbers do not show | — | To do |
 | — | After the port | **Models chosen by results**: the step outcomes of job 36 and the benchmarks rank the models per kind of work, once there are enough examples; the owner's roles and limits still decide | — | To do |
 
-Job 43 implementation checkpoint (24 November 2026): the sixteen native ports, ten pure
-comparison surfaces, recovered Antigravity cases, and six scenario replay floors are on
-the continuation branch and pass their focused checks. Engineering CI, the Release Engine
-build, the 984-case ParityTests run, and FakeCli's 64 tests passed. The full Engine suite
-has one localization-guard failure in `PhoneHandoverLive.cs` and `Worktrees.cs`, outside
-the integration slice. Native AOT is blocked by the missing Windows platform linker/C++
-workload. Keep Job 43 as `To do` until independent verification and the owner's Windows
-real-program hand test are complete; do not claim cross-platform CI from these Windows
-results.
 
 Every phase ends with the review done, CI green on Windows, macOS and Linux, and the comparison showing
 no difference for its modules. Until phase 7 Planwharf keeps running on the Node engine.

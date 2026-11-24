@@ -126,11 +126,12 @@ public sealed class RunnerTests
             Kind = "audit",
             Title = "Check Security",
             Detail = "Look for leaks.",
-            Result = "D:\\evidence\\result.txt"
+            // A path of this computer: "D:\\evidence" has no folder part on Linux or macOS.
+            Result = Path.Combine(Path.GetTempPath(), "evidence", "result.txt")
         };
         var auditPrompt = Runner.PromptFor(auditOpts);
         Assert.Contains("Planwharf audit worker", auditPrompt);
-        Assert.Contains("Evidence directory: D:\\evidence", auditPrompt);
+        Assert.Contains("Evidence directory: " + Path.Combine(Path.GetTempPath(), "evidence"), auditPrompt);
         Assert.Contains("Audit: Check Security", auditPrompt);
         Assert.Contains("Look for leaks.", auditPrompt);
 
