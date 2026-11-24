@@ -355,6 +355,20 @@ for these six modules; independently authored C# tests cannot prove this compari
 side-effect comparison approval is a prerequisite to Job 43: review must authorize a concrete
 recorder, fixture paths and replay/check command, or an explicit rule-12 exception. Until then,
 these six modules' comparison plan is blocked, not an approved exemption or completed coverage.
+
+**Owner decision (24 November 2026): a scenario recorder is approved, not a rule-12 exception.** Job 43
+adds `native/porting/parity/scenarios.cjs`. For each of the six modules (`provider-models`,
+`provider-adapters`, `api-agent`, `worktrees`, `pr-check`, `phone-activation-check`) it runs the JavaScript
+through fixed scenarios with simulated replies only (a fake `spawn`/`spawnSync`, a fake `fetch`, a temporary
+folder or a throwaway git repository; no real AI program, network or credentials), and writes
+`native/porting/parity/scenarios/<module>.json`: every request made (command and arguments, or method and
+URL with no secret), the reply given, the effects on files and git, and the final result or error.
+`ScenarioParityTests` in `Planwharf.Engine.Tests` replays each file against the C# port with the same
+simulated replies and must produce the same requests, effects and result. The check command is
+`node native/porting/parity/scenarios.cjs --check` (fails when a recorded file differs from a fresh run) and
+`dotnet test --filter ScenarioParityTests`. `required.json` lists the six modules with a nonzero scenario
+floor. A scenario that cannot be made deterministic is named in the sheet and asked to the owner; it is
+never dropped silently.
 `branchFor` invokes git check-ref-format, so it belongs to fixture tests, not the pure recorder.
 
 ## Platform risks and decisions that remain open
