@@ -22,7 +22,7 @@ Model text can only declare the goal reached or name an objective. It cannot app
 - Two stops in a row with no progress (no file changed, or the same step stopped for the same reason) are no progress. The crew stops (**Stopped: no progress twice**) and asks you in **Decisions** how to continue. Your answer starts it again from there.
 - An error inside Planwharf does not end the crew at once: it is shown in **Progress** and the step is tried again. Three in a row stop it (**Stopped: error**, with the message).
 - What Planwharf decides on its own (why the work was not split, which model a part moved to, why the crew stopped) is written in **Progress**.
-- **Pause** and **Stop** are always respected. A stopped or checkpointed project is not restarted.
+- **Pause** and **Stop** are always respected. **Resume** of work the crew started turns the crew back on for it: a step that then stops part way goes back to the lead, as before the stop. A stopped or checkpointed project is not restarted.
 - An unreadable or failed lead reply is retried once with a lead from another provider. If that also fails, autonomy stops. Nothing is guessed from it.
 - A worker or lead refused for quota or a usage limit is skipped for an hour; one that needs credits is skipped for a day. Its slice moves to another eligible model, and the timeline records the switch.
 - Provider quota thresholds still apply.
