@@ -120,3 +120,17 @@ test('a part that waits for others may change their finished files and files nob
   assert.equal(strict.sub('Integrate quota').status, 'BLOCKED');
   assert.deepEqual(strict.sub('Integrate quota').scopeViolation, ['src/skills.cs']);
 });
+
+test('Resume works after the same work stopped twice (two checkpoints): it continues from the latest', t => {
+  const { run, sub, bridge, item, job, parts, store, mega } = fixture(t, { work: info => info.worker.id === 'a' ? ['src/quota.cs', 'notes.md'] : ['src/skills.cs'] });
+  run();
+  assert.equal(sub('Port quota').status, 'BLOCKED');
+  assert.equal(bridge.resume(item, job, { confirmChanges: true }).ok, true);
+  bridge.advance(item, job, parts); bridge.advance(item, job, parts);
+  assert.equal(sub('Port quota').status, 'BLOCKED', 'stopped again');
+  const saved = store.execution.checkpoints.filter(cp => cp.megaTaskId === mega.id);
+  assert.ok(saved.length >= 2, 'two checkpoints of the same work');
+  const resumed = bridge.resume(item, job, { confirmChanges: true });
+  assert.equal(resumed.ok, true);
+  assert.equal(resumed.checkpointId, saved.at(-1).id, 'the latest checkpoint');
+});

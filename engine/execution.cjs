@@ -743,7 +743,11 @@ function createExecutionBridge(options) {
     checkpoint(item, job, mega, reason, interrupted); paint(mega); persist(); return mega;
   }
   function resume(item, job, request) {
-    const choices = data.checkpoints.filter(cp => cp.projectId === item.project.id && ['PAUSED', 'FAILED'].includes(data.megaTasks.find(mega => mega.id === cp.megaTaskId)?.status));
+    // Each stop of a work saves a checkpoint; Resume without a named one continues from the latest of each
+    // stopped work (job 45 was stopped by the owner, then blocked: two checkpoints, and Resume was refused).
+    const all = data.checkpoints.filter(cp => cp.projectId === item.project.id && ['PAUSED', 'FAILED'].includes(data.megaTasks.find(mega => mega.id === cp.megaTaskId)?.status));
+    const latest = megaId => { const mega = data.megaTasks.find(item => item.id === megaId); const own = all.filter(cp => cp.megaTaskId === megaId); return own.find(cp => cp.id === mega?.currentCheckpointId) || own.at(-1); };
+    const choices = request.checkpointId ? all : [...new Set(all.map(cp => cp.megaTaskId))].map(latest);
     if ((!request.megaTaskId || !request.checkpointId) && choices.length !== 1) throw new Error('Choose an explicit MegaTask and checkpoint for this project.');
     const cp = choices.find(cp => cp.id === (request.checkpointId || choices[0]?.id) && cp.megaTaskId === (request.megaTaskId || choices[0]?.megaTaskId));
     if (!cp) throw new Error('Checkpoint does not belong to this project and MegaTask.');

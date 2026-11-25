@@ -123,7 +123,7 @@ public sealed partial class MainWindow
         dropButton.IsVisible = view.Action == CrewAction.Resume;
         dropButton.IsEnabled = !busy;
         send.IsEnabled = !busy && Pending == null;
-        if (Pending == null)
+        if (Pending == null && !StickyError())
         {
             var waiting = view.Action == CrewAction.StopTheCrew && view.Work?.Waiting.Length > 0;
             var line = checking ? Strings.T("Checking your AI tools\u2026") : missing.FirstOrDefault()

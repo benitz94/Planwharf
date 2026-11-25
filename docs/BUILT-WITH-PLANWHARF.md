@@ -284,3 +284,4 @@ scenario assertion-strength limitations in the existing `ScenarioParityTests.cs`
 this slice's write scope. The owner's real-program Windows hand test remains required
 before Job 43 acceptance; no cross-platform CI result is claimed.
 | Job 45 stopped on "Work branch has uncommitted changes" at every integration: Planwharf's own work plan had been committed into the repository with job 43, and Planwharf rewrites it at every step. It left the repository, and integration ignores it | #237 |
+| Resume was refused once a work had stopped twice (two checkpoints: "Choose an explicit MegaTask and checkpoint"), and the app showed the error for less than a second | #238 |
