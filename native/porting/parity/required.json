@@ -61,5 +61,6 @@
     "scenarioFloors": {
       "project-home": 2
     }
-  }
+  },
+  "orchestrator-order-parsing": { "minCases": 50 }
 }
