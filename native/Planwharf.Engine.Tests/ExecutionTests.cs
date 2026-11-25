@@ -400,6 +400,8 @@ public sealed class ExecutionTests
         public ExecutionBridge Bridge;
         public JsonObject Mega;
         public bool Alive = true;
+        public Func<int, bool>? CheckAlive { get; set; }
+        public Func<int, bool>? Kill { get; set; }
         public bool FailPersist { get; set; }
         public int Launches;
         public string Clock = "2026-01-01T00:00:00.000Z";
@@ -421,7 +423,8 @@ public sealed class ExecutionTests
             Store = Store, Attempts = Attempts, Directory = "synthetic", Files = Files, Models = () => Models,
             RowFor = (_, _) => Row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Now = () => Clock,
             LeadId = () => "lead", SessionId = Session, NewId = () => "stable", Plan = Plan,
-            IsProcessAlive = pid => { Calls.Add("alive:" + pid); return Alive; },
+            IsProcessAlive = pid => { Calls.Add("alive:" + pid); return CheckAlive?.Invoke(pid) ?? Alive; },
+            KillWorker = pid => Kill?.Invoke(pid) ?? true,
             SpawnWorker = _ => { Launches++; return new JsonObject { ["pid"] = 100 + Launches }; },
             Persist = () => { Calls.Add("persist"); if (FailPersist) throw new IOException("persist failed"); },
             OnRefusal = (model, reason) => Calls.Add("refusal:" + model + ":" + reason),
@@ -1072,5 +1075,387 @@ public sealed class ExecutionTests
         Assert.True(bridge.Data.MegaTasks[0]!.AsObject().ContainsKey("future"));
         Assert.Equal("[1,2]", bridge.Data.Node["unknown"]!.ToJsonString());
         Assert.Empty(calls);
+    }
+
+    [Fact]
+    public void StopGracefulAndForcedPreservesPartialEvidenceAndCheckpoints()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        var otherJob = ProposalJob(); otherJob["id"] = "other-job";
+
+        Assert.Equal("MegaTask does not belong to the current job.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Stop(item, otherJob, Text(f.Mega["id"]))).Message);
+
+        var killed = false;
+        f.Kill = pid => { killed = true; return true; };
+        f.CheckAlive = pid => !killed;
+
+        var graceful = f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: true);
+        Assert.True(graceful["pauseRequested"]!.GetValue<bool>());
+        Assert.Equal("Finish active slices, then save a checkpoint.", Text(graceful["nextAction"]));
+        Assert.Empty(f.Bridge.Data.Checkpoints);
+
+        var stopped = f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false);
+        Assert.Equal("PAUSED", Text(stopped["status"]));
+        Assert.Equal("Review remaining slices and resume this checkpoint.", Text(stopped["nextAction"]));
+        var cp = Assert.Single(f.Bridge.Data.Checkpoints);
+        Assert.Equal("stop", Text(cp!["reason"]));
+        Assert.Contains(Text(f.Part["attemptId"]), cp["activeAttemptIds"]!.ToJsonString());
+        Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal("BLOCKED", Text(f.Bridge.Data.Results[0]!["status"]));
+        Assert.StartsWith("Interrupted by Stop; partial evidence retained.", Text(f.Bridge.Data.Results[0]!["summary"]));
+
+        Assert.Equal("MegaTask is not running.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Stop(item, job, Text(f.Mega["id"]))).Message);
+    }
+
+    [Fact]
+    public void StopProcessTreeTerminationFailurePausesSchedulingAndExposesActiveProcesses()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+
+        f.Kill = pid => false;
+        f.Alive = true;
+
+        var ex = Assert.Throws<InvalidOperationException>(() => f.Bridge.Stop(item, job, Text(f.Mega["id"])));
+        Assert.Contains("Could not terminate worker process tree(s):", ex.Message);
+        Assert.Contains("Scheduling is paused; these processes are still active.", ex.Message);
+        Assert.True(f.Mega["pauseRequested"]!.GetValue<bool>());
+        Assert.True(f.Row["workerAlive"]!.GetValue<bool>());
+        Assert.Equal(1, f.Row["monitoring"]!["alive"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public void StopWorkerTerminatesSpecificProcessAndCollectsBlocked()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        var killed = false;
+        f.Kill = pid => { if (pid == 101) killed = true; return pid == 101; };
+        f.CheckAlive = pid => !killed;
+
+        Assert.Equal("Worker is no longer active on this project.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.StopWorker(item, job, Text(f.Mega["id"]), 999)).Message);
+
+        f.Kill = pid => false;
+        Assert.Equal("Could not terminate the worker process tree. Scheduling is paused.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.StopWorker(item, job, Text(f.Mega["id"]), 101)).Message);
+
+        f.Kill = pid => { killed = true; return true; };
+        var stopped = f.Bridge.StopWorker(item, job, Text(f.Mega["id"]), 101);
+        Assert.True(stopped["pauseRequested"]!.GetValue<bool>());
+        Assert.Equal("Finish other active slices, then resume remaining work from the checkpoint.", Text(stopped["nextAction"]));
+        Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal("BLOCKED", Text(f.Bridge.Data.Results[0]!["status"]));
+        Assert.Contains("Worker stopped by you; remaining workers may finish.", Text(f.Bridge.Data.Results[0]!["summary"]));
+    }
+
+    [Fact]
+    public void CheckpointForUpdateAndDropWorkEnforceRunningAndWorktreeState()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        var killed = false;
+        f.Kill = pid => { killed = true; return true; };
+        f.CheckAlive = pid => !killed;
+
+        var wrongJob = ProposalJob(); wrongJob["id"] = "mismatch";
+        Assert.Equal("Update checkpoint belongs to another task.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.CheckpointForUpdate(item, wrongJob, Text(f.Mega["id"]))).Message);
+
+        Assert.Equal("Stop every worker before dropping its worktrees.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.DropWork(item, Text(f.Mega["id"]))).Message);
+
+        var cpMega = f.Bridge.CheckpointForUpdate(item, job, Text(f.Mega["id"]));
+        Assert.Equal("PAUSED", Text(cpMega["status"]));
+        var cp = Assert.Single(f.Bridge.Data.Checkpoints);
+        Assert.Equal("application update", Text(cp!["reason"]));
+
+        var wtFolder = Worktrees.WorktreePath(Path.GetFullPath("synthetic"), "p", Text(f.Mega["id"]), "s1");
+        var cleanedParts = new List<string>();
+        f.Mega["worktreeParts"] = new JsonArray(new JsonObject { ["subId"] = "s1", ["folder"] = wtFolder, ["branch"] = "b1" });
+        f.Git = call => { cleanedParts.Add(string.Join(" ", call.Args)); return new Worktrees.GitReply(0); };
+        var dropped = f.Bridge.DropWork(item, Text(f.Mega["id"]));
+        Assert.NotNull(dropped);
+        Assert.Contains(cleanedParts, cmd => cmd.Contains("branch -D b1"));
+    }
+
+    [Fact]
+    public void ResumeWithTwoResumeTargetsRequiresExplicitIdentity()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        f.Kill = pid => true; f.CheckAlive = pid => false;
+        f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false);
+
+        var cp2 = new JsonObject
+        {
+            ["id"] = "CP-second", ["projectId"] = "p", ["megaTaskId"] = "MT-other",
+            ["jobId"] = "job", ["jobFingerprint"] = f.Bridge.Data.Checkpoints[0]!["jobFingerprint"]?.DeepClone(),
+            ["repoState"] = f.Bridge.Data.Checkpoints[0]!["repoState"]?.DeepClone()
+        };
+        var mega2 = new JsonObject { ["id"] = "MT-other", ["projectId"] = "p", ["taskId"] = "job", ["status"] = "PAUSED", ["title"] = "Second" };
+        f.Bridge.Data.Checkpoints.Add((JsonNode)cp2);
+        f.Bridge.Data.MegaTasks.Add((JsonNode)mega2);
+
+        Assert.Equal("Choose an explicit MegaTask and checkpoint for this project.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Resume(item, job, new JsonObject())).Message);
+
+        Assert.Equal("Checkpoint does not belong to this project and MegaTask.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Resume(item, job, new JsonObject { ["checkpointId"] = "nonexistent", ["megaTaskId"] = Text(f.Mega["id"]) })).Message);
+
+        var otherJob = ProposalJob(); otherJob["detail"] = "Changed fingerprint";
+        Assert.Equal("Checkpoint belongs to a different job.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Resume(item, otherJob, new JsonObject { ["checkpointId"] = Text(f.Bridge.Data.Checkpoints[0]!["id"]), ["megaTaskId"] = Text(f.Mega["id"]) })).Message);
+    }
+
+    [Fact]
+    public void ResumeWithChangedRepositoryOrPlanRevisionRequiresExplicitConfirmation()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        f.Kill = pid => true; f.CheckAlive = pid => false;
+        f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false);
+        var cpId = Text(f.Bridge.Data.Checkpoints[0]!["id"]);
+
+        var changedItem = ProposalItem();
+        changedItem["revisions"] = new JsonArray(new JsonObject { ["id"] = 99, ["direction"] = "New direction" });
+
+        var preview = f.Bridge.Resume(changedItem, job, new JsonObject { ["checkpointId"] = cpId, ["megaTaskId"] = Text(f.Mega["id"]) });
+        Assert.False(preview["ok"]!.GetValue<bool>());
+        Assert.True(preview["requiresConfirmation"]!.GetValue<bool>());
+        Assert.Equal("Repository or Living Plan changed since the checkpoint. Review changes and explicitly confirm before continuing.", Text(preview["reason"]));
+        Assert.Equal("PAUSED", Text(f.Mega["status"]));
+
+        var confirmed = f.Bridge.Resume(changedItem, job, new JsonObject { ["checkpointId"] = cpId, ["megaTaskId"] = Text(f.Mega["id"]), ["confirmChanges"] = true });
+        Assert.True(confirmed["ok"]!.GetValue<bool>());
+        Assert.Equal("RUNNING", Text(f.Mega["status"]));
+        Assert.Single(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "MEGATASK_RESUMED");
+    }
+
+    [Fact]
+    public void ResumeWithAssignmentsUpdatesSubTasksAndResetsPending()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        f.Kill = pid => true; f.CheckAlive = pid => false;
+        f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false);
+        var cpId = Text(f.Bridge.Data.Checkpoints[0]!["id"]);
+
+        var badAssignments = new JsonObject { ["assignments"] = new JsonArray("invalid") };
+        Assert.Equal("Worker assignments must map SubTask IDs to exact model IDs.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Resume(item, job, badAssignments)).Message);
+
+        var unknownModel = new JsonObject { ["checkpointId"] = cpId, ["megaTaskId"] = Text(f.Mega["id"]),
+            ["assignments"] = new JsonObject { [Text(f.Sub["id"])] = "nonexistent" } };
+        Assert.Equal("Invalid remaining SubTask or exact worker model.",
+            Assert.Throws<InvalidOperationException>(() => f.Bridge.Resume(item, job, unknownModel)).Message);
+
+        var validReq = new JsonObject
+        {
+            ["checkpointId"] = cpId, ["megaTaskId"] = Text(f.Mega["id"]),
+            ["assignments"] = new JsonObject { [Text(f.Sub["id"])] = "b" }
+        };
+        var res = f.Bridge.Resume(item, job, validReq);
+        Assert.True(res["ok"]!.GetValue<bool>());
+        Assert.Equal("PENDING", Text(f.Sub["status"]));
+        Assert.Equal("b", Text(f.Sub["assignedModelId"]));
+        Assert.Equal("codex", Text(f.Sub["proposedProvider"]));
+        Assert.Equal("b", Text(f.Sub["proposedCli"]));
+    }
+
+    [Fact]
+    public void ResumeAfterDeadlineHonorsContinuationBeyondDeadline()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        f.Kill = pid => true; f.CheckAlive = pid => false;
+        f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false, reason: "deadline");
+        var cpId = Text(f.Bridge.Data.Checkpoints[0]!["id"]);
+
+        Assert.Null(f.Mega["deadlineHonoredAt"]);
+        var res = f.Bridge.Resume(item, job, new JsonObject { ["checkpointId"] = cpId, ["megaTaskId"] = Text(f.Mega["id"]) });
+        Assert.True(res["ok"]!.GetValue<bool>());
+        Assert.NotNull(f.Mega["deadlineHonoredAt"]);
+    }
+
+    [Fact]
+    public void ProposalWithUnavailableGoldModelRejectsWithExactText()
+    {
+        var (bridge, _, _) = ProposedBridge();
+        var job = ProposalJob();
+        job["goldModel"] = new JsonObject { ["id"] = "gold:1", ["provider"] = "gold", ["cli"] = "1" };
+
+        var ex = Assert.Throws<InvalidOperationException>(() => bridge.Propose(ProposalItem(), job, []));
+        Assert.Equal("Gold model gold/1 (gold:1) is unavailable, disabled or blocked by quota. No substitute will be used.", ex.Message);
+    }
+
+    [Fact]
+    public void AdditionKillFailureStillResetsVerifyWithoutConfirmingProcessDeath()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+
+        var claim = f.Attempts.Claim(new JsonObject
+        {
+            ["taskId"] = "MT-stable-ST-02", ["projectId"] = "p", ["modelId"] = "a",
+            ["megaTaskId"] = Text(f.Mega["id"]), ["subTaskId"] = "MT-stable-ST-02",
+            ["candidates"] = new JsonArray(f.Models.Select(m => (JsonNode)m.DeepClone()).ToArray())
+        });
+        var verifyAttemptId = Text(claim["attempt"]?["id"]);
+
+        var verify = (JsonObject)f.Sub.DeepClone();
+        verify["id"] = "MT-stable-ST-02";
+        verify["title"] = "Verify the work independently";
+        verify["status"] = "RUNNING";
+        verify["dependencies"] = new JsonArray(f.Sub["id"]!.DeepClone());
+        verify["attemptIds"] = new JsonArray(verifyAttemptId);
+        f.Bridge.Data.SubTasks.Add((JsonNode)verify);
+
+        var verifyPart = new JsonObject
+        {
+            ["subTaskId"] = "MT-stable-ST-02",
+            ["attemptId"] = verifyAttemptId,
+            ["pid"] = 888,
+            ["alive"] = true,
+            ["observedAlive"] = true,
+            ["structuredResultPath"] = $"synthetic/results/{verifyAttemptId}.json",
+            ["exitPath"] = $"synthetic/results/{verifyAttemptId}.exit.json"
+        };
+        (f.Row["dispatch"] as JsonArray)!.Add((JsonNode)verifyPart);
+
+        f.Kill = pid => throw new IOException("kill process failed");
+        f.Alive = true;
+
+        var additionRes = f.Bridge.AppendAddition(item, job, Text(f.Mega["id"]), new JsonObject
+        {
+            ["title"] = "Fix edge case",
+            ["files"] = new JsonArray("src/fix.cs"),
+            ["modelId"] = "b"
+        });
+
+        Assert.True(additionRes["ok"]!.GetValue<bool>());
+        Assert.Equal("PENDING", Text(verify["status"]));
+        Assert.False(verifyPart["alive"]!.GetValue<bool>());
+        Assert.False(verifyPart["observedAlive"]!.GetValue<bool>());
+        Assert.Equal("closed", Text(f.Attempts.GetAttempts().First(a => Text(a["id"]) == verifyAttemptId)["status"]));
+        Assert.Equal(3, f.Bridge.Data.SubTasks.Count);
+        var added = f.Bridge.Data.SubTasks.OfType<JsonObject>().First(s => Text(s["title"]) == "Fix edge case");
+        Assert.Contains(Text(added["id"]), verify["dependencies"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void AdditionToPausedWorkImmediatelyResumesAndAdvancesWithoutConfirmation()
+    {
+        var f = new CollectionFixture();
+        var item = ProposalItem(); var job = ProposalJob();
+        f.Kill = pid => true; f.CheckAlive = pid => false;
+        f.Bridge.Stop(item, job, Text(f.Mega["id"]), graceful: false);
+        Assert.Equal("PAUSED", Text(f.Mega["status"]));
+
+        var cp = f.Bridge.Data.Checkpoints[0] as JsonObject;
+        Assert.NotNull(cp);
+        f.Alive = true;
+
+        var res = f.Bridge.AppendAddition(item, job, Text(f.Mega["id"]), new JsonObject
+        {
+            ["title"] = "New feature while paused",
+            ["files"] = new JsonArray("src/feat.cs"),
+            ["modelId"] = "b"
+        });
+
+        Assert.True(res["ok"]!.GetValue<bool>());
+        Assert.Equal("RUNNING", Text(f.Mega["status"]));
+        Assert.False(f.Mega["pauseRequested"]!.GetValue<bool>());
+        Assert.Empty(f.Mega["interruptedAttemptIds"]!.AsArray());
+        Assert.Single(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "MEGATASK_RESUMED");
+        Assert.Single(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "SUBTASK_ADDED");
+    }
+
+    [Fact]
+    public void AnswerDecisionAllowsFirstAnswerAfterWorkStartedButRejectsSubsequentAnswer()
+    {
+        var f = new CollectionFixture();
+        var decisionId = "DEC-test-1";
+        var decision = new JsonObject
+        {
+            ["id"] = decisionId,
+            ["projectId"] = "p",
+            ["megaTaskId"] = Text(f.Mega["id"]),
+            ["text"] = "Choose approach",
+            ["suggestion"] = "Option A",
+            ["answer"] = null,
+            ["answeredBy"] = null,
+            ["createdAt"] = f.Clock
+        };
+        f.Bridge.Data.Decisions.Add((JsonNode)decision);
+        Assert.Equal("RUNNING", Text(f.Sub["status"]));
+
+        var first = f.Bridge.AnswerDecision("p", decisionId, "Option B");
+        Assert.True(first["ok"]!.GetValue<bool>());
+        Assert.Equal("Option B", Text(decision["answer"]));
+        Assert.Equal("owner", Text(decision["answeredBy"]));
+
+        var second = f.Bridge.AnswerDecision("p", decisionId, "Option C");
+        Assert.False(second["ok"]!.GetValue<bool>());
+        Assert.Equal("The step that needs this decision has already started.", Text(second["reason"]));
+        Assert.Equal("Option B", Text(decision["answer"]));
+    }
+
+    [Fact]
+    public void DelegateDecisionReplacesAnswerRegardlessOfStartedWork()
+    {
+        var f = new CollectionFixture();
+        var decisionId = "DEC-delegate-1";
+        var decision = new JsonObject
+        {
+            ["id"] = decisionId,
+            ["projectId"] = "p",
+            ["megaTaskId"] = Text(f.Mega["id"]),
+            ["text"] = "Choose default",
+            ["suggestion"] = "Safe Default",
+            ["answer"] = "Original Owner Answer",
+            ["answeredBy"] = "owner",
+            ["createdAt"] = f.Clock
+        };
+        f.Bridge.Data.Decisions.Add((JsonNode)decision);
+        Assert.Equal("RUNNING", Text(f.Sub["status"]));
+
+        var res = f.Bridge.DelegateDecision("p", decisionId, "Lead Auto");
+        Assert.True(res["ok"]!.GetValue<bool>());
+        Assert.Equal("Safe Default", Text(decision["answer"]));
+        Assert.Equal("Decided by Lead Auto", Text(decision["answeredBy"]));
+        Assert.Equal("Followed recommended suggestion: Safe Default", Text(decision["autoReason"]));
+    }
+
+    [Fact]
+    public void ReassignRemainingInRunningWorkStopsWorkerCapturesTakeoverAndRestarts()
+    {
+        var f = new CollectionFixture();
+        f.Files.Content[Text(f.Part["logPath"])] = Encoding.UTF8.GetBytes("header\nworker line 1\nworker line 2");
+
+        var killed = false;
+        f.Kill = pid => { killed = true; return true; };
+        f.CheckAlive = pid => !killed;
+
+        var failKill = new CollectionFixture();
+        failKill.Kill = pid => false;
+        failKill.Alive = true;
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            failKill.Bridge.ReassignRemaining("p", Text(failKill.Mega["id"]), new JsonObject { [Text(failKill.Sub["id"])] = "b" }));
+        Assert.Contains("Could not stop the worker", ex.Message);
+        Assert.Contains("its model was not changed", ex.Message);
+
+        var reassigned = f.Bridge.ReassignRemaining("p", Text(f.Mega["id"]), new JsonObject { [Text(f.Sub["id"])] = "b" }, "Quota switch");
+        Assert.NotNull(reassigned);
+        Assert.Equal("b", Text(f.Sub["assignedModelId"]));
+        Assert.Equal("PENDING", Text(f.Sub["status"]));
+        Assert.NotNull(f.Sub["takeover"]);
+        Assert.Contains("worker line 1", Text(f.Sub["takeover"]!["logTail"]));
+        Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal("BLOCKED", Text(f.Bridge.Data.Results[0]!["status"]));
+        Assert.True(f.Bridge.Data.Results[0]!["modelChange"]!.GetValue<bool>());
     }
 }

@@ -1147,6 +1147,549 @@ public sealed partial class ExecutionBridge
         }
         Options.Persist();
     }
+
+    public JsonObject Stop(JsonObject item, JsonObject job, string megaTaskId, bool graceful = false, string reason = "stop")
+    {
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var mega = Target(projectId, megaTaskId);
+        if (Execution.Text(mega["taskId"]) != Execution.Text(job["id"])) throw new InvalidOperationException("MegaTask does not belong to the current job.");
+        if (Execution.Text(mega["status"]) != "RUNNING") throw new InvalidOperationException("MegaTask is not running.");
+        mega["pauseRequested"] = true;
+        if (graceful) { mega["nextAction"] = "Finish active slices, then save a checkpoint."; Paint(mega); Options.Persist(); return mega; }
+        Reconcile(mega);
+        var active = SubTasks(mega).Where(sub => Execution.Text(sub["status"]) == "RUNNING").ToArray();
+        var interrupted = active.Select(sub => (sub["attemptIds"] as JsonArray)?.LastOrDefault()?.GetValue<string>() ?? "").Where(id => id.Length > 0).Distinct().ToArray();
+        var prevInterrupted = (mega["interruptedAttemptIds"] as JsonArray ?? []).Select(Execution.Text);
+        mega["interruptedAttemptIds"] = StringArray(prevInterrupted.Concat(interrupted).Distinct());
+        var failures = new List<string>();
+        var row = Options.RowFor(projectId, Execution.Text(mega["id"]));
+        foreach (var sub in active)
+        {
+            var part = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(p => JsonNode.DeepEquals(p["subTaskId"], sub["id"]));
+            if (part is null) continue;
+            try
+            {
+                if (Execution.Truthy(part["alive"]))
+                {
+                    var pid = (int)Number(part["pid"]);
+                    var terminated = Options.KillWorker?.Invoke(pid);
+                    if ((Options.IsProcessAlive?.Invoke(pid) ?? false) || (terminated != true && Options.IsProcessAlive is null))
+                    {
+                        failures.Add(pid.ToString());
+                        continue;
+                    }
+                }
+            }
+            catch (Exception error) { failures.Add($"{part["pid"]}: {error.Message}"); continue; }
+            part["alive"] = false; part["observedAlive"] = false;
+            var partial = ReadJson(Execution.Text(part["structuredResultPath"]));
+            var result = ValidatedResult(mega, sub, part);
+            var valid = result is not null && (Execution.Text(sub["type"]) != "RESEARCH" || Execution.Text(result["status"]) != "COMPLETE" || ReportExists(result, part));
+            var identity = Identity(mega, sub, Execution.Text(part["attemptId"]));
+            var validPartial = partial is not null && WorkerResult.ValidateResult(partial, identity) ? partial : null;
+            var tech = Technical(mega, sub, part, "BLOCKED", reason == "deadline" ? "Interrupted at the Finish by deadline; partial evidence retained." : "Interrupted by Stop; partial evidence retained.", validPartial);
+            Collect(mega, sub, part, valid ? result! : tech);
+        }
+        row["workerAlive"] = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().Any(p => Execution.Truthy(p["alive"]));
+        var monitoring = row["monitoring"] as JsonObject ?? new JsonObject();
+        monitoring["alive"] = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().Count(p => Execution.Truthy(p["alive"]));
+        row["monitoring"] = monitoring;
+        if (failures.Count > 0)
+        {
+            Options.Persist();
+            throw new InvalidOperationException($"Could not terminate worker process tree(s): {string.Join(", ", failures)}. Scheduling is paused; these processes are still active.");
+        }
+        mega["deadlineError"] = null;
+        if (Execution.Truthy(mega["deadlineReachedAt"]) && !Execution.Truthy(mega["deadlineHonoredAt"]))
+            mega["deadlineHonoredAt"] = Options.Now();
+        if (reason == "deadline" && SubTasks(mega).All(sub => Execution.Text(sub["status"]) == "COMPLETE"))
+        {
+            Complete(item, mega); Paint(mega); Options.Persist(); return mega;
+        }
+        mega["nextAction"] = reason == "deadline" ? "Deadline reached. Review partial results and explicitly resume this checkpoint to continue beyond the original deadline." : "Review remaining slices and resume this checkpoint.";
+        Checkpoint(item, job, mega, reason, interrupted); Paint(mega); Options.Persist(); return mega;
+    }
+
+    public JsonObject StopWorker(JsonObject item, JsonObject job, string megaTaskId, int pid)
+    {
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var mega = Target(projectId, megaTaskId);
+        if (Execution.Text(mega["status"]) != "RUNNING" || Execution.Text(mega["taskId"]) != Execution.Text(job["id"]))
+            throw new InvalidOperationException("Worker does not belong to this running MegaTask.");
+        var row = Options.RowFor(projectId, Execution.Text(mega["id"]));
+        var part = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(p => (int)Number(p["pid"]) == pid && Execution.Truthy(p["alive"]));
+        var sub = part is null ? null : SubTasks(mega).FirstOrDefault(s => JsonNode.DeepEquals(s["id"], part["subTaskId"]) && Execution.Text(s["status"]) == "RUNNING");
+        if (sub is null || part is null) throw new InvalidOperationException("Worker is no longer active on this project.");
+        mega["pauseRequested"] = true; Options.Persist();
+        if (Options.KillWorker is null || !Options.KillWorker(pid) || (Options.IsProcessAlive?.Invoke(pid) ?? false))
+            throw new InvalidOperationException("Could not terminate the worker process tree. Scheduling is paused.");
+        part["alive"] = false; part["observedAlive"] = false;
+        var partial = ReadJson(Execution.Text(part["structuredResultPath"]));
+        var identity = Identity(mega, sub, Execution.Text(part["attemptId"]));
+        var validPartial = partial is not null && WorkerResult.ValidateResult(partial, identity) ? partial : null;
+        Collect(mega, sub, part, Technical(mega, sub, part, "BLOCKED", "Worker stopped by you; remaining workers may finish.", validPartial));
+        mega["interruptedAttemptIds"] = StringArray((mega["interruptedAttemptIds"] as JsonArray ?? []).Select(Execution.Text).Append(Execution.Text(part["attemptId"])).Distinct());
+        mega["nextAction"] = "Finish other active slices, then resume remaining work from the checkpoint.";
+        Options.Persist(); return mega;
+    }
+
+    public JsonObject DropWork(JsonObject item, string megaTaskId)
+    {
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var mega = Target(projectId, megaTaskId);
+        if (SubTasks(mega).Any(sub => Execution.Text(sub["status"]) == "RUNNING"))
+            throw new InvalidOperationException("Stop every worker before dropping its worktrees.");
+        if (mega["worktreeParts"] is JsonArray { Count: > 0 } parts && Options.Git is not null)
+        {
+            var folder = Execution.Text(item["project"]?["folder"]);
+            new Worktrees(Options.Git).Cleanup(folder, Path.GetFullPath(Options.Directory), projectId, Execution.Text(mega["id"]),
+                parts.OfType<JsonObject>().Select(p => new Worktrees.Part(Execution.Text(p["folder"]), Execution.Text(p["branch"]), Execution.Text(p["subId"]))).ToArray(), discardBranches: true);
+        }
+        return mega;
+    }
+
+    public void Restore(string projectId, JsonObject incoming)
+    {
+        var payload = (JsonObject)incoming.DeepClone();
+        foreach (var mega in (payload["megaTasks"] as JsonArray ?? []).OfType<JsonObject>())
+            if (Execution.Text(mega["projectId"]) == projectId && !Data.MegaTasks.OfType<JsonObject>().Any(item => JsonNode.DeepEquals(item["id"], mega["id"])))
+                Data.MegaTasks.Add((JsonNode)mega.DeepClone());
+        var known = Data.MegaTasks.OfType<JsonObject>().Where(mega => Execution.Text(mega["projectId"]) == projectId).Select(m => Execution.Text(m["id"])).ToHashSet();
+        foreach (var sub in (payload["subTasks"] as JsonArray ?? []).OfType<JsonObject>())
+            if (known.Contains(Execution.Text(sub["megaTaskId"])) && !Data.SubTasks.OfType<JsonObject>().Any(item => JsonNode.DeepEquals(item["id"], sub["id"])))
+                Data.SubTasks.Add((JsonNode)sub.DeepClone());
+        foreach (var result in (payload["results"] as JsonArray ?? []).OfType<JsonObject>())
+            if (known.Contains(Execution.Text(result["megaTaskId"])))
+                Data.Results.Add((JsonNode)result.DeepClone());
+        foreach (var cp in (payload["checkpoints"] as JsonArray ?? []).OfType<JsonObject>())
+            if (Execution.Text(cp["projectId"]) == projectId && !Data.Checkpoints.OfType<JsonObject>().Any(item => JsonNode.DeepEquals(item["id"], cp["id"])))
+                Data.Checkpoints.Add((JsonNode)cp.DeepClone());
+        foreach (var ev in (payload["timeline"] as JsonArray ?? []).OfType<JsonObject>())
+            if (Execution.Text(ev["projectId"]) == projectId)
+                Data.Timeline.Add((JsonNode)ev.DeepClone());
+        var last = Data.MegaTasks.OfType<JsonObject>().LastOrDefault(mega => Execution.Text(mega["projectId"]) == projectId);
+        if (last is not null)
+        {
+            var row = Options.RowFor(projectId, Execution.Text(last["id"]));
+            var cp = Data.Checkpoints.OfType<JsonObject>().FirstOrDefault(item => JsonNode.DeepEquals(item["id"], last["currentCheckpointId"])) ??
+                Data.Checkpoints.OfType<JsonObject>().LastOrDefault(item => JsonNode.DeepEquals(item["megaTaskId"], last["id"]));
+            if (cp is not null) row["checkpoint"] = cp.DeepClone();
+            Paint(last);
+        }
+        Options.Persist();
+    }
+
+    public JsonObject CheckpointForUpdate(JsonObject item, JsonObject job, string megaTaskId)
+    {
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var mega = Target(projectId, megaTaskId);
+        if (Execution.Text(mega["taskId"]) != Execution.Text(job["id"])) throw new InvalidOperationException("Update checkpoint belongs to another task.");
+        if (Execution.Text(mega["status"]) == "RUNNING") return Stop(item, job, megaTaskId, false, "application update");
+        if (Execution.Text(mega["status"]) == "COMPLETE") return mega;
+        if (!Execution.Truthy(mega["currentCheckpointId"])) Checkpoint(item, job, mega, "application update");
+        Paint(mega); Options.Persist(); return mega;
+    }
+
+    public JsonObject Resume(JsonObject item, JsonObject job, JsonObject request)
+    {
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var choices = Data.Checkpoints.OfType<JsonObject>().Where(cp => Execution.Text(cp["projectId"]) == projectId &&
+            new[] { "PAUSED", "FAILED" }.Contains(Execution.Text(Data.MegaTasks.OfType<JsonObject>().FirstOrDefault(mega => JsonNode.DeepEquals(mega["id"], cp["megaTaskId"]))?["status"]))).ToArray();
+        var reqMegaId = Execution.Text(request["megaTaskId"]);
+        var reqCpId = Execution.Text(request["checkpointId"]);
+        if ((reqMegaId.Length == 0 || reqCpId.Length == 0) && choices.Length != 1)
+            throw new InvalidOperationException("Choose an explicit MegaTask and checkpoint for this project.");
+        var defaultCp = choices.FirstOrDefault();
+        var targetCpId = reqCpId.Length > 0 ? reqCpId : Execution.Text(defaultCp?["id"]);
+        var targetMegaId = reqMegaId.Length > 0 ? reqMegaId : Execution.Text(defaultCp?["megaTaskId"]);
+        var cp = choices.FirstOrDefault(c => Execution.Text(c["id"]) == targetCpId && Execution.Text(c["megaTaskId"]) == targetMegaId);
+        if (cp is null) throw new InvalidOperationException("Checkpoint does not belong to this project and MegaTask.");
+        var mega = Target(projectId, Execution.Text(cp["megaTaskId"]));
+        if (Execution.Text(cp["jobFingerprint"]) != JobFingerprint(job))
+            throw new InvalidOperationException("Checkpoint belongs to a different job.");
+        Reconcile(mega);
+        var folder = Execution.Text(item["project"]?["folder"]);
+        var linked = Options.Files.LinkedWorkspace(folder);
+        var facts = linked is null ? new JsonObject { ["error"] = "Relink a real local project folder before implementation.", ["git"] = false, ["dirty"] = new JsonArray() } : Options.Inspect(linked);
+        var current = Execution.RepoState(folder, facts, Options.Files);
+        var revisions = item["revisions"] as JsonArray ?? [];
+        var lastRevisionId = revisions.LastOrDefault()?["id"]?.GetValue<int>() ?? 0;
+        var completedSubIds = new JsonArray(SubTasks(mega).Where(sub => Execution.Text(sub["status"]) == "COMPLETE").Select(sub => (JsonNode?)sub["id"]?.DeepClone()).ToArray());
+        var diff = ProjectHistory.CheckpointDiff(cp, current, lastRevisionId, completedSubIds);
+        var currentComparable = current["comparable"]?.GetValue<bool>() == true;
+        var cpRepo = cp["repoState"] as JsonObject ?? new JsonObject();
+        var cpComparable = cpRepo["comparable"]?.GetValue<bool>() == true;
+        var currentFingerprint = Execution.Text(current["fingerprint"]);
+        var cpFingerprint = Execution.Text(cpRepo["fingerprint"]);
+        var cpRevisionId = cp["planRevisionId"]?.GetValue<int>() ?? -1;
+        var confirmChanges = request["confirmChanges"]?.GetValue<bool>() == true;
+        if ((!currentComparable || !cpComparable || currentFingerprint != cpFingerprint || lastRevisionId != cpRevisionId) && !confirmChanges)
+        {
+            var before = (JsonObject)cpRepo.DeepClone(); before["planRevisionId"] = cp["planRevisionId"]?.DeepClone();
+            var curr = (JsonObject)current.DeepClone(); curr["planRevisionId"] = lastRevisionId;
+            return new JsonObject
+            {
+                ["ok"] = false, ["requiresConfirmation"] = true,
+                ["reason"] = "Repository or Living Plan changed since the checkpoint. Review changes and explicitly confirm before continuing.",
+                ["checkpointId"] = cp["id"]?.DeepClone(), ["megaTaskId"] = mega["id"]?.DeepClone(),
+                ["diff"] = diff, ["before"] = before, ["current"] = curr
+            };
+        }
+        if (request.ContainsKey("assignments") && request["assignments"] is not null)
+        {
+            if (request["assignments"] is not JsonObject assignmentsObj)
+                throw new InvalidOperationException("Worker assignments must map SubTask IDs to exact model IDs.");
+            foreach (var pair in assignmentsObj)
+            {
+                var sub = SubTasks(mega).FirstOrDefault(s => Execution.Text(s["id"]) == pair.Key && Execution.Text(s["status"]) != "COMPLETE");
+                var modelId = Execution.Text(pair.Value);
+                if (sub is null || !Options.Models().Any(model => Execution.Text(model["id"]) == modelId && Execution.Truthy(model["enabled"]) && model["available"]?.ToJsonString() != "false" && (Options.WorkerEligible is null || Options.WorkerEligible(model, sub))))
+                    throw new InvalidOperationException("Invalid remaining SubTask or exact worker model.");
+            }
+        }
+        var assignments = request["assignments"] as JsonObject;
+        foreach (var sub in SubTasks(mega))
+        {
+            if (Execution.Text(sub["status"]) != "COMPLETE")
+            {
+                sub["status"] = "PENDING"; sub["resultId"] = null;
+                var subId = Execution.Text(sub["id"]);
+                if (assignments is not null && assignments.ContainsKey(subId))
+                {
+                    var assignedId = Execution.Text(assignments[subId]);
+                    sub["assignedModelId"] = assignedId;
+                    var worker = Model(assignedId);
+                    sub["proposedProvider"] = worker?["provider"]?.DeepClone();
+                    sub["proposedCli"] = worker?["cli"]?.DeepClone();
+                }
+            }
+        }
+        mega["status"] = "RUNNING"; mega["pauseRequested"] = false; mega["interruptedAttemptIds"] = new JsonArray();
+        mega["orchestratorModelId"] = Options.LeadId(); mega["currentCheckpointId"] = cp["id"]?.DeepClone();
+        mega["authorizedSessionId"] = Options.SessionId; mega["deadlineError"] = null;
+        if (Execution.Text(cp["reason"]) == "deadline" && !Execution.Truthy(mega["deadlineHonoredAt"]))
+            mega["deadlineHonoredAt"] = Options.Now();
+        Event(projectId, "MEGATASK_RESUMED", $"Resumed {Execution.Text(mega["title"])} from {Execution.Text(cp["id"])}.",
+            new JsonObject { ["megaTaskId"] = mega["id"]?.DeepClone(), ["checkpointId"] = cp["id"]?.DeepClone(), ["orchestratorModelId"] = mega["orchestratorModelId"]?.DeepClone() });
+        Options.Persist();
+        return new JsonObject { ["ok"] = true, ["megaTaskId"] = mega["id"]?.DeepClone(), ["checkpointId"] = cp["id"]?.DeepClone() };
+    }
+
+    static string LogTail(string path, IExecutionFiles files, int max = 3000)
+    {
+        try
+        {
+            var bytes = files.Read(path);
+            var text = Encoding.UTF8.GetString(bytes);
+            if (text.Length > max) text = text[^max..];
+            var lines = text.Split('\n');
+            return string.Join("\n", lines.Skip(1)).Trim();
+        }
+        catch { return ""; }
+    }
+
+    public JsonObject ReassignRemaining(string projectId, string megaTaskId, JsonObject assignments, string why = "", string by = "lead")
+    {
+        var mega = Target(projectId, megaTaskId);
+        Reconcile(mega);
+        var status = Execution.Text(mega["status"]);
+        if (status is "COMPLETE" or "CANCELLED")
+            throw new InvalidOperationException($"This work is {status.ToLowerInvariant()}: start new work instead.");
+        if (assignments is null || assignments.Count == 0)
+            throw new InvalidOperationException("Name at least one step and its model.");
+        var changes = new List<(JsonObject Sub, JsonObject Model)>();
+        foreach (var pair in assignments)
+        {
+            var sub = SubTasks(mega).FirstOrDefault(s => Execution.Text(s["id"]) == pair.Key && Execution.Text(s["status"]) != "COMPLETE");
+            if (sub is null) throw new InvalidOperationException($"Step {pair.Key} is not a remaining step of this work.");
+            var modelId = Execution.Text(pair.Value);
+            var model = Options.Models().FirstOrDefault(m => Execution.Text(m["id"]) == modelId && Execution.Truthy(m["enabled"]) && m["available"]?.ToJsonString() != "false");
+            if (model is null || (Options.WorkerEligible is not null && !Options.WorkerEligible(model, sub)))
+                throw new InvalidOperationException($"Model {modelId} cannot take \"{Execution.Text(sub["title"])}\": it must be enabled, have this role in Team and have quota.");
+            changes.Add((sub, model));
+        }
+        var row = Options.RowFor(projectId, Execution.Text(mega["id"]));
+        foreach (var (sub, model) in changes.Where(c => Execution.Text(c.Sub["status"]) == "RUNNING"))
+        {
+            var part = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(item => JsonNode.DeepEquals(item["subTaskId"], sub["id"]) && Execution.Truthy(item["alive"]));
+            if (part is null) continue;
+            var pid = (int)Number(part["pid"]);
+            if (Options.KillWorker is null || !Options.KillWorker(pid) || (Options.IsProcessAlive?.Invoke(pid) ?? false))
+                throw new InvalidOperationException($"Could not stop the worker of \"{Execution.Text(sub["title"])}\"; its model was not changed.");
+            part["alive"] = false; part["observedAlive"] = false;
+            var partial = ReadJson(Execution.Text(part["structuredResultPath"]));
+            var identity = Identity(mega, sub, Execution.Text(part["attemptId"]));
+            var validPartial = partial is not null && WorkerResult.ValidateResult(partial, identity) ? partial : null;
+            var tech = Technical(mega, sub, part, "BLOCKED", $"Model changed to {Execution.Text(model["label"] ?? model["id"])}; the step restarts with it.", validPartial);
+            tech["modelChange"] = true;
+            Collect(mega, sub, part, tech);
+            mega["interruptedAttemptIds"] = StringArray((mega["interruptedAttemptIds"] as JsonArray ?? []).Select(Execution.Text).Append(Execution.Text(part["attemptId"])).Distinct());
+        }
+        foreach (var (sub, model) in changes)
+        {
+            var last = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().LastOrDefault(item => JsonNode.DeepEquals(item["subTaskId"], sub["id"]));
+            if ((sub["attemptIds"] as JsonArray)?.Count > 0 && Execution.Text(sub["assignedModelId"]) != Execution.Text(model["id"]))
+            {
+                var result = Data.Results.OfType<JsonObject>().LastOrDefault(item => JsonNode.DeepEquals(item["subTaskId"], sub["id"]));
+                var tail = last is not null && Execution.Truthy(last["logPath"]) ? LogTail(Execution.Text(last["logPath"]), Options.Files) : "";
+                sub["takeover"] = new JsonObject
+                {
+                    ["fromModelId"] = sub["assignedModelId"]?.DeepClone(),
+                    ["at"] = Options.Now(),
+                    ["filesChanged"] = result?["filesChanged"]?.DeepClone() ?? new JsonArray(),
+                    ["tests"] = result?["tests"]?.DeepClone() ?? new JsonArray(),
+                    ["summary"] = result?["summary"]?.DeepClone() ?? JsonValue.Create(""),
+                    ["logTail"] = tail
+                };
+            }
+            sub["assignedModelId"] = model["id"]?.DeepClone();
+            sub["proposedProvider"] = model["provider"]?.DeepClone();
+            sub["proposedCli"] = model["cli"]?.DeepClone();
+            if (Execution.Text(sub["status"]) is "BLOCKED" or "RUNNING")
+            {
+                sub["status"] = "PENDING";
+                sub["resultId"] = null;
+            }
+        }
+        if (Execution.Text(mega["status"]) == "READY_FOR_APPROVAL")
+            mega["blockers"] = StringArray(ProposalBlockers(mega));
+        var who = by == "user" ? "You assigned" : by == "auto" ? "Planwharf switched" : "Lead assigned";
+        Event(projectId, "MEGATASK_ASSIGNED", $"{who} {string.Join(" · ", changes.Select(c => $"{StepRole(c.Sub)}: {Execution.Text(c.Model["label"] ?? c.Model["id"])}"))}.{(why.Length > 0 ? " Why: " + why : "")}",
+            new JsonObject { ["megaTaskId"] = megaTaskId });
+        Paint(mega); Options.Persist();
+        return mega;
+    }
+
+    public JsonObject AnswerDecision(string projectId, string decisionId, string answer, string who = "owner")
+    {
+        var decision = Data.Decisions.OfType<JsonObject>().FirstOrDefault(d => Execution.Text(d["projectId"]) == projectId && Execution.Text(d["id"]) == decisionId);
+        if (decision is null) return new JsonObject { ["ok"] = false, ["reason"] = "Decision not found." };
+        var subs = SubTasks(new JsonObject { ["id"] = decision["megaTaskId"]?.DeepClone() });
+        if (Execution.Truthy(decision["answer"]) && subs.Any(s => Execution.Text(s["status"]) is "RUNNING" or "COMPLETE"))
+            return new JsonObject { ["ok"] = false, ["reason"] = "The step that needs this decision has already started." };
+        var val = (answer ?? "").Trim();
+        decision["answer"] = (val == "accepted" && Execution.Truthy(decision["suggestion"])) ? decision["suggestion"]?.DeepClone() : JsonValue.Create(val.Length > 0 ? val : "yes");
+        decision["answeredBy"] = who == "owner" ? "owner" : who;
+        decision["answeredAt"] = Options.Now();
+        Options.Persist();
+        return new JsonObject { ["ok"] = true, ["decision"] = decision.DeepClone() };
+    }
+
+    public JsonObject DelegateDecision(string projectId, string decisionId, string leadLabel = "Lead")
+    {
+        var decision = Data.Decisions.OfType<JsonObject>().FirstOrDefault(d => Execution.Text(d["projectId"]) == projectId && Execution.Text(d["id"]) == decisionId);
+        if (decision is null) return new JsonObject { ["ok"] = false, ["reason"] = "Decision not found." };
+        decision["answer"] = Execution.Truthy(decision["suggestion"]) ? decision["suggestion"]?.DeepClone() : JsonValue.Create("yes");
+        decision["answeredBy"] = $"Decided by {leadLabel}";
+        decision["autoReason"] = Execution.Truthy(decision["suggestion"]) ? $"Followed recommended suggestion: {Execution.Text(decision["suggestion"])}" : "Safe default accepted.";
+        decision["answeredAt"] = Options.Now();
+        Options.Persist();
+        return new JsonObject { ["ok"] = true, ["decision"] = decision.DeepClone() };
+    }
+
+    public JsonObject AppendAddition(JsonObject item, JsonObject job, string megaTaskId, JsonObject? spec = null)
+    {
+        spec ??= new JsonObject();
+        var projectId = Execution.Text(item["project"]?["id"]);
+        var mega = Target(projectId, megaTaskId);
+        if (Execution.Text(mega["status"]) == "COMPLETE")
+            throw new InvalidOperationException("Work is already complete. Start a new goal instead.");
+        Reconcile(mega);
+        var subs = SubTasks(mega);
+        var verifySub = subs.FirstOrDefault(sub => StepRole(sub) == "Verify");
+
+        List<string>? scope = null;
+        if (spec["files"] is JsonArray filesArr && filesArr.Count > 0)
+            scope = filesArr.Select(Execution.Text).Select(Execution.Slash).ToList();
+        if (scope is null && Execution.Truthy(spec["addition"]))
+        {
+            var text = Execution.Text(spec["addition"]);
+            var matches = Regex.Matches(text, @"`([^`\r\n]+\.[a-zA-Z0-9]+)`");
+            if (matches.Count > 0)
+                scope = matches.Select(m => Execution.Slash(m.Groups[1].Value.Trim())).ToList();
+        }
+        if (scope is null && spec["scope"] is JsonArray scopeArr && scopeArr.Count > 0)
+            scope = scopeArr.Select(Execution.Text).Select(Execution.Slash).ToList();
+
+        var dependencies = new List<string>();
+        var incompleteBuilds = subs.Where(sub => StepRole(sub) == "Build" && Execution.Text(sub["status"]) != "COMPLETE").ToArray();
+        if (scope is not null && scope.Count > 0)
+        {
+            foreach (var other in incompleteBuilds)
+            {
+                var otherScope = other["scope"] is JsonArray oArr && oArr.Count > 0 ? oArr.Select(Execution.Text).Select(Execution.Slash).ToList() : null;
+                if (otherScope is null || otherScope.Any(x => scope.Any(y => x == y || y.StartsWith(x + "/", StringComparison.Ordinal) || x.StartsWith(y + "/", StringComparison.Ordinal))))
+                    dependencies.Add(Execution.Text(other["id"]));
+            }
+        }
+        else
+        {
+            foreach (var other in incompleteBuilds)
+                dependencies.Add(Execution.Text(other["id"]));
+        }
+
+        JsonObject? worker = null;
+        var specModelId = Execution.Text(spec["modelId"]);
+        if (specModelId.Length > 0)
+        {
+            var candidate = Options.Models().FirstOrDefault(m => Execution.Text(m["id"]) == specModelId);
+            if (candidate is not null && (Options.WorkerEligible is null || Options.WorkerEligible(candidate, new JsonObject { ["type"] = "IMPLEMENTATION" })))
+                worker = candidate;
+        }
+        if (worker is null && Options.Replacement is not null)
+        {
+            worker = Options.Replacement(new JsonObject { ["type"] = "IMPLEMENTATION", ["title"] = (spec["title"] ?? spec["addition"])?.DeepClone() }, []);
+        }
+        if (worker is null)
+        {
+            worker = Options.Models().FirstOrDefault(m => Execution.Truthy(m["roles"]?["worker"]) && (Options.WorkerEligible is null || Options.WorkerEligible(m, new JsonObject { ["type"] = "IMPLEMENTATION" })));
+        }
+
+        var assignedModelId = Execution.Text(worker?["id"] ?? (JsonNode?)(specModelId.Length > 0 ? JsonValue.Create(specModelId) : JsonValue.Create("unassigned")));
+        var proposedProvider = worker?["provider"]?.DeepClone();
+        var proposedCli = worker?["cli"]?.DeepClone();
+
+        var newIndex = subs.Count + 1;
+        var id = $"{Execution.Text(mega["id"])}-ST-{newIndex:00}";
+        var rawAddition = Execution.Text(spec["addition"]);
+        var rawTitle = Execution.Text(spec["title"]);
+        if (rawTitle.Length == 0 && rawAddition.Length > 0)
+        {
+            var firstLine = rawAddition.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+            rawTitle = Regex.Replace(firstLine, @"^Addition to this work:\s*", "", RegexOptions.IgnoreCase).Trim();
+        }
+        var title = rawTitle.Length > 120 ? rawTitle[..120] : (rawTitle.Length > 0 ? rawTitle : "Addition to work");
+        var detail = Execution.Truthy(spec["addition"]) ? spec["addition"]?.DeepClone() : (spec["detail"] ?? JsonValue.Create(title));
+
+        var newSub = new JsonObject
+        {
+            ["id"] = id,
+            ["megaTaskId"] = mega["id"]?.DeepClone(),
+            ["title"] = title,
+            ["detail"] = detail,
+            ["status"] = "PENDING",
+            ["assignedModelId"] = assignedModelId,
+            ["attemptIds"] = new JsonArray(),
+            ["resultId"] = null,
+            ["createdAt"] = Options.Now(),
+            ["completedAt"] = null,
+            ["type"] = "IMPLEMENTATION",
+            ["dependencies"] = StringArray(dependencies.Distinct()),
+            ["proposedProvider"] = proposedProvider,
+            ["proposedCli"] = proposedCli,
+            ["provider"] = null,
+            ["cli"] = null
+        };
+        if (scope is not null)
+            newSub["scope"] = StringArray(scope);
+
+        if (verifySub is not null)
+        {
+            var verifyIdx = Data.SubTasks.IndexOf(verifySub);
+            if (verifyIdx >= 0) Data.SubTasks.Insert(verifyIdx, (JsonNode)newSub);
+            else Data.SubTasks.Add((JsonNode)newSub);
+
+            var vDeps = verifySub["dependencies"] as JsonArray ?? new JsonArray();
+            if (!vDeps.Any(d => Execution.Text(d) == newSub["id"]!.GetValue<string>()))
+                vDeps.Add((JsonNode)newSub["id"]!.DeepClone());
+            verifySub["dependencies"] = vDeps;
+
+            if (Execution.Text(verifySub["status"]) == "RUNNING")
+            {
+                var row = Options.RowFor(projectId, Execution.Text(mega["id"]));
+                var part = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().FirstOrDefault(p => JsonNode.DeepEquals(p["subTaskId"], verifySub["id"]) && Execution.Truthy(p["alive"]));
+                if (part is not null)
+                {
+                    if (Options.KillWorker is not null)
+                    {
+                        try { Options.KillWorker((int)Number(part["pid"])); } catch { }
+                    }
+                    part["alive"] = false;
+                    part["observedAlive"] = false;
+                    Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "interrupted by addition" });
+                }
+                verifySub["status"] = "PENDING";
+                verifySub["resultId"] = null;
+                verifySub["completedAt"] = null;
+            }
+            else if (new[] { "COMPLETE", "BLOCKED", "FAILED" }.Contains(Execution.Text(verifySub["status"])))
+            {
+                verifySub["status"] = "PENDING";
+                verifySub["resultId"] = null;
+                verifySub["completedAt"] = null;
+            }
+        }
+        else
+        {
+            Data.SubTasks.Add((JsonNode)newSub);
+        }
+
+        if (Execution.Text(mega["status"]) == "PAUSED")
+        {
+            var latestCp = Data.Checkpoints.OfType<JsonObject>().Where(cp => JsonNode.DeepEquals(cp["megaTaskId"], mega["id"])).LastOrDefault();
+            if (latestCp is not null) mega["currentCheckpointId"] = latestCp["id"]?.DeepClone();
+            foreach (var sub in SubTasks(mega))
+            {
+                if (Execution.Text(sub["status"]) != "COMPLETE")
+                {
+                    sub["status"] = "PENDING";
+                    sub["resultId"] = null;
+                }
+            }
+            mega["status"] = "RUNNING";
+            mega["pauseRequested"] = false;
+            mega["interruptedAttemptIds"] = new JsonArray();
+            mega["nextAction"] = "Resume with the new addition step.";
+            Event(projectId, "MEGATASK_RESUMED", $"Resumed {Execution.Text(mega["title"])} with addition.", new JsonObject { ["megaTaskId"] = mega["id"]?.DeepClone() });
+        }
+
+        Event(projectId, "SUBTASK_ADDED", $"Added to this work: {title} ({Execution.Text(worker?["label"] ?? worker?["id"] ?? (JsonNode?)JsonValue.Create(assignedModelId))}).",
+            new JsonObject { ["megaTaskId"] = mega["id"]?.DeepClone(), ["subTaskId"] = newSub["id"]?.DeepClone() });
+
+        var folder = Execution.Text(item["project"]?["folder"]);
+        if (folder.Length > 0 && Options.Plan is not null)
+        {
+            try
+            {
+                var prev = PlanFile.Parse(PlanFile.Read(folder));
+                var allSubs = SubTasks(mega);
+                var steps = allSubs.Select(sub =>
+                {
+                    var modelObj = Options.Models().FirstOrDefault(m => Execution.Text(m["id"]) == Execution.Text(sub["assignedModelId"]));
+                    var modelLabel = Execution.Text(modelObj?["label"] ?? sub["assignedModelId"]);
+                    if (modelLabel.Length == 0) modelLabel = "unassigned";
+                    var isDone = Execution.Text(sub["status"]) == "COMPLETE";
+                    var isReset = StepRole(sub) == "Verify" && !isDone;
+                    var commit = isDone ? Execution.Text(Data.Results.OfType<JsonObject>().FirstOrDefault(r => JsonNode.DeepEquals(r["subTaskId"], sub["id"]))?["summary"] ?? (JsonNode?)JsonValue.Create("committed")) : "";
+                    return new PlanStep(
+                        Role: StepRole(sub),
+                        Model: modelLabel,
+                        Title: Execution.Text(sub["title"]),
+                        Done: isDone,
+                        Reset: isReset,
+                        Commit: commit
+                    );
+                }).ToArray();
+                Options.Plan.WritePlan(folder, new PlanSpec(
+                    Goal: prev.Goal.Length > 0 ? prev.Goal : Execution.Text(mega["goal"]),
+                    Base: prev.Base,
+                    Branch: prev.Branch.Length > 0 ? prev.Branch : Options.Plan.CurrentBranch(folder),
+                    Steps: steps
+                ));
+            }
+            catch { }
+        }
+
+        Paint(mega);
+        Options.Persist();
+
+        if (Execution.Text(mega["status"]) == "RUNNING")
+        {
+            Advance(item, job, [], true);
+        }
+
+        return new JsonObject { ["ok"] = true, ["subTask"] = newSub.DeepClone(), ["megaTask"] = mega.DeepClone() };
+    }
 }
 
 public static class Execution
@@ -1162,8 +1705,8 @@ public static class Execution
             System.Globalization.CultureInfo.InvariantCulture, out var n) && n != 0 && !double.IsNaN(n),
         _ => true
     };
-    static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
-    static string Slash(string file) => Regex.Replace(file.Replace('\\', '/'), @"^\./|/+$", "", RegexOptions.ECMAScript);
+    internal static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+    internal static string Slash(string file) => Regex.Replace(file.Replace('\\', '/'), @"^\./|/+$", "", RegexOptions.ECMAScript);
     public static ExecutionBridge CreateExecutionBridge(ExecutionOptions options) => new(options);
     public static string NoVerdictPlan(double tries) => tries >= 2 ? "stop" : tries == 1 ? "switch" : "retry-same";
 
