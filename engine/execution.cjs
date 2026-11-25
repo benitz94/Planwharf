@@ -224,7 +224,7 @@ function createExecutionBridge(options) {
     if (sub.type === 'INTEGRATION' && result.status === 'COMPLETE') {
       try {
         for (const branch of (mega.worktreeParts || []).filter(branch => mega.activeGroup?.includes(branch.subId))) worktrees.git(part.projectFolder, ['merge-base', '--is-ancestor', branch.branch, 'HEAD']);
-        if (worktrees.git(part.projectFolder, ['status', '--porcelain'])) throw new Error('Work branch has uncommitted changes');
+        if (worktrees.workChanges(worktrees.git(part.projectFolder, ['status', '--porcelain']))) throw new Error('Work branch has uncommitted changes');
         mega.integratedSubIds = [...new Set([...(mega.integratedSubIds || []), ...(mega.activeGroup || [])])];
         mega.activeGroup = null; mega.awaitingIntegration = false;
       } catch (error) { result = { ...result, status: 'BLOCKED', summary: `Integration is unfinished: ${error.message}`, blockers: [...(result.blockers || []), error.message] }; }

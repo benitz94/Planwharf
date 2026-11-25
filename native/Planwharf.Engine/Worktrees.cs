@@ -107,11 +107,18 @@ public sealed class Worktrees
         return new Part(destination, branch, subId);
     }
 
+    // Planwharf's own work plan (.planwharf/) is rewritten at every step: it never makes a branch dirty.
+    public static string WorkChanges(string? status) => string.Join("\n", (status ?? "").Split('\n')
+        .Select(line => line.TrimEnd('\r')).Where(line => line.Trim().Length > 0 && !ChangedFile(line).StartsWith(".planwharf/", StringComparison.Ordinal)));
+
+    // A line is "XY path" (or "XY old -> new"); the first line may come trimmed, so the path is after the status.
+    static string ChangedFile(string line) => Regex.Replace(line.Trim(), @"^\S+\s+", "").Split(" -> ")[^1].TrimStart('"');
+
     public MergeResult Integrate(string folder, IReadOnlyList<Part> parts)
     {
         try
         {
-            if (Git(folder, "status", "--porcelain").Length > 0)
+            if (WorkChanges(Git(folder, "status", "--porcelain")).Length > 0)
                 return new MergeResult(false, Conflicts: [], Reason: "Work branch has uncommitted changes; integration is paused.");
         }
         catch (Exception error) { return new MergeResult(false, Conflicts: [], Reason: error.Message); }
@@ -125,7 +132,7 @@ public sealed class Worktrees
                 var reason = Directory.Exists(part.Folder) ? error.Message : $"Part worktree is unavailable: {part.Folder}";
                 return new MergeResult(false, part.Branch, [], reason);
             }
-            if (dirty.Length > 0)
+            if (WorkChanges(dirty).Length > 0)
                 return new MergeResult(false, part.Branch, [], "Part has uncommitted changes; integration is paused.");
         }
 

@@ -264,4 +264,13 @@ public sealed class WorktreesTests : IDisposable
         Assert.Equal("status failed", result.Reason);
         Assert.Equal(["status", "--porcelain"], Assert.Single(calls).Args);
     }
+
+    [Fact]
+    public void Planwharfs_own_work_plan_is_not_a_change_that_pauses_integration()
+    {
+        Assert.Equal("?? src/a.cs", Worktrees.WorkChanges("M .planwharf/plan.md\n?? src/a.cs"));
+        Assert.Equal("", Worktrees.WorkChanges(" M .planwharf/plan.md\r\n?? \".planwharf/x y\""));
+        Assert.Equal(" M src/b.cs", Worktrees.WorkChanges(" M src/b.cs"));
+        Assert.Equal("", Worktrees.WorkChanges("R  old.md -> .planwharf/plan.md"));
+    }
 }
