@@ -25,6 +25,16 @@ public sealed partial class MainWindow : Window
     readonly ChatModeBar chatModes = new() { IsVisible = false };
     // Next to Resume: close the stopped work to start something new.
     readonly Button dropButton = Look.Button(Strings.T("Drop this work"), "trash");
+    // The error of the last button pressed stays on the hint line for a minute: the next redraw used to replace
+    // it within a second, so a refused Resume showed nothing (job 45, 2026-11-25).
+    (string? Project, string Message, DateTime At)? actionError;
+    void ShowActionError(string message) { actionError = (projectId, message, DateTime.UtcNow); hint.Text = message; hint.Foreground = Palette.Danger; }
+    bool StickyError()
+    {
+        if (actionError is not { } shown || shown.Project != projectId || DateTime.UtcNow - shown.At > TimeSpan.FromMinutes(1)) return false;
+        hint.Text = shown.Message; hint.Foreground = Palette.Danger; return true;
+    }
+
     readonly TextBlock hint = new() { Foreground = Palette.Muted, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
     readonly TextBox input = Look.Field(new TextBox { Watermark = Strings.T("Tell the lead what you want built\u2026"), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 46, MaxHeight = 220, FontSize = 15, VerticalContentAlignment = VerticalAlignment.Center });
     readonly Button send = Look.Button(Strings.T("Send"), "send", Look.Kind.Primary);
@@ -1410,8 +1420,8 @@ public sealed partial class MainWindow : Window
     async Task DoAsync(Func<Task> work, string done)
     {
         if (api == null) return;
-        try { await work(); hint.Text = done; hint.Foreground = Palette.Accent; }
-        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
+        try { actionError = null; await work(); hint.Text = done; hint.Foreground = Palette.Accent; }
+        catch (Exception error) { ShowActionError(error.Message); }
         threadSig = sideSig = null;
         await RefreshAsync(readOnly: false);
     }
@@ -1450,7 +1460,7 @@ public sealed partial class MainWindow : Window
     async Task ActAsync()
     {
         if (api == null || snapshot == null || projectId == null || ProjectViews.Project(snapshot, projectId) is not { } view) return;
-        busy = true; Render();
+        busy = true; actionError = null; Render();
         try
         {
             switch (view.Action)
@@ -1482,7 +1492,7 @@ public sealed partial class MainWindow : Window
                 case CrewAction.StopWork: await api.StopAsync(projectId); break;
             }
         }
-        catch (Exception error) { hint.Text = error.Message; hint.Foreground = Palette.Danger; }
+        catch (Exception error) { ShowActionError(error.Message); }
         finally { busy = false; threadSig = null; await RefreshAsync(readOnly: false); }
     }
 }

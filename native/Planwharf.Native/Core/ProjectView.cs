@@ -202,7 +202,8 @@ public static class ProjectViews
 
         (CrewAction action, string text, string hint) = working ? (CrewAction.StopTheCrew, Strings.T("Stop the crew"), running
                 ? Strings.T("The crew is working. You can keep chatting with the lead and change models at any time.")
-                : Strings.T("The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on."))
+                : S(row["status"]) == "complete" ? Strings.T("The work is done. The lead is checking the result and deciding the next step; Stop the crew if it should not go on.")
+                : Strings.T("A step stopped before the work was done. The lead is deciding how to go on; Stop the crew if it should not go on."))
             : S(row["status"]) == "needs_approval" ? (CrewAction.Approve, Strings.T("Approve and start"), Strings.T("The lead proposed some work. Approve it, or tell the lead what to change."))
             : B(row["canStop"]) ? (CrewAction.StopWork, Strings.T("Stop work"), Strings.T("Work in progress. You can keep chatting with the lead."))
             : B(row["canResume"]) ? (CrewAction.Resume, Strings.T("Resume"), (stopReason.Length > 0 && stopReason != "GOAL_REACHED" ? StopSentence(stopReason) + " " : "")

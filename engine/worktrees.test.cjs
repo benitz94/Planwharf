@@ -241,6 +241,22 @@ test('dirty work or part pauses integration before any merge', t => {
   assert.equal(fs.existsSync(path.join(second.folder, 'unfinished.txt')), true);
 });
 
+test('Planwharf\'s own work plan does not pause integration, even when a project tracks it', t => {
+  const f = fixture(t);
+  // A project that committed .planwharf/plan.md (Planwharf's own repository did, until 2026-11-25).
+  fs.mkdirSync(path.join(f.folder, '.planwharf'), { recursive: true });
+  fs.writeFileSync(path.join(f.folder, '.planwharf', 'plan.md'), '# Plan\n'); git(f.folder, 'add', '.'); git(f.folder, 'commit', '-m', 'plan');
+  const first = part(f, 'ST-1', 1), second = part(f, 'ST-2', 2);
+  fs.writeFileSync(path.join(first.folder, 'one.txt'), 'one\n'); git(first.folder, 'add', 'one.txt'); git(first.folder, 'commit', '-m', 'one');
+  fs.writeFileSync(path.join(second.folder, 'two.txt'), 'two\n'); git(second.folder, 'add', 'two.txt'); git(second.folder, 'commit', '-m', 'two');
+  // Planwharf ticks a step in the work folder and in a part while they work.
+  fs.writeFileSync(path.join(f.folder, '.planwharf', 'plan.md'), '# Plan\n- [x] Build\n');
+  fs.writeFileSync(path.join(second.folder, '.planwharf', 'plan.md'), '# Plan\n- [x] Part\n');
+  assert.deepEqual(worktrees.integrate({ folder: f.folder, parts: [first, second] }), { ok: true });
+  assert.equal(fs.existsSync(path.join(f.folder, 'two.txt')), true);
+  assert.equal(worktrees.workChanges(' M .planwharf/plan.md\n?? src/a.cs'), '?? src/a.cs');
+});
+
 test('a missing part folder pauses integration instead of throwing', t => {
   const f = fixture(t), first = part(f, 'ST-1', 1);
   fs.writeFileSync(path.join(first.folder, 'one.txt'), 'one\n'); git(first.folder, 'add', '.'); git(first.folder, 'commit', '-m', 'one');

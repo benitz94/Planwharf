@@ -120,3 +120,41 @@ test('a part that waits for others may change their finished files and files nob
   assert.equal(strict.sub('Integrate quota').status, 'BLOCKED');
   assert.deepEqual(strict.sub('Integrate quota').scopeViolation, ['src/skills.cs']);
 });
+
+test('Resume works after the same work stopped twice (two checkpoints): it continues from the latest', t => {
+  const { run, sub, bridge, item, job, parts, store, mega } = fixture(t, { work: info => info.worker.id === 'a' ? ['src/quota.cs', 'notes.md'] : ['src/skills.cs'] });
+  run();
+  assert.equal(sub('Port quota').status, 'BLOCKED');
+  assert.equal(bridge.resume(item, job, { confirmChanges: true }).ok, true);
+  bridge.advance(item, job, parts); bridge.advance(item, job, parts);
+  assert.equal(sub('Port quota').status, 'BLOCKED', 'stopped again');
+  const saved = store.execution.checkpoints.filter(cp => cp.megaTaskId === mega.id);
+  assert.ok(saved.length >= 2, 'two checkpoints of the same work');
+  const resumed = bridge.resume(item, job, { confirmChanges: true });
+  assert.equal(resumed.ok, true);
+  assert.equal(resumed.checkpointId, saved.at(-1).id, 'the latest checkpoint');
+});
+
+test('a work that continues a stopped one gets new branches for its parts, while the stopped parts keep theirs', t => {
+  // The first work's parts stop (one out of scope), so their worktrees and branches stay.
+  const f = fixture(t, { work: info => info.worker.id === 'a' ? ['src/quota.cs', 'notes.md'] : ['src/skills.cs'] });
+  f.run();
+  const first = f.store.execution.megaTasks.find(mega => mega.id === f.mega.id);
+  const firstBranches = (first.worktreeParts || []).map(part => part.branch);
+  assert.equal(firstBranches.length, 2, 'the first work ran its parts in worktrees');
+  // The lead names the rest: a new work of the same project, with parts numbered from 1 again.
+  first.status = 'CANCELLED';
+  const job2 = { ...f.job, id: 'scope-job-2', detail: 'Continue the port' };
+  f.item.tasks = [{ ...f.job, status: 'superseded' }, job2];
+  const parts2 = [{ modelId: 'a', slice: 'Port quota again', dependsOn: [], scope: ['src/quota.cs'] }, { modelId: 'b', slice: 'Port skills again', dependsOn: [], scope: ['src/skills.cs'] }];
+  const mega2 = f.bridge.propose(f.item, job2, parts2);
+  f.bridge.approve(f.item.project.id, mega2.id);
+  const before = f.launches.length;
+  f.bridge.advance(f.item, job2, parts2);
+  const failed = f.store.execution.results.filter(result => result.megaTaskId === mega2.id && /Worktree creation failed/.test(result.summary || ''));
+  assert.deepEqual(failed.map(result => result.summary), [], 'no part failed to get its worktree');
+  assert.equal(f.launches.length - before, 2, 'both new parts started');
+  const secondBranches = (f.store.execution.megaTasks.find(mega => mega.id === mega2.id).worktreeParts || []).map(part => part.branch);
+  assert.equal(secondBranches.length, 2);
+  for (const branch of secondBranches) assert.ok(!firstBranches.includes(branch), branch + ' was already taken');
+});

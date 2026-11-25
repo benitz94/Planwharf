@@ -4315,6 +4315,21 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
     return { ok: true, phase: 'plan', job: payload, facts, clearJob };
   }
 
+  // Work the crew started ("Let the crew do it") goes on with the crew after Resume: when a step then stops
+  // part way, the lead names the rest and the crew continues, as before the stop. Without it, a resumed
+  // job 45 stopped for good on the first partial step (2026-11-25).
+  function crewAgainAfterResume(projectId, megaTaskId) {
+    const mega = (store.execution?.megaTasks || []).find(item => item && item.id === megaTaskId);
+    if (!mega || autonomyActive(projectId) && !store.autonomy[projectId].stopReason) return;
+    const byCrew = mega.approvedBy === 'autonomy' || (store.execution?.timeline || []).some(event => event && event.type === 'MEGATASK_APPROVED'
+      && event.reference?.megaTaskId === megaTaskId && /by the project autonomy setting/.test(event.summary || ''));
+    if (!byCrew) return;
+    const previous = store.autonomy[projectId] || {};
+    store.autonomy[projectId] = { ...autonomy.createSettings(sessionId, now()), started: true,
+      approved: [...new Set([...(previous.approved || []), megaTaskId])], continued: previous.continued || [], evaluated: previous.evaluated || [] };
+    note(projectId, store.mode === 'auto' ? 'Resumed work the crew started: the crew carries on with it.' : 'Resumed work the crew started. Press Let the crew do it so the crew carries on when a step stops part way.');
+    persist();
+  }
   async function resume(projectId, request = {}) {
     if (typeof projectId === 'string' && projectId && teamScope.getStore() !== projectId) return inTeam(projectId, () => resume(projectId, request));
     if (typeof projectId !== 'string' || !projectId.trim()) return { ok: false, reason: 'invalid data' };
@@ -4331,6 +4346,7 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
       try {
         const resumed = bridge.resume(item, job, request);
         if (!resumed.ok) return resumed;
+        crewAgainAfterResume(projectId, resumed.megaTaskId);
         return { ...resumed, snapshot: await tick(projectId) };
       } catch (error) { return { ok: false, reason: error.message }; }
     }

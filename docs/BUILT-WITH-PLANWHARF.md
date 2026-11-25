@@ -290,3 +290,7 @@ controls reject missing and undersized fixtures. Independent verification also f
 scenario assertion-strength limitations in the existing `ScenarioParityTests.cs` outside
 this slice's write scope. The owner's real-program Windows hand test remains required
 before Job 43 acceptance; no cross-platform CI result is claimed.
+| Job 45 stopped on "Work branch has uncommitted changes" at every integration: Planwharf's own work plan had been committed into the repository with job 43, and Planwharf rewrites it at every step. It left the repository, and integration ignores it | #237 |
+| Resume was refused once a work had stopped twice (two checkpoints: "Choose an explicit MegaTask and checkpoint"), and the app showed the error for less than a second | #238 |
+| Resume of job 45 restarted the work but not the crew, so the first step that stopped part way ended it: nobody asked the lead for the rest | #239 |
+| The work the lead named after job 45 stopped could not start any part: its parts were numbered from 1 again, and the stopped work's worktrees still held those branches | #240 |
