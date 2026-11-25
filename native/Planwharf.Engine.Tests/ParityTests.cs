@@ -70,6 +70,12 @@ public class ParityTests
         var errors = new List<string>();
         foreach (var (moduleName, spec) in required)
         {
+            if (spec is JsonObject specObj && specObj.TryGetPropertyValue("scenarioOnly", out var so) && so is JsonValue sov && sov.TryGetValue<bool>(out var isSo) && isSo)
+            {
+                // Scenario-only modules do not have pure parity .json files or ParityTests.Ports wiring
+                continue;
+            }
+
             var minCases = spec is JsonObject obj && obj.TryGetPropertyValue("minCases", out var mc) && mc is JsonValue mv && mv.TryGetValue<int>(out var val)
                 ? val
                 : (spec is JsonValue v && v.TryGetValue<int>(out var num) ? num : 1);
@@ -157,6 +163,11 @@ public class ParityTests
             req["unwired-mod"] = new JsonObject { ["minCases"] = 1 };
             errors = ValidateParityDirectory(req, tempDir, new HashSet<string>());
             Assert.Contains(errors, e => e.Contains("Function unwired-mod/unwiredFn is not wired"));
+
+            // Scenario-only module does not require pure file or wired ports
+            req["scenario-only-mod"] = new JsonObject { ["scenarioOnly"] = true, ["scenarioFloors"] = new JsonObject { ["scen1"] = 1 } };
+            errors = ValidateParityDirectory(req, tempDir, new HashSet<string> { "unwired-mod/unwiredFn" });
+            Assert.DoesNotContain(errors, e => e.Contains("scenario-only-mod"));
         }
         finally
         {
@@ -171,16 +182,31 @@ public class ParityTests
         ["api-agent"] = 27,
         ["worktrees"] = 16,
         ["pr-check"] = 18,
-        ["phone-activation-check"] = 12
+        ["phone-activation-check"] = 12,
+        ["execution"] = 11,
+        ["project-home"] = 2
     };
 
     public static Dictionary<string, int> LoadScenarioFloors(string parityDir)
     {
         var required = JsonNode.Parse(File.ReadAllText(Path.Combine(parityDir, "required.json"))) as JsonObject;
-        var configured = required?["runner"]?["scenarioFloors"] as JsonObject;
-        return configured?.Where(pair => pair.Value is JsonValue value && value.TryGetValue<int>(out _))
-            .ToDictionary(pair => pair.Key, pair => pair.Value!.GetValue<int>(), StringComparer.Ordinal)
-            ?? new Dictionary<string, int>(StringComparer.Ordinal);
+        var result = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (required == null) return result;
+        foreach (var (_, spec) in required)
+        {
+            if (spec is not JsonObject specObj) continue;
+            if (specObj.TryGetPropertyValue("scenarioFloors", out var sf) && sf is JsonObject sfObj)
+            {
+                foreach (var (key, value) in sfObj)
+                {
+                    if (value is JsonValue v && v.TryGetValue<int>(out var count))
+                    {
+                        result[key] = count;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     public static List<string> ValidateScenarioFloors(IReadOnlyDictionary<string, int> floors, string scenariosDir)
@@ -231,6 +257,14 @@ public class ParityTests
             var missingErrors = ValidateScenarioFloors(new Dictionary<string, int> { ["provider-models"] = 19 }, tempDir);
             Assert.Contains(missingErrors, e => e.Contains("Missing scenario fixture: provider-models.json"));
 
+            // Missing execution scenario fixture fails
+            var missingExec = ValidateScenarioFloors(new Dictionary<string, int> { ["execution"] = 11 }, tempDir);
+            Assert.Contains(missingExec, e => e.Contains("Missing scenario fixture: execution.json"));
+
+            // Missing project-home scenario fixture fails
+            var missingHome = ValidateScenarioFloors(new Dictionary<string, int> { ["project-home"] = 2 }, tempDir);
+            Assert.Contains(missingHome, e => e.Contains("Missing scenario fixture: project-home.json"));
+
             // Too few scenarios fails
             var fixture = new JsonObject
             {
@@ -241,6 +275,17 @@ public class ParityTests
             File.WriteAllText(Path.Combine(tempDir, "provider-models.json"), fixture.ToJsonString());
             var shortErrors = ValidateScenarioFloors(new Dictionary<string, int> { ["provider-models"] = 19 }, tempDir);
             Assert.Contains(shortErrors, e => e.Contains("has only 1 scenarios, requires at least 19"));
+
+            // Too few project-home scenarios fails
+            var homeFixture = new JsonObject
+            {
+                ["schema"] = 1,
+                ["module"] = "project-home",
+                ["scenarios"] = new JsonArray { new JsonObject { ["name"] = "h1" } }
+            };
+            File.WriteAllText(Path.Combine(tempDir, "project-home.json"), homeFixture.ToJsonString());
+            var shortHome = ValidateScenarioFloors(new Dictionary<string, int> { ["project-home"] = 2 }, tempDir);
+            Assert.Contains(shortHome, e => e.Contains("Scenario module project-home has only 1 scenarios, requires at least 2"));
         }
         finally
         {
@@ -676,6 +721,18 @@ public class ParityTests
         ["phone-handover/exchangeEvidence"] = a => PhoneHandover.ExchangeEvidence(Obj(a, 0)),
         ["phone-handover-live/redact"] = a => (JsonNode)JsonValue.Create(PhoneHandoverLive.Redact(Text(a, 0)))!,
         ["phone-handover-live/projectsFromPlan"] = a => PhoneHandoverLive.ProjectsFromPlan(Node(a, 0)),
+        ["execution/splitSummary"] = a =>
+        {
+            var subs = Arr(a, 0)!.Select(n => (JsonObject)n!).ToList();
+            var why = a.Count > 1 && a[1] is JsonValue v && v.TryGetValue<string>(out var w) ? w : "";
+            return (JsonNode)JsonValue.Create(Execution.SplitSummary(subs, id => id, why))!;
+        },
+        ["execution/noVerdictPlan"] = a =>
+        {
+            var tries = a.Count > 0 && a[0] is JsonValue v && v.TryGetValue<double>(out var t) ? t : 0;
+            return (JsonNode)JsonValue.Create(Execution.NoVerdictPlan(tries))!;
+        },
+        ["execution/deliveredWithoutVerdict"] = a => Execution.DeliveredWithoutVerdict(Obj(a, 0)!),
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

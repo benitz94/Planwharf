@@ -1013,5 +1013,31 @@ module.exports = {
     ['projectsFromPlan', [{ schema: 2, projects: [{ id: 'p1', name: 'Alpha', status: 'running', goal: 'Do it' }] }]],
     ['projectsFromPlan', [{ schema: 2, projects: [{ id: 'p2', name: 'Beta', status: 'done', direction: 'Direct' }] }]],
     ['projectsFromPlan', [null]]
+  ],
+  execution: [
+    ['splitSummary', [[{ id: 'sub-1', title: 'Single task', assignedModelId: 'terra' }]]],
+    ['splitSummary', [[{ id: 'sub-1', title: 'Part 1', assignedModelId: 'terra' }, { id: 'sub-2', title: 'Part 2', assignedModelId: 'sonnet' }]]],
+    ['splitSummary', [[{ id: 'sub-1', title: 'Build part', assignedModelId: 'terra' }, { id: 'sub-2', title: 'Verify part', assignedModelId: 'gemini-pro', dependencies: ['sub-1'] }]]],
+    ['splitSummary', [[{ id: 'sub-1', title: 'Build 1', assignedModelId: 'terra' }, { id: 'sub-2', title: 'Build 2', assignedModelId: 'sonnet' }, { id: 'sub-3', title: 'Verify both', assignedModelId: 'gemini-pro', dependencies: ['sub-1', 'sub-2'] }], 'All clear']],
+    ['splitSummary', [[{ id: 'sub-1', title: 'Build 1', assignedModelId: 'terra' }, { id: 'sub-2', title: 'Build 2', assignedModelId: 'sonnet' }, { id: 'sub-3', title: 'Verify 1 only', assignedModelId: 'gemini-pro', dependencies: ['sub-1'] }], 'Partial verification']],
+    ['noVerdictPlan', [0]],
+    ['noVerdictPlan', [1]],
+    ['noVerdictPlan', [2]],
+    ['noVerdictPlan', [3]],
+    ['noVerdictPlan', [-1]],
+    ['noVerdictPlan', [0.5]],
+    ['noVerdictPlan', [1.5]],
+    ['noVerdictPlan', [10]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 1, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '0123456789abcdef0123456789abcdef01234567', exitCode: 0, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: '', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: 'not-a-valid-hex-hash', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: 'short', exitCode: 0, scope: ['src'], names: ['src/file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src'], names: [] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src'], names: ['src/file.js', 'other/file.txt'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: [], names: ['any/path.txt', 'other/file.txt'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src\\nested'], names: ['src\\nested\\file.js'] }]],
+    ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', after: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789', exitCode: 0, scope: ['docs'], names: ['docs/README.md'] }]]
   ]
 };

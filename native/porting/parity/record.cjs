@@ -15,7 +15,8 @@ const PATH_MAP = {
 
 // Functions that take a callback get one that accepts everything; JSON has no functions.
 const CALL = {
-  'model-policy': { resolveUsageFallback: (fn, args) => fn(...args, () => true) }
+  'model-policy': { resolveUsageFallback: (fn, args) => fn(...args, () => true) },
+  execution: { splitSummary: (fn, args) => fn(args[0], id => id, args[1] || '') }
 };
 
 function record(moduleName) {
