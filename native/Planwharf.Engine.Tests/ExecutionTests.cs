@@ -8,6 +8,7 @@ namespace Planwharf.Engine.Tests;
 
 public sealed class ExecutionTests
 {
+    static string Text(JsonNode? node) => node?.ToString() ?? "";
     static JsonObject Obj(string json) => JsonNode.Parse(json)!.AsObject();
     static (ExecutionBridge Bridge, JsonObject Row, List<string> Calls) ProposedBridge(bool launcher = true)
     {
@@ -16,6 +17,7 @@ public sealed class ExecutionTests
             Obj("""{"id":"codex:model-b","provider":"codex","cli":"model-b","label":"B","enabled":true,"available":true}""") };
         var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = new JsonObject(), Attempts = AttemptEngine.Create(new AttemptIo()), Directory = "synthetic",
             RowFor = (_, _) => { calls.Add("row"); return row; },
             Inspect = _ => { calls.Add("inspect"); return Obj("""{"git":false,"dirty":[]}"""); },
@@ -87,6 +89,7 @@ public sealed class ExecutionTests
         ExecutionBridge? bridge = null;
         bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = store, Attempts = attempt, Directory = "synthetic", Files = files,
             RowFor = (_, _) => row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""),
             Models = () => [Obj("""{"id":"codex:model-a","provider":"codex","cli":"model-a","label":"A","enabled":true,"available":true,"cost":2}""")],
@@ -126,6 +129,7 @@ public sealed class ExecutionTests
         var row = new JsonObject(); var launches = new List<string>(); var files = new MemoryFiles();
         var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = new JsonObject(), Attempts = AttemptEngine.Create(new AttemptIo()), Directory = "synthetic", Files = files,
             RowFor = (_, _) => row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""),
             Models = () => [Obj("""{"id":"codex:model-a","provider":"codex","cli":"model-a","enabled":true,"available":true}""")],
@@ -174,6 +178,7 @@ public sealed class ExecutionTests
         var quota = false;
         var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = store, Attempts = AttemptEngine.Create(new AttemptIo()), Directory = "synthetic", Files = new MemoryFiles(),
             RowFor = (_, _) => row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Models = () => [model],
             Now = () => "2026-01-01T00:00:00.000Z", LeadId = () => "codex:lead", SessionId = "session-1",
@@ -197,6 +202,7 @@ public sealed class ExecutionTests
         var row = new JsonObject(); var requests = new List<JsonObject>(); var created = new List<string>();
         var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = new JsonObject(), Attempts = AttemptEngine.Create(new AttemptIo()), Directory = "synthetic", Files = new MemoryFiles(),
             RowFor = (_, _) => row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""),
             Models = () => [Obj("""{"id":"codex:model-a","provider":"codex","cli":"model-a","enabled":true,"available":true}""")],
@@ -254,6 +260,7 @@ public sealed class ExecutionTests
         var persisted = 0;
         var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
         {
+            IsProcessAlive = _ => true,
             Store = new JsonObject(), Attempts = AttemptEngine.Create(new AttemptIo()), Directory = "synthetic", Files = new MemoryFiles(),
             RowFor = (_, _) => new JsonObject(), Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Models = () => [model],
             Now = () => "2026-01-01T00:00:00.000Z", LeadId = () => "codex:lead", SessionId = "s",
@@ -380,6 +387,553 @@ public sealed class ExecutionTests
         Assert.IsType<JsonObject>(new ExecutionData(store).Observations);
     }
 
+    sealed class CollectionFixture
+    {
+        public readonly MemoryFiles Files = new();
+        public readonly AttemptIo Io = new();
+        public readonly JsonObject Store = new(), Row = new();
+        public readonly List<string> Calls = [];
+        public readonly List<JsonObject> Models = [Obj("""{"id":"a","provider":"codex","cli":"a","enabled":true,"available":true}"""),
+            Obj("""{"id":"b","provider":"codex","cli":"b","enabled":true,"available":true}"""),
+            Obj("""{"id":"c","provider":"codex","cli":"c","enabled":true,"available":true}""")];
+        public readonly AttemptEngine Attempts;
+        public ExecutionBridge Bridge;
+        public JsonObject Mega;
+        public bool Alive = true;
+        public bool FailPersist { get; set; }
+        public int Launches;
+        public string Clock = "2026-01-01T00:00:00.000Z";
+        public Worktrees.GitRunner? Git { get; set; }
+        public JsonObject? Next;
+        public PlanFile? Plan { get; set; }
+        public string Session = "session";
+        public CollectionFixture()
+        {
+            Attempts = AttemptEngine.Create(Io);
+            Bridge = Create();
+            Mega = Bridge.Propose(ProposalItem(), ProposalJob(), [Obj("""{"slice":"Build","modelId":"a","scope":["src"]}""")]);
+            Bridge.Approve("p", Text(Mega["id"]));
+            Bridge.Advance(ProposalItem(), ProposalJob(), []);
+            Clock = "2026-01-01T00:01:00.000Z";
+        }
+        public ExecutionBridge Create() => Execution.CreateExecutionBridge(new ExecutionOptions
+        {
+            Store = Store, Attempts = Attempts, Directory = "synthetic", Files = Files, Models = () => Models,
+            RowFor = (_, _) => Row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Now = () => Clock,
+            LeadId = () => "lead", SessionId = Session, NewId = () => "stable", Plan = Plan,
+            IsProcessAlive = pid => { Calls.Add("alive:" + pid); return Alive; },
+            SpawnWorker = _ => { Launches++; return new JsonObject { ["pid"] = 100 + Launches }; },
+            Persist = () => { Calls.Add("persist"); if (FailPersist) throw new IOException("persist failed"); },
+            OnRefusal = (model, reason) => Calls.Add("refusal:" + model + ":" + reason),
+            Replacement = (_, excluded) => { Calls.Add("replacement:" + string.Join(",", excluded)); return Next; },
+            SafeGitWorkspace = _ => true,
+            Git = call => Git?.Invoke(call) ?? new Worktrees.GitReply(1)
+        });
+        public JsonObject Sub => Bridge.Data.SubTasks[0]!.AsObject();
+        public JsonObject Part => Row["dispatch"]!.AsArray().OfType<JsonObject>().First(p => JsonNode.DeepEquals(p["subTaskId"], Sub["id"]));
+        public void Write(string path, JsonObject value) => Files.Content[path] = Encoding.UTF8.GetBytes(value.ToJsonString());
+        public JsonObject Result(string status = "COMPLETE") => new()
+        {
+            ["resultId"] = "R-" + Text(Part["attemptId"]), ["attemptId"] = Part["attemptId"]?.DeepClone(),
+            ["subTaskId"] = Sub["id"]?.DeepClone(), ["megaTaskId"] = Mega["id"]?.DeepClone(), ["status"] = status,
+            ["summary"] = "Delivered", ["filesChanged"] = new JsonArray("src/a.cs"), ["tests"] = new JsonArray(),
+            ["blockers"] = new JsonArray(), ["nextAction"] = "Review", ["future"] = new JsonObject { ["keep"] = null }
+        };
+        public void Evidence(JsonObject? result = null)
+        {
+            Write(Text(Part["structuredResultPath"]), result ?? Result());
+            Write(Text(Part["exitPath"]), new JsonObject { ["attemptId"] = Part["attemptId"]?.DeepClone(),
+                ["provider"] = Sub["provider"]?.DeepClone(), ["model"] = Sub["cli"]?.DeepClone(), ["exitCode"] = 0,
+                ["createdAt"] = Clock });
+        }
+        public void Collect() { Alive = false; Bridge.Reconcile(Mega); }
+        public void LaunchAgain() { Alive = true; Bridge.Advance(ProposalItem(), ProposalJob(), []); Alive = false; }
+    }
+
+    [Fact]
+    public void DeadWorkerCollectsOnceAcrossRestartWithUnknownFieldsAndAccounting()
+    {
+        var f = new CollectionFixture(); f.Evidence(); f.Collect();
+        Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal("{\"keep\":null}", f.Bridge.Data.Results[0]!["future"]!.ToJsonString());
+        Assert.Equal("closed", Text(f.Attempts.GetAttempts()[0]["status"]));
+        Assert.Single(Execution.ReadStepTimes("synthetic", f.Files));
+        Assert.Single(Execution.ReadStepOutcomes("synthetic", f.Files));
+        var snapshot = f.Store.ToJsonString();
+        f.Session = "restarted"; f.Bridge = f.Create(); f.Bridge.Reconcile(f.Mega); f.Bridge.Reconcile(f.Mega);
+        Assert.Equal(snapshot, f.Store.ToJsonString());
+        Assert.Single(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "SUBTASK_COMPLETED");
+        Assert.Single(Execution.ReadStepTimes("synthetic", f.Files));
+    }
+
+    [Theory]
+    [InlineData("attemptId")]
+    [InlineData("subTaskId")]
+    [InlineData("megaTaskId")]
+    [InlineData("resultId")]
+    [InlineData("exit-provider")]
+    [InlineData("exit-model")]
+    [InlineData("exit-attempt")]
+    [InlineData("exit-code")]
+    [InlineData("corrupt")]
+    [InlineData("partial")]
+    public void InvalidIdentityOrCorruptEvidenceNeverCompletes(string mutation)
+    {
+        var f = new CollectionFixture(); var result = f.Result(); f.Evidence(result);
+        if (mutation.StartsWith("exit-", StringComparison.Ordinal))
+        {
+            var path = Text(f.Part["exitPath"]);
+            var exit = JsonNode.Parse(f.Files.Content[path])!.AsObject();
+            exit[mutation == "exit-attempt" ? "attemptId" : mutation == "exit-code" ? "exitCode" : mutation[5..]] = "wrong";
+            f.Write(path, exit);
+        }
+        else if (mutation == "corrupt") f.Files.Content[Text(f.Part["structuredResultPath"])] = Encoding.UTF8.GetBytes("{broken");
+        else if (mutation == "partial") { result.Remove("tests"); f.Evidence(result); }
+        else { result[mutation] = "wrong"; f.Evidence(result); }
+        f.Collect();
+        Assert.Equal("PENDING", Text(f.Sub["status"])); Assert.Empty(f.Bridge.Data.Results);
+        Assert.Equal(1, f.Sub["noVerdictTries"]!.GetValue<int>());
+        Assert.Equal("closed", Text(f.Attempts.GetAttempts()[0]["status"]));
+        Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+    }
+
+    [Fact]
+    public void NoVerdictRetriesSameThenSwitchesThenStops()
+    {
+        var f = new CollectionFixture(); f.Next = f.Models[1];
+        f.Collect(); Assert.Equal("a", Text(f.Sub["assignedModelId"]));
+        f.LaunchAgain(); f.Collect(); Assert.Equal("b", Text(f.Sub["assignedModelId"]));
+        Assert.Equal(2, f.Sub["noVerdictTries"]!.GetValue<int>());
+        f.LaunchAgain(); f.Collect(); f.Bridge.Reconcile(f.Mega);
+        Assert.Equal("FAILED", Text(f.Sub["status"])); Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal(3, f.Attempts.GetAttempts().Count); Assert.All(f.Attempts.GetAttempts(), a => Assert.Equal("closed", Text(a["status"])));
+        Assert.Equal(2, Execution.ReadStepOutcomes("synthetic", f.Files).Count);
+        Assert.Single(Execution.ReadStepTimes("synthetic", f.Files));
+        Assert.Contains("replacement:a", f.Calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LiveOrReusedPidDefersCollectionEvenWithValidEvidence(bool receipt)
+    {
+        var f = new CollectionFixture(); f.Evidence();
+        if (receipt)
+        {
+            f.Part["pid"] = null;
+            f.Write(Text(f.Part["exitPath"]) + ".process.json", new JsonObject { ["attemptId"] = f.Part["attemptId"]?.DeepClone(), ["pid"] = 987 });
+        }
+        f.Bridge = f.Create(); f.Bridge.Reconcile(f.Mega);
+        Assert.Equal("RUNNING", Text(f.Sub["status"])); Assert.Empty(f.Bridge.Data.Results);
+        Assert.True(f.Row["workerAlive"]!.GetValue<bool>());
+        Assert.Contains("alive:" + (receipt ? "987" : "101"), f.Calls);
+        f.Collect(); Assert.Single(f.Bridge.Data.Results);
+    }
+
+    [Fact]
+    public void LogWriteFailureIsBestEffortAndDoesNotLoseResult()
+    {
+        var f = new CollectionFixture(); f.Evidence(); f.Files.FailWrite = true; f.Collect();
+        Assert.Single(f.Bridge.Data.Results); Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Equal("closed", Text(f.Attempts.GetAttempts()[0]["status"]));
+        Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+        Assert.Empty(Execution.ReadStepOutcomes("synthetic", f.Files));
+        f.Files.FailWrite = false; f.Bridge.Reconcile(f.Mega);
+        Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+    }
+
+    [Fact]
+    public void RefusalReroutesAreBoundedAndCooldownPrecedesReplacement()
+    {
+        var f = new CollectionFixture();
+        for (var i = 0; i < 3; i++)
+        {
+            f.Files.Content[Text(f.Part["logPath"])] = Encoding.UTF8.GetBytes("insufficient credits");
+            f.Next = f.Models[Math.Min(i + 1, 2)]; f.Collect();
+            if (i < 2)
+            {
+                Assert.Equal("PENDING", Text(f.Sub["status"]));
+                Assert.Equal(i + 1, f.Sub["refusalReroutes"]!.GetValue<double>());
+                var refusal = f.Calls.FindLastIndex(c => c.StartsWith("refusal:", StringComparison.Ordinal));
+                var replacement = f.Calls.FindLastIndex(c => c.StartsWith("replacement:", StringComparison.Ordinal));
+                Assert.True(refusal < replacement);
+                f.LaunchAgain();
+            }
+        }
+        Assert.Equal(2, f.Calls.Count(c => c.StartsWith("refusal:", StringComparison.Ordinal)));
+        Assert.Equal(1, f.Sub["noVerdictTries"]!.GetValue<int>());
+        Assert.Empty(f.Bridge.Data.Results);
+        Assert.Equal(2, Execution.ReadStepOutcomes("synthetic", f.Files).Count);
+    }
+
+    [Theory]
+    [InlineData(false, "BLOCKED")]
+    [InlineData(true, "COMPLETE")]
+    public void ConcurrentSharedFolderChangesAreNotAttributedToOneWorker(bool concurrent, string expected)
+    {
+        var f = new CollectionFixture();
+        var other = (JsonObject)f.Sub.DeepClone(); other["id"] = "other"; other["scope"] = new JsonArray("other");
+        other["status"] = concurrent ? "RUNNING" : "PENDING";
+        f.Bridge.Data.SubTasks.Add((JsonNode)other);
+        f.Git = call => call.Args.Contains("status") ? new Worktrees.GitReply(0, " M outside.cs\0") : new Worktrees.GitReply(1);
+        f.Evidence(); f.Collect();
+        Assert.Equal(expected, Text(f.Sub["status"]));
+        Assert.Single(f.Bridge.Data.Results);
+        if (!concurrent) Assert.Equal("[\"outside.cs\"]", f.Sub["scopeViolation"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void ReportedScopeViolationStillBlocksWhileOthersRunAndIsolatedCommitInspectionFailsClosed()
+    {
+        var f = new CollectionFixture();
+        var other = (JsonObject)f.Sub.DeepClone(); other["id"] = "other";
+        f.Bridge.Data.SubTasks.Add((JsonNode)other);
+        var result = f.Result(); result["filesChanged"] = new JsonArray("outside.cs"); f.Evidence(result); f.Collect();
+        Assert.Equal("BLOCKED", Text(f.Sub["status"]));
+        Assert.Equal("Stopped: changed files outside its scope (outside.cs). Delivered", Text(f.Bridge.Data.Results[0]!["summary"]));
+        var isolated = new CollectionFixture(); isolated.Part["branch"] = "part"; isolated.Part["baseHead"] = new string('a', 40);
+        isolated.Evidence(); isolated.Collect();
+        Assert.Equal("BLOCKED", Text(isolated.Sub["status"]));
+        Assert.Equal("[\"(commit inspection unavailable)\"]", isolated.Sub["scopeViolation"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void DependencyScopeAllowsFinishedFilesAndUnownedFilesButProtectsBusyScope()
+    {
+        var f = new CollectionFixture();
+        var parent = (JsonObject)f.Sub.DeepClone(); parent["id"] = "parent"; parent["status"] = "COMPLETE"; parent["scope"] = new JsonArray("parent");
+        var busy = (JsonObject)f.Sub.DeepClone(); busy["id"] = "busy"; busy["status"] = "PENDING"; busy["scope"] = new JsonArray("busy");
+        f.Bridge.Data.SubTasks.Add((JsonNode)parent); f.Bridge.Data.SubTasks.Add((JsonNode)busy);
+        f.Sub["dependencies"] = new JsonArray("parent");
+        var result = f.Result(); result["filesChanged"] = new JsonArray("src/a.cs", "parent/a.cs", "unowned.cs", "busy/a.cs");
+        f.Evidence(result); f.Collect();
+        Assert.Equal("[\"busy/a.cs\"]", f.Sub["scopeViolation"]!.ToJsonString());
+    }
+
+    [Fact]
+    public void PreexistingDirtyAndFinishedWorkerOwnedFilesAreNotBlamed()
+    {
+        var f = new CollectionFixture(); f.Mega["repoBefore"]!["dirtyFiles"] = new JsonArray(" M before.cs");
+        var other = (JsonObject)f.Sub.DeepClone(); other["id"] = "other"; other["status"] = "COMPLETE";
+        other["scope"] = new JsonArray("other"); other["finishedAt"] = "2025-12-31T00:00:00.000Z";
+        f.Bridge.Data.SubTasks.Add((JsonNode)other);
+        f.Git = call => call.Args.Contains("status") ? new Worktrees.GitReply(0, " M before.cs\0 M other/a.cs\0") : new Worktrees.GitReply(1);
+        f.Evidence(); f.Collect(); Assert.Equal("COMPLETE", Text(f.Sub["status"])); Assert.Null(f.Sub["scopeViolation"]);
+    }
+
+    [Theory]
+    [InlineData(0, "src/a.cs", "COMPLETE", "Delivered on disk without a structured result:")]
+    [InlineData(1, "src/a.cs", "COMPLETE", "Delivered on disk:")]
+    [InlineData(0, "outside.cs", "BLOCKED", "Stopped:")]
+    public void CommitFallbackPreservesJavaScriptExitAndScopeBehavior(int exitCode, string name, string status, string summary)
+    {
+        var f = new CollectionFixture(); f.Mega["repoBefore"]!["repoHead"] = new string('a', 40);
+        f.Write(Text(f.Part["exitPath"]), new JsonObject { ["attemptId"] = f.Part["attemptId"]?.DeepClone(), ["exitCode"] = exitCode });
+        f.Git = call => new Worktrees.GitReply(0, call.Args.Contains("rev-parse") ? new string('b', 40) : call.Args.Contains("diff") ? name + "\n" : "");
+        f.Collect();
+        Assert.Equal(status, Text(f.Sub["status"])); Assert.StartsWith(summary, Text(f.Bridge.Data.Results[0]!["summary"]));
+        Assert.Equal("TECHNICAL", Text(f.Bridge.Data.Results[0]!["evidenceKind"]));
+    }
+
+    [Fact]
+    public void CancelledMegaTaskIsNotDispatchedAndMissingOwnedPartFailsWithoutInventedResult()
+    {
+        var f = new CollectionFixture(); f.Mega["status"] = "CANCELLED"; f.Evidence(); f.Alive = false;
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), []);
+        Assert.Equal("CANCELLED", Text(f.Mega["status"])); Assert.Single(f.Bridge.Data.Results); Assert.Equal(1, f.Launches);
+        var missing = new CollectionFixture(); missing.Row["dispatch"] = new JsonArray(); missing.Bridge.Reconcile(missing.Mega);
+        Assert.Equal("FAILED", Text(missing.Sub["status"])); Assert.Empty(missing.Bridge.Data.Results);
+        Assert.Equal("active", Text(missing.Attempts.GetAttempts()[0]["status"]));
+    }
+
+    [Fact]
+    public void PersistenceFailureAfterCollectionKeepsInMemoryEvidenceWithoutDuplicatingAccounting()
+    {
+        var f = new CollectionFixture(); f.Evidence(); f.Alive = false; f.FailPersist = true;
+        Assert.Equal("persist failed", Assert.Throws<IOException>(() => f.Bridge.Advance(ProposalItem(), ProposalJob(), [])).Message);
+        Assert.Equal("COMPLETE", Text(f.Mega["status"])); Assert.Single(f.Bridge.Data.Results);
+        Assert.Equal("closed", Text(f.Attempts.GetAttempts()[0]["status"]));
+        f.FailPersist = false; f.Bridge.Advance(ProposalItem(), ProposalJob(), []);
+        Assert.Single(Execution.ReadStepTimes("synthetic", f.Files)); Assert.Single(Execution.ReadStepOutcomes("synthetic", f.Files));
+        Assert.Single(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "MEGATASK_COMPLETED");
+    }
+
+    [Fact]
+    public void AttemptWriteFailurePreservesJavaScriptPartialCollectionOrder()
+    {
+        var f = new CollectionFixture(); f.Evidence(); f.Io.FailWrite = true;
+        Assert.Throws<IOException>(() => f.Collect());
+        Assert.Single(f.Bridge.Data.Results); Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+        Assert.DoesNotContain(f.Bridge.Data.Timeline.OfType<JsonObject>(), e => Text(e["type"]) == "SUBTASK_COMPLETED");
+        f.Io.FailWrite = false; f.Bridge.Reconcile(f.Mega);
+        Assert.Single(f.Bridge.Data.Results); Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+        Assert.Equal("active", Text(f.Attempts.GetAttempts()[0]["status"]));
+    }
+
+    [Fact]
+    public void RestartRequiresExplicitCheckpointBeforeRemainingWorkDispatch()
+    {
+        var f = new CollectionFixture(); f.Collect(); f.Session = "new-session"; f.Bridge = f.Create();
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), []);
+        Assert.Equal("PAUSED", Text(f.Mega["status"])); Assert.Equal(1, f.Launches);
+        var checkpoint = Assert.Single(f.Bridge.Data.Checkpoints);
+        Assert.Equal("backend restarted", Text(checkpoint!["reason"]));
+        Assert.Equal("[\"MT-stable-ST-01\"]", checkpoint["pendingSubTaskIds"]!.ToJsonString());
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), []); Assert.Single(f.Bridge.Data.Checkpoints);
+    }
+
+    [Fact]
+    public void NewDecisionLinePreservesJavaScriptReferenceErrorAndPartialState()
+    {
+        var f = new CollectionFixture(); var result = f.Result();
+        result["summary"] = "Needs your decision: Choose | suggestion: yes | breaks: no";
+        f.Evidence(result);
+        Assert.Equal("item is not defined", Assert.Throws<InvalidOperationException>(() => f.Collect()).Message);
+        Assert.Single(f.Bridge.Data.Results); Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Empty(f.Bridge.Data.Decisions); Assert.Equal("active", Text(f.Attempts.GetAttempts()[0]["status"]));
+        Assert.Null(f.Part["validatedResultStatus"]); Assert.Empty(Execution.ReadStepTimes("synthetic", f.Files));
+        f.Bridge.Reconcile(f.Mega); Assert.Single(f.Bridge.Data.Results);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    public void VerifyRecordsBuildAcceptanceOrFixesOnceWithQuota(int fixedFiles)
+    {
+        var f = new CollectionFixture();
+        var verify = (JsonObject)f.Sub.DeepClone(); verify["id"] = "verify"; verify["title"] = "Verify the work independently";
+        verify["status"] = "PENDING"; verify["dependencies"] = new JsonArray(f.Sub["id"]!.DeepClone()); verify["attemptIds"] = new JsonArray(); verify.Remove("scope");
+        f.Bridge.Data.SubTasks.Add((JsonNode)verify);
+        f.Write(Text(f.Part["structuredResultPath"]) + ".usage.json", Obj("""{"inputTokens":22,"outputTokens":7}"""));
+        f.Evidence(); f.Collect(); Assert.Empty(Execution.ReadStepOutcomes("synthetic", f.Files));
+        f.Alive = true; f.Bridge.Advance(ProposalItem(), ProposalJob(), []); f.Alive = false;
+        var part = f.Row["dispatch"]!.AsArray().OfType<JsonObject>().Single(p => Text(p["subTaskId"]) == "verify");
+        var result = f.Result(); result["resultId"] = "R-" + Text(part["attemptId"]); result["attemptId"] = part["attemptId"]?.DeepClone(); result["subTaskId"] = "verify";
+        result["filesChanged"] = new JsonArray(Enumerable.Range(0, fixedFiles).Select(i => (JsonNode?)JsonValue.Create("src/fix" + i)).ToArray());
+        f.Write(Text(part["structuredResultPath"]), result);
+        f.Write(Text(part["exitPath"]), new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["provider"] = "codex", ["model"] = "a", ["exitCode"] = 0 });
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), [], schedule: false);
+        var outcomes = Execution.ReadStepOutcomes("synthetic", f.Files);
+        Assert.Equal(2, outcomes.Count); Assert.Equal("Verify", Text(outcomes[0]["role"])); Assert.Equal("Build", Text(outcomes[1]["role"]));
+        Assert.All(outcomes, r => { Assert.Equal(fixedFiles == 0, r["accepted"]!.GetValue<bool>()); Assert.Equal(fixedFiles, r["fixed"]!.GetValue<int>()); });
+        Assert.Equal(22, outcomes[1]["quota"]!["inputTokens"]!.GetValue<double>());
+        Assert.Equal("COMPLETE", Text(f.Mega["status"]));
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), [], schedule: false);
+        Assert.Equal(2, Execution.ReadStepOutcomes("synthetic", f.Files).Count);
+        Assert.Equal(2, Execution.ReadStepTimes("synthetic", f.Files).Count);
+    }
+
+    sealed class NoPlanGit : IPlanGit
+    {
+        public PlanGitResult Run(string folder, IReadOnlyList<string> args, int timeoutMs = 20000) => new(false);
+    }
+
+    [Fact]
+    public void CompleteTicksPlanOnceAndRetainsExistingPlanRules()
+    {
+        var folder = Directory.CreateTempSubdirectory("pw-collection-plan-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(folder, ".planwharf"));
+            var path = PlanFile.PlanPath(folder);
+            File.WriteAllText(path, "# Work\n\nRules: preserve evidence\n\n- [ ] Build\n");
+            var f = new CollectionFixture(); f.Plan = new PlanFile(new NoPlanGit()); f.Bridge = f.Create(); f.Part["projectFolder"] = folder;
+            f.Evidence(); f.Collect(); var ticked = File.ReadAllText(path);
+            Assert.Contains("- [x] Build — not committed", ticked); Assert.Contains("Rules: preserve evidence", ticked);
+            f.Bridge.Reconcile(f.Mega); Assert.Equal(ticked, File.ReadAllText(path));
+            f.Bridge.Advance(ProposalItem(), ProposalJob(), [], schedule: false);
+            Assert.Equal("COMPLETE", Text(f.Mega["status"]));
+            Assert.Equal("Review", Text(f.Mega["nextAction"])); Assert.False(f.Mega["repoAfter"]!["gitReadable"]!.GetValue<bool>());
+            Assert.Empty(f.Mega["repoAfter"]!["commitIds"]!.AsArray());
+        }
+        finally { Directory.Delete(folder, true); }
+    }
+
+    [Fact]
+    public void BrokenPlanDoesNotBlockSavedResultAndCompletionWaitsForIntegration()
+    {
+        var f = new CollectionFixture(); f.Plan = new PlanFile(new NoPlanGit()); f.Bridge = f.Create();
+        f.Part["projectFolder"] = "\0invalid"; f.Evidence(); f.Collect();
+        Assert.Equal("COMPLETE", Text(f.Sub["status"])); Assert.Single(f.Bridge.Data.Results);
+        f.Mega["activeGroup"] = new JsonArray(f.Sub["id"]!.DeepClone());
+        f.Mega["worktreeParts"] = new JsonArray(new JsonObject { ["subId"] = f.Sub["id"]!.DeepClone(), ["folder"] = "isolated", ["branch"] = "part" });
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), [], schedule: false);
+        Assert.Equal("RUNNING", Text(f.Mega["status"])); Assert.Null(f.Mega["completedAt"]);
+    }
+
+    [Fact]
+    public void LaunchAndResultFileFailuresRetainTheirDifferentJavaScriptFinalStates()
+    {
+        var f = new CollectionFixture(); f.Collect(); f.Files.FailWrite = true;
+        Assert.Throws<IOException>(() => f.Bridge.Advance(ProposalItem(), ProposalJob(), []));
+        Assert.Equal("PENDING", Text(f.Sub["status"])); Assert.Single(f.Sub["attemptIds"]!.AsArray());
+        Assert.Equal("active", Text(f.Attempts.GetAttempts()[1]["status"])); Assert.Empty(f.Bridge.Data.Results);
+    }
+
+    [Fact]
+    public void ResearchSubTaskRequiresValidReportMdBeforeCompletion()
+    {
+        var f = new CollectionFixture();
+        f.Next = f.Models[1];
+        f.Sub["type"] = "RESEARCH";
+
+        var report1 = Path.Combine(Path.GetFullPath(Text(f.Part["folder"])), "report.md");
+        var res1 = f.Result(); res1["reportPath"] = report1;
+        f.Evidence(res1);
+        f.Files.Info = new ExecutionFileStat(0, false, false);
+        f.Collect();
+        Assert.Equal("PENDING", Text(f.Sub["status"]));
+        Assert.Equal(1, f.Sub["noVerdictTries"]!.GetValue<int>());
+        Assert.Empty(f.Bridge.Data.Results);
+
+        f.Files.Info = new ExecutionFileStat(0, true, false);
+        f.LaunchAgain();
+        var report2 = Path.Combine(Path.GetFullPath(Text(f.Part["folder"])), "report.md");
+        var res2 = f.Result(); res2["reportPath"] = report2;
+        f.Files.Content[report2] = [];
+        f.Evidence(res2);
+        f.Collect();
+        Assert.Equal("PENDING", Text(f.Sub["status"]));
+        Assert.Equal(2, f.Sub["noVerdictTries"]!.GetValue<int>());
+
+        f.Files.Info = new ExecutionFileStat(100, true, false);
+        f.LaunchAgain();
+        var report3 = Path.Combine(Path.GetFullPath(Text(f.Part["folder"])), "report.md");
+        var res3 = f.Result(); res3["reportPath"] = report3;
+        f.Files.Content[report3] = Encoding.UTF8.GetBytes("# Research Findings");
+        f.Evidence(res3);
+        f.Collect();
+        Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Single(f.Bridge.Data.Results);
+    }
+
+    [Fact]
+    public void TakeoverNoteFormulatesExactHandoffTextInSubsequentLaunch()
+    {
+        var f = new CollectionFixture();
+        var requests = new List<JsonObject>();
+        f.Bridge = Execution.CreateExecutionBridge(new ExecutionOptions
+        {
+            Store = f.Store, Attempts = f.Attempts, Directory = "synthetic", Files = f.Files, Models = () => f.Models,
+            RowFor = (_, _) => f.Row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Now = () => f.Clock,
+            LeadId = () => "lead", SessionId = f.Session, NewId = () => "stable",
+            IsProcessAlive = _ => true,
+            SpawnWorker = req => { requests.Add(req); return new JsonObject { ["pid"] = 999 }; },
+            Persist = () => { },
+            SafeGitWorkspace = _ => true
+        });
+        f.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = f.Part["attemptId"]?.DeepClone(), ["reason"] = "no verdict" });
+        f.Sub["takeover"] = new JsonObject
+        {
+            ["fromModelId"] = "gpt-6.1-sol",
+            ["filesChanged"] = new JsonArray("src/fix.cs"),
+            ["tests"] = new JsonArray(new JsonObject { ["command"] = "dotnet test", ["status"] = "PASSED" }),
+            ["summary"] = "Almost finished",
+            ["logTail"] = "line 1\nline 2"
+        };
+        f.Sub["status"] = "PENDING";
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), []);
+        Assert.Single(requests);
+        var detail = Text(requests[0]["job"]!["detail"]);
+        Assert.StartsWith("HANDOFF: you take over this step from gpt-6.1-sol, which was stopped before finishing.\n" +
+            "Continue from the current state of the project folder. Do not start over: first look at what is already there (git status and the files below), keep what works, then finish the step.\n" +
+            "Files it changed: src/fix.cs\n" +
+            "Tests it reported: dotnet test PASSED\n" +
+            "Its last report: Almost finished\n" +
+            "Its last activity (log tail):\nline 1\nline 2\n\n", detail);
+    }
+
+    [Fact]
+    public void ScopeCheckAllowsFilesFinishedInContinuedCancelledMegaTask()
+    {
+        var f = new CollectionFixture();
+        var cancelledMega = new JsonObject { ["id"] = "MT-cancelled", ["projectId"] = "p", ["status"] = "CANCELLED" };
+        f.Bridge.Data.MegaTasks.Add((JsonNode)cancelledMega);
+        var cancelledResult = new JsonObject
+        {
+            ["resultId"] = "R-cancelled", ["megaTaskId"] = "MT-cancelled", ["status"] = "COMPLETE",
+            ["filesChanged"] = new JsonArray("completed_before.cs")
+        };
+        f.Bridge.Data.Results.Add((JsonNode)cancelledResult);
+
+        var result = f.Result();
+        result["filesChanged"] = new JsonArray("src/a.cs", "completed_before.cs");
+        f.Evidence(result);
+        f.Collect();
+
+        Assert.Equal("COMPLETE", Text(f.Sub["status"]));
+        Assert.Null(f.Sub["scopeViolation"]);
+    }
+
+    [Fact]
+    public void WorktreeCreationFailureCollectsTechnicalResultAndFailsSubTask()
+    {
+        var store = new JsonObject();
+        var row = new JsonObject();
+        var attempts = AttemptEngine.Create(new AttemptIo());
+        var files = new MemoryFiles();
+        var models = new List<JsonObject> {
+            Obj("""{"id":"a","provider":"codex","cli":"a","enabled":true,"available":true}"""),
+            Obj("""{"id":"b","provider":"codex","cli":"b","enabled":true,"available":true}""")
+        };
+        var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
+        {
+            Store = store, Attempts = attempts, Directory = "synthetic", Files = files, Models = () => models,
+            RowFor = (_, _) => row, Inspect = _ => Obj("""{"git":false,"dirty":[]}"""), Now = () => "2026-01-01T00:00:00.000Z",
+            LeadId = () => "lead", SessionId = "s", NewId = () => "stable",
+            IsProcessAlive = _ => false,
+            SpawnWorker = _ => new JsonObject { ["pid"] = 999 },
+            CreateWorktree = (_, _, _, _, _, _) => throw new InvalidOperationException("disk full"),
+            Persist = () => { },
+            SafeGitWorkspace = _ => true
+        });
+        var parallel1 = Obj("""{"slice":"Build1","modelId":"a","scope":["src"],"dependsOn":[]}""");
+        var parallel2 = Obj("""{"slice":"Build2","modelId":"b","scope":["src"],"dependsOn":[]}""");
+        var mega = bridge.Propose(ProposalItem(), ProposalJob(), [parallel1, parallel2]);
+        bridge.Approve("p", Text(mega["id"]));
+        bridge.Advance(ProposalItem(), ProposalJob(), [parallel1, parallel2]);
+        var sub1 = bridge.Data.SubTasks.OfType<JsonObject>().First(s => Text(s["title"]) == "Build1");
+        Assert.Equal("FAILED", Text(sub1["status"]));
+        var res = bridge.Data.Results.OfType<JsonObject>().First(r => JsonNode.DeepEquals(r["subTaskId"], sub1["id"]));
+        Assert.Equal("FAILED", Text(res["status"]));
+        Assert.Contains("Worktree creation failed: disk full", Text(res["summary"]));
+    }
+
+    [Fact]
+    public void AuditSubTaskRoleRecordedAsReview()
+    {
+        var f = new CollectionFixture();
+        var audit = (JsonObject)f.Sub.DeepClone();
+        audit["id"] = "audit-sub";
+        audit["type"] = "AUDIT";
+        audit["title"] = "Audit the codebase";
+        audit["status"] = "PENDING";
+        audit["attemptIds"] = new JsonArray();
+        audit["dependencies"] = new JsonArray();
+        f.Bridge.Data.SubTasks.Add((JsonNode)audit);
+
+        f.Alive = true;
+        f.Bridge.Advance(ProposalItem(), ProposalJob(), []);
+        f.Alive = false;
+
+        var part = f.Row["dispatch"]!.AsArray().OfType<JsonObject>().First(p => Text(p["subTaskId"]) == "audit-sub");
+        var result = f.Result();
+        result["resultId"] = "R-" + Text(part["attemptId"]);
+        result["attemptId"] = part["attemptId"]?.DeepClone();
+        result["subTaskId"] = "audit-sub";
+        f.Write(Text(part["structuredResultPath"]), result);
+        f.Write(Text(part["exitPath"]), new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["provider"] = "codex", ["model"] = "a", ["exitCode"] = 0 });
+
+        f.Bridge.Reconcile(f.Mega);
+        Assert.Equal("COMPLETE", Text(audit["status"]));
+
+        var outcomes = Execution.ReadStepOutcomes("synthetic", f.Files);
+        var auditOutcome = outcomes.FirstOrDefault(o => Text(o["role"]) == "Review");
+        Assert.NotNull(auditOutcome);
+    }
+
     sealed class MemoryFiles : IExecutionFiles
     {
         public readonly Dictionary<string, byte[]> Content = new();
@@ -491,9 +1045,10 @@ public sealed class ExecutionTests
     sealed class AttemptIo : IAttemptIo
     {
         JsonObject data = new();
+        public bool FailWrite { get; set; }
         public T WithLock<T>(Func<T> work) => work();
         public JsonObject Read() => data;
-        public void Write(JsonObject store) => data = store;
+        public void Write(JsonObject store) { if (FailWrite) throw new IOException("attempt write failed"); data = store; }
     }
 
     [Fact]

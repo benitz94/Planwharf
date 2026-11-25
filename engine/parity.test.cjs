@@ -8,7 +8,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { check } = require('../native/porting/parity/record.cjs');
 
-function checkRequired(requiredPath, parityDir, parityTestsCsPath) {
+function checkRequired(requiredPath, parityDir, parityTestsCsPath, scenariosDir = path.join(parityDir, 'scenarios')) {
   const errors = [];
   if (!fs.existsSync(requiredPath)) {
     errors.push(`Missing required configuration file: ${requiredPath}`);
@@ -32,7 +32,66 @@ function checkRequired(requiredPath, parityDir, parityTestsCsPath) {
 
   const parityTestsSource = fs.readFileSync(parityTestsCsPath, 'utf8');
 
+  // Independently enforce nonzero execution and project-home scenario coverage and six runner scenario floors
+  const runnerFloors = required.runner?.scenarioFloors;
+  const expectedRunnerScenarios = ['provider-models', 'provider-adapters', 'api-agent', 'worktrees', 'pr-check', 'phone-activation-check'];
+  for (const scen of expectedRunnerScenarios) {
+    if (!runnerFloors || typeof runnerFloors[scen] !== 'number' || runnerFloors[scen] <= 0) {
+      errors.push(`Runner must preserve scenario floor for: ${scen}`);
+    }
+  }
+
+  const execFloors = required.execution?.scenarioFloors;
+  if (!execFloors || typeof execFloors.execution !== 'number' || execFloors.execution <= 0) {
+    errors.push(`Execution must independently enforce nonzero scenario coverage (execution)`);
+  }
+
+  const homeFloors = required['project-home']?.scenarioFloors;
+  if (!homeFloors || typeof homeFloors['project-home'] !== 'number' || homeFloors['project-home'] <= 0) {
+    errors.push(`Project-home must independently enforce nonzero scenario coverage (project-home)`);
+  }
+
   for (const [moduleName, spec] of Object.entries(required)) {
+    // 1. Scenario floors check
+    const scenarioFloors = spec?.scenarioFloors;
+    if (scenarioFloors) {
+      if (typeof scenarioFloors !== 'object' || Array.isArray(scenarioFloors)) {
+        errors.push(`Invalid scenarioFloors format for module ${moduleName}`);
+      } else {
+        for (const [scenName, minCount] of Object.entries(scenarioFloors)) {
+          if (typeof minCount !== 'number' || minCount <= 0) {
+            errors.push(`Scenario floor for ${scenName} under ${moduleName} must be positive`);
+            continue;
+          }
+          const scenPath = path.join(scenariosDir, scenName + '.json');
+          if (!fs.existsSync(scenPath)) {
+            errors.push(`Missing scenario fixture for ${moduleName}: ${scenName}.json`);
+            continue;
+          }
+          let scenData;
+          try {
+            scenData = JSON.parse(fs.readFileSync(scenPath, 'utf8'));
+          } catch (err) {
+            errors.push(`Invalid JSON in scenario fixture ${scenName}.json: ${err.message}`);
+            continue;
+          }
+          const actualCount = Array.isArray(scenData?.scenarios) ? scenData.scenarios.length : 0;
+          if (actualCount < minCount) {
+            errors.push(`Scenario module ${scenName} has only ${actualCount} scenarios, requires at least ${minCount}`);
+          }
+        }
+      }
+    }
+
+    // 2. Scenario-only modules do not have pure parity .json files or ParityTests.Ports wiring
+    if (spec?.scenarioOnly === true) {
+      if (!scenarioFloors || Object.keys(scenarioFloors).length === 0) {
+        errors.push(`Scenario-only module ${moduleName} must declare scenarioFloors`);
+      }
+      continue;
+    }
+
+    // 3. Pure or mixed module checks
     const minCases = typeof spec === 'number' ? spec : (spec?.minCases ?? 1);
     const jsonPath = path.join(parityDir, moduleName + '.json');
     if (!fs.existsSync(jsonPath)) {
@@ -145,6 +204,69 @@ test('the parity guard detects missing files, too few cases, and unwired ports',
     fs.writeFileSync(fakeCsPath, '["num-spec/fn1"]');
     const numSpecErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
     assert.match(numSpecErrors.join('\n'), /Module num-spec has only 1 parity cases, requires at least 3/);
+
+    // 11. Scenario-only module without scenarioFloors
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'scen-only-broken': { scenarioOnly: true } }));
+    const noScenFloorsErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath);
+    assert.match(noScenFloorsErrors.join('\n'), /Scenario-only module scen-only-broken must declare scenarioFloors/);
+
+    // 12. Missing scenario fixture
+    const fakeScenariosDir = path.join(tmp, 'scenarios');
+    fs.mkdirSync(fakeScenariosDir, { recursive: true });
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'scen-mod': { scenarioOnly: true, scenarioFloors: { 'missing-scen': 5 } } }));
+    const missingScenErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(missingScenErrors.join('\n'), /Missing scenario fixture for scen-mod: missing-scen\.json/);
+
+    // 13. Too few scenarios in fixture
+    fs.writeFileSync(path.join(fakeScenariosDir, 'short-scen.json'), JSON.stringify({ scenarios: [{ name: 's1' }] }));
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'scen-mod': { scenarioOnly: true, scenarioFloors: { 'short-scen': 5 } } }));
+    const shortScenErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(shortScenErrors.join('\n'), /Scenario module short-scen has only 1 scenarios, requires at least 5/);
+
+    // 14. Corrupted scenario fixture JSON
+    fs.writeFileSync(path.join(fakeScenariosDir, 'corrupt-scen.json'), '{ broken-json');
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify({ 'scen-mod': { scenarioOnly: true, scenarioFloors: { 'corrupt-scen': 1 } } }));
+    const corruptScenErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(corruptScenErrors.join('\n'), /Invalid JSON in scenario fixture corrupt-scen\.json/);
+
+    // 15. Valid scenario-only module passes without pure file or C# wiring
+    fs.writeFileSync(path.join(fakeScenariosDir, 'valid-scen.json'), JSON.stringify({ scenarios: [{ name: 's1' }, { name: 's2' }] }));
+    const validRequired = {
+      runner: { scenarioFloors: { 'provider-models': 1, 'provider-adapters': 1, 'api-agent': 1, worktrees: 1, 'pr-check': 1, 'phone-activation-check': 1 } },
+      execution: { scenarioFloors: { execution: 1 } },
+      'project-home': { scenarioOnly: true, scenarioFloors: { 'project-home': 1 } },
+      'valid-only': { scenarioOnly: true, scenarioFloors: { 'valid-scen': 2 } }
+    };
+    for (const name of ['provider-models', 'provider-adapters', 'api-agent', 'worktrees', 'pr-check', 'phone-activation-check', 'execution', 'project-home']) {
+      fs.writeFileSync(path.join(fakeScenariosDir, name + '.json'), JSON.stringify({ scenarios: [{ name: 's1' }] }));
+    }
+    fs.writeFileSync(path.join(fakeParityDir, 'runner.json'), JSON.stringify([{ fn: 'fnR', args: [] }]));
+    fs.writeFileSync(path.join(fakeParityDir, 'execution.json'), JSON.stringify([{ fn: 'fnE', args: [] }]));
+    fs.writeFileSync(fakeCsPath, '["runner/fnR", "execution/fnE"]');
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify(validRequired));
+    const validErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.deepEqual(validErrors, []);
+
+    // 16. Omission of execution scenario coverage fails
+    const missingExecReq = structuredClone(validRequired);
+    delete missingExecReq.execution;
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify(missingExecReq));
+    const missExecErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(missExecErrors.join('\n'), /Execution must independently enforce nonzero scenario coverage/);
+
+    // 17. Omission of project-home scenario coverage fails
+    const missingHomeReq = structuredClone(validRequired);
+    delete missingHomeReq['project-home'];
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify(missingHomeReq));
+    const missHomeErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(missHomeErrors.join('\n'), /Project-home must independently enforce nonzero scenario coverage/);
+
+    // 18. Omission of runner scenario floor fails
+    const missingRunnerReq = structuredClone(validRequired);
+    delete missingRunnerReq.runner.scenarioFloors['pr-check'];
+    fs.writeFileSync(fakeRequiredPath, JSON.stringify(missingRunnerReq));
+    const missRunnerErrors = checkRequired(fakeRequiredPath, fakeParityDir, fakeCsPath, fakeScenariosDir);
+    assert.match(missRunnerErrors.join('\n'), /Runner must preserve scenario floor for: pr-check/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

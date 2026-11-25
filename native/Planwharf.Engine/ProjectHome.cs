@@ -108,6 +108,7 @@ public sealed class ProjectHomeFiles : IProjectHomeFiles
             if (read == 0) break;
             totalRead += read;
         }
+        if (totalRead < bytesToRead) Array.Resize(ref buffer, totalRead);
         return buffer;
     }
 }
@@ -123,6 +124,7 @@ public sealed class ProjectHomeOptions
 public static class ProjectHome
 {
     internal static readonly JsonSerializerOptions Json = Execution.Json;
+    private const int GitMaxBuffer = 8 * 1024 * 1024;
 
     internal static string Hash(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     internal static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
@@ -143,21 +145,19 @@ public static class ProjectHome
         start.ArgumentList.Add("-C");
         start.ArgumentList.Add(folder);
         foreach (var arg in args) start.ArgumentList.Add(arg);
+        start.Environment.Clear();
         foreach (var pair in ProjectWorkspace.GitEnvironment()) start.Environment[pair.Key] = pair.Value;
-        foreach (var key in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.OrdinalIgnoreCase)).ToArray())
-            if (!ProjectWorkspace.GitEnvironment().ContainsKey(key)) start.Environment.Remove(key);
         process.StartInfo = start;
         try
         {
             process.Start();
             using var cts = new CancellationTokenSource(5000);
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(cts.Token);
-            var stderrTask = process.StandardError.ReadToEndAsync(cts.Token);
+            var stdoutTask = ReadLimitedAsync(process.StandardOutput, cts.Token);
+            var stderrTask = ReadLimitedAsync(process.StandardError, cts.Token);
             await process.WaitForExitAsync(cts.Token);
-            var stdout = await stdoutTask;
-            await stderrTask;
-            if (process.ExitCode != 0) return null;
-            if (Encoding.UTF8.GetByteCount(stdout) > 8 * 1024 * 1024) return null;
+            var (stdout, outOverflow) = await stdoutTask;
+            var (_, errOverflow) = await stderrTask;
+            if (outOverflow || errOverflow || process.ExitCode != 0) return null;
             return args.Contains("-z") ? stdout : stdout.Trim();
         }
         catch
@@ -165,6 +165,28 @@ public static class ProjectHome
             try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
             return null;
         }
+    }
+
+    private static async Task<(string Text, bool Overflow)> ReadLimitedAsync(StreamReader reader, CancellationToken token)
+    {
+        var sb = new StringBuilder();
+        var buffer = new char[4096];
+        var totalBytes = 0;
+        var overflow = false;
+        while (true)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), token);
+            if (read == 0) break;
+            var byteCount = Encoding.UTF8.GetByteCount(buffer, 0, read);
+            totalBytes += byteCount;
+            if (totalBytes > GitMaxBuffer)
+            {
+                overflow = true;
+                break;
+            }
+            sb.Append(buffer, 0, read);
+        }
+        return (sb.ToString(), overflow);
     }
 
     internal static async Task<bool> ContainedParentAsync(string root, string file, IProjectHomeFiles files)
@@ -337,7 +359,9 @@ public static class ProjectHome
                 {
                     var tailBytes = await files.ReadTailAsync(logPath, 1024 * 1024);
                     var text = Encoding.UTF8.GetString(tailBytes);
-                    var workerLabel = part["label"]?.GetValue<string>() ?? part["modelId"]?.GetValue<string>() ?? "";
+                    var partLabel = part["label"]?.GetValue<string>();
+                    var partModel = part["modelId"]?.GetValue<string>();
+                    var workerLabel = !string.IsNullOrEmpty(partLabel) ? partLabel : (!string.IsNullOrEmpty(partModel) ? partModel : "");
                     var actions = Activity.ActivityMessages(text);
                     var slice = actions.Count > 12 ? actions.TakeLast(12) : actions;
                     foreach (var action in slice)
@@ -367,7 +391,8 @@ public static class ProjectHome
         if (messages.Count == 0 && row != null)
         {
             var workerTail = row["workerTail"]?.GetValue<string>() ?? "";
-            var workerLabel = row["workerLabel"]?.GetValue<string>() ?? "Worker";
+            var rowLabel = row["workerLabel"]?.GetValue<string>();
+            var workerLabel = !string.IsNullOrEmpty(rowLabel) ? rowLabel : "Worker";
             var actions = Activity.ActivityMessages(workerTail);
             var slice = actions.Count > 12 ? actions.TakeLast(12) : actions;
             foreach (var action in slice)
@@ -410,28 +435,35 @@ public static class ProjectHome
 
         var (actions, reports) = await RecentActionsAsync(row, files);
         var checkpoint = row["checkpoint"];
-        string? checkpointHash = checkpoint != null ? Hash(checkpoint.ToJsonString(Json)) : null;
+        string? checkpointHash = Execution.Truthy(checkpoint) ? Hash(checkpoint!.ToJsonString(Json)) : null;
 
         var sortedResearch = researches
             .OrderBy(r => r["id"]?.GetValue<string>() ?? "", StringComparer.Ordinal)
-            .Select(r => (JsonNode)new JsonObject
+            .Select(r =>
             {
-                ["id"] = r["id"]?.DeepClone(),
-                ["status"] = r["status"]?.DeepClone(),
-                ["attemptId"] = r["attemptId"]?.DeepClone() ?? null,
-                ["reportAvailable"] = r["reportAvailable"] is JsonValue rv && rv.TryGetValue<bool>(out var b) && b
+                var rAttemptId = r["attemptId"]?.GetValue<string>();
+                return (JsonNode)new JsonObject
+                {
+                    ["id"] = r["id"]?.DeepClone(),
+                    ["status"] = r["status"]?.DeepClone(),
+                    ["attemptId"] = !string.IsNullOrEmpty(rAttemptId) ? (JsonNode?)JsonValue.Create(rAttemptId) : null,
+                    ["reportAvailable"] = r["reportAvailable"] is JsonValue rv && rv.TryGetValue<bool>(out var b) && b
+                };
             })
             .ToArray();
+
+        var jobId = row["jobId"]?.GetValue<string>();
+        var attemptId = row["attemptId"]?.GetValue<string>();
 
         return new JsonObject
         {
             ["status"] = row["status"]?.DeepClone(),
-            ["jobId"] = row["jobId"]?.DeepClone() ?? null,
+            ["jobId"] = !string.IsNullOrEmpty(jobId) ? (JsonNode?)JsonValue.Create(jobId) : null,
             ["jobTitle"] = row["jobTitle"]?.GetValue<string>() ?? "",
             ["activity"] = row["workerActivity"]?.GetValue<string>() ?? "",
             ["actions"] = actions,
             ["reports"] = reports,
-            ["attemptId"] = row["attemptId"]?.DeepClone() ?? null,
+            ["attemptId"] = !string.IsNullOrEmpty(attemptId) ? (JsonNode?)JsonValue.Create(attemptId) : null,
             ["checkpoint"] = checkpointHash,
             ["result"] = result,
             ["research"] = new JsonArray(sortedResearch)
@@ -595,12 +627,12 @@ public static class ProjectHome
 
             var oldActions = (oldExec["actions"] as JsonArray ?? [])
                 .OfType<JsonObject>()
-                .Select(a => $"{a["worker"]}: {a["text"]}")
+                .Select(a => $"{a["worker"]?.GetValue<string>()}: {a["text"]?.GetValue<string>()}")
                 .ToHashSet(StringComparer.Ordinal);
 
             var newActions = (nowExec["actions"] as JsonArray ?? [])
                 .OfType<JsonObject>()
-                .Where(a => !oldActions.Contains($"{a["worker"]}: {a["text"]}"))
+                .Where(a => !oldActions.Contains($"{a["worker"]?.GetValue<string>()}: {a["text"]?.GetValue<string>()}"))
                 .ToArray();
 
             if (newActions.Length > 0)
@@ -612,7 +644,7 @@ public static class ProjectHome
                 if (!string.IsNullOrEmpty(nowJobTitle))
                     details.Add((JsonNode)JsonValue.Create($"Work item: {nowJobTitle} ({nowStatus})")!);
                 foreach (var action in newActions)
-                    details.Add((JsonNode)JsonValue.Create($"{action["worker"]}: {action["text"]}")!);
+                    details.Add((JsonNode)JsonValue.Create($"{action["worker"]?.GetValue<string>()}: {action["text"]?.GetValue<string>()}")!);
             }
 
             var oldResearches = (oldExec["research"] as JsonArray ?? []).OfType<JsonObject>().ToArray();
@@ -715,7 +747,10 @@ public static class ProjectHome
                 var target = (JsonObject)cp.DeepClone();
                 var cpMegaId = cp["megaTaskId"]?.GetValue<string>();
                 var matchingResearch = allResearches.FirstOrDefault(r => r["megaTaskId"]?.GetValue<string>() == cpMegaId);
-                target["researchId"] = matchingResearch?["id"]?.DeepClone();
+                if (matchingResearch?["id"] != null)
+                {
+                    target["researchId"] = matchingResearch["id"]!.DeepClone();
+                }
                 return target;
             })
             .ToList();
@@ -739,10 +774,10 @@ public static class ProjectHome
             executionBaseline["reportFingerprint"] = Hash(reports.ToJsonString(Json));
         }
 
-        var technicalTimelineIds = technicalTimeline.Select(e => (JsonNode)JsonValue.Create(e["id"]?.GetValue<string>() ?? "")!).ToArray();
+        var technicalTimelineIds = technicalTimeline.Select(e => e["id"]?.DeepClone() ?? (JsonNode)JsonValue.Create("")!).ToArray();
         var homeObj = project["home"] as JsonObject;
-        var noteIds = (homeObj?["notes"] as JsonArray ?? []).Select(n => (JsonNode)JsonValue.Create(n?["id"]?.GetValue<string>() ?? "")!).ToArray();
-        var revisionIds = revisionsArray.Select(r => (JsonNode)JsonValue.Create(r?["id"]?.GetValue<int>() ?? 0)!).ToArray();
+        var noteIds = (homeObj?["notes"] as JsonArray ?? []).Select(n => n?["id"]?.DeepClone() ?? (JsonNode)JsonValue.Create("")!).ToArray();
+        var revisionIds = revisionsArray.Select(r => r?["id"]?.DeepClone() ?? (JsonNode)JsonValue.Create(0)!).ToArray();
 
         var currentRevisions = new JsonArray((JsonNode)new JsonObject
         {
@@ -765,8 +800,8 @@ public static class ProjectHome
         };
 
         var dispatchArr = row?["dispatch"] as JsonArray ?? [];
-        var runningDispatch = dispatchArr.OfType<JsonObject>().Count(p => p["alive"] is JsonValue v && v.TryGetValue<bool>(out var b) && b);
-        var runningResearch = researches.Count(r => (r["alive"] is JsonValue av && av.TryGetValue<bool>(out var ab) && ab) && r["status"]?.GetValue<string>() == "watching");
+        var runningDispatch = dispatchArr.OfType<JsonObject>().Count(p => Execution.Truthy(p["alive"]));
+        var runningResearch = researches.Count(r => Execution.Truthy(r["alive"]) && r["status"]?.GetValue<string>() == "watching");
         var running = runningDispatch + runningResearch;
 
         var rowStatus = row?["status"]?.GetValue<string>();
@@ -801,13 +836,13 @@ public static class ProjectHome
             else action = null;
         }
         else if (rowStatus == "needs_approval") action = "approve";
-        else if (row?["canResume"] is JsonValue cr && cr.TryGetValue<bool>(out var canRes) && canRes) action = "resume";
+        else if (Execution.Truthy(row?["canResume"])) action = "resume";
         else if (revision["open"] is JsonArray openArr && openArr.Count > 0) action = "grill";
         else action = null;
 
         var completed = results.Where(r => r["status"]?.GetValue<string>() == "COMPLETE").ToList();
         var workers = new JsonArray();
-        foreach (var r in results.Where(res => res["megaTaskId"]?.GetValue<string>() == megaId && res["pid"] != null))
+        foreach (var r in results.Where(res => res["megaTaskId"]?.GetValue<string>() == megaId && Execution.Truthy(res["pid"])))
         {
             workers.Add((JsonNode)new JsonObject
             {
@@ -926,12 +961,14 @@ public static class ProjectHome
         {
             actionTarget["checkpointId"] = resumeTargets[0]["id"]?.DeepClone();
             actionTarget["megaTaskId"] = resumeTargets[0]["megaTaskId"]?.DeepClone();
-            actionTarget["researchId"] = resumeTargets[0]["researchId"]?.DeepClone();
+            if (resumeTargets[0]["researchId"] != null)
+                actionTarget["researchId"] = resumeTargets[0]["researchId"]!.DeepClone();
         }
         else if (mega?["detached"] is JsonValue dv && dv.TryGetValue<bool>(out var isDetached) && isDetached)
         {
             var matchingResearch = allResearches.FirstOrDefault(r => r["megaTaskId"]?.GetValue<string>() == megaId);
-            actionTarget["researchId"] = matchingResearch?["id"]?.DeepClone();
+            if (matchingResearch?["id"] != null)
+                actionTarget["researchId"] = matchingResearch["id"]!.DeepClone();
         }
 
         string nowText = running > 0 ? "Workers running"
@@ -940,6 +977,10 @@ public static class ProjectHome
             : megaStatus == "COMPLETE" ? "Completed"
             : megaStatus == "READY_FOR_APPROVAL" ? "Waiting for approval"
             : labelText;
+
+        var megaTitle = mega?["title"]?.GetValue<string>();
+        var rowJobTitle = row?["jobTitle"]?.GetValue<string>();
+        var finalJobTitle = !string.IsNullOrEmpty(megaTitle) ? megaTitle : (!string.IsNullOrEmpty(rowJobTitle) ? rowJobTitle : "");
 
         return new JsonObject
         {
@@ -956,7 +997,7 @@ public static class ProjectHome
             ["local"] = local,
             ["now"] = nowText,
             ["running"] = running,
-            ["jobTitle"] = mega?["title"]?.GetValue<string>() ?? row?["jobTitle"]?.GetValue<string>() ?? "",
+            ["jobTitle"] = finalJobTitle,
             ["next"] = next,
             ["action"] = action,
             ["notes"] = (homeObj?["notes"] as JsonArray)?.DeepClone() ?? new JsonArray(),

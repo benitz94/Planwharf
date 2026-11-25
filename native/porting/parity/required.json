@@ -49,5 +49,17 @@
   "phone": { "minCases": 40 },
   "phone-ollama": { "minCases": 25 },
   "phone-handover": { "minCases": 5 },
-  "phone-handover-live": { "minCases": 5 }
+  "phone-handover-live": { "minCases": 5 },
+  "execution": {
+    "minCases": 20,
+    "scenarioFloors": {
+      "execution": 11
+    }
+  },
+  "project-home": {
+    "scenarioOnly": true,
+    "scenarioFloors": {
+      "project-home": 2
+    }
+  }
 }
