@@ -70,12 +70,24 @@ public sealed class ExecutionFiles : IExecutionFiles
 
 // No process or Git default is used by construction. Dispatch collaborators must be supplied
 // by the composition root; inspection never implicitly starts a worker.
+public interface IExecutionAttempts
+{
+    JsonObject Claim(JsonObject input);
+    JsonObject AttachResult(JsonObject input);
+    JsonObject CloseAttempt(JsonObject input);
+}
+
 public sealed class ExecutionOptions
 {
     // RowFor returns the live mutable row in Store. Persist synchronously saves that same
     // store; it must not enqueue a later save. Inspect receives a canonical linked folder.
     public required JsonObject Store { get; init; }
     public required AttemptEngine Attempts { get; init; }
+    // The host may supply the same callback seam as createExecutionBridge in JavaScript.
+    public IExecutionAttempts? AttemptAdapter { get; init; }
+    internal JsonObject ClaimAttempt(JsonObject input) => AttemptAdapter?.Claim(input) ?? Attempts.Claim(input);
+    internal JsonObject AttachAttemptResult(JsonObject input) => AttemptAdapter?.AttachResult(input) ?? Attempts.AttachResult(input);
+    internal JsonObject CloseAttempt(JsonObject input) => AttemptAdapter?.CloseAttempt(input) ?? Attempts.CloseAttempt(input);
     public required string Directory { get; init; }
     public required Func<string, string?, JsonObject> RowFor { get; init; }
     public required Func<string, JsonObject> Inspect { get; init; }
@@ -505,9 +517,9 @@ public sealed partial class ExecutionBridge
         part["validatedResultStatus"] = result["status"]?.DeepClone(); part["recordedSubTaskStatus"] = sub["status"]?.DeepClone();
         var complete = Execution.Text(result["status"]) == "COMPLETE";
         sub["completedAt"] = complete ? Options.Now() : null;
-        Options.Attempts.AttachResult(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(),
+        Options.AttachAttemptResult(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(),
             ["resultPath"] = part["structuredResultPath"]?.DeepClone(), ["status"] = result["status"]?.DeepClone(), ["exitCode"] = result["exitCode"]?.DeepClone() });
-        Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = Execution.Text(result["status"]).ToLowerInvariant() });
+        Options.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = Execution.Text(result["status"]).ToLowerInvariant() });
         Event(Execution.Text(mega["projectId"]), complete ? "SUBTASK_COMPLETED" : Execution.Truthy(result["modelChange"]) ? "SUBTASK_REASSIGNED" : "SUBTASK_FAILED",
             $"{Execution.Text(sub["title"])}: {Execution.Text(result["summary"])}", new JsonObject { ["megaTaskId"] = mega["id"]?.DeepClone(),
                 ["subTaskId"] = sub["id"]?.DeepClone(), ["resultId"] = result["resultId"]?.DeepClone() });
@@ -566,7 +578,7 @@ public sealed partial class ExecutionBridge
         Options.OnRefusal(from, reason);
         var next = Options.Replacement(sub, [from]);
         if (next is null) return false;
-        Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "provider refused" });
+        Options.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "provider refused" });
         sub["status"] = "PENDING"; sub["refusalReroutes"] = Number(sub["refusalReroutes"]) + 1;
         SwitchModel(sub, next, from); part["alive"] = false; part["refused"] = reason;
         Event(Execution.Text(mega["projectId"]), "MODEL_REFUSAL_FALLBACK", $"{from} refused the slice ({reason}). Reassigned to {Execution.Text(next["id"])}.",
@@ -587,7 +599,7 @@ public sealed partial class ExecutionBridge
         var plan = Execution.NoVerdictPlan(Number(sub["noVerdictTries"]));
         if (plan == "stop") return false;
         var text = ReadText(Execution.Text(part["logPath"]));
-        Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "no verdict" });
+        Options.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "no verdict" });
         sub["takeover"] = new JsonObject { ["fromModelId"] = sub["assignedModelId"]?.DeepClone(), ["at"] = Options.Now(),
             ["filesChanged"] = new JsonArray(), ["tests"] = new JsonArray(),
             ["summary"] = "The previous attempt ended without a result. Continue from the folder; do not start over.",
@@ -778,6 +790,7 @@ public sealed partial class ExecutionBridge
         }
         row["jobId"] = mega["taskId"]?.DeepClone(); row["jobTitle"] = mega["title"]?.DeepClone();
         row["jobFingerprint"] = mega["jobFingerprint"]?.DeepClone(); row["jobRevisionId"] = mega["planRevisionId"]?.DeepClone();
+        if (!mega.ContainsKey("planRevisionId")) row.Remove("jobRevisionId");
         row["megaTaskId"] = mega["id"]?.DeepClone(); row["megaTask"] = mega.DeepClone();
         row["subTasks"] = new JsonArray(subs.Select(s => (JsonNode?)s.DeepClone()).ToArray());
         row["status"] = Execution.Text(mega["status"]) switch { "READY_FOR_APPROVAL" => "needs_approval", "RUNNING" => "watching",
@@ -1033,22 +1046,20 @@ public sealed partial class ExecutionBridge
         { sub["status"] = "BLOCKED"; mega["nextAction"] = "Review changed provider/model configuration and explicitly reassign this slice on Resume."; return; }
         if (Execution.Text(sub["type"]) == "RESEARCH" && ProviderAdapters.AdapterFor(worker)?.SourceProtectedResearch != true)
         { sub["status"] = "BLOCKED"; mega["nextAction"] = "Source-protected research is not supported by this adapter."; return; }
-        var claim = Options.Attempts.Claim(new JsonObject { ["taskId"] = sub["id"]?.DeepClone(),
+        var claim = Options.ClaimAttempt(new JsonObject { ["taskId"] = sub["id"]?.DeepClone(),
             ["projectId"] = Execution.Truthy(mega["detached"]) ? "research:" + megaId : projectId,
             ["modelId"] = worker["id"]?.DeepClone(), ["candidates"] = new JsonArray(Options.Models().Select(m => (JsonNode?)m.DeepClone()).ToArray()),
             ["megaTaskId"] = megaId, ["subTaskId"] = sub["id"]?.DeepClone(), ["research"] = Execution.Truthy(mega["detached"]) });
         if (!Execution.Truthy(claim["ok"]))
         { sub["status"] = "BLOCKED"; mega["nextAction"] = claim["reason"]?.DeepClone(); return; }
         var attemptId = Execution.Text(claim["attempt"]?["id"]);
-        var projectFolder = Execution.Text(item["project"]?["folder"]);
-        var linked = Options.Files.LinkedWorkspace(projectFolder);
+        var projectFolder = item["project"]?["folder"]?.GetValue<string>();
         var research = Execution.Text(sub["type"]) == "RESEARCH";
-        if (!research && linked is null)
-        { sub["status"] = "BLOCKED"; mega["nextAction"] = "Relink a real local project folder before implementation.";
-            Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = attemptId, ["reason"] = "invalid folder" }); return; }
-        var folder = research ? Path.Combine(Options.Directory, "research", megaId, attemptId) : linked!;
+        // Match JavaScript: proposals check the linked folder, but additions bypass that
+        // check. The injected launcher remains responsible for accepting a dispatch.
+        var folder = research ? Path.Combine(Options.Directory, "research", megaId, attemptId) : projectFolder;
         Worktrees.Part? worktree = null;
-        if (!research && Execution.Text(sub["type"]) == "IMPLEMENTATION" && ParallelBuilds(mega).Any(s => ReferenceEquals(s, sub)))
+        if (!research && folder is not null && Execution.Text(sub["type"]) == "IMPLEMENTATION" && ParallelBuilds(mega).Any(s => ReferenceEquals(s, sub)))
         {
             try
             {
@@ -1076,24 +1087,24 @@ public sealed partial class ExecutionBridge
                     ((JsonArray)mega["worktreeParts"]!).Add((JsonNode)new JsonObject { ["subId"] = sub["id"]?.DeepClone(), ["folder"] = folder, ["branch"] = worktree.Branch });
             }
         }
-        if (research) Options.Files.CreateDirectory(folder);
-        var resultPath = research ? Path.Combine(folder, "result.txt") : Path.Combine(Options.Directory, "results", attemptId + ".txt");
-        var structured = research ? Path.Combine(folder, "result.json") : Path.Combine(Options.Directory, "results", attemptId + ".json");
+        if (research) Options.Files.CreateDirectory(folder!);
+        var resultPath = research ? Path.Combine(folder!, "result.txt") : Path.Combine(Options.Directory, "results", attemptId + ".txt");
+        var structured = research ? Path.Combine(folder!, "result.json") : Path.Combine(Options.Directory, "results", attemptId + ".json");
         var part = new JsonObject { ["projectFolder"] = projectFolder, ["modelId"] = worker["id"]?.DeepClone(),
             ["label"] = worker["label"]?.DeepClone(), ["provider"] = worker["provider"]?.DeepClone(), ["cli"] = worker["cli"]?.DeepClone(),
             ["subTaskId"] = sub["id"]?.DeepClone(), ["megaTaskId"] = megaId, ["attemptId"] = attemptId, ["slice"] = sub["title"]?.DeepClone(),
             ["resultPath"] = resultPath, ["structuredResultPath"] = structured,
-            ["exitPath"] = research ? Path.Combine(folder, "exit.json") : Path.Combine(Options.Directory, "results", attemptId + ".exit.json"),
+            ["exitPath"] = research ? Path.Combine(folder!, "exit.json") : Path.Combine(Options.Directory, "results", attemptId + ".exit.json"),
             ["logPath"] = Path.Combine(Options.Directory, "logs", attemptId + ".log"), ["folder"] = folder,
             ["pid"] = null, ["alive"] = false, ["startedAt"] = Options.Now(), ["sessionId"] = Options.SessionId };
         if (worktree is not null)
         {
             part["branch"] = worktree.Branch;
-            if (Options.Git is not null) part["baseHead"] = new Worktrees(Options.Git).Git(folder, "rev-parse", "HEAD");
+            if (Options.Git is not null) part["baseHead"] = new Worktrees(Options.Git).Git(folder!, "rev-parse", "HEAD");
         }
         Options.Files.CreateDirectory(Path.GetDirectoryName(resultPath)!);
         Options.Files.Write(resultPath, Encoding.UTF8.GetBytes("STATUS: WATCHING\n"));
-        Options.Attempts.AttachResult(new JsonObject { ["attemptId"] = attemptId, ["resultPath"] = structured });
+        Options.AttachAttemptResult(new JsonObject { ["attemptId"] = attemptId, ["resultPath"] = structured });
         Options.FreezeSavingMode?.Invoke(projectId, sub);
         sub["attemptIds"] ??= new JsonArray(); ((JsonArray)sub["attemptIds"]!).Add((JsonNode)JsonValue.Create(attemptId)!);
         sub["status"] = "RUNNING"; sub["provider"] = worker["provider"]?.DeepClone(); sub["cli"] = worker["cli"]?.DeepClone();
@@ -1108,19 +1119,21 @@ public sealed partial class ExecutionBridge
             ["results"] = new JsonArray(Data.Results.OfType<JsonObject>().Where(r => Execution.Text(r["megaTaskId"]) == megaId).Select(r => (JsonNode?)r.DeepClone()).ToArray()),
             ["checkpoint"] = Data.Checkpoints.OfType<JsonObject>().FirstOrDefault(c => Execution.Text(c["id"]) == Execution.Text(mega["currentCheckpointId"]))?.DeepClone(),
             ["notes"] = new JsonArray((item["home"]?["notes"] as JsonArray ?? []).OfType<JsonObject>().Where(n => Execution.Truthy(n["aiRelevant"])).Select(n => (JsonNode?)n.DeepClone()).ToArray()) };
+        if (handoff["checkpoint"] is null) handoff.Remove("checkpoint");
         var scope = sub["scope"] is JsonArray { Count: > 0 } scopes
             ? $"\n\nYour scope: change only these files or folders, relative to {(worktree is null ? "the project folder" : "this worker folder")}: {string.Join(", ", scopes.Select(Execution.Text))}. {(worktree is null ? "Other workers are changing other files in this folder at the same time." : "Other workers have their own folders.")} A change outside your scope stops your part."
             : "";
         if (scope.Length > 0 && sub["scopeViolation"] is JsonArray { Count: > 0 } violations)
             scope += $"\nLast time this part was stopped for changing files outside its scope: {string.Join(", ", violations.Select(Execution.Text))}. Do not touch them: if the work needs them, say so in your result and stop.";
-        var detail = TakeoverText(sub) + $"{Execution.Text(job["detail"])}\n\nSubTask: {Execution.Text(sub["detail"])}{scope}\n\n" +
-            (research ? $"Source project (read only for research): {projectFolder}" : $"Project folder (work here): {folder}") +
+        var detail = TakeoverText(sub) + $"{(job.ContainsKey("detail") ? job["detail"]?.ToString() ?? "null" : "undefined")}\n\nSubTask: {(sub.ContainsKey("detail") ? sub["detail"]?.ToString() ?? "null" : "undefined")}{scope}\n\n" +
+            (research ? $"Source project (read only for research): {projectFolder ?? "null"}" : $"Project folder (work here): {folder ?? "null"}") +
             "\n\nDurable handoff:\n" + handoff.ToJsonString(Execution.Json);
         var request = (JsonObject)part.DeepClone();
         request["linkedFolder"] = projectFolder; request["projectId"] = projectId; request["worker"] = worker.DeepClone();
         request["resultId"] = "R-" + attemptId;
         request["job"] = new JsonObject { ["title"] = sub["title"]?.DeepClone(), ["kind"] = research ? "research" :
             Execution.Text(sub["type"]) == "AUDIT" ? "audit" : Execution.Text(job["kind"]), ["detail"] = detail };
+        if (!research && Execution.Text(sub["type"]) != "AUDIT" && !job.ContainsKey("kind")) request["job"]!.AsObject().Remove("kind");
         try
         {
             var launched = Options.SpawnWorker!(request);
@@ -1606,7 +1619,7 @@ public sealed partial class ExecutionBridge
                     }
                     part["alive"] = false;
                     part["observedAlive"] = false;
-                    Options.Attempts.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "interrupted by addition" });
+                    Options.CloseAttempt(new JsonObject { ["attemptId"] = part["attemptId"]?.DeepClone(), ["reason"] = "interrupted by addition" });
                 }
                 verifySub["status"] = "PENDING";
                 verifySub["resultId"] = null;

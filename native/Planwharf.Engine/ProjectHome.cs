@@ -120,6 +120,7 @@ public sealed class ProjectHomeFiles : IProjectHomeFiles
 
 public sealed class ProjectHomeOptions
 {
+    public Func<string>? Now { get; init; }
     public string? PlanFile { get; init; }
     public Func<string, IReadOnlyList<string>, Task<string?>>? Git { get; init; }
     public IProjectHomeGit? GitAdapter { get; init; }
@@ -129,6 +130,10 @@ public sealed class ProjectHomeOptions
 
 public static class ProjectHome
 {
+    private static JsonArray HomeTimeline(JsonArray events, JsonObject durable) =>
+        events.Count == 1 && !Execution.Truthy(events[0]?["reference"]?["megaTaskId"])
+            ? events.DeepClone().AsArray()
+            : ProjectHistory.SummarizeTimeline(events, durable);
     internal static readonly JsonSerializerOptions Json = Execution.Json;
     private const int GitMaxBuffer = 8 * 1024 * 1024;
 
@@ -736,7 +741,9 @@ public static class ProjectHome
             .Select(e => (JsonObject)e.DeepClone())
             .ToList();
         var technicalTimelineArray = new JsonArray(technicalTimeline.Select(e => (JsonNode)e).ToArray());
-        var timeline = ProjectHistory.SummarizeTimeline(technicalTimelineArray, durable);
+        // A single ungrouped event needs neither aggregation nor sorting. JavaScript's
+        // sort never reads createdAt in this case, including older undated events.
+        var timeline = HomeTimeline(technicalTimelineArray, durable);
 
         var resumeTargets = (durable["checkpoints"] as JsonArray ?? [])
             .OfType<JsonObject>()
@@ -796,7 +803,7 @@ public static class ProjectHome
 
         var current = new JsonObject
         {
-            ["viewedAt"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            ["viewedAt"] = (options?.Now?.Invoke() ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")),
             ["timelineEventIds"] = new JsonArray(technicalTimelineIds),
             ["noteIds"] = new JsonArray(noteIds),
             ["revisionIds"] = new JsonArray(revisionIds),
@@ -879,7 +886,7 @@ public static class ProjectHome
 
         var prevEventIds = (baselineToCompare?["timelineEventIds"] as JsonArray ?? []).Select(Execution.Text).ToHashSet(StringComparer.Ordinal);
         var deltaEvents = new JsonArray(technicalTimeline.Where(ev => !prevEventIds.Contains(ev["id"]?.GetValue<string>() ?? "")).Select(e => (JsonNode)e.DeepClone()).ToArray());
-        var delta = ProjectHistory.SummarizeTimeline(deltaEvents, durable);
+        var delta = HomeTimeline(deltaEvents, durable);
         if (delta.Count > 0 && since["firstVisit"]?.GetValue<bool>() != true)
         {
             var changesArr = since["changes"] as JsonArray;

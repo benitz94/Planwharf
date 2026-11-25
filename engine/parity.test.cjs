@@ -273,3 +273,51 @@ test('the parity guard detects missing files, too few cases, and unwired ports',
 });
 
 module.exports = { checkRequired };
+
+test('phase 5 scenario fixtures are actually wired into C# replay', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '../native/Planwharf.Engine.Tests/ScenarioParityTests.cs'), 'utf8');
+  for (const module of ['execution', 'project-home']) {
+    assert.ok(source.includes(`GetScenarios("${module}")`), `${module} requires an executable scenario theory`);
+  }
+});
+
+test('phase 5 floors reject removed, undersized and corrupt fixtures and recover after restoration', () => {
+  const source = path.resolve(__dirname, '../native/porting/parity');
+  const tmp = fs.mkdtempSync(path.join(__dirname, '.parity-verifier-'));
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(source, 'required.json'), 'utf8'));
+    assert.ok(manifest.execution.minCases >= 20);
+    assert.ok(manifest.execution.scenarioFloors.execution >= 11);
+    assert.ok(manifest['project-home'].scenarioOnly);
+    assert.ok(manifest['project-home'].scenarioFloors['project-home'] >= 2);
+    fs.mkdirSync(path.join(tmp, 'scenarios'));
+    for (const file of fs.readdirSync(source).filter(file => file.endsWith('.json'))) {
+      fs.copyFileSync(path.join(source, file), path.join(tmp, file));
+    }
+    for (const file of fs.readdirSync(path.join(source, 'scenarios'))) {
+      if (file.endsWith('.json')) fs.copyFileSync(path.join(source, 'scenarios', file), path.join(tmp, 'scenarios', file));
+    }
+    const cs = path.resolve(__dirname, '../native/Planwharf.Engine.Tests/ParityTests.cs');
+    const checkCopy = () => checkRequired(path.join(tmp, 'required.json'), tmp, cs);
+    assert.deepEqual(checkCopy(), []);
+    for (const [relative, floor, isScenario] of [
+      ['execution.json', manifest.execution.minCases, false],
+      ['scenarios/execution.json', manifest.execution.scenarioFloors.execution, true],
+      ['scenarios/project-home.json', manifest['project-home'].scenarioFloors['project-home'], true]
+    ]) {
+      const file = path.join(tmp, relative), original = fs.readFileSync(file, 'utf8');
+      fs.unlinkSync(file);
+      assert.match(checkCopy().join('\n'), /Missing (parity file|scenario fixture)/);
+      const data = JSON.parse(original);
+      if (isScenario) data.scenarios = data.scenarios.slice(0, floor - 1);
+      fs.writeFileSync(file, JSON.stringify(isScenario ? data : data.slice(0, floor - 1)));
+      assert.ok(checkCopy().some(error => error.includes(`requires at least ${floor}`)), relative);
+      fs.writeFileSync(file, '{broken');
+      assert.match(checkCopy().join('\n'), /Invalid JSON/);
+      fs.writeFileSync(file, original);
+      assert.deepEqual(checkCopy(), [], `${relative} restoration must recover without stale failures`);
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
