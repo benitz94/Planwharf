@@ -479,3 +479,146 @@ test('representative architectural, state boundary, parity, and migration mutati
   }
 });
 
+test('specification sheets cover edge cases, error conditions, and recovery mechanisms across all five split modules', () => {
+  // 46a: OrchestratorTeamModels edge cases, route errors, refusals, quota exhaustion
+  const teamModelsContent = readSheet(sheets.teamModels.path);
+  assert.ok(/ModelRouting\.ModelRouteError/i.test(teamModelsContent), '46a must specify route error checking');
+  assert.ok(/neverUsable/i.test(teamModelsContent), '46a must specify neverUsable flag');
+  assert.ok(/unavailableReason\s*=\s*routeError/i.test(teamModelsContent), '46a must specify routeError recording');
+  assert.ok(/explicit refusal reason\s*\(`ok:\s*false`\)/i.test(teamModelsContent), '46a must specify explicit refusal on unavailable models');
+  assert.ok(/AllowedBySavingMode/i.test(teamModelsContent), '46a must specify saving mode filtering');
+  assert.ok(/planExhausted/i.test(teamModelsContent), '46a must specify plan quota exhaustion detection');
+
+  // 46b: OrchestratorJobBuilding edge cases, slice bounds, verification contract, no process launch
+  const jobBuildingContent = readSheet(sheets.jobBuilding.path);
+  assert.ok(/pool\s*<=\s*1.*returns\s*`?1/i.test(jobBuildingContent), '46b must specify pool <= 1 constraint');
+  assert.ok(/workers list is empty:\s*returns empty array\s*`?\[\]`?/i.test(jobBuildingContent), '46b must specify empty worker list handling');
+  assert.ok(/VERIFY_SLICE\s*\+/i.test(jobBuildingContent), '46b must specify VERIFY_SLICE composition');
+  assert.ok(/Needs your decision:\s*<plain words a non-programmer understands>/i.test(jobBuildingContent), '46b must specify verifier decision protocol');
+  assert.ok(/no direct worker launches/i.test(jobBuildingContent), '46b must forbid direct worker process launches');
+
+  // 46c: OrchestratorLeadQuestions error paths, fallback parsing, envelope errors, project isolation
+  const leadQuestionsContent = readSheet(sheets.leadQuestions.path);
+  assert.ok(/ok:\s*false,\s*reason:\s*'empty question'/i.test(leadQuestionsContent), '46c must specify empty question rejection');
+  assert.ok(/Fallback for non-JSON or malformed JSON/i.test(leadQuestionsContent), '46c must specify malformed grill JSON fallback');
+  assert.ok(/strips numbering\/bullets\/emoji/i.test(leadQuestionsContent), '46c must specify grill question sanitization');
+  assert.ok(/Invalid lead action envelope; no workers were dispatched\./i.test(leadQuestionsContent), '46c must specify envelope validation failure');
+  assert.ok(/Unreadable lead action envelope; no workers were dispatched\./i.test(leadQuestionsContent), '46c must specify envelope json parse failure');
+  assert.ok(/strictly omitting other projects' private discussions/i.test(leadQuestionsContent), '46c must specify project boundary state packing');
+
+  // 46d: OrchestratorState recovery, atomic persistence, checkpoint hydration, research failures
+  const stateContent = readSheet(sheets.state.path);
+  assert.ok(/renameWithRetry/i.test(stateContent), '46d must specify renameWithRetry atomic persistence');
+  assert.ok(/orchestrator\.json\.<uuid>\.tmp/i.test(stateContent), '46d must specify unique tmp file pattern');
+  assert.ok(/HydrateCheckpoints/i.test(stateContent), '46d must specify checkpoint hydration on startup');
+  assert.ok(/paintCheckpoint/i.test(stateContent), '46d must specify paintCheckpoint transition for interrupted rows');
+  assert.ok(/transitions finished research to `complete` or `failed`/i.test(stateContent), '46d must specify research error handling');
+
+  // 46e: OrchestratorOrderParsing edge cases, empty question, recipient resolution, bilingual keywords
+  const orderParsingContent = readSheet(sheets.orderParsing.path);
+  assert.ok(/returns `null` if empty/i.test(orderParsingContent), '46e must specify empty question null return');
+  assert.ok(/multiple projects exist and none is matched,\s*returns `null`/i.test(orderParsingContent), '46e must specify ambiguous project resolution');
+  assert.ok(/English:\s*`how\s*`,\s*`what\s*`/i.test(orderParsingContent), '46e must specify English question keywords');
+  assert.ok(/Italian:\s*`quanto\s*`,\s*`quale\s*`/i.test(orderParsingContent), '46e must specify Italian question keywords');
+  assert.ok(/smista.*metti i worker.*dai il lavoro/i.test(orderParsingContent), '46e must specify Italian work keywords');
+});
+
+test('master orchestrator sheet enforces context isolation, concurrency gates, and cross-project token separation', () => {
+  const masterContent = readSheet(sheets.master.path);
+  assert.ok(/AsyncLocal<string\?> CurrentProjectId/i.test(masterContent), 'master must specify AsyncLocal project context');
+  assert.ok(/ConcurrentDictionary<string,\s*CancellationTokenSource>\s*_projectAskCts/i.test(masterContent), 'master must specify per-project ask cancellation tokens');
+  assert.ok(/ConcurrentDictionary<string,\s*SemaphoreSlim>\s*_projectGates/i.test(masterContent), 'master must specify per-project serialization gates');
+  assert.ok(/stopping,\s*cancelling,\s*or timing out.*in Project A never cancels or interferes with Project B/i.test(masterContent), 'master must specify cancellation isolation');
+  assert.ok(/no duplicate copy or split-brain representation/i.test(masterContent), 'master must specify zero duplicated bridge cache');
+});
+
+test('cross-sheet contracts and migration sequence are strictly consistent and bidirectional', () => {
+  const masterContent = readSheet(sheets.master.path);
+
+  // Master references all sub-module sheets and classes
+  const expectedSubModules = [
+    { key: 'teamModels', file: '46a-orchestrator-team-models.md', cls: 'OrchestratorTeamModels', job: 'Job 48', step: 'Step 2' },
+    { key: 'jobBuilding', file: '46b-orchestrator-job-building.md', cls: 'OrchestratorJobBuilding', job: 'Job 49', step: 'Step 3' },
+    { key: 'leadQuestions', file: '46c-orchestrator-lead-questions.md', cls: 'OrchestratorLeadQuestions', job: 'Job 50', step: 'Step 4' },
+    { key: 'state', file: '46d-orchestrator-state.md', cls: 'OrchestratorState', job: 'Job 51', step: 'Step 5' },
+    { key: 'orderParsing', file: '46e-orchestrator-order-parsing.md', cls: 'OrchestratorOrderParsing', job: 'Job 47', step: 'Step 1' },
+  ];
+
+  for (const sub of expectedSubModules) {
+    assert.ok(masterContent.includes(sub.file), `master must reference ${sub.file}`);
+    assert.ok(masterContent.includes(sub.cls), `master must reference class ${sub.cls}`);
+    assert.ok(masterContent.includes(sub.job), `master must reference migration ${sub.job}`);
+    assert.ok(masterContent.includes(sub.step), `master must reference step ${sub.step}`);
+
+    // Sub-module sheet must reference its target C# file and migration job
+    const subContent = readSheet(sheets[sub.key].path);
+    assert.ok(subContent.includes(`${sub.cls}.cs`), `${sub.file} must specify target class file ${sub.cls}.cs`);
+    assert.ok(subContent.includes(sub.job), `${sub.file} must specify migration step ${sub.job}`);
+    assert.ok(/Orchestrator(\.cs)?/i.test(subContent), `${sub.file} must reference Orchestrator composition root`);
+  }
+
+  // Master composition facade is Job 52
+  assert.ok(/Job 52/i.test(masterContent), 'master sheet must specify Job 52 as facade composition step');
+});
+
+test('edge case, recovery, and concurrency requirement mutations are detected across all sheets', () => {
+  const mutations = [
+    {
+      sheet: sheets.teamModels,
+      label: 'team models route error handling',
+      target: /neverUsable/gi,
+      replacement: 'alwaysUsable',
+      check: (c) => /neverUsable/i.test(c),
+    },
+    {
+      sheet: sheets.jobBuilding,
+      label: 'job building verifier decision contract',
+      target: /Needs your decision/g,
+      replacement: 'Decide silently',
+      check: (c) => /Needs your decision/i.test(c),
+    },
+    {
+      sheet: sheets.leadQuestions,
+      label: 'lead questions envelope rejection',
+      target: /Invalid lead action envelope/g,
+      replacement: 'Accept invalid lead envelope',
+      check: (c) => /Invalid lead action envelope/i.test(c),
+    },
+    {
+      sheet: sheets.state,
+      label: 'state atomic persistence retry',
+      target: /renameWithRetry/g,
+      replacement: 'DirectWriteUnsafe',
+      check: (c) => /renameWithRetry/i.test(c),
+    },
+    {
+      sheet: sheets.orderParsing,
+      label: 'order parsing ambiguous project return',
+      target: /multiple projects exist and none is matched,\s*returns `null`/i,
+      replacement: 'multiple projects exist and none is matched, returns arbitrary',
+      check: (c) => /multiple projects exist and none is matched,\s*returns `null`/i.test(c),
+    },
+    {
+      sheet: sheets.master,
+      label: 'master AsyncLocal context isolation',
+      target: /AsyncLocal<string\?>/g,
+      replacement: 'ThreadStaticString',
+      check: (c) => /AsyncLocal<string\?>/i.test(c),
+    },
+    {
+      sheet: sheets.master,
+      label: 'master per-project cancellation token isolation',
+      target: /ConcurrentDictionary<string,\s*CancellationTokenSource>/g,
+      replacement: 'SingleSharedCts',
+      check: (c) => /ConcurrentDictionary<string,\s*CancellationTokenSource>/i.test(c),
+    },
+  ];
+
+  for (const mut of mutations) {
+    const original = readSheet(mut.sheet.path);
+    assert.ok(mut.check(original), `original sheet ${mut.sheet.path} must satisfy check for ${mut.label}`);
+    const broken = original.replace(mut.target, mut.replacement);
+    assert.notEqual(broken, original, `mutation ${mut.label} must modify content`);
+    assert.ok(!mut.check(broken), `broken content for ${mut.label} must fail verification check`);
+  }
+});
