@@ -471,6 +471,20 @@ function createExecutionBridge(options) {
       && sub.dependencies.every(id => data.subTasks.find(parent => parent.id === id)?.status === 'COMPLETE' && (!(mega.worktreeParts || []).some(part => part.subId === id) || mega.integratedSubIds?.includes(id))));
     return ready.length > 1 ? ready : [];
   }
+  // The number of a part's branch (<work branch>--part-N) is unique in the project, not only in its work: a
+  // work that continues a stopped one must not take a branch the earlier parts' worktrees still hold (job 45:
+  // "'port/45-phase5--part-1' is already used by worktree", 2026-11-25). A branch that exists is skipped; the
+  // number stays with the part, so the part finds its worktree again when it runs again.
+  function partIndex(folder, mega, sub, workBranch) {
+    if (Number.isInteger(sub.worktreeIndex)) return sub.worktreeIndex;
+    const taken = data.megaTasks.filter(other => other.projectId === mega.projectId).flatMap(other => (other.worktreeParts || []).map(part => Number(String(part.branch || '').match(/--part-(\d+)$/)?.[1]) || 0))
+      .concat(data.subTasks.filter(other => other.megaTaskId && data.megaTasks.some(m => m.id === other.megaTaskId && m.projectId === mega.projectId)).map(other => other.worktreeIndex || 0));
+    let index = Math.max(subtasks(mega).indexOf(sub) + 1, ...taken.map(n => n + 1));
+    const exists = number => { try { worktrees.git(folder, ['show-ref', '--verify', '--quiet', `refs/heads/${worktrees.branchFor(workBranch, number)}`]); return true; } catch { return false; } };
+    for (let tries = 0; tries < 200 && exists(index); tries += 1) index += 1;
+    sub.worktreeIndex = index;
+    return index;
+  }
   function startable(mega) {
     const subs = subtasks(mega);
     return subs.some(sub => sub.status === 'PENDING' && stepRole(sub) === 'Build'
@@ -535,7 +549,7 @@ function createExecutionBridge(options) {
       try {
         const workBranch = worktrees.git(item.project.folder, ['branch', '--show-current']);
         worktree = worktrees.create({ folder: item.project.folder, dir, projectId: mega.projectId, megaId: mega.id, subId: sub.id,
-          index: subtasks(mega).indexOf(sub) + 1, workBranch });
+          index: partIndex(item.project.folder, mega, sub, workBranch), workBranch });
         if (worktree) {
           folder = worktree.folder;
           mega.worktreeParts ||= [];
