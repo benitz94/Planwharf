@@ -283,4 +283,4 @@ controls reject missing and undersized fixtures. Independent verification also f
 scenario assertion-strength limitations in the existing `ScenarioParityTests.cs` outside
 this slice's write scope. The owner's real-program Windows hand test remains required
 before Job 43 acceptance; no cross-platform CI result is claimed.
-| Job 45 stopped on "Work branch has uncommitted changes" at every integration: Planwharf's own work plan had been committed into the repository with job 43, and Planwharf rewrites it at every step | #? |
+| Job 45 stopped on "Work branch has uncommitted changes" at every integration: Planwharf's own work plan had been committed into the repository with job 43, and Planwharf rewrites it at every step. It left the repository, and integration ignores it | #237 |
