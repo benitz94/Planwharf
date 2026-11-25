@@ -165,23 +165,6 @@ public sealed partial class MainWindow
 
         // Light or dark, and in the dark theme the text colour, as in the chat page.
         side.Children.Add(SettingsHead(Strings.T("Look")));
-        side.Children.Add(Explain(Strings.T("Language")));
-        var language = new ComboBox
-        {
-            Name = "LanguagePicker",
-            ItemsSource = new[] { Strings.T("English"), Strings.T("Italian") },
-            SelectedIndex = Strings.CurrentLanguage == "it" ? 1 : 0,
-            HorizontalAlignment = HorizontalAlignment.Stretch
-        };
-        language.SelectionChanged += (_, _) =>
-        {
-            var selected = language.SelectedIndex == 1 ? "it" : "en";
-            if (selected == Strings.CurrentLanguage) return;
-            Strings.CurrentLanguage = selected;
-            Prefs.Save();
-            App.Restyle(this);
-        };
-        side.Children.Add(language);
         side.Children.Add(Explain(Strings.T("Alerts when work is done or needs you")));
         foreach (var alertName in new[] { nameof(AlertOptions.Notification), nameof(AlertOptions.Flash), nameof(AlertOptions.Sound) })
         {

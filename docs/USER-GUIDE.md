@@ -14,9 +14,9 @@ Your projects and settings are kept in your user folder (`%APPDATA%\Planwharf\da
 
 **Updates:** **Settings → Updates → Update now** downloads the new version, checks it against the digest GitHub publishes, saves running work, and restarts. After the restart, press **Resume** if work was running.
 
-**Settings:** Everyday settings (new project folders, language, look, phone alerts, updates) are shown first. Advanced settings (approvals, automatic model switches, project tools, skills, project moving) start closed in an **Advanced settings** section.
+**Settings:** Everyday settings (new project folders, look, phone alerts, updates) are shown first. Advanced settings (approvals, automatic model switches, project tools, skills, project moving) start closed in an **Advanced settings** section.
 
-**Language:** **Settings → Look → Language**: English (default) or Italiano. Texts written by the engine (statuses, reasons, the crew's answers) stay in English for now; the lead answers in the language you write in.
+**Language:** the app is in English.
 
 ## Projects and folders
 

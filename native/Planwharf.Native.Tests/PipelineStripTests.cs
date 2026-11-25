@@ -10,7 +10,6 @@ public sealed class PipelineStripTests : IDisposable
 {
     public void Dispose()
     {
-        Strings.CurrentLanguage = "en";
     }
 
     [Fact]
@@ -262,64 +261,6 @@ public sealed class PipelineStripTests : IDisposable
         Assert.Equal("Needs you", stripAwaitingNoReason.ActiveStagePlainWords);
     }
 
-    [Fact]
-    public void Localization_ItalianResources()
-    {
-        Strings.CurrentLanguage = "it";
-
-        var explainer = PipelineViews.GetWorkflowExplainer("progetto-alfa");
-        Assert.Equal("Come funziona la pipeline", explainer.Title);
-        Assert.Contains("progetto-alfa", explainer.EmptyQueueMessage);
-
-        var labels = explainer.Stages.Select(s => s.Label).ToList();
-        Assert.Contains("Richiesta", labels);
-        Assert.Contains("Domande", labels);
-        Assert.Contains("Specifica e test", labels);
-        Assert.Contains("Costruzione ⇄ Revisione", labels);
-        Assert.Contains("Controlli", labels);
-        Assert.Contains("Pull request", labels);
-        Assert.Contains("Unito", labels);
-
-        var qStage = explainer.Stages.Single(s => s.StageId == PipelineStageNames.Questions);
-        Assert.Equal("Risponde alle domande", qStage.OwnerIntervention);
-
-        var sStage = explainer.Stages.Single(s => s.StageId == PipelineStageNames.SpecAndTests);
-        Assert.Equal("Approva la specifica", sStage.OwnerIntervention);
-
-        var prStage = explainer.Stages.Single(s => s.StageId == PipelineStageNames.PullRequest);
-        Assert.Equal("Unisce la pull request", prStage.OwnerIntervention);
-
-        // Active stage formatting in Italian
-        var specObj = new JsonObject
-        {
-            ["tasks"] = new JsonArray
-            {
-                new JsonObject { ["id"] = "T1" },
-                new JsonObject { ["id"] = "T2" },
-                new JsonObject { ["id"] = "T3" }
-            }
-        };
-        var routingObj = new JsonObject
-        {
-            ["chosen"] = new JsonObject
-            {
-                ["reviewer-1"] = new JsonObject { ["modelId"] = "gemini-3.8-flash-high" }
-            }
-        };
-        var jobObj = new JsonObject
-        {
-            ["task_T1_status"] = "accepted",
-            ["currentRound_T2"] = 2
-        };
-
-        var strip = PipelineViews.BuildStageStrip("reviewing", jobObj: jobObj, routingObj: routingObj, specObj: specObj);
-        Assert.Equal("Gemini sta revisionando l'attività 2 di 3", strip.ActiveStagePlainWords);
-        Assert.Equal("ciclo 2 di 3", strip.ReviewLoop?.DisplayText);
-
-        // Intervention prompts in Italian
-        var qWait = PipelineViews.BuildStageStrip("awaiting-owner", awaitingOwnerReason: "questions");
-        Assert.Equal("Serve il tuo intervento: rispondi alle domande", qWait.ActiveStagePlainWords);
-    }
 
     [AvaloniaFact]
     public void AvaloniaControls_RenderCleanly()

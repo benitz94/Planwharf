@@ -13,7 +13,6 @@ public sealed class PipelineVerificationTests : IDisposable
 
     public void Dispose()
     {
-        Strings.CurrentLanguage = "en";
         for (var attempt = 0; Directory.Exists(root); attempt++)
         {
             try { Directory.Delete(root, true); }
