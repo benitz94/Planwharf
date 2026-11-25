@@ -287,4 +287,4 @@ before Job 43 acceptance; no cross-platform CI result is claimed.
 | Resume was refused once a work had stopped twice (two checkpoints: "Choose an explicit MegaTask and checkpoint"), and the app showed the error for less than a second | #238 |
 | Resume of job 45 restarted the work but not the crew, so the first step that stopped part way ended it: nobody asked the lead for the rest | #239 |
 | The work the lead named after job 45 stopped could not start any part: its parts were numbered from 1 again, and the stopped work's worktrees still held those branches | #240 |
-| A pull request fix wrote its progress into the project's chat and Progress instead of the Pull requests panel, and when it gave up it did not say why the other models were left out | #? |
+| A pull request fix wrote its progress into the project's chat and Progress instead of the Pull requests panel, and when it gave up it did not say why the other models were left out | #242 |
