@@ -733,6 +733,20 @@ public class ParityTests
             return (JsonNode)JsonValue.Create(Execution.NoVerdictPlan(tries))!;
         },
         ["execution/deliveredWithoutVerdict"] = a => Execution.DeliveredWithoutVerdict(Obj(a, 0)!),
+        ["orchestrator-order-parsing/looksLikeQuestion"] = a => (JsonNode)JsonValue.Create(OrchestratorOrderParsing.LooksLikeQuestion(Text(a, 0)))!,
+        ["orchestrator-order-parsing/looksLikeWork"] = a => (JsonNode)JsonValue.Create(OrchestratorOrderParsing.LooksLikeWork(Text(a, 0)))!,
+        ["orchestrator-order-parsing/parseOrder"] = a =>
+        {
+            var snap = Obj(a, 1) is { } obj ? OrchestratorSnapshot.FromJson(obj) : null;
+            var order = OrchestratorOrderParsing.ParseOrder(Text(a, 0), snap, Text(a, 2));
+            if (order == null) return null;
+            var json = order.ToJsonObject();
+            if (order is ChatModeOrder or RejectOrder or SavingModeOrder or LifecycleOrder)
+            {
+                if (!json.ContainsKey("projectId")) json["projectId"] = null;
+            }
+            return json;
+        },
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.
