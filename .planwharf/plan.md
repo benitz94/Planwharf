@@ -21,6 +21,8 @@ port/45-phase5
 - [x] Build (gemini-3.8-flash-medium) — port/45-phase5--part-7 d518cc2
 - [x] Build (gemini-3.8-flash-low) — port/45-phase5--part-26 17e9ffe
 - [x] Verify (gpt-oss-120b-medium) — port/45-phase5--part-25 17e9ffe
+- [x] Integrate, run acceptance gates and record deferred JavaScript cases — port/45-phase5
+- [x] Update Job 45 progress and commit — port/45-phase5
 
 ## Rules
 
