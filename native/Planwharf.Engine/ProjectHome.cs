@@ -21,6 +21,11 @@ public interface IProjectHomeFiles
     Task<byte[]> ReadTailAsync(string path, int maxBytes);
 }
 
+public interface IProjectHomeGit
+{
+    Task<string?> RunGitAsync(string folder, IReadOnlyList<string> args);
+}
+
 public sealed class ProjectHomeFiles : IProjectHomeFiles
 {
     public Task<string?> RealPathAsync(string path)
@@ -117,6 +122,7 @@ public sealed class ProjectHomeOptions
 {
     public string? PlanFile { get; init; }
     public Func<string, IReadOnlyList<string>, Task<string?>>? Git { get; init; }
+    public IProjectHomeGit? GitAdapter { get; init; }
     public Func<string, JsonObject>? Inspect { get; init; }
     public IProjectHomeFiles? Files { get; init; }
 }
@@ -210,7 +216,7 @@ public static class ProjectHome
     public static async Task<JsonObject> LocalGitAsync(string? folder, ProjectHomeOptions? options = null)
     {
         var files = options?.Files ?? new ProjectHomeFiles();
-        var gitFn = options?.Git ?? RunDefaultGitAsync;
+        var gitFn = options?.Git ?? (options?.GitAdapter != null ? options.GitAdapter.RunGitAsync : (Func<string, IReadOnlyList<string>, Task<string?>>)RunDefaultGitAsync);
         var planFile = options?.PlanFile;
 
         var linked = ProjectWorkspace.LinkedWorkspace(folder);
@@ -487,7 +493,7 @@ public static class ProjectHome
             };
         }
 
-        var gitFn = options?.Git ?? RunDefaultGitAsync;
+        var gitFn = options?.Git ?? (options?.GitAdapter != null ? options.GitAdapter.RunGitAsync : (Func<string, IReadOnlyList<string>, Task<string?>>)RunDefaultGitAsync);
 
         var prevRevisionIds = (previous["revisionIds"] as JsonArray ?? []).Select(Execution.Text).ToHashSet(StringComparer.Ordinal);
         var currentRevisionIds = (current["revisionIds"] as JsonArray ?? []).Select(Execution.Text).ToArray();

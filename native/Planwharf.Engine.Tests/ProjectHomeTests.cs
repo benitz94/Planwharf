@@ -1543,6 +1543,732 @@ public sealed class ProjectHomeTests : IDisposable
         Assert.Contains("Decision recorded: decision-2", details);
     }
 
+    [Fact]
+    public async Task LocalGit_InjectedAdapter_DirectorySymlinkToAnotherProject_FailsSafely()
+    {
+        var root = Path.Combine(tempDir, "inj-symlink-root");
+        var alpha = Path.Combine(root, "alpha");
+        var beta = Path.Combine(root, "beta");
+        Directory.CreateDirectory(alpha);
+        Directory.CreateDirectory(beta);
+        RunGitCommand(alpha, "init", "-q");
+
+        var fakeFiles = new FakeProjectHomeFiles();
+        fakeFiles.RealPaths[Path.Combine(alpha, "linked")] = beta;
+        fakeFiles.Symlinks[Path.Combine(alpha, "linked")] = beta;
+
+        var gitAdapter = new FakeProjectHomeGit((folder, args) =>
+        {
+            if (args.Contains("--show-toplevel")) return Task.FromResult<string?>(alpha);
+            if (args.Contains("--verify")) return Task.FromResult<string?>("1111111111111111111111111111111111111111");
+            if (args.Contains("ls-files")) return Task.FromResult<string?>("");
+            if (args.Contains("status") && args.Contains("-z")) return Task.FromResult<string?>(" D linked/data\0");
+            if (args.Contains("status")) return Task.FromResult<string?>(" D linked/data\n");
+            if (args.Contains("diff")) return Task.FromResult<string?>("");
+            return Task.FromResult<string?>("");
+        });
+
+        var options = new ProjectHomeOptions
+        {
+            Files = fakeFiles,
+            GitAdapter = gitAdapter
+        };
+
+        var before = await ProjectHome.LocalGitAsync(alpha, options);
+        Assert.True(before["readable"]?.GetValue<bool>());
+
+        var files = (JsonArray)before["files"]!;
+        Assert.Single(files);
+        var fileItem = (JsonObject)files[0]!;
+        Assert.Equal("linked/data", fileItem["path"]?.GetValue<string>());
+        Assert.Equal("deleted", fileItem["fingerprint"]?.GetValue<string>());
+
+        var after = await ProjectHome.LocalGitAsync(alpha, options);
+        Assert.Equal(before["fingerprint"]?.GetValue<string>(), after["fingerprint"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task LocalGit_InjectedAdapter_SubmoduleForeignGitdir_IgnoresForeignCommit()
+    {
+        var root = Path.Combine(tempDir, "inj-submodule-root");
+        var alpha = Path.Combine(root, "alpha");
+        Directory.CreateDirectory(alpha);
+        RunGitCommand(alpha, "init", "-q");
+
+        var localContent = "initial local content";
+        var fakeFiles = new FakeProjectHomeFiles();
+        fakeFiles.Files[Path.Combine(alpha, "local.txt")] = Encoding.UTF8.GetBytes(localContent);
+
+        var gitAdapter = new FakeProjectHomeGit((folder, args) =>
+        {
+            if (args.Contains("status") || args.Contains("diff"))
+                Assert.Contains("--ignore-submodules=all", args);
+            if (args.Contains("--show-toplevel")) return Task.FromResult<string?>(alpha);
+            if (args.Contains("--verify")) return Task.FromResult<string?>("1111111111111111111111111111111111111111");
+            if (args.Contains("ls-files")) return Task.FromResult<string?>("local.txt\0");
+            if (args.Contains("status") && args.Contains("-z")) return Task.FromResult<string?>("?? local.txt\0");
+            if (args.Contains("status")) return Task.FromResult<string?>("?? local.txt\n");
+            if (args.Contains("diff")) return Task.FromResult<string?>("");
+            return Task.FromResult<string?>("");
+        });
+
+        var options = new ProjectHomeOptions
+        {
+            Files = fakeFiles,
+            GitAdapter = gitAdapter
+        };
+
+        var before = await ProjectHome.LocalGitAsync(alpha, options);
+        Assert.True(before["readable"]?.GetValue<bool>());
+        var fpBefore = before["fingerprint"]?.GetValue<string>();
+        Assert.NotNull(fpBefore);
+
+        // When local file content changes, fingerprint changes
+        fakeFiles.Files[Path.Combine(alpha, "local.txt")] = Encoding.UTF8.GetBytes("updated local content");
+        var after = await ProjectHome.LocalGitAsync(alpha, options);
+        var fpAfter = after["fingerprint"]?.GetValue<string>();
+        Assert.NotNull(fpAfter);
+        Assert.NotEqual(fpBefore, fpAfter);
+    }
+
+    [Fact]
+    public async Task ProjectHome_ProgressDetail_PortFromJS_WithInjectedAdapters()
+    {
+        var root = Path.Combine(tempDir, "prog-detail-inj");
+        var folder = Path.Combine(root, "project");
+        Directory.CreateDirectory(folder);
+        RunGitCommand(folder, "init", "-q");
+
+        var logPath = Path.Combine(root, "worker.log");
+        var initialLog = "{\"event\":\"step_update\",\"step_update\":{\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"view_file\",\"tool_info\":{\"parameters\":{\"AbsolutePath\":\"" + folder.Replace('\\', '/') + "/Sayaku.ts\"}}}}\n";
+
+        var fakeFiles = new FakeProjectHomeFiles();
+        fakeFiles.Files[logPath] = Encoding.UTF8.GetBytes(initialLog);
+        fakeFiles.Files[Path.Combine(folder, "Sayaku.ts")] = Encoding.UTF8.GetBytes("export const greeting = \"hello\";\n");
+
+        var gitHead = "1111111111111111111111111111111111111111";
+        var gitStatus = "";
+        var gitDiff = "";
+        var gitUntracked = "";
+        var gitAdapter = new FakeProjectHomeGit((f, args) =>
+        {
+            if (args.Contains("--show-toplevel")) return Task.FromResult<string?>(folder);
+            if (args.Contains("--verify")) return Task.FromResult<string?>(gitHead);
+            if (args.Contains("--is-ancestor")) return Task.FromResult<string?>("");
+            if (args.Contains("--count")) return Task.FromResult<string?>("1");
+            if (args.Contains("-100")) return Task.FromResult<string?>("2222222\tUpdate greeting behavior");
+            if (args.Contains("ls-files")) return Task.FromResult<string?>(gitUntracked);
+            if (args.Contains("status")) return Task.FromResult<string?>(gitStatus);
+            if (args.Contains("diff")) return Task.FromResult<string?>(gitDiff);
+            return Task.FromResult<string?>("");
+        });
+
+        var options = new ProjectHomeOptions
+        {
+            Files = fakeFiles,
+            GitAdapter = gitAdapter
+        };
+
+        var project = Item(folder, "fixture");
+        var row = new JsonObject
+        {
+            ["id"] = "fixture",
+            ["status"] = "watching",
+            ["jobId"] = "audit",
+            ["jobTitle"] = "Audit Sayaku greeting behavior",
+            ["dispatch"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["label"] = "Fixture worker",
+                    ["logPath"] = logPath,
+                    ["alive"] = false
+                }
+            }
+        };
+        var snapshot = new JsonObject
+        {
+            ["projects"] = new JsonArray { row },
+            ["researches"] = new JsonArray()
+        };
+
+        // First visit
+        var first = await ProjectHome.GetProjectHomeAsync(project, snapshot, (JsonNode?)null, options);
+        Assert.NotNull(first["current"]);
+
+        // Simulate progress
+        gitHead = "2222222222222222222222222222222222222222";
+        gitStatus = "?? Sayaku.test.ts\n";
+        gitUntracked = "Sayaku.test.ts\0";
+        fakeFiles.Files[Path.Combine(folder, "Sayaku.test.ts")] = Encoding.UTF8.GetBytes("fixture test source\n");
+
+        var revArray = (JsonArray)project["revisions"]!;
+        var latest = (JsonObject)revArray.Last()!;
+        var nextRev = new JsonObject
+        {
+            ["id"] = latest["id"]!.GetValue<int>() + 1,
+            ["title"] = "Greeting audit findings",
+            ["state"] = "Greeting behavior updated; integration review remains.",
+            ["direction"] = latest["direction"]?.DeepClone(),
+            ["open"] = new JsonArray(),
+            ["closed"] = new JsonArray { "Preserve the configured greeting." }
+        };
+        revArray.Add(nextRev);
+
+        row["status"] = "complete";
+        var stepLog1 = "{\"event\":\"step_update\",\"step_update\":{\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"write_to_file\",\"tool_info\":{\"parameters\":{\"TargetFile\":\"" + folder.Replace('\\', '/') + "/Sayaku.test.ts\"}}}}\n";
+        var stepLog2 = "{\"event\":\"step_update\",\"step_update\":{\"state\":\"DONE\",\"step_type\":\"tool\",\"tool_name\":\"run_command\",\"tool_info\":{\"parameters\":{\"CommandLine\":\"node Sayaku.test.ts\"}}}}\n";
+        var report = "Greeting parsing now preserves the configured message.\n" + string.Concat(Enumerable.Repeat("Fixture report details are retained without shortening.\n", 30));
+        var resultEvent = "{\"event\":\"result\",\"result\":{\"status\":\"SUCCESS\",\"response\":\"" + report.Replace("\n", "\\n") + "\"}}\n";
+        var updatedLog = initialLog + stepLog1 + stepLog2 + resultEvent;
+        fakeFiles.Files[logPath] = Encoding.UTF8.GetBytes(updatedLog);
+
+        // Second visit with baseline
+        var returned = await ProjectHome.GetProjectHomeAsync(project, snapshot, first["current"], options);
+
+        var details = ((JsonArray)returned["since"]!["details"]!).Select(d => d?.GetValue<string>()).ToList();
+        var detailsJoined = string.Join("\n", details);
+        Assert.Matches("Update greeting behavior", detailsJoined);
+        Assert.Matches("Added locally: Sayaku.test.ts", detailsJoined);
+        Assert.Matches("Recorded progress: Greeting behavior updated", detailsJoined);
+        Assert.Matches("Decision recorded: Preserve the configured greeting", detailsJoined);
+
+        var actions = ((JsonArray)returned["progressDetails"]!["actions"]!).Select(a => a?["text"]?.GetValue<string>()).ToList();
+        var actionsJoined = string.Join("\n", actions);
+        Assert.Matches("writing project files: Sayaku.test.ts", actionsJoined);
+        Assert.Matches("Finished running tests for Sayaku.test.ts", actionsJoined);
+
+        var actionsJson = returned["progressDetails"]!["actions"]!.ToJsonString();
+        Assert.DoesNotMatch("step_update|conversation_id|tool_info", actionsJson);
+
+        Assert.Equal("Greeting behavior updated; integration review remains.", returned["progress"]?.GetValue<string>());
+
+        var reports = (JsonArray)returned["progressDetails"]!["reports"]!;
+        Assert.Single(reports);
+        Assert.Equal(report, reports[0]?["text"]?.GetValue<string>());
+
+        var currentJson = returned["current"]!.ToJsonString();
+        Assert.DoesNotMatch("Fixture report details", currentJson);
+
+        var currentExecution = (JsonObject)returned["current"]!["execution"]!;
+        var fp = currentExecution["reportFingerprint"]?.GetValue<string>();
+        Assert.NotNull(fp);
+        Assert.Matches("^[a-f0-9]{64}$", fp);
+    }
+
+    [Fact]
+    public async Task ProjectHome_ProjectContext_StrictIsolationBetweenProjects()
+    {
+        var folderA = Path.Combine(tempDir, "iso-proj-a");
+        var folderB = Path.Combine(tempDir, "iso-proj-b");
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+        RunGitCommand(folderA, "init", "-q");
+        RunGitCommand(folderB, "init", "-q");
+
+        var projectA = Item(folderA, "alpha");
+
+        var snapshot = new JsonObject
+        {
+            ["projects"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "alpha", ["megaTaskId"] = "MT-A", ["status"] = "watching" },
+                new JsonObject { ["id"] = "beta", ["megaTaskId"] = "MT-B", ["status"] = "complete" }
+            },
+            ["researches"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "research-alpha", ["projectId"] = "alpha", ["megaTaskId"] = "MT-A", ["status"] = "complete" },
+                new JsonObject { ["id"] = "research-beta", ["projectId"] = "beta", ["megaTaskId"] = "MT-B", ["status"] = "complete" }
+            },
+            ["execution"] = new JsonObject
+            {
+                ["megaTasks"] = new JsonArray
+                {
+                    new JsonObject { ["id"] = "MT-A", ["projectId"] = "alpha", ["status"] = "PAUSED", ["title"] = "Alpha task", ["createdAt"] = "2026-11-25T12:00:00.000Z" },
+                    new JsonObject { ["id"] = "MT-B", ["projectId"] = "beta", ["status"] = "COMPLETE", ["title"] = "Beta task", ["createdAt"] = "2026-11-25T12:00:00.000Z" }
+                },
+                ["subTasks"] = new JsonArray
+                {
+                    new JsonObject { ["id"] = "ST-A1", ["megaTaskId"] = "MT-A", ["title"] = "Sub A", ["status"] = "RUNNING", ["attemptIds"] = new JsonArray { "att-a1" }, ["assignedModelId"] = "gpt-4o" },
+                    new JsonObject { ["id"] = "ST-B1", ["megaTaskId"] = "MT-B", ["title"] = "Sub B", ["status"] = "COMPLETE", ["attemptIds"] = new JsonArray { "att-b1" }, ["assignedModelId"] = "claude-3" }
+                },
+                ["results"] = new JsonArray
+                {
+                    new JsonObject { ["resultId"] = "R-A", ["megaTaskId"] = "MT-A", ["subTaskId"] = "ST-A1", ["status"] = "RUNNING", ["pid"] = 12345, ["assignedModelId"] = "gpt-4o" },
+                    new JsonObject { ["resultId"] = "R-B", ["megaTaskId"] = "MT-B", ["subTaskId"] = "ST-B1", ["status"] = "COMPLETE", ["pid"] = 54321, ["assignedModelId"] = "claude-3" }
+                },
+                ["timeline"] = new JsonArray
+                {
+                    new JsonObject { ["id"] = "TL-A", ["projectId"] = "alpha", ["megaTaskId"] = "MT-A", ["createdAt"] = "2026-11-25T12:01:00.000Z", ["summary"] = "Alpha milestone" },
+                    new JsonObject { ["id"] = "TL-B", ["projectId"] = "beta", ["megaTaskId"] = "MT-B", ["createdAt"] = "2026-11-25T12:02:00.000Z", ["summary"] = "Beta milestone" }
+                },
+                ["checkpoints"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "CP-A",
+                        ["projectId"] = "alpha",
+                        ["megaTaskId"] = "MT-A",
+                        ["repoState"] = new JsonObject { ["repoHead"] = "1111", ["comparable"] = true, ["dirtyFiles"] = new JsonArray() }
+                    },
+                    new JsonObject
+                    {
+                        ["id"] = "CP-B",
+                        ["projectId"] = "beta",
+                        ["megaTaskId"] = "MT-B",
+                        ["repoState"] = new JsonObject { ["repoHead"] = "2222", ["comparable"] = true, ["dirtyFiles"] = new JsonArray() }
+                    }
+                }
+            }
+        };
+
+        var home = await ProjectHome.GetProjectHomeAsync(projectA, snapshot);
+
+        Assert.Equal("alpha", home["projectId"]?.GetValue<string>());
+        Assert.Equal("Alpha task", home["jobTitle"]?.GetValue<string>());
+
+        var research = (JsonArray)home["current"]!["execution"]!["research"]!;
+        Assert.Single(research);
+        Assert.Equal("research-alpha", research[0]?["id"]?.GetValue<string>());
+
+        var progressDetails = (JsonObject)home["progressDetails"]!;
+        Assert.Equal("MT-A", progressDetails["megaTask"]?["id"]?.GetValue<string>());
+
+        var subTasks = (JsonArray)progressDetails["subTasks"]!;
+        Assert.Single(subTasks);
+        Assert.Equal("ST-A1", subTasks[0]?["id"]?.GetValue<string>());
+
+        var results = (JsonArray)progressDetails["results"]!;
+        Assert.Single(results);
+        Assert.Equal("R-A", results[0]?["resultId"]?.GetValue<string>());
+
+        var workers = (JsonArray)progressDetails["workers"]!;
+        Assert.All(workers, w => Assert.Equal("gpt-4o", w?["modelId"]?.GetValue<string>()));
+        Assert.DoesNotContain(workers, w => w?["modelId"]?.GetValue<string>() == "claude-3");
+
+        var timeline = (JsonArray)home["timeline"]!;
+        Assert.Single(timeline);
+        Assert.Equal("TL-A", timeline[0]?["id"]?.GetValue<string>());
+
+        var resumeTargets = (JsonArray)home["resumeTargets"]!;
+        Assert.Single(resumeTargets);
+        Assert.Equal("CP-A", resumeTargets[0]?["id"]?.GetValue<string>());
+        Assert.Equal("research-alpha", resumeTargets[0]?["researchId"]?.GetValue<string>());
+
+        var checkpointDiffs = (JsonArray)home["checkpointDiffs"]!;
+        Assert.Single(checkpointDiffs);
+        Assert.Equal("CP-A", checkpointDiffs[0]?["checkpointId"]?.GetValue<string>());
+
+        var actionTarget = (JsonObject)home["actionTarget"]!;
+        Assert.Equal("alpha", actionTarget["projectId"]?.GetValue<string>());
+        Assert.Equal("MT-A", actionTarget["megaTaskId"]?.GetValue<string>());
+        Assert.Equal("CP-A", actionTarget["checkpointId"]?.GetValue<string>());
+        Assert.Equal("research-alpha", actionTarget["researchId"]?.GetValue<string>());
+
+        var json = home.ToJsonString();
+        Assert.DoesNotMatch("beta|Beta|MT-B|ST-B1|research-beta|CP-B|TL-B", json);
+    }
+
+    [Fact]
+    public async Task ProjectHome_ProjectRecipient_ActionTargetAndWorkerGuards()
+    {
+        var folder = Path.Combine(tempDir, "recipient-repo");
+        Directory.CreateDirectory(folder);
+        RunGitCommand(folder, "init", "-q");
+        var project = Item(folder, "alpha");
+
+        // Case 1: Multiple resume targets -> actionTarget does NOT specify a single checkpointId
+        var durableMulti = new JsonObject
+        {
+            ["megaTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "MT-Multi", ["projectId"] = "alpha", ["status"] = "PAUSED" }
+            },
+            ["checkpoints"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "CP-1", ["projectId"] = "alpha", ["megaTaskId"] = "MT-Multi", ["repoState"] = new JsonObject { ["repoHead"] = "1111", ["comparable"] = true, ["dirtyFiles"] = new JsonArray() } },
+                new JsonObject { ["id"] = "CP-2", ["projectId"] = "alpha", ["megaTaskId"] = "MT-Multi", ["repoState"] = new JsonObject { ["repoHead"] = "2222", ["comparable"] = true, ["dirtyFiles"] = new JsonArray() } }
+            }
+        };
+        var snapshotMulti = new JsonObject
+        {
+            ["projects"] = new JsonArray { new JsonObject { ["id"] = "alpha", ["megaTaskId"] = "MT-Multi" } },
+            ["execution"] = durableMulti
+        };
+        var homeMulti = await ProjectHome.GetProjectHomeAsync(project, snapshotMulti);
+        var atMulti = (JsonObject)homeMulti["actionTarget"]!;
+        Assert.Equal("alpha", atMulti["projectId"]?.GetValue<string>());
+        Assert.Equal("MT-Multi", atMulti["megaTaskId"]?.GetValue<string>());
+        Assert.Null(atMulti["checkpointId"]); // Not set when multiple resume targets exist
+
+        // Case 2: Unlinked workspace guard -> action is always null
+        var unlinkedProject = Item(null, "alpha");
+        var homeUnlinked = await ProjectHome.GetProjectHomeAsync(unlinkedProject, snapshotMulti);
+        Assert.Null(homeUnlinked["action"]);
+
+        // Case 3: Detached MegaTask without single resume target receives researchId
+        var durableDetached = new JsonObject
+        {
+            ["megaTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "MT-Det", ["projectId"] = "alpha", ["status"] = "RUNNING", ["detached"] = true }
+            }
+        };
+        var snapshotDetached = new JsonObject
+        {
+            ["projects"] = new JsonArray { new JsonObject { ["id"] = "alpha", ["megaTaskId"] = "MT-Det" } },
+            ["researches"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "RES-Det", ["projectId"] = "alpha", ["megaTaskId"] = "MT-Det" }
+            },
+            ["execution"] = durableDetached
+        };
+        var homeDetached = await ProjectHome.GetProjectHomeAsync(project, snapshotDetached);
+        var atDet = (JsonObject)homeDetached["actionTarget"]!;
+        Assert.Equal("RES-Det", atDet["researchId"]?.GetValue<string>());
+        Assert.Equal("MT-Det", atDet["megaTaskId"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task ProjectHome_ExecutionNext_AllGraphCasesAThroughJ_MatchesJS()
+    {
+        var folder = Path.Combine(tempDir, "exec-next-graph");
+        Directory.CreateDirectory(folder);
+        RunGitCommand(folder, "init", "-q");
+
+        static JsonObject MakeGraph(string status = "RUNNING", string first = "RUNNING", string second = "PENDING")
+        {
+            var mega = new JsonObject
+            {
+                ["id"] = "MT-test",
+                ["projectId"] = "isolated",
+                ["status"] = status,
+                ["nextAction"] = "Review the proposed slices and approve this MegaTask.",
+                ["currentCheckpointId"] = "CP-test"
+            };
+            return new JsonObject
+            {
+                ["megaTasks"] = new JsonArray { mega },
+                ["subTasks"] = new JsonArray
+                {
+                    new JsonObject { ["id"] = "ST-first", ["megaTaskId"] = "MT-test", ["title"] = "Create module", ["status"] = first, ["dependencies"] = new JsonArray(), ["attemptIds"] = new JsonArray(), ["resultId"] = "R-first" },
+                    new JsonObject { ["id"] = "ST-second", ["megaTaskId"] = "MT-test", ["title"] = "Verify recovery", ["status"] = second, ["dependencies"] = new JsonArray { "ST-first" }, ["attemptIds"] = new JsonArray(), ["resultId"] = "R-second" }
+                },
+                ["results"] = new JsonArray(),
+                ["checkpoints"] = new JsonArray()
+            };
+        }
+
+        var cases = new (string Name, JsonObject Durable, string ExpectedPattern)[]
+        {
+            ("A proposal permits approval", MakeGraph("READY_FOR_APPROVAL", "PENDING"), "Approve the prepared MegaTask."),
+            ("B approval immediately replaces proposal text", MakeGraph("RUNNING", "PENDING"), "^Next SubTask: Create module \\(ST-first\\)\\.$"),
+            ("C active first slice", MakeGraph(), "^Work in progress: Create module \\(ST-first\\)\\.$"),
+            ("D first complete and second pending", MakeGraph("RUNNING", "COMPLETE"), "^Next SubTask: Verify recovery \\(ST-second\\)\\.$"),
+            ("E active second slice", MakeGraph("RUNNING", "COMPLETE", "RUNNING"), "^Work in progress: Verify recovery \\(ST-second\\)\\.$"),
+            ("F dependency waiting identifies prerequisite", MakeGraph("RUNNING", "BLOCKED"), "Waiting for prerequisite Create module \\(ST-first\\) before Verify recovery \\(ST-second\\)\\."),
+            ("reconciliation never reuses proposal", MakeGraph("RUNNING", "COMPLETE", "COMPLETE"), "^Reconciling completed work\\.$"),
+            ("G paused fallback uses remaining work", MakeGraph("PAUSED", "COMPLETE"), "Next SubTask: Verify recovery"),
+            ("I completion without a result action is neutral", MakeGraph("COMPLETE", "COMPLETE", "COMPLETE"), "^Review completed evidence\\.$"),
+            ("J failed without structured recovery is neutral", MakeGraph("FAILED", "FAILED"), "Review Create module \\(ST-first\\) and resume from an explicit checkpoint\\.")
+        };
+
+        foreach (var (name, durable, pattern) in cases)
+        {
+            var project = Item(folder, "isolated");
+            var snapshot = new JsonObject
+            {
+                ["execution"] = (JsonObject)durable.DeepClone(),
+                ["projects"] = new JsonArray
+                {
+                    new JsonObject { ["id"] = "isolated", ["next"] = "Approve the prepared job", ["status"] = "watching", ["dispatch"] = new JsonArray() }
+                },
+                ["researches"] = new JsonArray()
+            };
+
+            var home = await ProjectHome.GetProjectHomeAsync(project, snapshot);
+            var nextText = home["next"]?.GetValue<string>();
+            Assert.NotNull(nextText);
+            if (pattern.StartsWith("^") || pattern.EndsWith("$"))
+                Assert.Matches(pattern, nextText);
+            else
+                Assert.Contains(pattern.Replace("\\(", "(").Replace("\\)", ")").Replace("\\.", "."), nextText);
+
+            if (durable["megaTasks"]?[0]?["status"]?.GetValue<string>() == "READY_FOR_APPROVAL")
+            {
+                Assert.Equal("Approve the prepared MegaTask.", nextText);
+                Assert.Equal("approve", home["action"]?.GetValue<string>());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ProjectHome_ParallelProjects_ConcurrentInvocationsDoNotInterfere()
+    {
+        var folderA = Path.Combine(tempDir, "par-proj-a");
+        var folderB = Path.Combine(tempDir, "par-proj-b");
+        Directory.CreateDirectory(folderA);
+        Directory.CreateDirectory(folderB);
+        RunGitCommand(folderA, "init", "-q");
+        RunGitCommand(folderB, "init", "-q");
+
+        var projectA = Item(folderA, "alpha");
+        var projectB = Item(folderB, "beta");
+
+        var durable = new JsonObject
+        {
+            ["megaTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "MT-Par-A", ["projectId"] = "alpha", ["status"] = "RUNNING", ["title"] = "Work Alpha" },
+                new JsonObject { ["id"] = "MT-Par-B", ["projectId"] = "beta", ["status"] = "READY_FOR_APPROVAL", ["title"] = "Work Beta" }
+            },
+            ["subTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "ST-Par-A", ["megaTaskId"] = "MT-Par-A", ["status"] = "RUNNING", ["title"] = "Slice A" },
+                new JsonObject { ["id"] = "ST-Par-B", ["megaTaskId"] = "MT-Par-B", ["status"] = "PENDING", ["title"] = "Slice B" }
+            }
+        };
+
+        var snapshot = new JsonObject
+        {
+            ["projects"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "alpha", ["megaTaskId"] = "MT-Par-A" },
+                new JsonObject { ["id"] = "beta", ["megaTaskId"] = "MT-Par-B" }
+            },
+            ["execution"] = durable
+        };
+
+        var taskA = ProjectHome.GetProjectHomeAsync(projectA, (JsonObject)snapshot.DeepClone());
+        var taskB = ProjectHome.GetProjectHomeAsync(projectB, (JsonObject)snapshot.DeepClone());
+        await Task.WhenAll(taskA, taskB);
+
+        var homeA = await taskA;
+        var homeB = await taskB;
+
+        Assert.Equal("alpha", homeA["projectId"]?.GetValue<string>());
+        Assert.Equal("Work in progress: Slice A (ST-Par-A).", homeA["next"]?.GetValue<string>());
+        Assert.Null(homeA["action"]);
+
+        Assert.Equal("beta", homeB["projectId"]?.GetValue<string>());
+        Assert.Equal("Approve the prepared MegaTask.", homeB["next"]?.GetValue<string>());
+        Assert.Equal("approve", homeB["action"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task ProjectHome_ExecutionResult_InjectedFiles_AllVariants()
+    {
+        var folder = Path.Combine(tempDir, "inj-res-folder");
+        Directory.CreateDirectory(folder);
+        RunGitCommand(folder, "init", "-q");
+        var project = Item(folder, "alpha");
+
+        var fakeFiles = new FakeProjectHomeFiles();
+        var validContent = Encoding.UTF8.GetBytes("{\"status\":\"COMPLETE\",\"summary\":\"all tests passed\"}");
+        var validPath = Path.Combine(folder, "valid.json");
+        fakeFiles.Files[validPath] = validContent;
+
+        var emptyPath = Path.Combine(folder, "empty.json");
+        fakeFiles.Files[emptyPath] = Array.Empty<byte>();
+
+        var oversizePath = Path.Combine(folder, "oversize.json");
+        fakeFiles.Files[oversizePath] = new byte[8 * 1024 * 1024 + 1];
+
+        var options = new ProjectHomeOptions { Files = fakeFiles };
+
+        // 1. Valid file -> hashed
+        var rowValid = new JsonObject { ["id"] = "alpha", ["resultPath"] = validPath };
+        var homeValid = await ProjectHome.GetProjectHomeAsync(project, new JsonObject { ["projects"] = new JsonArray { rowValid } }, options);
+        var resHash = homeValid["current"]?["execution"]?["result"]?.GetValue<string>();
+        Assert.NotNull(resHash);
+        Assert.Matches("^[a-f0-9]{64}$", resHash);
+
+        // 2. Empty file -> null
+        var rowEmpty = new JsonObject { ["id"] = "alpha", ["resultPath"] = emptyPath };
+        var homeEmpty = await ProjectHome.GetProjectHomeAsync(project, new JsonObject { ["projects"] = new JsonArray { rowEmpty } }, options);
+        Assert.Null(homeEmpty["current"]?["execution"]?["result"]);
+
+        // 3. Oversize file -> null
+        var rowOversize = new JsonObject { ["id"] = "alpha", ["resultPath"] = oversizePath };
+        var homeOversize = await ProjectHome.GetProjectHomeAsync(project, new JsonObject { ["projects"] = new JsonArray { rowOversize } }, options);
+        Assert.Null(homeOversize["current"]?["execution"]?["result"]);
+
+        // 4. Absent file -> null
+        var rowAbsent = new JsonObject { ["id"] = "alpha", ["resultPath"] = Path.Combine(folder, "nonexistent.json") };
+        var homeAbsent = await ProjectHome.GetProjectHomeAsync(project, new JsonObject { ["projects"] = new JsonArray { rowAbsent } }, options);
+        Assert.Null(homeAbsent["current"]?["execution"]?["result"]);
+    }
+
+    [Fact]
+    public async Task LocalGit_UntrackedLimits_Exact2000AndExact8MiB_Succeeds()
+    {
+        var repoDir = Path.Combine(tempDir, "exact-limits-repo");
+        Directory.CreateDirectory(repoDir);
+        RunGitCommand(repoDir, "init", "-q");
+
+        // Exactly 2000 untracked files
+        var names = Enumerable.Range(1, 2000).Select(i => $"f{i}.txt").ToList();
+        var fakeFiles = new FakeProjectHomeFiles();
+        foreach (var n in names)
+            fakeFiles.Files[Path.Combine(repoDir, n)] = [0x41]; // 1 byte each
+
+        var gitAdapter = new FakeProjectHomeGit((f, args) =>
+        {
+            if (args.Contains("--show-toplevel")) return Task.FromResult<string?>(repoDir);
+            if (args.Contains("--verify")) return Task.FromResult<string?>("1111111111111111111111111111111111111111");
+            if (args.Contains("ls-files")) return Task.FromResult<string?>(string.Join("\0", names));
+            if (args.Contains("status")) return Task.FromResult<string?>("?? f1.txt\n");
+            if (args.Contains("diff")) return Task.FromResult<string?>("");
+            return Task.FromResult<string?>("");
+        });
+
+        var options = new ProjectHomeOptions
+        {
+            Files = fakeFiles,
+            GitAdapter = gitAdapter
+        };
+
+        var result = await ProjectHome.LocalGitAsync(repoDir, options);
+        Assert.True(result["readable"]?.GetValue<bool>());
+        Assert.NotNull(result["fingerprint"]); // Exactly 2000 files succeeds!
+    }
+
+    [Fact]
+    public async Task ProjectHome_CheckpointDiff_HeadAndRevisionChanges()
+    {
+        var folder = Path.Combine(tempDir, "cp-diff-variations");
+        Directory.CreateDirectory(folder);
+        RunGitCommand(folder, "init", "-q");
+
+        var project = Item(folder, "alpha");
+        var durable = new JsonObject
+        {
+            ["megaTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "MT-1", ["projectId"] = "alpha", ["status"] = "PAUSED" }
+            },
+            ["subTasks"] = new JsonArray
+            {
+                new JsonObject { ["id"] = "ST-1", ["megaTaskId"] = "MT-1", ["status"] = "COMPLETE" },
+                new JsonObject { ["id"] = "ST-2", ["megaTaskId"] = "MT-1", ["status"] = "PENDING" }
+            },
+            ["checkpoints"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["id"] = "CP-Diff",
+                    ["projectId"] = "alpha",
+                    ["megaTaskId"] = "MT-1",
+                    ["planRevisionId"] = 1,
+                    ["completedSubTaskIds"] = new JsonArray { "ST-1" },
+                    ["repoState"] = new JsonObject
+                    {
+                        ["repoHead"] = "1111111111111111111111111111111111111111",
+                        ["fingerprint"] = "fp-initial",
+                        ["comparable"] = true,
+                        ["dirtyFiles"] = new JsonArray()
+                    }
+                }
+            }
+        };
+
+        var options = new ProjectHomeOptions
+        {
+            Inspect = f => new JsonObject
+            {
+                ["git"] = true,
+                ["commitId"] = "2222222222222222222222222222222222222222",
+                ["dirty"] = new JsonArray { " M dirty.txt" }
+            }
+        };
+
+        var snapshot = new JsonObject
+        {
+            ["projects"] = new JsonArray { new JsonObject { ["id"] = "alpha", ["megaTaskId"] = "MT-1" } },
+            ["execution"] = durable
+        };
+
+        var home = await ProjectHome.GetProjectHomeAsync(project, snapshot, options);
+        var diffs = (JsonArray)home["checkpointDiffs"]!;
+        Assert.Single(diffs);
+        var diff = (JsonObject)diffs[0]!;
+        Assert.Equal("CP-Diff", diff["checkpointId"]?.GetValue<string>());
+        var changes = ((JsonArray)diff["changes"]!).Select(c => c?.GetValue<string>()).ToList();
+        Assert.Contains(changes, c => c != null && c.StartsWith("HEAD changed from 11111111") && c.Contains("to 22222222"));
+        Assert.Contains(changes, c => c != null && c.Contains("1 files currently changed locally"));
+    }
+
+    public sealed class FakeProjectHomeGit : IProjectHomeGit
+    {
+        public List<(string Folder, IReadOnlyList<string> Args)> Calls { get; } = new();
+        public Func<string, IReadOnlyList<string>, Task<string?>>? Handler { get; set; }
+
+        public FakeProjectHomeGit(Func<string, IReadOnlyList<string>, Task<string?>>? handler = null)
+        {
+            Handler = handler;
+        }
+
+        public Task<string?> RunGitAsync(string folder, IReadOnlyList<string> args)
+        {
+            Calls.Add((folder, args));
+            if (Handler != null) return Handler(folder, args);
+            return Task.FromResult<string?>("");
+        }
+    }
+
+    public sealed class FakeProjectHomeFiles : IProjectHomeFiles
+    {
+        public Dictionary<string, byte[]> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> Symlinks { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> RealPaths { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public Task<string?> RealPathAsync(string path)
+        {
+            if (RealPaths.TryGetValue(path, out var real)) return Task.FromResult<string?>(real);
+            return Task.FromResult<string?>(path);
+        }
+
+        public Task<ProjectHomeFileStat> LStatAsync(string path)
+        {
+            if (Symlinks.TryGetValue(path, out var target))
+                return Task.FromResult(new ProjectHomeFileStat(Encoding.UTF8.GetByteCount(target), false, false, true));
+            if (Files.TryGetValue(path, out var bytes))
+                return Task.FromResult(new ProjectHomeFileStat(bytes.Length, true, false, false));
+            throw new FileNotFoundException("File not found in fake", path);
+        }
+
+        public Task<ProjectHomeFileStat> StatAsync(string path)
+        {
+            if (Files.TryGetValue(path, out var bytes))
+                return Task.FromResult(new ProjectHomeFileStat(bytes.Length, true, false, false));
+            throw new FileNotFoundException("File not found in fake", path);
+        }
+
+        public Task<byte[]> ReadFileAsync(string path)
+        {
+            if (Files.TryGetValue(path, out var bytes)) return Task.FromResult(bytes);
+            throw new FileNotFoundException("File not found in fake", path);
+        }
+
+        public Task<string> ReadLinkAsync(string path)
+        {
+            if (Symlinks.TryGetValue(path, out var target)) return Task.FromResult(target);
+            throw new FileNotFoundException("Link not found in fake", path);
+        }
+
+        public Task<byte[]> ReadTailAsync(string path, int maxBytes)
+        {
+            if (Files.TryGetValue(path, out var bytes))
+            {
+                var take = Math.Min(bytes.Length, maxBytes);
+                var result = new byte[take];
+                Buffer.BlockCopy(bytes, bytes.Length - take, result, 0, take);
+                return Task.FromResult(result);
+            }
+            throw new FileNotFoundException("File not found in fake", path);
+        }
+    }
+
     private sealed class FakeContainmentFiles : IProjectHomeFiles
     {
         private readonly string alpha;
