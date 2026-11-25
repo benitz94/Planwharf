@@ -76,8 +76,8 @@ public static class ChatViews
         return longer ? Strings.T("Longer than usual \u00B7 ") + char.ToLowerInvariant(about[0]) + about[1..] + when + confidence : about + when + confidence;
     }
 
-    static readonly Regex Shown = new("QUOTA_STOPPED|PR_FIX_(STARTED|COMPLETED|FAILED)|LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
-    static readonly Regex News = new("QUOTA_STOPPED|PR_FIX_(COMPLETED|FAILED)|LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
+    static readonly Regex Shown = new("QUOTA_STOPPED|LEAD_SWITCHED|PLAN_REVISION|MEGATASK_(PROPOSED|APPROVED|ASSIGNED|COMPLETED|FAILED|STOPPED|BLOCKED)|SUBTASK_(STARTED|COMPLETED|FAILED|BLOCKED|REASSIGNED)|CHECKPOINT|GOAL|AUTONOMY");
+    static readonly Regex News = new("QUOTA_STOPPED|LEAD_SWITCHED|SUBTASK_(COMPLETED|FAILED|BLOCKED)|MEGATASK_(PROPOSED|COMPLETED|FAILED|BLOCKED|STOPPED)|GOAL|AUTONOMY");
 
     // Plain words: no internal states, no repeated titles, no long verify prefix.
     public static (string Kind, string Text) Event(string type, string summary)

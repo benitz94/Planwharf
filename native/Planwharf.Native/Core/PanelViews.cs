@@ -53,7 +53,8 @@ public static class PanelViews
         var steps = (row?["subTasks"] as JsonArray ?? row?["megaTask"]?["subTasks"] as JsonArray ?? []).OfType<JsonObject>()
             .Select(sub => new ProgressStep(S(sub["status"]) is { Length: > 0 } s ? s.ToLowerInvariant() : Strings.T("planned"), S(sub["title"]) is var t && t.Length > 140 ? t[..140] : t,
                 Label(S(sub["assignedModelId"]) is { Length: > 0 } a ? a : S(sub["modelId"])))).ToList();
-        var recent = (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId)
+        // A pull request fix is followed in the Pull requests panel, not in the project's progress.
+        var recent = (snapshot["execution"]?["timeline"] as JsonArray ?? []).OfType<JsonObject>().Where(e => S(e["projectId"]) == projectId && !S(e["type"]).StartsWith("PR_FIX_", StringComparison.Ordinal))
             .TakeLast(15).Reverse().Select(e => (Clock(S(e["createdAt"]), zone), S(e["summary"]) is var text && text.Length > 200 ? text[..200] : text)).ToList();
         var folder = S(row?["folder"]);
         var subs = (row?["subTasks"] as JsonArray ?? row?["megaTask"]?["subTasks"] as JsonArray ?? []).OfType<JsonObject>();
