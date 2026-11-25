@@ -4706,7 +4706,14 @@ Orchestrator: ${turn.answer}`).join('\n\n').slice(-24000);
         for (let attempt = 0; attempt < 3; attempt += 1) {
         model = leadQuality(roster().filter(candidate => usable(candidate) && !tried.has(candidate.id) && !refusals.activeRefusal(store, candidate.id, Date.parse(now()))))[0];
         if (!model) {
-          if (tried.size) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${[...tried].map(id => roster().find(item => item.id === id)?.label || id).join(', ')} refused the work, and no other model with the Build role is above its quota limit. Nothing was pushed.`);
+          // Say why each model with the Build role was left out, so the owner can act (raise a limit, No limit, a role).
+          const leftOutWhy = () => roster().filter(item => item.enabled && !tried.has(item.id) && permitsAssignment(item, { type: 'IMPLEMENTATION', title: 'Implement' })).slice(0, 8).map(item => {
+            const name = item.label || item.id, left = quotaLeft(item, plansLive);
+            const why = refusals.activeRefusal(store, item.id, Date.parse(now())) ? 'refused earlier' : planExhausted(plansLive, item.quotaPoolId || item.plan) ? 'quota spent'
+              : isLow(item) ? `under its limit${Number.isFinite(left) ? ` (${left}% left)` : ''}` : !allowedBySavingMode(mode, item) ? 'left out by the saving mode' : item.available === false ? 'not available' : 'not usable now';
+            return `${name}: ${why}`;
+          }).join('; ');
+          if (tried.size) return done('PR_FIX_FAILED', `Pull request #${number} was not fixed: ${[...tried].map(id => roster().find(item => item.id === id)?.label || id).join(', ')} refused the work, and no other model with the Build role can take it${leftOutWhy() ? ` (${leftOutWhy()})` : ''}. Nothing was pushed.`);
           const leftOut = roster().filter(item => item.enabled && item.available !== false && !allowedBySavingMode(mode, item)).map(item => item.label || item.id);
           const underLimit = roster().filter(item => item.enabled && allowedBySavingMode(mode, item) && isLow(item)).map(item => item.label || item.id);
           const why = mode === 'normal' ? `Pull request #${number} was not fixed: no model with the Build role in this project is above its quota limit.`

@@ -92,4 +92,18 @@ public class ChatViewsTests
         Assert.Equal("pulls", ChatViews.Command("mostra richieste").Panel);
         Assert.Equal(CommandKind.None, ChatViews.Command("please show me the pull requests of every project today").Kind);
     }
+
+    [Fact]
+    public void A_pull_request_fix_stays_in_the_Pull_requests_panel_not_in_the_chat()
+    {
+        var snapshot = JsonNode.Parse("""
+            {"asks":[],"execution":{"timeline":[
+              {"projectId":"p","type":"PR_FIX_STARTED","summary":"Opus is fixing pull request #241 in the background.","createdAt":"2026-11-25T15:22:00Z"},
+              {"projectId":"p","type":"PR_FIX_FAILED","summary":"Pull request #241 was not fixed.","createdAt":"2026-11-25T15:22:30Z"},
+              {"projectId":"p","type":"GOAL_REACHED","summary":"Goal reached.","createdAt":"2026-11-25T15:20:00Z"}]}}
+            """)!;
+        var thread = ChatViews.Thread(snapshot, "p", id => id);
+        Assert.DoesNotContain(thread, item => item.ToString()!.Contains("pull request #241", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(DateTimeOffset.Parse("2026-11-25T15:20:00Z"), ChatViews.LastNews(snapshot, "p"));
+    }
 }

@@ -936,7 +936,15 @@ public sealed partial class MainWindow : Window
         {
             // While the fix runs, the card says who works on it, for how long, at which stage and what it did last.
             var live = pr.Progress;
-            card.Children.Add(Line(Strings.T("Fixing in the background") + (live is { Model.Length: > 0 } ? " · " + live.Model : "") + (live is { Elapsed.Length: > 0 } ? " · " + live.Elapsed : ""), Palette.Accent, 14, FontWeight.SemiBold));
+            // A turning icon says the fix is running, here in the panel; the chat stays on the project's work.
+            var turning = Look.Icon("refresh", 16, Palette.Accent);
+            turning.RenderTransform = new RotateTransform(0); turning.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+            turning.VerticalAlignment = VerticalAlignment.Center; turning.Margin = new Thickness(0, 0, 6, 0);
+            _ = new Avalonia.Animation.Animation { Duration = TimeSpan.FromSeconds(1.2), IterationCount = Avalonia.Animation.IterationCount.Infinite, Children = {
+                new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(0), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 0d) } },
+                new Avalonia.Animation.KeyFrame { Cue = new Avalonia.Animation.Cue(1), Setters = { new Avalonia.Styling.Setter(RotateTransform.AngleProperty, 360d) } } } }.RunAsync(turning);
+            card.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { turning,
+                Line(Strings.T("Fixing in the background") + (live is { Model.Length: > 0 } ? " · " + live.Model : "") + (live is { Elapsed.Length: > 0 } ? " · " + live.Elapsed : ""), Palette.Accent, 14, FontWeight.SemiBold) } });
             if (live is { Stage.Length: > 0 }) card.Children.Add(Line(Strings.T(live.Stage), Palette.Text, 13));
             if (live is { Activity.Length: > 0 }) card.Children.Add(Explain(Strings.T("Now: ") + live.Activity));
             else if (pr.FixText.Length > 0) card.Children.Add(Explain(pr.FixText));

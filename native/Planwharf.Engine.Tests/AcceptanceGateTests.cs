@@ -817,14 +817,15 @@ public sealed class AcceptanceGateTests : IDisposable
             Arguments = arguments,
             WorkingDirectory = root,
             Environment = env,
-            // Windows PowerShell starting a second PowerShell can take well over 5 seconds on a busy CI runner.
-            TimeoutMs = 60_000,
+            // Windows PowerShell starting a second PowerShell can take well over 5 seconds on a busy CI runner, and
+            // over 45 on the Windows ARM runner, where PowerShell runs emulated.
+            TimeoutMs = 150_000,
             Shell = false,
             CheckId = "sleep"
         }, events);
         try
         {
-            Assert.Same(ready.Task, await Task.WhenAny(ready.Task, Task.Delay(45_000)));
+            Assert.Same(ready.Task, await Task.WhenAny(ready.Task, Task.Delay(120_000)));
         }
         finally
         {
