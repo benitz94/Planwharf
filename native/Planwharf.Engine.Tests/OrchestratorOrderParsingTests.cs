@@ -764,4 +764,458 @@ public class OrchestratorOrderParsingTests
         Assert.NotNull(project);
         Assert.Equal("Alpha", project.Name);
     }
+
+    // --- Part 1: Edge Cases for Heuristics and CheckpointTalk ---
+
+    [Theory]
+    [InlineData("   how does it work")]
+    [InlineData("HOW does this happen")]
+    [InlineData("sTaTuS")]
+    [InlineData("qUoTa")]
+    [InlineData("is it done???")]
+    [InlineData("what is this?")]
+    [InlineData("?")]
+    [InlineData("???")]
+    [InlineData("quanto manca?")]
+    [InlineData("perché non funziona")]
+    [InlineData("perche non compila")]
+    [InlineData("chi sta eseguendo")]
+    [InlineData("perchance")] // Matches ^perch by prefix design in sheet 46e
+    public void LooksLikeQuestion_EdgeCases_Positive(string input)
+    {
+        Assert.True(OrchestratorOrderParsing.LooksLikeQuestion(input));
+    }
+
+    [Theory]
+    [InlineData("somewhat strange")]
+    [InlineData("statusquo")]
+    [InlineData("quotas")]
+    [InlineData("whoever")]
+    [InlineData("somewhere")]
+    [InlineData("notnow")]
+    [InlineData("what?!")] // Doesn't end with ? and 'what' lacks required following space
+    public void LooksLikeQuestion_EdgeCases_EmbeddedWords_Negative(string input)
+    {
+        Assert.False(OrchestratorOrderParsing.LooksLikeQuestion(input));
+    }
+
+    [Theory]
+    [InlineData("FALLO")]
+    [InlineData("SMISTA")]
+    [InlineData("GO")]
+    [InlineData("PROCEDI")]
+    [InlineData("DO IT")]
+    [InlineData("vai avanti!")]
+    [InlineData("fai il lavoro.")]
+    [InlineData("sistema il bug!")]
+    public void LooksLikeWork_EdgeCases_Positive(string input)
+    {
+        Assert.True(OrchestratorOrderParsing.LooksLikeWork(input));
+    }
+
+    [Theory]
+    [InlineData("going")]
+    [InlineData("good")]
+    [InlineData("gold")]
+    [InlineData("goldModel")]
+    [InlineData("gopher")]
+    public void LooksLikeWork_EdgeCases_Negative(string input)
+    {
+        Assert.False(OrchestratorOrderParsing.LooksLikeWork(input));
+    }
+
+    [Theory]
+    [InlineData("per favore verifica i file")]
+    [InlineData("vorrei fare audit")]
+    [InlineData("voglio implementare la feature")]
+    [InlineData("puoi verifica il codice")]
+    [InlineData("puoi fare controlla")]
+    [InlineData("PLEASE FIX THE BUG")]
+    [InlineData("CAN YOU AUDIT THIS")]
+    public void FreshTaskIntent_EdgeCases_Positive(string input)
+    {
+        Assert.True(OrchestratorOrderParsing.FreshTaskIntent(input));
+    }
+
+    [Theory]
+    [InlineData("please explain the concept")]
+    [InlineData("can you tell me a story")]
+    [InlineData("how to implement this")]
+    [InlineData("vorrei capire il codice")]
+    [InlineData("puoi spiegare l'architettura")]
+    [InlineData("vorrei fare un audit")] // 'fare un' is not in regex (matches either fare or an? but not both)
+    [InlineData("puoi fare una verifica")]
+    [InlineData("puoi verificare il codice")] // Regex specifies 'verifica' rather than infinitive 'verificare'
+    public void FreshTaskIntent_EdgeCases_Negative(string input)
+    {
+        Assert.False(OrchestratorOrderParsing.FreshTaskIntent(input));
+    }
+
+    [Fact]
+    public void ResearchIntent_MultiTurn_OnlyImmediatePreviousTurnChecked()
+    {
+        // Turn 0 is non-research, Turn 1 is research: affirmative confirmation must return false
+        var history = new[]
+        {
+            new TurnHistory("Build completed cleanly.", "Ready for next step."),
+            new TurnHistory("Should we research options?", "Yes, we can investigate.")
+        };
+        Assert.False(OrchestratorOrderParsing.ResearchIntent("yes", history));
+        Assert.False(OrchestratorOrderParsing.ResearchIntent("fallo", history));
+
+        // Turn 0 with null strings should not throw and return false
+        var nullHistory = new[]
+        {
+            new TurnHistory(null!, null!)
+        };
+        Assert.False(OrchestratorOrderParsing.ResearchIntent("yes", nullHistory));
+
+        // Affirmative with punctuation
+        var researchHistory = new[]
+        {
+            new TurnHistory("Should we investigate?", "Yes.")
+        };
+        Assert.True(OrchestratorOrderParsing.ResearchIntent("yes!", researchHistory));
+        Assert.True(OrchestratorOrderParsing.ResearchIntent("fallo.", researchHistory));
+        Assert.True(OrchestratorOrderParsing.ResearchIntent("procedi!", researchHistory));
+        Assert.True(OrchestratorOrderParsing.ResearchIntent("sì!", researchHistory));
+        Assert.True(OrchestratorOrderParsing.ResearchIntent("go ahead.", researchHistory));
+    }
+
+    [Fact]
+    public void CheckpointTalk_SpecialCharacters_AndFormatting()
+    {
+        var info = OrchestratorOrderParsing.CheckpointTalk("worker process exited with code 137 (SIGKILL)");
+        Assert.Equal("Job ended without completing. Checkpoint saved.", info.Activity);
+        Assert.Equal("Job ended (worker process exited with code 137 (SIGKILL)). Checkpoint saved. Press Resume to continue.", info.Note);
+        Assert.Equal("Job ended without completing. Checkpoint saved.", info.Orch);
+
+        var doing = info.FormatDoing("Project [A/B]", "Fix {Bug} #123");
+        Assert.Equal("Project [A/B] · Fix {Bug} #123 ended without completing (worker process exited with code 137 (SIGKILL)). Checkpoint saved.", doing);
+    }
+
+    // --- Part 2: Edge Cases for Project Resolution, Order Parsing, and Order Models ---
+
+    [Fact]
+    public void PickAskedProject_WhitespaceAndNullSafety()
+    {
+        var p1 = new ProjectSummary("proj-1", "Alpha Project");
+        var snap = new OrchestratorSnapshot(new[] { p1 });
+
+        // Whitespace around explicit projectId is trimmed
+        var match = OrchestratorOrderParsing.PickAskedProject(snap, "  proj-1  ", "test");
+        Assert.NotNull(match);
+        Assert.Equal("proj-1", match.Id);
+
+        // Snapshot with null / empty fields does not throw
+        var emptyFieldProj = new ProjectSummary("", null!);
+        var weirdSnap = new OrchestratorSnapshot(new[] { emptyFieldProj });
+        Assert.Null(OrchestratorOrderParsing.PickAskedProject(weirdSnap, "nonexistent", "hello"));
+        Assert.Equal("", OrchestratorOrderParsing.PickAskedProject(weirdSnap, null, "hello")?.Id);
+
+        // Null Projects in snapshot
+        var nullProjectsSnap = new OrchestratorSnapshot(null);
+        Assert.Null(OrchestratorOrderParsing.PickAskedProject(nullProjectsSnap, "proj-1", "test"));
+    }
+
+    [Fact]
+    public void ParseOrder_ConflictingToggleTokens_ReturnsNull()
+    {
+        var models = new[] { new ModelCatalogEntry("luna", "Luna") };
+        var snap = new OrchestratorSnapshot(Models: models);
+
+        // Both on and off tokens present: neither condition matches
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("Turn on and off Luna", snap, null));
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("accendi e spegni Luna", snap, null));
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("disable and enable Luna", snap, null));
+    }
+
+    [Fact]
+    public void ParseOrder_ModelLabelLengthConstraint()
+    {
+        // Model with label length <= 2: cannot match by label, but matches by Id
+        var shortLabelModel = new ModelCatalogEntry("ai-model", "AI");
+        var snap = new OrchestratorSnapshot(Models: new[] { shortLabelModel });
+
+        // Mentioning short label "AI" does not trigger model toggle
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("Turn off AI", snap, null));
+
+        // Mentioning full id "ai-model" does trigger model toggle
+        var byId = OrchestratorOrderParsing.ParseOrder("Turn off ai-model", snap, null);
+        Assert.NotNull(byId);
+        var toggle = Assert.IsType<ModelToggleOrder>(byId);
+        Assert.Equal("ai-model", toggle.Id);
+        Assert.False(toggle.Enabled);
+    }
+
+    [Fact]
+    public void ParseOrder_LifecycleWithOnSyntax_AndTargetMismatch()
+    {
+        var p1 = new ProjectSummary("demo", "Demo");
+        var snap = new OrchestratorSnapshot(Projects: new[] { p1 });
+
+        // "stop on Demo" and "start on demo" strip "on "
+        var stopOn = OrchestratorOrderParsing.ParseOrder("stop on Demo!", snap, null);
+        Assert.NotNull(stopOn);
+        Assert.Equal("stop", Assert.IsType<LifecycleOrder>(stopOn).Action);
+        Assert.Equal("demo", stopOn.ProjectId);
+
+        var startOn = OrchestratorOrderParsing.ParseOrder("start on Demo.", snap, null);
+        Assert.NotNull(startOn);
+        Assert.Equal("start", Assert.IsType<LifecycleOrder>(startOn).Action);
+
+        // Target mismatch: command names non-matching target
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("stop on OtherProject", snap, "demo"));
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("ferma NonExistent", snap, "demo"));
+    }
+
+    [Fact]
+    public void ParseOrder_SavingAndChatModes_EdgeCases()
+    {
+        var snap = new OrchestratorSnapshot();
+
+        // Multiple whitespace in saving mode
+        var savingMulti = OrchestratorOrderParsing.ParseOrder("mode    safe", snap, "p1");
+        Assert.NotNull(savingMulti);
+        Assert.Equal("safe", Assert.IsType<SavingModeOrder>(savingMulti).SavingMode);
+
+        var italianSavingMulti = OrchestratorOrderParsing.ParseOrder("modalità    ultra    sicura", snap, "p1");
+        Assert.NotNull(italianSavingMulti);
+        Assert.Equal("ultra-safe", Assert.IsType<SavingModeOrder>(italianSavingMulti).SavingMode);
+
+        // "switch to auto start" must NOT match chat mode auto
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("switch to auto start", snap, "p1"));
+
+        // Unknown saving or chat modes return null
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("mode turbo", snap, "p1"));
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("switch to quantum", snap, "p1"));
+        Assert.Null(OrchestratorOrderParsing.ParseOrder("modalità super", snap, "p1"));
+    }
+
+    [Fact]
+    public void ParsedOrder_Serialization_AndGoldModelPreservation()
+    {
+        // LifecycleOrder serialization
+        var lifeWithName = new LifecycleOrder("start", "p1", "Project One") { GoldModel = "gold-v1" };
+        var lifeJson = lifeWithName.ToJsonObject();
+        Assert.Equal("start", lifeJson["action"]?.GetValue<string>());
+        Assert.Equal("p1", lifeJson["projectId"]?.GetValue<string>());
+        Assert.Equal("Project One", lifeJson["name"]?.GetValue<string>());
+        Assert.Equal("gold-v1", lifeJson["goldModel"]?.GetValue<string>());
+
+        var lifeWithoutName = new LifecycleOrder("stop", "p1", null);
+        var noNameJson = lifeWithoutName.ToJsonObject();
+        Assert.False(noNameJson.ContainsKey("name"));
+        Assert.False(noNameJson.ContainsKey("goldModel"));
+
+        // ChatModeOrder serialization
+        var chatOrder = new ChatModeOrder("manual", "plan", "p2") { GoldModel = "custom-lead" };
+        var chatJson = chatOrder.ToJsonObject();
+        Assert.Equal("mode", chatJson["action"]?.GetValue<string>());
+        Assert.Equal("manual", chatJson["mode"]?.GetValue<string>());
+        Assert.Equal("plan", chatJson["chatMode"]?.GetValue<string>());
+        Assert.Equal("p2", chatJson["projectId"]?.GetValue<string>());
+        Assert.Equal("custom-lead", chatJson["goldModel"]?.GetValue<string>());
+
+        // RejectOrder serialization
+        var reject = new RejectOrder("pipeline", "p3");
+        var rejectJson = reject.ToJsonObject();
+        Assert.Equal("reject", rejectJson["action"]?.GetValue<string>());
+        Assert.Equal("pipeline", rejectJson["mode"]?.GetValue<string>());
+        Assert.Equal("p3", rejectJson["projectId"]?.GetValue<string>());
+
+        // SystemQueryOrder serialization
+        var sysOrder = new SystemQueryOrder("quota", "p1");
+        var sysJson = sysOrder.ToJsonObject();
+        Assert.Equal("quota", sysJson["action"]?.GetValue<string>());
+        Assert.Equal("p1", sysJson["projectId"]?.GetValue<string>());
+    }
+
+    // --- Part 3: Edge Cases, Error Handling, and Recovery in RouteAsk and Snapshot Parsing ---
+
+    [Fact]
+    public void RouteAsk_Phase2_ExplicitlyNamedCommand_BindsRecipient()
+    {
+        var snap = new OrchestratorSnapshot(new[]
+        {
+            new ProjectSummary("p1", "Alpha"),
+            new ProjectSummary("p2", "Beta")
+        });
+
+        // Bare command without project recipient fails on multi-project snapshot
+        var bareStop = OrchestratorOrderParsing.RouteAsk("stop", snap, null);
+        Assert.False(bareStop.Ok);
+        Assert.Equal("Select a project or name it explicitly before issuing a command.", bareStop.Reason);
+
+        // Explicitly named command "stop Alpha" binds project recipient
+        var namedStop = OrchestratorOrderParsing.RouteAsk("stop Alpha", snap, null);
+        Assert.True(namedStop.Ok);
+        Assert.NotNull(namedStop.Order);
+        Assert.Equal("stop", namedStop.Order.Action);
+        Assert.Equal("p1", namedStop.Order.ProjectId);
+        Assert.Equal("Alpha", namedStop.TargetProject?.Name);
+
+        // Phase2 binds effectiveProjectId so conversation history for p1 is retrieved
+        var conversation = new[]
+        {
+            new TurnHistory("Let's plan auth.", "Sure.", ProjectId: "p1", GrillKind: "docs")
+        };
+
+        var phase2Opts = new AskRoutingOptions(Conversation: conversation, Phase2: true);
+        var phase2Res = OrchestratorOrderParsing.RouteAsk("stop Alpha", snap, null, phase2Opts);
+        Assert.True(phase2Res.Ok);
+        Assert.Equal("stop", phase2Res.Order?.Action);
+        Assert.Equal("p1", phase2Res.Order?.ProjectId);
+    }
+
+    [Theory]
+    [InlineData("status")]
+    [InlineData("quota")]
+    public void RouteAsk_GoldModel_OnSystemQueries_Fails(string question)
+    {
+        var snap = new OrchestratorSnapshot(new[] { new ProjectSummary("p1", "Alpha") });
+        var res = OrchestratorOrderParsing.RouteAsk(question, snap, "p1", null, goldModel: "gemini-pro");
+        Assert.False(res.Ok);
+        Assert.Equal("Gold applies to new work requests or Start. Use Default to approve or resume the existing task; its saved model constraint stays active.", res.Reason);
+    }
+
+    [Theory]
+    [InlineData("grill me!")]
+    [InlineData("grill me.")]
+    [InlineData("grill with docs?")]
+    [InlineData("grill with the docs.")]
+    [InlineData("GRILL WITH THE DOCS!")]
+    public void RouteAsk_GrillCommands_PunctuationAndCaseInsensitive(string question)
+    {
+        var snap = new OrchestratorSnapshot(new[] { new ProjectSummary("p1", "Alpha") });
+        var res = OrchestratorOrderParsing.RouteAsk(question, snap, "p1");
+        Assert.True(res.Ok);
+        Assert.NotNull(res.GrillKind);
+        Assert.Null(res.Order); // Orders superseded by Grill
+    }
+
+    [Fact]
+    public void RouteAsk_MalformedSnapshot_RecoveryAndNullSafety()
+    {
+        // Snapshot with null collections does not crash
+        var emptySnap = new OrchestratorSnapshot(null, null, null, null, null);
+        var res = OrchestratorOrderParsing.RouteAsk("status", emptySnap, null);
+        Assert.True(res.Ok);
+        Assert.Equal("state", res.Order?.Action);
+
+        var modelRes = OrchestratorOrderParsing.RouteAsk("Turn off Luna", emptySnap, null);
+        Assert.True(modelRes.Ok);
+        Assert.Null(modelRes.Order); // No models available, not recognized as order
+
+        // JSON parsing robustness on malformed nodes
+        Assert.Null(ModelCatalogEntry.FromJson(null));
+        Assert.Null(ModelCatalogEntry.FromJson(new JsonArray()));
+        Assert.Null(ProjectSummary.FromJson(null));
+        Assert.Null(ProjectSummary.FromJson(new JsonArray()));
+
+        var malformedSnap = OrchestratorSnapshot.FromJson(new JsonObject
+        {
+            ["projects"] = "not an array",
+            ["models"] = 12345
+        });
+        Assert.Null(malformedSnap.Projects);
+        Assert.Null(malformedSnap.Models);
+
+        var routeMalformed = OrchestratorOrderParsing.RouteAsk("status", malformedSnap, null);
+        Assert.True(routeMalformed.Ok);
+        Assert.Equal("state", routeMalformed.Order?.Action);
+    }
+
+    // --- Part 4: Concurrency and Thread-Safety Stress Tests ---
+
+    [Fact]
+    public void Concurrency_ParallelAnalyticalCalls_AreThreadSafeAndDeterministic()
+    {
+        var snap = new OrchestratorSnapshot(
+            Projects: new[]
+            {
+                new ProjectSummary("p1", "Alpha", "idle", "talk"),
+                new ProjectSummary("p2", "Beta", "running", "plan")
+            },
+            Models: new[]
+            {
+                new ModelCatalogEntry("luna", "Luna"),
+                new ModelCatalogEntry("grok", "Grok")
+            });
+
+        var history = new[]
+        {
+            new TurnHistory("Should we research options?", "Yes, we can explore.", ProjectId: "p1", GrillKind: "docs")
+        };
+
+        // Run 500 concurrent operations in parallel
+        Parallel.For(0, 500, i =>
+        {
+            switch (i % 8)
+            {
+                case 0:
+                    Assert.True(OrchestratorOrderParsing.LooksLikeQuestion("what is the lead model?"));
+                    Assert.False(OrchestratorOrderParsing.LooksLikeQuestion("proceed with work"));
+                    break;
+                case 1:
+                    Assert.True(OrchestratorOrderParsing.LooksLikeWork("metti i worker sul job"));
+                    Assert.False(OrchestratorOrderParsing.LooksLikeWork("How far did we go?"));
+                    break;
+                case 2:
+                    Assert.True(OrchestratorOrderParsing.FreshTaskIntent("please implement the feature"));
+                    Assert.False(OrchestratorOrderParsing.FreshTaskIntent("hello there"));
+                    break;
+                case 3:
+                    var info = OrchestratorOrderParsing.CheckpointTalk("application update");
+                    Assert.Equal("Saved unfinished work before updating.", info.Orch);
+                    break;
+                case 4:
+                    Assert.True(OrchestratorOrderParsing.ResearchIntent("cerca documentazione"));
+                    Assert.True(OrchestratorOrderParsing.ResearchIntent("yes", history));
+                    break;
+                case 5:
+                    var proj = OrchestratorOrderParsing.PickAskedProject(snap, null, "Stop Beta now");
+                    Assert.NotNull(proj);
+                    Assert.Equal("p2", proj.Id);
+                    break;
+                case 6:
+                    var order = OrchestratorOrderParsing.ParseOrder("Turn off Luna", snap, null);
+                    Assert.NotNull(order);
+                    var toggle = Assert.IsType<ModelToggleOrder>(order);
+                    Assert.False(toggle.Enabled);
+                    break;
+                case 7:
+                    var route = OrchestratorOrderParsing.RouteAsk("status", snap, "p1");
+                    Assert.True(route.Ok);
+                    Assert.Equal("state", route.Order?.Action);
+                    break;
+            }
+        });
+    }
+
+    [Fact]
+    public async Task Concurrency_AsyncMultiThreadedStressTest()
+    {
+        var snap = new OrchestratorSnapshot(
+            Projects: new[] { new ProjectSummary("p1", "Alpha", "idle", "plan") },
+            Models: new[] { new ModelCatalogEntry("luna", "Luna") });
+
+        var tasks = Enumerable.Range(0, 100).Select(async id =>
+        {
+            await Task.Yield();
+            var parsed = OrchestratorOrderParsing.ParseOrder(id % 2 == 0 ? "mode safe" : "mode talk", snap, "p1");
+            Assert.NotNull(parsed);
+            if (id % 2 == 0)
+                Assert.Equal("safe", Assert.IsType<SavingModeOrder>(parsed).SavingMode);
+            else
+                Assert.Equal("talk", Assert.IsType<ChatModeOrder>(parsed).Mode);
+
+            var routed = OrchestratorOrderParsing.RouteAsk("Turn on Luna", snap, "p1");
+            Assert.True(routed.Ok);
+            Assert.NotNull(routed.Order);
+            Assert.True(Assert.IsType<ModelToggleOrder>(routed.Order).Enabled);
+        });
+
+        await Task.WhenAll(tasks);
+    }
 }
