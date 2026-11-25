@@ -13,22 +13,27 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **64 of 72** | 72 |
-| JavaScript engine lines ported | **about 8,820 of 14,000** (63%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); next: phase 6 (orchestrator) | 0 to 8 |
+| Engine modules ported to C# | **65 of 72** | 72 |
+| JavaScript engine lines ported | **about 9,120 of 14,000** (65%) | all; the orchestrator alone is about 3,800 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing in progress / waiting for review | 0 to 8 |
 | C# engine tests | 2027, plus 898 comparison cases with the JavaScript across 42 modules and 116 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,
 `claims`, `claude`, `claude-usage`, `execution`, `execution-next`, `external-adapters`, `invocations`,
-`model-policy`, `model-roles`, `model-routing`, `models`, `notebook-file`, `phone`, `phone-activation`,
-`phone-activation-check`, `phone-handover`, `phone-handover-live`, `phone-ollama`, `phone-voice`,
-`plan`, `plan-file`, `plan-status`, `planUsage`, `pr-check`, `project-checks`, `project-export`,
-`project-history`, `project-home`, `project-workspace`, `provider-accounts`, `provider-adapters`,
-`provider-catalog`, `provider-connections`, `provider-diagnostics`, `provider-models`,
-`provider-policy`, `provider-refusal`, `provider-runtime`, `provider-status`, `push-email`, `quota`,
-`repository`, `runner`, `sentinel`, `skills`, `step-outcomes`, `structured-final`, `supervisor`,
-`temp-cleanup`, `time-left`, `worker-result`, `worktrees`.
+`model-policy`, `model-roles`, `model-routing`, `models`, `notebook-file`, `orchestrator-order-parsing`,
+`phone`, `phone-activation`, `phone-activation-check`, `phone-handover`, `phone-handover-live`,
+`phone-ollama`, `phone-voice`, `plan`, `plan-file`, `plan-status`, `planUsage`, `pr-check`,
+`project-checks`, `project-export`, `project-history`, `project-home`, `project-workspace`,
+`provider-accounts`, `provider-adapters`, `provider-catalog`, `provider-connections`,
+`provider-diagnostics`, `provider-models`, `provider-policy`, `provider-refusal`, `provider-runtime`,
+`provider-status`, `push-email`, `quota`, `repository`, `runner`, `sentinel`, `skills`,
+`step-outcomes`, `structured-final`, `supervisor`, `temp-cleanup`, `time-left`, `worker-result`,
+`worktrees`.
+
+## Job 47 port done, waiting for review
+
+The port of orchestrator order parsing, command interpretation, intent classification, and order routing to C# (`OrchestratorOrderParsing.cs`) as specified in sheet 46e is complete on `port/47-order-parsing`. Implemented `LooksLikeQuestion`, `LooksLikeWork`, `FreshTaskIntent`, `CheckpointTalk`, `ResearchIntent`, `PickAskedProject`, `ParseOrder`, and `RouteAsk` with `CheckpointTalkInfo`, `AskRoutingOptions`, and `OrderRouteResult` in `Planwharf.Engine`. Added unit tests in `OrchestratorOrderParsingTests.cs` and pure parity comparison vectors in `cases.cjs` and `record.cjs`. Pure parity checks pass; in progress / waiting for review.
 
 ## Job 46 sheet done
 
@@ -40,7 +45,7 @@ Wrote the Phase 6 orchestrator specification sheets in `native/porting/jobs/` ac
 - `46e-orchestrator-order-parsing.md` (`OrchestratorOrderParsing.cs`: functional question/work intent classification, parseOrder syntax in English and Italian)
 - `46-phase6-orchestrator.md` (Master orchestrator composition root architecture, unidirectional dependencies, Job 47+ migration plan)
 
-Added `engine/job46-sheet.test.cjs` validating all six specification sheets with durable omission checks, truncation rejection, concurrency independence, edge cases, error conditions, recovery mechanisms, cross-sheet consistency, and critical mutation detection (11 tests). All existing sheet test gates (job46, job44, job42, job37, job23) pass cleanly (41 tests total). Sheet done; waiting for owner review.
+Added `engine/job46-sheet.test.cjs` validating all six specification sheets with durable omission checks, truncation rejection, concurrency independence, edge cases, error conditions, recovery mechanisms, cross-sheet consistency, and critical mutation detection (11 tests). All existing sheet test gates (job46, job44, job42, job37, job23) pass cleanly (41 tests total). Sheet done; merged in PR #244.
 
 ## Job 44 sheet done
 
@@ -76,7 +81,8 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 
 | Job | Pull request | What | What the review changed |
 |---|---|---|---|
-| 46 | #? | Wrote the Phase 6 orchestrator specification sheets in `native/porting/jobs/46*.md` for the approved split across five modules (`OrchestratorTeamModels`, `OrchestratorJobBuilding`, `OrchestratorLeadQuestions`, `OrchestratorState`, `OrchestratorOrderParsing`) and the master composition root sheet; added sheet verification tests | Checked module boundaries, exact C# method signatures, immutable state contracts, unidirectional dependency direction through composition root, JavaScript test mappings, pure vectors, scenario parity under Rule 12, and Job 47+ migration sequence. Added `engine/job46-sheet.test.cjs` covering all five split sheets and master sheet with durable omission, edge case, error/recovery, concurrency, and mutation controls (11 tests). **Sheet only: build is Job 47+** |
+| 47 | #? | Ported orchestrator order parsing to C# (`OrchestratorOrderParsing.cs`) as specified in sheet 46e; added unit tests and pure parity comparison vectors | Pure parity vectors recorded for parseOrder, looksLikeWork, looksLikeQuestion, and freshTaskIntent; unit tests covering English and Italian commands, edge cases, and ambiguity errors. **In progress / waiting for review** |
+| 46 | #244 | Wrote the Phase 6 orchestrator specification sheets in `native/porting/jobs/46*.md` for the approved split across five modules (`OrchestratorTeamModels`, `OrchestratorJobBuilding`, `OrchestratorLeadQuestions`, `OrchestratorState`, `OrchestratorOrderParsing`) and the master composition root sheet; added sheet verification tests | Checked module boundaries, exact C# method signatures, immutable state contracts, unidirectional dependency direction through composition root, JavaScript test mappings, pure vectors, scenario parity under Rule 12, and Job 47+ migration sequence. Added `engine/job46-sheet.test.cjs` covering all five split sheets and master sheet with durable omission, edge case, error/recovery, concurrency, and mutation controls (11 tests). **Sheet only: build is Job 47+** |
 | 45 | #241 | Ported `execution.cjs` and `project-home.cjs` to C# with deterministic unit, pure parity and scenario parity coverage; enforced pure and scenario floors and updated progress | Owning JavaScript parity tests and targeted C# tests pass. Full C# suite has localization-audit failures in the two port files; Windows Native AOT publish is blocked by the missing platform linker/C++ workload. Deferred live provider, real process, native-host, orchestrator and deployed-locking cases are listed above. **Done, waiting for review** |
 | 44 | #236 | Wrote the Phase 5 execution and project home sheet in `native/porting/jobs/44-phase5-execution.md` covering `execution.cjs`, `project-home.cjs`, and an orchestrator split proposal across five concerns; implementation awaits review | Checked against module dependencies, lifecycle, error recovery, concurrency, project containment, Native AOT constraints, and pure/scenario parity requirements. Added `job44-sheet.test.cjs` covering all 5 proposed concerns, durable mappings, risks, parity, allowlists, and mutation controls (5 tests). **Sheet only: build is Job 45** |
 | 43 | #233 | Ported sixteen Phase 4 processes-and-providers modules to C#: `runner`, `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`, `worktrees`, `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`; recovered Antigravity parity surface, added ten pure comparison surfaces and six scenario floors | Built in parallel worktrees; 103 scenarios recorded across 6 modules; 984 pure parity tests; 109 scenario parity tests. Localization violation in LiteralStringTests recorded as pre-existing; Windows native publish toolchain (C++ linker) unavailable. Real-program Windows hand test moved to phase 7 (owner, 24 November 2026) |
