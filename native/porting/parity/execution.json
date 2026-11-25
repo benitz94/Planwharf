@@ -1,0 +1,382 @@
+[
+  {
+    "fn": "splitSummary",
+    "args": [
+      [
+        {
+          "id": "sub-1",
+          "title": "Single task",
+          "assignedModelId": "terra"
+        }
+      ]
+    ],
+    "result": "Lead kept the work as one build step: Single task (terra)."
+  },
+  {
+    "fn": "splitSummary",
+    "args": [
+      [
+        {
+          "id": "sub-1",
+          "title": "Part 1",
+          "assignedModelId": "terra"
+        },
+        {
+          "id": "sub-2",
+          "title": "Part 2",
+          "assignedModelId": "sonnet"
+        }
+      ]
+    ],
+    "result": "Lead split the work into 2 parts: Part 1 (terra) · Part 2 (sonnet)."
+  },
+  {
+    "fn": "splitSummary",
+    "args": [
+      [
+        {
+          "id": "sub-1",
+          "title": "Build part",
+          "assignedModelId": "terra"
+        },
+        {
+          "id": "sub-2",
+          "title": "Verify part",
+          "assignedModelId": "gemini-pro",
+          "dependencies": [
+            "sub-1"
+          ]
+        }
+      ]
+    ],
+    "result": "Lead kept the work as one build step and a check of the whole: Build part (terra) · Verify part (gemini-pro)."
+  },
+  {
+    "fn": "splitSummary",
+    "args": [
+      [
+        {
+          "id": "sub-1",
+          "title": "Build 1",
+          "assignedModelId": "terra"
+        },
+        {
+          "id": "sub-2",
+          "title": "Build 2",
+          "assignedModelId": "sonnet"
+        },
+        {
+          "id": "sub-3",
+          "title": "Verify both",
+          "assignedModelId": "gemini-pro",
+          "dependencies": [
+            "sub-1",
+            "sub-2"
+          ]
+        }
+      ],
+      "All clear"
+    ],
+    "result": "Lead split the work into 2 parts and a check of the whole: Build 1 (terra) · Build 2 (sonnet) · Verify both (gemini-pro). Why: All clear"
+  },
+  {
+    "fn": "splitSummary",
+    "args": [
+      [
+        {
+          "id": "sub-1",
+          "title": "Build 1",
+          "assignedModelId": "terra"
+        },
+        {
+          "id": "sub-2",
+          "title": "Build 2",
+          "assignedModelId": "sonnet"
+        },
+        {
+          "id": "sub-3",
+          "title": "Verify 1 only",
+          "assignedModelId": "gemini-pro",
+          "dependencies": [
+            "sub-1"
+          ]
+        }
+      ],
+      "Partial verification"
+    ],
+    "result": "Lead split the work into 3 parts: Build 1 (terra) · Build 2 (sonnet) · Verify 1 only (gemini-pro). Why: Partial verification"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      0
+    ],
+    "result": "retry-same"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      1
+    ],
+    "result": "switch"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      2
+    ],
+    "result": "stop"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      3
+    ],
+    "result": "stop"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      -1
+    ],
+    "result": "retry-same"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      0.5
+    ],
+    "result": "retry-same"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      1.5
+    ],
+    "result": "retry-same"
+  },
+  {
+    "fn": "noVerdictPlan",
+    "args": [
+      10
+    ],
+    "result": "stop"
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": {
+      "filesChanged": [
+        "src/file.js"
+      ],
+      "summary": "Delivered on disk without a structured result: 1 file(s) committed after the step started."
+    }
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 1,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "0123456789abcdef0123456789abcdef01234567",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "not-a-valid-hex-hash",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "short",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": []
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src"
+        ],
+        "names": [
+          "src/file.js",
+          "other/file.txt"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [],
+        "names": [
+          "any/path.txt",
+          "other/file.txt"
+        ]
+      }
+    ],
+    "result": {
+      "filesChanged": [
+        "any/path.txt",
+        "other/file.txt"
+      ],
+      "summary": "Delivered on disk without a structured result: 2 file(s) committed after the step started."
+    }
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef01234567",
+        "after": "123456789abcdef0123456789abcdef012345678",
+        "exitCode": 0,
+        "scope": [
+          "src\\nested"
+        ],
+        "names": [
+          "src\\nested\\file.js"
+        ]
+      }
+    ],
+    "result": {
+      "filesChanged": [
+        "src/nested/file.js"
+      ],
+      "summary": "Delivered on disk without a structured result: 1 file(s) committed after the step started."
+    }
+  },
+  {
+    "fn": "deliveredWithoutVerdict",
+    "args": [
+      {
+        "folder": "C:/repo",
+        "before": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "after": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+        "exitCode": 0,
+        "scope": [
+          "docs"
+        ],
+        "names": [
+          "docs/README.md"
+        ]
+      }
+    ],
+    "result": {
+      "filesChanged": [
+        "docs/README.md"
+      ],
+      "summary": "Delivered on disk without a structured result: 1 file(s) committed after the step started."
+    }
+  }
+]

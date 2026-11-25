@@ -47,7 +47,7 @@ public static class PipelineStageNames
         BuildAndReview => Strings.T("Build ⇄ Review"),
         Checks => Strings.T("Checks"),
         PullRequest => Strings.T("Pull request"),
-        Merged => Strings.CurrentLanguage == "it" ? "Unito" : Strings.T("Merged"),
+        Merged => Strings.T("Merged"),
         _ => id
     };
 }

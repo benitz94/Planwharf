@@ -17,8 +17,7 @@ static class Prefs
 
     public static void Load()
     {
-        // A bad file restores every preference, not only the language.
-        Strings.CurrentLanguage = "en";
+        // A bad file restores every preference. The app is English only: a saved language is ignored.
         Theme = "dark";
         Ink = "white";
         Accent = "green";
@@ -26,7 +25,6 @@ static class Prefs
         try
         {
             var saved = JsonNode.Parse(System.IO.File.ReadAllText(File));
-            Strings.CurrentLanguage = saved?["language"] is JsonValue language && language.TryGetValue<string>(out var selectedLanguage) ? selectedLanguage : "en";
             Alerts = AlertOptions.Read(saved);
             if (saved?["theme"]?.GetValue<string>() is "light" or "dark") Theme = saved["theme"]!.GetValue<string>();
             if (saved?["ink"]?.GetValue<string>() is { Length: > 0 } ink) Ink = ink;
@@ -51,7 +49,7 @@ static class Prefs
             var directory = Path.GetDirectoryName(File);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             temporary = File + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            var json = new JsonObject { ["language"] = Strings.CurrentLanguage, ["theme"] = Theme, ["ink"] = Ink, ["accent"] = Accent,
+            var json = new JsonObject { ["theme"] = Theme, ["ink"] = Ink, ["accent"] = Accent,
                 ["alertNotification"] = Alerts.Notification, ["alertFlash"] = Alerts.Flash, ["alertSound"] = Alerts.Sound }.ToJsonString();
             System.IO.File.WriteAllText(temporary, json);
             System.IO.File.Move(temporary, File, overwrite: true);

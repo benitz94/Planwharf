@@ -129,7 +129,6 @@ public class PullPanelLoadTests
     public async Task Show_more_keeps_the_list_when_the_next_page_fails()
     {
         var language = Strings.CurrentLanguage;
-        Strings.CurrentLanguage = "en";
         using var server = new PageServer();
         var window = new MainWindow("test") { Height = 1000, Width = 1200 };
         window.Show();
@@ -153,14 +152,13 @@ public class PullPanelLoadTests
             Assert.True(Has(window, "#1 Open only"));
             Assert.False(Has(window, "No open pull requests."));
         }
-        finally { window.Close(); Strings.CurrentLanguage = language; }
+        finally { window.Close(); }
     }
 
     [AvaloniaFact]
     public async Task Show_more_keeps_the_list_when_the_next_page_has_no_rows()
     {
         var language = Strings.CurrentLanguage;
-        Strings.CurrentLanguage = "en";
         using var server = new PageServer(200, """{"ok":true,"state":"open","author":"all"}""");
         var window = new MainWindow("test") { Height = 1000, Width = 1200 };
         window.Show();
@@ -182,14 +180,13 @@ public class PullPanelLoadTests
             Assert.True(Has(window, "#1 Open only"));
             Assert.False(Has(window, "No open pull requests."));
         }
-        finally { window.Close(); Strings.CurrentLanguage = language; }
+        finally { window.Close(); }
     }
 
     [AvaloniaFact]
     public async Task Show_more_keeps_the_list_when_the_server_errors()
     {
         var language = Strings.CurrentLanguage;
-        Strings.CurrentLanguage = "en";
         using var server = new PageServer(500, """{"error":"unavailable"}""");
         var window = new MainWindow("test") { Height = 1000, Width = 1200 };
         window.Show();
@@ -211,7 +208,7 @@ public class PullPanelLoadTests
             Assert.True(Has(window, "#1 Open only"));
             Assert.False(Has(window, "No open pull requests."));
         }
-        finally { window.Close(); Strings.CurrentLanguage = language; }
+        finally { window.Close(); }
     }
 
     sealed class PageServer : IDisposable

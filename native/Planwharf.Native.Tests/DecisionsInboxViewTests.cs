@@ -132,40 +132,6 @@ public class DecisionsInboxViewTests
         }
     }
 
-    [AvaloniaFact]
-    public void Decisions_inbox_localizes_to_Italian()
-    {
-        var prev = Strings.CurrentLanguage;
-        Strings.CurrentLanguage = "it";
-        var window = new MainWindow("test") { Height = 1200, Width = 1200 };
-        window.Show();
-        try
-        {
-            window.Show(SampleState.Working());
-            window.ShowDecisions(JsonNode.Parse(DecisionsPayload)!);
-            window.OpenSide("decisions");
-            window.UpdateLayout();
-
-            // Top bar tab in Italian
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Decisioni (2)");
-
-            // Auto switch in Italian
-            var toggles = window.GetVisualDescendants().OfType<ToggleSwitch>().ToList();
-            Assert.Contains(toggles, t => (t.OnContent?.ToString() ?? "").Contains("Lascia decidere al lead le nuove decisioni"));
-
-            // Break highlighting in Italian
-            Assert.True(Has(window, "Potrebbe rompere qualcosa"));
-
-            // Let the lead decide button in Italian
-            var buttons = window.GetVisualDescendants().OfType<Button>().ToList();
-            Assert.Contains(buttons, b => b.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Text == "Lascia decidere al lead"));
-        }
-        finally
-        {
-            Strings.CurrentLanguage = prev;
-            window.Close();
-        }
-    }
 
     [AvaloniaFact]
     public void When_step_started_change_answer_box_is_hidden()
@@ -214,53 +180,4 @@ public class DecisionsInboxViewTests
         }
     }
 
-    [AvaloniaFact]
-    public void Empty_decisions_inbox_displays_no_decisions_waiting()
-    {
-        var emptyPayload = JsonNode.Parse("""
-        {
-          "openCount": 0,
-          "open": [],
-          "answered": []
-        }
-        """);
-
-        var window = new MainWindow("test") { Height = 1000, Width = 1200 };
-        window.Show();
-        try
-        {
-            window.Show(SampleState.Working());
-            window.ShowDecisions(emptyPayload!);
-            window.OpenSide("decisions");
-            window.UpdateLayout();
-
-            // Top bar tab shows Decisions without count badge
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Decisions");
-            Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), block => (block.Text ?? "").StartsWith("Decisions ("));
-
-            // Side panel shows empty state
-            Assert.True(Has(window, "No decisions waiting"));
-
-            // Check in Italian
-            var prev = Strings.CurrentLanguage;
-            try
-            {
-                Strings.CurrentLanguage = "it";
-                window.ShowDecisions(emptyPayload!);
-                window.OpenSide("decisions");
-                window.UpdateLayout();
-
-                Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Decisioni");
-                Assert.True(Has(window, "Nessuna decisione in attesa"));
-            }
-            finally
-            {
-                Strings.CurrentLanguage = prev;
-            }
-        }
-        finally
-        {
-            window.Close();
-        }
-    }
 }

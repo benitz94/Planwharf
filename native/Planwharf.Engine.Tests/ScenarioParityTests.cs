@@ -13,6 +13,268 @@ public class ScenarioParityTests
     private static readonly string ScenariosFolder = FindScenariosFolder();
     private const long Epoch = 1700000000000L;
 
+    public static TheoryData<string> ExecutionScenarios => GetScenarios("execution");
+    public static TheoryData<string> ProjectHomeScenarios => GetScenarios("project-home");
+
+    [Theory]
+    [MemberData(nameof(ProjectHomeScenarios))]
+    public async Task Replay_ProjectHome_Scenarios(string name)
+    {
+        var root = Path.Combine(FindScenariosFolder(), ".verify-" + Guid.NewGuid());
+        Directory.CreateDirectory(root);
+        try
+        {
+            var sc = GetScenario("project-home", name);
+            var exchange = new Exchange(sc["requests"]!.AsArray(), sc["replies"]!.AsArray(), root);
+            var folder = Path.Combine(root, "project é");
+            Directory.CreateDirectory(Path.Combine(folder, ".git"));
+            File.WriteAllText(Path.Combine(folder, ".git", "HEAD"), "ref: refs/heads/main\n");
+            File.WriteAllText(Path.Combine(folder, ".git", "config"), "[core]\nrepositoryformatversion = 0\n");
+            Task<string?> Git(string linked, IReadOnlyList<string> args)
+            {
+                var commandArgs = new JsonArray("--no-optional-locks", "-C", linked);
+                foreach (var arg in args) commandArgs.Add(arg);
+                var reply = exchange.Call(new JsonObject { ["kind"] = "git", ["command"] = "git", ["args"] = commandArgs,
+                    ["cwd"] = null, ["timeout"] = 5000, ["maxBuffer"] = 8388608 });
+                var stdout = reply["stdout"]?.ToString().Replace("<ROOT>", root);
+                return Task.FromResult(reply["error"] is null ? args.Contains("-z") ? stdout : stdout?.Trim() : null);
+            }
+            var options = new ProjectHomeOptions { PlanFile = Path.Combine(folder, ".planwharf", "plan.md"), Git = Git,
+                Now = () => "2023-11-14T22:13:20.000Z" };
+            JsonObject result;
+            if (name == "local-git-success-and-failure")
+            {
+                var success = await ProjectHome.LocalGitAsync(folder, options);
+                var failure = await ProjectHome.LocalGitAsync(folder, new ProjectHomeOptions { Git = Git });
+                result = new JsonObject { ["success"] = success, ["failure"] = failure };
+            }
+            else if (name == "durable-megatask-outranks-row")
+            {
+                var project = EObj("""{"project":{"id":"project"},"revisions":[{"id":3,"title":"Fixture plan","direction":"Ship fixture","state":"Recorded progress","open":["Need review"],"closed":[]}],"home":{"notes":[{"id":"N-1","text":"Keep exact identity."}]}}""");
+                project["project"]!["folder"] = folder;
+                var snapshot = EObj("""{"projects":[{"id":"project","megaTaskId":"MT-ready","status":"watching","canResume":true,"jobTitle":"Stale row title","dispatch":[]}],"researches":[],"execution":{"megaTasks":[{"id":"MT-running","projectId":"other","status":"RUNNING"},{"id":"MT-ready","projectId":"project","title":"Durable proposal","status":"READY_FOR_APPROVAL","blockers":[]}],"subTasks":[{"id":"ST-ready","megaTaskId":"MT-ready","title":"Build fixture","status":"PENDING","assignedModelId":"worker","provider":"fixture","cli":"fixture-cli","attemptIds":[]}],"results":[],"checkpoints":[],"timeline":[{"id":"EV-fixed","projectId":"project","type":"MEGATASK_PROPOSED","summary":"Durable proposal prepared."}]}}""");
+                var home = await ProjectHome.GetProjectHomeAsync(project, snapshot, null, options);
+                project["project"] = EObj("""{"id":"missing","folder":null}""");
+                var relink = await ProjectHome.GetProjectHomeAsync(project, EObj("""{"projects":[{"id":"missing","status":"checkpointed","canResume":true}],"researches":[],"execution":{}}"""), null, new ProjectHomeOptions { Git = Git });
+                result = new JsonObject { ["home"] = home, ["relink"] = new JsonObject { ["next"] = relink["next"]?.DeepClone(), ["action"] = relink["action"]?.DeepClone(), ["local"] = relink["local"]?.DeepClone() } };
+            }
+            else throw new InvalidOperationException("Missing project-home replay: " + name);
+            AssertJsonAt(sc["result"], Normalize(result, root), "result");
+            AssertOutcome(sc, Normalize(result, root), null, GetEffects(root), exchange);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [MemberData(nameof(ExecutionScenarios))]
+    public void Replay_Execution_Scenarios(string name)
+    {
+        var root = Path.Combine(FindScenariosFolder(), ".verify-" + Guid.NewGuid());
+        Directory.CreateDirectory(root);
+        try
+        {
+            var sc = GetScenario("execution", name);
+            var exchange = new Exchange(sc["requests"]!.AsArray(), sc["replies"]!.AsArray(), root);
+            JsonNode? result = null;
+            string? error = null;
+            var files = new ReplayExecutionFiles(root);
+            try { result = RunExecutionScenario(name, root, files); }
+            catch (InvalidOperationException ex) { error = ex.Message; }
+            Assert.Equal(sc["error"]?.ToString(), error);
+            AssertJsonAt(sc["fileEffects"], Normalize(files.Effects, root), "fileEffects");
+            if (error is null) AssertJsonAt(sc["result"], Normalize(result, root), "result");
+            AssertOutcome(sc, Normalize(result, root), error, GetEffects(root), exchange);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    private sealed class ReplayAttemptIo : IAttemptIo
+    {
+        private JsonObject state = JsonNode.Parse("""{"nextId":1,"attempts":[]}""")!.AsObject();
+        public T WithLock<T>(Func<T> work) => work();
+        public JsonObject Read() => state.DeepClone().AsObject();
+        public void Write(JsonObject value) => state = value.DeepClone().AsObject();
+    }
+
+    private sealed class ReplayExecutionFiles(string root) : IExecutionFiles
+    {
+        private readonly ExecutionFiles inner = new();
+        public JsonArray Effects { get; } = [];
+        private void Guard(string path)
+        {
+            var full = Path.GetFullPath(path);
+            Assert.True(full == root || full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal),
+                "Execution replay attempted filesystem access outside its isolated root.");
+        }
+        private void Mutate(string operation, string path, Action action, byte[]? bytes = null)
+        {
+            Guard(path);
+            var effect = new JsonObject { ["operation"] = operation, ["path"] = path };
+            if (bytes is not null) effect["content"] = Encoding.UTF8.GetString(bytes);
+            action(); effect["ok"] = true; Effects.Add(effect);
+        }
+        public byte[] Read(string path) { Guard(path); return inner.Read(path); }
+        public void Append(string path, byte[] bytes) => Mutate("appendFile", path, () => inner.Append(path, bytes), bytes);
+        public void Write(string path, byte[] bytes) => Mutate("writeFile", path, () => inner.Write(path, bytes), bytes);
+        public void CreateDirectory(string path) => Mutate("mkdir", path, () => inner.CreateDirectory(path));
+        public string? LinkedWorkspace(string? path) { if (!string.IsNullOrEmpty(path)) Guard(path); return inner.LinkedWorkspace(path); }
+        public string RealDirectory(string path) { Guard(path); return inner.RealDirectory(path); }
+        public ExecutionFileStat Stat(string path) { Guard(path); return inner.Stat(path); }
+    }
+
+    private static JsonObject EObj(string json) => JsonNode.Parse(json)!.AsObject();
+
+    private static void AssertJsonAt(JsonNode? expected, JsonNode? actual, string path)
+    {
+        if (expected is JsonObject eo && actual is JsonObject ao)
+        {
+            Assert.True(eo.Select(p => p.Key).Order().SequenceEqual(ao.Select(p => p.Key).Order()),
+                $"{path} keys: expected {string.Join(',', eo.Select(p => p.Key))}; actual {string.Join(',', ao.Select(p => p.Key))}");
+            foreach (var (key, value) in eo) AssertJsonAt(value, ao[key], path + "." + key);
+        }
+        else if (expected is JsonArray ea && actual is JsonArray aa)
+        {
+            Assert.True(ea.Count == aa.Count, $"{path} count: {ea.Count} != {aa.Count}");
+            for (var i = 0; i < ea.Count; i++) AssertJsonAt(ea[i], aa[i], path + "[" + i + "]");
+        }
+        else Assert.True(Same(Slashes(expected), Slashes(actual)), $"{path}: expected {expected}; actual {actual}");
+    }
+
+    private sealed class ReplayAttempts(JsonArray closed, JsonArray launches) : IExecutionAttempts
+    {
+        public JsonObject Claim(JsonObject input) => new() { ["ok"] = true,
+            ["attempt"] = new JsonObject { ["id"] = "attempt-" + (closed.Count + launches.Count + 1) }, ["request"] = input.DeepClone() };
+        public JsonObject AttachResult(JsonObject input)
+        {
+            closed.Add(new JsonObject { ["attached"] = input.DeepClone() });
+            return new JsonObject { ["ok"] = true };
+        }
+        public JsonObject CloseAttempt(JsonObject input)
+        {
+            closed.Add(input.DeepClone());
+            return new JsonObject { ["ok"] = true };
+        }
+    }
+
+    private static JsonObject RunExecutionScenario(string name, string root, ReplayExecutionFiles files)
+    {
+        var store = EObj("""{"usage":{},"execution":{"megaTasks":[],"subTasks":[],"results":[],"checkpoints":[],"timeline":[],"decisions":[]}}""");
+        var row = EObj("""{"dispatch":[]}""");
+        var launches = new JsonArray();
+        var closed = new JsonArray();
+        var persisted = 0;
+        var bridge = Execution.CreateExecutionBridge(new ExecutionOptions
+        {
+            Store = store, Directory = root, Attempts = AttemptEngine.Create(new ReplayAttemptIo()),
+            AttemptAdapter = new ReplayAttempts(closed, launches),
+            Files = files,
+            RowFor = (_, _) => row, Inspect = _ => EObj("""{"git":false,"dirty":[],"names":[],"fileCount":0}"""),
+            Models = () => [EObj("""{"id":"worker","label":"Fixture worker","provider":"fixture","cli":"fixture-cli","enabled":true,"available":true,"roles":{"worker":true}}""")],
+            Now = () => "2023-11-14T22:13:20.000Z", LeadId = () => "lead-exact", SessionId = "session-fixed",
+            NewId = () => "00000000-0000-4000-8000-000000000001", Persist = () => persisted++,
+            IsProcessAlive = pid => name == "stop-kill-failure-preserves-process" ? pid == 88 :
+                name == "addition-kill-failure-resets-verify" ? pid is 44 or 77 : name == "paused-addition-resumes" && pid == 77,
+            KillWorker = _ => name == "addition-kill-failure-resets-verify" ? throw new IOException("Synthetic kill failure") : name != "stop-kill-failure-preserves-process",
+            SpawnWorker = info => { launches.Add(info.DeepClone()); return new JsonObject { ["pid"] = 77 }; }
+        });
+        if (name == "helpers-and-no-verdict-matrix")
+        {
+            var subs = new List<JsonObject> { EObj("""{"id":"a","title":"Build","assignedModelId":"worker"}""") };
+            var summaries = new JsonArray(Execution.SplitSummary(subs, id => id));
+            subs.Add(EObj("""{"id":"b","title":"Verify","assignedModelId":"worker","dependencies":["a"]}"""));
+            summaries.Add(Execution.SplitSummary(subs, id => id, "Fixture"));
+            var input = new JsonObject { ["folder"] = root, ["before"] = new string('a', 40), ["after"] = new string('b', 40),
+                ["exitCode"] = 0, ["scope"] = new JsonArray("src"), ["names"] = new JsonArray("src/a.js") };
+            var delivered = new JsonArray(Execution.DeliveredWithoutVerdict(input));
+            input["names"] = new JsonArray("outside.js"); delivered.Add(Execution.DeliveredWithoutVerdict(input));
+            input.Remove("scope"); input["exitCode"] = 1; input["names"] = new JsonArray("src/a.js");
+            delivered.Add(Execution.DeliveredWithoutVerdict(input));
+            return new JsonObject { ["summaries"] = summaries, ["plans"] = new JsonArray(Execution.NoVerdictPlan(0), Execution.NoVerdictPlan(1), Execution.NoVerdictPlan(2)),
+                ["delivered"] = delivered, ["repo"] = Execution.RepoState(root, EObj("""{"git":true,"commitId":"head-fixed","dirty":["?? missing.txt"]}""")) };
+        }
+        var item = EObj("""{"project":{"id":"project"},"revisions":[{"id":1,"direction":"Goal"}]}""");
+        item["project"]!["folder"] = name == "proposal-guard-no-linked-folder" ? null : root;
+        var job = EObj("""{"id":"job","title":"Fixture work","detail":"Goal"}""");
+        if (name == "proposal-approval-and-recovery")
+        {
+            item["revisions"]![0]!["id"] = 4; item["revisions"]![0]!["direction"] = "Fixture goal";
+            job = EObj("""{"id":"job","revision_id":4,"title":"Fixture work","detail":"Exercise proposal","timing":"deadline","deadlineAt":"2023-11-15T00:00:00.000Z"}""");
+            var mega = bridge.Propose(item, job, [EObj("""{"title":"Build fixture","modelId":"worker","scope":["src/a.js"]}"""),
+                EObj("""{"title":"Verify fixture","modelId":"worker","dependsOn":[0],"type":"AUDIT"}""")]);
+            var approved = bridge.Approve("project", mega["id"]!.ToString());
+            var recovered = bridge.Propose(item, job, []);
+            return new JsonObject { ["mega"] = mega.DeepClone(), ["approved"] = approved.DeepClone(),
+                ["recoveredSame"] = recovered["id"]!.ToString() == mega["id"]!.ToString(), ["persisted"] = persisted, ["store"] = store };
+        }
+        if (name.StartsWith("proposal-guard-", StringComparison.Ordinal))
+        {
+            var parts = new List<JsonObject>();
+            if (name != "proposal-guard-no-crew") parts.Add(EObj("""{"title":"Build","modelId":"worker"}"""));
+            if (name == "proposal-guard-cyclic-dependency") parts[0]["dependsOn"] = new JsonArray(0);
+            try { return new JsonObject { ["proposed"] = bridge.Propose(item, job, parts).DeepClone(), ["store"] = store, ["launches"] = launches }; }
+            catch (InvalidOperationException error) { return new JsonObject { ["error"] = error.Message, ["store"] = store, ["launches"] = launches }; }
+        }
+        item["project"]!["folder"] = null;
+        if (name is "addition-kill-failure-resets-verify" or "paused-addition-resumes" or "first-answer-after-start" or "delegation-replaces-after-start")
+        {
+            var paused = name == "paused-addition-resumes";
+            var killFailure = name == "addition-kill-failure-resets-verify";
+            var mega = EObj("""{"id":"MT-fixed","projectId":"project","taskId":"job","title":"Fixture work","goal":"Goal","status":"RUNNING","approvedAt":"yes","authorizedSessionId":"session-fixed","pauseRequested":false,"jobFingerprint":"7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db","repoBefore":{"repoHead":null,"dirtyFiles":[],"comparable":true,"gitReadable":false,"fingerprint":null,"disposition":"NOT APPLICABLE"}}""");
+            mega["status"] = paused ? "PAUSED" : "RUNNING"; mega["pauseRequested"] = paused;
+            var verify = EObj("""{"id":"MT-fixed-ST-02","megaTaskId":"MT-fixed","title":"Verify the work independently","status":"PENDING","dependencies":["MT-fixed-ST-01"],"assignedModelId":"worker","proposedProvider":"fixture","proposedCli":"fixture-cli","attemptIds":[],"resultId":null}""");
+            var build = EObj("""{"id":"MT-fixed-ST-01","megaTaskId":"MT-fixed","title":"Build fixture","type":"IMPLEMENTATION","status":"COMPLETE","dependencies":[],"assignedModelId":"worker","proposedProvider":"fixture","proposedCli":"fixture-cli","attemptIds":[],"resultId":null}""");
+            build["status"] = paused ? "PENDING" : "COMPLETE";
+            if (killFailure)
+            {
+                verify["status"] = "RUNNING"; verify["attemptIds"] = new JsonArray("attempt-fixed");
+                row["dispatch"]!.AsArray().Add(EObj("""{"subTaskId":"MT-fixed-ST-02","pid":44,"alive":true,"observedAlive":true,"attemptId":"attempt-fixed"}"""));
+            }
+            var decision = EObj("""{"id":"D-fixed","projectId":"project","megaTaskId":"MT-fixed","answer":"","suggestion":"suggested answer"}""");
+            if (name == "delegation-replaces-after-start") decision["answer"] = "old answer";
+            bridge.Data.MegaTasks.Add(mega); bridge.Data.SubTasks.Add(build); bridge.Data.SubTasks.Add(verify); bridge.Data.Decisions.Add(decision);
+            if (paused) bridge.Data.Checkpoints.Add(EObj("""{"id":"CP-fixed","megaTaskId":"MT-fixed"}"""));
+            if (name == "first-answer-after-start")
+            {
+                var first = bridge.AnswerDecision("project", "D-fixed", "owner answer");
+                return new JsonObject { ["first"] = first.DeepClone(), ["decision"] = decision.DeepClone(), ["persisted"] = persisted };
+            }
+            if (name == "delegation-replaces-after-start")
+            {
+                var delegated = bridge.DelegateDecision("project", "D-fixed", "Lead fixture");
+                return new JsonObject { ["delegated"] = delegated.DeepClone(), ["decision"] = decision.DeepClone(), ["persisted"] = persisted };
+            }
+            var appended = bridge.AppendAddition(item, EObj("""{"id":"job","detail":"Goal"}"""), "MT-fixed", EObj("""{"addition":"Add `src/new.js`."}"""));
+            return new JsonObject { ["appended"] = appended.DeepClone(), ["closed"] = closed, ["launches"] = launches, ["persisted"] = persisted, ["row"] = row, ["store"] = store };
+        }
+        if (name is "dead-worker-retries-once" or "stop-kill-failure-preserves-process")
+        {
+            var stopping = name == "stop-kill-failure-preserves-process";
+            var id = stopping ? "MT-stop" : "MT-retry";
+            var mega = EObj("""{"projectId":"project","taskId":"job","status":"RUNNING","approvedAt":"yes","authorizedSessionId":"session-fixed","repoBefore":{"repoHead":null}}""");
+            mega["id"] = id; mega["title"] = stopping ? "Stop fixture" : "Retry fixture";
+            var sub = EObj("""{"title":"Build fixture","status":"RUNNING","assignedModelId":"worker","proposedProvider":"fixture","proposedCli":"fixture-cli","provider":"fixture","cli":"fixture-cli","resultId":null,"dependencies":[]}""");
+            sub["id"] = id + "-ST-01"; sub["megaTaskId"] = id; sub["attemptIds"] = new JsonArray(stopping ? "attempt-live" : "attempt-dead");
+            if (!stopping) sub["type"] = "IMPLEMENTATION";
+            var part = new JsonObject { ["subTaskId"] = id + "-ST-01", ["attemptId"] = stopping ? "attempt-live" : "attempt-dead",
+                ["pid"] = stopping ? 88 : 66, ["alive"] = true, ["structuredResultPath"] = Path.Combine(root, stopping ? "live.json" : "dead.json") };
+            if (!stopping)
+            {
+                part["folder"] = null; part["projectFolder"] = null;
+                part["logPath"] = Path.Combine(root, "dead.log"); part["exitPath"] = Path.Combine(root, "dead.exit.json");
+            }
+            bridge.Data.MegaTasks.Add(mega); bridge.Data.SubTasks.Add(sub); row["dispatch"]!.AsArray().Add(part);
+            if (stopping)
+            {
+                item["revisions"]![0]!.AsObject().Remove("direction");
+                var error = Assert.Throws<InvalidOperationException>(() => bridge.Stop(item, EObj("""{"id":"job"}"""), id));
+                return new JsonObject { ["error"] = error.Message, ["row"] = row, ["store"] = store, ["persisted"] = persisted };
+            }
+            var result = bridge.Advance(item, EObj("""{"id":"job","detail":"Goal"}"""), [], false);
+            return new JsonObject { ["result"] = result.DeepClone(), ["closed"] = closed, ["persisted"] = persisted, ["store"] = store, ["row"] = row };
+        }
+        throw new InvalidOperationException("Missing execution replay: " + name);
+    }
+
     private static string FindScenariosFolder()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)

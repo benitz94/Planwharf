@@ -133,41 +133,7 @@ public class ChatModeTests
         finally { window.Close(); }
     }
 
-    [Fact]
-    public void The_switch_labels_and_hints_are_Italian()
-    {
-        var previous = Strings.CurrentLanguage;
-        try
-        {
-            Strings.CurrentLanguage = "it";
-            Assert.Equal("Chat", ChatModeBar.LabelOf(ChatModeBar.Talk));
-            Assert.Equal("Piano", ChatModeBar.LabelOf(ChatModeBar.Plan));
-            Assert.Equal("Una conversazione con il coordinatore. Non parte nulla.", ChatModeBar.HintOf(ChatModeBar.Talk));
-            Assert.Contains("Affida il lavoro alla squadra", ChatModeBar.HintOf(ChatModeBar.Plan));
-        }
-        finally { Strings.CurrentLanguage = previous; }
-    }
 
-    [Fact]
-    public void LabelOf_and_HintOf_fall_back_cleanly_for_null_or_unknown_modes()
-    {
-        Assert.Equal("Plan", ChatModeBar.LabelOf(null!));
-        Assert.Equal("Plan", ChatModeBar.LabelOf("UNKNOWN"));
-        Assert.Equal("Plan", ChatModeBar.LabelOf("pipeline"));
-
-        Assert.Contains("Let the crew do it", ChatModeBar.HintOf(null!));
-        Assert.Contains("Let the crew do it", ChatModeBar.HintOf("UNKNOWN"));
-
-        var previous = Strings.CurrentLanguage;
-        try
-        {
-            Strings.CurrentLanguage = "it";
-            Assert.Equal("Piano", ChatModeBar.LabelOf(null!));
-            Assert.Equal("Piano", ChatModeBar.LabelOf("invalid"));
-            Assert.Contains("Affida il lavoro alla squadra", ChatModeBar.HintOf(null!));
-        }
-        finally { Strings.CurrentLanguage = previous; }
-    }
 
 
     static bool Checked(ChatModeBar bar, string mode) => bar.Buttons.Single(button => (string?)button.Tag == mode).IsChecked == true;

@@ -26,9 +26,16 @@ async function localGit(folder, { planFile } = {}) {
   if (!root) return { readable: false, reason: 'Contained local Git history unavailable.' };
   const gitRoot = await git(root, ['rev-parse', '--show-toplevel']);
   if (!gitRoot) return { readable: false, reason: 'Local Git history unavailable.' };
-  const relative = planFile ? path.relative(root, path.resolve(planFile)).replace(/\\/g, '/') : null;
+  // Both sides compared as resolved paths: a folder reached through a link (macOS /var is /private/var, a
+  // mapped drive on Windows) is the same folder.
+  const resolved = file => {
+    const full = path.resolve(file), rest = [];
+    for (let dir = full; dir && dir !== path.dirname(dir); dir = path.dirname(dir)) { const real = linkedWorkspace(dir); if (real) return path.join(real, ...rest.reverse()); rest.push(path.basename(dir)); }
+    return full;
+  };
+  const relative = planFile ? path.relative(root, resolved(planFile)).replace(/\\/g, '/') : null;
   const scope = '.';
-  const prefix = path.relative(gitRoot, root).replace(/\\/g, '/');
+  const prefix = path.relative(linkedWorkspace(gitRoot) || gitRoot, root).replace(/\\/g, '/');
   const localName = name => prefix ? name.startsWith(prefix + '/') ? name.slice(prefix.length + 1) : null : name;
   // Every Git command runs at the canonical linked folder with an explicit scope.
   const files = ['--', '.'];
