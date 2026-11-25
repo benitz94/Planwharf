@@ -87,9 +87,12 @@ function finish(info, status = 'COMPLETE') {
   assert.notEqual(launches[2].attemptId, interrupted.attemptId);
   assert.ok(launches[2].job.detail.includes(firstSubId), 'Compact handoff contains durable completed work');
   await request('/api/orchestrator/stop', { projectId: 'raceengineer', megaTaskId: mtRace });
-  await request('/api/orchestrator/resume', { projectId: 'raceengineer' }, 400);
+  // The work now has two checkpoints. Resume without naming one (as the app does) continues from the latest.
   const current = await request('/api/execution?projectId=raceengineer'), lastCP = current.checkpoints.at(-1);
-  await request('/api/orchestrator/resume', { projectId: 'raceengineer', megaTaskId: mtRace, checkpointId: lastCP.id });
+  assert.ok(current.checkpoints.filter(item => item.megaTaskId === mtRace).length >= 2);
+  await request('/api/orchestrator/resume', { projectId: 'raceengineer' });
+  const resumedFrom = (await request('/api/execution?projectId=raceengineer')).timeline.filter(event => event.type === 'MEGATASK_RESUMED').at(-1);
+  assert.equal(resumedFrom.reference.checkpointId, lastCP.id);
   finish(launches.at(-1)); await request('/api/orchestrator');
   finish(launches.at(-1)); await request('/api/orchestrator');
   const complete = await request('/api/execution?projectId=raceengineer');
