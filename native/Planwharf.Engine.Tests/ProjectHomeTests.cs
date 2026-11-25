@@ -12,7 +12,9 @@ public sealed class ProjectHomeTests : IDisposable
 
     public ProjectHomeTests()
     {
-        tempDir = Path.Combine(Path.GetTempPath(), "pw-home-test-" + Guid.NewGuid().ToString("N"));
+        // The resolved temporary folder: on macOS /var is a link to /private/var, and the fakes below key their
+        // files by the paths the engine builds from the resolved project folder.
+        tempDir = Path.Combine(ScenarioParityTests.RealRootForTests(Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar)), "pw-home-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
     }
 

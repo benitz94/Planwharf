@@ -200,6 +200,18 @@ public static class ProjectHome
         return (sb.ToString(), overflow);
     }
 
+    // A path with its nearest existing folder resolved (links followed); the rest is kept as written.
+    static string Resolved(string full)
+    {
+        var rest = new List<string>();
+        for (var dir = full; !string.IsNullOrEmpty(dir); dir = Path.GetDirectoryName(dir))
+        {
+            if (ProjectWorkspace.LinkedWorkspace(dir) is string real) return rest.Count == 0 ? real : Path.Combine([real, .. Enumerable.Reverse(rest)]);
+            rest.Add(Path.GetFileName(dir));
+        }
+        return full;
+    }
+
     internal static async Task<bool> ContainedParentAsync(string root, string file, IProjectHomeFiles files)
     {
         try
@@ -234,11 +246,14 @@ public static class ProjectHome
         string? relative = null;
         if (!string.IsNullOrEmpty(planFile))
         {
+            // Both sides compared as resolved paths: a folder reached through a link (macOS /var is
+            // /private/var, a mapped drive on Windows) is the same folder.
             var fullPlan = Path.GetFullPath(planFile);
+            fullPlan = Resolved(fullPlan);
             relative = Path.GetRelativePath(root, fullPlan).Replace('\\', '/');
         }
         const string scope = ".";
-        var prefix = Path.GetRelativePath(gitRoot, root).Replace('\\', '/');
+        var prefix = Path.GetRelativePath(ProjectWorkspace.LinkedWorkspace(gitRoot) ?? gitRoot, root).Replace('\\', '/');
         if (prefix == ".") prefix = "";
         string? LocalName(string name)
         {
