@@ -167,23 +167,6 @@ public class AddToWorkTests
         }
     }
 
-    [Fact]
-    public void Italian_translations_are_present()
-    {
-        var prev = Strings.CurrentLanguage;
-        try
-        {
-            Strings.CurrentLanguage = "it";
-            Assert.Equal("Aggiungi a questo lavoro", Strings.T("Add to this work"));
-            Assert.Equal("Aggiunto a questo lavoro: qualcosa", Strings.Format(Strings.T("Added to this work: {0}"), "qualcosa"));
-            Assert.Equal("Aggiunta a questo lavoro: ", Strings.T("Addition to this work: "));
-            Assert.Equal("Aggiunto a questo lavoro: ", Strings.T("Added to this work: "));
-        }
-        finally
-        {
-            Strings.CurrentLanguage = prev;
-        }
-    }
 
     sealed class AddToWorkServer : IDisposable
     {

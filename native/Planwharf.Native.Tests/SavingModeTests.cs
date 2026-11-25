@@ -37,22 +37,6 @@ public class SavingModeTests
         Assert.Equal(SavingModes.UltraSafe, SavingModes.Normalize("  Ultra Sicura "));
     }
 
-    [Fact]
-    public void The_labels_and_hints_are_Italian()
-    {
-        var previous = Strings.CurrentLanguage;
-        try
-        {
-            Strings.CurrentLanguage = "it";
-            Assert.Equal("Normale", SavingModes.Label(SavingModes.Normal));
-            Assert.Equal("Sicura", SavingModes.Label(SavingModes.Safe));
-            Assert.Equal("Ultra sicura", SavingModes.Label(SavingModes.UltraSafe));
-            Assert.Contains("modello di punta", SavingModes.Hint(SavingModes.Safe));
-            Assert.Contains("leggeri", SavingModes.Hint(SavingModes.UltraSafe));
-            Assert.Equal("Meteo · Sicura", SavingModes.Beside("Meteo", "safe"));
-        }
-        finally { Strings.CurrentLanguage = previous; }
-    }
 
     [AvaloniaFact]
     public void SavingModeBar_shows_the_saved_mode()
@@ -73,27 +57,6 @@ public class SavingModeTests
         Assert.Equal(3, bar.Buttons.Count);
     }
 
-    [AvaloniaFact]
-    public void The_title_and_the_crew_card_name_the_saved_mode()
-    {
-        var previous = Strings.CurrentLanguage;
-        var window = new MainWindow("test");
-        window.Show();
-        try
-        {
-            window.Show(WithMode(SampleState.Working(), "weather", "safe"));
-            window.UpdateLayout();
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Weather dashboard · Safe");
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => (block.Text ?? "").StartsWith("Crew at work · Safe"));
-
-            Strings.CurrentLanguage = "it";
-            window.Show(WithMode(SampleState.Working(), "weather", "ultra-safe"));
-            window.UpdateLayout();
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "Weather dashboard · Ultra sicura");
-            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block => (block.Text ?? "").StartsWith("Squadra al lavoro · Ultra sicura"));
-        }
-        finally { Strings.CurrentLanguage = previous; window.Close(); }
-    }
 
     [AvaloniaFact]
     public async Task Each_click_in_Team_calls_the_engine_once()

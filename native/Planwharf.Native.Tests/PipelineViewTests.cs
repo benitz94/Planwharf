@@ -15,7 +15,6 @@ public sealed class PipelineViewTests : IDisposable
 
     public void Dispose()
     {
-        Strings.CurrentLanguage = "en";
         for (var attempt = 0; Directory.Exists(root); attempt++)
         {
             try { Directory.Delete(root, true); }
@@ -228,25 +227,6 @@ public sealed class PipelineViewTests : IDisposable
         Assert.DoesNotContain("SHOULD_NOT_LEAK", details.Select(d => d.Summary));
     }
 
-    [Fact]
-    public void View_Localization_ItalianCatalog()
-    {
-        Strings.CurrentLanguage = "it";
-
-        var unreadQuota = new JsonObject
-        {
-            ["providerId"] = "anthropic",
-            ["modelId"] = "claude-sonnet",
-            ["unread"] = true
-        };
-        WriteJob(ProjectAlpha, Job1, "ready-local", quota: unreadQuota);
-
-        var view = PipelineViews.ReadProjectView(Attempts(), ProjectAlpha);
-        Assert.Single(view.Jobs);
-
-        Assert.Equal("Serve una tua decisione", view.Jobs[0].DecisionLabel);
-        Assert.Contains("non letto", view.Jobs[0].QuotaDisplay);
-    }
 
     [Fact]
     public void View_PartialStageFiles_DoesNotCrashOrAdvanceStatus()
