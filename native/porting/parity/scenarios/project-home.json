@@ -1,0 +1,538 @@
+{
+  "schema": 1,
+  "module": "project-home",
+  "scenarios": [
+    {
+      "name": "local-git-success-and-failure",
+      "input": {
+        "categories": [
+          "bounded-git",
+          "failure"
+        ]
+      },
+      "requests": [
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "rev-parse",
+            "--verify",
+            "HEAD"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "status",
+            "--ignore-submodules=all",
+            "--porcelain=v1",
+            "--no-renames",
+            "-uall",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "diff",
+            "--ignore-submodules=all",
+            "--submodule=short",
+            "--relative",
+            "--no-renames",
+            "--no-ext-diff",
+            "--no-textconv",
+            "HEAD",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "status",
+            "--ignore-submodules=all",
+            "--porcelain=v1",
+            "--no-renames",
+            "-z",
+            "-uall",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "error": null,
+          "stdout": "<ROOT>/project é\n"
+        },
+        {
+          "error": null,
+          "stdout": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        },
+        {
+          "error": null,
+          "stdout": " M src/é.js\n"
+        },
+        {
+          "error": null,
+          "stdout": "diff --git a/src/é.js b/src/é.js\n"
+        },
+        {
+          "error": null,
+          "stdout": ""
+        },
+        {
+          "error": null,
+          "stdout": " M src/é.js\u0000"
+        },
+        {
+          "error": {
+            "code": 1
+          },
+          "stdout": ""
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": "[core]\nrepositoryformatversion = 0\n",
+        "project é/.git/HEAD": "ref: refs/heads/main\n"
+      },
+      "result": {
+        "success": {
+          "readable": true,
+          "root": "<ROOT>/project é",
+          "scope": ".",
+          "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "changedFiles": 1,
+          "fingerprint": "600ebd669e70374e849522dfb4be4207d45c2cd6622f00c20e14b760637eefa6",
+          "files": [
+            {
+              "path": "src/é.js",
+              "from": null,
+              "status": "M",
+              "fingerprint": null
+            }
+          ]
+        },
+        "failure": {
+          "readable": false,
+          "reason": "Local Git history unavailable."
+        }
+      }
+    },
+    {
+      "name": "durable-megatask-outranks-row",
+      "input": {
+        "categories": [
+          "home",
+          "durable-state",
+          "relink-priority"
+        ]
+      },
+      "requests": [
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "rev-parse",
+            "--show-toplevel"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "rev-parse",
+            "--verify",
+            "HEAD"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "status",
+            "--ignore-submodules=all",
+            "--porcelain=v1",
+            "--no-renames",
+            "-uall",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "diff",
+            "--ignore-submodules=all",
+            "--submodule=short",
+            "--relative",
+            "--no-renames",
+            "--no-ext-diff",
+            "--no-textconv",
+            "HEAD",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "--no-optional-locks",
+            "-C",
+            "<ROOT>/project é",
+            "status",
+            "--ignore-submodules=all",
+            "--porcelain=v1",
+            "--no-renames",
+            "-z",
+            "-uall",
+            "--",
+            ".",
+            ":(exclude,literal).planwharf/plan.md"
+          ],
+          "cwd": null,
+          "timeout": 5000,
+          "maxBuffer": 8388608
+        }
+      ],
+      "replies": [
+        {
+          "error": null,
+          "stdout": "<ROOT>/project é\n"
+        },
+        {
+          "error": null,
+          "stdout": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        },
+        {
+          "error": null,
+          "stdout": " M src/é.js\n"
+        },
+        {
+          "error": null,
+          "stdout": "diff --git a/src/é.js b/src/é.js\n"
+        },
+        {
+          "error": null,
+          "stdout": ""
+        },
+        {
+          "error": null,
+          "stdout": " M src/é.js\u0000"
+        }
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {
+        "project é/.git/config": "[core]\nrepositoryformatversion = 0\n",
+        "project é/.git/HEAD": "ref: refs/heads/main\n"
+      },
+      "result": {
+        "home": {
+          "projectId": "project",
+          "goal": "Ship fixture",
+          "progress": "Recorded progress",
+          "progressDetails": {
+            "jobTitle": "Stale row title",
+            "status": "watching",
+            "actions": [],
+            "reports": [],
+            "files": [
+              {
+                "path": "src/é.js",
+                "from": null,
+                "status": "M",
+                "fingerprint": null
+              }
+            ],
+            "megaTask": {
+              "id": "MT-ready",
+              "projectId": "project",
+              "title": "Durable proposal",
+              "status": "READY_FOR_APPROVAL",
+              "blockers": []
+            },
+            "subTasks": [
+              {
+                "id": "ST-ready",
+                "megaTaskId": "MT-ready",
+                "title": "Build fixture",
+                "status": "PENDING",
+                "assignedModelId": "worker",
+                "provider": "fixture",
+                "cli": "fixture-cli",
+                "attemptIds": []
+              }
+            ],
+            "results": [],
+            "completed": [],
+            "pending": [
+              {
+                "id": "ST-ready",
+                "megaTaskId": "MT-ready",
+                "title": "Build fixture",
+                "status": "PENDING",
+                "assignedModelId": "worker",
+                "provider": "fixture",
+                "cli": "fixture-cli",
+                "attemptIds": []
+              }
+            ],
+            "tests": [],
+            "blockers": [],
+            "workers": [],
+            "gitProgress": null
+          },
+          "timeline": [
+            {
+              "id": "EV-fixed",
+              "projectId": "project",
+              "type": "MEGATASK_PROPOSED",
+              "summary": "Durable proposal prepared."
+            }
+          ],
+          "timelineSummary": [
+            {
+              "id": "EV-fixed",
+              "projectId": "project",
+              "type": "MEGATASK_PROPOSED",
+              "summary": "Durable proposal prepared."
+            }
+          ],
+          "technicalTimeline": [
+            {
+              "id": "EV-fixed",
+              "projectId": "project",
+              "type": "MEGATASK_PROPOSED",
+              "summary": "Durable proposal prepared."
+            }
+          ],
+          "checkpointDiffs": [],
+          "resumeTargets": [],
+          "actionTarget": {
+            "projectId": "project",
+            "megaTaskId": "MT-ready"
+          },
+          "local": {
+            "readable": true,
+            "root": "<ROOT>/project é",
+            "scope": ".",
+            "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "changedFiles": 1,
+            "fingerprint": "600ebd669e70374e849522dfb4be4207d45c2cd6622f00c20e14b760637eefa6",
+            "files": [
+              {
+                "path": "src/é.js",
+                "from": null,
+                "status": "M",
+                "fingerprint": null
+              }
+            ]
+          },
+          "now": "Waiting for approval",
+          "running": 0,
+          "jobTitle": "Durable proposal",
+          "next": "Approve the prepared MegaTask.",
+          "action": "approve",
+          "notes": [
+            {
+              "id": "N-1",
+              "text": "Keep exact identity."
+            }
+          ],
+          "baseline": null,
+          "current": {
+            "viewedAt": "2023-11-14T22:13:20.000Z",
+            "timelineEventIds": [
+              "EV-fixed"
+            ],
+            "noteIds": [
+              "N-1"
+            ],
+            "revisionIds": [
+              3
+            ],
+            "revisions": [
+              {
+                "id": 3,
+                "title": "Fixture plan",
+                "state": "Recorded progress",
+                "direction": "Ship fixture",
+                "closed": []
+              }
+            ],
+            "git": {
+              "readable": true,
+              "root": "<ROOT>/project é",
+              "scope": ".",
+              "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "changedFiles": 1,
+              "fingerprint": "600ebd669e70374e849522dfb4be4207d45c2cd6622f00c20e14b760637eefa6",
+              "files": [
+                {
+                  "path": "src/é.js",
+                  "from": null,
+                  "status": "M",
+                  "fingerprint": null
+                }
+              ]
+            },
+            "execution": {
+              "status": "watching",
+              "jobId": null,
+              "jobTitle": "Stale row title",
+              "activity": "",
+              "actions": [],
+              "attemptId": null,
+              "checkpoint": null,
+              "result": null,
+              "research": [],
+              "reportFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+            }
+          },
+          "since": {
+            "firstVisit": true,
+            "changes": [],
+            "unavailable": [],
+            "details": []
+          }
+        },
+        "relink": {
+          "next": "Relink the project folder on this PC.",
+          "action": null,
+          "local": {
+            "readable": false,
+            "reason": "No local folder linked."
+          }
+        }
+      }
+    }
+  ]
+}

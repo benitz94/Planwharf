@@ -1,0 +1,1319 @@
+{
+  "schema": 1,
+  "module": "execution",
+  "scenarios": [
+    {
+      "name": "helpers-and-no-verdict-matrix",
+      "input": {
+        "categories": [
+          "summary",
+          "no-verdict",
+          "repository"
+        ]
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "summaries": [
+          "Lead kept the work as one build step: Build (worker).",
+          "Lead kept the work as one build step and a check of the whole: Build (worker) · Verify (worker). Why: Fixture"
+        ],
+        "plans": [
+          "retry-same",
+          "switch",
+          "stop"
+        ],
+        "delivered": [
+          {
+            "filesChanged": [
+              "src/a.js"
+            ],
+            "summary": "Delivered on disk without a structured result: 1 file(s) committed after the step started."
+          },
+          null,
+          null
+        ],
+        "repo": {
+          "repoHead": "head-fixed",
+          "dirtyFiles": [
+            "?? missing.txt"
+          ],
+          "comparable": false,
+          "gitReadable": true,
+          "fingerprint": null,
+          "disposition": "UNCOMMITTED"
+        }
+      }
+    },
+    {
+      "name": "proposal-approval-and-recovery",
+      "input": {
+        "category": "approval-and-persistence"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "mega": {
+          "id": "MT-00000000-0000-4000-8000-000000000001",
+          "projectId": "project",
+          "taskId": "job",
+          "planRevisionId": 4,
+          "title": "Fixture work",
+          "goal": "Exercise proposal",
+          "createdAt": "2023-11-14T22:13:20.000Z",
+          "approvedAt": "2023-11-14T22:13:20.000Z",
+          "status": "RUNNING",
+          "orchestratorModelId": "lead-exact",
+          "currentCheckpointId": null,
+          "completedAt": null,
+          "jobFingerprint": "025ef9fb70c02642ffb157bef9837fb1bcfb736157c2181498d2b20b7428726f",
+          "detached": false,
+          "repoBefore": {
+            "repoHead": null,
+            "dirtyFiles": [],
+            "comparable": true,
+            "gitReadable": false,
+            "fingerprint": "797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0",
+            "disposition": "NOT APPLICABLE"
+          },
+          "nextAction": "Review the proposed slices and approve this MegaTask.",
+          "pauseRequested": false,
+          "timing": "deadline",
+          "deadlineAt": "2023-11-15T00:00:00.000Z",
+          "blockers": [],
+          "approvedMegaTaskId": "MT-00000000-0000-4000-8000-000000000001",
+          "authorizedSessionId": "session-fixed"
+        },
+        "approved": {
+          "id": "MT-00000000-0000-4000-8000-000000000001",
+          "projectId": "project",
+          "taskId": "job",
+          "planRevisionId": 4,
+          "title": "Fixture work",
+          "goal": "Exercise proposal",
+          "createdAt": "2023-11-14T22:13:20.000Z",
+          "approvedAt": "2023-11-14T22:13:20.000Z",
+          "status": "RUNNING",
+          "orchestratorModelId": "lead-exact",
+          "currentCheckpointId": null,
+          "completedAt": null,
+          "jobFingerprint": "025ef9fb70c02642ffb157bef9837fb1bcfb736157c2181498d2b20b7428726f",
+          "detached": false,
+          "repoBefore": {
+            "repoHead": null,
+            "dirtyFiles": [],
+            "comparable": true,
+            "gitReadable": false,
+            "fingerprint": "797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0",
+            "disposition": "NOT APPLICABLE"
+          },
+          "nextAction": "Review the proposed slices and approve this MegaTask.",
+          "pauseRequested": false,
+          "timing": "deadline",
+          "deadlineAt": "2023-11-15T00:00:00.000Z",
+          "blockers": [],
+          "approvedMegaTaskId": "MT-00000000-0000-4000-8000-000000000001",
+          "authorizedSessionId": "session-fixed"
+        },
+        "recoveredSame": true,
+        "persisted": 2,
+        "store": {
+          "usage": {},
+          "execution": {
+            "megaTasks": [
+              {
+                "id": "MT-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "taskId": "job",
+                "planRevisionId": 4,
+                "title": "Fixture work",
+                "goal": "Exercise proposal",
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "approvedAt": "2023-11-14T22:13:20.000Z",
+                "status": "RUNNING",
+                "orchestratorModelId": "lead-exact",
+                "currentCheckpointId": null,
+                "completedAt": null,
+                "jobFingerprint": "025ef9fb70c02642ffb157bef9837fb1bcfb736157c2181498d2b20b7428726f",
+                "detached": false,
+                "repoBefore": {
+                  "repoHead": null,
+                  "dirtyFiles": [],
+                  "comparable": true,
+                  "gitReadable": false,
+                  "fingerprint": "797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0",
+                  "disposition": "NOT APPLICABLE"
+                },
+                "nextAction": "Review the proposed slices and approve this MegaTask.",
+                "pauseRequested": false,
+                "timing": "deadline",
+                "deadlineAt": "2023-11-15T00:00:00.000Z",
+                "blockers": [],
+                "approvedMegaTaskId": "MT-00000000-0000-4000-8000-000000000001",
+                "authorizedSessionId": "session-fixed"
+              }
+            ],
+            "subTasks": [
+              {
+                "id": "MT-00000000-0000-4000-8000-000000000001-ST-01",
+                "megaTaskId": "MT-00000000-0000-4000-8000-000000000001",
+                "title": "Build fixture",
+                "detail": "Exercise proposal",
+                "status": "PENDING",
+                "assignedModelId": "worker",
+                "attemptIds": [],
+                "resultId": null,
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "completedAt": null,
+                "type": "IMPLEMENTATION",
+                "dependencies": [],
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "provider": null,
+                "cli": null,
+                "scope": [
+                  "src/a.js"
+                ]
+              },
+              {
+                "id": "MT-00000000-0000-4000-8000-000000000001-ST-02",
+                "megaTaskId": "MT-00000000-0000-4000-8000-000000000001",
+                "title": "Verify fixture",
+                "detail": "Exercise proposal",
+                "status": "PENDING",
+                "assignedModelId": "worker",
+                "attemptIds": [],
+                "resultId": null,
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "completedAt": null,
+                "type": "AUDIT",
+                "dependencies": [
+                  "MT-00000000-0000-4000-8000-000000000001-ST-01"
+                ],
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "provider": null,
+                "cli": null
+              }
+            ],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "MEGATASK_PROPOSED",
+                "summary": "Fixture work: 2 proposed slice(s).",
+                "reference": {
+                  "megaTaskId": "MT-00000000-0000-4000-8000-000000000001"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "MEGATASK_APPROVED",
+                "summary": "Approved Fixture work.",
+                "reference": {
+                  "megaTaskId": "MT-00000000-0000-4000-8000-000000000001"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              }
+            ],
+            "decisions": [],
+            "observations": {}
+          }
+        }
+      }
+    },
+    {
+      "name": "addition-kill-failure-resets-verify",
+      "input": {
+        "safetyDiscrepancy": "addition-kill-failure-resets-verify"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/results",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/results/attempt-2.txt",
+          "content": "STATUS: WATCHING\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "results/attempt-2.txt": "STATUS: WATCHING\n"
+      },
+      "result": {
+        "appended": {
+          "ok": true,
+          "subTask": {
+            "id": "MT-fixed-ST-03",
+            "megaTaskId": "MT-fixed",
+            "title": "Add `src/new.js`.",
+            "detail": "Add `src/new.js`.",
+            "status": "RUNNING",
+            "assignedModelId": "worker",
+            "attemptIds": [
+              "attempt-2"
+            ],
+            "resultId": null,
+            "createdAt": "2023-11-14T22:13:20.000Z",
+            "completedAt": null,
+            "type": "IMPLEMENTATION",
+            "dependencies": [],
+            "proposedProvider": "fixture",
+            "proposedCli": "fixture-cli",
+            "provider": "fixture",
+            "cli": "fixture-cli",
+            "scope": [
+              "src/new.js"
+            ],
+            "waitingFor": null
+          },
+          "megaTask": {
+            "id": "MT-fixed",
+            "projectId": "project",
+            "taskId": "job",
+            "title": "Fixture work",
+            "goal": "Goal",
+            "status": "RUNNING",
+            "approvedAt": "yes",
+            "authorizedSessionId": "session-fixed",
+            "pauseRequested": false,
+            "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+            "repoBefore": {
+              "repoHead": null,
+              "dirtyFiles": [],
+              "comparable": true,
+              "gitReadable": false,
+              "fingerprint": null,
+              "disposition": "NOT APPLICABLE"
+            },
+            "timing": "discretion",
+            "deadlineAt": null
+          }
+        },
+        "closed": [
+          {
+            "attemptId": "attempt-fixed",
+            "reason": "interrupted by addition"
+          },
+          {
+            "attached": {
+              "attemptId": "attempt-2",
+              "resultPath": "<ROOT>/results/attempt-2.json"
+            }
+          }
+        ],
+        "launches": [
+          {
+            "projectFolder": null,
+            "modelId": "worker",
+            "label": "Fixture worker",
+            "provider": "fixture",
+            "cli": "fixture-cli",
+            "subTaskId": "MT-fixed-ST-03",
+            "megaTaskId": "MT-fixed",
+            "attemptId": "attempt-2",
+            "slice": "Add `src/new.js`.",
+            "resultPath": "<ROOT>/results/attempt-2.txt",
+            "structuredResultPath": "<ROOT>/results/attempt-2.json",
+            "exitPath": "<ROOT>/results/attempt-2.exit.json",
+            "logPath": "<ROOT>/logs/attempt-2.log",
+            "folder": null,
+            "pid": null,
+            "alive": false,
+            "startedAt": "2023-11-14T22:13:20.000Z",
+            "sessionId": "session-fixed",
+            "linkedFolder": null,
+            "projectId": "project",
+            "worker": {
+              "id": "worker",
+              "label": "Fixture worker",
+              "provider": "fixture",
+              "cli": "fixture-cli",
+              "enabled": true,
+              "available": true,
+              "roles": {
+                "worker": true
+              }
+            },
+            "resultId": "R-attempt-2",
+            "job": {
+              "title": "Add `src/new.js`.",
+              "detail": "Goal\n\nSubTask: Add `src/new.js`.\n\nYour scope: change only these files or folders, relative to the project folder: src/new.js. Other workers are changing other files in this folder at the same time. A change outside your scope stops your part.\n\nProject folder (work here): null\n\nDurable handoff:\n{\"megaTask\":{\"id\":\"MT-fixed\",\"projectId\":\"project\",\"taskId\":\"job\",\"title\":\"Fixture work\",\"goal\":\"Goal\",\"status\":\"RUNNING\",\"approvedAt\":\"yes\",\"authorizedSessionId\":\"session-fixed\",\"pauseRequested\":false,\"jobFingerprint\":\"7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db\",\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":null,\"disposition\":\"NOT APPLICABLE\"},\"timing\":\"discretion\",\"deadlineAt\":null},\"subTasks\":[{\"id\":\"MT-fixed-ST-01\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Build fixture\",\"type\":\"IMPLEMENTATION\",\"status\":\"COMPLETE\",\"dependencies\":[],\"assignedModelId\":\"worker\",\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"attemptIds\":[],\"resultId\":null},{\"id\":\"MT-fixed-ST-03\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Add `src/new.js`.\",\"detail\":\"Add `src/new.js`.\",\"status\":\"RUNNING\",\"assignedModelId\":\"worker\",\"attemptIds\":[\"attempt-2\"],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"provider\":\"fixture\",\"cli\":\"fixture-cli\",\"scope\":[\"src/new.js\"],\"waitingFor\":null},{\"id\":\"MT-fixed-ST-02\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Verify the work independently\",\"status\":\"PENDING\",\"dependencies\":[\"MT-fixed-ST-01\",\"MT-fixed-ST-03\"],\"assignedModelId\":\"worker\",\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"attemptIds\":[\"attempt-fixed\"],\"resultId\":null,\"completedAt\":null}],\"results\":[],\"notes\":[]}"
+            }
+          }
+        ],
+        "persisted": 4,
+        "row": {
+          "dispatch": [
+            {
+              "subTaskId": "MT-fixed-ST-02",
+              "pid": 44,
+              "alive": false,
+              "observedAlive": false,
+              "attemptId": "attempt-fixed"
+            },
+            {
+              "projectFolder": null,
+              "modelId": "worker",
+              "label": "Fixture worker",
+              "provider": "fixture",
+              "cli": "fixture-cli",
+              "subTaskId": "MT-fixed-ST-03",
+              "megaTaskId": "MT-fixed",
+              "attemptId": "attempt-2",
+              "slice": "Add `src/new.js`.",
+              "resultPath": "<ROOT>/results/attempt-2.txt",
+              "structuredResultPath": "<ROOT>/results/attempt-2.json",
+              "exitPath": "<ROOT>/results/attempt-2.exit.json",
+              "logPath": "<ROOT>/logs/attempt-2.log",
+              "folder": null,
+              "pid": 77,
+              "alive": true,
+              "startedAt": "2023-11-14T22:13:20.000Z",
+              "sessionId": "session-fixed",
+              "observedAlive": true
+            }
+          ],
+          "workerAlive": true,
+          "monitoring": {
+            "workers": 2,
+            "alive": 1
+          },
+          "jobId": "job",
+          "jobTitle": "Fixture work",
+          "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+          "megaTaskId": "MT-fixed",
+          "megaTask": {
+            "id": "MT-fixed",
+            "projectId": "project",
+            "taskId": "job",
+            "title": "Fixture work",
+            "goal": "Goal",
+            "status": "RUNNING",
+            "approvedAt": "yes",
+            "authorizedSessionId": "session-fixed",
+            "pauseRequested": false,
+            "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+            "repoBefore": {
+              "repoHead": null,
+              "dirtyFiles": [],
+              "comparable": true,
+              "gitReadable": false,
+              "fingerprint": null,
+              "disposition": "NOT APPLICABLE"
+            },
+            "timing": "discretion",
+            "deadlineAt": null
+          },
+          "subTasks": [
+            {
+              "id": "MT-fixed-ST-01",
+              "megaTaskId": "MT-fixed",
+              "title": "Build fixture",
+              "type": "IMPLEMENTATION",
+              "status": "COMPLETE",
+              "dependencies": [],
+              "assignedModelId": "worker",
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "attemptIds": [],
+              "resultId": null
+            },
+            {
+              "id": "MT-fixed-ST-03",
+              "megaTaskId": "MT-fixed",
+              "title": "Add `src/new.js`.",
+              "detail": "Add `src/new.js`.",
+              "status": "RUNNING",
+              "assignedModelId": "worker",
+              "attemptIds": [
+                "attempt-2"
+              ],
+              "resultId": null,
+              "createdAt": "2023-11-14T22:13:20.000Z",
+              "completedAt": null,
+              "type": "IMPLEMENTATION",
+              "dependencies": [],
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "provider": "fixture",
+              "cli": "fixture-cli",
+              "scope": [
+                "src/new.js"
+              ],
+              "waitingFor": null
+            },
+            {
+              "id": "MT-fixed-ST-02",
+              "megaTaskId": "MT-fixed",
+              "title": "Verify the work independently",
+              "status": "PENDING",
+              "dependencies": [
+                "MT-fixed-ST-01",
+                "MT-fixed-ST-03"
+              ],
+              "assignedModelId": "worker",
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "attemptIds": [
+                "attempt-fixed"
+              ],
+              "resultId": null,
+              "completedAt": null
+            }
+          ],
+          "status": "watching",
+          "doing": "Fixture work: 1/3 slices complete.",
+          "workerActivity": "Fixture work: 1/3 slices complete.",
+          "next": "Work in progress: Add `src/new.js`. (MT-fixed-ST-03).",
+          "waitingFor": "Structured worker results",
+          "workerLabel": " + Fixture worker",
+          "plan": [
+            "MegaTask: Fixture work",
+            "Objective: Goal",
+            "Latest git: Not applicable",
+            "Build fixture — worker; parallel-ready; COMPLETE",
+            "Add `src/new.js`. — worker; parallel-ready; RUNNING",
+            "Verify the work independently — worker; after Build fixture, Add `src/new.js`.; PENDING"
+          ],
+          "approved": true,
+          "attemptId": "attempt-2",
+          "modelId": "worker",
+          "resultPath": "<ROOT>/results/attempt-2.txt",
+          "workerPid": 77,
+          "workerLog": "<ROOT>/logs/attempt-2.log"
+        },
+        "store": {
+          "execution": {
+            "megaTasks": [
+              {
+                "id": "MT-fixed",
+                "projectId": "project",
+                "taskId": "job",
+                "title": "Fixture work",
+                "goal": "Goal",
+                "status": "RUNNING",
+                "approvedAt": "yes",
+                "authorizedSessionId": "session-fixed",
+                "pauseRequested": false,
+                "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+                "repoBefore": {
+                  "repoHead": null,
+                  "dirtyFiles": [],
+                  "comparable": true,
+                  "gitReadable": false,
+                  "fingerprint": null,
+                  "disposition": "NOT APPLICABLE"
+                },
+                "timing": "discretion",
+                "deadlineAt": null
+              }
+            ],
+            "subTasks": [
+              {
+                "id": "MT-fixed-ST-01",
+                "megaTaskId": "MT-fixed",
+                "title": "Build fixture",
+                "type": "IMPLEMENTATION",
+                "status": "COMPLETE",
+                "dependencies": [],
+                "assignedModelId": "worker",
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "attemptIds": [],
+                "resultId": null
+              },
+              {
+                "id": "MT-fixed-ST-03",
+                "megaTaskId": "MT-fixed",
+                "title": "Add `src/new.js`.",
+                "detail": "Add `src/new.js`.",
+                "status": "RUNNING",
+                "assignedModelId": "worker",
+                "attemptIds": [
+                  "attempt-2"
+                ],
+                "resultId": null,
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "completedAt": null,
+                "type": "IMPLEMENTATION",
+                "dependencies": [],
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "provider": "fixture",
+                "cli": "fixture-cli",
+                "scope": [
+                  "src/new.js"
+                ],
+                "waitingFor": null
+              },
+              {
+                "id": "MT-fixed-ST-02",
+                "megaTaskId": "MT-fixed",
+                "title": "Verify the work independently",
+                "status": "PENDING",
+                "dependencies": [
+                  "MT-fixed-ST-01",
+                  "MT-fixed-ST-03"
+                ],
+                "assignedModelId": "worker",
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "attemptIds": [
+                  "attempt-fixed"
+                ],
+                "resultId": null,
+                "completedAt": null
+              }
+            ],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "SUBTASK_ADDED",
+                "summary": "Added to this work: Add `src/new.js`. (Fixture worker).",
+                "reference": {
+                  "megaTaskId": "MT-fixed",
+                  "subTaskId": "MT-fixed-ST-03"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "PLAN_REVISION",
+                "summary": "Living Plan R1: Goal",
+                "reference": {
+                  "planRevisionId": 1
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "key": "revision:project:1"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "SUBTASK_STARTED",
+                "summary": "Fixture worker started Add `src/new.js`..",
+                "reference": {
+                  "megaTaskId": "MT-fixed",
+                  "subTaskId": "MT-fixed-ST-03",
+                  "attemptId": "attempt-2",
+                  "provider": "fixture",
+                  "cli": "fixture-cli"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              }
+            ],
+            "decisions": [
+              {
+                "id": "D-fixed",
+                "projectId": "project",
+                "megaTaskId": "MT-fixed",
+                "answer": "",
+                "suggestion": "suggested answer"
+              }
+            ],
+            "observations": {}
+          },
+          "usage": {
+            "worker": {
+              "used": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "paused-addition-resumes",
+      "input": {
+        "safetyDiscrepancy": "paused-addition-resumes"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/results",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/results/attempt-1.txt",
+          "content": "STATUS: WATCHING\n",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "results/attempt-1.txt": "STATUS: WATCHING\n"
+      },
+      "result": {
+        "appended": {
+          "ok": true,
+          "subTask": {
+            "id": "MT-fixed-ST-03",
+            "megaTaskId": "MT-fixed",
+            "title": "Add `src/new.js`.",
+            "detail": "Add `src/new.js`.",
+            "status": "PENDING",
+            "assignedModelId": "worker",
+            "attemptIds": [],
+            "resultId": null,
+            "createdAt": "2023-11-14T22:13:20.000Z",
+            "completedAt": null,
+            "type": "IMPLEMENTATION",
+            "dependencies": [
+              "MT-fixed-ST-01"
+            ],
+            "proposedProvider": "fixture",
+            "proposedCli": "fixture-cli",
+            "provider": null,
+            "cli": null,
+            "scope": [
+              "src/new.js"
+            ]
+          },
+          "megaTask": {
+            "id": "MT-fixed",
+            "projectId": "project",
+            "taskId": "job",
+            "title": "Fixture work",
+            "goal": "Goal",
+            "status": "RUNNING",
+            "approvedAt": "yes",
+            "authorizedSessionId": "session-fixed",
+            "pauseRequested": false,
+            "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+            "repoBefore": {
+              "repoHead": null,
+              "dirtyFiles": [],
+              "comparable": true,
+              "gitReadable": false,
+              "fingerprint": null,
+              "disposition": "NOT APPLICABLE"
+            },
+            "currentCheckpointId": "CP-fixed",
+            "interruptedAttemptIds": [],
+            "nextAction": "Resume with the new addition step.",
+            "timing": "discretion",
+            "deadlineAt": null
+          }
+        },
+        "closed": [
+          {
+            "attached": {
+              "attemptId": "attempt-1",
+              "resultPath": "<ROOT>/results/attempt-1.json"
+            }
+          }
+        ],
+        "launches": [
+          {
+            "projectFolder": null,
+            "modelId": "worker",
+            "label": "Fixture worker",
+            "provider": "fixture",
+            "cli": "fixture-cli",
+            "subTaskId": "MT-fixed-ST-01",
+            "megaTaskId": "MT-fixed",
+            "attemptId": "attempt-1",
+            "slice": "Build fixture",
+            "resultPath": "<ROOT>/results/attempt-1.txt",
+            "structuredResultPath": "<ROOT>/results/attempt-1.json",
+            "exitPath": "<ROOT>/results/attempt-1.exit.json",
+            "logPath": "<ROOT>/logs/attempt-1.log",
+            "folder": null,
+            "pid": null,
+            "alive": false,
+            "startedAt": "2023-11-14T22:13:20.000Z",
+            "sessionId": "session-fixed",
+            "linkedFolder": null,
+            "projectId": "project",
+            "worker": {
+              "id": "worker",
+              "label": "Fixture worker",
+              "provider": "fixture",
+              "cli": "fixture-cli",
+              "enabled": true,
+              "available": true,
+              "roles": {
+                "worker": true
+              }
+            },
+            "resultId": "R-attempt-1",
+            "job": {
+              "title": "Build fixture",
+              "detail": "Goal\n\nSubTask: undefined\n\nProject folder (work here): null\n\nDurable handoff:\n{\"megaTask\":{\"id\":\"MT-fixed\",\"projectId\":\"project\",\"taskId\":\"job\",\"title\":\"Fixture work\",\"goal\":\"Goal\",\"status\":\"RUNNING\",\"approvedAt\":\"yes\",\"authorizedSessionId\":\"session-fixed\",\"pauseRequested\":false,\"jobFingerprint\":\"7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db\",\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":null,\"disposition\":\"NOT APPLICABLE\"},\"currentCheckpointId\":\"CP-fixed\",\"interruptedAttemptIds\":[],\"nextAction\":\"Resume with the new addition step.\",\"timing\":\"discretion\",\"deadlineAt\":null},\"subTasks\":[{\"id\":\"MT-fixed-ST-01\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Build fixture\",\"type\":\"IMPLEMENTATION\",\"status\":\"RUNNING\",\"dependencies\":[],\"assignedModelId\":\"worker\",\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"attemptIds\":[\"attempt-1\"],\"resultId\":null,\"waitingFor\":null,\"provider\":\"fixture\",\"cli\":\"fixture-cli\"},{\"id\":\"MT-fixed-ST-03\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Add `src/new.js`.\",\"detail\":\"Add `src/new.js`.\",\"status\":\"PENDING\",\"assignedModelId\":\"worker\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-fixed-ST-01\"],\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"provider\":null,\"cli\":null,\"scope\":[\"src/new.js\"]},{\"id\":\"MT-fixed-ST-02\",\"megaTaskId\":\"MT-fixed\",\"title\":\"Verify the work independently\",\"status\":\"PENDING\",\"dependencies\":[\"MT-fixed-ST-01\",\"MT-fixed-ST-03\"],\"assignedModelId\":\"worker\",\"proposedProvider\":\"fixture\",\"proposedCli\":\"fixture-cli\",\"attemptIds\":[],\"resultId\":null}],\"results\":[],\"checkpoint\":{\"id\":\"CP-fixed\",\"megaTaskId\":\"MT-fixed\"},\"notes\":[]}"
+            }
+          }
+        ],
+        "persisted": 4,
+        "row": {
+          "dispatch": [
+            {
+              "projectFolder": null,
+              "modelId": "worker",
+              "label": "Fixture worker",
+              "provider": "fixture",
+              "cli": "fixture-cli",
+              "subTaskId": "MT-fixed-ST-01",
+              "megaTaskId": "MT-fixed",
+              "attemptId": "attempt-1",
+              "slice": "Build fixture",
+              "resultPath": "<ROOT>/results/attempt-1.txt",
+              "structuredResultPath": "<ROOT>/results/attempt-1.json",
+              "exitPath": "<ROOT>/results/attempt-1.exit.json",
+              "logPath": "<ROOT>/logs/attempt-1.log",
+              "folder": null,
+              "pid": 77,
+              "alive": true,
+              "startedAt": "2023-11-14T22:13:20.000Z",
+              "sessionId": "session-fixed",
+              "observedAlive": true
+            }
+          ],
+          "workerAlive": true,
+          "monitoring": {
+            "workers": 1,
+            "alive": 1
+          },
+          "jobId": "job",
+          "jobTitle": "Fixture work",
+          "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+          "megaTaskId": "MT-fixed",
+          "megaTask": {
+            "id": "MT-fixed",
+            "projectId": "project",
+            "taskId": "job",
+            "title": "Fixture work",
+            "goal": "Goal",
+            "status": "RUNNING",
+            "approvedAt": "yes",
+            "authorizedSessionId": "session-fixed",
+            "pauseRequested": false,
+            "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+            "repoBefore": {
+              "repoHead": null,
+              "dirtyFiles": [],
+              "comparable": true,
+              "gitReadable": false,
+              "fingerprint": null,
+              "disposition": "NOT APPLICABLE"
+            },
+            "currentCheckpointId": "CP-fixed",
+            "interruptedAttemptIds": [],
+            "nextAction": "Resume with the new addition step.",
+            "timing": "discretion",
+            "deadlineAt": null
+          },
+          "subTasks": [
+            {
+              "id": "MT-fixed-ST-01",
+              "megaTaskId": "MT-fixed",
+              "title": "Build fixture",
+              "type": "IMPLEMENTATION",
+              "status": "RUNNING",
+              "dependencies": [],
+              "assignedModelId": "worker",
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "attemptIds": [
+                "attempt-1"
+              ],
+              "resultId": null,
+              "waitingFor": null,
+              "provider": "fixture",
+              "cli": "fixture-cli"
+            },
+            {
+              "id": "MT-fixed-ST-03",
+              "megaTaskId": "MT-fixed",
+              "title": "Add `src/new.js`.",
+              "detail": "Add `src/new.js`.",
+              "status": "PENDING",
+              "assignedModelId": "worker",
+              "attemptIds": [],
+              "resultId": null,
+              "createdAt": "2023-11-14T22:13:20.000Z",
+              "completedAt": null,
+              "type": "IMPLEMENTATION",
+              "dependencies": [
+                "MT-fixed-ST-01"
+              ],
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "provider": null,
+              "cli": null,
+              "scope": [
+                "src/new.js"
+              ]
+            },
+            {
+              "id": "MT-fixed-ST-02",
+              "megaTaskId": "MT-fixed",
+              "title": "Verify the work independently",
+              "status": "PENDING",
+              "dependencies": [
+                "MT-fixed-ST-01",
+                "MT-fixed-ST-03"
+              ],
+              "assignedModelId": "worker",
+              "proposedProvider": "fixture",
+              "proposedCli": "fixture-cli",
+              "attemptIds": [],
+              "resultId": null
+            }
+          ],
+          "status": "watching",
+          "doing": "Fixture work: 0/3 slices complete.",
+          "workerActivity": "Fixture work: 0/3 slices complete.",
+          "next": "Work in progress: Build fixture (MT-fixed-ST-01).",
+          "waitingFor": "Structured worker results",
+          "workerLabel": "Fixture worker",
+          "plan": [
+            "MegaTask: Fixture work",
+            "Objective: Goal",
+            "Latest git: Not applicable",
+            "Build fixture — worker; parallel-ready; RUNNING",
+            "Add `src/new.js`. — worker; after Build fixture; PENDING",
+            "Verify the work independently — worker; after Build fixture, Add `src/new.js`.; PENDING"
+          ],
+          "approved": true,
+          "attemptId": "attempt-1",
+          "modelId": "worker",
+          "resultPath": "<ROOT>/results/attempt-1.txt",
+          "workerPid": 77,
+          "workerLog": "<ROOT>/logs/attempt-1.log"
+        },
+        "store": {
+          "execution": {
+            "megaTasks": [
+              {
+                "id": "MT-fixed",
+                "projectId": "project",
+                "taskId": "job",
+                "title": "Fixture work",
+                "goal": "Goal",
+                "status": "RUNNING",
+                "approvedAt": "yes",
+                "authorizedSessionId": "session-fixed",
+                "pauseRequested": false,
+                "jobFingerprint": "7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db",
+                "repoBefore": {
+                  "repoHead": null,
+                  "dirtyFiles": [],
+                  "comparable": true,
+                  "gitReadable": false,
+                  "fingerprint": null,
+                  "disposition": "NOT APPLICABLE"
+                },
+                "currentCheckpointId": "CP-fixed",
+                "interruptedAttemptIds": [],
+                "nextAction": "Resume with the new addition step.",
+                "timing": "discretion",
+                "deadlineAt": null
+              }
+            ],
+            "subTasks": [
+              {
+                "id": "MT-fixed-ST-01",
+                "megaTaskId": "MT-fixed",
+                "title": "Build fixture",
+                "type": "IMPLEMENTATION",
+                "status": "RUNNING",
+                "dependencies": [],
+                "assignedModelId": "worker",
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "attemptIds": [
+                  "attempt-1"
+                ],
+                "resultId": null,
+                "waitingFor": null,
+                "provider": "fixture",
+                "cli": "fixture-cli"
+              },
+              {
+                "id": "MT-fixed-ST-03",
+                "megaTaskId": "MT-fixed",
+                "title": "Add `src/new.js`.",
+                "detail": "Add `src/new.js`.",
+                "status": "PENDING",
+                "assignedModelId": "worker",
+                "attemptIds": [],
+                "resultId": null,
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "completedAt": null,
+                "type": "IMPLEMENTATION",
+                "dependencies": [
+                  "MT-fixed-ST-01"
+                ],
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "provider": null,
+                "cli": null,
+                "scope": [
+                  "src/new.js"
+                ]
+              },
+              {
+                "id": "MT-fixed-ST-02",
+                "megaTaskId": "MT-fixed",
+                "title": "Verify the work independently",
+                "status": "PENDING",
+                "dependencies": [
+                  "MT-fixed-ST-01",
+                  "MT-fixed-ST-03"
+                ],
+                "assignedModelId": "worker",
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "attemptIds": [],
+                "resultId": null
+              }
+            ],
+            "results": [],
+            "checkpoints": [
+              {
+                "id": "CP-fixed",
+                "megaTaskId": "MT-fixed"
+              }
+            ],
+            "timeline": [
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "MEGATASK_RESUMED",
+                "summary": "Resumed Fixture work with addition.",
+                "reference": {
+                  "megaTaskId": "MT-fixed"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "SUBTASK_ADDED",
+                "summary": "Added to this work: Add `src/new.js`. (Fixture worker).",
+                "reference": {
+                  "megaTaskId": "MT-fixed",
+                  "subTaskId": "MT-fixed-ST-03"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "PLAN_REVISION",
+                "summary": "Living Plan R1: Goal",
+                "reference": {
+                  "planRevisionId": 1
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z",
+                "key": "revision:project:1"
+              },
+              {
+                "id": "EV-00000000-0000-4000-8000-000000000001",
+                "projectId": "project",
+                "type": "SUBTASK_STARTED",
+                "summary": "Fixture worker started Build fixture.",
+                "reference": {
+                  "megaTaskId": "MT-fixed",
+                  "subTaskId": "MT-fixed-ST-01",
+                  "attemptId": "attempt-1",
+                  "provider": "fixture",
+                  "cli": "fixture-cli"
+                },
+                "createdAt": "2023-11-14T22:13:20.000Z"
+              }
+            ],
+            "decisions": [
+              {
+                "id": "D-fixed",
+                "projectId": "project",
+                "megaTaskId": "MT-fixed",
+                "answer": "",
+                "suggestion": "suggested answer"
+              }
+            ],
+            "observations": {}
+          },
+          "usage": {
+            "worker": {
+              "used": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "first-answer-after-start",
+      "input": {
+        "safetyDiscrepancy": "first-answer-after-start"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "first": {
+          "ok": true,
+          "decision": {
+            "id": "D-fixed",
+            "projectId": "project",
+            "megaTaskId": "MT-fixed",
+            "answer": "owner answer",
+            "suggestion": "suggested answer",
+            "answeredBy": "owner",
+            "answeredAt": "2023-11-14T22:13:20.000Z"
+          }
+        },
+        "decision": {
+          "id": "D-fixed",
+          "projectId": "project",
+          "megaTaskId": "MT-fixed",
+          "answer": "owner answer",
+          "suggestion": "suggested answer",
+          "answeredBy": "owner",
+          "answeredAt": "2023-11-14T22:13:20.000Z"
+        },
+        "persisted": 1
+      }
+    },
+    {
+      "name": "delegation-replaces-after-start",
+      "input": {
+        "safetyDiscrepancy": "delegation-replaces-after-start"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "delegated": {
+          "ok": true,
+          "decision": {
+            "id": "D-fixed",
+            "projectId": "project",
+            "megaTaskId": "MT-fixed",
+            "answer": "suggested answer",
+            "suggestion": "suggested answer",
+            "answeredBy": "Decided by Lead fixture",
+            "autoReason": "Followed recommended suggestion: suggested answer",
+            "answeredAt": "2023-11-14T22:13:20.000Z"
+          }
+        },
+        "decision": {
+          "id": "D-fixed",
+          "projectId": "project",
+          "megaTaskId": "MT-fixed",
+          "answer": "suggested answer",
+          "suggestion": "suggested answer",
+          "answeredBy": "Decided by Lead fixture",
+          "autoReason": "Followed recommended suggestion: suggested answer",
+          "answeredAt": "2023-11-14T22:13:20.000Z"
+        },
+        "persisted": 1
+      }
+    },
+    {
+      "name": "proposal-guard-no-crew",
+      "input": {
+        "category": "approval-and-dispatch",
+        "mode": "no-crew"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "error": "No eligible workers for the proposed MegaTask.",
+        "store": {
+          "usage": {},
+          "execution": {
+            "megaTasks": [],
+            "subTasks": [],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [],
+            "decisions": [],
+            "observations": {}
+          }
+        },
+        "launches": []
+      }
+    },
+    {
+      "name": "proposal-guard-no-linked-folder",
+      "input": {
+        "category": "approval-and-dispatch",
+        "mode": "no-linked-folder"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "error": "Set a local source folder before proposing implementation work.",
+        "store": {
+          "usage": {},
+          "execution": {
+            "megaTasks": [],
+            "subTasks": [],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [],
+            "decisions": [],
+            "observations": {}
+          }
+        },
+        "launches": []
+      }
+    },
+    {
+      "name": "proposal-guard-cyclic-dependency",
+      "input": {
+        "category": "approval-and-dispatch",
+        "mode": "cyclic-dependency"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "error": "Dependencies must reference an earlier SubTask in the same MegaTask.",
+        "store": {
+          "usage": {},
+          "execution": {
+            "megaTasks": [],
+            "subTasks": [],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [],
+            "decisions": [],
+            "observations": {}
+          }
+        },
+        "launches": []
+      }
+    },
+    {
+      "name": "dead-worker-retries-once",
+      "input": {
+        "category": "result-refusal-and-recovery",
+        "tries": [
+          "retry-same",
+          "switch",
+          "stop"
+        ]
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "error": "MegaTask job identity changed. Prepare a new objective."
+    },
+    {
+      "name": "stop-kill-failure-preserves-process",
+      "input": {
+        "category": "stop-and-recovery"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "error": "Could not terminate worker process tree(s): 88. Scheduling is paused; these processes are still active.",
+        "row": {
+          "dispatch": [
+            {
+              "subTaskId": "MT-stop-ST-01",
+              "attemptId": "attempt-live",
+              "pid": 88,
+              "alive": true,
+              "structuredResultPath": "<ROOT>/live.json",
+              "observedAlive": true
+            }
+          ],
+          "workerAlive": true,
+          "monitoring": {
+            "workers": 1,
+            "alive": 1
+          }
+        },
+        "store": {
+          "usage": {},
+          "execution": {
+            "megaTasks": [
+              {
+                "id": "MT-stop",
+                "projectId": "project",
+                "taskId": "job",
+                "title": "Stop fixture",
+                "status": "RUNNING",
+                "approvedAt": "yes",
+                "authorizedSessionId": "session-fixed",
+                "repoBefore": {
+                  "repoHead": null
+                },
+                "pauseRequested": true,
+                "interruptedAttemptIds": [
+                  "attempt-live"
+                ]
+              }
+            ],
+            "subTasks": [
+              {
+                "id": "MT-stop-ST-01",
+                "megaTaskId": "MT-stop",
+                "title": "Build fixture",
+                "status": "RUNNING",
+                "assignedModelId": "worker",
+                "proposedProvider": "fixture",
+                "proposedCli": "fixture-cli",
+                "provider": "fixture",
+                "cli": "fixture-cli",
+                "attemptIds": [
+                  "attempt-live"
+                ],
+                "resultId": null,
+                "dependencies": []
+              }
+            ],
+            "results": [],
+            "checkpoints": [],
+            "timeline": [],
+            "decisions": [],
+            "observations": {}
+          }
+        },
+        "persisted": 1
+      }
+    }
+  ]
+}
