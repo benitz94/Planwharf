@@ -53,7 +53,7 @@ function sandbox(root, overrides = {}) {
   } });
   const processDouble = { env: {}, platform: process.platform, argv: [], cwd: () => root, stdout: { write: denied('stdout') }, stderr: { write: denied('stderr') }, ...overrides.process };
   class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : [epoch])); } static now() { return epoch; } }
-  const context = vm.createContext({ Buffer, URL, AbortSignal, Date: FixedDate, process: processDouble,
+  const context = vm.createContext({ Buffer, URL, AbortSignal, Date: FixedDate, structuredClone, process: processDouble,
     fetch: overrides.fetch || denied('fetch'), setTimeout, clearTimeout, console: { log: denied('console'), error: denied('console') } });
   const builtins = {
     fs: fileApi(fs), 'fs/promises': fileApi(fs.promises), path,
@@ -423,6 +423,20 @@ function verify(module, rows) {
     assert.equal(get('push-refused').result.kept, true);
     assert.equal(get('push-success').result.changed, true);
     assert.equal(get('finish-noop').result.changed, false);
+  } else if (module === 'execution') {
+    assert.deepEqual(get('helpers-and-no-verdict-matrix').result.plans, ['retry-same', 'switch', 'stop']);
+    assert.ok(get('helpers-and-no-verdict-matrix').result.delivered[0]);
+    assert.equal(get('helpers-and-no-verdict-matrix').result.delivered[1], null);
+    assert.equal(get('proposal-approval-and-recovery').result.recoveredSame, true);
+    assert.equal(get('addition-kill-failure-resets-verify').result.store.execution.subTasks.find(sub => /^Verify/.test(sub.title)).status, 'PENDING');
+    assert.equal(get('paused-addition-resumes').result.store.execution.megaTasks[0].status, 'RUNNING');
+    assert.equal(get('first-answer-after-start').result.first.ok, true);
+    assert.equal(get('delegation-replaces-after-start').result.decision.answer, 'suggested answer');
+  } else if (module === 'project-home') {
+    assert.equal(get('local-git-success-and-failure').result.success.readable, true);
+    assert.equal(get('local-git-success-and-failure').result.failure.readable, false);
+    assert.equal(get('durable-megatask-outranks-row').result.home.action, 'approve');
+    assert.match(get('durable-megatask-outranks-row').result.home.next, /Approve/);
   } else {
     assert.equal(get('allowed').events[0].stdout, 'ALLOWED\nno blocker\n');
     assert.equal(get('live-blocked').requests.length, 1);
@@ -538,5 +552,140 @@ scenario('api-agent', 'approved-command-fake-process', { command: 'fake-tool', a
     exchange({ kind: 'process', command, args, options }, reply); callback(reply.error, reply.stdout, reply.stderr);
   } } } });
   return box.load('api-agent.cjs').executeTool({ name: 'run_command', input: { command: 'fake-tool', args: ['space Ω'] } }, { folder: root, alwaysApprove: true });
+});
+
+// Phase 5 bridge recordings use only an in-memory attempt ledger and explicit process doubles.
+// They intentionally exercise the unchanged JavaScript lifecycle without an orchestrator host.
+function executionFixture(root, extra = {}) {
+  const store = extra.store || { usage: {}, execution: { megaTasks: [], subTasks: [], results: [], checkpoints: [], timeline: [], decisions: [] } };
+  store.usage ||= {};
+  const closed = [], launches = [], persisted = [];
+  const model = { id: 'worker', label: 'Fixture worker', provider: 'fixture', cli: 'fixture-cli', enabled: true, available: true, roles: { worker: true } };
+  const api = sandbox(root).load('execution.cjs');
+  const bridge = api.createExecutionBridge({
+    store, dir: root, models: () => [model], now: () => '2023-11-14T22:13:20.000Z', leadId: () => 'lead-exact',
+    attempts: {
+      claim: value => ({ ok: true, attempt: { id: 'attempt-' + (closed.length + launches.length + 1) }, request: plain(value) }),
+      attachResult: value => { closed.push({ attached: plain(value) }); return { ok: true }; },
+      closeAttempt: value => { closed.push(plain(value)); return { ok: true }; }
+    },
+    rowFor: () => extra.row || (extra.row = { dispatch: [] }), inspect: () => ({ git: false, dirty: [], names: [], fileCount: 0 }),
+    spawnWorker: info => { launches.push(plain(info)); return { pid: 77 }; }, isProcessAlive: id => extra.live?.has(id) || false,
+    killWorker: extra.killWorker || (() => true), persist: () => persisted.push({ at: 'persist' }), sessionId: 'session-fixed'
+  });
+  return { api, bridge, store, closed, launches, persisted, model };
+}
+scenario('execution', 'helpers-and-no-verdict-matrix', { categories: ['summary', 'no-verdict', 'repository'] }, ({ root }) => {
+  const { api } = executionFixture(root);
+  const before = 'a'.repeat(40), after = 'b'.repeat(40);
+  return {
+    summaries: [api.splitSummary([{ id: 'a', title: 'Build', assignedModelId: 'worker' }], id => id), api.splitSummary([{ id: 'a', title: 'Build', assignedModelId: 'worker' }, { id: 'b', title: 'Verify', assignedModelId: 'worker', dependencies: ['a'] }], id => id, 'Fixture')],
+    plans: [0, 1, 2].map(api.noVerdictPlan),
+    delivered: [
+      api.deliveredWithoutVerdict({ folder: root, before, after, exitCode: 0, scope: ['src'], names: ['src/a.js'] }),
+      api.deliveredWithoutVerdict({ folder: root, before, after, exitCode: 0, scope: ['src'], names: ['outside.js'] }),
+      api.deliveredWithoutVerdict({ folder: root, before, after, exitCode: 1, names: ['src/a.js'] })
+    ],
+    repo: api.repoState(root, { git: true, commitId: 'head-fixed', dirty: ['?? missing.txt'] })
+  };
+});
+scenario('execution', 'proposal-approval-and-recovery', { category: 'approval-and-persistence' }, ({ root }) => {
+  const box = executionFixture(root);
+  const item = { project: { id: 'project', folder: root }, revisions: [{ id: 4, direction: 'Fixture goal' }] };
+  const job = { id: 'job', revision_id: 4, title: 'Fixture work', detail: 'Exercise proposal', timing: 'deadline', deadlineAt: '2023-11-15T00:00:00.000Z' };
+  const mega = box.bridge.propose(item, job, [{ title: 'Build fixture', modelId: 'worker', scope: ['src/a.js'] }, { title: 'Verify fixture', modelId: 'worker', dependsOn: [0], type: 'AUDIT' }]);
+  const approved = box.bridge.approve('project', mega.id);
+  // A repeated proposal is recovery/idempotence, not a second task.
+  const recovered = box.bridge.propose(item, job, []);
+  return { mega, approved, recoveredSame: recovered.id === mega.id, persisted: box.persisted.length, store: box.store };
+});
+for (const mode of ['addition-kill-failure-resets-verify', 'paused-addition-resumes', 'first-answer-after-start', 'delegation-replaces-after-start']) {
+  scenario('execution', mode, { safetyDiscrepancy: mode }, ({ root }) => {
+    const mega = { id: 'MT-fixed', projectId: 'project', taskId: 'job', title: 'Fixture work', goal: 'Goal', status: mode === 'paused-addition-resumes' ? 'PAUSED' : 'RUNNING', approvedAt: 'yes', authorizedSessionId: 'session-fixed', pauseRequested: mode === 'paused-addition-resumes', jobFingerprint: '7c635f0996c3e96cba77d8dbe78c05153906baf54e5d3033fd3abc70bd4752db', repoBefore: { repoHead: null, dirtyFiles: [], comparable: true, gitReadable: false, fingerprint: null, disposition: 'NOT APPLICABLE' } };
+    const verify = { id: 'MT-fixed-ST-02', megaTaskId: mega.id, title: 'Verify the work independently', status: mode === 'addition-kill-failure-resets-verify' ? 'RUNNING' : 'PENDING', dependencies: ['MT-fixed-ST-01'], assignedModelId: 'worker', proposedProvider: 'fixture', proposedCli: 'fixture-cli', attemptIds: mode === 'addition-kill-failure-resets-verify' ? ['attempt-fixed'] : [], resultId: null };
+    const build = { id: 'MT-fixed-ST-01', megaTaskId: mega.id, title: 'Build fixture', type: 'IMPLEMENTATION', status: mode === 'paused-addition-resumes' ? 'PENDING' : 'COMPLETE', dependencies: [], assignedModelId: 'worker', proposedProvider: 'fixture', proposedCli: 'fixture-cli', attemptIds: [], resultId: null };
+    const decision = { id: 'D-fixed', projectId: 'project', megaTaskId: mega.id, answer: mode === 'delegation-replaces-after-start' ? 'old answer' : '', suggestion: 'suggested answer' };
+    const row = { dispatch: mode === 'addition-kill-failure-resets-verify' ? [{ subTaskId: verify.id, pid: 44, alive: true, observedAlive: true, attemptId: 'attempt-fixed' }] : [] };
+    const store = { execution: { megaTasks: [mega], subTasks: [build, verify], results: [], checkpoints: mode === 'paused-addition-resumes' ? [{ id: 'CP-fixed', megaTaskId: mega.id }] : [], timeline: [], decisions: [decision] } };
+    const box = executionFixture(root, { store, row, live: mode === 'addition-kill-failure-resets-verify' ? new Set([44, 77]) : mode === 'paused-addition-resumes' ? new Set([77]) : new Set(), killWorker: mode === 'addition-kill-failure-resets-verify' ? () => { throw new Error('Synthetic kill failure'); } : () => true });
+    if (mode === 'first-answer-after-start') return { first: box.bridge.answerDecision('project', decision.id, 'owner answer'), decision, persisted: box.persisted.length };
+    if (mode === 'delegation-replaces-after-start') return { delegated: box.bridge.delegateDecision('project', decision.id, 'Lead fixture'), decision, persisted: box.persisted.length };
+    const item = { project: { id: 'project', folder: null }, revisions: [{ id: 1, direction: 'Goal' }] };
+    const appended = box.bridge.appendAddition(item, { id: 'job', detail: 'Goal' }, mega.id, { addition: 'Add `src/new.js`.' });
+    return { appended, closed: box.closed, launches: box.launches, persisted: box.persisted.length, row, store };
+  });
+}
+for (const mode of ['no-crew', 'no-linked-folder', 'cyclic-dependency']) {
+  scenario('execution', 'proposal-guard-' + mode, { category: 'approval-and-dispatch', mode }, ({ root }) => {
+    const box = executionFixture(root);
+    const item = { project: { id: 'project', folder: mode === 'no-linked-folder' ? null : root }, revisions: [{ id: 1, direction: 'Goal' }] };
+    const job = { id: 'job', title: 'Fixture work', detail: 'Goal' };
+    const parts = mode === 'no-crew' ? [] : mode === 'cyclic-dependency'
+      ? [{ title: 'Build', modelId: 'worker', dependsOn: [0] }]
+      : [{ title: 'Build', modelId: 'worker' }];
+    try { return { proposed: box.bridge.propose(item, job, parts), store: box.store, launches: box.launches }; }
+    catch (error) { return { error: error.message, store: box.store, launches: box.launches }; }
+  });
+}
+scenario('execution', 'dead-worker-retries-once', { category: 'result-refusal-and-recovery', tries: ['retry-same', 'switch', 'stop'] }, ({ root }) => {
+  const mega = { id: 'MT-retry', projectId: 'project', taskId: 'job', title: 'Retry fixture', status: 'RUNNING', approvedAt: 'yes', authorizedSessionId: 'session-fixed', repoBefore: { repoHead: null } };
+  const sub = { id: 'MT-retry-ST-01', megaTaskId: mega.id, title: 'Build fixture', type: 'IMPLEMENTATION', status: 'RUNNING', assignedModelId: 'worker', proposedProvider: 'fixture', proposedCli: 'fixture-cli', provider: 'fixture', cli: 'fixture-cli', attemptIds: ['attempt-dead'], resultId: null, dependencies: [] };
+  const row = { dispatch: [{ subTaskId: sub.id, attemptId: 'attempt-dead', pid: 66, alive: true, folder: null, projectFolder: null, logPath: path.join(root, 'dead.log'), exitPath: path.join(root, 'dead.exit.json'), structuredResultPath: path.join(root, 'dead.json') }] };
+  const store = { usage: {}, execution: { megaTasks: [mega], subTasks: [sub], results: [], checkpoints: [], timeline: [], decisions: [] } };
+  const box = executionFixture(root, { store, row, live: new Set() });
+  const item = { project: { id: 'project', folder: null }, revisions: [{ id: 1, direction: 'Goal' }] };
+  const result = box.bridge.advance(item, { id: 'job', detail: 'Goal' }, [], false);
+  return { result, closed: box.closed, persisted: box.persisted.length, store, row };
+});
+scenario('execution', 'stop-kill-failure-preserves-process', { category: 'stop-and-recovery' }, ({ root }) => {
+  const mega = { id: 'MT-stop', projectId: 'project', taskId: 'job', title: 'Stop fixture', status: 'RUNNING', approvedAt: 'yes', authorizedSessionId: 'session-fixed', repoBefore: { repoHead: null } };
+  const sub = { id: 'MT-stop-ST-01', megaTaskId: mega.id, title: 'Build fixture', status: 'RUNNING', assignedModelId: 'worker', proposedProvider: 'fixture', proposedCli: 'fixture-cli', provider: 'fixture', cli: 'fixture-cli', attemptIds: ['attempt-live'], resultId: null, dependencies: [] };
+  const row = { dispatch: [{ subTaskId: sub.id, attemptId: 'attempt-live', pid: 88, alive: true, structuredResultPath: path.join(root, 'live.json') }] };
+  const store = { usage: {}, execution: { megaTasks: [mega], subTasks: [sub], results: [], checkpoints: [], timeline: [], decisions: [] } };
+  const box = executionFixture(root, { store, row, live: new Set([88]), killWorker: () => false });
+  try { box.bridge.stop({ project: { id: 'project', folder: null }, revisions: [{ id: 1 }] }, { id: 'job' }, mega.id); }
+  catch (error) { return { error: error.message, row, store, persisted: box.persisted.length }; }
+  throw new Error('Expected synthetic kill failure');
+});
+function homeFolder(root) {
+  const folder = path.join(root, 'project é');
+  fs.mkdirSync(path.join(folder, '.git', 'objects'), { recursive: true });
+  fs.writeFileSync(path.join(folder, '.git', 'HEAD'), 'ref: refs/heads/main\n');
+  fs.writeFileSync(path.join(folder, '.git', 'config'), '[core]\nrepositoryformatversion = 0\n');
+  return folder;
+}
+function gitReplies(exchange, folder, mode = 'success') {
+  return { execFile(command, args, options, callback) {
+    assert.equal(command, 'git');
+    const gitArgs = args.slice(3), joined = gitArgs.join(' ');
+    let stdout = '', error = null;
+    if (mode === 'failure') error = Object.assign(new Error('Synthetic Git failure'), { code: 1 });
+    else if (joined === 'rev-parse --show-toplevel') stdout = folder + '\n';
+    else if (joined === 'rev-parse --verify HEAD') stdout = 'a'.repeat(40) + '\n';
+    else if (joined.startsWith('status ') && gitArgs.includes('-z')) stdout = ' M src/é.js\0';
+    else if (joined.startsWith('status ')) stdout = ' M src/é.js\n';
+    else if (joined.startsWith('diff ')) stdout = 'diff --git a/src/é.js b/src/é.js\n';
+    else if (joined.startsWith('ls-files ')) stdout = '';
+    exchange({ kind: 'git', command, args: plain(args), cwd: null, timeout: options.timeout, maxBuffer: options.maxBuffer }, { error: error ? { code: error.code } : null, stdout });
+    queueMicrotask(() => callback(error, stdout, error ? 'Synthetic Git failure' : ''));
+  } };
+}
+scenario('project-home', 'local-git-success-and-failure', { categories: ['bounded-git', 'failure'] }, async ({ root, exchange }) => {
+  const folder = homeFolder(root);
+  const success = await sandbox(root, { builtins: { child_process: gitReplies(exchange, folder) } }).load('project-home.cjs').localGit(folder, { planFile: path.join(folder, '.planwharf', 'plan.md') });
+  const failure = await sandbox(root, { builtins: { child_process: gitReplies(exchange, folder, 'failure') } }).load('project-home.cjs').localGit(folder);
+  return { success, failure };
+});
+scenario('project-home', 'durable-megatask-outranks-row', { categories: ['home', 'durable-state', 'relink-priority'] }, async ({ root, exchange }) => {
+  const folder = homeFolder(root);
+  const api = sandbox(root, { builtins: { child_process: gitReplies(exchange, folder) } }).load('project-home.cjs');
+  const project = { project: { id: 'project', folder }, revisions: [{ id: 3, title: 'Fixture plan', direction: 'Ship fixture', state: 'Recorded progress', open: ['Need review'], closed: [] }], home: { notes: [{ id: 'N-1', text: 'Keep exact identity.' }] } };
+  const snapshot = { projects: [{ id: 'project', megaTaskId: 'MT-ready', status: 'watching', canResume: true, jobTitle: 'Stale row title', dispatch: [] }], researches: [], execution: {
+    megaTasks: [{ id: 'MT-running', projectId: 'other', status: 'RUNNING' }, { id: 'MT-ready', projectId: 'project', title: 'Durable proposal', status: 'READY_FOR_APPROVAL', blockers: [] }],
+    subTasks: [{ id: 'ST-ready', megaTaskId: 'MT-ready', title: 'Build fixture', status: 'PENDING', assignedModelId: 'worker', provider: 'fixture', cli: 'fixture-cli', attemptIds: [] }], results: [], checkpoints: [], timeline: [{ id: 'EV-fixed', projectId: 'project', type: 'MEGATASK_PROPOSED', summary: 'Durable proposal prepared.' }]
+  } };
+  const home = await api.projectHome(project, snapshot, null, { planFile: path.join(folder, '.planwharf', 'plan.md') });
+  const relink = await api.projectHome({ ...project, project: { id: 'missing', folder: null } }, { projects: [{ id: 'missing', status: 'checkpointed', canResume: true }], researches: [], execution: {} }, null);
+  return { home, relink: { next: relink.next, action: relink.action, local: relink.local } };
 });
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
