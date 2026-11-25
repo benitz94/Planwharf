@@ -51,15 +51,23 @@ function create({ folder, dir, projectId, megaId, subId, index, workBranch }) {
   return { folder: destination, branch, subId };
 }
 
+// The changes a work branch or a part really has: Planwharf's own work plan (.planwharf/) is rewritten at
+// every step, so it never makes a branch "dirty" for integration (job 45 stopped on it, 2026-11-25).
+function workChanges(status) {
+  // A line is "XY path" (or "XY old -> new"); the first line may come trimmed, so the path is after the status.
+  const file = line => line.trim().replace(/^\S+\s+/, '').split(' -> ').at(-1).replace(/^"/, '');
+  return String(status || '').split(/\r?\n/).filter(line => line.trim() && !file(line).startsWith('.planwharf/')).join('\n');
+}
+
 function integrate({ folder, parts }) {
   try {
-    if (git(folder, ['status', '--porcelain'])) return { ok: false, reason: 'Work branch has uncommitted changes; integration is paused.', conflicts: [] };
+    if (workChanges(git(folder, ['status', '--porcelain']))) return { ok: false, reason: 'Work branch has uncommitted changes; integration is paused.', conflicts: [] };
   } catch (error) {
     return { ok: false, reason: error.message, conflicts: [] };
   }
   for (const part of parts) {
     let dirty = '';
-    try { dirty = git(part.folder, ['status', '--porcelain']); }
+    try { dirty = workChanges(git(part.folder, ['status', '--porcelain'])); }
     catch (error) {
       return { ok: false, branch: part.branch, conflicts: [], reason: fs.existsSync(part.folder) ? error.message : `Part worktree is unavailable: ${part.folder}` };
     }
@@ -114,4 +122,4 @@ function sweepOrphans({ dir, liveMegaIds }) {
   }
   return removed;
 }
-module.exports = { repository, branchFor, worktreePath, create, integrate, cleanup, git, sweepOrphans };
+module.exports = { workChanges, repository, branchFor, worktreePath, create, integrate, cleanup, git, sweepOrphans };

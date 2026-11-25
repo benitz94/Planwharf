@@ -52,3 +52,6 @@ engineering-logs/
 
 # Built from launch/Planwharf.cs (node launch/build-exe.cjs); the release adds it to the ZIP.
 /Planwharf.exe
+
+# Planwharf's own work plan, rewritten at every step of a work
+.planwharf/
