@@ -1146,6 +1146,10 @@ public sealed class ProjectHomeTests : IDisposable
         RunGitCommand(repoDir, "init", "-q");
         RunGitCommand(repoDir, "config", "user.name", "Fixture");
         RunGitCommand(repoDir, "config", "user.email", "fixture@example.invalid");
+        // Git's own background upkeep (maintenance after a commit) writes and removes lock files in .git while
+        // the test reads it (seen on the macOS runner): it is turned off, so only Planwharf could change a file.
+        RunGitCommand(repoDir, "config", "maintenance.auto", "false");
+        RunGitCommand(repoDir, "config", "gc.auto", "0");
 
         var trackedFile = Path.Combine(repoDir, "tracked.txt");
         File.WriteAllText(trackedFile, "initial content");
