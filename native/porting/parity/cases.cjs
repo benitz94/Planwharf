@@ -1039,5 +1039,39 @@ module.exports = {
     ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: [], names: ['any/path.txt', 'other/file.txt'] }]],
     ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef01234567', after: '123456789abcdef0123456789abcdef012345678', exitCode: 0, scope: ['src\\nested'], names: ['src\\nested\\file.js'] }]],
     ['deliveredWithoutVerdict', [{ folder: 'C:/repo', before: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', after: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789', exitCode: 0, scope: ['docs'], names: ['docs/README.md'] }]]
+  ],
+  'orchestrator-order-parsing': [
+    ['parseOrder', ['Turn off Luna', { models: [{ id: 'luna', label: 'Luna' }], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['Turn on luna', { models: [{ id: 'luna', label: 'Luna' }], projects: [] }, null]],
+    ['parseOrder', ['Use Grok as orchestrator', { models: [{ id: 'grok', label: 'Grok' }], projects: [] }, null]],
+    ['parseOrder', ['Stop Alpha', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, null]],
+    ['parseOrder', ['riprendi', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['approva', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['avvia', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['mode safe', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['modalità ultra sicura', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['mode talk', { models: [], projects: [{ id: 'p1', name: 'Alpha' }] }, 'p1']],
+    ['parseOrder', ['Switch to automatic', { models: [], projects: [] }, null]],
+    ['parseOrder', ['Switch to manual', { models: [], projects: [] }, null]],
+    ['parseOrder', ['mode pipeline', { models: [], projects: [] }, null]],
+    ['parseOrder', ['Do not resume Fixture alpha', { models: [], projects: [{ id: 'p1', name: 'Fixture alpha' }] }, 'p1']],
+    ['parseOrder', ['What is Luna doing?', { models: [{ id: 'luna', label: 'Luna' }], projects: [] }, null]],
+    ['parseOrder', ['', null, null]],
+    ['parseOrder', [null, null, null]],
+    ...[
+      'do it', 'fallo', 'procedi', 'smista', 'go',
+      'implement the auth parser', 'implementa il sistema', 'dispatch workers',
+      'metti i worker', 'dai il lavoro', 'vai avanti con la build',
+      'fix the failing test', 'sistema il bug',
+      'What is the current status?', 'How far did we get?', 'Tell me about the architecture',
+      'Can we discuss the plan?', '', null
+    ].map(question => ['looksLikeWork', [question]]),
+    ...[
+      'Is the build passing?', 'status', 'quota', 'how far along are we',
+      'what is the lead model', 'come sta il worker', 'perché fallisce',
+      'quanto manca', 'quale modello è attivo',
+      'Proceed with implementation', 'Fallo subito', 'Start the job',
+      'Turn off Luna', '', null
+    ].map(question => ['looksLikeQuestion', [question]])
   ]
 };

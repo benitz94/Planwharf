@@ -1,0 +1,559 @@
+[
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Turn off Luna",
+      {
+        "models": [
+          {
+            "id": "luna",
+            "label": "Luna"
+          }
+        ],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "model",
+      "id": "luna",
+      "enabled": false,
+      "label": "Luna"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Turn on luna",
+      {
+        "models": [
+          {
+            "id": "luna",
+            "label": "Luna"
+          }
+        ],
+        "projects": []
+      },
+      null
+    ],
+    "result": {
+      "action": "model",
+      "id": "luna",
+      "enabled": true,
+      "label": "Luna"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Use Grok as orchestrator",
+      {
+        "models": [
+          {
+            "id": "grok",
+            "label": "Grok"
+          }
+        ],
+        "projects": []
+      },
+      null
+    ],
+    "result": {
+      "action": "lead",
+      "id": "grok",
+      "label": "Grok"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Stop Alpha",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      null
+    ],
+    "result": {
+      "action": "stop",
+      "projectId": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "riprendi",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "resume",
+      "projectId": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "approva",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "approve",
+      "projectId": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "avvia",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "start",
+      "projectId": "p1",
+      "name": "Alpha"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "mode safe",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "saving-mode",
+      "savingMode": "safe",
+      "projectId": "p1"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "modalità ultra sicura",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "saving-mode",
+      "savingMode": "ultra-safe",
+      "projectId": "p1"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "mode talk",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": {
+      "action": "mode",
+      "mode": "talk",
+      "chatMode": "talk",
+      "projectId": "p1"
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Switch to automatic",
+      {
+        "models": [],
+        "projects": []
+      },
+      null
+    ],
+    "result": {
+      "action": "mode",
+      "mode": "auto",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Switch to manual",
+      {
+        "models": [],
+        "projects": []
+      },
+      null
+    ],
+    "result": {
+      "action": "mode",
+      "mode": "manual",
+      "chatMode": "plan",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "mode pipeline",
+      {
+        "models": [],
+        "projects": []
+      },
+      null
+    ],
+    "result": {
+      "action": "reject",
+      "mode": "pipeline",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "Do not resume Fixture alpha",
+      {
+        "models": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "Fixture alpha"
+          }
+        ]
+      },
+      "p1"
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "What is Luna doing?",
+      {
+        "models": [
+          {
+            "id": "luna",
+            "label": "Luna"
+          }
+        ],
+        "projects": []
+      },
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      "",
+      null,
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "parseOrder",
+    "args": [
+      null,
+      null,
+      null
+    ],
+    "result": null
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "do it"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "fallo"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "procedi"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "smista"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "go"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "implement the auth parser"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "implementa il sistema"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "dispatch workers"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "metti i worker"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "dai il lavoro"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "vai avanti con la build"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "fix the failing test"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "sistema il bug"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "What is the current status?"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "How far did we get?"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "Tell me about the architecture"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      "Can we discuss the plan?"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeWork",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "Is the build passing?"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "status"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "quota"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "how far along are we"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "what is the lead model"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "come sta il worker"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "perché fallisce"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "quanto manca"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "quale modello è attivo"
+    ],
+    "result": true
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "Proceed with implementation"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "Fallo subito"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "Start the job"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      "Turn off Luna"
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "looksLikeQuestion",
+    "args": [
+      null
+    ],
+    "result": false
+  }
+]

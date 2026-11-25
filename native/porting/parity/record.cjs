@@ -10,7 +10,8 @@ const PATH_MAP = {
   plan: path.join(__dirname, '..', '..', '..', 'plan.js'),
   quota: path.join(__dirname, '..', '..', '..', 'quota.js'),
   models: path.join(__dirname, '..', '..', '..', 'models.js'),
-  planUsage: path.join(__dirname, '..', '..', '..', 'engine', 'planUsage.js')
+  planUsage: path.join(__dirname, '..', '..', '..', 'engine', 'planUsage.js'),
+  'orchestrator-order-parsing': path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator.js')
 };
 
 // Functions that take a callback get one that accepts everything; JSON has no functions.
