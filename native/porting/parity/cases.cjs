@@ -21,6 +21,66 @@ const grok = model('grok', 'grok', { provider: 'grok' });
 const spent = model('spent', 'empty', { provider: 'codex' });
 const crew = [terra, sonnet, gemini, grok, spent];
 
+const path = require('node:path');
+const Module = require('node:module');
+const orchPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator.js');
+const savingMode = require(path.join(__dirname, '..', '..', '..', 'engine', 'saving-mode.cjs'));
+const orchestrator = require(orchPath);
+
+const allowedBySavingMode = (mode, item) => {
+  if (!mode || savingMode.persisted(mode) === 'normal') return true;
+  const tier = Number.isInteger(item?.leadTier) ? item.leadTier : orchestrator.leadTier(item);
+  return savingMode.allows(mode, item, tier);
+};
+
+const teamModelsMod = {
+  ...orchestrator,
+  allowedBySavingMode,
+  modelClass: savingMode.modelClass
+};
+
+orchestrator.allowedBySavingMode = allowedBySavingMode;
+orchestrator.modelClass = savingMode.modelClass;
+
+const virtualModPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator-team-models.cjs');
+const origResolve = Module._resolveFilename;
+Module._resolveFilename = function(request, parent, isMain, options) {
+  if (request === virtualModPath || request.endsWith('orchestrator-team-models.cjs')) {
+    return virtualModPath;
+  }
+  return origResolve.call(this, request, parent, isMain, options);
+};
+require.cache[virtualModPath] = {
+  id: virtualModPath,
+  filename: virtualModPath,
+  loaded: true,
+  exports: teamModelsMod
+};
+
+const leadCandidatesA = [
+  { id: 'opus-3', label: 'Claude 3 Opus', plan: 'claude' },
+  { id: 'opus-4', label: 'Claude 4 Opus', plan: 'claude' },
+  { id: 'fable-1', label: 'Claude 1 Fable', plan: 'claude' },
+  { id: 'sonnet-3-5', label: 'Claude 3.5 Sonnet', plan: 'claude' },
+  { id: 'haiku-3-5', label: 'Claude 3.5 Haiku', plan: 'claude' },
+  { id: 'gemini-flash', label: 'Gemini Flash', plan: 'gemini' },
+  { id: 'terra', label: 'GPT-6 Terra', kind: 'premium', plan: 'chatgpt' }
+];
+
+const leadCandidatesB = [
+  { id: 'custom-flag', label: 'Custom Flag', kind: 'premium' },
+  { id: 'custom-mid', label: 'Custom Mid', kind: 'default' },
+  { id: 'custom-local', label: 'Custom Local', kind: 'local' },
+  { id: 'luna', label: 'Luna Light' }
+];
+
+const diverseCrew = [
+  { id: 'terra', label: 'Terra', plan: 'chatgpt', enabled: true, available: true, provider: 'codex', cli: 'gpt-5' },
+  { id: 'sol', label: 'Sol', plan: 'chatgpt', enabled: true, available: true, provider: 'codex', cli: 'gpt-5' },
+  { id: 'sonnet', label: 'Sonnet', plan: 'claude', enabled: true, available: true, provider: 'claude', cli: 'claude-3-5-sonnet' },
+  { id: 'gemini', label: 'Gemini Pro', plan: 'gemini', enabled: true, available: true, provider: 'antigravity', cli: 'gemini-flash' }
+];
+
 module.exports = {
   antigravity: [
     ['parseUsage', [require('../../../fixtures/antigravity-usage.json')]],
@@ -1073,5 +1133,120 @@ module.exports = {
       'Proceed with implementation', 'Fallo subito', 'Start the job',
       'Turn off Luna', '', null
     ].map(question => ['looksLikeQuestion', [question]])
+  ],
+  'orchestrator-team-models': [
+    // 1. normalizeModels
+    ['normalizeModels', [[]]],
+    ['normalizeModels', [null]],
+    ['normalizeModels', [[null, 123, 'bad', {}, { label: 'No ID' }, { id: 456 }]]],
+    ['normalizeModels', [[{ id: 'legacy-1', plan: 'chatgpt' }, { id: 'legacy-2', label: 'Custom Label', plan: 'claude', enabled: true }]]],
+    ['normalizeModels', [[{ id: 'terra', label: 'Terra', provider: 'codex', cli: 'gpt-5', cost: 2, limit: 100, enabled: true }]]],
+    ['normalizeModels', [[{ id: 'sonnet', label: 'Sonnet', provider: 'claude', cli: 'claude-3-5-sonnet', kind: 'premium', cost: 0, limit: 10 }]]],
+    ['normalizeModels', [[{ id: 'local-ollama', label: 'Llama', provider: 'ollama', cli: 'llama3:8b', kind: 'local' }]]],
+    ['normalizeModels', [[{ id: 'bad-route', provider: 'nonexistent-adapter', cli: 'some-cli', enabled: true }]]],
+    ['normalizeModels', [[{ id: 'bad-cli', provider: 'codex', cli: '', enabled: true }]]],
+    ['normalizeModels', [[{ id: 'cat-ex', catalogExcluded: true, enabled: true }]]],
+
+    // 2. usageOf
+    ['usageOf', [{ used: 0, limit: 50 }]],
+    ['usageOf', [{ used: 15, limit: 50 }]],
+    ['usageOf', [{ used: 50, limit: 50 }]],
+    ['usageOf', [{ used: 60, limit: 50 }]],
+    ['usageOf', [{ used: 10, limit: 100, remaining: 85 }]],
+    ['usageOf', [{ used: 5, limit: 0 }]],
+    ['usageOf', [{ used: 25, limit: 100 }]],
+    ['usageOf', [{}]],
+    ['usageOf', [null]],
+
+    // 3. leadTier
+    ['leadTier', [{ id: 'claude-3-7-fable' }]],
+    ['leadTier', [{ label: 'Anthropic Fable 1.0' }]],
+    ['leadTier', [{ id: 'claude-3-opus' }]],
+    ['leadTier', [{ cli: 'claude-opus-4-6-thinking' }]],
+    ['leadTier', [{ id: 'claude-3-5-sonnet' }]],
+    ['leadTier', [{ label: 'Sonnet 3.5' }]],
+    ['leadTier', [{ id: 'claude-3-5-haiku' }]],
+    ['leadTier', [{ id: 'haiku-latest' }]],
+    ['leadTier', [{ id: 'flagship-gpt', kind: 'premium' }]],
+    ['leadTier', [{ id: 'local-llama', kind: 'local' }]],
+    ['leadTier', [{ id: 'std-model', kind: 'default' }]],
+    ['leadTier', [{ id: 'gemini-flash' }]],
+    ['leadTier', [{ id: 'gpt-4o-mini' }]],
+    ['leadTier', [{ id: 'luna-v1' }]],
+    ['leadTier', [{ id: 'custom-lite-model' }]],
+    ['leadTier', [{ id: 'deepseek-nano' }]],
+    ['leadTier', [{ id: 'unknown-model' }]],
+    ['leadTier', [null]],
+
+    // 4. leadRanking
+    ['leadRanking', [leadCandidatesA, plans]],
+    ['leadRanking', [leadCandidatesA, []]],
+    ['leadRanking', [leadCandidatesB, plans]],
+    ['leadRanking', [[], plans]],
+    ['leadRanking', [null, plans]],
+
+    // 5. leadQuality
+    ['leadQuality', [leadCandidatesA]],
+    ['leadQuality', [leadCandidatesB]],
+    ['leadQuality', [[]]],
+    ['leadQuality', [null]],
+
+    // 6. pickWorker
+    ['pickWorker', [crew, { job: { title: 'Implement feature', detail: 'Write code' } }]],
+    ['pickWorker', [crew, { job: { title: 'Verify tests', detail: 'Check edge cases', kind: 'verify' } }]],
+    ['pickWorker', [crew, { job: { title: 'Review pull request', detail: 'Check standards', kind: 'review' } }]],
+    ['pickWorker', [crew, { job: { title: 'Research docs', detail: 'Find facts', kind: 'research' } }]],
+    ['pickWorker', [crew, { job: { title: 'Build', detail: 'code' }, skip: ['terra'] }]],
+    ['pickWorker', [crew, { job: { title: 'Build', detail: 'code' }, savingMode: 'safe' }]],
+    ['pickWorker', [crew, { job: { title: 'Build', detail: 'code' }, usage: { terra: { used: 100 } } }]],
+    ['pickWorker', [[], { job: { title: 'Build', detail: 'code' } }]],
+
+    // 7. pickWorkers
+    ['pickWorkers', [crew, { job: { title: 'Build engine', detail: 'Write tests' } }]],
+    ['pickWorkers', [diverseCrew, { job: { title: 'Build feature', detail: 'Code' }, count: 2 }]],
+    ['pickWorkers', [crew, { job: { title: 'Build feature', detail: 'Code' }, count: 1 }]],
+    ['pickWorkers', [crew, { job: { title: 'Review changes', detail: 'Audit code', kind: 'review' }, count: 3 }]],
+    ['pickWorkers', [crew, { job: { title: 'Build feature', detail: 'Code' }, usage: { terra: { used: 49 } }, count: 2 }]],
+    ['pickWorkers', [crew, { job: { title: 'Build feature', detail: 'Code' }, savingMode: 'ultra-safe' }]],
+
+    // 8. dispatchPlan
+    ['dispatchPlan', [[{ id: 'terra', label: 'Terra', why: 'selected' }], { title: 'Build' }, null]],
+    ['dispatchPlan', [[{ id: 'terra', label: 'Terra' }, { id: 'sonnet', label: 'Sonnet' }], { title: 'Build' }, { dirty: [] }]],
+    ['dispatchPlan', [[{ id: 'terra', label: 'Terra' }, { id: 'sonnet', label: 'Sonnet' }], { title: 'Build' }, { dirty: ['file.cs', 'test.cs'] }]],
+    ['dispatchPlan', [[{ id: 'terra', label: 'Terra' }, { id: 'sonnet', label: 'Sonnet' }, { id: 'gemini', label: 'Gemini' }], { title: 'Review', kind: 'review' }, null]],
+    ['dispatchPlan', [[], { title: 'Build' }, null]],
+
+    // 9. allowedBySavingMode
+    ['allowedBySavingMode', ['normal', { id: 'fable', leadTier: 0 }]],
+    ['allowedBySavingMode', ['normale', { id: 'sonnet', leadTier: 1 }]],
+    ['allowedBySavingMode', ['normal', { id: 'haiku', leadTier: 2 }]],
+    ['allowedBySavingMode', ['safe', { id: 'fable', leadTier: 0 }]],
+    ['allowedBySavingMode', ['sicura', { id: 'sonnet', leadTier: 1 }]],
+    ['allowedBySavingMode', ['safe', { id: 'haiku', leadTier: 2 }]],
+    ['allowedBySavingMode', ['ultra-safe', { id: 'fable', leadTier: 0 }]],
+    ['allowedBySavingMode', ['ultra sicura', { id: 'sonnet', leadTier: 1 }]],
+    ['allowedBySavingMode', ['ultra-safe', { id: 'haiku', leadTier: 2 }]],
+    ['allowedBySavingMode', ['safe', { id: 'fable', leadTier: 0, weightSource: 'team', weight: 'light' }]],
+    ['allowedBySavingMode', ['ultra-safe', { id: 'sonnet', leadTier: 1, weightSource: 'team', weight: 'light' }]],
+    ['allowedBySavingMode', ['safe', { id: 'haiku', leadTier: 2, weightSource: 'team', weight: 'premium' }]],
+    ['allowedBySavingMode', ['safe', { id: 'fable', leadTier: 0, weightSource: 'lineup', weight: 'light' }]],
+    ['allowedBySavingMode', ['', { id: 'fable', leadTier: 0 }]],
+    ['allowedBySavingMode', [null, { id: 'fable', leadTier: 0 }]],
+
+    // 10. modelClass
+    ['modelClass', [{ id: 'm1' }, 0]],
+    ['modelClass', [{ id: 'm2' }, 1]],
+    ['modelClass', [{ id: 'm3' }, 2]],
+    ['modelClass', [{ id: 'm1', leadTier: 0 }]],
+    ['modelClass', [{ id: 'm2', leadTier: 1 }]],
+    ['modelClass', [{ id: 'm3', leadTier: 2 }]],
+    ['modelClass', [{ id: 'm1', kind: 'premium' }]],
+    ['modelClass', [{ id: 'm2', kind: 'default' }]],
+    ['modelClass', [{ id: 'm3', kind: 'local' }]],
+    ['modelClass', [{ id: 'm1', leadTier: 0, weightSource: 'team', weight: 'light' }, 0]],
+    ['modelClass', [{ id: 'm2', leadTier: 2, weightSource: 'team', weight: 'premium' }, 2]],
+    ['modelClass', [{ id: 'm3', leadTier: 0, weightSource: 'team', weight: 'default' }, 0]],
+    ['modelClass', [{ id: 'm1', leadTier: 0, weightSource: 'lineup', weight: 'light' }, 0]],
+    ['modelClass', [null]]
   ]
 };
