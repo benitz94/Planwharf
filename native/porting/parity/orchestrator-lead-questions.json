@@ -1,0 +1,3948 @@
+[
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[\"Is this the calculator slice? Recommended: yes.\"]"
+    ],
+    "result": [
+      "Is this the calculator slice? Recommended: yes."
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[\" Do it? \", false, null, 42, \"  Keep existing tests? Recommended: yes  \"]"
+    ],
+    "result": [
+      "Do it?",
+      "Keep existing tests? Recommended: yes"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[{\"title\":\"Goal\",\"body\":\"Why?\",\"recommend\":\"yes\"},{\"question\":\"Scope\",\"recommended\":\"minimal\"}]"
+    ],
+    "result": [
+      "Goal: Why? Recommended: yes",
+      "Scope Recommended: minimal"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[{\"title\":\"Only title\"},{\"body\":\"Only body\",\"recommend\":\"skip\"},{\"title\":1e3,\"recommend\":true},{\"title\":1e-6},{\"title\":1e-7}]"
+    ],
+    "result": [
+      "Only title",
+      "Only body Recommended: skip",
+      "1000 Recommended: true",
+      "0.000001",
+      "1e-7"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[{\"title\":\"first\",\"title\":\"last\"}]"
+    ],
+    "result": [
+      "last"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "Here is the interview:\n```json\n[\"Use native AOT? Recommended: yes\", \"Keep JS fallback? Recommended: yes\"]\n```\nThanks."
+    ],
+    "result": [
+      "Use native AOT? Recommended: yes",
+      "Keep JS fallback? Recommended: yes"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "- First bullet? Recommended: yes\n* Second bullet?\n1. Numbered dot? Recommended: no\n2) Numbered paren?"
+    ],
+    "result": [
+      "First bullet? Recommended: yes",
+      "Second bullet?",
+      "Numbered dot? Recommended: no",
+      "Numbered paren?"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "❓ **Q1** — 日本語?\n❓ **Q2** – Accented perché? Recommended: sì\n❓ **Q3** - Hyphenated?"
+    ],
+    "result": [
+      "日本語?",
+      "Accented perché? Recommended: sì",
+      "Hyphenated?"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "Intro statement without question mark.\nIs parity strict? Recommended: yes\nAnother statement without marker\nConfirm scope: recommended: keep minimal"
+    ],
+    "result": [
+      "Is parity strict? Recommended: yes",
+      "Confirm scope: recommended: keep minimal"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "﻿ - Ready?﻿"
+    ],
+    "result": [
+      "Ready?"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[\"Question 1? Recommended: yes\",\"Question 2? Recommended: yes\",\"Question 3? Recommended: yes\",\"Question 4? Recommended: yes\",\"Question 5? Recommended: yes\",\"Question 6? Recommended: yes\",\"Question 7? Recommended: yes\",\"Question 8? Recommended: yes\",\"Question 9? Recommended: yes\",\"Question 10? Recommended: yes\"]"
+    ],
+    "result": [
+      "Question 1? Recommended: yes",
+      "Question 2? Recommended: yes",
+      "Question 3? Recommended: yes",
+      "Question 4? Recommended: yes",
+      "Question 5? Recommended: yes",
+      "Question 6? Recommended: yes",
+      "Question 7? Recommended: yes",
+      "Question 8? Recommended: yes"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "1. Markdown question 1?\n2. Markdown question 2?\n3. Markdown question 3?\n4. Markdown question 4?\n5. Markdown question 5?\n6. Markdown question 6?\n7. Markdown question 7?\n8. Markdown question 8?\n9. Markdown question 9?\n10. Markdown question 10?"
+    ],
+    "result": [
+      "Markdown question 1?",
+      "Markdown question 2?",
+      "Markdown question 3?",
+      "Markdown question 4?",
+      "Markdown question 5?",
+      "Markdown question 6?",
+      "Markdown question 7?",
+      "Markdown question 8?"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "[{\"title\":\"broken\"\n- Fallback question? Recommended: yes\n- Plain statement"
+    ],
+    "result": [
+      "Fallback question? Recommended: yes"
+    ]
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      ""
+    ],
+    "result": []
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      "   \n\t  "
+    ],
+    "result": []
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      42
+    ],
+    "result": []
+  },
+  {
+    "fn": "parseGrillQuestions",
+    "args": [
+      {}
+    ],
+    "result": []
+  },
+  {
+    "fn": "grillPrompt",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Demo",
+          "folder": "/repo/demo"
+        },
+        "revisions": [
+          {
+            "id": 1,
+            "direction": "Old goal"
+          },
+          {
+            "id": 2,
+            "direction": "Ship Job 50 parity"
+          }
+        ]
+      },
+      {
+        "lastCommit": "abc1234 Add parser",
+        "names": [
+          "file-1.cs",
+          "file-2.cs",
+          "file-3.cs",
+          "file-4.cs",
+          "file-5.cs",
+          "file-6.cs",
+          "file-7.cs",
+          "file-8.cs",
+          "file-9.cs",
+          "file-10.cs",
+          "file-11.cs",
+          "file-12.cs",
+          "file-13.cs",
+          "file-14.cs"
+        ]
+      },
+      [
+        "README.md",
+        "docs/spec.md"
+      ]
+    ],
+    "result": "You are interviewing the user about this Planwharf project before any planning.\n\nAsk only what blocks a good plan: the open decisions at the frontier, in one round. Word each question so yes accepts your recommended answer.\n\nProject: Demo\n\nGoal: Ship Job 50 parity\n\nFolder: /repo/demo\n\nLatest commit: abc1234 Add parser\n\nTop files: file-1.cs, file-2.cs, file-3.cs, file-4.cs, file-5.cs, file-6.cs, file-7.cs, file-8.cs, file-9.cs, file-10.cs, file-11.cs, file-12.cs\n\nDocs: README.md, docs/spec.md\n\nReturn ONLY a JSON array of 3 to 6 strings.\n\nEach string is one frontier question about THIS project, with \"Recommended: ...\" in the same string.\n\nDo not ask for facts listed above. Do not implement."
+  },
+  {
+    "fn": "grillPrompt",
+    "args": [
+      {
+        "project": {
+          "name": "Minimal"
+        },
+        "revisions": []
+      },
+      null,
+      null
+    ],
+    "result": "You are interviewing the user about this Planwharf project before any planning.\n\nAsk only what blocks a good plan: the open decisions at the frontier, in one round. Word each question so yes accepts your recommended answer.\n\nProject: Minimal\n\nReturn ONLY a JSON array of 3 to 6 strings.\n\nEach string is one frontier question about THIS project, with \"Recommended: ...\" in the same string.\n\nDo not ask for facts listed above. Do not implement."
+  },
+  {
+    "fn": "grillPrompt",
+    "args": [
+      {
+        "project": {
+          "name": "Partial",
+          "folder": ""
+        },
+        "revisions": [
+          {
+            "direction": ""
+          }
+        ]
+      },
+      {
+        "names": []
+      },
+      []
+    ],
+    "result": "You are interviewing the user about this Planwharf project before any planning.\n\nAsk only what blocks a good plan: the open decisions at the frontier, in one round. Word each question so yes accepts your recommended answer.\n\nProject: Partial\n\nReturn ONLY a JSON array of 3 to 6 strings.\n\nEach string is one frontier question about THIS project, with \"Recommended: ...\" in the same string.\n\nDo not ask for facts listed above. Do not implement."
+  },
+  {
+    "fn": "grillPrompt",
+    "args": [
+      {
+        "project": {
+          "name": "DocsOnly"
+        },
+        "revisions": [
+          {
+            "direction": "Verify"
+          }
+        ]
+      },
+      null,
+      [
+        "AGENTS.md"
+      ]
+    ],
+    "result": "You are interviewing the user about this Planwharf project before any planning.\n\nAsk only what blocks a good plan: the open decisions at the frontier, in one round. Word each question so yes accepts your recommended answer.\n\nProject: DocsOnly\n\nGoal: Verify\n\nDocs: AGENTS.md\n\nReturn ONLY a JSON array of 3 to 6 strings.\n\nEach string is one frontier question about THIS project, with \"Recommended: ...\" in the same string.\n\nDo not ask for facts listed above. Do not implement."
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      {
+        "revisions": [
+          {
+            "mode": "grill",
+            "title": "R1"
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      {
+        "revisions": [
+          {
+            "mode": "manual",
+            "title": "Grill me"
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      {
+        "revisions": [
+          {
+            "mode": "manual",
+            "title": "Grill with the docs"
+          }
+        ]
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      {
+        "revisions": [
+          {
+            "mode": "Grill",
+            "title": "Other"
+          }
+        ]
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      {
+        "revisions": []
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "grillDone",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "docs": [
+          " README.md ",
+          "",
+          "   ",
+          "docs/a.md"
+        ],
+        "names": [
+          "AGENTS.md"
+        ]
+      }
+    ],
+    "result": [
+      "README.md",
+      "docs/a.md"
+    ]
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "docs": [
+          null,
+          12,
+          {},
+          true,
+          " x "
+        ]
+      }
+    ],
+    "result": [
+      "null",
+      "12",
+      "[object Object]",
+      "true",
+      "x"
+    ]
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "docs": [
+          " ",
+          ""
+        ],
+        "names": [
+          "README.md"
+        ]
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "docs": [
+          "doc-1.md",
+          "doc-2.md",
+          "doc-3.md",
+          "doc-4.md",
+          "doc-5.md",
+          "doc-6.md",
+          "doc-7.md",
+          "doc-8.md",
+          "doc-9.md",
+          "doc-10.md",
+          "doc-11.md",
+          "doc-12.md",
+          "doc-13.md",
+          "doc-14.md",
+          "doc-15.md"
+        ]
+      }
+    ],
+    "result": [
+      "doc-1.md",
+      "doc-2.md",
+      "doc-3.md",
+      "doc-4.md",
+      "doc-5.md",
+      "doc-6.md",
+      "doc-7.md",
+      "doc-8.md",
+      "doc-9.md",
+      "doc-10.md",
+      "doc-11.md",
+      "doc-12.md"
+    ]
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "names": [
+          "README.md",
+          "README",
+          "AGENTS.md",
+          "CLAUDE.md",
+          "SKILL.md",
+          "CONTRIBUTING.md",
+          "docs/spec.md",
+          "docs\\sub\\guide.md",
+          "src/CLAUDE.md",
+          "index.js",
+          "package.json",
+          "docs/note.txt",
+          "src/other.md"
+        ]
+      }
+    ],
+    "result": [
+      "README.md",
+      "README",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "SKILL.md",
+      "CONTRIBUTING.md",
+      "docs/spec.md",
+      "docs\\sub\\guide.md",
+      "src/CLAUDE.md"
+    ]
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      {
+        "names": [
+          "docs/d1.md",
+          "docs/d2.md",
+          "docs/d3.md",
+          "docs/d4.md",
+          "docs/d5.md",
+          "docs/d6.md",
+          "docs/d7.md",
+          "docs/d8.md",
+          "docs/d9.md",
+          "docs/d10.md",
+          "docs/d11.md",
+          "docs/d12.md",
+          "docs/d13.md",
+          "docs/d14.md",
+          "docs/d15.md"
+        ]
+      }
+    ],
+    "result": [
+      "docs/d1.md",
+      "docs/d2.md",
+      "docs/d3.md",
+      "docs/d4.md",
+      "docs/d5.md",
+      "docs/d6.md",
+      "docs/d7.md",
+      "docs/d8.md",
+      "docs/d9.md",
+      "docs/d10.md",
+      "docs/d11.md",
+      "docs/d12.md"
+    ]
+  },
+  {
+    "fn": "collectDocs",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "README.md"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "docs/spec.md"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "docs\\nested\\guide.md"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "src/CLAUDE.md"
+    ],
+    "result": true
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "docs/plain.txt"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      "index.js"
+    ],
+    "result": false
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      ""
+    ],
+    "result": false
+  },
+  {
+    "fn": "isDocName",
+    "args": [
+      null
+    ],
+    "result": false
+  },
+  {
+    "fn": "listDocs",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "listDocs",
+    "args": [
+      ""
+    ],
+    "result": []
+  },
+  {
+    "fn": "listDocs",
+    "args": [
+      "nonexistent-docs-folder-parity"
+    ],
+    "result": []
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      " plain "
+    ],
+    "result": {
+      "answer": "plain",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "Line one\nLine two"
+    ],
+    "result": {
+      "answer": "Line one\nLine two",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "```plain```"
+    ],
+    "result": {
+      "answer": "```plain```",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "```json\n{\"answer\":\"text\",\"actions\":[{\"type\":\"dispatch_research\",\"projectId\":\"p1\"}]}\n```"
+    ],
+    "result": {
+      "answer": "text",
+      "actions": [
+        {
+          "type": "dispatch_research",
+          "projectId": "p1"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "```JSON\n{\"answer\":\"ok\",\"actions\":[]}\n```"
+    ],
+    "result": {
+      "answer": "ok",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":\"ok\",\"actions\":[{\"type\":\"new\",\"extra\":{\"x\":1}}]}"
+    ],
+    "result": {
+      "answer": "ok",
+      "actions": [
+        {
+          "type": "new",
+          "extra": {
+            "x": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":\"first\",\"answer\":\"last\",\"actions\":[]}"
+    ],
+    "result": {
+      "answer": "last",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{bad}"
+    ],
+    "result": {
+      "answer": "{bad}",
+      "actions": [],
+      "error": "Unreadable lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "```json\n{bad}\n```"
+    ],
+    "result": {
+      "answer": "```json\n{bad}\n```",
+      "actions": [],
+      "error": "Unreadable lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":\"ok\",\"actions\":[],\"extra\":1}"
+    ],
+    "result": {
+      "answer": "{\"answer\":\"ok\",\"actions\":[],\"extra\":1}",
+      "actions": [],
+      "error": "Invalid lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":\"ok\"}"
+    ],
+    "result": {
+      "answer": "{\"answer\":\"ok\"}",
+      "actions": [],
+      "error": "Invalid lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":123,\"actions\":[]}"
+    ],
+    "result": {
+      "answer": "{\"answer\":123,\"actions\":[]}",
+      "actions": [],
+      "error": "Invalid lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      "{\"answer\":\"ok\",\"actions\":{}}"
+    ],
+    "result": {
+      "answer": "{\"answer\":\"ok\",\"actions\":{}}",
+      "actions": [],
+      "error": "Invalid lead action envelope; no workers were dispatched."
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      " untrimmed ",
+      [
+        {
+          "type": "custom",
+          "unknown": "keep"
+        }
+      ]
+    ],
+    "result": {
+      "answer": " untrimmed ",
+      "actions": [
+        {
+          "type": "custom",
+          "unknown": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      ""
+    ],
+    "result": {
+      "answer": "",
+      "actions": []
+    }
+  },
+  {
+    "fn": "leadEnvelope",
+    "args": [
+      null
+    ],
+    "result": {
+      "answer": "",
+      "actions": []
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": false,
+      "reason": "empty question",
+      "answer": "",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "   ",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      }
+    ],
+    "result": {
+      "ok": false,
+      "reason": "empty question",
+      "answer": "",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      null,
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      }
+    ],
+    "result": {
+      "ok": false,
+      "reason": "empty question",
+      "answer": "",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "all projects",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      }
+    ],
+    "result": {
+      "ok": true,
+      "answer": "Speaking as Lead. Demo is working. Watching. Job: Port parity. Worker 1 Codeworker: build. Process 99 alive Worker 2 Reviewworker: verify. Checking. I am monitoring processes, worker logs, and the project folder: 1/2 alive, 7 files. Waiting for: tests. Next: review Last worker output: new\nSpeaking as Lead. Beta is idle. No running job. Worker: Sonnet. I am monitoring processes, worker logs, and the project folder: 0/1 alive, file count unavailable.",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "tutti",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      }
+    ],
+    "result": {
+      "ok": true,
+      "answer": "Speaking as Lead. Demo is working. Watching. Job: Port parity. Worker 1 Codeworker: build. Process 99 alive Worker 2 Reviewworker: verify. Checking. I am monitoring processes, worker logs, and the project folder: 1/2 alive, 7 files. Waiting for: tests. Next: review Last worker output: new\nSpeaking as Lead. Beta is idle. No running job. Worker: Sonnet. I am monitoring processes, worker logs, and the project folder: 0/1 alive, file count unavailable.",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "zzz",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": []
+      }
+    ],
+    "result": {
+      "ok": true,
+      "answer": "Lead: no projects in the notebook.",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "zzz",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      }
+    ],
+    "result": {
+      "ok": true,
+      "answer": "Lead: no projects in the notebook.",
+      "projectId": null
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "Codeworker",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead on Demo: Codeworker has slice \"build\". No interpreted activity yet. Process 99 is alive."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "model-review",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead on Demo: Reviewworker has slice \"verify\". Checking. Process 100 is stopped."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "split",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead split Demo into 2 slices: Codeworker — build; Reviewworker — verify."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "split",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "y"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "y",
+      "answer": "Lead did not split Beta. One worker on the whole job."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "How much quota is left?",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead usage: ChatGPT: 5-hour 30% used (70% left); Grok: exhausted (100% used (0% left)); Gemini: Not logged in."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "quota",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "idle"
+          }
+        ],
+        "plans": [],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead usage: ModelA: 20% used (80% left); ModelB: -5% used (105% left)."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "quota",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "idle",
+            "workerTail": "{\"type\":\"result\",\"result\":\"JSONL activity\"}"
+          }
+        ],
+        "plans": [],
+        "models": []
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead: no plans loaded."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "monitor",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead: Watching. 1/2 processes alive, 7 files. Waiting for: tests."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "monitor",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "y"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "y",
+      "answer": "Lead: not monitoring a run. 0/1 processes alive, file count unavailable. Waiting for: nothing named."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "next",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead on Demo: waiting for tests. Next: review"
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "log",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead last worker output on Demo: new"
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "log",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "idle",
+            "workerTail": "{\"type\":\"result\",\"result\":\"JSONL activity\"}"
+          }
+        ],
+        "plans": [],
+        "models": []
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Lead last worker output on Demo: Worker returned its final response."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "log",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "y"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "y",
+      "answer": "Lead: no worker log yet on Beta."
+    }
+  },
+  {
+    "fn": "answerQuestion",
+    "args": [
+      "summary",
+      {
+        "orchestratorLabel": "Lead",
+        "projects": [
+          {
+            "id": "x",
+            "name": "Demo",
+            "label": "working",
+            "jobTitle": "Port parity",
+            "orchestratorDoing": "Watching.",
+            "waitingFor": "tests",
+            "next": "review",
+            "workerTail": "old\nnew",
+            "monitoring": {
+              "alive": 1,
+              "workers": 2,
+              "folderFiles": 7
+            },
+            "dispatch": [
+              {
+                "modelId": "model-code",
+                "label": "Codeworker",
+                "slice": "build",
+                "pid": 99,
+                "alive": true
+              },
+              {
+                "modelId": "model-review",
+                "label": "Reviewworker",
+                "slice": "verify",
+                "activity": "Checking.",
+                "pid": 100,
+                "alive": false
+              }
+            ]
+          },
+          {
+            "id": "y",
+            "name": "Beta",
+            "label": "idle",
+            "workerLabel": "Sonnet",
+            "monitoring": {
+              "alive": 0,
+              "workers": 1,
+              "folderFiles": null
+            }
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "ChatGPT",
+            "readable": true,
+            "exhausted": false,
+            "pct": 30,
+            "leftPct": 70,
+            "windows": [
+              {
+                "name": "5-hour",
+                "pct": 30,
+                "leftPct": 70
+              }
+            ]
+          },
+          {
+            "id": "p2",
+            "label": "Grok",
+            "readable": true,
+            "exhausted": true,
+            "pct": 100,
+            "leftPct": 0,
+            "windows": []
+          },
+          {
+            "id": "p3",
+            "label": "Gemini",
+            "readable": false,
+            "reason": "Not logged in"
+          }
+        ],
+        "models": [
+          {
+            "id": "m1",
+            "label": "ModelA",
+            "used": 10,
+            "limit": 50
+          },
+          {
+            "id": "m2",
+            "label": "ModelB",
+            "used": -5,
+            "limit": 100
+          }
+        ]
+      },
+      "x"
+    ],
+    "result": {
+      "ok": true,
+      "projectId": "x",
+      "answer": "Speaking as Lead. Demo is working. Watching. Job: Port parity. Worker 1 Codeworker: build. Process 99 alive Worker 2 Reviewworker: verify. Checking. I am monitoring processes, worker logs, and the project folder: 1/2 alive, 7 files. Waiting for: tests. Next: review Last worker output: new"
+    }
+  },
+  {
+    "fn": "briefRow",
+    "args": [
+      {
+        "id": "x",
+        "name": "Demo",
+        "label": "working",
+        "jobTitle": "Port parity",
+        "orchestratorDoing": "Watching.",
+        "waitingFor": "tests",
+        "next": "review",
+        "workerTail": "old\nnew",
+        "monitoring": {
+          "alive": 1,
+          "workers": 2,
+          "folderFiles": 7
+        },
+        "dispatch": [
+          {
+            "modelId": "model-code",
+            "label": "Codeworker",
+            "slice": "build",
+            "pid": 99,
+            "alive": true
+          },
+          {
+            "modelId": "model-review",
+            "label": "Reviewworker",
+            "slice": "verify",
+            "activity": "Checking.",
+            "pid": 100,
+            "alive": false
+          }
+        ]
+      },
+      "Lead"
+    ],
+    "result": "Speaking as Lead. Demo is working. Watching. Job: Port parity. Worker 1 Codeworker: build. Process 99 alive Worker 2 Reviewworker: verify. Checking. I am monitoring processes, worker logs, and the project folder: 1/2 alive, 7 files. Waiting for: tests. Next: review Last worker output: new"
+  },
+  {
+    "fn": "briefRow",
+    "args": [
+      {
+        "id": "y",
+        "name": "Beta",
+        "label": "idle",
+        "workerLabel": "Sonnet",
+        "monitoring": {
+          "alive": 0,
+          "workers": 1,
+          "folderFiles": null
+        }
+      },
+      null
+    ],
+    "result": "Speaking as Orchestrator. Beta is idle. No running job. Worker: Sonnet. I am monitoring processes, worker logs, and the project folder: 0/1 alive, file count unavailable."
+  },
+  {
+    "fn": "briefRow",
+    "args": [
+      null,
+      "Lead"
+    ],
+    "result": "No project."
+  },
+  {
+    "fn": "packState",
+    "args": [
+      {
+        "orchestratorLabel": "Lead",
+        "orchestratorId": "chosen",
+        "mode": "plan",
+        "grillPropose": true,
+        "grillKind": "docs",
+        "projects": [
+          {
+            "id": "alpha",
+            "name": "Alpha",
+            "folder": null,
+            "github": "owner/alpha",
+            "repository": {
+              "branch": "main"
+            },
+            "status": "working",
+            "label": "Working",
+            "goal": "Build parity",
+            "stateArt": "Ready",
+            "open": [
+              "open-0",
+              "open-1",
+              "open-2",
+              "open-3",
+              "open-4",
+              "open-5",
+              "open-6",
+              "open-7",
+              "open-8",
+              "open-9",
+              "open-10",
+              "open-11",
+              "open-12",
+              "open-13"
+            ],
+            "analysis": "Checked.",
+            "jobTitle": "Job 50",
+            "plan": [
+              "step-0",
+              "step-1",
+              "step-2",
+              "step-3",
+              "step-4",
+              "step-5",
+              "step-6",
+              "step-7",
+              "step-8",
+              "step-9",
+              "step-10",
+              "step-11",
+              "step-12",
+              "step-13",
+              "step-14",
+              "step-15",
+              "step-16",
+              "step-17"
+            ],
+            "checkpoint": {
+              "reason": "pause",
+              "at": "2026-11-26T00:00:00Z",
+              "path": "cp.json",
+              "jobTitle": "Job 50",
+              "plan": [
+                "cp-0",
+                "cp-1",
+                "cp-2",
+                "cp-3",
+                "cp-4",
+                "cp-5",
+                "cp-6",
+                "cp-7",
+                "cp-8",
+                "cp-9",
+                "cp-10",
+                "cp-11",
+                "cp-12",
+                "cp-13"
+              ]
+            },
+            "orchestratorDoing": "Watching",
+            "waitingFor": "tests",
+            "next": "verify",
+            "savingMode": "safe",
+            "facts": {
+              "git": true,
+              "fileCount": 3,
+              "lastCommit": "c1",
+              "dirty": [
+                "d-0",
+                "d-1",
+                "d-2",
+                "d-3",
+                "d-4",
+                "d-5",
+                "d-6",
+                "d-7",
+                "d-8",
+                "d-9",
+                "d-10",
+                "d-11",
+                "d-12",
+                "d-13"
+              ]
+            },
+            "notes": [
+              "alpha-own-note"
+            ],
+            "dispatch": [
+              {
+                "modelId": "m1",
+                "label": "M1",
+                "slice": "s1",
+                "pid": 42,
+                "alive": true,
+                "activity": "Running"
+              }
+            ],
+            "monitoring": {
+              "alive": 1,
+              "workers": 1,
+              "folderFiles": 3
+            },
+            "workerTail": "line 1\nline 2"
+          },
+          {
+            "id": "beta",
+            "name": "Beta",
+            "folder": null,
+            "status": "idle",
+            "jobTitle": "PRIVATE_BETA_JOB",
+            "notes": [
+              "PRIVATE_BETA_NOTE"
+            ]
+          }
+        ],
+        "execution": {
+          "megaTasks": [
+            {
+              "id": "ma",
+              "projectId": "alpha"
+            },
+            {
+              "id": "mb",
+              "projectId": "beta"
+            }
+          ],
+          "subTasks": [
+            {
+              "id": "sa",
+              "megaTaskId": "ma"
+            },
+            {
+              "id": "sb",
+              "megaTaskId": "mb",
+              "secret": "PRIVATE"
+            }
+          ],
+          "results": [
+            {
+              "megaTaskId": "ma",
+              "status": "COMPLETE"
+            },
+            {
+              "megaTaskId": "mb",
+              "summary": "PRIVATE"
+            }
+          ],
+          "checkpoints": [
+            {
+              "id": "ca",
+              "projectId": "alpha"
+            },
+            {
+              "id": "cb",
+              "projectId": "beta"
+            }
+          ]
+        },
+        "researches": [
+          {
+            "id": "ra",
+            "projectId": "alpha",
+            "title": "Alpha Research"
+          },
+          {
+            "id": "rb",
+            "projectId": "beta",
+            "title": "PRIVATE_BETA_RESEARCH"
+          }
+        ],
+        "fleet": [
+          {
+            "id": "m1",
+            "label": "M1",
+            "role": "worker",
+            "plan": "p1",
+            "exhausted": false,
+            "enabled": true,
+            "roles": {
+              "worker": true
+            },
+            "roleEligibility": {
+              "worker": true
+            },
+            "lead": false
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "Plan 1",
+            "readable": true,
+            "exhausted": false,
+            "pct": 20,
+            "leftPct": 80,
+            "windows": []
+          }
+        ]
+      },
+      {
+        "id": "alpha",
+        "name": "Alpha",
+        "folder": null,
+        "github": "owner/alpha",
+        "repository": {
+          "branch": "main"
+        },
+        "status": "working",
+        "label": "Working",
+        "goal": "Build parity",
+        "stateArt": "Ready",
+        "open": [
+          "open-0",
+          "open-1",
+          "open-2",
+          "open-3",
+          "open-4",
+          "open-5",
+          "open-6",
+          "open-7",
+          "open-8",
+          "open-9",
+          "open-10",
+          "open-11",
+          "open-12",
+          "open-13"
+        ],
+        "analysis": "Checked.",
+        "jobTitle": "Job 50",
+        "plan": [
+          "step-0",
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4",
+          "step-5",
+          "step-6",
+          "step-7",
+          "step-8",
+          "step-9",
+          "step-10",
+          "step-11",
+          "step-12",
+          "step-13",
+          "step-14",
+          "step-15",
+          "step-16",
+          "step-17"
+        ],
+        "checkpoint": {
+          "reason": "pause",
+          "at": "2026-11-26T00:00:00Z",
+          "path": "cp.json",
+          "jobTitle": "Job 50",
+          "plan": [
+            "cp-0",
+            "cp-1",
+            "cp-2",
+            "cp-3",
+            "cp-4",
+            "cp-5",
+            "cp-6",
+            "cp-7",
+            "cp-8",
+            "cp-9",
+            "cp-10",
+            "cp-11",
+            "cp-12",
+            "cp-13"
+          ]
+        },
+        "orchestratorDoing": "Watching",
+        "waitingFor": "tests",
+        "next": "verify",
+        "savingMode": "safe",
+        "facts": {
+          "git": true,
+          "fileCount": 3,
+          "lastCommit": "c1",
+          "dirty": [
+            "d-0",
+            "d-1",
+            "d-2",
+            "d-3",
+            "d-4",
+            "d-5",
+            "d-6",
+            "d-7",
+            "d-8",
+            "d-9",
+            "d-10",
+            "d-11",
+            "d-12",
+            "d-13"
+          ]
+        },
+        "notes": [
+          "alpha-own-note"
+        ],
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "M1",
+            "slice": "s1",
+            "pid": 42,
+            "alive": true,
+            "activity": "Running"
+          }
+        ],
+        "monitoring": {
+          "alive": 1,
+          "workers": 1,
+          "folderFiles": 3
+        },
+        "workerTail": "line 1\nline 2"
+      }
+    ],
+    "result": {
+      "orchestrator": "Lead",
+      "orchestratorId": "chosen",
+      "executionHandoff": {
+        "megaTasks": [
+          {
+            "id": "ma",
+            "projectId": "alpha"
+          }
+        ],
+        "subTasks": [
+          {
+            "id": "sa",
+            "megaTaskId": "ma"
+          }
+        ],
+        "results": [
+          {
+            "megaTaskId": "ma",
+            "status": "COMPLETE"
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "ca",
+            "projectId": "alpha"
+          }
+        ],
+        "repository": {
+          "git": true,
+          "fileCount": 3,
+          "lastCommit": "c1",
+          "dirty": [
+            "d-0",
+            "d-1",
+            "d-2",
+            "d-3",
+            "d-4",
+            "d-5",
+            "d-6",
+            "d-7",
+            "d-8",
+            "d-9",
+            "d-10",
+            "d-11",
+            "d-12",
+            "d-13"
+          ]
+        },
+        "notes": [
+          "alpha-own-note"
+        ]
+      },
+      "researches": [
+        {
+          "id": "ra",
+          "projectId": "alpha",
+          "title": "Alpha Research"
+        }
+      ],
+      "mode": "plan",
+      "grill": {
+        "propose": true,
+        "kind": "docs"
+      },
+      "focus": {
+        "id": "alpha",
+        "name": "Alpha",
+        "folder": null,
+        "github": "owner/alpha",
+        "repository": {
+          "branch": "main"
+        },
+        "status": "working",
+        "label": "Working",
+        "goal": "Build parity",
+        "state": "Ready",
+        "open": [
+          "open-0",
+          "open-1",
+          "open-2",
+          "open-3",
+          "open-4",
+          "open-5",
+          "open-6",
+          "open-7",
+          "open-8",
+          "open-9",
+          "open-10",
+          "open-11"
+        ],
+        "analysis": "Checked.",
+        "job": "Job 50",
+        "plan": [
+          "step-0",
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4",
+          "step-5",
+          "step-6",
+          "step-7",
+          "step-8",
+          "step-9",
+          "step-10",
+          "step-11",
+          "step-12",
+          "step-13",
+          "step-14",
+          "step-15"
+        ],
+        "checkpoint": {
+          "reason": "pause",
+          "at": "2026-11-26T00:00:00Z",
+          "path": "cp.json",
+          "jobTitle": "Job 50",
+          "plan": [
+            "cp-0",
+            "cp-1",
+            "cp-2",
+            "cp-3",
+            "cp-4",
+            "cp-5",
+            "cp-6",
+            "cp-7",
+            "cp-8",
+            "cp-9",
+            "cp-10",
+            "cp-11"
+          ]
+        },
+        "orchestratorDoing": "Watching",
+        "waitingFor": "tests",
+        "next": "verify",
+        "files": 3,
+        "git": true,
+        "lastCommit": "c1",
+        "dirty": [
+          "d-0",
+          "d-1",
+          "d-2",
+          "d-3",
+          "d-4",
+          "d-5",
+          "d-6",
+          "d-7",
+          "d-8",
+          "d-9",
+          "d-10",
+          "d-11"
+        ],
+        "savingMode": "safe",
+        "workers": [
+          {
+            "id": "m1",
+            "name": "M1",
+            "slice": "s1",
+            "pid": 42,
+            "alive": true,
+            "activity": "Running",
+            "log": ""
+          }
+        ],
+        "monitoring": {
+          "alive": 1,
+          "workers": 1,
+          "folderFiles": 3
+        },
+        "lastLog": "line 2"
+      },
+      "others": [],
+      "fleet": [
+        {
+          "id": "m1",
+          "label": "M1",
+          "role": "worker",
+          "plan": "p1",
+          "exhausted": false,
+          "enabled": true,
+          "roles": {
+            "worker": true
+          },
+          "roleEligibility": {
+            "worker": true
+          },
+          "lead": false
+        }
+      ],
+      "plans": [
+        {
+          "id": "p1",
+          "label": "Plan 1",
+          "readable": true,
+          "exhausted": false,
+          "pct": 20,
+          "leftPct": 80,
+          "windows": []
+        }
+      ]
+    }
+  },
+  {
+    "fn": "packState",
+    "args": [
+      {
+        "orchestratorLabel": "Lead",
+        "orchestratorId": "chosen",
+        "mode": "plan",
+        "grillPropose": true,
+        "grillKind": "docs",
+        "projects": [
+          {
+            "id": "alpha",
+            "name": "Alpha",
+            "folder": null,
+            "github": "owner/alpha",
+            "repository": {
+              "branch": "main"
+            },
+            "status": "working",
+            "label": "Working",
+            "goal": "Build parity",
+            "stateArt": "Ready",
+            "open": [
+              "open-0",
+              "open-1",
+              "open-2",
+              "open-3",
+              "open-4",
+              "open-5",
+              "open-6",
+              "open-7",
+              "open-8",
+              "open-9",
+              "open-10",
+              "open-11",
+              "open-12",
+              "open-13"
+            ],
+            "analysis": "Checked.",
+            "jobTitle": "Job 50",
+            "plan": [
+              "step-0",
+              "step-1",
+              "step-2",
+              "step-3",
+              "step-4",
+              "step-5",
+              "step-6",
+              "step-7",
+              "step-8",
+              "step-9",
+              "step-10",
+              "step-11",
+              "step-12",
+              "step-13",
+              "step-14",
+              "step-15",
+              "step-16",
+              "step-17"
+            ],
+            "checkpoint": {
+              "reason": "pause",
+              "at": "2026-11-26T00:00:00Z",
+              "path": "cp.json",
+              "jobTitle": "Job 50",
+              "plan": [
+                "cp-0",
+                "cp-1",
+                "cp-2",
+                "cp-3",
+                "cp-4",
+                "cp-5",
+                "cp-6",
+                "cp-7",
+                "cp-8",
+                "cp-9",
+                "cp-10",
+                "cp-11",
+                "cp-12",
+                "cp-13"
+              ]
+            },
+            "orchestratorDoing": "Watching",
+            "waitingFor": "tests",
+            "next": "verify",
+            "savingMode": "safe",
+            "facts": {
+              "git": true,
+              "fileCount": 3,
+              "lastCommit": "c1",
+              "dirty": [
+                "d-0",
+                "d-1",
+                "d-2",
+                "d-3",
+                "d-4",
+                "d-5",
+                "d-6",
+                "d-7",
+                "d-8",
+                "d-9",
+                "d-10",
+                "d-11",
+                "d-12",
+                "d-13"
+              ]
+            },
+            "notes": [
+              "alpha-own-note"
+            ],
+            "dispatch": [
+              {
+                "modelId": "m1",
+                "label": "M1",
+                "slice": "s1",
+                "pid": 42,
+                "alive": true,
+                "activity": "Running"
+              }
+            ],
+            "monitoring": {
+              "alive": 1,
+              "workers": 1,
+              "folderFiles": 3
+            },
+            "workerTail": "line 1\nline 2"
+          },
+          {
+            "id": "beta",
+            "name": "Beta",
+            "folder": null,
+            "status": "idle",
+            "jobTitle": "PRIVATE_BETA_JOB",
+            "notes": [
+              "PRIVATE_BETA_NOTE"
+            ]
+          }
+        ],
+        "execution": {
+          "megaTasks": [
+            {
+              "id": "ma",
+              "projectId": "alpha"
+            },
+            {
+              "id": "mb",
+              "projectId": "beta"
+            }
+          ],
+          "subTasks": [
+            {
+              "id": "sa",
+              "megaTaskId": "ma"
+            },
+            {
+              "id": "sb",
+              "megaTaskId": "mb",
+              "secret": "PRIVATE"
+            }
+          ],
+          "results": [
+            {
+              "megaTaskId": "ma",
+              "status": "COMPLETE"
+            },
+            {
+              "megaTaskId": "mb",
+              "summary": "PRIVATE"
+            }
+          ],
+          "checkpoints": [
+            {
+              "id": "ca",
+              "projectId": "alpha"
+            },
+            {
+              "id": "cb",
+              "projectId": "beta"
+            }
+          ]
+        },
+        "researches": [
+          {
+            "id": "ra",
+            "projectId": "alpha",
+            "title": "Alpha Research"
+          },
+          {
+            "id": "rb",
+            "projectId": "beta",
+            "title": "PRIVATE_BETA_RESEARCH"
+          }
+        ],
+        "fleet": [
+          {
+            "id": "m1",
+            "label": "M1",
+            "role": "worker",
+            "plan": "p1",
+            "exhausted": false,
+            "enabled": true,
+            "roles": {
+              "worker": true
+            },
+            "roleEligibility": {
+              "worker": true
+            },
+            "lead": false
+          }
+        ],
+        "plans": [
+          {
+            "id": "p1",
+            "label": "Plan 1",
+            "readable": true,
+            "exhausted": false,
+            "pct": 20,
+            "leftPct": 80,
+            "windows": []
+          }
+        ]
+      },
+      null
+    ],
+    "result": {
+      "orchestrator": "Lead",
+      "orchestratorId": "chosen",
+      "executionHandoff": null,
+      "researches": [
+        {
+          "id": "ra",
+          "projectId": "alpha",
+          "title": "Alpha Research"
+        },
+        {
+          "id": "rb",
+          "projectId": "beta",
+          "title": "PRIVATE_BETA_RESEARCH"
+        }
+      ],
+      "mode": "plan",
+      "grill": {
+        "propose": true,
+        "kind": "docs"
+      },
+      "focus": null,
+      "others": [
+        {
+          "id": "alpha",
+          "name": "Alpha",
+          "folder": null,
+          "github": "owner/alpha",
+          "repository": {
+            "branch": "main"
+          },
+          "status": "working",
+          "job": "Job 50"
+        },
+        {
+          "id": "beta",
+          "name": "Beta",
+          "folder": null,
+          "github": null,
+          "repository": null,
+          "status": "idle",
+          "job": "PRIVATE_BETA_JOB"
+        }
+      ],
+      "fleet": [
+        {
+          "id": "m1",
+          "label": "M1",
+          "role": "worker",
+          "plan": "p1",
+          "exhausted": false,
+          "enabled": true,
+          "roles": {
+            "worker": true
+          },
+          "roleEligibility": {
+            "worker": true
+          },
+          "lead": false
+        }
+      ],
+      "plans": [
+        {
+          "id": "p1",
+          "label": "Plan 1",
+          "readable": true,
+          "exhausted": false,
+          "pct": 20,
+          "leftPct": 80,
+          "windows": []
+        }
+      ]
+    }
+  },
+  {
+    "fn": "packState",
+    "args": [
+      {
+        "grillPropose": false,
+        "projects": []
+      },
+      {
+        "id": "p",
+        "name": "P",
+        "savingMode": "normal"
+      }
+    ],
+    "result": {
+      "orchestrator": "Orchestrator",
+      "executionHandoff": null,
+      "researches": [],
+      "grill": {
+        "propose": false,
+        "kind": "off"
+      },
+      "focus": {
+        "id": "p",
+        "name": "P",
+        "folder": null,
+        "github": null,
+        "repository": null,
+        "goal": "",
+        "state": "",
+        "open": [],
+        "analysis": "",
+        "job": null,
+        "plan": [],
+        "checkpoint": null,
+        "orchestratorDoing": "",
+        "waitingFor": "",
+        "next": "",
+        "files": null,
+        "git": null,
+        "lastCommit": "",
+        "dirty": [],
+        "workers": [],
+        "monitoring": null,
+        "lastLog": ""
+      },
+      "others": [],
+      "fleet": [],
+      "plans": []
+    }
+  },
+  {
+    "fn": "packState",
+    "args": [
+      null,
+      null
+    ],
+    "result": {
+      "orchestrator": "Orchestrator",
+      "orchestratorId": null,
+      "executionHandoff": null,
+      "researches": [],
+      "mode": null,
+      "grill": {
+        "propose": null,
+        "kind": "me"
+      },
+      "focus": null,
+      "others": [],
+      "fleet": [],
+      "plans": []
+    }
+  },
+  {
+    "fn": "packState",
+    "args": [
+      {},
+      {
+        "id": "p1",
+        "name": "P1"
+      }
+    ],
+    "result": {
+      "orchestrator": "Orchestrator",
+      "executionHandoff": null,
+      "researches": [],
+      "grill": {
+        "propose": true,
+        "kind": "me"
+      },
+      "focus": {
+        "id": "p1",
+        "name": "P1",
+        "folder": null,
+        "github": null,
+        "repository": null,
+        "goal": "",
+        "state": "",
+        "open": [],
+        "analysis": "",
+        "job": null,
+        "plan": [],
+        "checkpoint": null,
+        "orchestratorDoing": "",
+        "waitingFor": "",
+        "next": "",
+        "files": null,
+        "git": null,
+        "lastCommit": "",
+        "dirty": [],
+        "workers": [],
+        "monitoring": null,
+        "lastLog": ""
+      },
+      "others": [],
+      "fleet": [],
+      "plans": []
+    }
+  },
+  {
+    "fn": "evaluationPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "results": [
+          {
+            "status": "COMPLETE",
+            "summary": "ok",
+            "filesChanged": [
+              "a.cs"
+            ],
+            "blockers": []
+          }
+        ],
+        "checks": {
+          "label": "test",
+          "exitCode": 0,
+          "seconds": 2,
+          "output": "pass"
+        }
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: Goal\nRecorded results:\n- COMPLETE: ok Files changed: a.cs.\nPlanwharf ran `test` in the project folder just now: PASSED in 2 s. Output tail:\n```\npass\n```\nThis run is fresh evidence: do not run the tests again. Do not edit files. Inspect the project folder (files, git log, git diff) when the results leave a doubt.\nA worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "evaluationPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": null,
+        "results": []
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask finished.\nGoal: not recorded\nRecorded results:\n- none recorded\nA worker that did part of the goal is not the end of it: if the goal is not met, put all the remaining work in next, so the crew continues.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "nudgePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "alert": {
+          "title": "Stalled",
+          "message": "No progress"
+        }
+      }
+    ],
+    "result": "Supervisor alert for project Proj: Stalled. No progress\nGoal: Goal\nIf active workers are still making progress, set next to null. If the work is stuck, name the objective that recovers it.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "nudgePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": null,
+        "alert": {
+          "title": "Alert",
+          "message": "Check"
+        }
+      }
+    ],
+    "result": "Supervisor alert for project Proj: Alert. Check\nGoal: not recorded\nIf active workers are still making progress, set next to null. If the work is stuck, name the objective that recovers it.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "continuePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Port modules",
+        "reason": "blocked worker",
+        "results": [
+          {
+            "status": "BLOCKED",
+            "summary": "Partial",
+            "filesChanged": [
+              "a.cs"
+            ],
+            "blockers": [
+              "Needs test"
+            ]
+          }
+        ]
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask stopped before the goal was met (blocked worker).\nGoal: Port modules\nRecorded results:\n- BLOCKED: Partial Files changed: a.cs. Blockers: Needs test\nInspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.\nPut in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "continuePrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "results": []
+      }
+    ],
+    "result": "Autonomous review of project Proj. The current MegaTask stopped before the goal was met (a step did not finish).\nGoal: not recorded\nRecorded results:\n- none recorded\nInspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.\nPut in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.\nReply with one JSON object and nothing else: {\"done\":true|false,\"next\":\"objective or null\",\"assumptions\":[\"...\"],\"summary\":\"one or two plain sentences\"}\nSet done to true only if the goal is met by the recorded results. Otherwise put the single next objective in next.\nAlso give \"summary\": one or two plain sentences for the owner that say what the work did, from the results above, at most 280 characters. No file paths, no code, no test names.\nDecide open questions yourself and list what you assumed. Work stays inside the project folder: never push, merge to a shared branch, or publish a release."
+  },
+  {
+    "fn": "splitPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Port sheet 46c",
+        "builders": [
+          {
+            "id": "a",
+            "label": "A",
+            "provider": "p1",
+            "tier": "light",
+            "left": 50
+          }
+        ],
+        "verifiers": [
+          {
+            "id": "b",
+            "label": "B",
+            "provider": "p2",
+            "tier": "premium"
+          }
+        ],
+        "files": [
+          "a.cs",
+          "b.cs"
+        ],
+        "said": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "documents": [
+          {
+            "path": "docs/spec.md",
+            "text": "Spec content",
+            "clipped": true
+          }
+        ]
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: Port sheet 46c\nYou told the user in the chat, before this work started:\n<<<\n…xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n>>>\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others. A part may also change the files of the parts it depends on, once they are finished.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, light, 50% quota left)\nModels allowed to verify: b (B, provider p2, premium, quota not reported)\nProject files (2):\na.cs\nb.cs\nDocument the goal names, docs/spec.md (start only; read the rest in the project folder):\n<<<\nSpec content\n>>>\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+  },
+  {
+    "fn": "splitPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": null,
+        "builders": [
+          {
+            "id": "a",
+            "label": "A",
+            "provider": "p1",
+            "tier": "default"
+          }
+        ],
+        "verifiers": [
+          {
+            "id": "b",
+            "label": "B",
+            "provider": "p2",
+            "tier": "premium",
+            "left": 80
+          }
+        ],
+        "files": []
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: not recorded\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others. A part may also change the files of the parts it depends on, once they are finished.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: a (A, provider p1, default, quota not reported)\nModels allowed to verify: b (B, provider p2, premium, 80% quota left)\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+  },
+  {
+    "fn": "assignmentPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": "Goal",
+        "slices": [
+          "Build",
+          "Verify"
+        ],
+        "candidates": [
+          [
+            {
+              "id": "a",
+              "label": "A",
+              "provider": "p1"
+            }
+          ],
+          [
+            {
+              "id": "b",
+              "label": "B",
+              "provider": "p2"
+            }
+          ]
+        ],
+        "said": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: Goal\nYou told the user in the chat, before this work started:\n<<<\n…yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\n>>>\nIf you proposed a crew there, keep that crew unless one of its models is not allowed below; if you choose differently, say why in \"why\".\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build\n   Allowed: a (A, provider p1)\n2. Verify\n   Allowed: b (B, provider p2)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nYou may inspect the project to judge the slices; do not change anything.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
+  },
+  {
+    "fn": "assignmentPrompt",
+    "args": [
+      {
+        "name": "Proj",
+        "goal": null,
+        "slices": [
+          "Build"
+        ],
+        "candidates": [
+          [
+            {
+              "id": "a",
+              "label": "A",
+              "provider": "p1"
+            }
+          ]
+        ]
+      }
+    ],
+    "result": "Autonomous planning for project Proj. Goal: not recorded\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build\n   Allowed: a (A, provider p1)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nYou may inspect the project to judge the slices; do not change anything.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
+  },
+  {
+    "fn": "strictDecisionPrompt",
+    "args": [
+      "Review project."
+    ],
+    "result": "Review project.\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it."
+  },
+  {
+    "fn": "strictDecisionPrompt",
+    "args": [
+      "Line 1\nLine 2"
+    ],
+    "result": "Line 1\nLine 2\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it."
+  }
+]
