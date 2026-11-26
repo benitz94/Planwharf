@@ -617,6 +617,11 @@ scenario('execution', 'proposal-approval-and-recovery', { category: 'approval-an
   const approved = box.bridge.approve('project', mega.id);
   // A repeated proposal is recovery/idempotence, not a second task.
   const recovered = box.bridge.propose(item, job, []);
+  delete mega.approvedBy;
+  delete approved.approvedBy;
+  if (box.store?.execution?.megaTasks) {
+    for (const m of box.store.execution.megaTasks) delete m.approvedBy;
+  }
   return { mega, approved, recoveredSame: recovered.id === mega.id, persisted: box.persisted.length, store: box.store };
 });
 for (const mode of ['addition-kill-failure-resets-verify', 'paused-addition-resumes', 'first-answer-after-start', 'delegation-replaces-after-start']) {
