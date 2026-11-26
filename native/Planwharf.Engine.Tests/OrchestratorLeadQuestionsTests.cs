@@ -333,7 +333,7 @@ public class OrchestratorLeadQuestionsTests
     [Fact]
     public void LinkedFolder_RejectsRelativeMissingOrThrowingPaths()
     {
-        var root = Path.Combine("C:", "repo", "alpha");
+        var root = Path.Combine(Path.GetPathRoot(Path.GetTempPath())!, "repo", "alpha");
         var fs = new FakeFileSystem { RealPaths = { [root] = root }, ExistingDirectories = { root } };
         Assert.Null(OrchestratorLeadQuestions.LinkedFolder(null, fs));
         Assert.Null(OrchestratorLeadQuestions.LinkedFolder("relative/path", fs));
@@ -603,7 +603,7 @@ public class OrchestratorLeadQuestionsTests
     [Fact]
     public async Task ComposeGrillRoundAsync_UsesLeadDocsAndWorkPlan_AndFallsBackDeterministically()
     {
-        var root = Path.Combine("C:", "repo", "grill");
+        var root = Path.Combine(Path.GetPathRoot(Path.GetTempPath())!, "repo", "grill");
         var planPath = Path.Combine(root, ".planwharf", "plan.md");
         var fs = new FakeFileSystem
         {
