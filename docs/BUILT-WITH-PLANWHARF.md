@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **68 of 72** | 72 |
 | JavaScript engine lines ported | **about 11,500 of 14,000** (82%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions done, waiting for review | 0 to 8 |
-| C# engine tests | 2803, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
+| C# engine tests | 2810, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,
@@ -40,7 +40,7 @@ Signature adaptations: nested helper/data wrappers preserve complete JavaScript 
 
 Deferred cases: real program process-tree execution, live provider logins, and network queries (tested with deterministic fake adapters and in-memory mocks; live providers forbidden by porting rules); composition-root orchestrator facade orchestration (Job 52: durable chat store mutation `store.asks.push`, live process spawning, real worker dispatch, atomic file persistence, and ledger transaction tracking); native host / UI integration and Windows hand test (Phase 7).
 
-Acceptance results: Release build clean (0 warnings, 0 errors); 71 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,803 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; full JavaScript test suite passed with `node --test` (822 tests, 0 failures); git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent verification was completed by `claude-sonnet-4-6` on commit `776a83fb179297ca701acec52967811d0666e714` (Approved, 0 blocking issues).
+Acceptance results: Release build clean (0 warnings, 0 errors); 78 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,810 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; full JavaScript test suite passed with `node --test` (822 tests, 0 failures); git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent review was completed by `claude-sonnet-4-6` on commit `776a83fb179297ca701acec52967811d0666e714` (Approved, 0 blocking issues); subsequent verification hardening in commit `2ae99493d7bd5de33e3f0bcd0a8842876eacfdab` could not be re-reviewed by `claude-sonnet-4-6` due to Claude weekly quota exhaustion (resets 6am Europe/Rome).
 
 Final verification and JavaScript baseline analysis (attempt-281):
 
@@ -74,13 +74,18 @@ Newly executed checks on the final tree:
 | `node --test engine/research-dispatch.test.cjs` | 1 passed |
 | `node --test engine/parity.test.cjs` | 5 passed |
 | `dotnet build native/Planwharf.Engine -c Release` | Exit 0; 0 warnings, 0 errors |
-| `dotnet test native/Planwharf.Engine.Tests -c Release --filter OrchestratorLeadQuestionsTests` | 71 passed |
+| `dotnet test native/Planwharf.Engine.Tests -c Release --filter OrchestratorLeadQuestionsTests` | 78 passed |
 | `dotnet test native/Planwharf.Engine.Tests -c Release --filter ScenarioParityTests` | 137 passed |
 | `dotnet test native/Planwharf.Engine.Tests -c Release --filter ParityTests` | 1,396 passed (includes scenario tests) |
 | `dotnet test native/Planwharf.Engine.Tests -c Release --filter FullyQualifiedName~Planwharf.Engine.Tests.ParityTests` | 1,259 passed (pure parity class) |
-| `dotnet test native/Planwharf.Engine.Tests -c Release` | 2,803 passed, 0 failed, 0 skipped; 1 minute 24 seconds |
+| `dotnet test native/Planwharf.Engine.Tests -c Release` | 2,810 passed, 0 failed, 0 skipped; 2 minutes 18 seconds |
 | `dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared` | Exit 1: platform linker not found; Visual Studio Desktop Development for C++ workload required |
 | `git diff --check` | Exit 0 |
+
+Independent verification pass (attempt-282, commit `2ae99493d7bd5de33e3f0bcd0a8842876eacfdab`):
+- Added thread-safety locking around `EmitEffect` (`effects.Add`) and `OnModelProgress` (`thinkingState` updates/cloning) in `OrchestratorLeadQuestions.cs` so concurrent progress callbacks within a single turn cannot race.
+- Added 7 unit tests in `OrchestratorLeadQuestionsTests.cs` (71 → 78 tests) covering duplicate-key last-write-wins JSON envelopes, multi-threaded `OnProgress` concurrency, `AskLeadDecisionAsync` strict-retry fallback to alternate provider / `LEAD_FAILED` / idle decision / `PrepareTask` failure, `ReviewSnapshotAsync` failure ledger states and `ComposeGrillRoundAsync` empty-question fallback, `AskAsync` multi-hop `process` + `PROVIDER_USAGE_LIMIT` cascade, null-adapter / no-lead / empty-answer / malformed-envelope / post-cancellation-throw paths, saving-mode `note_once` suppression, `phase2` explicit command routing, multi-project ambiguity, unscoped `TOOL REQUEST`, follow-up research intent, `ApplyAction` proposal/pid receipts, `ValidateResearchDispatch` boundaries, and `reassign_crew` `ApplyAction` + nested `megaTask.id`.
+- Attempted `claude -p --model claude-sonnet-4-6` on commit `2ae99493d7bd5de33e3f0bcd0a8842876eacfdab`; returned `You've hit your weekly limit · resets 6am (Europe/Rome)`. Commit `776a83fb179297ca701acec52967811d0666e714` remains the latest commit reviewed by `claude-sonnet-4-6`.
 
 ## Job 49 port done
 
