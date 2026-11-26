@@ -1,0 +1,592 @@
+{
+  "schema": 1,
+  "module": "orchestrator-job-building",
+  "scenarios": [
+    {
+      "name": "plan-by-lead",
+      "input": {
+        "category": "lead-split"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Autonomous planning for project Alpha. Goal: Implement service and tests\nYour crew can work in parallel: up to 10 workers at the same time, all in the same project folder. You may give up to 30 parts: the rest start as earlier ones finish.\nSize the work by what the goal and the documents it names ask for, not by the length of the goal line: a goal that points to a sheet or plan listing several modules, screens or files is a large job. Read those documents before you decide.\nSplit the work into parts where that saves time or keeps each part small enough for one worker to finish: a worker given too much stops part way. Parts that run at the same time must touch different files: two workers on one file overwrite each other. Only a truly small job (one change in a few files) stays one part.\nFor each part give: title; detail (complete instructions, the worker sees nothing else); files (the files or folders it may change, relative to the project folder; nothing outside them); dependsOn (indexes of earlier parts that must finish first); size (light, normal or heavy); model (one id allowed to build).\nFor each part also give \"line\": one short plain sentence for the owner, at most 12 words, that says who does what (for example \"Opus builds the weather page\"). No file paths, no code.\nFiles that every part would touch (project files such as .csproj or package.json, shared configuration) belong to one last integration part that depends on the others. A part may also change the files of the parts it depends on, once they are finished.\nEach model has a weight: light, default or premium. Planwharf enforces it: a light part goes to a light model, a normal part to a default or light model, a heavy part to any model; a part given to a heavier model is moved to a lighter one when there is one. Strong models working at the same time drain their company's shared quota fast: keep premium models for heavy parts.\nSpread the parts over different models and companies: each company has its own quota, and many parts on one company drain it and leave the others idle. Models of the same company are different models too. Planwharf moves a part to a less busy model of the same weight when one model or company has more than its share.\nAlso name \"verify\": the model that checks the whole work at the end, allowed to verify, ideally from a company that built none of the parts.\nModels allowed to build: astra (Astra, provider codex, default, quota not reported); opus (Opus 5.5, provider claude, premium, quota not reported); haiku (Haiku 5.5, provider claude, light, quota not reported)\nModels allowed to verify: astra (Astra, provider codex, default, quota not reported); opus (Opus 5.5, provider claude, premium, quota not reported)\nProject files (1):\npackage.json\nYou may read any project file to size the work (the project folder is open to you); do not change anything.\nReply with one JSON object and nothing else: {\"parts\":[{\"title\":\"\",\"detail\":\"\",\"files\":[\"relative/path\"],\"dependsOn\":[],\"size\":\"normal\",\"model\":\"id\"}],\"verify\":\"id\",\"why\":\"one sentence\"}"
+        }
+      ],
+      "replies": [
+        {
+          "answer": "{\"parts\":[{\"title\":\"Build endpoints\",\"detail\":\"Write service endpoints\",\"files\":[\"src/service.js\"],\"dependsOn\":[],\"size\":\"light\",\"model\":\"opus\"},{\"title\":\"Build tests\",\"detail\":\"Write unit tests\",\"files\":[\"tests/service.test.js\"],\"dependsOn\":[0],\"size\":\"normal\",\"model\":\"opus\"}],\"verify\":\"haiku\",\"why\":\"Two-part split\"}"
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-1\",\"title\":\"Implement service and tests\",\"goal\":\"Build service\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"d965f0b04990cdd253c74adfda94b669d45f321b595aa4ace4d02132884f1eb0\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Implement feature\",\"detail\":\"Build service\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan R1: Implement service and tests\",\"reference\":{\"planRevisionId\":1},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"Implement service and tests: 1 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"needs_approval\",\"doing\":\"Implement service and tests: 0/1 slices complete.\",\"plan\":[\"MegaTask: Implement service and tests\",\"Objective: Build service\",\"Latest git: Not applicable\",\"Implement feature — astra; parallel-ready; PENDING\"],\"facts\":null,\"jobId\":\"job-1\",\"jobTitle\":\"Implement service and tests\",\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Approval of MegaTask MT-00000000-0000-4000-8000-000000000001\",\"next\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf moved \\\"Build tests\\\" from Opus 5.5 to Astra: normal part.\"},{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf moved \\\"Build endpoints\\\" from Opus 5.5 to Haiku 5.5: light part.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"Implement service and tests: 0/1 slices complete.\",\"jobFingerprint\":\"d965f0b04990cdd253c74adfda94b669d45f321b595aa4ace4d02132884f1eb0\",\"jobDetail\":null,\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"megaTask\":{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-1\",\"title\":\"Implement service and tests\",\"goal\":\"Build service\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"d965f0b04990cdd253c74adfda94b669d45f321b595aa4ace4d02132884f1eb0\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]},\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Implement feature\",\"detail\":\"Build service\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}]}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-1\",\"title\":\"Implement service and tests\",\"goal\":\"Build service\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"d965f0b04990cdd253c74adfda94b669d45f321b595aa4ace4d02132884f1eb0\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build endpoints\",\"detail\":\"Write service endpoints\",\"status\":\"PENDING\",\"assignedModelId\":\"haiku\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"claude\",\"proposedCli\":\"claude-haiku-5-5\",\"provider\":null,\"cli\":null,\"scope\":[\"src/service.js\"],\"size\":\"light\"},{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-02\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build tests\",\"detail\":\"Write unit tests\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-00000000-0000-4000-8000-000000000001-ST-01\"],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null,\"scope\":[\"tests/service.test.js\"],\"size\":\"normal\"},{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-03\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\".\",\"detail\":\"Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\".\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"MT-00000000-0000-4000-8000-000000000001-ST-02\"],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan R1: Implement service and tests\",\"reference\":{\"planRevisionId\":1},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"Implement service and tests: 1 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf moved \\\"Build endpoints\\\" from Opus 5.5 to Haiku 5.5: light part.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf moved \\\"Build tests\\\" from Opus 5.5 to Astra: normal part.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"Lead split the work into 2 parts and a check of the whole: Build endpoints (Haiku 5.5) · Build tests (Astra) · Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\". (Astra). Why: Two-part split Planwharf gave lighter models the lighter parts: \\\"Build endpoints\\\" to Haiku 5.5, \\\"Build tests\\\" to Astra.\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project/package.json": "{\"name\":\"project\"}\n"
+      },
+      "result": {
+        "ok": true,
+        "replanned": true,
+        "subTasks": [
+          {
+            "id": "MT-00000000-0000-4000-8000-000000000001-ST-01",
+            "title": "Build endpoints",
+            "assignedModelId": "haiku",
+            "dependencies": []
+          },
+          {
+            "id": "MT-00000000-0000-4000-8000-000000000001-ST-02",
+            "title": "Build tests",
+            "assignedModelId": "astra",
+            "dependencies": [
+              "MT-00000000-0000-4000-8000-000000000001-ST-01"
+            ]
+          },
+          {
+            "id": "MT-00000000-0000-4000-8000-000000000001-ST-03",
+            "title": "Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\" only if the wrong choice could lose work or break the app, otherwise \"breaks: no\".",
+            "assignedModelId": "astra",
+            "dependencies": [
+              "MT-00000000-0000-4000-8000-000000000001-ST-01",
+              "MT-00000000-0000-4000-8000-000000000001-ST-02"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "assign-by-lead",
+      "input": {
+        "category": "lead-assignment"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Autonomous planning for project Alpha. Goal: Build two components\nThe MegaTask has these slices, run in order. Each lists the models allowed to take it:\n1. Build service\n   Allowed: astra (Astra, provider codex); opus (Opus 5.5, provider claude); haiku (Haiku 5.5, provider claude)\n2. Build tests\n   Allowed: astra (Astra, provider codex); opus (Opus 5.5, provider claude); haiku (Haiku 5.5, provider claude)\nChoose one allowed model per slice. Pick the model most likely to do that slice correctly. For each later slice prefer a different provider than the slice before it, so the work is checked independently.\nYou may inspect the project to judge the slices; do not change anything.\nReply with one JSON object and nothing else: {\"assign\":[\"worker id for slice 1\", \"...\"],\"why\":\"one sentence\"}."
+        }
+      ],
+      "replies": [
+        {
+          "answer": "{\"assign\":[\"opus\",\"astra\"],\"why\":\"Optimized crew matching\"}"
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-2\",\"title\":\"Build two components\",\"goal\":\"Dual component implementation\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"a530f70fabfcfc19649ffa2848964a02436b322c3778eeab324d6603527e414c\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build service\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null},{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-02\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build tests\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"opus\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-00000000-0000-4000-8000-000000000001-ST-01\"],\"proposedProvider\":\"claude\",\"proposedCli\":\"claude-opus-5-5\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan R1: Build two components\",\"reference\":{\"planRevisionId\":1},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"Build two components: 2 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"needs_approval\",\"doing\":\"Build two components: 0/2 slices complete.\",\"plan\":[\"MegaTask: Build two components\",\"Objective: Dual component implementation\",\"Latest git: Not applicable\",\"Build service — opus; parallel-ready; PENDING\",\"Build tests — astra; after Build service; PENDING\"],\"facts\":null,\"jobId\":\"job-2\",\"jobTitle\":\"Build two components\",\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Approval of MegaTask MT-00000000-0000-4000-8000-000000000001\",\"next\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"Build two components: 0/2 slices complete.\",\"jobFingerprint\":\"a530f70fabfcfc19649ffa2848964a02436b322c3778eeab324d6603527e414c\",\"jobDetail\":null,\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"megaTask\":{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-2\",\"title\":\"Build two components\",\"goal\":\"Dual component implementation\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"a530f70fabfcfc19649ffa2848964a02436b322c3778eeab324d6603527e414c\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]},\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build service\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"opus\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"claude\",\"proposedCli\":\"claude-opus-5-5\",\"provider\":null,\"cli\":null},{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-02\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build tests\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-00000000-0000-4000-8000-000000000001-ST-01\"],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}]}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-2\",\"title\":\"Build two components\",\"goal\":\"Dual component implementation\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":\"astra\",\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"a530f70fabfcfc19649ffa2848964a02436b322c3778eeab324d6603527e414c\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build service\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"opus\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"claude\",\"proposedCli\":\"claude-opus-5-5\",\"provider\":null,\"cli\":null},{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-02\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Build tests\",\"detail\":\"Dual component implementation\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[\"MT-00000000-0000-4000-8000-000000000001-ST-01\"],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan R1: Build two components\",\"reference\":{\"planRevisionId\":1},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"Build two components: 2 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_ASSIGNED\",\"summary\":\"Lead assigned Build: Opus 5.5 · Build: Astra. Why: Optimized crew matching\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project/package.json": "{\"name\":\"project\"}\n"
+      },
+      "result": {
+        "ok": true,
+        "assigned": true,
+        "subTasks": [
+          {
+            "id": "MT-00000000-0000-4000-8000-000000000001-ST-01",
+            "assignedModelId": "opus"
+          },
+          {
+            "id": "MT-00000000-0000-4000-8000-000000000001-ST-02",
+            "assignedModelId": "astra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "start-auto-task",
+      "input": {
+        "category": "auto-start"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":true,\"grillKind\":\"me\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":null,\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":true,\"grillKind\":\"me\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":null,\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":true,\"grillKind\":\"me\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":{\"folder\":\"<ROOT>/project\",\"fileCount\":2,\"names\":[\".git\",\"package.json\"],\"docs\":[],\"git\":false,\"head\":\"\",\"branch\":\"\",\"lastCommit\":\"\",\"commitId\":null,\"lastSubject\":\"\",\"recent\":[],\"dirty\":[],\"diffStat\":\"\"},\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Auto start: clarification interview (me).\"}],\"pendingAutoStart\":{\"timing\":\"discretion\",\"deadlineAt\":null},\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"authorizedSessionId\":\"session-fixed\",\"grillAsked\":true}},\"asks\":[],\"orchestratorId\":null,\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-1: Build web service and automated tests\",\"reference\":{\"planRevisionId\":\"rev-1\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Auto start: clarification interview (me).\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":true,\"grillKind\":\"me\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"propose_grill\",\"doing\":\"Auto start on Alpha proposes grill first. Grill me, or set a folder to Grill with the docs. Skip if you will not rely on it.\",\"plan\":[],\"facts\":{\"folder\":\"<ROOT>/project\",\"fileCount\":2,\"names\":[\".git\",\"package.json\"],\"docs\":[],\"git\":false,\"head\":\"\",\"branch\":\"\",\"lastCommit\":\"\",\"commitId\":null,\"lastSubject\":\"\",\"recent\":[],\"dirty\":[],\"diffStat\":\"\"},\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Grill me, Grill with the docs, or skip\",\"next\":\"Grill me. Set a folder to grill with the docs.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Auto start: clarification interview (me).\"}],\"pendingAutoStart\":{\"timing\":\"discretion\",\"deadlineAt\":null},\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"authorizedSessionId\":\"session-fixed\",\"grillAsked\":true}},\"asks\":[],\"orchestratorId\":null,\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-1: Build web service and automated tests\",\"reference\":{\"planRevisionId\":\"rev-1\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Auto start: clarification interview (me).\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/project/.planwharf",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/project/.planwharf/plan.md",
+          "content": "# Work plan\n\n## Goal\n\nBuild web service and automated tests\n\n## Base\n\nNot a git repository.\n\n## Branch\n\n(none)\n\n## Steps\n\n- [ ] Build (unassigned)\n\n## Rules\n\nNo push or merge. Files outside the goal are not touched.\n\n## Done\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":true,\"grillKind\":\"me\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"propose_grill\",\"doing\":\"Auto start on Alpha proposes grill first. Grill me, or set a folder to Grill with the docs. Skip if you will not rely on it.\",\"plan\":[],\"facts\":{\"folder\":\"<ROOT>/project\",\"fileCount\":2,\"names\":[\".git\",\"package.json\"],\"docs\":[],\"git\":false,\"head\":\"\",\"branch\":\"\",\"lastCommit\":\"\",\"commitId\":null,\"lastSubject\":\"\",\"recent\":[],\"dirty\":[],\"diffStat\":\"\"},\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Grill me, Grill with the docs, or skip\",\"next\":\"Grill me. Set a folder to grill with the docs.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":true,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Read the repo and latest changes. Plan ready for approval.\"},{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Auto start: clarification interview (me).\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"authorizedSessionId\":\"session-fixed\",\"grillAsked\":true}},\"asks\":[],\"orchestratorId\":null,\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-1: Build web service and automated tests\",\"reference\":{\"planRevisionId\":\"rev-1\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-1\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Auto start: clarification interview (me).\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Read the repo and latest changes. Plan ready for approval.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project/.git/config": "[core]\nrepositoryformatversion = 0\n",
+        "project/.git/HEAD": "ref: refs/heads/main\n",
+        "project/.planwharf/plan.md": "# Work plan\n\n## Goal\n\nBuild web service and automated tests\n\n## Base\n\nNot a git repository.\n\n## Branch\n\n(none)\n\n## Steps\n\n- [ ] Build (unassigned)\n\n## Rules\n\nNo push or merge. Files outside the goal are not touched.\n\n## Done\n",
+        "project/package.json": "{\"name\":\"project\"}\n"
+      },
+      "result": {
+        "grill": {
+          "ok": true,
+          "phase": "grill",
+          "job": null,
+          "facts": {
+            "folder": "<ROOT>/project",
+            "fileCount": 2,
+            "names": [
+              ".git",
+              "package.json"
+            ],
+            "docs": [],
+            "git": false,
+            "head": "",
+            "branch": "",
+            "lastCommit": "",
+            "commitId": null,
+            "lastSubject": "",
+            "recent": [],
+            "dirty": [],
+            "diffStat": ""
+          },
+          "questions": [
+            "Is this run the next slice of Alpha: Build web service and automated tests? Recommended: yes.",
+            "Stay inside <ROOT>/project and the files already there. No paid APIs. Recommended: yes.",
+            "Is the slice done when the work is on disk with tests, and nothing extra ships? Recommended: yes.",
+            "Is everything else out of scope until this slice is done? Recommended: yes."
+          ],
+          "title": "Grill me",
+          "kind": "me",
+          "replace": false,
+          "clearJob": false
+        },
+        "plan": {
+          "ok": true,
+          "phase": "plan",
+          "job": {
+            "title": "Build web service and automated tests",
+            "detail": "Goal: Build web service and automated tests\n\nNo git history.\n\nWorking tree clean.\n\nWork toward the goal. Read only what that needs.\n\nGrill discussion for this task:\nAutonomous mode: no interview",
+            "source": "chat",
+            "revision_id": "rev-1",
+            "timing": "deadline",
+            "deadlineAt": "2023-11-15T00:00:00.000Z"
+          },
+          "facts": {
+            "folder": "<ROOT>/project",
+            "fileCount": 2,
+            "names": [
+              ".git",
+              "package.json"
+            ],
+            "docs": [],
+            "git": false,
+            "head": "",
+            "branch": "",
+            "lastCommit": "",
+            "commitId": null,
+            "lastSubject": "",
+            "recent": [],
+            "dirty": [],
+            "diffStat": ""
+          },
+          "clearJob": false
+        }
+      }
+    },
+    {
+      "name": "open-work-plan",
+      "input": {
+        "category": "work-plan"
+      },
+      "requests": [
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "--is-inside-work-tree"
+          ]
+        },
+        {
+          "kind": "git",
+          "command": "git",
+          "args": [
+            "worktree",
+            "prune"
+          ]
+        }
+      ],
+      "replies": [
+        {
+          "status": 0
+        },
+        {
+          "status": 0
+        }
+      ],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>/project/.planwharf",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/project/.planwharf/plan.md",
+          "content": "# Work plan\n\n## Goal\n\nImplement service endpoints\n\n## Base\n\nNot a git repository.\n\n## Branch\n\n(none)\n\n## Steps\n\n- [ ] Build (Astra)\n- [ ] Verify (Haiku)\n\n## Rules\n\nNo push or merge. Files outside the goal are not touched.\n\n## Done\n",
+          "ok": true
+        },
+        {
+          "operation": "rm",
+          "path": "<ROOT>/worktrees/alpha/MT-orphan",
+          "ok": true
+        },
+        {
+          "operation": "rmdir",
+          "path": "<ROOT>/worktrees/alpha",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "project/.git/config": "[core]\nrepositoryformatversion = 0\n",
+        "project/.git/HEAD": "ref: refs/heads/main\n",
+        "project/.planwharf/plan.md": "# Work plan\n\n## Goal\n\nImplement service endpoints\n\n## Base\n\nNot a git repository.\n\n## Branch\n\n(none)\n\n## Steps\n\n- [ ] Build (Astra)\n- [ ] Verify (Haiku)\n\n## Rules\n\nNo push or merge. Files outside the goal are not touched.\n\n## Done\n"
+      },
+      "result": {
+        "ok": true,
+        "planExists": true,
+        "chat": null,
+        "orphanSwept": true
+      }
+    },
+    {
+      "name": "decide",
+      "input": {
+        "category": "decide-lifecycle"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"quotaLimits\":{},\"creditsNeeded\":{},\"poolLimits\":{},\"notLead\":[],\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"modelRoles\":{},\"accountModelRoles\":{},\"projectTeams\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"projects\":{\"alpha\":{\"status\":\"needs_approval\",\"doing\":\"Execution plan ready for Alpha · Task 2. Approve to assign Astra + Opus 5.5 (inspect job · Astra on chatgpt; user catalog order).\",\"plan\":[\"Stay inside <ROOT>.\",\"Notebook goal: Goal\",\"Read-only inspect (2 top-level names).\",\"Proceed with the plan from those changes.\",\"Split into 2 slices for parallel workers.\",\"Slice 1: Astra — Implement the whole job in the project folder, with automated tests. Run the tests before you finish..\",\"Slice 2: Opus 5.5 — Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\"..\",\"Timing is at the worker’s discretion.\",\"Watch the worker process, the result file (STATUS: COMPLETE), and the project folder.\"],\"facts\":{\"folder\":\"<ROOT>\",\"fileCount\":2,\"names\":[\"orchestrator.json\",\"result.txt\"],\"docs\":[],\"git\":false,\"head\":\"\",\"branch\":\"\",\"lastCommit\":\"\",\"commitId\":null,\"lastSubject\":\"\",\"recent\":[],\"dirty\":[],\"diffStat\":\"\"},\"jobId\":\"job-2\",\"jobTitle\":\"Task 2\",\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Your Approve run\",\"next\":\"Approve to assign Astra + Opus 5.5.\",\"workerLabel\":\"Astra + Opus 5.5\",\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Job changed. Approval reset.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[{\"modelId\":\"astra\",\"label\":\"Astra\",\"slice\":\"Implement the whole job in the project folder, with automated tests. Run the tests before you finish.\",\"why\":\"inspect job · Astra on chatgpt; user catalog order\",\"pid\":null,\"logPath\":null,\"resultPath\":null,\"alive\":false,\"activity\":\"\"},{\"modelId\":\"opus\",\"label\":\"Opus 5.5\",\"slice\":\"Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\".\",\"why\":\"build job · Opus 5.5 on claude; user catalog order\",\"pid\":null,\"logPath\":null,\"resultPath\":null,\"alive\":false,\"activity\":\"\"}],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"Evidence complete.\",\"jobFingerprint\":\"802981cab78ae7e8740c7d5c3dc5f10c7a02f09b0ea5fd661efdd71341b5a5ac\",\"orchestratorDoing\":\"Verified STATUS: COMPLETE and folder output.\",\"monitoring\":{\"alive\":0},\"jobDetail\":\"Detail 2\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"}},\"asks\":[],\"researches\":[],\"workerHistory\":[],\"archivedProjects\":{},\"projectArchive\":[],\"projectTools\":{},\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-v2\",\"title\":\"V2 Work\",\"goal\":\"Advance work\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":null,\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"c1f78a89aca7c0c440ffdca58077314e1c696ac8b06dfc337560ee01a6bae38f\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Advance work\",\"detail\":\"Advance work\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Job changed. Approval reset.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"V2 Work: 1 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]},\"pullRequestFixes\":[],\"briefingBaselines\":{},\"selectedProjectId\":null,\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"goldModelId\":null,\"orchestratorId\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"quotaLimits\":{},\"creditsNeeded\":{},\"poolLimits\":{},\"notLead\":[],\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"modelRoles\":{},\"accountModelRoles\":{},\"projectTeams\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"projects\":{\"alpha\":{\"status\":\"needs_approval\",\"doing\":\"V2 Work: 0/1 slices complete.\",\"plan\":[\"MegaTask: V2 Work\",\"Objective: Advance work\",\"Latest git: Not applicable\",\"Advance work — astra; parallel-ready; PENDING\"],\"facts\":{\"folder\":\"<ROOT>\",\"fileCount\":2,\"names\":[\"orchestrator.json\",\"result.txt\"],\"docs\":[],\"git\":false,\"head\":\"\",\"branch\":\"\",\"lastCommit\":\"\",\"commitId\":null,\"lastSubject\":\"\",\"recent\":[],\"dirty\":[],\"diffStat\":\"\"},\"jobId\":\"job-v2\",\"jobTitle\":\"V2 Work\",\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Approval of MegaTask MT-00000000-0000-4000-8000-000000000001\",\"next\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Job changed. Approval reset.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[{\"modelId\":\"astra\",\"label\":\"Astra\",\"slice\":\"Implement the whole job in the project folder, with automated tests. Run the tests before you finish.\",\"why\":\"inspect job · Astra on chatgpt; user catalog order\",\"pid\":null,\"logPath\":null,\"resultPath\":null,\"alive\":false,\"activity\":\"\"},{\"modelId\":\"opus\",\"label\":\"Opus 5.5\",\"slice\":\"Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \\\"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\\\" only if the wrong choice could lose work or break the app, otherwise \\\"breaks: no\\\".\",\"why\":\"build job · Opus 5.5 on claude; user catalog order\",\"pid\":null,\"logPath\":null,\"resultPath\":null,\"alive\":false,\"activity\":\"\"}],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"V2 Work: 0/1 slices complete.\",\"jobFingerprint\":\"c1f78a89aca7c0c440ffdca58077314e1c696ac8b06dfc337560ee01a6bae38f\",\"orchestratorDoing\":\"Verified STATUS: COMPLETE and folder output.\",\"monitoring\":{\"alive\":0,\"workers\":0},\"jobDetail\":\"Advance work\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"megaTask\":{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-v2\",\"title\":\"V2 Work\",\"goal\":\"Advance work\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":null,\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"c1f78a89aca7c0c440ffdca58077314e1c696ac8b06dfc337560ee01a6bae38f\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]},\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Advance work\",\"detail\":\"Advance work\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}]}},\"asks\":[],\"researches\":[],\"workerHistory\":[],\"archivedProjects\":{},\"projectArchive\":[],\"projectTools\":{},\"execution\":{\"megaTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"taskId\":\"job-v2\",\"title\":\"V2 Work\",\"goal\":\"Advance work\",\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"approvedAt\":null,\"status\":\"READY_FOR_APPROVAL\",\"orchestratorModelId\":null,\"currentCheckpointId\":null,\"completedAt\":null,\"jobFingerprint\":\"c1f78a89aca7c0c440ffdca58077314e1c696ac8b06dfc337560ee01a6bae38f\",\"detached\":false,\"repoBefore\":{\"repoHead\":null,\"dirtyFiles\":[],\"comparable\":true,\"gitReadable\":false,\"fingerprint\":\"797e3dc8a48bf4fe78ba892d5e966be12cef8bef05dc91043d6421768de0b5c0\",\"disposition\":\"NOT APPLICABLE\"},\"nextAction\":\"Resolve the proposal blockers before approval: The worker launcher is unavailable. Start Planwharf through its desktop launcher.\",\"pauseRequested\":false,\"timing\":\"discretion\",\"deadlineAt\":null,\"blockers\":[\"The worker launcher is unavailable. Start Planwharf through its desktop launcher.\"]}],\"subTasks\":[{\"id\":\"MT-00000000-0000-4000-8000-000000000001-ST-01\",\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\",\"title\":\"Advance work\",\"detail\":\"Advance work\",\"status\":\"PENDING\",\"assignedModelId\":\"astra\",\"attemptIds\":[],\"resultId\":null,\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"completedAt\":null,\"type\":\"IMPLEMENTATION\",\"dependencies\":[],\"proposedProvider\":\"codex\",\"proposedCli\":\"gpt-6-astra\",\"provider\":null,\"cli\":null}],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Job changed. Approval reset.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"MEGATASK_PROPOSED\",\"summary\":\"V2 Work: 1 proposed slice(s).\",\"reference\":{\"megaTaskId\":\"MT-00000000-0000-4000-8000-000000000001\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan R1: Goal\",\"reference\":{\"planRevisionId\":1},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:1\"}],\"observations\":{},\"decisions\":[]},\"pullRequestFixes\":[],\"briefingBaselines\":{},\"selectedProjectId\":null,\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"goldModelId\":null,\"orchestratorId\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "result.txt": "STATUS: COMPLETE\nAll tests passed.\n"
+      },
+      "result": {
+        "completion": {
+          "status": "complete",
+          "doing": "Evidence complete for Task 1 on Alpha.",
+          "waitingFor": "Nothing. Evidence is complete."
+        },
+        "mutation": {
+          "approved": false,
+          "holdApproval": false,
+          "jobId": "job-2"
+        },
+        "advance": {
+          "status": "needs_approval",
+          "jobId": "job-v2"
+        }
+      }
+    }
+  ]
+}
