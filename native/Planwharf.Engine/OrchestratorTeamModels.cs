@@ -90,8 +90,8 @@ public static class OrchestratorTeamModels
 
     public static UsageStats CalculateUsage(JsonObject? item)
     {
-        var used = N(P(item, "used"));
-        var limit = Math.Max(0, N(P(item, "limit")));
+        var used = Number(P(item, "used")) is double validUsed && validUsed >= 0 ? validUsed : 0;
+        var limit = Number(P(item, "limit")) is double validLimit && validLimit > 0 ? validLimit : 0;
         var remaining = N(P(item, "remaining"), Math.Max(0, limit - used));
         var pct = limit > 0 ? Math.Min(100, Math.Floor(used * 100 / limit + 0.5)) : 0;
         return new(used, limit, remaining, pct, limit > 0 ? Math.Max(0, 100 - pct) : 100);
@@ -502,17 +502,17 @@ public static class OrchestratorTeamModels
     public static JsonObject ResearchModel(TeamRosterContext context, string modelId)
     {
         var worker = Rows(BuildRoster(context)).FirstOrDefault(model => S(model["id"]) == modelId)
-            ?? throw new InvalidOperationException("Requested research model is not in the roster: " + modelId);
+            ?? throw new InvalidOperationException(Strings.Format("Requested research model is not in the roster: {0}", modelId));
         var mode = Mode(context);
         if (!AllowedBySavingMode(mode, worker)) throw new InvalidOperationException(ModelRouting.SavingModeError(worker, mode, Tier(worker)));
-        if (!ModelRoles.PermitsAssignment(worker, new JsonObject { ["kind"] = "research" })) throw new InvalidOperationException("The requested model is not enabled for the Worker role: " + modelId);
-        if (!T(worker["enabled"]) || False(worker["available"])) throw new InvalidOperationException("Requested research model is disabled or unavailable: " + modelId);
-        if (ProviderAdapters.AdapterFor(worker)?.SourceProtectedResearch != true) throw new InvalidOperationException("Source-protected research is not supported by the requested adapter: " + S(worker["provider"]));
+        if (!ModelRoles.PermitsAssignment(worker, new JsonObject { ["kind"] = "research" })) throw new InvalidOperationException(Strings.Format("The requested model is not enabled for the Worker role: {0}", modelId));
+        if (!T(worker["enabled"]) || False(worker["available"])) throw new InvalidOperationException(Strings.Format("Requested research model is disabled or unavailable: {0}", modelId));
+        if (ProviderAdapters.AdapterFor(worker)?.SourceProtectedResearch != true) throw new InvalidOperationException(Strings.Format("Source-protected research is not supported by the requested adapter: {0}", S(worker["provider"])));
         var error = RouteError(worker);
         if (error is not null) throw new InvalidOperationException(error);
         var policy = ModelPolicy.UsagePolicy(worker, context.PlansLive);
         if (T(policy["blocked"])) throw new InvalidOperationException(S(policy["reason"]));
-        if (Exhausted(context.PlansLive, S(worker["plan"])) || N(worker["remaining"]) < N(worker["cost"])) throw new InvalidOperationException("Requested research model has no remaining usage: " + modelId);
+        if (Exhausted(context.PlansLive, S(worker["plan"])) || N(worker["remaining"]) < N(worker["cost"])) throw new InvalidOperationException(Strings.Format("Requested research model has no remaining usage: {0}", modelId));
         return worker;
     }
 

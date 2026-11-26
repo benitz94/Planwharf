@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text.Json.Nodes;
 using Xunit;
 
 namespace Planwharf.Engine.Tests;
@@ -135,5 +136,34 @@ public sealed class LiteralStringTests
             var command = new Regex("^(stop|fermati)$");
             """;
         Assert.Empty(FindUnlocalized(code));
+    }
+}
+
+public sealed class OrchestratorTeamModelsSliceTests
+{
+    [Fact]
+    public void Usage_defaults_invalid_or_negative_values_without_inventing_quota()
+    {
+        var usage = OrchestratorTeamModels.CalculateUsage(new JsonObject
+        {
+            ["used"] = -4, ["limit"] = 10
+        });
+        Assert.Equal(0, usage.Used);
+        Assert.Equal(10, usage.Limit);
+        Assert.Equal(10, usage.Remaining);
+        Assert.Equal(0, usage.Pct);
+        Assert.Equal(100, usage.LeftPct);
+    }
+
+    [Fact]
+    public void Explicit_invalid_route_is_never_usable()
+    {
+        var models = OrchestratorTeamModels.NormalizeModels(new JsonArray(new JsonObject
+        {
+            ["id"] = "gpt-example", ["enabled"] = true, ["provider"] = "codex", ["cli"] = "not-a-codex-id"
+        }));
+        var model = Assert.IsType<JsonObject>(Assert.Single(models));
+        Assert.False(model["available"]!.GetValue<bool>());
+        Assert.True(model["neverUsable"]!.GetValue<bool>());
     }
 }
