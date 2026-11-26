@@ -43,10 +43,14 @@ orchestrator.allowedBySavingMode = allowedBySavingMode;
 orchestrator.modelClass = savingMode.modelClass;
 
 const virtualModPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator-team-models.cjs');
+const virtualJobBuildingModPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator-job-building.cjs');
 const origResolve = Module._resolveFilename;
 Module._resolveFilename = function(request, parent, isMain, options) {
   if (request === virtualModPath || request.endsWith('orchestrator-team-models.cjs')) {
     return virtualModPath;
+  }
+  if (request === virtualJobBuildingModPath || request.endsWith('orchestrator-job-building.cjs')) {
+    return virtualJobBuildingModPath;
   }
   return origResolve.call(this, request, parent, isMain, options);
 };
@@ -55,6 +59,12 @@ require.cache[virtualModPath] = {
   filename: virtualModPath,
   loaded: true,
   exports: teamModelsMod
+};
+require.cache[virtualJobBuildingModPath] = {
+  id: virtualJobBuildingModPath,
+  filename: virtualJobBuildingModPath,
+  loaded: true,
+  exports: orchestrator
 };
 
 const leadCandidatesA = [
@@ -1248,5 +1258,132 @@ module.exports = {
     ['modelClass', [{ id: 'm3', leadTier: 0, weightSource: 'team', weight: 'default' }, 0]],
     ['modelClass', [{ id: 'm1', leadTier: 0, weightSource: 'lineup', weight: 'light' }, 0]],
     ['modelClass', [null]]
+  ],
+  'orchestrator-job-building': [
+    // 1. sliceCount matrix: kinds ('hard', 'build', 'inspect') x dirty (0, 3, 4, 12) x eligible (0, 1, 2, 5)
+    ...(() => {
+      const kinds = [
+        { title: 'Hard architecture changes', detail: 'complex algorithm escalation' },
+        { title: 'Implement feature', detail: 'write code and tests' },
+        { title: 'Review repository status', detail: 'check notes' }
+      ];
+      const dirtyCounts = [
+        [],
+        ['src/a.js', 'src/b.js', 'src/c.js'],
+        ['src/a.js', 'src/b.js', 'src/c.js', 'src/d.js'],
+        ['1.js', '2.js', '3.js', '4.js', '5.js', '6.js', '7.js', '8.js', '9.js', '10.js', '11.js', '12.js']
+      ];
+      const eligibleCounts = [0, 1, 2, 5];
+      const res = [];
+      for (const job of kinds) {
+        for (const dirty of dirtyCounts) {
+          for (const eligible of eligibleCounts) {
+            res.push(['sliceCount', [job, { dirty }, eligible]]);
+          }
+        }
+      }
+      res.push(['sliceCount', [null, null, 2]]);
+      res.push(['sliceCount', [{ title: 'Complex task' }, null, 0]]);
+      res.push(['sliceCount', [null, { dirty: ['1', '2', '3', '4'] }, 3]]);
+      res.push(['sliceCount', [{ title: 'Build task' }, { dirty: null }, -1]]);
+      res.push(['sliceCount', [{ title: 'Inspect' }, { dirty: [] }, 10]]);
+      return res;
+    })(),
+
+    // 2. planLines matrix: git (clean, dirty, absent) x dispatch (single, multi) x timing (discretion, deadline) x active (true, false) x checkpoint (present, null)
+    ...(() => {
+      const gitScenarios = [
+        { facts: { git: true, lastCommit: '9a8b7c6', branch: 'main', dirty: [] }, name: 'git-clean' },
+        { facts: { git: true, head: '1a2b3c4', branch: 'feature/login', dirty: ['app.js', 'app.test.js'] }, name: 'git-dirty' },
+        { facts: { git: false, fileCount: 17 }, name: 'git-absent' }
+      ];
+      const dispatchScenarios = [
+        { dispatch: [{ modelId: 'm1', label: 'Gemini Pro', slice: 'Whole job' }], name: 'single' },
+        { dispatch: [{ modelId: 'm1', label: 'Builder', slice: 'Implement code' }, { modelId: 'm2', label: 'Verifier', slice: 'Verify tests' }], name: 'multi' }
+      ];
+      const timingScenarios = [
+        { job: { timing: 'discretion' }, name: 'discretion' },
+        { job: { timing: 'deadline', deadlineAt: '2026-12-01T15:00:00.000Z' }, name: 'deadline' }
+      ];
+      const activeScenarios = [true, false];
+      const checkpointScenarios = [
+        { checkpoint: { path: '.planwharf/checkpoints/cp-42.json' }, name: 'with-checkpoint' },
+        { checkpoint: null, name: 'no-checkpoint' }
+      ];
+
+      const res = [];
+      const shown = { id: 'm1', label: 'Gemini Flash', why: 'fast' };
+      const baseItem = {
+        project: { id: 'p1', name: 'Planwharf', folder: 'C:/repos/test-project' },
+        revisions: [{ id: 'rev-1', direction: 'Build the parity test suite' }],
+        tasks: []
+      };
+
+      for (const git of gitScenarios) {
+        for (const disp of dispatchScenarios) {
+          for (const timing of timingScenarios) {
+            for (const active of activeScenarios) {
+              for (const cp of checkpointScenarios) {
+                const extras = {
+                  dispatch: disp.dispatch,
+                  job: timing.job,
+                  checkpoint: cp.checkpoint
+                };
+                res.push(['planLines', [baseItem, git.facts, shown, active, extras]]);
+              }
+            }
+          }
+        }
+      }
+
+      // Edge cases for planLines
+      res.push(['planLines', [
+        { project: { id: 'p1', name: 'Proj', folder: '/app' }, revisions: [] },
+        { git: true, lastCommit: 'c1' },
+        { id: 'm1', label: 'Flash' },
+        true,
+        null
+      ]]);
+      res.push(['planLines', [
+        { project: { id: 'p1', name: 'Proj', folder: '/app' }, revisions: [{ direction: 'A'.repeat(250) }] },
+        { git: true, lastCommit: 'c1' },
+        { id: 'm1' },
+        false,
+        {}
+      ]]);
+      res.push(['planLines', [
+        {
+          project: { id: 'p1', name: 'Proj', folder: '/app' },
+          revisions: [{ direction: 'Test' }],
+          tasks: [{ status: 'running', timing: 'deadline', deadlineAt: '2026-12-31T23:59:59Z' }]
+        },
+        { git: false, fileCount: 0 },
+        { id: 'm2', label: 'Sonnet', why: '' },
+        true,
+        { dispatch: [] }
+      ]]);
+      res.push(['planLines', [
+        { project: { id: 'p1', name: 'Proj', folder: '/app' }, revisions: [{ direction: 'Multi' }] },
+        { git: true, head: 'h1', dirty: [] },
+        { id: 'm1', label: 'Model1' },
+        false,
+        {
+          dispatch: [
+            { modelId: 'm1', label: '', slice: 'Slice 1' },
+            { modelId: 'm2', label: 'Verifier', slice: 'Slice 2' },
+            { modelId: 'm3', label: 'Reviewer', slice: 'Slice 3' }
+          ]
+        }
+      ]]);
+      res.push(['planLines', [
+        { project: { id: 'p1', name: 'Proj', folder: '/app' }, revisions: [{ direction: 'Branchless' }] },
+        { git: true, lastCommit: 'abc', branch: null, dirty: ['file.txt'] },
+        { id: 'm1', label: 'Model1', why: 'chosen' },
+        true,
+        null
+      ]]);
+
+      return res;
+    })()
   ]
 };
