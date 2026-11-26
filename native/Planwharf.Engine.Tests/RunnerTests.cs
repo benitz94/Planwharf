@@ -586,10 +586,10 @@ public sealed class RunnerTests
             // Run with a simulated exit 0 process
             var code = Runner.Run(["node", "runner.cjs", "--job-file", jobFile], swOut, swErr, processRunner: psi =>
             {
+                // Like a real AI program, it reads the prompt first: a process that exits before the runner has
+                // written it is a failed launch, and a fast computer could make the test fail (Linux and Windows ARM).
                 var runPsi = OperatingSystem.IsWindows()
-                    ? new ProcessStartInfo("cmd.exe", ["/c", "exit 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true }
-                    // Like a real AI program, it reads the prompt first: a process that exits before the runner
-                    // has written it is a failed launch, and a fast computer could make the test fail.
+                    ? new ProcessStartInfo("cmd.exe", ["/c", "more > nul & exit /b 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true }
                     : new ProcessStartInfo("sh", ["-c", "cat > /dev/null; exit 0"]) { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
                 return Process.Start(runPsi)!;
             });
