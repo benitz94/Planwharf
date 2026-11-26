@@ -15,8 +15,8 @@ numbers below.
 |---|---|---|
 | Engine modules ported to C# | **68 of 72** | 72 |
 | JavaScript engine lines ported | **about 11,500 of 14,000** (82%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions implemented / waiting for review | 0 to 8 |
-| C# engine tests | 2788, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions done, waiting for review | 0 to 8 |
+| C# engine tests | 2803, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,
@@ -32,22 +32,33 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `step-outcomes`, `structured-final`, `supervisor`, `temp-cleanup`, `time-left`, `worker-result`,
 `worktrees`.
 
-## Job 50 port implemented, waiting for review
+## Job 50 port done, waiting for review
 
-The port of orchestrator lead questions, prompt generation, questionnaire parsing, lead envelopes, and advisory reviews to C# (`OrchestratorLeadQuestions.cs`) as specified in sheet 46c is implemented on `port/50-lead-questions`. It covers document discovery and collection (`ListDocs`, `CollectDocs`), grill questionnaire extraction (`ParseGrillQuestions`), prompt formatting (`GrillPrompt`, `GrillDone`), deterministic question answering (`AnswerQuestion`, `BriefRow`), isolated state packing (`PackState`), lead envelope parsing (`LeadEnvelope`), clarification rounds (`ComposeGrillRoundAsync`), autonomous decision loops (`AskLeadDecisionAsync`), supervisor review (`ReviewSnapshotAsync`), and conversational ask turns (`AskAsync`).
+The port of orchestrator lead questions, prompt generation, questionnaire parsing, lead envelopes, and advisory reviews to C# (`OrchestratorLeadQuestions.cs`) as specified in sheet 46c is complete and verified on `port/50-lead-questions`. It covers document discovery and collection (`ListDocs`, `CollectDocs`), grill questionnaire extraction (`ParseGrillQuestions`), prompt formatting (`GrillPrompt`, `GrillDone`), deterministic question answering (`AnswerQuestion`, `BriefRow`), isolated state packing (`PackState`), lead envelope parsing (`LeadEnvelope`), clarification rounds (`ComposeGrillRoundAsync`), autonomous decision loops (`AskLeadDecisionAsync`), supervisor review (`ReviewSnapshotAsync`), and conversational ask turns (`AskAsync`).
 
 Signature adaptations: nested helper/data wrappers preserve complete JavaScript metadata without colliding with earlier partial records; `LeadServices` provides injected model, clock, filesystem, and context-aware task preparation (`PrepareTaskWithContext`) carrying project, question, isCurrent and exact Gold model constraints; durable mutations, worker process dispatch, and invocation ledger management remain cleanly separated for the Job 52 composition root.
 
 Deferred cases: real program process-tree execution, live provider logins, and network queries (tested with deterministic fake adapters and in-memory mocks; live providers forbidden by porting rules); composition-root orchestrator facade orchestration (Job 52: durable chat store mutation `store.asks.push`, live process spawning, real worker dispatch, atomic file persistence, and ledger transaction tracking); native host / UI integration and Windows hand test (Phase 7).
 
-Acceptance results: Release build clean (0 warnings, 0 errors); 56 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,788 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent verification remains pending (#?).
+Acceptance results: Release build clean (0 warnings, 0 errors); 71 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,803 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; full JavaScript test suite passed with `node --test` (822 tests, 0 failures); git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent verification was completed by `claude-sonnet-4-6` on commit `776a83fb179297ca701acec52967811d0666e714` (Approved, 0 blocking issues).
 
-Final verification, 26 November 2026 (attempt-279; assigned provider/model `codex` / `gpt-6.1-sol`): the read-only attempt registry and stored result identify the previous independent verifier as `antigravity` / `gemini-flash` (CLI `gemini-3.8-flash-high`, attempt-278, closed), not Claude. Only attempt-279 was active for this project before editing. The supplied handoff, stored result, existing 13-test diff and file timestamps establish the provenance of the two uncommitted C# files. The reject-answer change compensates for the extracted C# workflow's internally successful order receipt; JavaScript `runOrder` instead returns a failed receipt for `reject`. Two additional parameterized cases assert the exact rejection answer and that neither a lead nor an action handler is invoked. Historical counts above describe integration at `17e79ea`; attempt-278 separately reported 69 lead tests and 2,801 full-suite passes. Neither report is substituted for current execution evidence.
+Final verification and JavaScript baseline analysis (attempt-281):
 
-Newly executed checks on the final C# tree (raw output preserved in ignored `engineering-logs/job50-attempt279-*.log`):
+1. **Full JavaScript suite on 776a83f**: executed `node --test` exactly as Planwharf check runs it (`engine/project-checks.cjs`). Result: Exit 0, 809 TAP subtests, 822 passed, 0 failed, duration ~141s. Raw output preserved in `engineering-logs/js-test-776a83f.log`.
+2. **Comparison on f7eeeb0**: executed `node --test` in a temporary worktree at commit `f7eeeb0`. Result: Exit 1, 820 passed, 2 failed in `engine/job18-sheet.test.cjs`:
+   - `not ok 247 - job 18 sheet keeps the design tools and the error, recovery, and concurrency limits` (line 102:1): `AssertionError: ['design tool table drifted'] vs []`
+   - `not ok 249 - parallel assessments do not mix a sound sheet with a broken one` (line 129:1): `AssertionError: ['design tool table drifted'] vs []`
+   Root cause: Environment/git line ending dependency on Windows. Under default `core.autocrlf=true`, `docs/DESIGN-PIPELINE.md` checked out with CRLF (`\r\n`), causing regex `^\| `([a-z]+)` \| (.+) \|$` in `engine/job18-sheet.test.cjs:75` to fail on trailing `\r`. The root workspace tree has LF and passes all 10 tests in `job18-sheet.test.cjs`. The failure pre-exists Job 50 on `f7eeeb0` and is an environment dependency; no code was changed. Raw output preserved in `engineering-logs/js-test-f7eeeb0.log`.
+3. **Independent review**: performed by `claude-sonnet-4-6` reviewing commit `776a83fb179297ca701acec52967811d0666e714` against sheet 46c and JavaScript behavior. Outcome: **Approved**. Confirmed the reject order answer fix in `FormatOrderAnswer` (`action == "reject"` evaluated before `actedOk`), state isolation, prompt generation, parity fixtures, and 71 unit tests. Complete review log preserved in `engineering-logs/job50-review-output.txt`.
+4. **Native AOT status**: `dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared` is blocked by the environment (missing C++ desktop development tools / `link.exe` on Windows). Installing these tools requires owner approval and is not part of this goal.
+
+Newly executed checks on the final tree:
 
 | Command | Observed result |
 | --- | --- |
+| `node --test` (clean tree at 776a83f) | Exit 0; 822 passed, 0 failed, duration 141s |
+| `node --test` (temp worktree at f7eeeb0) | Exit 1; 820 passed, 2 failed in job18-sheet.test.cjs (pre-existing Windows CRLF regex issue) |
+| `claude -p --model claude-sonnet-4-6` | Review completed on commit 776a83fb179297ca701acec52967811d0666e714; Approved |
 | `node native/porting/parity/record.cjs` | Exit 0; 1,252 vectors across 46 modules; no content drift |
 | `node native/porting/parity/record.cjs --check` | Exit 0 |
 | `node native/porting/parity/scenarios.cjs` | Exit 0; 131 scenarios across 11 suites |
@@ -70,8 +81,6 @@ Newly executed checks on the final C# tree (raw output preserved in ignored `eng
 | `dotnet test native/Planwharf.Engine.Tests -c Release` | 2,803 passed, 0 failed, 0 skipped; 1 minute 24 seconds |
 | `dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared` | Exit 1: platform linker not found; Visual Studio Desktop Development for C++ workload required |
 | `git diff --check` | Exit 0 |
-
-Remaining evidence gap: the handoff mentions two fresh failures, but does not include their names or saved output location. The repository's saved TRX is dated 24 November and is not evidence for this run; attempt-278's stored result reports no test failures. The final tree's new Release run above passed, but this does not establish the cause or scope of the two earlier failures. Their saved output must still be supplied for independent verification; no unrelated fix was attempted. The AOT gate remains blocked by the host toolchain and is not passed. No live provider workers or personal projects were dispatched, no dependencies installed, and no push, merge, publishing or Job 51 work occurred. The startup skills update check was unavailable (GitHub HTTP 403 rate limit); no skills were updated.
 
 ## Job 49 port done
 
