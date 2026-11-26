@@ -487,6 +487,84 @@ public class ParityTests
     static string? Text(JsonArray args, int i) => i < args.Count && args[i] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
     static JsonNode? Num(double? value) => value is null ? null : JsonValue.Create(value.Value);
 
+    static readonly JsonSerializerOptions StateJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    static ProjectEntry? StateEntry(JsonNode? node) => node is null
+        ? null
+        : JsonSerializer.Deserialize<ProjectEntry>(node.ToJsonString(), StateJsonOptions);
+
+    static ExecutionState? StateExecution(JsonNode? node) => node is null
+        ? null
+        : JsonSerializer.Deserialize<ExecutionState>(node.ToJsonString(), StateJsonOptions);
+
+    static IReadOnlyList<DispatchPart>? StateDispatch(JsonNode? node) => node is not JsonArray array
+        ? null
+        : JsonSerializer.Deserialize<IReadOnlyList<DispatchPart>>(array.ToJsonString(), StateJsonOptions);
+
+    static InspectionFacts? StateFacts(JsonNode? node) => node is null
+        ? null
+        : JsonSerializer.Deserialize<InspectionFacts>(node.ToJsonString(), StateJsonOptions);
+
+    static JsonObject StateEntryJson(ProjectEntry entry)
+    {
+        // Keep the replay shape at the JavaScript emptyEntry boundary. The typed
+        // C# record may carry later state fields, but this pure vector compares the
+        // fields emitted by engine/orchestrator.js exactly.
+        return new JsonObject
+        {
+            ["status"] = entry.Status,
+            ["doing"] = entry.Doing,
+            ["plan"] = JsonSerializer.SerializeToNode(entry.Plan, StateJsonOptions),
+            ["facts"] = JsonSerializer.SerializeToNode(entry.Facts, StateJsonOptions),
+            ["jobId"] = entry.JobId,
+            ["jobTitle"] = entry.JobTitle,
+            ["attemptId"] = entry.AttemptId,
+            ["modelId"] = entry.ModelId,
+            ["approved"] = entry.Approved,
+            ["waitingFor"] = entry.WaitingFor,
+            ["next"] = entry.Next,
+            ["workerLabel"] = entry.WorkerLabel,
+            ["resultPath"] = entry.ResultPath,
+            ["watchingSince"] = entry.WatchingSince,
+            ["holdApproval"] = entry.HoldApproval,
+            ["grillSkipped"] = entry.GrillSkipped,
+            ["docs"] = JsonSerializer.SerializeToNode(entry.Docs, StateJsonOptions),
+            ["log"] = JsonSerializer.SerializeToNode(entry.Log, StateJsonOptions),
+            ["pendingAutoStart"] = JsonSerializer.SerializeToNode(entry.PendingAutoStart, StateJsonOptions),
+            ["checkpoint"] = JsonSerializer.SerializeToNode(entry.Checkpoint, StateJsonOptions),
+            ["dispatch"] = JsonSerializer.SerializeToNode(entry.Dispatch, StateJsonOptions),
+            ["resumeRequested"] = entry.ResumeRequested,
+            ["deadlineHonored"] = entry.DeadlineHonored,
+            ["workerPid"] = entry.WorkerPid,
+            ["workerLog"] = entry.WorkerLog,
+            ["workerAlive"] = entry.WorkerAlive,
+            ["tried"] = JsonSerializer.SerializeToNode(entry.Tried, StateJsonOptions),
+            ["progressAt"] = entry.ProgressAt,
+            ["progressKey"] = entry.ProgressKey,
+            ["workerTail"] = entry.WorkerTail,
+            ["workerActivity"] = entry.WorkerActivity
+        };
+    }
+
+    static JsonArray PipelineJson(IReadOnlyList<PipelineStepState> steps) =>
+        new(steps.Select(step => (JsonNode)new JsonObject
+        {
+            ["id"] = step.Id,
+            ["label"] = step.Label,
+            ["state"] = step.State
+        }).ToArray());
+
+    static JsonArray CrewJson(IReadOnlyList<CrewMember> crew) =>
+        new(crew.Select(member => (JsonNode)new JsonObject
+        {
+            ["role"] = member.Role,
+            ["name"] = member.Name,
+            ["doing"] = member.Doing
+        }).ToArray());
+
     // One entry per ported function: how to call the C# with the recorded JavaScript arguments.
     static readonly Dictionary<string, Func<JsonArray, JsonNode?>> Ports = new()
     {
@@ -967,6 +1045,21 @@ public class ParityTests
         ["orchestrator-lead-questions/splitPrompt"] = a => Autonomy.SplitPrompt(Obj(a, 0)!),
         ["orchestrator-lead-questions/assignmentPrompt"] = a => Autonomy.AssignmentPrompt(Obj(a, 0)!),
         ["orchestrator-lead-questions/strictDecisionPrompt"] = a => Autonomy.StrictDecisionPrompt(Text(a, 0)!),
+        ["orchestrator-state/emptyEntry"] = _ => StateEntryJson(OrchestratorState.EmptyEntry()),
+        ["orchestrator-state/stepOf"] = a => (JsonNode)JsonValue.Create(
+            OrchestratorState.StepOf(StateEntry(Node(a, 0))))!,
+        ["orchestrator-state/pipelineOf"] = a => PipelineJson(
+            OrchestratorState.PipelineOf(StateEntry(Node(a, 0)))),
+        ["orchestrator-state/crewOf"] = a => CrewJson(
+            OrchestratorState.CrewOf(
+                Obj(a, 0),
+                Text(a, 1),
+                a.Count > 2 ? Obj(a, 2) : null)),
+        ["orchestrator-state/progressKey"] = a => (JsonNode)JsonValue.Create(
+            OrchestratorState.ProgressKey(
+                Obj(a, 0),
+                Text(a, 1),
+                a.Count > 2 ? a[2] as JsonArray : null))!,
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

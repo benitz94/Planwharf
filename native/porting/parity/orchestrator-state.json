@@ -1,0 +1,1237 @@
+[
+  {
+    "fn": "emptyEntry",
+    "args": [],
+    "result": {
+      "status": "idle",
+      "doing": "",
+      "plan": [],
+      "facts": null,
+      "jobId": null,
+      "jobTitle": null,
+      "attemptId": null,
+      "modelId": null,
+      "approved": false,
+      "waitingFor": "",
+      "next": "",
+      "workerLabel": null,
+      "resultPath": null,
+      "watchingSince": null,
+      "holdApproval": false,
+      "grillSkipped": false,
+      "docs": [],
+      "log": [],
+      "pendingAutoStart": null,
+      "checkpoint": null,
+      "dispatch": [],
+      "resumeRequested": false,
+      "deadlineHonored": false,
+      "workerPid": null,
+      "workerLog": null,
+      "workerAlive": false,
+      "tried": [],
+      "progressAt": null,
+      "progressKey": null,
+      "workerTail": "",
+      "workerActivity": ""
+    }
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      null
+    ],
+    "result": "idle"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {}
+    ],
+    "result": "idle"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "blocked_no_folder"
+      }
+    ],
+    "result": "check"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "propose_grill"
+      }
+    ],
+    "result": "grill"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "waiting_on_you"
+      }
+    ],
+    "result": "grill"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "idle"
+      }
+    ],
+    "result": "idle"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "idle",
+        "pendingAutoStart": {
+          "timing": "discretion"
+        }
+      }
+    ],
+    "result": "plan"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "needs_approval"
+      }
+    ],
+    "result": "approve"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "blocked_no_worker"
+      }
+    ],
+    "result": "assign"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "watching"
+      }
+    ],
+    "result": "watch"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "checkpointed"
+      }
+    ],
+    "result": "watch"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "failed"
+      }
+    ],
+    "result": "watch"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "complete"
+      }
+    ],
+    "result": "done"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": "mystery"
+      }
+    ],
+    "result": "mystery"
+  },
+  {
+    "fn": "stepOf",
+    "args": [
+      {
+        "status": null
+      }
+    ],
+    "result": "idle"
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      null
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "todo"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "todo"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "todo"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "todo"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "idle",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "todo"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "todo"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "todo"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "todo"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "idle",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": {
+          "timing": "deadline"
+        },
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "done"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "now"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "todo"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "propose_grill",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "now"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "todo"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "todo"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "needs_approval",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "done"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "done"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "now"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "done"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "done"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "done"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "done"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "now"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "complete",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "done"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "done"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "done"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "done"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "done"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": true,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "skip"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "done"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "done"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "done"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "now"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "complete",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": true,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "done"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "skip"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "done"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "done"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "done"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "done"
+      }
+    ]
+  },
+  {
+    "fn": "pipelineOf",
+    "args": [
+      {
+        "status": "mystery",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": true,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      }
+    ],
+    "result": [
+      {
+        "id": "check",
+        "label": "Check",
+        "state": "todo"
+      },
+      {
+        "id": "grill",
+        "label": "Grill",
+        "state": "todo"
+      },
+      {
+        "id": "plan",
+        "label": "Plan",
+        "state": "todo"
+      },
+      {
+        "id": "approve",
+        "label": "Approve",
+        "state": "todo"
+      },
+      {
+        "id": "assign",
+        "label": "Assign",
+        "state": "todo"
+      },
+      {
+        "id": "watch",
+        "label": "Watch",
+        "state": "todo"
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      null,
+      null
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Orchestrator",
+        "doing": "Idle."
+      },
+      {
+        "role": "Worker",
+        "name": "None yet",
+        "doing": "Not assigned yet."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "propose_grill",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Holding assign until grill is closed."
+      },
+      {
+        "role": "Worker",
+        "name": "None yet",
+        "doing": "Not assigned until grill is closed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Fallback",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": 17,
+        "workerLog": null,
+        "workerAlive": true,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": "Compiling"
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Fallback",
+        "doing": "Compiling"
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "needs_approval",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "subTaskId": "sub-1",
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Build slice",
+            "activity": "Waiting"
+          },
+          {
+            "subTaskId": "sub-2",
+            "modelId": "m2",
+            "label": "Reviewer",
+            "slice": "Review slice",
+            "activitySession": {
+              "role": "reviewer"
+            }
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead",
+      {
+        "subTasks": []
+      }
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Split the job into 2 slices across available workers. Waiting for Approve."
+      },
+      {
+        "role": "Worker",
+        "name": "Builder",
+        "doing": "Build slice. Waiting for Approve."
+      },
+      {
+        "role": "Reviewer",
+        "name": "Reviewer",
+        "doing": "Review slice. Waiting for Approve."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Current",
+            "slice": "Current slice",
+            "alive": true,
+            "pid": 21,
+            "activity": "Running"
+          },
+          {
+            "modelId": "m2",
+            "label": "Historical",
+            "slice": "Old slice",
+            "historicalAssignment": true,
+            "assignmentJobTitle": "Old job",
+            "activity": "Finished"
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 2 workers (1 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Current",
+        "doing": "Running"
+      },
+      {
+        "role": "Worker",
+        "name": "Historical",
+        "doing": "Old job: Finished"
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Unhealthy",
+            "slice": "Slice",
+            "alive": true
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": "Hit an error: provider"
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Worker looks unhealthy. Monitoring for recovery; I will switch models if it stalls or dies."
+      },
+      {
+        "role": "Worker",
+        "name": "Unhealthy",
+        "doing": "Hit an error: provider"
+      }
+    ]
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      null,
+      null,
+      null
+    ],
+    "result": "0||0|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": 3,
+        "names": [
+          "a.cs",
+          "docs"
+        ],
+        "dirty": [
+          " M a.cs"
+        ]
+      },
+      "missing-parity-log-a",
+      null
+    ],
+    "result": "3|a.cs,docs|1|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": 3,
+        "names": [
+          "a.cs",
+          "docs"
+        ],
+        "dirty": [
+          " M a.cs",
+          "?? b.cs"
+        ]
+      },
+      null,
+      [
+        {
+          "logPath": "missing-parity-log-a"
+        },
+        {
+          "logPath": "missing-parity-log-b"
+        }
+      ]
+    ],
+    "result": "3|a.cs,docs|2|0|0;0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": null,
+        "names": "not-an-array",
+        "dirty": null
+      },
+      "",
+      []
+    ],
+    "result": "0||0|0|0"
+  }
+]

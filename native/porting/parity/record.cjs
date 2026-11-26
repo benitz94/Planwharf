@@ -36,8 +36,22 @@ function loadOrchestratorLeadQuestions() {
   };
 }
 
+function loadOrchestratorState() {
+  const orchPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator.js');
+  const mod = new Module(orchPath);
+  mod.filename = orchPath;
+  mod.paths = Module._nodeModulePaths(path.dirname(orchPath));
+  // Test-only seam: expose the unchanged module's private default constructor without
+  // changing engine/orchestrator.js or reimplementing its behavior here.
+  const source = fs.readFileSync(orchPath, 'utf8')
+    + '\n;module.exports = { ...module.exports, emptyEntry };\n';
+  mod._compile(source, orchPath);
+  return mod.exports;
+}
+
 const LOADER_MAP = {
-  'orchestrator-lead-questions': loadOrchestratorLeadQuestions
+  'orchestrator-lead-questions': loadOrchestratorLeadQuestions,
+  'orchestrator-state': loadOrchestratorState
 };
 
 // Functions that take a callback get one that accepts everything; JSON has no functions.

@@ -91,6 +91,51 @@ const diverseCrew = [
   { id: 'gemini', label: 'Gemini Pro', plan: 'gemini', enabled: true, available: true, provider: 'antigravity', cli: 'gemini-flash' }
 ];
 
+const stateEntry = (overrides = {}) => ({
+  status: 'idle', doing: '', plan: [], facts: null, jobId: null, jobTitle: null, attemptId: null,
+  modelId: null, approved: false, waitingFor: '', next: '', workerLabel: null, resultPath: null,
+  watchingSince: null, holdApproval: false, grillSkipped: false, docs: [], log: [],
+  pendingAutoStart: null, checkpoint: null, dispatch: [], resumeRequested: false,
+  deadlineHonored: false, workerPid: null, workerLog: null, workerAlive: false, tried: [],
+  progressAt: null, progressKey: null, workerTail: '', workerActivity: '', ...overrides
+});
+
+const orchestratorStateCases = [
+  ['emptyEntry', []],
+  ...[null, {},
+    { status: 'blocked_no_folder' }, { status: 'propose_grill' }, { status: 'waiting_on_you' },
+    { status: 'idle' }, { status: 'idle', pendingAutoStart: { timing: 'discretion' } },
+    { status: 'needs_approval' }, { status: 'blocked_no_worker' }, { status: 'watching' },
+    { status: 'checkpointed' }, { status: 'failed' }, { status: 'complete' },
+    { status: 'mystery' }, { status: null }
+  ].map(row => ['stepOf', [row]]),
+  ...[null,
+    stateEntry(), stateEntry({ status: 'idle', pendingAutoStart: { timing: 'deadline' } }),
+    stateEntry({ status: 'propose_grill' }), stateEntry({ status: 'needs_approval' }),
+    stateEntry({ status: 'watching' }), stateEntry({ status: 'complete' }),
+    stateEntry({ status: 'watching', grillSkipped: true }),
+    stateEntry({ status: 'complete', grillSkipped: true }),
+    stateEntry({ status: 'mystery', grillSkipped: true })
+  ].map(row => ['pipelineOf', [row]]),
+  ['crewOf', [null, null]],
+  ['crewOf', [stateEntry({ status: 'propose_grill' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Fallback', workerPid: 17, workerAlive: true, workerActivity: 'Compiling' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'needs_approval', dispatch: [
+    { subTaskId: 'sub-1', modelId: 'm1', label: 'Builder', slice: 'Build slice', activity: 'Waiting' },
+    { subTaskId: 'sub-2', modelId: 'm2', label: 'Reviewer', slice: 'Review slice', activitySession: { role: 'reviewer' } }
+  ] }), 'Lead', { subTasks: [] }]],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [
+    { modelId: 'm1', label: 'Current', slice: 'Current slice', alive: true, pid: 21, activity: 'Running' },
+    { modelId: 'm2', label: 'Historical', slice: 'Old slice', historicalAssignment: true, assignmentJobTitle: 'Old job', activity: 'Finished' }
+  ] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'Unhealthy', slice: 'Slice', alive: true }], workerActivity: 'Hit an error: provider' }), 'Lead']],
+  ['progressKey', [null, null, null]],
+  ['progressKey', [{ fileCount: 3, names: ['a.cs', 'docs'], dirty: [' M a.cs'] }, 'missing-parity-log-a', null]],
+  ['progressKey', [{ fileCount: 3, names: ['a.cs', 'docs'], dirty: [' M a.cs', '?? b.cs'] }, null,
+    [{ logPath: 'missing-parity-log-a' }, { logPath: 'missing-parity-log-b' }]]],
+  ['progressKey', [{ fileCount: null, names: 'not-an-array', dirty: null }, '', []]]
+];
+
 module.exports = {
   antigravity: [
     ['parseUsage', [require('../../../fixtures/antigravity-usage.json')]],
@@ -1622,5 +1667,9 @@ module.exports = {
     ['assignmentPrompt', [{ name: 'Proj', goal: null, slices: ['Build'], candidates: [[{ id: 'a', label: 'A', provider: 'p1' }]] }]],
     ['strictDecisionPrompt', ['Review project.']],
     ['strictDecisionPrompt', ['Line 1\nLine 2']]
-  ]
+  ],
+
+  // Job 51 pure state helpers. Inputs deliberately use absent log paths so the
+  // recorder never depends on the host filesystem's size or timestamps.
+  'orchestrator-state': orchestratorStateCases
 };
