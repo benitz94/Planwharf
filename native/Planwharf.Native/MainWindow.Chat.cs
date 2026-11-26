@@ -46,7 +46,7 @@ public sealed partial class MainWindow
         return null;
     }
 
-    void RenderProjects(IReadOnlyList<ProjectItem> projects)
+    void RenderProjects(IReadOnlyList<Core.ProjectItem> projects)
     {
         var now = DateTimeOffset.UtcNow;
         var rows = projects.Select(project =>
