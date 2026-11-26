@@ -791,8 +791,13 @@ public static partial class OrchestratorLeadQuestions
     static void EmitEffect(LeadServices services, List<LeadEffect> effects, string kind, string? projectId, JsonObject payload)
     {
         var effect = new LeadEffect(kind, projectId, payload);
-        lock (effects) { effects.Add(effect); }
-        services.OnEffect?.Invoke(effect);
+        // A single invocation can emit progress on several threads. Serialize delivery
+        // with recording so a non-thread-safe OnEffect observer cannot lose updates.
+        lock (effects)
+        {
+            effects.Add(effect);
+            services.OnEffect?.Invoke(effect);
+        }
     }
 
     static JsonObject LedgerStartPayload(string role, string? projectId, string? megaTaskId, Model model, string reason) => new()
