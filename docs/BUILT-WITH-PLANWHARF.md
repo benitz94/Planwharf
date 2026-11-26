@@ -42,6 +42,37 @@ Deferred cases: real program process-tree execution, live provider logins, and n
 
 Acceptance results: Release build clean (0 warnings, 0 errors); 56 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,788 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent verification remains pending (#?).
 
+Final verification, 26 November 2026 (attempt-279; assigned provider/model `codex` / `gpt-6.1-sol`): the read-only attempt registry and stored result identify the previous independent verifier as `antigravity` / `gemini-flash` (CLI `gemini-3.8-flash-high`, attempt-278, closed), not Claude. Only attempt-279 was active for this project before editing. The supplied handoff, stored result, existing 13-test diff and file timestamps establish the provenance of the two uncommitted C# files. The reject-answer change compensates for the extracted C# workflow's internally successful order receipt; JavaScript `runOrder` instead returns a failed receipt for `reject`. Two additional parameterized cases assert the exact rejection answer and that neither a lead nor an action handler is invoked. Historical counts above describe integration at `17e79ea`; attempt-278 separately reported 69 lead tests and 2,801 full-suite passes. Neither report is substituted for current execution evidence.
+
+Newly executed checks on the final C# tree (raw output preserved in ignored `engineering-logs/job50-attempt279-*.log`):
+
+| Command | Observed result |
+| --- | --- |
+| `node native/porting/parity/record.cjs` | Exit 0; 1,252 vectors across 46 modules; no content drift |
+| `node native/porting/parity/record.cjs --check` | Exit 0 |
+| `node native/porting/parity/scenarios.cjs` | Exit 0; 131 scenarios across 11 suites |
+| `node native/porting/parity/scenarios.cjs --check` | Exit 0 |
+| `node native/porting/parity/scenarios.cjs --self-test` | Exit 0 |
+| `node --test engine/orchestrator.test.cjs` | 1 passed |
+| `node --test engine/project-context.test.cjs` | 1 passed |
+| `node --test engine/project-recipient.test.cjs` | 1 passed |
+| `node --test engine/conversation-history.test.cjs` | 1 passed |
+| `node --test engine/grill-chat.test.cjs` | 5 passed |
+| `node --test engine/autonomy.test.cjs` | 18 passed; teardown also logged ENOENT for its deleted temporary notebook |
+| `node --test engine/parallel-projects.test.cjs` | 1 passed |
+| `node --test engine/research-dispatch.test.cjs` | 1 passed |
+| `node --test engine/parity.test.cjs` | 5 passed |
+| `dotnet build native/Planwharf.Engine -c Release` | Exit 0; 0 warnings, 0 errors |
+| `dotnet test native/Planwharf.Engine.Tests -c Release --filter OrchestratorLeadQuestionsTests` | 71 passed |
+| `dotnet test native/Planwharf.Engine.Tests -c Release --filter ScenarioParityTests` | 137 passed |
+| `dotnet test native/Planwharf.Engine.Tests -c Release --filter ParityTests` | 1,396 passed (includes scenario tests) |
+| `dotnet test native/Planwharf.Engine.Tests -c Release --filter FullyQualifiedName~Planwharf.Engine.Tests.ParityTests` | 1,259 passed (pure parity class) |
+| `dotnet test native/Planwharf.Engine.Tests -c Release` | 2,803 passed, 0 failed, 0 skipped; 1 minute 24 seconds |
+| `dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared` | Exit 1: platform linker not found; Visual Studio Desktop Development for C++ workload required |
+| `git diff --check` | Exit 0 |
+
+Remaining evidence gap: the handoff mentions two fresh failures, but does not include their names or saved output location. The repository's saved TRX is dated 24 November and is not evidence for this run; attempt-278's stored result reports no test failures. The final tree's new Release run above passed, but this does not establish the cause or scope of the two earlier failures. Their saved output must still be supplied for independent verification; no unrelated fix was attempted. The AOT gate remains blocked by the host toolchain and is not passed. No live provider workers or personal projects were dispatched, no dependencies installed, and no push, merge, publishing or Job 51 work occurred. The startup skills update check was unavailable (GitHub HTTP 403 rate limit); no skills were updated.
+
 ## Job 49 port done
 
 The port of orchestrator job building and work plan formation to C# (`OrchestratorJobBuilding.cs`) as specified in sheet 46b is complete on `port/49-job-building`. It covers job kinds, slice counts, deterministic dispatch plans, goal retention, work plan line formatting, .planwharf/plan.md preparation, completion detection verifying result files have STATUS: COMPLETE, and approval reset on job mutation. Focused unit, pure parity, and scenario parity coverage are part of the Job 49 integration; merged in PR #247.

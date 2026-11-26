@@ -1324,6 +1324,610 @@ public class OrchestratorLeadQuestionsTests
         Assert.Equal("beta", betaResult.Metadata!["projectId"]!.GetValue<string>());
     }
 
+    [Fact]
+    public async Task AskAsync_InputValidation_RejectsInvalidGrillKind_InvalidRequestMode_OversizedMessages_AndDeletedProjects()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var adapter = new FakeLeadAdapter();
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+
+        // 1. Invalid Grill kind
+        var badGrill = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Grill me", "alpha", "s1", "default", "unsupported-kind", null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(badGrill.Ok);
+        Assert.Equal("Invalid Grill kind.", badGrill.Reason);
+
+        // 2. Invalid Request mode
+        var badMode = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Implement", "alpha", "s1", "invalid-mode", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(badMode.Ok);
+        Assert.Equal("Invalid request mode.", badMode.Reason);
+
+        // 3. Oversized message (> 1 MiB)
+        var hugeQuestion = new string('x', 1024 * 1024 + 10);
+        var oversized = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                hugeQuestion, "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(oversized.Ok);
+        Assert.Equal("message too long (maximum 1 MiB)", oversized.Reason);
+
+        // 4. Selected project no longer exists in snapshot
+        var deleted = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Status?", "deleted-project-id", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(deleted.Ok);
+        Assert.Equal("Selected project no longer exists. Select a project before sending.", deleted.Reason);
+    }
+
+    [Fact]
+    public async Task AskAsync_TalkMode_StripsSuggestedGoalAndAddition_AndClearsEnvelopeActions()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        // Chat mode "talk" stored in snapshot chatModes
+        snap.Data["chatModes"] = new JsonObject { ["alpha"] = "talk" };
+
+        var rawReply = "Let's think this through.\n\n**Suggested next goal:** Write a prototype parser.\n\n**Addition to this work:** Also add benchmarks.";
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (inv, _) =>
+            {
+                Assert.Equal("talk", inv.ChatMode);
+                return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                    rawReply,
+                    Actions: Arr("""[{"type":"dispatch_research","projectId":"alpha","modelId":"astra","title":"T","detail":"D"}]""")));
+            }
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "What do you think of this approach?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal("Let's think this through.", result.Answer);
+        Assert.Empty(result.ActionResults);
+    }
+
+    [Fact]
+    public async Task AskAsync_ToolRequest_StripsTagAndEmitsToolRequestEffect()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                "I should inspect the live docs first.\n\nTOOL REQUEST: browser"))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add
+        };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Can you check the online docs?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal("I should inspect the live docs first.", result.Answer);
+        Assert.Equal("browser", result.Metadata!["toolRequest"]!.GetValue<string>());
+
+        var toolEffect = Assert.Single(effects, e => e.Kind == "tool_request");
+        Assert.Equal("browser", toolEffect.Payload["tool"]!.GetValue<string>());
+        Assert.Equal("astra", toolEffect.Payload["leadId"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task AskAsync_Orders_HandlesQuotaAndStateSystemQueries()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = new OrchestratorLeadQuestions.Snapshot(Obj("""
+            {
+              "orchestratorLabel": "Astra",
+              "plans": [
+                {
+                  "id": "chatgpt",
+                  "label": "ChatGPT",
+                  "readable": true,
+                  "exhausted": false,
+                  "pct": 10,
+                  "leftPct": 90,
+                  "windows": [{ "name": "5-hour", "pct": 10, "leftPct": 90, "resetAt": "18:00" }]
+                }
+              ],
+              "projects": [
+                {
+                  "id": "alpha",
+                  "name": "Alpha",
+                  "status": "watching",
+                  "next": "Verify parser.",
+                  "checkpoint": { "id": "cp-42" }
+                }
+              ]
+            }
+            """));
+        var adapter = new FakeLeadAdapter();
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+
+        // 1. Quota command
+        var quotaResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "how much quota is left?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.True(quotaResult.Ok);
+        Assert.Contains("ChatGPT:", quotaResult.Answer);
+        Assert.Contains("resets 18:00", quotaResult.Answer);
+        Assert.Empty(adapter.Invocations);
+
+        // 2. Current state command
+        var stateResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "current state", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.True(stateResult.Ok);
+        Assert.Equal("Alpha: watching. Verify parser. Checkpoint: cp-42", stateResult.Answer);
+        Assert.Empty(adapter.Invocations);
+    }
+
+    [Fact]
+    public async Task AskAsync_Orders_HandlesModelLeadSavingModeAndModeOrders()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        snap.Data["models"] = Arr("""[{"id":"astra","label":"Astra"}]""");
+        var adapter = new FakeLeadAdapter();
+
+        // 1. Model order
+        var modelServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, null, null, action))
+        };
+        var modelResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "turn off astra", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(modelResult.Ok);
+        Assert.Equal("Astra: Astra is now off.", modelResult.Answer);
+
+        // 2. Lead order
+        var leadResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "use astra as lead", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(leadResult.Ok);
+        Assert.Equal("Astra: orchestrator lead is now Astra.", leadResult.Answer);
+
+        // 3. Saving mode in English ("mode safe")
+        var saveEnResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "mode safe", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(saveEnResult.Ok);
+        Assert.Equal("Astra: Saving mode is now Safe. It applies from the next step.", saveEnResult.Answer);
+
+        // 4. Saving mode in Italian ("modalità sicura")
+        var saveItResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "modalità sicura", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(saveItResult.Ok);
+        Assert.Equal("Astra: La modalità di risparmio è ora Sicura. Vale dal prossimo passo.", saveItResult.Answer);
+
+        // 5. Mode talk
+        var modeResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "mode talk", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(modeResult.Ok);
+        Assert.Equal("Astra: mode is now Talk.", modeResult.Answer);
+
+        // 6. Mode pipeline (rejected)
+        var rejectResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "mode pipeline", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(rejectResult.Ok);
+        Assert.Equal("Astra: Pipeline is not available.", rejectResult.Answer);
+
+        // 7. End grill
+        var endGrillResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "end grill", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, modelServices);
+        Assert.True(endGrillResult.Ok);
+        Assert.Equal("Grill session ended. Use Grill me to begin a new conversation.", endGrillResult.Answer);
+    }
+
+    [Fact]
+    public async Task AskAsync_Orders_HandlesStartApproveSkipRejectAndFailure()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = new OrchestratorLeadQuestions.Snapshot(Obj("""
+            {
+              "orchestratorLabel": "Astra",
+              "projects": [
+                {
+                  "id": "alpha",
+                  "name": "Alpha",
+                  "workerLabel": "Luna",
+                  "dispatch": [{ "label": "GPT-6 Luna" }]
+                }
+              ]
+            }
+            """));
+        var adapter = new FakeLeadAdapter();
+
+        // 1. Start with phase "plan"
+        var startServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, null, null, action, new JsonObject { ["phase"] = "plan" }))
+        };
+        var startResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "start", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, startServices);
+        Assert.True(startResult.Ok);
+        Assert.Equal("Astra: Plan ready. Approve to assign workers on Alpha. I dispatch; I do not do the job.", startResult.Answer);
+
+        // 2. Approve
+        var approveServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, null, null, action))
+        };
+        var approveResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "approve", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, approveServices);
+        Assert.True(approveResult.Ok);
+        Assert.Equal("Astra: assigned GPT-6 Luna on Alpha. I dispatch; I do not do the job.", approveResult.Answer);
+
+        // 3. Stop
+        var stopResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "stop", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, approveServices);
+        Assert.True(stopResult.Ok);
+        Assert.Equal("Astra: stop on Alpha.", stopResult.Answer);
+
+        // 4. Failed action order reports failure reason
+        var failServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                false, null, "worker process crashed", action))
+        };
+        var failResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "start", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, failServices);
+        Assert.True(failResult.Ok);
+        Assert.Equal("Astra: could not start: worker process crashed.", failResult.Answer);
+    }
+
+    [Fact]
+    public async Task AskAsync_ReassignCrew_ValidatesPayload_EmitsEffectOrAppliesAction()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = new OrchestratorLeadQuestions.Snapshot(Obj("""
+            {
+              "orchestratorLabel": "Astra",
+              "projects": [
+                { "id": "alpha", "name": "Alpha", "megaTaskId": "mt-100" },
+                { "id": "beta", "name": "Beta" }
+              ]
+            }
+            """));
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter();
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add
+        };
+
+        // 1. Invalid keys in reassign_crew action
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Proposing crew change.","actions":[{"type":"reassign_crew","projectId":"alpha","assignments":{},"why":"balance","extra":"invalid"}]}"""));
+        var invalidKeys = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "reassign crew", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(invalidKeys.ActionResults[0].Ok);
+        Assert.Contains("Crew not changed: Invalid crew change.", invalidKeys.Answer);
+
+        // 2. Targets different project
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Proposing crew change.","actions":[{"type":"reassign_crew","projectId":"beta","assignments":{},"why":"balance"}]}"""));
+        var wrongProject = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "reassign crew", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(wrongProject.ActionResults[0].Ok);
+        Assert.Contains("The crew change targets a different project from the selected one.", wrongProject.Answer);
+
+        // 3. Project has no proposed or stopped work
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Proposing crew change.","actions":[{"type":"reassign_crew","projectId":"beta","assignments":{},"why":"balance"}]}"""));
+        var noWork = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "reassign crew", "beta", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.False(noWork.ActionResults[0].Ok);
+        Assert.Contains("This project has no proposed or stopped work.", noWork.Answer);
+
+        // 4. Valid reassign_crew proposes effect
+        effects.Clear();
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Proposed new assignment.","actions":[{"type":"reassign_crew","projectId":"alpha","assignments":{"m1":"slice1"},"why":"better fit"}]}"""));
+        var validCrew = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "reassign crew", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+        Assert.True(validCrew.ActionResults[0].Ok);
+        Assert.Contains("Crew change proposed.", validCrew.Answer);
+        var crewEffect = Assert.Single(effects, e => e.Kind == "reassign_crew");
+        Assert.Equal("alpha", crewEffect.ProjectId);
+        Assert.Equal("better fit", crewEffect.Payload["why"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task AskAsync_ExcessiveActions_RejectsWhenMoreThanThreeActionsReturned()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                """{"answer":"Here are four tasks.","actions":[{"type":"t1"},{"type":"t2"},{"type":"t3"},{"type":"t4"}]}"""))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "plan work", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Contains("Invalid lead actions; no workers were dispatched.", result.Answer);
+        Assert.Empty(result.ActionResults);
+    }
+
+    [Fact]
+    public async Task AskAsync_ProviderException_DiagnosesAndEmitsThinkingClear()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra", provider: "codex", cli: "gpt-6-astra");
+        var snap = TwoProjectSnap();
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => throw new InvalidOperationException("process crashed with exit code 1")
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add
+        };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain status", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.NotNull(result.Diagnostic);
+        Assert.Contains("thinking_clear", effects.Select(e => e.Kind));
+    }
+
+    [Fact]
+    public async Task AskAsync_ProviderModelUnavailable_EmitsModelUnavailableEffect()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra", provider: "codex", cli: "gpt-6-astra");
+        var snap = TwoProjectSnap();
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                "Model is currently unavailable.",
+                Failure: "provider",
+                Diagnostic: Obj("""{"code":"PROVIDER_MODEL_UNAVAILABLE","message":"Model was decommissioned."}""")))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add
+        };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Status?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        var unavailEffect = Assert.Single(effects, e => e.Kind == "model_unavailable");
+        Assert.Equal("astra", unavailEffect.Payload["modelId"]!.GetValue<string>());
+        Assert.Equal("Model was decommissioned.", unavailEffect.Payload["reason"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task AskAsync_FreshTaskIntent_PreparesTaskAndAppendsNotice()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var preparedCalls = 0;
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("I can help with that."))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            PrepareTaskWithContext = (req, _) =>
+            {
+                preparedCalls++;
+                return ValueTask.FromResult(Obj("""
+                    {
+                      "ok": true,
+                      "task": { "id": "t-search", "title": "Binary Search" }
+                    }
+                    """));
+            }
+        };
+
+        // 1. Valid fresh task preparation
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "please implement a binary search", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal(1, preparedCalls);
+        Assert.Equal("t-search", result.NewTaskId);
+        Assert.Contains("New task prepared from this message: Binary Search.", result.Answer);
+
+        // 2. Fresh task intent without target project fails
+        var noTargetSnap = new OrchestratorLeadQuestions.Snapshot(Obj("""{"projects":[]}"""));
+        var noTarget = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "please implement a binary search", null, "s1", "default", null, null, noTargetSnap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.False(noTarget.Ok);
+        Assert.Equal("Select the project for this new task.", noTarget.Reason);
+
+        // 3. Preparation failure returns fail result
+        services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            PrepareTaskWithContext = (_, _) => ValueTask.FromResult(Obj("""{"ok": false, "reason": "Task queue is full."}"""))
+        };
+        var prepFailed = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "please implement a binary search", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.False(prepFailed.Ok);
+        Assert.Equal("Task queue is full.", prepFailed.Reason);
+    }
+
+    [Fact]
+    public async Task AskAsync_HandOverCascade_StopsWhenRosterExhausted()
+    {
+        var lead1 = MakeModel("lead-1", "Lead 1", provider: "p1", cli: "cli-1");
+        var lead2 = MakeModel("lead-2", "Lead 2", provider: "p2", cli: "cli-2");
+        var roster = new[] { lead1, lead2 };
+        var snap = TwoProjectSnap(leadId: "lead-1");
+        var tried = new List<string>();
+
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (inv, _) =>
+            {
+                var id = inv.Model.Data["id"]!.GetValue<string>();
+                tried.Add(id);
+                return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                    "Out of credits",
+                    Failure: "provider",
+                    Diagnostic: Obj("""{"code":"PROVIDER_USAGE_LIMIT","message":"limit reached"}""")));
+            }
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead1 };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain project alpha status", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal(new[] { "lead-1", "lead-2" }, tried);
+        Assert.Equal("lead-2", result.InvokedLead!.Data["id"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task OrchestratorLeadQuestions_EarlyCancellation_ThrowsImmediately()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var item = new OrchestratorLeadQuestions.Item(Obj("""{"project":{"id":"p1","name":"Demo"},"revisions":[]}"""));
+        var facts = new OrchestratorLeadQuestions.Facts(new JsonObject());
+        var adapter = new FakeLeadAdapter();
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+
+        // 1. ComposeGrillRoundAsync
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await OrchestratorLeadQuestions.ComposeGrillRoundAsync(item, facts, "me", adapter, services, cts.Token));
+
+        // 2. ReviewSnapshotAsync
+        var sup = MakeModel("sup-1", "Supervisor", provider: "api", cli: "api-model", supervisor: true, remaining: 10, cost: 2);
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await OrchestratorLeadQuestions.ReviewSnapshotAsync(
+                new OrchestratorLeadQuestions.SupervisorReviewRequest("p1", "sup-1", "Question", new JsonObject(), new JsonArray(), [sup]),
+                adapter, services, cts.Token));
+
+        // 3. AskLeadDecisionAsync
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await OrchestratorLeadQuestions.AskLeadDecisionAsync(
+                new OrchestratorLeadQuestions.LeadDecisionRequest("p1", item, new JsonObject(), "Question", [lead]),
+                adapter, services, cts.Token));
+
+        // 4. AskAsync
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            await OrchestratorLeadQuestions.AskAsync(
+                new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                    "Status?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+                adapter, services, cts.Token));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AskAsync_RejectedPipelineOrder_DoesNotInvokeActionsOrLead(bool withActionHandler)
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var adapter = new FakeLeadAdapter();
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add,
+            ApplyAction = withActionHandler
+                ? (_, _) => throw new InvalidOperationException("Rejected orders must not invoke actions.")
+                : null
+        };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "mode pipeline", "alpha", "s1", "default", null, null,
+                TwoProjectSnap(), null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal("Astra: Pipeline is not available.", result.Answer);
+        Assert.Empty(adapter.Invocations);
+        Assert.Empty(result.ActionResults);
+        var order = Assert.Single(effects, effect => effect.Kind == "order");
+        Assert.Equal("reject", order.Payload["action"]!.GetValue<string>());
+    }
+
     // Composition-root cases deferred to Job 52 (Orchestrator.cs / server integration):
     // - HTTP routes (/api/orchestrator, /api/orchestrator/ask, /api/orchestrator/ask/cancel, /api/orchestrator/lead, /api/orchestrator/research/*).
     // - Durable orchestrator.json persistence (store.asks mutations, briefingBaselines, atomic persist/renameWithRetry, restart recovery).

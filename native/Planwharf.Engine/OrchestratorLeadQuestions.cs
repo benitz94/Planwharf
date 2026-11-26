@@ -1306,8 +1306,8 @@ public static partial class OrchestratorLeadQuestions
                 : $"{who}: {name} is already with {crew}. I dispatch; I do not do the job.";
         }
         if (actedOk && action == "skip") return $"{who}: skipped grill on {name}.";
-        if (actedOk) return $"{who}: {action} on {name}.";
         if (action == "reject") return $"{who}: Pipeline is not available.";
+        if (actedOk) return $"{who}: {action} on {name}.";
         return $"{who}: could not {action}: {(string.IsNullOrEmpty(actedReason) ? "failed" : actedReason)}.";
     }
 
