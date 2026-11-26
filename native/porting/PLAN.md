@@ -1,6 +1,6 @@
 # Plan: Planwharf on a C# engine, native app only
 
-Updated on 13 November 2026 with the owner's three decisions; statuses updated on 25 November 2026. The order of the jobs, including the protocol and the pipeline that come before phase 3, is in [docs/NEXT-WORK.md](../../docs/NEXT-WORK.md). The porting rules are in
+Updated on 13 November 2026 with the owner's three decisions; statuses updated on 26 November 2026. The order of the jobs, including the protocol and the pipeline that come before phase 3, is in [docs/NEXT-WORK.md](../../docs/NEXT-WORK.md). The porting rules are in
 [README.md](README.md); each piece of work has a job sheet in [jobs/](jobs/).
 
 ## The decisions
@@ -28,9 +28,16 @@ and Planwharf itself does the porting jobs, with every pull request reviewed bef
 | **3. First level** | `attempts`, `claims`, `project-export`, `execution-next`, `worker-result` (done in job 01), `provider-catalog`, `provider-policy`, `model-routing`, `claude`, `claude-usage`, `repository`, `supervisor`, `activity`, `activity-sessions`, `provider-runtime`; added after the plan was drawn: `time-left`, `plan-status`, `provider-status`, `push-email`, `temp-cleanup`, `account-folders`, `phone-voice`, `phone-activation`, `step-outcomes` (job 36), `decisions-inbox` (job 39). | Done: jobs 40, 41 (#213, #217) |
 | **4. Processes and providers** (the riskiest) | `runner` (start and stop the AI programs, read what they write, close process trees on Windows); `provider-models`, `external-adapters`, `api-agent`, `provider-adapters`, `provider-connections`, `antigravity`, `planUsage`; added after the plan was drawn: `worktrees` (parallel parts in their own git worktree), `plan-file`, `pr-check`, `phone`, `phone-ollama`, `phone-handover`, `phone-handover-live`, `phone-activation-check`. The six modules with side effects are compared with the scenario recorder; the hand test on Windows with real AI programs moved to phase 7 (owner, 24 November 2026). | Done: jobs 42, 43 (#219, #233); real-program test in phase 7 |
 | **5. Execution** | `execution.cjs`, `project-home`; at the same time, the design of how to split the orchestrator. | Done: jobs 44, 45 (#236, #241) |
-| **6. Orchestrator** | The 3,750-line file, split by that design, then put together. | Sheets done: job 46 (#244); order parsing done: job 47 (#245); team models implemented: job 48 (waiting for review); jobs 49–52 to do |
+| **6. Orchestrator** | The 3,750-line file, split by that design, then put together. | Sheets done: job 46 (#244); order parsing done: job 47 (#245); team models implemented on `port/48-team-models`: job 48 (waiting for review, #?); jobs 49–52 to do |
 | **7. The native app runs the C# engine** | The window calls the engine directly instead of `server.cjs`. First as an **option** for at least one release, then the **default**; Node leaves the zip. While it is an option, the owner tries it with the real AI programs (Claude, Codex, Grok, Gemini: start, answer, refuse, stop, restart) on Windows; this is the real-program test the phase 4 sheet asked for, and what fails is fixed before it becomes the default | To do |
 | **8. Removal, in one go** | Before it: the list of what the native app still lacks compared with the web app and Electron, with a proposal of what to bring over; **the owner decides**. Then the web app, Electron, the JavaScript engine and `server.cjs` are deleted together, with their workflows and release files. | To do |
+
+## Current porting progress
+
+| Measure | Now | At the end |
+|---|---|---|
+| Engine modules ported to C# | **66 of 72** | 72 |
+| JavaScript engine lines ported | **about 9,900 of 14,000** (71%) | all; the orchestrator alone is about 3,800 |
 
 Removed from the earlier plan: the C# HTTP server (old phase 7) and moving the web app and Electron
 onto the C# engine (old phase 9).
