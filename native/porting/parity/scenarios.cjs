@@ -477,6 +477,25 @@ function verify(module, rows) {
     assert.equal(decide.completion.status, 'complete');
     assert.equal(decide.mutation.approved, false);
     assert.equal(decide.advance.status, 'needs_approval');
+  } else if (module === 'orchestrator-lead-questions') {
+    const streamed = get('streamed-envelope-project-isolation-and-unsolicited-research');
+    assert.equal(streamed.result.recordedAnswerContainsPrivateBeta, false);
+    assert.doesNotMatch(JSON.stringify(streamed.requests[0].state), /PRIVATE_BETA_GOAL/);
+    assert.equal(streamed.result.turn.actionResults[0].ok, false);
+    assert.equal(streamed.events.length, 2);
+    const process = get('process-failure-retry-then-alternate-provider');
+    assert.deepEqual(process.events.map(event => event.modelId), ['astra', 'astra', 'opus']);
+    for (const reason of ['provider-usage-limit', 'credits-needed']) {
+      const immediate = get('immediate-handover-' + reason);
+      assert.deepEqual(immediate.events.map(event => event.modelId), ['astra', 'opus']);
+    }
+    const strict = get('unreadable-autonomy-decision-strict-retry');
+    assert.equal(strict.requests.length, 2);
+    assert.equal(strict.requests[1].question, strict.requests[0].question + '\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it.');
+    const cancelled = get('mid-turn-cancellation-preserves-only-stop-record');
+    assert.equal(cancelled.result.cancelled, true);
+    assert.equal(cancelled.result.asks[0].answer, 'Stopped.');
+    assert.doesNotMatch(JSON.stringify(cancelled.result.asks), /must not be persisted/);
   } else {
     assert.equal(get('allowed').events[0].stdout, 'ALLOWED\nno blocker\n');
     assert.equal(get('live-blocked').requests.length, 1);
@@ -1187,5 +1206,204 @@ scenario('orchestrator-job-building', 'decide', { category: 'decide-lifecycle' }
   cleanOrchFiles(root);
   return { completion, mutation, advance };
 });
+
+function leadQuestionsSandbox(root) {
+  return sandbox(root, {
+    builtins: {
+      async_hooks: require('node:async_hooks'),
+      events: require('node:events'),
+      '../plan.js': require('../../../plan.js'),
+      '../quota.js': require('../../../quota.js')
+    },
+    transform: (file, content) => path.basename(file) === 'orchestrator.js'
+      ? content.replace('return { stopPullRequestFix,', 'return { askLeadDecision, stopPullRequestFix,')
+      : content
+  });
+}
+
+function leadQuestionModels() {
+  return {
+    providers: [
+      { id: 'codex', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true },
+      { id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true }
+    ],
+    models: [
+      { id: 'astra', label: 'Astra', provider: 'codex', providerId: 'codex', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+      { id: 'opus', label: 'Opus', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } }
+    ]
+  };
+}
+
+function leadQuestionPlan() {
+  return {
+    schema: 2,
+    projects: [
+      { project: { id: 'alpha', name: 'Alpha', folder: null }, revisions: [{ id: 'rev-a', direction: 'Ship Alpha safely' }], tasks: [] },
+      { project: { id: 'beta', name: 'Beta', folder: null }, revisions: [{ id: 'rev-b', direction: 'PRIVATE_BETA_GOAL' }], tasks: [] }
+    ]
+  };
+}
+
+function leadQuestionRequest(info) {
+  return {
+    kind: 'askModel',
+    modelId: info.model.id,
+    question: info.question,
+    projectId: info.projectId || null,
+    allowActions: Object.hasOwn(info, 'allowActions') ? info.allowActions : null,
+    state: info.state
+  };
+}
+
+function leadQuestionResult(result) {
+  return {
+    ok: result.ok,
+    question: result.question || null,
+    answer: result.answer || null,
+    thinking: result.thinking || null,
+    ms: result.ms ?? null,
+    projectId: result.projectId || null,
+    orchestratorId: result.orchestratorId || null,
+    actionResults: result.actionResults || []
+  };
+}
+
+scenario('orchestrator-lead-questions', 'streamed-envelope-project-isolation-and-unsolicited-research',
+  { category: 'lead-turn', projectId: 'alpha' }, async ({ root, exchange, events }) => {
+    const { providers, models } = leadQuestionModels();
+    const plan = leadQuestionPlan();
+    let orchestra;
+    const askModel = async info => {
+      info.onProgress({ thinking: 'Inspecting Alpha', answer: '', ms: 4 });
+      events.push({ type: 'progress', thinking: 'Inspecting Alpha', answer: '', ms: 4 });
+      info.onProgress({ thinking: 'Inspecting Alpha', answer: 'Draft answer', ms: 8 });
+      events.push({ type: 'progress', thinking: 'Inspecting Alpha', answer: 'Draft answer', ms: 8 });
+      const reply = exchange(leadQuestionRequest(info), {
+        answer: JSON.stringify({
+          answer: 'Alpha is ready for review.',
+          actions: [{ type: 'dispatch_research', projectId: 'alpha', modelId: 'opus', title: 'Unasked research', detail: 'Do not run' }]
+        }),
+        thinking: 'Checked only Alpha.',
+        ms: 12
+      });
+      return reply;
+    };
+    orchestra = leadQuestionsSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: root, models, providers, readPlan: async () => plan, attempts: fakeAttempts(),
+      fetchPlans: async () => [], askModel, now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fixed'
+    });
+    await orchestra.setOrchestrator('astra');
+    const result = await orchestra.ask('What is the current status?', 'alpha', 'chat-fixed');
+    const firstRequest = JSON.stringify(result.asks[0]);
+    cleanOrchFiles(root);
+    return {
+      turn: leadQuestionResult(result),
+      recordedAnswerContainsPrivateBeta: firstRequest.includes('PRIVATE_BETA_GOAL'),
+      persistedAskCount: result.asks.length
+    };
+  });
+
+scenario('orchestrator-lead-questions', 'process-failure-retry-then-alternate-provider',
+  { category: 'handover', failures: 2 }, async ({ root, exchange, events }) => {
+    const { providers, models } = leadQuestionModels();
+    let call = 0;
+    const askModel = async info => {
+      call += 1;
+      events.push({ type: 'invoke', call, modelId: info.model.id });
+      const reply = call <= 2
+        ? { answer: 'Synthetic process failure ' + call, failure: 'process', diagnostic: { code: 'PROVIDER_EXECUTION_FAILED', message: 'Synthetic process failure ' + call }, ms: call }
+        : { answer: 'Recovered through Opus.', thinking: 'Alternate provider answered.', ms: 9 };
+      return exchange(leadQuestionRequest(info), reply);
+    };
+    const orchestra = leadQuestionsSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: root, models, providers, readPlan: async () => leadQuestionPlan(), attempts: fakeAttempts(),
+      fetchPlans: async () => [], askModel, now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fixed'
+    });
+    await orchestra.setOrchestrator('astra');
+    const result = await orchestra.ask('Explain Alpha status.', 'alpha', 'chat-fixed');
+    cleanOrchFiles(root);
+    return { turn: leadQuestionResult(result), calls: call };
+  });
+
+for (const failure of ['PROVIDER_USAGE_LIMIT', 'CREDITS_NEEDED']) {
+  scenario('orchestrator-lead-questions', 'immediate-handover-' + failure.toLowerCase().replaceAll('_', '-'),
+    { category: 'handover', failure }, async ({ root, exchange, events }) => {
+      const { providers, models } = leadQuestionModels();
+      let call = 0;
+      const askModel = async info => {
+        call += 1;
+        events.push({ type: 'invoke', call, modelId: info.model.id });
+        const reply = call === 1
+          ? failure === 'PROVIDER_USAGE_LIMIT'
+            ? { answer: 'Quota exhausted.', failure: 'provider', diagnostic: { code: 'PROVIDER_USAGE_LIMIT', message: 'Quota exhausted.' }, ms: 2 }
+            : { answer: 'This model requires usage credits.', failure: 'provider', diagnostic: { code: 'PROVIDER_EXECUTION_FAILED', message: 'Credits needed.' }, ms: 2 }
+          : { answer: 'Immediate handover succeeded.', thinking: 'Second provider.', ms: 5 };
+        return exchange(leadQuestionRequest(info), reply);
+      };
+      const orchestra = leadQuestionsSandbox(root).load('orchestrator.js').createOrchestrator({
+        dir: root, models, providers, readPlan: async () => leadQuestionPlan(), attempts: fakeAttempts(),
+        fetchPlans: async () => [], askModel, now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fixed'
+      });
+      await orchestra.setOrchestrator('astra');
+      const result = await orchestra.ask('Summarize Alpha.', 'alpha', 'chat-fixed');
+      cleanOrchFiles(root);
+      return { turn: leadQuestionResult(result), calls: call };
+    });
+}
+
+scenario('orchestrator-lead-questions', 'unreadable-autonomy-decision-strict-retry',
+  { category: 'autonomy', projectId: 'alpha' }, async ({ root, exchange, events }) => {
+    const { providers, models } = leadQuestionModels();
+    const question = 'Decide whether Alpha is complete.';
+    let call = 0;
+    const askModel = async info => {
+      call += 1;
+      events.push({ type: 'invoke', call, modelId: info.model.id, question: info.question });
+      const reply = call === 1
+        ? { answer: 'I cannot format that decision.', ms: 3 }
+        : { answer: '{"done":false,"next":"Run the isolated checks","assumptions":["The fixture is synthetic"],"summary":"A strict reply was accepted."}', ms: 4 };
+      return exchange(leadQuestionRequest(info), reply);
+    };
+    const orchestra = leadQuestionsSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: root, models, providers, readPlan: async () => leadQuestionPlan(), attempts: fakeAttempts(),
+      fetchPlans: async () => [], askModel,
+      prepareTask: async (projectId, objective) => ({ ok: true, task: { id: 'task-fixed', projectId, objective } }),
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fixed'
+    });
+    await orchestra.setOrchestrator('astra');
+    const settings = { enabled: true, assumptions: [], approved: [], continued: [], evaluated: [] };
+    const item = leadQuestionPlan().projects[0];
+    await orchestra.askLeadDecision('alpha', item, settings, question);
+    const snapshot = await orchestra.snapshot('alpha');
+    cleanOrchFiles(root);
+    return {
+      calls: call,
+      assumptions: settings.assumptions,
+      stopReason: settings.stopReason || null,
+      notes: snapshot.projects[0].log.map(entry => entry.text)
+    };
+  });
+
+scenario('orchestrator-lead-questions', 'mid-turn-cancellation-preserves-only-stop-record',
+  { category: 'cancellation', projectId: 'alpha' }, async ({ root, exchange, events }) => {
+    const { providers, models } = leadQuestionModels();
+    let orchestra;
+    const askModel = async info => {
+      info.onProgress({ thinking: 'Halfway', answer: 'Unsafe partial draft', ms: 7 });
+      events.push({ type: 'progress', thinking: 'Halfway', answer: 'Unsafe partial draft', ms: 7 });
+      const stopped = await orchestra.abortAsk('alpha');
+      events.push({ type: 'abort', aborted: stopped.aborted, asks: stopped.asks.length });
+      return exchange(leadQuestionRequest(info), { answer: 'This answer must not be persisted.', thinking: 'Too late', ms: 11 });
+    };
+    orchestra = leadQuestionsSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: root, models, providers, readPlan: async () => leadQuestionPlan(), attempts: fakeAttempts(),
+      fetchPlans: async () => [], askModel, now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fixed'
+    });
+    await orchestra.setOrchestrator('astra');
+    const result = await orchestra.ask('Cancel this Alpha turn.', 'alpha', 'chat-fixed');
+    const asks = result.asks.map(item => ({ question: item.question, answer: item.answer, thinking: item.thinking, order: item.order }));
+    cleanOrchFiles(root);
+    return { ok: result.ok, cancelled: result.cancelled, asks };
+  });
 
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });

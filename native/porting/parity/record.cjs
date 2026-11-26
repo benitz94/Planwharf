@@ -3,6 +3,7 @@
 // this file. `node native/porting/parity/record.cjs` writes them; `--check` only compares and exits 1
 // when a JavaScript change left a file out of date (CI runs the same check in engine/parity.test.cjs).
 const fs = require('node:fs');
+const { Module } = require('node:module');
 const path = require('node:path');
 const cases = require('./cases.cjs');
 
@@ -14,6 +15,31 @@ const PATH_MAP = {
   'orchestrator-order-parsing': path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator.js')
 };
 
+function loadOrchestratorLeadQuestions() {
+  const orchPath = path.join(__dirname, '..', '..', '..', 'engine', 'orchestrator.js');
+  const autonomyMod = require(path.join(__dirname, '..', '..', '..', 'engine', 'autonomy.cjs'));
+  const mod = new Module(orchPath);
+  mod.filename = orchPath;
+  mod.paths = Module._nodeModulePaths(path.dirname(orchPath));
+  // Test-only in-memory seam exposing top-level helpers from unchanged engine/orchestrator.js.
+  const source = fs.readFileSync(orchPath, 'utf8')
+    + '\n;module.exports = { ...module.exports, leadEnvelope, isDocName, briefRow };\n';
+  mod._compile(source, orchPath);
+  return {
+    ...mod.exports,
+    evaluationPrompt: autonomyMod.evaluationPrompt,
+    nudgePrompt: autonomyMod.nudgePrompt,
+    continuePrompt: autonomyMod.continuePrompt,
+    splitPrompt: autonomyMod.splitPrompt,
+    assignmentPrompt: autonomyMod.assignmentPrompt,
+    strictDecisionPrompt: autonomyMod.strictDecisionPrompt
+  };
+}
+
+const LOADER_MAP = {
+  'orchestrator-lead-questions': loadOrchestratorLeadQuestions
+};
+
 // Functions that take a callback get one that accepts everything; JSON has no functions.
 const CALL = {
   'model-policy': { resolveUsageFallback: (fn, args) => fn(...args, () => true) },
@@ -21,9 +47,13 @@ const CALL = {
 };
 
 function record(moduleName) {
+  const loader = LOADER_MAP[moduleName];
   const modPath = PATH_MAP[moduleName] || path.join(__dirname, '..', '..', '..', 'engine', moduleName + '.cjs');
-  const mod = require(modPath);
+  const mod = loader ? loader() : require(modPath);
   return cases[moduleName].map(([fn, args]) => {
+    if (typeof mod[fn] !== 'function') {
+      throw new Error(`Missing exported function for ${moduleName}/${fn}`);
+    }
     let out;
     try {
       const call = CALL[moduleName]?.[fn];

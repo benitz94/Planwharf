@@ -1385,5 +1385,242 @@ module.exports = {
 
       return res;
     })()
+  ],
+  'orchestrator-lead-questions': [
+    // 1. parseGrillQuestions
+    ['parseGrillQuestions', ['["Is this the calculator slice? Recommended: yes."]']],
+    ['parseGrillQuestions', ['[" Do it? ", false, null, 42, "  Keep existing tests? Recommended: yes  "]']],
+    ['parseGrillQuestions', ['[{"title":"Goal","body":"Why?","recommend":"yes"},{"question":"Scope","recommended":"minimal"}]']],
+    ['parseGrillQuestions', ['[{"title":"Only title"},{"body":"Only body","recommend":"skip"},{"title":1e3,"recommend":true},{"title":1e-6},{"title":1e-7}]']],
+    ['parseGrillQuestions', ['[{"title":"first","title":"last"}]']],
+    ['parseGrillQuestions', ['Here is the interview:\n```json\n["Use native AOT? Recommended: yes", "Keep JS fallback? Recommended: yes"]\n```\nThanks.']],
+    ['parseGrillQuestions', ['- First bullet? Recommended: yes\n* Second bullet?\n1. Numbered dot? Recommended: no\n2) Numbered paren?']],
+    ['parseGrillQuestions', ['❓ **Q1** — 日本語?\n❓ **Q2** – Accented perché? Recommended: sì\n❓ **Q3** - Hyphenated?']],
+    ['parseGrillQuestions', ['Intro statement without question mark.\nIs parity strict? Recommended: yes\nAnother statement without marker\nConfirm scope: recommended: keep minimal']],
+    ['parseGrillQuestions', ['\uFEFF\u00A0- Ready?\uFEFF']],
+    ['parseGrillQuestions', [JSON.stringify(Array.from({ length: 10 }, (_, i) => `Question ${i + 1}? Recommended: yes`))]],
+    ['parseGrillQuestions', [Array.from({ length: 10 }, (_, i) => `${i + 1}. Markdown question ${i + 1}?`).join('\n')]],
+    ['parseGrillQuestions', ['[{"title":"broken"\n- Fallback question? Recommended: yes\n- Plain statement']],
+    ['parseGrillQuestions', ['']],
+    ['parseGrillQuestions', ['   \n\t  ']],
+    ['parseGrillQuestions', [null]],
+    ['parseGrillQuestions', [42]],
+    ['parseGrillQuestions', [{}]],
+
+    // 2. grillPrompt
+    ['grillPrompt', [
+      {
+        project: { id: 'p1', name: 'Demo', folder: '/repo/demo' },
+        revisions: [{ id: 1, direction: 'Old goal' }, { id: 2, direction: 'Ship Job 50 parity' }]
+      },
+      {
+        lastCommit: 'abc1234 Add parser',
+        names: Array.from({ length: 14 }, (_, i) => `file-${i + 1}.cs`)
+      },
+      ['README.md', 'docs/spec.md']
+    ]],
+    ['grillPrompt', [{ project: { name: 'Minimal' }, revisions: [] }, null, null]],
+    ['grillPrompt', [{ project: { name: 'Partial', folder: '' }, revisions: [{ direction: '' }] }, { names: [] }, []]],
+    ['grillPrompt', [{ project: { name: 'DocsOnly' }, revisions: [{ direction: 'Verify' }] }, null, ['AGENTS.md']]],
+
+    // 3. grillDone
+    ['grillDone', [{ revisions: [{ mode: 'grill', title: 'R1' }] }]],
+    ['grillDone', [{ revisions: [{ mode: 'manual', title: 'Grill me' }] }]],
+    ['grillDone', [{ revisions: [{ mode: 'manual', title: 'Grill with the docs' }] }]],
+    ['grillDone', [{ revisions: [{ mode: 'Grill', title: 'Other' }] }]],
+    ['grillDone', [{ revisions: [] }]],
+    ['grillDone', [null]],
+
+    // 4. collectDocs & isDocName & listDocs
+    ['collectDocs', [{ docs: [' README.md ', '', '   ', 'docs/a.md'], names: ['AGENTS.md'] }]],
+    ['collectDocs', [{ docs: [null, 12, {}, true, ' x '] }]],
+    ['collectDocs', [{ docs: [' ', ''], names: ['README.md'] }]],
+    ['collectDocs', [{ docs: Array.from({ length: 15 }, (_, i) => `doc-${i + 1}.md`) }]],
+    ['collectDocs', [{ names: ['README.md', 'README', 'AGENTS.md', 'CLAUDE.md', 'SKILL.md', 'CONTRIBUTING.md', 'docs/spec.md', 'docs\\sub\\guide.md', 'src/CLAUDE.md', 'index.js', 'package.json', 'docs/note.txt', 'src/other.md'] }]],
+    ['collectDocs', [{ names: Array.from({ length: 15 }, (_, i) => `docs/d${i + 1}.md`) }]],
+    ['collectDocs', [null]],
+    ...['README.md', 'docs/spec.md', 'docs\\nested\\guide.md', 'src/CLAUDE.md', 'docs/plain.txt', 'index.js', '', null].map(n => ['isDocName', [n]]),
+    ['listDocs', [null]],
+    ['listDocs', ['']],
+    ['listDocs', ['nonexistent-docs-folder-parity']],
+
+    // 5. leadEnvelope
+    ['leadEnvelope', [' plain ']],
+    ['leadEnvelope', ['Line one\nLine two']],
+    ['leadEnvelope', ['```plain```']],
+    ['leadEnvelope', ['```json\n{"answer":"text","actions":[{"type":"dispatch_research","projectId":"p1"}]}\n```']],
+    ['leadEnvelope', ['```JSON\n{"answer":"ok","actions":[]}\n```']],
+    ['leadEnvelope', ['{"answer":"ok","actions":[{"type":"new","extra":{"x":1}}]}']],
+    ['leadEnvelope', ['{"answer":"first","answer":"last","actions":[]}']],
+    ['leadEnvelope', ['{bad}']],
+    ['leadEnvelope', ['```json\n{bad}\n```']],
+    ['leadEnvelope', ['{"answer":"ok","actions":[],"extra":1}']],
+    ['leadEnvelope', ['{"answer":"ok"}']],
+    ['leadEnvelope', ['{"answer":123,"actions":[]}']],
+    ['leadEnvelope', ['{"answer":"ok","actions":{}}']],
+    ['leadEnvelope', [' untrimmed ', [{ type: 'custom', unknown: 'keep' }]]],
+    ['leadEnvelope', ['']],
+    ['leadEnvelope', [null]],
+
+    // 6. answerQuestion & briefRow
+    ...(() => {
+      const detailSnap = {
+        orchestratorLabel: 'Lead',
+        projects: [
+          {
+            id: 'x',
+            name: 'Demo',
+            label: 'working',
+            jobTitle: 'Port parity',
+            orchestratorDoing: 'Watching.',
+            waitingFor: 'tests',
+            next: 'review',
+            workerTail: 'old\nnew',
+            monitoring: { alive: 1, workers: 2, folderFiles: 7 },
+            dispatch: [
+              { modelId: 'model-code', label: 'Codeworker', slice: 'build', pid: 99, alive: true },
+              { modelId: 'model-review', label: 'Reviewworker', slice: 'verify', activity: 'Checking.', pid: 100, alive: false }
+            ]
+          },
+          {
+            id: 'y',
+            name: 'Beta',
+            label: 'idle',
+            workerLabel: 'Sonnet',
+            monitoring: { alive: 0, workers: 1, folderFiles: null }
+          }
+        ],
+        plans: [
+          { id: 'p1', label: 'ChatGPT', readable: true, exhausted: false, pct: 30, leftPct: 70, windows: [{ name: '5-hour', pct: 30, leftPct: 70 }] },
+          { id: 'p2', label: 'Grok', readable: true, exhausted: true, pct: 100, leftPct: 0, windows: [] },
+          { id: 'p3', label: 'Gemini', readable: false, reason: 'Not logged in' }
+        ],
+        models: [
+          { id: 'm1', label: 'ModelA', used: 10, limit: 50 },
+          { id: 'm2', label: 'ModelB', used: -5, limit: 100 }
+        ]
+      };
+      const noPlansSnap = {
+        orchestratorLabel: 'Lead',
+        projects: [{ id: 'x', name: 'Demo', label: 'idle' }],
+        plans: [],
+        models: detailSnap.models
+      };
+      const emptyPlansAndModelsSnap = {
+        orchestratorLabel: 'Lead',
+        projects: [{ id: 'x', name: 'Demo', label: 'idle', workerTail: '{"type":"result","result":"JSONL activity"}' }],
+        plans: [],
+        models: []
+      };
+      return [
+        ['answerQuestion', ['', detailSnap, 'x']],
+        ['answerQuestion', ['   ', detailSnap]],
+        ['answerQuestion', [null, detailSnap]],
+        ['answerQuestion', ['all projects', detailSnap]],
+        ['answerQuestion', ['tutti', detailSnap]],
+        ['answerQuestion', ['zzz', { orchestratorLabel: 'Lead', projects: [] }]],
+        ['answerQuestion', ['zzz', detailSnap]],
+        ['answerQuestion', ['Codeworker', detailSnap, 'x']],
+        ['answerQuestion', ['model-review', detailSnap, 'x']],
+        ['answerQuestion', ['split', detailSnap, 'x']],
+        ['answerQuestion', ['split', detailSnap, 'y']],
+        ['answerQuestion', ['How much quota is left?', detailSnap, 'x']],
+        ['answerQuestion', ['quota', noPlansSnap, 'x']],
+        ['answerQuestion', ['quota', emptyPlansAndModelsSnap, 'x']],
+        ['answerQuestion', ['monitor', detailSnap, 'x']],
+        ['answerQuestion', ['monitor', detailSnap, 'y']],
+        ['answerQuestion', ['next', detailSnap, 'x']],
+        ['answerQuestion', ['log', detailSnap, 'x']],
+        ['answerQuestion', ['log', emptyPlansAndModelsSnap, 'x']],
+        ['answerQuestion', ['log', detailSnap, 'y']],
+        ['answerQuestion', ['summary', detailSnap, 'x']],
+        ['briefRow', [detailSnap.projects[0], 'Lead']],
+        ['briefRow', [detailSnap.projects[1], null]],
+        ['briefRow', [null, 'Lead']]
+      ];
+    })(),
+
+    // 7. packState (privacy, caps, unscoped vs focused)
+    ...(() => {
+      const multiSnap = {
+        orchestratorLabel: 'Lead',
+        orchestratorId: 'chosen',
+        mode: 'plan',
+        grillPropose: true,
+        grillKind: 'docs',
+        projects: [
+          {
+            id: 'alpha',
+            name: 'Alpha',
+            folder: null,
+            github: 'owner/alpha',
+            repository: { branch: 'main' },
+            status: 'working',
+            label: 'Working',
+            goal: 'Build parity',
+            stateArt: 'Ready',
+            open: Array.from({ length: 14 }, (_, i) => `open-${i}`),
+            analysis: 'Checked.',
+            jobTitle: 'Job 50',
+            plan: Array.from({ length: 18 }, (_, i) => `step-${i}`),
+            checkpoint: { reason: 'pause', at: '2026-11-26T00:00:00Z', path: 'cp.json', jobTitle: 'Job 50', plan: Array.from({ length: 14 }, (_, i) => `cp-${i}`) },
+            orchestratorDoing: 'Watching',
+            waitingFor: 'tests',
+            next: 'verify',
+            savingMode: 'safe',
+            facts: { git: true, fileCount: 3, lastCommit: 'c1', dirty: Array.from({ length: 14 }, (_, i) => `d-${i}`) },
+            notes: ['alpha-own-note'],
+            dispatch: [{ modelId: 'm1', label: 'M1', slice: 's1', pid: 42, alive: true, activity: 'Running' }],
+            monitoring: { alive: 1, workers: 1, folderFiles: 3 },
+            workerTail: 'line 1\nline 2'
+          },
+          {
+            id: 'beta',
+            name: 'Beta',
+            folder: null,
+            status: 'idle',
+            jobTitle: 'PRIVATE_BETA_JOB',
+            notes: ['PRIVATE_BETA_NOTE']
+          }
+        ],
+        execution: {
+          megaTasks: [{ id: 'ma', projectId: 'alpha' }, { id: 'mb', projectId: 'beta' }],
+          subTasks: [{ id: 'sa', megaTaskId: 'ma' }, { id: 'sb', megaTaskId: 'mb', secret: 'PRIVATE' }],
+          results: [{ megaTaskId: 'ma', status: 'COMPLETE' }, { megaTaskId: 'mb', summary: 'PRIVATE' }],
+          checkpoints: [{ id: 'ca', projectId: 'alpha' }, { id: 'cb', projectId: 'beta' }]
+        },
+        researches: [
+          { id: 'ra', projectId: 'alpha', title: 'Alpha Research' },
+          { id: 'rb', projectId: 'beta', title: 'PRIVATE_BETA_RESEARCH' }
+        ],
+        fleet: [
+          { id: 'm1', label: 'M1', role: 'worker', plan: 'p1', exhausted: false, enabled: true, roles: { worker: true }, roleEligibility: { worker: true }, lead: false }
+        ],
+        plans: [
+          { id: 'p1', label: 'Plan 1', readable: true, exhausted: false, pct: 20, leftPct: 80, windows: [] }
+        ]
+      };
+      return [
+        ['packState', [multiSnap, multiSnap.projects[0]]],
+        ['packState', [multiSnap, null]],
+        ['packState', [{ grillPropose: false, projects: [] }, { id: 'p', name: 'P', savingMode: 'normal' }]],
+        ['packState', [null, null]],
+        ['packState', [{}, { id: 'p1', name: 'P1' }]]
+      ];
+    })(),
+
+    // 8. Autonomy prompt generators (from engine/autonomy.cjs)
+    ['evaluationPrompt', [{ name: 'Proj', goal: 'Goal', results: [{ status: 'COMPLETE', summary: 'ok', filesChanged: ['a.cs'], blockers: [] }], checks: { label: 'test', exitCode: 0, seconds: 2, output: 'pass' } }]],
+    ['evaluationPrompt', [{ name: 'Proj', goal: null, results: [] }]],
+    ['nudgePrompt', [{ name: 'Proj', goal: 'Goal', alert: { title: 'Stalled', message: 'No progress' } }]],
+    ['nudgePrompt', [{ name: 'Proj', goal: null, alert: { title: 'Alert', message: 'Check' } }]],
+    ['continuePrompt', [{ name: 'Proj', goal: 'Port modules', reason: 'blocked worker', results: [{ status: 'BLOCKED', summary: 'Partial', filesChanged: ['a.cs'], blockers: ['Needs test'] }] }]],
+    ['continuePrompt', [{ name: 'Proj', results: [] }]],
+    ['splitPrompt', [{ name: 'Proj', goal: 'Port sheet 46c', builders: [{ id: 'a', label: 'A', provider: 'p1', tier: 'light', left: 50 }], verifiers: [{ id: 'b', label: 'B', provider: 'p2', tier: 'premium' }], files: ['a.cs', 'b.cs'], said: 'x'.repeat(2600), documents: [{ path: 'docs/spec.md', text: 'Spec content', clipped: true }] }]],
+    ['splitPrompt', [{ name: 'Proj', goal: null, builders: [{ id: 'a', label: 'A', provider: 'p1', tier: 'default' }], verifiers: [{ id: 'b', label: 'B', provider: 'p2', tier: 'premium', left: 80 }], files: [] }]],
+    ['assignmentPrompt', [{ name: 'Proj', goal: 'Goal', slices: ['Build', 'Verify'], candidates: [[{ id: 'a', label: 'A', provider: 'p1' }], [{ id: 'b', label: 'B', provider: 'p2' }]], said: 'y'.repeat(2600) }]],
+    ['assignmentPrompt', [{ name: 'Proj', goal: null, slices: ['Build'], candidates: [[{ id: 'a', label: 'A', provider: 'p1' }]] }]],
+    ['strictDecisionPrompt', ['Review project.']],
+    ['strictDecisionPrompt', ['Line 1\nLine 2']]
   ]
 };

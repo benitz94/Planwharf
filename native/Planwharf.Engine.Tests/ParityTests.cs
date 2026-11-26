@@ -913,6 +913,60 @@ public class ParityTests
             foreach (var line in lines) arr.Add(line);
             return arr;
         },
+        ["orchestrator-lead-questions/parseGrillQuestions"] = a =>
+            new JsonArray(OrchestratorLeadQuestions.ParseGrillQuestionsValue(Node(a, 0)).Select(s => (JsonNode)JsonValue.Create(s)!).ToArray()),
+        ["orchestrator-lead-questions/grillPrompt"] = a => (JsonNode)JsonValue.Create(
+            OrchestratorLeadQuestions.GrillPrompt(
+                new OrchestratorLeadQuestions.Item(Obj(a, 0)!),
+                Obj(a, 1) is { } f ? new OrchestratorLeadQuestions.Facts(f) : null,
+                Arr(a, 2)?.Select(x => x?.GetValue<string>() ?? "").ToArray()))!,
+        ["orchestrator-lead-questions/grillDone"] = a => (JsonNode)JsonValue.Create(
+            OrchestratorLeadQuestions.GrillDone(Obj(a, 0) is { } o ? new OrchestratorLeadQuestions.Item(o) : null))!,
+        ["orchestrator-lead-questions/collectDocs"] = a =>
+            new JsonArray(OrchestratorLeadQuestions.CollectDocs(Obj(a, 0) is { } f ? new OrchestratorLeadQuestions.Facts(f) : null)
+                .Select(s => (JsonNode)JsonValue.Create(s)!).ToArray()),
+        ["orchestrator-lead-questions/isDocName"] = a => (JsonNode)JsonValue.Create(OrchestratorLeadQuestions.IsDocName(Text(a, 0)))!,
+        ["orchestrator-lead-questions/listDocs"] = a =>
+            new JsonArray(OrchestratorLeadQuestions.ListDocs(Text(a, 0)).Select(s => (JsonNode)JsonValue.Create(s)!).ToArray()),
+        ["orchestrator-lead-questions/leadEnvelope"] = a =>
+        {
+            var env = OrchestratorLeadQuestions.LeadEnvelope(Text(a, 0), Arr(a, 1));
+            var obj = new JsonObject
+            {
+                ["answer"] = env.Answer,
+                ["actions"] = env.Actions.DeepClone()
+            };
+            if (env.Error != null) obj["error"] = env.Error;
+            return obj;
+        },
+        ["orchestrator-lead-questions/answerQuestion"] = a =>
+        {
+            var res = OrchestratorLeadQuestions.AnswerQuestion(
+                Text(a, 0),
+                Obj(a, 1) is { } s ? new OrchestratorLeadQuestions.Snapshot(s) : null,
+                Text(a, 2));
+            var obj = new JsonObject
+            {
+                ["ok"] = res.Ok,
+                ["answer"] = res.Answer,
+                ["projectId"] = res.ProjectId
+            };
+            if (res.Reason != null) obj["reason"] = res.Reason;
+            return obj;
+        },
+        ["orchestrator-lead-questions/briefRow"] = a => (JsonNode)JsonValue.Create(
+            OrchestratorLeadQuestions.BriefRow(
+                Obj(a, 0) is { } p ? new OrchestratorLeadQuestions.Project(p) : null,
+                Text(a, 1)))!,
+        ["orchestrator-lead-questions/packState"] = a => OrchestratorLeadQuestions.PackState(
+            Obj(a, 0) is { } s ? new OrchestratorLeadQuestions.Snapshot(s) : null,
+            Obj(a, 1) is { } p ? new OrchestratorLeadQuestions.Project(p) : null),
+        ["orchestrator-lead-questions/evaluationPrompt"] = a => Autonomy.EvaluationPrompt(Obj(a, 0)!),
+        ["orchestrator-lead-questions/nudgePrompt"] = a => Autonomy.NudgePrompt(Obj(a, 0)!),
+        ["orchestrator-lead-questions/continuePrompt"] = a => Autonomy.ContinuePrompt(Obj(a, 0)!),
+        ["orchestrator-lead-questions/splitPrompt"] = a => Autonomy.SplitPrompt(Obj(a, 0)!),
+        ["orchestrator-lead-questions/assignmentPrompt"] = a => Autonomy.AssignmentPrompt(Obj(a, 0)!),
+        ["orchestrator-lead-questions/strictDecisionPrompt"] = a => Autonomy.StrictDecisionPrompt(Text(a, 0)!),
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

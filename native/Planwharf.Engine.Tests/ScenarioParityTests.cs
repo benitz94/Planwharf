@@ -17,6 +17,214 @@ public class ScenarioParityTests
     public static TheoryData<string> ProjectHomeScenarios => GetScenarios("project-home");
     public static TheoryData<string> OrchestratorTeamModelsScenarios => GetScenarios("orchestrator-team-models");
     public static TheoryData<string> OrchestratorJobBuildingScenarios => GetScenarios("orchestrator-job-building");
+    public static TheoryData<string> OrchestratorLeadQuestionsScenarios => GetScenarios("orchestrator-lead-questions");
+
+    [Theory]
+    [MemberData(nameof(OrchestratorLeadQuestionsScenarios))]
+    public async Task Replay_OrchestratorLeadQuestions_Scenarios(string name)
+    {
+        var root = Path.Combine(FindScenariosFolder(), ".verify-" + Guid.NewGuid());
+        Directory.CreateDirectory(root);
+        try
+        {
+            var scenario = GetScenario("orchestrator-lead-questions", name);
+            var requests = scenario["requests"]!.AsArray();
+            var replies = scenario["replies"]!.AsArray();
+            var exchange = new Exchange(requests, replies, root);
+            var observedEvents = new List<JsonNode>();
+            var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+            var current = true;
+            var adapter = new ReplayLeadModelAdapter(exchange, observedEvents, () => current, () => current = false);
+            var roster = LeadQuestionRoster();
+            var services = new OrchestratorLeadQuestions.LeadServices
+            {
+                Now = () => "2023-11-14T22:13:20.000Z",
+                NowMilliseconds = () => Epoch,
+                OnEffect = effect => effects.Add(effect),
+                OnProgress = progress => observedEvents.Add(new JsonObject
+                {
+                    ["type"] = "progress",
+                    ["thinking"] = progress.Thinking,
+                    ["answer"] = progress.Answer,
+                    ["ms"] = progress.Ms
+                }),
+                PrepareTask = (projectId, objective, isCurrent, _) => ValueTask.FromResult(
+                    isCurrent()
+                        ? new JsonObject
+                        {
+                            ["ok"] = true,
+                            ["task"] = new JsonObject
+                            {
+                                ["id"] = "task-fixed",
+                                ["projectId"] = projectId,
+                                ["objective"] = objective
+                            }
+                        }
+                        : new JsonObject { ["ok"] = false, ["reason"] = "cancelled" })
+            };
+
+            if (name == "unreadable-autonomy-decision-strict-retry")
+            {
+                var decisionServices = services with { LeadModel = () => roster[0], Roster = roster };
+                var decisionRequest = CreateLeadDecisionRequest(scenario, roster, () => current);
+                var decisionResult = await OrchestratorLeadQuestions.AskLeadDecisionAsync(decisionRequest, adapter, decisionServices, CancellationToken.None);
+
+                var projectedNotes = new JsonArray(effects
+                    .Where(e => e.Kind == "note")
+                    .Select(e => (JsonNode?)e.Payload["text"]!.DeepClone())
+                    .Reverse()
+                    .ToArray());
+                var actualDecisionOutput = new JsonObject
+                {
+                    ["calls"] = adapter.CallCount,
+                    ["assumptions"] = decisionResult.Settings?["assumptions"]?.DeepClone() ?? new JsonArray(),
+                    ["stopReason"] = decisionResult.StopReason,
+                    ["notes"] = projectedNotes
+                };
+
+                AssertOutcome(scenario, Normalize(actualDecisionOutput, root), null, GetEffects(root), exchange, observedEvents);
+                Assert.True(decisionResult.Ok);
+                Assert.NotNull(decisionResult.Decision);
+                Assert.Equal("Run the isolated checks", decisionResult.Decision!["next"]!.GetValue<string>());
+                Assert.Equal("A strict reply was accepted.", decisionResult.Decision["summary"]!.GetValue<string>());
+                Assert.Null(decisionResult.StopReason);
+                Assert.Equal(["astra", "astra"], adapter.ObservedModelIds);
+                Assert.Contains(effects, e => e.Kind == "assumption");
+                Assert.Contains(effects, e => e.Kind == "prepare_task"
+                    && e.Payload["next"]?.GetValue<string>() == "Run the isolated checks"
+                    && e.Payload["result"]?["ok"]?.GetValue<bool>() == true);
+                Assert.DoesNotContain(effects, e => e.Kind is "stop_autonomy" or "refusal" or "credits_needed" or "dispatch_research");
+                AssertNoPrivateBetaLeak(adapter.ObservedStates, effects, decisionResult.Decision);
+                return;
+            }
+
+            var askRequest = CreateLeadAskRequest(scenario, roster, () => current);
+            var askResult = await OrchestratorLeadQuestions.AskAsync(askRequest, adapter, services, CancellationToken.None);
+
+            if (name == "mid-turn-cancellation-preserves-only-stop-record")
+            {
+                exchange.AssertAllConsumed();
+                Assert.False(current);
+                Assert.True(Same(scenario["effects"]!, GetEffects(root)), "Cancelled turn must not write files to disk.");
+                var actualEvents = new JsonArray(observedEvents.Select(e => e.DeepClone()).ToArray());
+                Assert.True(Same(scenario["events"]!, actualEvents),
+                    $"Events mismatch for {name}:\nExpected: {scenario["events"]!.ToJsonString()}\nActual:   {actualEvents.ToJsonString()}");
+
+                // The durable "Stopped." ask belongs to the Job 52 composition root. This module proves
+                // cancellation via LeadAskTurnResult metadata, captured progress effect, and no durable turn effects.
+                Assert.Equal(scenario["result"]!["ok"]!.GetValue<bool>(), askResult.Ok);
+                Assert.Equal(scenario["result"]!["cancelled"]!.GetValue<bool>(), askResult.Metadata?["cancelled"]?.GetValue<bool>());
+                Assert.Equal("cancelled", askResult.Reason);
+                Assert.Equal("", askResult.Answer);
+                Assert.Null(askResult.Thinking);
+                Assert.Null(askResult.InvokedLead);
+                Assert.Empty(askResult.ActionResults);
+
+                var progressEffects = effects.Where(e => e.Kind == "progress").ToList();
+                var expectedAsk = scenario["result"]!["asks"]![0]!.AsObject();
+                Assert.Single(progressEffects);
+                Assert.Equal(expectedAsk["question"]!.GetValue<string>(), progressEffects[0].Payload["question"]!.GetValue<string>());
+                Assert.Equal(expectedAsk["thinking"]!.GetValue<string>(), progressEffects[0].Payload["thinking"]!.GetValue<string>());
+                Assert.Equal("Unsafe partial draft", progressEffects[0].Payload["draft"]!.GetValue<string>());
+                Assert.Equal(7L, progressEffects[0].Payload["ms"]!.GetValue<long>());
+                Assert.Contains(effects, e => e.Kind == "thinking_clear");
+                Assert.Contains(effects, e => e.Kind == "cancelled" && e.Payload["chatKey"]?.GetValue<string>() == "alpha");
+                Assert.DoesNotContain(effects, e => e.Kind is "ask_turn" or "briefing_baseline" or "dispatch_research" or "prepare_task" or "reassign_crew" or "tool_request");
+
+                var resultText = JsonSerializer.Serialize(new JsonObject
+                {
+                    ["answer"] = askResult.Answer,
+                    ["thinking"] = askResult.Thinking,
+                    ["reason"] = askResult.Reason,
+                    ["metadata"] = askResult.Metadata?.DeepClone()
+                });
+                Assert.DoesNotContain("must not be persisted", resultText, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("Too late", resultText, StringComparison.Ordinal);
+                Assert.DoesNotContain(effects, e => e.Payload.ToJsonString().Contains("must not be persisted", StringComparison.OrdinalIgnoreCase));
+                Assert.DoesNotContain(effects, e => e.Payload.ToJsonString().Contains("Stale draft", StringComparison.Ordinal));
+                AssertNoPrivateBetaLeak(adapter.ObservedStates, effects, null);
+                return;
+            }
+
+            var projectedActions = new JsonArray();
+            foreach (var action in askResult.ActionResults)
+            {
+                var item = new JsonObject { ["ok"] = action.Ok };
+                if (action.Text is not null) item["text"] = action.Text;
+                if (action.Reason is not null) item["reason"] = action.Reason;
+                if (action.Payload is not null) item["payload"] = action.Payload.DeepClone();
+                projectedActions.Add(item);
+            }
+            var turnJson = new JsonObject
+            {
+                ["ok"] = askResult.Ok,
+                ["question"] = askRequest.Question,
+                ["answer"] = askResult.Answer,
+                ["thinking"] = askResult.Thinking,
+                ["ms"] = askResult.Ms,
+                ["projectId"] = askResult.Metadata?["projectId"]?.DeepClone(),
+                ["orchestratorId"] = askResult.InvokedLead?.Data["id"]?.DeepClone(),
+                ["actionResults"] = projectedActions
+            };
+            JsonObject actualResult = name == "streamed-envelope-project-isolation-and-unsolicited-research"
+                ? new JsonObject
+                {
+                    ["turn"] = turnJson,
+                    ["recordedAnswerContainsPrivateBeta"] =
+                        askResult.Answer.Contains("PRIVATE_BETA_GOAL", StringComparison.Ordinal) ||
+                        adapter.ObservedStates.Any(s => s.Contains("PRIVATE_BETA_GOAL", StringComparison.Ordinal)),
+                    ["persistedAskCount"] = effects.Count(e => e.Kind == "ask_turn")
+                }
+                : new JsonObject
+                {
+                    ["turn"] = turnJson,
+                    ["calls"] = adapter.CallCount
+                };
+
+            AssertOutcome(scenario, Normalize(actualResult, root), null, GetEffects(root), exchange, observedEvents);
+            Assert.Equal(requests.Select(r => r!["modelId"]!.GetValue<string>()), adapter.ObservedModelIds);
+            AssertNoPrivateBetaLeak(adapter.ObservedStates, effects, askResult.Metadata);
+
+            if (name == "streamed-envelope-project-isolation-and-unsolicited-research")
+            {
+                Assert.Contains(effects, e => e.Kind == "ask_turn");
+                Assert.Contains(effects, e => e.Kind == "briefing_baseline");
+                Assert.DoesNotContain(effects, e => e.Kind is "dispatch_research" or "prepare_task" or "lead_switch");
+            }
+            else if (name == "process-failure-retry-then-alternate-provider")
+            {
+                Assert.Equal(["astra", "astra", "opus"], adapter.ObservedModelIds);
+                Assert.Contains(effects, e => e.Kind == "note" && e.Payload["text"]?.GetValue<string>() == "Astra failed to answer (process). Retrying once.");
+                Assert.Contains(effects, e => e.Kind == "lead_switch"
+                    && e.Payload["fromId"]?.GetValue<string>() == "astra"
+                    && e.Payload["toId"]?.GetValue<string>() == "opus");
+                Assert.DoesNotContain(effects, e => e.Kind is "dispatch_research" or "credits_needed");
+            }
+            else if (name == "immediate-handover-provider-usage-limit")
+            {
+                Assert.Equal(["astra", "opus"], adapter.ObservedModelIds);
+                Assert.Contains(effects, e => e.Kind == "lead_switch"
+                    && e.Payload["fromId"]?.GetValue<string>() == "astra"
+                    && e.Payload["toId"]?.GetValue<string>() == "opus"
+                    && e.Payload["why"]?.GetValue<string>() == "Astra is out of quota.");
+                Assert.DoesNotContain(effects, e => e.Kind is "dispatch_research" or "credits_needed");
+            }
+            else if (name == "immediate-handover-credits-needed")
+            {
+                Assert.Equal(["astra", "opus"], adapter.ObservedModelIds);
+                Assert.Contains(effects, e => e.Kind == "credits_needed" && e.Payload["modelId"]?.GetValue<string>() == "astra");
+                Assert.Contains(effects, e => e.Kind == "lead_switch"
+                    && e.Payload["fromId"]?.GetValue<string>() == "astra"
+                    && e.Payload["toId"]?.GetValue<string>() == "opus"
+                    && e.Payload["why"]?.GetValue<string>() == "Astra needs usage credits.");
+                Assert.DoesNotContain(effects, e => e.Kind == "dispatch_research");
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
 
     [Theory]
     [MemberData(nameof(ProjectHomeScenarios))]
@@ -1216,6 +1424,185 @@ public class ScenarioParityTests
             return new JsonObject { ["result"] = result.DeepClone(), ["closed"] = closed, ["persisted"] = persisted, ["store"] = store, ["row"] = row };
         }
         throw new InvalidOperationException("Missing execution replay: " + name);
+    }
+
+    private sealed class ReplayLeadModelAdapter(
+        Exchange exchange,
+        List<JsonNode> events,
+        Func<bool> isCurrent,
+        Action cancel) : OrchestratorLeadQuestions.ILeadModelAdapter
+    {
+        public int CallCount { get; private set; }
+        public List<string> ObservedModelIds { get; } = [];
+        public List<string> ObservedStates { get; } = [];
+
+        public ValueTask<OrchestratorLeadQuestions.LeadSpokenResponse> AskModelAsync(
+            OrchestratorLeadQuestions.LeadAskInvocation invocation,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Assert.True(isCurrent());
+
+            var call = ++CallCount;
+            var modelId = invocation.Model.Data["id"]!.GetValue<string>();
+            ObservedModelIds.Add(modelId);
+            ObservedStates.Add(invocation.State.ToJsonString());
+
+            if (call == 1 && invocation.Question == "What is the current status?")
+            {
+                Assert.NotNull(invocation.OnProgress);
+                invocation.OnProgress!(new OrchestratorLeadQuestions.LeadAskProgress("Inspecting Alpha", "", 4));
+                invocation.OnProgress!(new OrchestratorLeadQuestions.LeadAskProgress("Inspecting Alpha", "Draft answer", 8));
+            }
+            else if (call == 1 && invocation.Question == "Cancel this Alpha turn.")
+            {
+                Assert.NotNull(invocation.OnProgress);
+                invocation.OnProgress!(new OrchestratorLeadQuestions.LeadAskProgress("Halfway", "Unsafe partial draft", 7));
+                cancel();
+                invocation.OnProgress!(new OrchestratorLeadQuestions.LeadAskProgress("Stale thinking", "Stale draft", 9));
+                events.Add(new JsonObject { ["type"] = "abort", ["aborted"] = true, ["asks"] = 1 });
+            }
+            else
+            {
+                var invoked = new JsonObject { ["type"] = "invoke", ["call"] = call, ["modelId"] = modelId };
+                if (invocation.Question.StartsWith("Decide whether Alpha", StringComparison.Ordinal))
+                    invoked["question"] = invocation.Question;
+                events.Add(invoked);
+            }
+
+            var actualRequest = new JsonObject
+            {
+                ["kind"] = "askModel",
+                ["modelId"] = modelId,
+                ["question"] = invocation.Question,
+                ["projectId"] = invocation.ProjectId,
+                ["allowActions"] = invocation.AllowActions is bool allow ? JsonValue.Create(allow) : null,
+                ["state"] = invocation.State.DeepClone()
+            };
+            var reply = exchange.Call(actualRequest).AsObject();
+            var response = new OrchestratorLeadQuestions.LeadSpokenResponse(
+                Answer: reply["answer"]?.GetValue<string>(),
+                Thinking: reply["thinking"]?.GetValue<string>(),
+                Ms: reply["ms"]?.GetValue<long>(),
+                Actions: reply["actions"] is JsonArray actions ? (JsonArray)actions.DeepClone() : null,
+                Failure: reply["failure"]?.GetValue<string>(),
+                Diagnostic: reply["diagnostic"] is JsonObject diagnostic ? (JsonObject)diagnostic.DeepClone() : null,
+                ProcessExit: reply["processExit"]?.GetValue<int>(),
+                Tokens: reply["tokens"] is JsonObject tokens ? (JsonObject)tokens.DeepClone() : null,
+                Error: reply["error"]?.GetValue<string>(),
+                Metadata: reply["metadata"] is JsonObject metadata ? (JsonObject)metadata.DeepClone() : null);
+            return ValueTask.FromResult(response);
+        }
+    }
+
+    private static IReadOnlyList<OrchestratorLeadQuestions.Model> LeadQuestionRoster() =>
+    [
+        new(EObj("""{"id":"astra","label":"Astra","provider":"codex","providerId":"codex","adapter":"codex","cli":"gpt-6-astra","plan":"chatgpt","quotaPoolId":"chatgpt","kind":"premium","enabled":true,"available":true,"limit":100,"roles":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},"roleEligibility":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false}}""")),
+        new(EObj("""{"id":"opus","label":"Opus","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-opus-5-5","plan":"claude","quotaPoolId":"claude","kind":"premium","enabled":true,"available":true,"limit":100,"roles":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},"roleEligibility":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false}}"""))
+    ];
+
+    private static JsonObject LeadQuestionSnapshotData() => EObj("""
+        {
+          "orchestratorId":"astra","orchestratorLabel":"Astra","mode":"manual","grillPropose":false,"grillKind":"off",
+          "projects":[
+            {
+              "id":"alpha","name":"Alpha","folder":null,"github":null,
+              "repository":{
+                "checkedAt":"2023-11-14T22:13:20.000Z","folder":null,"github":null,
+                "local":{"exists":false,"readable":false,"writable":false,"git":false},
+                "remote":{"accessible":false,"error":"No repository linked."},
+                "comparison":{"status":"unknown","ahead":null,"behind":null}
+              },
+              "status":"idle","label":"Idle","goal":"Ship Alpha safely","stateArt":"","open":[],
+              "analysis":"Reading the notebook. No job to split. Waiting for: Auto start.",
+              "jobTitle":null,"plan":[],"checkpoint":null,
+              "orchestratorDoing":"Reading the notebook. No job to split.","waitingFor":"Auto start",
+              "next":"Relink the project folder on this PC.","facts":null,"dispatch":[],"monitoring":null,"workerTail":""
+            },
+            {
+              "id":"beta","name":"Beta","folder":null,"status":"idle","label":"Idle",
+              "goal":"PRIVATE_BETA_GOAL",
+              "notes":[{"id":"N-beta","text":"PRIVATE_BETA_NOTE","aiRelevant":true}],
+              "dispatch":[]
+            }
+          ],
+          "execution":{"megaTasks":[],"subTasks":[],"results":[],"checkpoints":[]},
+          "researches":[{"id":"res-beta","projectId":"beta","title":"PRIVATE_BETA_RESEARCH","status":"COMPLETE","reportPath":"beta-report.md"}],
+          "fleet":[
+            {
+              "id":"astra","label":"Astra","role":"Lead","plan":"chatgpt","exhausted":false,"enabled":true,
+              "roles":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},
+              "roleEligibility":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},
+              "lead":true
+            },
+            {
+              "id":"opus","label":"Opus","role":"Orchestrator / Worker / Verifier / Reviewer","plan":"claude","exhausted":false,"enabled":true,
+              "roles":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},
+              "roleEligibility":{"orchestrator":true,"worker":true,"verifier":true,"reviewer":true,"supervisor":false},
+              "lead":false
+            }
+          ],
+          "plans":[
+            {"id":"ChatGPT","label":"ChatGPT","readable":false,"exhausted":false,"pct":null,"leftPct":null,"windows":[]},
+            {"id":"Grok","label":"Grok","readable":false,"exhausted":false,"pct":null,"leftPct":null,"windows":[]},
+            {"id":"Gemini","label":"Gemini","readable":false,"exhausted":false,"pct":null,"leftPct":null,"windows":[]}
+          ]
+        }
+        """);
+
+    private static OrchestratorLeadQuestions.LeadAskTurnRequest CreateLeadAskRequest(
+        JsonObject scenario,
+        IReadOnlyList<OrchestratorLeadQuestions.Model> roster,
+        Func<bool> isCurrent)
+    {
+        var expected = scenario["requests"]![0]!.AsObject();
+        var snapData = LeadQuestionSnapshotData();
+        var alphaData = snapData["projects"]![0]!.DeepClone().AsObject();
+        return new OrchestratorLeadQuestions.LeadAskTurnRequest(
+            Question: expected["question"]!.GetValue<string>(),
+            ProjectId: "alpha",
+            ChatSessionId: "chat-fixed",
+            RequestMode: "default",
+            RequestedGrillKind: null,
+            GoldModel: null,
+            Snapshot: new OrchestratorLeadQuestions.Snapshot(snapData),
+            TargetProject: new OrchestratorLeadQuestions.Project(alphaData),
+            ConversationHistory: [],
+            Roster: roster,
+            IsCurrent: isCurrent,
+            StateFile: null);
+    }
+
+    private static OrchestratorLeadQuestions.LeadDecisionRequest CreateLeadDecisionRequest(
+        JsonObject scenario,
+        IReadOnlyList<OrchestratorLeadQuestions.Model> roster,
+        Func<bool> isCurrent)
+    {
+        var expected = scenario["requests"]![0]!.AsObject();
+        var item = new OrchestratorLeadQuestions.Item(
+            EObj("""{"project":{"id":"alpha","name":"Alpha","folder":null},"revisions":[{"id":"rev-a","direction":"Ship Alpha safely"}]}"""));
+        return new OrchestratorLeadQuestions.LeadDecisionRequest(
+            ProjectId: "alpha",
+            Item: item,
+            Settings: EObj("""{"enabled":true,"assumptions":[],"approved":[],"continued":[],"evaluated":[]}"""),
+            Question: expected["question"]!.GetValue<string>(),
+            Roster: roster,
+            EvalMegaTaskId: null,
+            IsCurrent: isCurrent);
+    }
+
+    private static void AssertNoPrivateBetaLeak(
+        IReadOnlyList<string> observedStates,
+        IReadOnlyList<OrchestratorLeadQuestions.LeadEffect> effects,
+        JsonNode? outputNode)
+    {
+        foreach (var marker in new[] { "PRIVATE_BETA_GOAL", "PRIVATE_BETA_NOTE", "PRIVATE_BETA_RESEARCH" })
+        {
+            Assert.All(observedStates, state => Assert.DoesNotContain(marker, state, StringComparison.Ordinal));
+            Assert.All(effects, effect => Assert.DoesNotContain(marker, effect.Payload.ToJsonString(), StringComparison.Ordinal));
+            if (outputNode is not null)
+                Assert.DoesNotContain(marker, outputNode.ToJsonString(), StringComparison.Ordinal);
+        }
     }
 
     private static string FindScenariosFolder()

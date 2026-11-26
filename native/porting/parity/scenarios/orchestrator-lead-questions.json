@@ -1,0 +1,2387 @@
+{
+  "schema": 1,
+  "module": "orchestrator-lead-questions",
+  "scenarios": [
+    {
+      "name": "streamed-envelope-project-isolation-and-unsolicited-research",
+      "input": {
+        "category": "lead-turn",
+        "projectId": "alpha"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "What is the current status?",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "What is the current status?",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "{\"answer\":\"Alpha is ready for review.\",\"actions\":[{\"type\":\"dispatch_research\",\"projectId\":\"alpha\",\"modelId\":\"opus\",\"title\":\"Unasked research\",\"detail\":\"Do not run\"}]}",
+          "thinking": "Checked only Alpha.",
+          "ms": 12
+        }
+      ],
+      "events": [
+        {
+          "type": "progress",
+          "thinking": "Inspecting Alpha",
+          "answer": "",
+          "ms": 4
+        },
+        {
+          "type": "progress",
+          "thinking": "Inspecting Alpha",
+          "answer": "Draft answer",
+          "ms": 8
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"What is the current status?\",\"answer\":\"Alpha is ready for review.\\n\\nResearch was not dispatched: this message did not authorize research work.\",\"diagnostic\":null,\"thinking\":\"Checked only Alpha.\",\"ms\":12,\"projectId\":\"alpha\",\"sessionId\":\"session-fixed\",\"chatSessionId\":\"chat-fixed\",\"requestMode\":\"default\",\"goldModel\":null,\"grillKind\":null,\"orchestratorId\":\"astra\",\"order\":null,\"actionResults\":[{\"ok\":false,\"reason\":\"No research work authorization in the current message.\"}]}],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{\"alpha\":{\"head\":\"\",\"dirty\":[]}},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "turn": {
+          "ok": true,
+          "question": "What is the current status?",
+          "answer": "Alpha is ready for review.\n\nResearch was not dispatched: this message did not authorize research work.",
+          "thinking": "Checked only Alpha.",
+          "ms": 12,
+          "projectId": "alpha",
+          "orchestratorId": "astra",
+          "actionResults": [
+            {
+              "ok": false,
+              "reason": "No research work authorization in the current message."
+            }
+          ]
+        },
+        "recordedAnswerContainsPrivateBeta": false,
+        "persistedAskCount": 1
+      }
+    },
+    {
+      "name": "process-failure-retry-then-alternate-provider",
+      "input": {
+        "category": "handover",
+        "failures": 2
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Explain Alpha status.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Explain Alpha status.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        },
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Explain Alpha status.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Explain Alpha status.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        },
+        {
+          "kind": "askModel",
+          "modelId": "opus",
+          "question": "Explain Alpha status.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Explain Alpha status.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "Synthetic process failure 1",
+          "failure": "process",
+          "diagnostic": {
+            "code": "PROVIDER_EXECUTION_FAILED",
+            "message": "Synthetic process failure 1"
+          },
+          "ms": 1
+        },
+        {
+          "answer": "Synthetic process failure 2",
+          "failure": "process",
+          "diagnostic": {
+            "code": "PROVIDER_EXECUTION_FAILED",
+            "message": "Synthetic process failure 2"
+          },
+          "ms": 2
+        },
+        {
+          "answer": "Recovered through Opus.",
+          "thinking": "Alternate provider answered.",
+          "ms": 9
+        }
+      ],
+      "events": [
+        {
+          "type": "invoke",
+          "call": 1,
+          "modelId": "astra"
+        },
+        {
+          "type": "invoke",
+          "call": 2,
+          "modelId": "astra"
+        },
+        {
+          "type": "invoke",
+          "call": 3,
+          "modelId": "opus"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"FAILED\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"FAILED\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\"},{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Astra failed to answer (process). Retrying once.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Astra failed to answer (process). Retrying once.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\"},{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Astra failed to answer (process). Retrying once.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Explain Alpha status.\",\"answer\":\"Recovered through Opus.\",\"diagnostic\":null,\"thinking\":\"Alternate provider answered.\",\"ms\":9,\"projectId\":\"alpha\",\"sessionId\":\"session-fixed\",\"chatSessionId\":\"chat-fixed\",\"requestMode\":\"default\",\"goldModel\":null,\"grillKind\":null,\"orchestratorId\":\"opus\",\"order\":null}],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{\"alpha\":{\"head\":\"\",\"dirty\":[]}},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Astra failed to answer (process). Retrying once.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra failed to answer twice (process).\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "turn": {
+          "ok": true,
+          "question": "Explain Alpha status.",
+          "answer": "Recovered through Opus.",
+          "thinking": "Alternate provider answered.",
+          "ms": 9,
+          "projectId": "alpha",
+          "orchestratorId": "opus",
+          "actionResults": []
+        },
+        "calls": 3
+      }
+    },
+    {
+      "name": "immediate-handover-provider-usage-limit",
+      "input": {
+        "category": "handover",
+        "failure": "PROVIDER_USAGE_LIMIT"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Summarize Alpha.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Summarize Alpha.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        },
+        {
+          "kind": "askModel",
+          "modelId": "opus",
+          "question": "Summarize Alpha.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Summarize Alpha.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "Quota exhausted.",
+          "failure": "provider",
+          "diagnostic": {
+            "code": "PROVIDER_USAGE_LIMIT",
+            "message": "Quota exhausted."
+          },
+          "ms": 2
+        },
+        {
+          "answer": "Immediate handover succeeded.",
+          "thinking": "Second provider.",
+          "ms": 5
+        }
+      ],
+      "events": [
+        {
+          "type": "invoke",
+          "call": 1,
+          "modelId": "astra"
+        },
+        {
+          "type": "invoke",
+          "call": 2,
+          "modelId": "opus"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"FAILED\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Summarize Alpha.\",\"answer\":\"Immediate handover succeeded.\",\"diagnostic\":null,\"thinking\":\"Second provider.\",\"ms\":5,\"projectId\":\"alpha\",\"sessionId\":\"session-fixed\",\"chatSessionId\":\"chat-fixed\",\"requestMode\":\"default\",\"goldModel\":null,\"grillKind\":null,\"orchestratorId\":\"opus\",\"order\":null}],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{\"alpha\":{\"head\":\"\",\"dirty\":[]}},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra is out of quota.\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "turn": {
+          "ok": true,
+          "question": "Summarize Alpha.",
+          "answer": "Immediate handover succeeded.",
+          "thinking": "Second provider.",
+          "ms": 5,
+          "projectId": "alpha",
+          "orchestratorId": "opus",
+          "actionResults": []
+        },
+        "calls": 2
+      }
+    },
+    {
+      "name": "immediate-handover-credits-needed",
+      "input": {
+        "category": "handover",
+        "failure": "CREDITS_NEEDED"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Summarize Alpha.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Summarize Alpha.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        },
+        {
+          "kind": "askModel",
+          "modelId": "opus",
+          "question": "Summarize Alpha.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Summarize Alpha.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "This model requires usage credits.",
+          "failure": "provider",
+          "diagnostic": {
+            "code": "PROVIDER_EXECUTION_FAILED",
+            "message": "Credits needed."
+          },
+          "ms": 2
+        },
+        {
+          "answer": "Immediate handover succeeded.",
+          "thinking": "Second provider.",
+          "ms": 5
+        }
+      ],
+      "events": [
+        {
+          "type": "invoke",
+          "call": 1,
+          "modelId": "astra"
+        },
+        {
+          "type": "invoke",
+          "call": 2,
+          "modelId": "opus"
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"FAILED\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]},\"creditsNeeded\":{\"astra\":{\"at\":\"2023-11-14T22:13:20.000Z\"}}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]},\"creditsNeeded\":{\"astra\":{\"at\":\"2023-11-14T22:13:20.000Z\"}}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"claude\",\"model\":\"claude-opus-5-5\",\"modelId\":\"opus\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Summarize Alpha.\",\"answer\":\"Immediate handover succeeded.\",\"diagnostic\":null,\"thinking\":\"Second provider.\",\"ms\":5,\"projectId\":\"alpha\",\"sessionId\":\"session-fixed\",\"chatSessionId\":\"chat-fixed\",\"requestMode\":\"default\",\"goldModel\":null,\"grillKind\":null,\"orchestratorId\":\"opus\",\"order\":null}],\"orchestratorId\":\"opus\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{\"opus\":{\"orchestrator\":true,\"worker\":true,\"verifier\":true,\"reviewer\":true,\"supervisor\":false}},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{\"alpha\":{\"head\":\"\",\"dirty\":[]}},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"LEAD_SWITCHED\",\"summary\":\"Planwharf switched the lead: Astra → Opus. Why: Astra needs usage credits.\",\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]},\"creditsNeeded\":{\"astra\":{\"at\":\"2023-11-14T22:13:20.000Z\"}}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "turn": {
+          "ok": true,
+          "question": "Summarize Alpha.",
+          "answer": "Immediate handover succeeded.",
+          "thinking": "Second provider.",
+          "ms": 5,
+          "projectId": "alpha",
+          "orchestratorId": "opus",
+          "actionResults": []
+        },
+        "calls": 2
+      }
+    },
+    {
+      "name": "unreadable-autonomy-decision-strict-retry",
+      "input": {
+        "category": "autonomy",
+        "projectId": "alpha"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Decide whether Alpha is complete.",
+          "projectId": "alpha",
+          "allowActions": false,
+          "state": {
+            "name": "Alpha",
+            "goal": "Ship Alpha safely",
+            "folder": null
+          }
+        },
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Decide whether Alpha is complete.\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it.",
+          "projectId": "alpha",
+          "allowActions": false,
+          "state": {
+            "name": "Alpha",
+            "goal": "Ship Alpha safely",
+            "folder": null
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "I cannot format that decision.",
+          "ms": 3
+        },
+        {
+          "answer": "{\"done\":false,\"next\":\"Run the isolated checks\",\"assumptions\":[\"The fixture is synthetic\"],\"summary\":\"A strict reply was accepted.\"}",
+          "ms": 4
+        }
+      ],
+      "events": [
+        {
+          "type": "invoke",
+          "call": 1,
+          "modelId": "astra",
+          "question": "Decide whether Alpha is complete."
+        },
+        {
+          "type": "invoke",
+          "call": 2,
+          "modelId": "astra",
+          "question": "Decide whether Alpha is complete.\n\nYour previous reply could not be read. Reply with only the JSON object, with no other text before or after it."
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"clarification\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Lead assumptions: The fixture is synthetic\"},{\"at\":\"2023-11-14T22:13:20.000Z\",\"text\":\"Lead Astra gave no readable decision.\"}],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Lead Astra gave no readable decision.\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"NOTE\",\"summary\":\"Lead assumptions: The fixture is synthetic\",\"reference\":{},\"createdAt\":\"2023-11-14T22:13:20.000Z\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "calls": 2,
+        "assumptions": [
+          "The fixture is synthetic"
+        ],
+        "stopReason": null,
+        "notes": [
+          "Lead assumptions: The fixture is synthetic",
+          "Lead Astra gave no readable decision."
+        ]
+      }
+    },
+    {
+      "name": "mid-turn-cancellation-preserves-only-stop-record",
+      "input": {
+        "category": "cancellation",
+        "projectId": "alpha"
+      },
+      "requests": [
+        {
+          "kind": "askModel",
+          "modelId": "astra",
+          "question": "Cancel this Alpha turn.",
+          "projectId": "alpha",
+          "allowActions": null,
+          "state": {
+            "orchestrator": "Astra",
+            "orchestratorId": "astra",
+            "executionHandoff": {
+              "megaTask": null,
+              "subTasks": [],
+              "results": [],
+              "checkpoint": null,
+              "notes": []
+            },
+            "researches": [],
+            "mode": "manual",
+            "grill": {
+              "propose": false,
+              "kind": "off"
+            },
+            "focus": {
+              "id": "alpha",
+              "name": "Alpha",
+              "folder": null,
+              "github": null,
+              "repository": {
+                "remote": {
+                  "accessible": false
+                },
+                "comparison": {
+                  "status": "unknown",
+                  "ahead": null,
+                  "behind": null
+                }
+              },
+              "status": "idle",
+              "label": "Idle",
+              "goal": "Ship Alpha safely",
+              "state": "",
+              "open": [],
+              "analysis": "Reading the notebook. No job to split. Waiting for: Auto start.",
+              "job": null,
+              "plan": [],
+              "checkpoint": null,
+              "orchestratorDoing": "Reading the notebook. No job to split.",
+              "waitingFor": "Auto start",
+              "next": "Relink the project folder on this PC.",
+              "files": null,
+              "git": null,
+              "lastCommit": "",
+              "dirty": [],
+              "workers": [],
+              "monitoring": null
+            },
+            "others": [],
+            "fleet": [
+              {
+                "id": "astra",
+                "label": "Astra",
+                "role": "Lead",
+                "plan": "chatgpt",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": true
+              },
+              {
+                "id": "opus",
+                "label": "Opus",
+                "role": "Orchestrator / Worker / Verifier / Reviewer",
+                "plan": "claude",
+                "exhausted": false,
+                "enabled": true,
+                "roles": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "roleEligibility": {
+                  "orchestrator": true,
+                  "worker": true,
+                  "verifier": true,
+                  "reviewer": true,
+                  "supervisor": false
+                },
+                "lead": false
+              }
+            ],
+            "plans": [
+              {
+                "id": "ChatGPT",
+                "label": "ChatGPT",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Grok",
+                "label": "Grok",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              },
+              {
+                "id": "Gemini",
+                "label": "Gemini",
+                "readable": false,
+                "exhausted": false,
+                "pct": null,
+                "leftPct": null,
+                "windows": []
+              }
+            ],
+            "repositoryDelta": {
+              "initialInspection": true,
+              "current": {
+                "head": "",
+                "dirty": []
+              }
+            },
+            "history": [],
+            "contextArchive": null,
+            "earlierTurns": 0,
+            "currentRequest": {
+              "projectId": "alpha",
+              "text": "Cancel this Alpha turn.",
+              "taskId": null,
+              "requestMode": "default",
+              "goldModel": null,
+              "grillKind": null
+            }
+          }
+        }
+      ],
+      "replies": [
+        {
+          "answer": "This answer must not be persisted.",
+          "thinking": "Too late",
+          "ms": 11
+        }
+      ],
+      "events": [
+        {
+          "type": "progress",
+          "thinking": "Halfway",
+          "answer": "Unsafe partial draft",
+          "ms": 7
+        },
+        {
+          "type": "abort",
+          "aborted": true,
+          "asks": 1
+        }
+      ],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"RUNNING\",\"durationMs\":null,\"processExit\":null}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Cancel this Alpha turn.\",\"answer\":\"Stopped.\",\"thinking\":\"Halfway\",\"ms\":7,\"projectId\":\"alpha\",\"chatSessionId\":\"chat-fixed\",\"sessionId\":\"session-fixed\",\"orchestratorId\":\"astra\",\"order\":\"abort\"}],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Cancel this Alpha turn.\",\"answer\":\"Stopped.\",\"thinking\":\"Halfway\",\"ms\":7,\"projectId\":\"alpha\",\"chatSessionId\":\"chat-fixed\",\"sessionId\":\"session-fixed\",\"orchestratorId\":\"astra\",\"order\":\"abort\"}],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        },
+        {
+          "operation": "appendFile",
+          "path": "<ROOT>/invocations.jsonl",
+          "content": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"timestamp\":\"2023-11-14T22:13:20.000Z\",\"startTime\":\"2023-11-14T22:13:20.000Z\",\"role\":\"orchestrator\",\"projectId\":\"alpha\",\"megaTaskId\":null,\"subTaskId\":null,\"attemptId\":null,\"provider\":\"codex\",\"model\":\"gpt-6-astra\",\"modelId\":\"astra\",\"accountKey\":null,\"accountType\":\"unread\",\"reason\":\"user reasoning request\",\"status\":\"COMPLETE\",\"durationMs\":0,\"processExit\":null,\"endTime\":\"2023-11-14T22:13:20.000Z\"}\n",
+          "ok": true
+        },
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        },
+        {
+          "operation": "writeFile",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "content": "{\"autonomy\":{},\"chatModes\":{},\"savingModes\":{},\"modelWeights\":{},\"mode\":\"manual\",\"grillPropose\":false,\"grillKind\":\"off\",\"usage\":{},\"enabled\":{},\"providerEnabled\":{},\"catalogVisibility\":{},\"modelPolicies\":{},\"providerPolicies\":{},\"projects\":{\"alpha\":{\"status\":\"idle\",\"doing\":\"No job on Alpha. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null,\"repository\":{\"checkedAt\":\"2023-11-14T22:13:20.000Z\",\"folder\":null,\"github\":null,\"local\":{\"exists\":false,\"readable\":false,\"writable\":false,\"git\":false},\"remote\":{\"accessible\":false,\"error\":\"No repository linked.\"},\"comparison\":{\"status\":\"unknown\",\"ahead\":null,\"behind\":null}}},\"beta\":{\"status\":\"idle\",\"doing\":\"No job on Beta. Tell the lead what to build, or let the crew do it.\",\"plan\":[],\"facts\":null,\"jobId\":null,\"jobTitle\":null,\"attemptId\":null,\"modelId\":null,\"approved\":false,\"waitingFor\":\"Auto start\",\"next\":\"Tell the lead what to build, or let the crew do it.\",\"workerLabel\":null,\"resultPath\":null,\"watchingSince\":null,\"holdApproval\":false,\"grillSkipped\":false,\"docs\":[],\"log\":[],\"pendingAutoStart\":null,\"checkpoint\":null,\"dispatch\":[],\"resumeRequested\":false,\"deadlineHonored\":false,\"workerPid\":null,\"workerLog\":null,\"workerAlive\":false,\"tried\":[],\"progressAt\":null,\"progressKey\":null,\"workerTail\":\"\",\"workerActivity\":\"\",\"jobFingerprint\":null,\"jobDetail\":null,\"jobRevisionId\":null}},\"asks\":[{\"at\":\"2023-11-14T22:13:20.000Z\",\"question\":\"Cancel this Alpha turn.\",\"answer\":\"Stopped.\",\"thinking\":\"Halfway\",\"ms\":7,\"projectId\":\"alpha\",\"chatSessionId\":\"chat-fixed\",\"sessionId\":\"session-fixed\",\"orchestratorId\":\"astra\",\"order\":\"abort\"}],\"orchestratorId\":\"astra\",\"pullRequestFixes\":[],\"projectTools\":{},\"modelRoles\":{},\"projectTeams\":{},\"accountModelRoles\":{},\"accountBindings\":{},\"lastAccountKeys\":{},\"briefingBaselines\":{\"alpha\":{\"head\":\"\",\"dirty\":[]}},\"researches\":[],\"workerHistory\":[],\"sessions\":[{\"id\":\"session-fixed\",\"startedAt\":\"2023-11-14T22:13:20.000Z\"}],\"execution\":{\"megaTasks\":[],\"subTasks\":[],\"results\":[],\"checkpoints\":[],\"timeline\":[{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"alpha\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-a: Ship Alpha safely\",\"reference\":{\"planRevisionId\":\"rev-a\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:alpha:rev-a\"},{\"id\":\"EV-00000000-0000-4000-8000-000000000001\",\"projectId\":\"beta\",\"type\":\"PLAN_REVISION\",\"summary\":\"Living Plan Rrev-b: PRIVATE_BETA_GOAL\",\"reference\":{\"planRevisionId\":\"rev-b\"},\"createdAt\":\"2023-11-14T22:13:20.000Z\",\"key\":\"revision:beta:rev-b\"}],\"observations\":{},\"decisions\":[]}}\n",
+          "ok": true
+        },
+        {
+          "operation": "rename",
+          "path": "<ROOT>/orchestrator.json.00000000-0000-4000-8000-000000000001.tmp",
+          "destination": "<ROOT>/orchestrator.json",
+          "ok": true
+        }
+      ],
+      "effects": {},
+      "result": {
+        "ok": true,
+        "cancelled": true,
+        "asks": [
+          {
+            "question": "Cancel this Alpha turn.",
+            "answer": "Stopped.",
+            "thinking": "Halfway",
+            "order": "abort"
+          }
+        ]
+      }
+    }
+  ]
+}
