@@ -515,6 +515,364 @@ public class OrchestratorTeamModelsTests
         Assert.Equal("unavailable", fleet[1]!["state"]!.GetValue<string>());
     }
 
+    [Fact]
+    public void PickWorkersEnforcesProviderDiversityAndUsageAccumulation()
+    {
+        var models = Arr("""
+        [
+            {"id":"w1","label":"Worker 1","provider":"codex","cli":"gpt-6","enabled":true,"available":true,"cost":5,"limit":8},
+            {"id":"w2","label":"Worker 2","provider":"codex","cli":"gpt-6","enabled":true,"available":true,"cost":2,"limit":10},
+            {"id":"w3","label":"Worker 3","provider":"grok","cli":"grok-4","enabled":true,"available":true,"cost":2,"limit":10}
+        ]
+        """);
+        var options = Obj("""{"job":{"title":"Build parser","detail":"Implement parser"},"usage":{}}""");
+
+        // Primary worker should be w1 (first in pool).
+        // Verifier slice should choose w3 (different provider: grok) over w2 (same provider: codex).
+        var workers = OrchestratorTeamModels.PickWorkers(models, options);
+        Assert.Equal(2, workers.Count);
+        Assert.Equal("w1", workers[0]!["id"]!.GetValue<string>());
+        Assert.Equal("w3", workers[1]!["id"]!.GetValue<string>());
+
+        // If usage for w1 is 5, w1 (limit 8, cost 5) exceeds limit, so w2 is picked instead.
+        var highUsageOptions = Obj("""{"job":{"title":"Build parser","detail":"Implement parser"},"usage":{"w1":{"used":5}}}""");
+        var singleWorker = OrchestratorTeamModels.PickWorker(models, highUsageOptions);
+        Assert.NotNull(singleWorker);
+        Assert.Equal("w2", singleWorker!["id"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void PickWorkersVerifierRecoversWhenAllVerifiersAreLowQuota()
+    {
+        var models = Arr("""
+        [
+            {"id":"w1","label":"Builder","provider":"codex","cli":"gpt-6","enabled":true,"available":true,"cost":1,"limit":10},
+            {"id":"v1","label":"Verifier Low","provider":"grok","cli":"grok-4","enabled":true,"available":true,"cost":1,"limit":10}
+        ]
+        """);
+        var options = Obj("""{"job":{"title":"Build parser","detail":"Implement parser"}}""");
+
+        // Predicate marks only v1 as low quota.
+        Func<JsonObject, bool> isLow = m => m["id"]!.GetValue<string>() == "v1";
+
+        // Since v1 is the only available verifier, PickWorkers should fall back to v1 for verification
+        var workers = OrchestratorTeamModels.PickWorkers(models, options, isLow);
+        Assert.Equal(2, workers.Count);
+        Assert.Equal("w1", workers[0]!["id"]!.GetValue<string>());
+        Assert.Equal("v1", workers[1]!["id"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void CalculateUsageAndUsageOfHandleNullAndZeroLimits()
+    {
+        var nullUsage = OrchestratorTeamModels.CalculateUsage(null);
+        Assert.Equal(0, nullUsage.Used);
+        Assert.Equal(0, nullUsage.Limit);
+        Assert.Equal(0, nullUsage.Remaining);
+        Assert.Equal(0, nullUsage.Pct);
+        Assert.Equal(100, nullUsage.LeftPct);
+
+        var nullObj = OrchestratorTeamModels.UsageOf(null);
+        Assert.Equal(0, nullObj["used"]!.GetValue<double>());
+        Assert.Equal(100, nullObj["leftPct"]!.GetValue<double>());
+
+        var zeroLimit = OrchestratorTeamModels.CalculateUsage(Obj("""{"used":10,"limit":0}"""));
+        Assert.Equal(0, zeroLimit.Limit);
+        Assert.Equal(100, zeroLimit.LeftPct);
+        Assert.Equal(0, zeroLimit.Pct);
+    }
+
+    [Fact]
+    public void LeadRankingAndQualityTieBreakingAndClaudeFamilies()
+    {
+        // Claude families order: fable (0) < opus (1) < sonnet (2) < haiku (3)
+        var models = Arr("""
+        [
+            {"id":"h","label":"Claude 3.5 Haiku","kind":"default"},
+            {"id":"s","label":"Claude 3.5 Sonnet","kind":"default"},
+            {"id":"o","label":"Claude Opus 4","kind":"premium"},
+            {"id":"f","label":"Claude Fable 1","kind":"premium"}
+        ]
+        """);
+        var quality = OrchestratorTeamModels.LeadQuality(models);
+        Assert.Equal("f", quality[0]!["id"]!.GetValue<string>());
+        Assert.Equal("o", quality[1]!["id"]!.GetValue<string>());
+        Assert.Equal("s", quality[2]!["id"]!.GetValue<string>());
+        Assert.Equal("h", quality[3]!["id"]!.GetValue<string>());
+
+        // Null and empty checks
+        Assert.Empty(OrchestratorTeamModels.LeadQuality(null));
+        Assert.Empty(OrchestratorTeamModels.LeadRanking(null));
+        Assert.Empty(OrchestratorTeamModels.LeadQuality(new JsonArray()));
+    }
+
+    [Fact]
+    public void CanOrchestrateLocalModelGatingAndProviderDisable()
+    {
+        var localModel = Obj("""{"kind":"local","enabled":true,"available":true}""");
+        // Local model cannot orchestrate unless orchestratorEligible is explicitly set
+        Assert.False(OrchestratorTeamModels.CanOrchestrate(localModel));
+
+        localModel["orchestratorEligible"] = true;
+        Assert.True(OrchestratorTeamModels.CanOrchestrate(localModel));
+
+        // Provider disabled disables orchestration
+        localModel["providerEnabled"] = false;
+        Assert.False(OrchestratorTeamModels.CanOrchestrate(localModel));
+    }
+
+    [Fact]
+    public void SelectLeadCrossProviderFallbackOnActiveLeadRefusal()
+    {
+        // Setup: Active lead 'lead1' from provider 'codex' is refused.
+        // Another model 'peer' from same provider 'codex' is also low quota, so LeadRanking finds no eligible candidate.
+        // A model 'alt' from provider 'grok' is eligible.
+        // SelectLead should fall back across providers to 'alt' and record fallbackFrom: 'lead1'.
+        var models = Arr("""
+        [
+            {"id":"lead1","label":"Lead 1","provider":"codex","cli":"gpt-6","enabled":true,"available":true},
+            {"id":"peer","label":"Peer Codex","provider":"codex","cli":"gpt-6","enabled":true,"available":true},
+            {"id":"alt","label":"Alt Grok","provider":"grok","cli":"grok-4","enabled":true,"available":true}
+        ]
+        """);
+        var store = Obj("""
+        {
+            "orchestratorId": "lead1",
+            "refusals": {
+                "lead1": {
+                    "until": "2026-01-02T15:00:00Z",
+                    "reason": "QUOTA_ERROR: out of credits"
+                }
+            }
+        }
+        """);
+        var context = Context(models, store) with
+        {
+            // isLow returns true for peer so peer cannot be selected via LeadRanking
+            IsLow = m => m["id"]!.GetValue<string>() == "peer"
+        };
+
+        var lead = OrchestratorTeamModels.SelectLead(context);
+        Assert.NotNull(lead);
+        Assert.Equal("alt", lead!["id"]!.GetValue<string>());
+        Assert.Equal("lead1", lead["fallbackFrom"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void SwitchLeadTruncatesProjectLogAtTwelveEntries()
+    {
+        var existingLog = new JsonArray();
+        for (var i = 0; i < 20; i++)
+        {
+            existingLog.Add(new JsonObject { ["at"] = "2026-01-01T00:00:00Z", ["text"] = $"Log entry {i}" });
+        }
+        var models = Arr("""
+        [
+            {"id":"lead1","label":"Lead 1","provider":"codex","cli":"gpt-6","enabled":true,"available":true},
+            {"id":"lead2","label":"Lead 2","provider":"codex","cli":"gpt-6","enabled":true,"available":true}
+        ]
+        """);
+        var store = new JsonObject
+        {
+            ["orchestratorId"] = "lead1",
+            ["projects"] = new JsonObject
+            {
+                ["p1"] = new JsonObject
+                {
+                    ["id"] = "p1",
+                    ["log"] = existingLog
+                }
+            }
+        };
+        var context = Context(models, store) with
+        {
+            CurrentProjectId = () => "p1",
+            IsLow = m => m["id"]!.GetValue<string>() == "lead1"
+        };
+
+        var chosen = OrchestratorTeamModels.SelectLead(context);
+        Assert.NotNull(chosen);
+        Assert.Equal("lead2", chosen!["id"]!.GetValue<string>());
+
+        var projectLog = store["projects"]!["p1"]!["log"] as JsonArray;
+        Assert.NotNull(projectLog);
+        // The project log must contain at most 12 items (1 new + up to 11 previous)
+        Assert.Equal(12, projectLog!.Count);
+        Assert.Contains("Planwharf switched the lead", projectLog[0]!["text"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void ResearchModelEnforcesSavingModeRouteErrorsAndRemainingQuota()
+    {
+        var models = Arr("""
+        [
+            {"id":"flagship","provider":"codex","cli":"gpt-6","enabled":true,"available":true,"kind":"premium","cost":1,"remaining":10},
+            {"id":"exhausted","provider":"codex","cli":"gpt-6","enabled":true,"available":true,"cost":5,"remaining":2},
+            {"id":"unsupported-adapter","provider":"grok","cli":"grok-4","enabled":true,"available":true,"cost":1,"remaining":10}
+        ]
+        """);
+        var store = new JsonObject
+        {
+            ["savingModes"] = new JsonObject { ["p1"] = "safe" },
+            ["usage"] = new JsonObject
+            {
+                ["exhausted"] = new JsonObject { ["used"] = 50 }
+            }
+        };
+        var context = Context(models, store) with { CurrentProjectId = () => "p1" };
+
+        // Flagship model rejected in safe mode
+        var modeEx = Assert.Throws<InvalidOperationException>(() => OrchestratorTeamModels.ResearchModel(context, "flagship"));
+        Assert.Contains("Safe does not", modeEx.Message);
+
+        // Exhausted model rejected when remaining < cost
+        var quotaEx = Assert.Throws<InvalidOperationException>(() => OrchestratorTeamModels.ResearchModel(context, "exhausted"));
+        Assert.Contains("no remaining usage", quotaEx.Message);
+
+        // Adapter lacking source-protected research rejected
+        var adapterEx = Assert.Throws<InvalidOperationException>(() => OrchestratorTeamModels.ResearchModel(context, "unsupported-adapter"));
+        Assert.Contains("Source-protected research is not supported", adapterEx.Message);
+    }
+
+    [Fact]
+    public void SetModelRolesClearsOrchestratorWhenOrchestratorRoleIsRemoved()
+    {
+        var models = Arr("""[{"id":"m1","enabled":true,"available":true}]""");
+        var store = Obj("""{"orchestratorId":"m1"}""");
+        var context = Context(models, store);
+
+        // Disabling orchestrator role on the active lead should clear orchestratorId
+        var result = OrchestratorTeamModels.SetModelRoles(context, "m1", Obj("""{"orchestrator":false}"""));
+        Assert.True(result["ok"]!.GetValue<bool>());
+        Assert.Null(store["orchestratorId"]);
+    }
+
+    [Fact]
+    public void SetRolesForManyHandlesPartialEligibility()
+    {
+        var models = Arr("""
+        [
+            {"id":"m1","provider":"codex","enabled":true,"available":true},
+            {"id":"m2","provider":"api","enabled":true,"available":true}
+        ]
+        """);
+        var context = Context(models);
+
+        // m1 has provider "codex", so it is not eligible for supervisor role.
+        // But it is eligible for worker role.
+        // SetRolesForMany should filter out supervisor and apply worker.
+        var updates = Arr("""
+        [
+            {"id":"m1","roles":{"worker":true,"supervisor":true}},
+            {"id":"m2","roles":{"supervisor":true}}
+        ]
+        """);
+        var result = OrchestratorTeamModels.SetRolesForMany(context, updates);
+        Assert.True(result["ok"]!.GetValue<bool>());
+        Assert.Equal(2, result["changed"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task ReassignCrewValidatesWhyLengthAndBridgeExceptions()
+    {
+        var (bridge, mega, row, _, _, _) = CreateBridgeFixture();
+        var step = bridge.Data.SubTasks[0]!;
+        var context = Context(new JsonArray()) with { ExecutionBridge = bridge };
+
+        // 1. Extra invalid properties on action
+        var badAction = new JsonObject
+        {
+            ["type"] = "reassign_crew",
+            ["projectId"] = "p",
+            ["assignments"] = new JsonObject { [step["id"]!.GetValue<string>()] = "b" },
+            ["extraUnexpected"] = true
+        };
+        var badResult = await OrchestratorTeamModels.ReassignCrew(context, badAction, new JsonObject { ["id"] = "p", ["megaTaskId"] = mega["id"]!.DeepClone() });
+        Assert.False(badResult["ok"]!.GetValue<bool>());
+        Assert.Contains("Invalid crew change", badResult["reason"]!.GetValue<string>());
+
+        // 2. Long why string truncated cleanly without error
+        var longWhy = new string('x', 500);
+        var longWhyAction = new JsonObject
+        {
+            ["type"] = "reassign_crew",
+            ["projectId"] = "p",
+            ["assignments"] = new JsonObject { [step["id"]!.GetValue<string>()] = "b" },
+            ["why"] = longWhy
+        };
+        var okResult = await OrchestratorTeamModels.ReassignCrew(context, longWhyAction, new JsonObject { ["id"] = "p", ["megaTaskId"] = mega["id"]!.DeepClone() });
+        Assert.True(okResult["ok"]!.GetValue<bool>());
+
+        // 3. Missing megaTaskId in row
+        var noWorkResult = await OrchestratorTeamModels.ReassignCrew(context, new JsonObject
+        {
+            ["type"] = "reassign_crew",
+            ["projectId"] = "p",
+            ["assignments"] = new JsonObject { [step["id"]!.GetValue<string>()] = "b" }
+        }, new JsonObject { ["id"] = "p" });
+        Assert.False(noWorkResult["ok"]!.GetValue<bool>());
+        Assert.Contains("no proposed or stopped work", noWorkResult["reason"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void FleetOfEvaluatesExhaustionHistoricalAssignmentsAndRoleLabels()
+    {
+        var models = Arr("""
+        [
+            {"id":"m1","enabled":true,"available":true,"plan":"pool1","roles":{"worker":true,"reviewer":true}},
+            {"id":"m2","enabled":true,"available":true,"plan":"pool2","roles":{"worker":false,"reviewer":false,"orchestrator":false,"supervisor":false}},
+            {"id":"m3","enabled":true,"available":true,"plan":"pool3"}
+        ]
+        """);
+        var projects = Arr("""
+        [
+            {
+                "id":"p1",
+                "name":"Project 1",
+                "status":"idle",
+                "dispatch":[
+                    {
+                        "modelId":"m1",
+                        "historicalAssignment":true,
+                        "assignmentStatus":"complete"
+                    }
+                ]
+            }
+        ]
+        """);
+        var plans = Arr("""
+        [
+            {"id":"pool1","planStatus":"exhausted","leftPct":0,"readable":true},
+            {"id":"pool2","planStatus":"active","leftPct":50,"readable":true}
+        ]
+        """);
+
+        var fleet = OrchestratorTeamModels.FleetOf(models, projects, "m3", plans);
+        Assert.Equal(3, fleet.Count);
+
+        // m1: plan is exhausted, not working, so state is exhausted
+        var m1 = fleet[0]!;
+        Assert.True(m1["exhausted"]!.GetValue<bool>());
+        Assert.Equal("exhausted", m1["state"]!.GetValue<string>());
+        Assert.Equal("Worker / Reviewer", m1["role"]!.GetValue<string>());
+        var assignments = m1["assignments"] as JsonArray;
+        Assert.NotNull(assignments);
+        Assert.Single(assignments);
+        Assert.True(assignments![0]!["historicalAssignment"]!.GetValue<bool>());
+        Assert.Equal("Historical assignment title not retained", assignments[0]!["taskTitle"]!.GetValue<string>());
+        Assert.Equal("Original activity is not retained for this historical assignment.", assignments[0]!["activity"]!.GetValue<string>());
+
+        // m2: no allowed roles
+        var m2 = fleet[1]!;
+        Assert.Equal("No allowed roles", m2["role"]!.GetValue<string>());
+        Assert.False(m2["exhausted"]!.GetValue<bool>());
+
+        // m3: lead model
+        var m3 = fleet[2]!;
+        Assert.Equal("Lead", m3["role"]!.GetValue<string>());
+        Assert.True(m3["lead"]!.GetValue<bool>());
+    }
+
     private sealed class AttemptIo : IAttemptIo
     {
         private JsonObject data = new();
