@@ -13,16 +13,16 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **67 of 72** | 72 |
-| JavaScript engine lines ported | **about 10,500 of 14,000** (75%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building implemented / waiting for review | 0 to 8 |
-| C# engine tests | 2623, plus 1149 comparison cases with the JavaScript across 45 modules and 125 scenario parity cases | |
+| Engine modules ported to C# | **68 of 72** | 72 |
+| JavaScript engine lines ported | **about 11,500 of 14,000** (82%) | all; the orchestrator alone is about 3,800 |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions implemented / waiting for review | 0 to 8 |
+| C# engine tests | 2788, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,
 `claims`, `claude`, `claude-usage`, `execution`, `execution-next`, `external-adapters`, `invocations`,
 `model-policy`, `model-roles`, `model-routing`, `models`, `notebook-file`, `orchestrator-job-building`,
-`orchestrator-order-parsing`, `orchestrator-team-models`,
+`orchestrator-lead-questions`, `orchestrator-order-parsing`, `orchestrator-team-models`,
 `phone`, `phone-activation`, `phone-activation-check`, `phone-handover`, `phone-handover-live`,
 `phone-ollama`, `phone-voice`, `plan`, `plan-file`, `plan-status`, `planUsage`, `pr-check`,
 `project-checks`, `project-export`, `project-history`, `project-home`, `project-workspace`,
@@ -32,9 +32,19 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `step-outcomes`, `structured-final`, `supervisor`, `temp-cleanup`, `time-left`, `worker-result`,
 `worktrees`.
 
-## Job 49 port implemented, waiting for review
+## Job 50 port implemented, waiting for review
 
-The port of orchestrator job building and work plan formation to C# (`OrchestratorJobBuilding.cs`) as specified in sheet 46b is implemented on `port/49-job-building`. It covers job kinds, slice counts, deterministic dispatch plans, goal retention, work plan line formatting, .planwharf/plan.md preparation, completion detection verifying result files have STATUS: COMPLETE, and approval reset on job mutation. Focused unit, pure parity, and scenario parity coverage are part of the Job 49 integration; verification passed and the change is waiting for review (#?).
+The port of orchestrator lead questions, prompt generation, questionnaire parsing, lead envelopes, and advisory reviews to C# (`OrchestratorLeadQuestions.cs`) as specified in sheet 46c is implemented on `port/50-lead-questions`. It covers document discovery and collection (`ListDocs`, `CollectDocs`), grill questionnaire extraction (`ParseGrillQuestions`), prompt formatting (`GrillPrompt`, `GrillDone`), deterministic question answering (`AnswerQuestion`, `BriefRow`), isolated state packing (`PackState`), lead envelope parsing (`LeadEnvelope`), clarification rounds (`ComposeGrillRoundAsync`), autonomous decision loops (`AskLeadDecisionAsync`), supervisor review (`ReviewSnapshotAsync`), and conversational ask turns (`AskAsync`).
+
+Signature adaptations: nested helper/data wrappers preserve complete JavaScript metadata without colliding with earlier partial records; `LeadServices` provides injected model, clock, filesystem, and context-aware task preparation (`PrepareTaskWithContext`) carrying project, question, isCurrent and exact Gold model constraints; durable mutations, worker process dispatch, and invocation ledger management remain cleanly separated for the Job 52 composition root.
+
+Deferred cases: real program process-tree execution, live provider logins, and network queries (tested with deterministic fake adapters and in-memory mocks; live providers forbidden by porting rules); composition-root orchestrator facade orchestration (Job 52: durable chat store mutation `store.asks.push`, live process spawning, real worker dispatch, atomic file persistence, and ledger transaction tracking); native host / UI integration and Windows hand test (Phase 7).
+
+Acceptance results: Release build clean (0 warnings, 0 errors); 56 unit tests in `OrchestratorLeadQuestionsTests`; 103 pure comparison vectors in `orchestrator-lead-questions.json` (1,252 cases total across 46 modules); 6 scenario parity fixtures in `scenarios/orchestrator-lead-questions.json` (131 scenarios total across 11 suites); 137 scenario parity tests; 1,396 parity tests; 2,788 full engine tests passed; 5 parity guard tests passed; all 8 named JavaScript suites passed; git diff --check clean. Windows Native AOT shared-library publish was invoked and confirmed blocked by the host environment missing Visual Studio C++ desktop build tools (`link.exe`), matching prior phase reports. Independent verification remains pending (#?).
+
+## Job 49 port done
+
+The port of orchestrator job building and work plan formation to C# (`OrchestratorJobBuilding.cs`) as specified in sheet 46b is complete on `port/49-job-building`. It covers job kinds, slice counts, deterministic dispatch plans, goal retention, work plan line formatting, .planwharf/plan.md preparation, completion detection verifying result files have STATUS: COMPLETE, and approval reset on job mutation. Focused unit, pure parity, and scenario parity coverage are part of the Job 49 integration; merged in PR #247.
 
 ## Job 48 port done
 
@@ -90,7 +100,8 @@ The crews so far use models from Anthropic, OpenAI, Google and xAI.
 
 | Job | Pull request | What | What the review changed |
 |---|---|---|---|
-| 49 | #? | Ported orchestrator job building and work plan formation to C# (`OrchestratorJobBuilding.cs`) as specified in sheet 46b on `port/49-job-building`; added unit tests, pure parity vectors, and scenario parity replay tests | Covers job kinds, slice counts, deterministic dispatch plans, goal retention, .planwharf/plan.md preparation, decide logic with result file verification, and approval gating. **Verified, waiting for review (#?)** |
+| 50 | #? | Ported lead questioning, prompt generation, grill questionnaire parsing, lead envelopes, and advisory review to C# (`OrchestratorLeadQuestions.cs`) as specified in sheet 46c on `port/50-lead-questions`; added unit tests, pure parity vectors, and scenario parity replay tests | Covers document discovery and collection, grill questionnaire extraction, prompt formatting, deterministic answer classification, isolated state packing, action envelopes, grill clarification round, autonomous decision retries, supervisor review, and ask turns. **Waiting for independent verification / review (#?)** |
+| 49 | #247 | Ported orchestrator job building and work plan formation to C# (`OrchestratorJobBuilding.cs`) as specified in sheet 46b on `port/49-job-building`; added unit tests, pure parity vectors, and scenario parity replay tests | Covers job kinds, slice counts, deterministic dispatch plans, goal retention, .planwharf/plan.md preparation, decide logic with result file verification, and approval gating. **Done (#247)** |
 | 48 | #246 | Ported orchestrator team and model selection to C# (`OrchestratorTeamModels.cs`) as specified in sheet 46a on `port/48-team-models`; added focused unit, pure parity, and scenario parity coverage | Covers role, policy, saving-mode and quota decisions, exact model/provider identity, project/account isolation, credit lockout, lead handover and crew reassignment. **Done (#246)** |
 | 47 | #245 | Ported orchestrator order parsing to C# (`OrchestratorOrderParsing.cs`) as specified in sheet 46e; added unit tests and pure parity comparison vectors | Pure parity vectors recorded for parseOrder, looksLikeWork, looksLikeQuestion, and freshTaskIntent; unit tests covering English and Italian commands, edge cases, and ambiguity errors. **Done** |
 | 46 | #244 | Wrote the Phase 6 orchestrator specification sheets in `native/porting/jobs/46*.md` for the approved split across five modules (`OrchestratorTeamModels`, `OrchestratorJobBuilding`, `OrchestratorLeadQuestions`, `OrchestratorState`, `OrchestratorOrderParsing`) and the master composition root sheet; added sheet verification tests | Checked module boundaries, exact C# method signatures, immutable state contracts, unidirectional dependency direction through composition root, JavaScript test mappings, pure vectors, scenario parity under Rule 12, and Job 47+ migration sequence. Added `engine/job46-sheet.test.cjs` covering all five split sheets and master sheet with durable omission, edge case, error/recovery, concurrency, and mutation controls (11 tests). **Sheet only: build is Job 47+** |
