@@ -344,6 +344,143 @@ public class ParityTests
         Assert.False(Same(new JsonObject(), new JsonArray()));
     }
 
+    [Fact]
+    public void OrchestratorJobBuildingParity_SliceCount_replays_recorded_vectors_with_exact_parity()
+    {
+        var file = Path.Combine(Folder, "orchestrator-job-building.json");
+        Assert.True(File.Exists(file), "orchestrator-job-building.json must exist in parity folder");
+        var cases = JsonNode.Parse(File.ReadAllText(file))!.AsArray();
+        var tested = 0;
+        foreach (var entry in cases)
+        {
+            var obj = entry!.AsObject();
+            if (obj["fn"]?.GetValue<string>() != "sliceCount") continue;
+            var args = obj["args"]!.AsArray();
+            var job = ParseJob(Obj(args, 0));
+            var facts = ParseFacts(Obj(args, 1));
+            var eligible = args.Count > 2 && args[2] is JsonValue v && v.TryGetValue<double>(out var d) ? (int)d : 1;
+            var expected = obj["result"]!.GetValue<int>();
+            var actual = OrchestratorJobBuilding.SliceCount(job, facts, eligible);
+            Assert.Equal(expected, actual);
+            tested++;
+        }
+        Assert.True(tested >= 48, $"Expected at least 48 sliceCount cases, got {tested}");
+    }
+
+    [Fact]
+    public void OrchestratorJobBuildingParity_PlanLines_replays_recorded_vectors_with_exact_parity()
+    {
+        var file = Path.Combine(Folder, "orchestrator-job-building.json");
+        Assert.True(File.Exists(file), "orchestrator-job-building.json must exist in parity folder");
+        var cases = JsonNode.Parse(File.ReadAllText(file))!.AsArray();
+        var tested = 0;
+        foreach (var entry in cases)
+        {
+            var obj = entry!.AsObject();
+            if (obj["fn"]?.GetValue<string>() != "planLines") continue;
+            var args = obj["args"]!.AsArray();
+            var item = ParseProjectItem(Obj(args, 0));
+            var facts = ParseFacts(Obj(args, 1));
+            var shown = ParseModelCandidate(Obj(args, 2));
+            var active = args.Count > 3 && args[3] is JsonValue v && v.TryGetValue<bool>(out var act) && act;
+            var extras = ParsePlanExtras(Obj(args, 4));
+            var expectedLines = obj["result"]!.AsArray().Select(n => n!.GetValue<string>()).ToArray();
+            var actualLines = OrchestratorJobBuilding.PlanLines(item, facts, shown, active, extras);
+            Assert.Equal(expectedLines.Length, actualLines.Count);
+            for (var i = 0; i < expectedLines.Length; i++)
+            {
+                Assert.Equal(expectedLines[i], actualLines[i]);
+            }
+            tested++;
+        }
+        Assert.True(tested >= 48, $"Expected at least 48 planLines cases, got {tested}");
+    }
+
+    static JobDescriptor? ParseJob(JsonObject? obj)
+    {
+        if (obj == null) return null;
+        return new JobDescriptor(
+            obj["id"]?.GetValue<string>(),
+            obj["title"]?.GetValue<string>(),
+            obj["detail"]?.GetValue<string>(),
+            obj["kind"]?.GetValue<string>(),
+            obj["timing"]?.GetValue<string>(),
+            obj["deadlineAt"]?.GetValue<string>(),
+            obj["revision_id"]?.GetValue<string>()
+        )
+        {
+            Status = obj["status"]?.GetValue<string>(),
+            Type = obj["type"]?.GetValue<string>()
+        };
+    }
+
+    static InspectionFacts? ParseFacts(JsonObject? obj)
+    {
+        if (obj == null) return null;
+        var git = obj["git"] is JsonValue gv && gv.TryGetValue<bool>(out var g) && g;
+        var lastCommit = obj["lastCommit"]?.GetValue<string>();
+        var lastSubject = obj["lastSubject"]?.GetValue<string>();
+        var recent = (obj["recent"] as JsonArray)?.Select(x => x?.GetValue<string>() ?? "").ToArray();
+        var dirty = (obj["dirty"] as JsonArray)?.Select(x => x?.GetValue<string>() ?? "").ToArray();
+        var head = obj["head"]?.GetValue<string>();
+        var branch = obj["branch"]?.GetValue<string>();
+        var fileCount = obj["fileCount"] is JsonValue fv && fv.TryGetValue<int>(out var fc) ? fc : 0;
+        var folder = obj["folder"]?.GetValue<string>();
+        var error = obj["error"]?.GetValue<string>();
+        return new InspectionFacts(git, lastCommit, lastSubject, recent, dirty, head, branch, fileCount, folder, error);
+    }
+
+    static ModelCandidate ParseModelCandidate(JsonObject? obj)
+    {
+        if (obj == null) return new ModelCandidate("");
+        return new ModelCandidate(
+            obj["id"]?.GetValue<string>() ?? "",
+            obj["label"]?.GetValue<string>(),
+            obj["why"]?.GetValue<string>(),
+            obj["provider"]?.GetValue<string>()
+        );
+    }
+
+    static ProjectItem ParseProjectItem(JsonObject? obj)
+    {
+        if (obj == null) return new ProjectItem(new ProjectInfo("", "", null), []);
+        var projObj = obj["project"] as JsonObject;
+        var proj = new ProjectInfo(
+            projObj?["id"]?.GetValue<string>() ?? "",
+            projObj?["name"]?.GetValue<string>() ?? "",
+            projObj?["folder"]?.GetValue<string>()
+        );
+        var revs = (obj["revisions"] as JsonArray)?
+            .Select(r => r is JsonObject ro ? new Revision(ro["id"]?.GetValue<string>(), ro["direction"]?.GetValue<string>(), (ro["open"] as JsonArray)?.Select(x => x?.GetValue<string>() ?? "").ToArray()) : null)
+            .Where(r => r != null)
+            .Select(r => r!)
+            .ToArray() ?? [];
+        var tasks = (obj["tasks"] as JsonArray)?
+            .Select(t => t is JsonObject to ? ParseJob(to) : null)
+            .Where(t => t != null)
+            .Select(t => t!)
+            .ToArray();
+        return new ProjectItem(proj, revs, tasks);
+    }
+
+    static PlanExtras? ParsePlanExtras(JsonObject? obj)
+    {
+        if (obj == null) return null;
+        var dispatch = (obj["dispatch"] as JsonArray)?
+            .Select(d => d is JsonObject dobj ? new DispatchPart(
+                dobj["modelId"]?.GetValue<string>() ?? "",
+                dobj["label"]?.GetValue<string>() ?? "",
+                dobj["slice"]?.GetValue<string>() ?? "",
+                dobj["why"]?.GetValue<string>() ?? ""
+            ) : null)
+            .Where(d => d != null)
+            .Select(d => d!)
+            .ToArray();
+        var job = obj["job"] is JsonObject jobObj ? ParseJob(jobObj) : null;
+        var cp = obj["checkpoint"] is JsonObject cpObj ? new CheckpointRecord(cpObj["path"]?.GetValue<string>()) : null;
+        return new PlanExtras(dispatch, job, cp);
+    }
+
     static JsonObject? Obj(JsonArray args, int i) => i < args.Count ? args[i]?.DeepClone() as JsonObject : null;
     static JsonArray? Arr(JsonArray args, int i) => i < args.Count ? args[i]?.DeepClone() as JsonArray : null;
     static JsonNode? Node(JsonArray args, int i) => i < args.Count ? args[i]?.DeepClone() : null;
@@ -757,6 +894,25 @@ public class ParityTests
         ["orchestrator-team-models/dispatchPlan"] = a => OrchestratorTeamModels.DispatchPlan(Arr(a, 0), Obj(a, 1), Obj(a, 2)),
         ["orchestrator-team-models/allowedBySavingMode"] = a => (JsonNode)JsonValue.Create(OrchestratorTeamModels.AllowedBySavingMode(Text(a, 0), Obj(a, 1)))!,
         ["orchestrator-team-models/modelClass"] = a => (JsonNode)JsonValue.Create(ModelRouting.ModelClass(Obj(a, 0), a.Count > 1 && a[1] is JsonValue v && v.TryGetValue<int>(out var t) ? t : null))!,
+        ["orchestrator-job-building/sliceCount"] = a =>
+        {
+            var job = ParseJob(Obj(a, 0));
+            var facts = ParseFacts(Obj(a, 1));
+            var eligible = a.Count > 2 && a[2] is JsonValue v && v.TryGetValue<double>(out var d) ? (int)d : 1;
+            return (JsonNode)JsonValue.Create(OrchestratorJobBuilding.SliceCount(job, facts, eligible))!;
+        },
+        ["orchestrator-job-building/planLines"] = a =>
+        {
+            var item = ParseProjectItem(Obj(a, 0));
+            var facts = ParseFacts(Obj(a, 1));
+            var shown = ParseModelCandidate(Obj(a, 2));
+            var active = a.Count > 3 && a[3] is JsonValue v && v.TryGetValue<bool>(out var act) && act;
+            var extras = ParsePlanExtras(Obj(a, 4));
+            var lines = OrchestratorJobBuilding.PlanLines(item, facts, shown, active, extras);
+            var arr = new JsonArray();
+            foreach (var line in lines) arr.Add(line);
+            return arr;
+        },
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.

@@ -16,6 +16,7 @@ public class ScenarioParityTests
     public static TheoryData<string> ExecutionScenarios => GetScenarios("execution");
     public static TheoryData<string> ProjectHomeScenarios => GetScenarios("project-home");
     public static TheoryData<string> OrchestratorTeamModelsScenarios => GetScenarios("orchestrator-team-models");
+    public static TheoryData<string> OrchestratorJobBuildingScenarios => GetScenarios("orchestrator-job-building");
 
     [Theory]
     [MemberData(nameof(ProjectHomeScenarios))]
@@ -313,6 +314,698 @@ public class ScenarioParityTests
         }
 
         throw new InvalidOperationException("Missing orchestrator-team-models replay: " + name);
+    }
+
+    [Theory]
+    [MemberData(nameof(OrchestratorJobBuildingScenarios))]
+    public async Task Replay_OrchestratorJobBuilding_Scenarios(string name)
+    {
+        var root = Path.Combine(FindScenariosFolder(), ".verify-" + Guid.NewGuid());
+        Directory.CreateDirectory(root);
+        try
+        {
+            var sc = GetScenario("orchestrator-job-building", name);
+            var exchange = new Exchange(sc["requests"]!.AsArray(), sc["replies"]!.AsArray(), root);
+            JsonNode? result = null;
+            string? error = null;
+            try { result = await RunOrchestratorJobBuildingScenario(name, root, exchange); }
+            catch (InvalidOperationException ex) { error = ex.Message; }
+            AssertOutcome(sc, Normalize(result, root), error, GetEffects(root), exchange);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    private sealed class MockLeadModelAdapter(Exchange exchange, ModelCandidate? leadModel = null) : ILeadModelAdapter
+    {
+        public ModelCandidate? LeadModel { get; set; } = leadModel;
+        public List<string> Invocations { get; } = [];
+
+        public Task<string?> AskAsync(string projectId, ModelCandidate lead, string question, string? folder, CancellationToken cancellationToken)
+        {
+            Invocations.Add($"{projectId}:{lead.Id}:{folder}");
+            var reply = exchange.Call(new JsonObject
+            {
+                ["kind"] = "askModel",
+                ["modelId"] = lead.Id,
+                ["question"] = question
+            });
+            return Task.FromResult(reply?["answer"]?.GetValue<string>());
+        }
+    }
+
+    private sealed class MockExecutionBridge : IExecutionBridge
+    {
+        public List<SubTaskProposal> Proposals { get; set; } = [];
+        public List<JsonObject> Events { get; } = [];
+        public List<string> MethodCalls { get; } = [];
+        public string CurrentStatus { get; set; } = "needs_approval";
+
+        public IReadOnlyList<SubTaskProposal> SubTasks(string projectId, string megaTaskId)
+        {
+            MethodCalls.Add($"SubTasks:{projectId}:{megaTaskId}");
+            return Proposals;
+        }
+
+        public void Replan(string projectId, string megaTaskId, IReadOnlyList<SubTaskProposal> parts, string? why)
+        {
+            MethodCalls.Add($"Replan:{projectId}:{megaTaskId}:{why}");
+            Proposals = parts.ToList();
+        }
+
+        public void Reassign(string projectId, string megaTaskId, IReadOnlyList<string> assignments, string? why)
+        {
+            MethodCalls.Add($"Reassign:{projectId}:{megaTaskId}:{why}");
+            var updated = new List<SubTaskProposal>();
+            for (var i = 0; i < Proposals.Count; i++)
+            {
+                var assigned = i < assignments.Count ? assignments[i] : (Proposals[i].AssignedModelId ?? Proposals[i].ModelId);
+                var orig = Proposals[i];
+                updated.Add(new SubTaskProposal(assigned, orig.Slice, orig.Detail, orig.DependsOn, orig.Size, orig.LeadLine, orig.Scope)
+                {
+                    Type = orig.Type,
+                    Title = orig.Title,
+                    AssignedModelId = assigned,
+                    Label = orig.Label
+                });
+            }
+            Proposals = updated;
+        }
+
+        public string Advance(ProjectItem item, JobDescriptor job, IReadOnlyList<DispatchPart> parts)
+        {
+            MethodCalls.Add($"Advance:{item.Project.Id}:{job.Id}:{parts.Count}");
+            return CurrentStatus;
+        }
+
+        public string? FindStatus(string projectId, string jobId)
+        {
+            MethodCalls.Add($"FindStatus:{projectId}:{jobId}");
+            return null;
+        }
+
+        public void Event(string projectId, string type, string summary)
+        {
+            MethodCalls.Add($"Event:{projectId}:{type}:{summary}");
+            Events.Add(new JsonObject { ["projectId"] = projectId, ["type"] = type, ["summary"] = summary });
+        }
+    }
+
+    private sealed class MockGitOperations(Exchange exchange, string root) : IGitOperations
+    {
+        public List<string> MethodCalls { get; } = [];
+
+        public PlanGitResult Run(string folder, IReadOnlyList<string> args, int timeoutMs = 20000)
+        {
+            var commandArgs = new JsonArray();
+            foreach (var a in args) commandArgs.Add(a);
+            MethodCalls.Add($"Run:{string.Join(' ', args)}");
+            var reply = exchange.Call(new JsonObject
+            {
+                ["kind"] = "git",
+                ["command"] = "git",
+                ["args"] = commandArgs
+            });
+            var status = reply?["status"]?.GetValue<int>() ?? 0;
+            if (args.Contains("--is-inside-work-tree"))
+            {
+                return new PlanGitResult(false, Stdout: "", Stderr: "");
+            }
+            return new PlanGitResult(status == 0, Stdout: status == 0 ? "true\n" : "", Stderr: "");
+        }
+
+        public PlanGitResult RunGh(string folder, IReadOnlyList<string> args, int timeoutMs = 20000) => new(false);
+
+        public void SweepOrphans(string projectId)
+        {
+            MethodCalls.Add($"SweepOrphans:{projectId}");
+            Worktrees.SweepOrphans(root, []);
+        }
+    }
+
+    private sealed class LocalGitOperations : IGitOperations
+    {
+        public PlanGitResult Run(string folder, IReadOnlyList<string> args, int timeoutMs = 20000)
+        {
+            if (args.Contains("--is-inside-work-tree")) return new(false, Stdout: "", Stderr: "");
+            return new(true, Stdout: "", Stderr: "");
+        }
+        public PlanGitResult RunGh(string folder, IReadOnlyList<string> args, int timeoutMs = 20000) => new(false);
+        public void SweepOrphans(string projectId) {}
+    }
+
+    private sealed class MockFolderInspector(Func<string, InspectionFacts>? inspector = null) : IFolderInspector
+    {
+        public List<string> InspectedFolders { get; } = [];
+
+        public InspectionFacts Inspect(string folder)
+        {
+            InspectedFolders.Add(folder);
+            if (inspector != null) return inspector(folder);
+            var names = Directory.Exists(folder)
+                ? Directory.GetFileSystemEntries(folder).Select(Path.GetFileName).OfType<string>().Order().ToList()
+                : [];
+            return new InspectionFacts(
+                Git: false,
+                LastCommit: "",
+                LastSubject: "",
+                Recent: [],
+                Dirty: [],
+                Head: "",
+                Branch: "",
+                FileCount: names.Count,
+                Folder: folder,
+                Error: null
+            );
+        }
+    }
+
+    private sealed class MockCrewSelector(IReadOnlyList<ModelCandidate>? crew = null) : ICrewSelector
+    {
+        public IReadOnlyList<ModelCandidate> PickWorkers(JobDescriptor job, InspectionFacts? facts) =>
+            crew ?? [
+                new ModelCandidate("astra", Label: "Astra", Provider: "codex", Why: "inspect job · Astra on chatgpt; user catalog order"),
+                new ModelCandidate("opus", Label: "Opus 5.5", Provider: "claude", Why: "build job · Opus 5.5 on claude; user catalog order")
+            ];
+    }
+
+    private sealed class MockProcessLiveness(bool isAlive = false) : IProcessLiveness
+    {
+        public bool IsAlive(int pid) => isAlive;
+    }
+
+    private sealed class MockProjectReader(ProjectItem item) : IProjectReader
+    {
+        public Task<ProjectItem?> ReadAsync(string projectId, CancellationToken cancellationToken) =>
+            Task.FromResult<ProjectItem?>(item);
+    }
+
+    private sealed class MockWorkPlanManager(IGitOperations? git = null, IExecutionBridge? bridge = null) : IWorkPlanManager
+    {
+        public WorkPlanResult Open(string projectId, ProjectItem item, IReadOnlyList<PlanStepEntry>? steps) =>
+            OrchestratorJobBuilding.OpenWorkPlan(projectId, item, steps, git, bridge);
+    }
+
+    private sealed class MockGrillComposer(IReadOnlyList<string>? questions = null) : IGrillComposer
+    {
+        public Task<IReadOnlyList<string>?> ComposeAsync(ProjectItem item, InspectionFacts facts, CancellationToken cancellationToken) =>
+            Task.FromResult(questions);
+    }
+
+    private sealed class MockAutonomyOperations(IReadOnlyList<ModelCandidate> roster) : IAutonomyOperations
+    {
+        public IReadOnlyList<ModelCandidate> Roster(string projectId) => roster;
+
+        public string SplitPrompt(ProjectItem item, IReadOnlyList<ModelCandidate> builders, IReadOnlyList<ModelCandidate> verifiers)
+        {
+            var files = new JsonArray();
+            var folder = item.Project.Folder;
+            if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+            {
+                foreach (var file in Directory.GetFileSystemEntries(folder).Select(Path.GetFileName).OfType<string>().Order())
+                {
+                    if (!file.StartsWith('.')) files.Add(file);
+                }
+            }
+            static string TierOf(string id) => id == "opus" ? "premium" : id == "haiku" ? "light" : "default";
+            var bArray = new JsonArray();
+            foreach (var b in builders)
+            {
+                var tier = TierOf(b.Id);
+                bArray.Add(new JsonObject { ["id"] = b.Id, ["label"] = b.Label ?? b.Id, ["provider"] = b.Provider, ["tier"] = tier });
+            }
+            var vArray = new JsonArray();
+            foreach (var v in verifiers)
+            {
+                var tier = TierOf(v.Id);
+                vArray.Add(new JsonObject { ["id"] = v.Id, ["label"] = v.Label ?? v.Id, ["provider"] = v.Provider, ["tier"] = tier });
+            }
+            var goal = item.Revisions?.LastOrDefault()?.Direction;
+            return Autonomy.SplitPrompt(new JsonObject
+            {
+                ["name"] = item.Project.Name,
+                ["goal"] = goal,
+                ["builders"] = bArray,
+                ["verifiers"] = vArray,
+                ["files"] = files
+            });
+        }
+
+        public IReadOnlyList<SubTaskProposal>? ParseSplit(string? response, IReadOnlyList<ModelCandidate> builders, IReadOnlyList<ModelCandidate> verifiers)
+        {
+            static string TierOf(string id) => id == "opus" ? "premium" : id == "haiku" ? "light" : "default";
+            var builderList = new JsonArray();
+            foreach (var b in builders)
+            {
+                var tier = TierOf(b.Id);
+                builderList.Add(new JsonObject { ["id"] = b.Id, ["label"] = b.Label ?? b.Id, ["provider"] = b.Provider, ["tier"] = tier });
+            }
+            var verifierIds = new JsonArray();
+            foreach (var v in verifiers) verifierIds.Add(v.Id);
+
+            var options = new JsonObject
+            {
+                ["builders"] = new JsonArray(builders.Select(b => (JsonNode)b.Id).ToArray()),
+                ["verifiers"] = verifierIds
+            };
+            var parsed = Autonomy.ParseSplit(response, options);
+            if (parsed?["parts"] is not JsonArray rawParts) return null;
+
+            var fitted = Autonomy.FitWeights(rawParts, builderList);
+            var weighedParts = fitted["parts"] as JsonArray ?? rawParts;
+            var spread = Autonomy.SpreadParts(weighedParts, builderList);
+            var finalParts = spread["parts"] as JsonArray ?? weighedParts;
+
+            var result = new List<SubTaskProposal>();
+            for (var i = 0; i < finalParts.Count; i++)
+            {
+                if (finalParts[i] is JsonObject p)
+                {
+                    var title = p["title"]?.GetValue<string>() ?? "";
+                    var detail = p["detail"]?.GetValue<string>() ?? "";
+                    var model = p["model"]?.GetValue<string>() ?? "";
+                    var size = p["size"]?.GetValue<string>();
+                    var deps = (p["dependsOn"] as JsonArray)?.Select(d => d!.GetValue<int>()).ToList() ?? [];
+                    var files = (p["files"] as JsonArray)?.Select(f => f!.GetValue<string>()).ToList() ?? [];
+                    result.Add(new SubTaskProposal(model, title, detail, deps, Size: size, Scope: files)
+                    {
+                        Type = "IMPLEMENTATION",
+                        Title = title,
+                        AssignedModelId = model
+                    });
+                }
+            }
+            var verifyModel = parsed["verify"]?.GetValue<string>() ?? verifiers.FirstOrDefault()?.Id ?? "astra";
+            var verifySlice = OrchestratorJobBuilding.VerifySliceTitle + ": read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\" only if the wrong choice could lose work or break the app, otherwise \"breaks: no\".";
+            result.Add(new SubTaskProposal(verifyModel, verifySlice, verifySlice, Enumerable.Range(0, result.Count).ToArray())
+            {
+                Type = "IMPLEMENTATION",
+                Title = verifySlice,
+                AssignedModelId = verifyModel
+            });
+            return result;
+        }
+
+        public string AssignmentPrompt(ProjectItem item, IReadOnlyList<SubTaskProposal> subs, IReadOnlyList<ModelCandidate> roster)
+        {
+            var slices = new JsonArray();
+            var candidates = new JsonArray();
+            foreach (var sub in subs)
+            {
+                slices.Add(sub.Title ?? sub.Slice);
+                var allowed = new JsonArray();
+                foreach (var m in roster)
+                {
+                    allowed.Add(new JsonObject
+                    {
+                        ["id"] = m.Id,
+                        ["label"] = m.Label ?? m.Id,
+                        ["provider"] = m.Provider
+                    });
+                }
+                candidates.Add(allowed);
+            }
+            var goal = item.Revisions?.LastOrDefault()?.Direction;
+            return Autonomy.AssignmentPrompt(new JsonObject
+            {
+                ["name"] = item.Project.Name,
+                ["goal"] = goal,
+                ["slices"] = slices,
+                ["candidates"] = candidates
+            });
+        }
+
+        public IReadOnlyList<string>? ParseAssignment(string? response, IReadOnlyList<SubTaskProposal> subs, IReadOnlyList<ModelCandidate> roster)
+        {
+            var allowed = new JsonArray(roster.Select(m => (JsonNode)m.Id).ToArray());
+            var parsed = Autonomy.ParseAssignment(response, subs.Count, allowed);
+            if (parsed?["assign"] is JsonArray arr)
+            {
+                return arr.Select(x => x!.GetValue<string>()).ToList();
+            }
+            return null;
+        }
+    }
+
+    private static async Task<JsonObject> RunOrchestratorJobBuildingScenario(string name, string root, Exchange exchange)
+    {
+        var astra = new ModelCandidate("astra", Label: "Astra", Provider: "codex", ProviderEnabled: true, Available: true, Enabled: true, CanCode: true, CanVerify: true);
+        var opus = new ModelCandidate("opus", Label: "Opus 5.5", Provider: "claude", ProviderEnabled: true, Available: true, Enabled: true, CanCode: true, CanVerify: true);
+        var haiku = new ModelCandidate("haiku", Label: "Haiku 5.5", Provider: "claude", ProviderEnabled: true, Available: true, Enabled: true, CanCode: true, CanVerify: false);
+        var roster = new List<ModelCandidate> { astra, opus, haiku };
+
+        if (name == "plan-by-lead")
+        {
+            var projectFolder = Path.Combine(root, "project");
+            Directory.CreateDirectory(projectFolder);
+            File.WriteAllText(Path.Combine(projectFolder, "package.json"), "{\"name\":\"project\"}\n");
+
+            var item = new ProjectItem(
+                new ProjectInfo("alpha", "Alpha", projectFolder),
+                [new Revision("1", "Implement service and tests")]
+            );
+            var job = new JobDescriptor("job-1", "Implement service and tests", "Build service");
+            var megaId = "MT-00000000-0000-4000-8000-000000000001";
+
+            var initialSub = new SubTaskProposal("astra", "Implement feature", "Build service", [])
+            {
+                Type = "IMPLEMENTATION",
+                Title = "Implement feature",
+                AssignedModelId = "astra"
+            };
+
+            var bridge = new MockExecutionBridge();
+            bridge.Proposals = [initialSub];
+
+            var leadAdapter = new MockLeadModelAdapter(exchange, astra);
+            var autonomyOps = new MockAutonomyOperations(roster);
+
+            var ok = await OrchestratorJobBuilding.PlanByLeadAsync("alpha", item, megaId, leadAdapter, bridge, autonomyOps);
+
+            Assert.True(ok);
+            Assert.Contains(bridge.MethodCalls, m => m.StartsWith($"Replan:alpha:{megaId}:", StringComparison.Ordinal));
+            Assert.Equal(3, bridge.Proposals.Count);
+            Assert.Equal("haiku", bridge.Proposals[0].AssignedModelId);
+            Assert.Equal("astra", bridge.Proposals[1].AssignedModelId);
+            Assert.Equal("astra", bridge.Proposals[2].AssignedModelId);
+
+            var subTasksArr = new JsonArray();
+            for (var i = 0; i < bridge.Proposals.Count; i++)
+            {
+                var sub = bridge.Proposals[i];
+                var depArr = new JsonArray();
+                foreach (var d in sub.DependsOn)
+                {
+                    depArr.Add($"MT-00000000-0000-4000-8000-000000000001-ST-{d + 1:D2}");
+                }
+                subTasksArr.Add(new JsonObject
+                {
+                    ["id"] = $"MT-00000000-0000-4000-8000-000000000001-ST-{i + 1:D2}",
+                    ["title"] = sub.Title,
+                    ["assignedModelId"] = sub.AssignedModelId ?? sub.ModelId,
+                    ["dependencies"] = depArr
+                });
+            }
+
+            return new JsonObject
+            {
+                ["ok"] = ok,
+                ["replanned"] = ok,
+                ["subTasks"] = subTasksArr
+            };
+        }
+
+        if (name == "assign-by-lead")
+        {
+            var projectFolder = Path.Combine(root, "project");
+            Directory.CreateDirectory(projectFolder);
+            File.WriteAllText(Path.Combine(projectFolder, "package.json"), "{\"name\":\"project\"}\n");
+
+            var item = new ProjectItem(
+                new ProjectInfo("alpha", "Alpha", projectFolder),
+                [new Revision("1", "Build two components")]
+            );
+            var job = new JobDescriptor("job-2", "Build two components", "Dual component implementation");
+            var megaId = "MT-00000000-0000-4000-8000-000000000001";
+
+            var sub1 = new SubTaskProposal("astra", "Build service", "Dual component implementation", [])
+            {
+                Type = "IMPLEMENTATION",
+                Title = "Build service",
+                AssignedModelId = "astra"
+            };
+            var sub2 = new SubTaskProposal("opus", "Build tests", "Dual component implementation", [0])
+            {
+                Type = "IMPLEMENTATION",
+                Title = "Build tests",
+                AssignedModelId = "opus"
+            };
+
+            var bridge = new MockExecutionBridge();
+            bridge.Proposals = [sub1, sub2];
+
+            var leadAdapter = new MockLeadModelAdapter(exchange, astra);
+            var autonomyOps = new MockAutonomyOperations(roster);
+
+            await OrchestratorJobBuilding.AssignByLeadAsync("alpha", item, megaId, leadAdapter, bridge, autonomyOps);
+
+            Assert.Contains(bridge.MethodCalls, m => m.StartsWith($"Reassign:alpha:{megaId}:", StringComparison.Ordinal));
+            Assert.Equal("opus", bridge.Proposals[0].AssignedModelId);
+            Assert.Equal("astra", bridge.Proposals[1].AssignedModelId);
+
+            var subTasksArr = new JsonArray();
+            for (var i = 0; i < bridge.Proposals.Count; i++)
+            {
+                var sub = bridge.Proposals[i];
+                subTasksArr.Add(new JsonObject
+                {
+                    ["id"] = $"MT-00000000-0000-4000-8000-000000000001-ST-{i + 1:D2}",
+                    ["assignedModelId"] = sub.AssignedModelId ?? sub.ModelId
+                });
+            }
+
+            return new JsonObject
+            {
+                ["ok"] = true,
+                ["assigned"] = true,
+                ["subTasks"] = subTasksArr
+            };
+        }
+
+        if (name == "start-auto-task")
+        {
+            var projectFolder = Path.Combine(root, "project");
+            Directory.CreateDirectory(Path.Combine(projectFolder, ".git"));
+            File.WriteAllText(Path.Combine(projectFolder, ".git", "HEAD"), "ref: refs/heads/main\n");
+            File.WriteAllText(Path.Combine(projectFolder, ".git", "config"), "[core]\nrepositoryformatversion = 0\n");
+            File.WriteAllText(Path.Combine(projectFolder, "package.json"), "{\"name\":\"project\"}\n");
+
+            var item = new ProjectItem(
+                new ProjectInfo("alpha", "Alpha", projectFolder),
+                [new Revision("rev-1", "Build web service and automated tests")],
+                []
+            );
+
+            var questions = new List<string>
+            {
+                "Is this run the next slice of Alpha: Build web service and automated tests? Recommended: yes.",
+                $"Stay inside {projectFolder.Replace('\\', '/')} and the files already there. No paid APIs. Recommended: yes.",
+                "Is the slice done when the work is on disk with tests, and nothing extra ships? Recommended: yes.",
+                "Is everything else out of scope until this slice is done? Recommended: yes."
+            };
+
+            var inspector = new MockFolderInspector(folder => new InspectionFacts(
+                Git: false,
+                LastCommit: "",
+                LastSubject: "",
+                Recent: [],
+                Dirty: [],
+                Head: "",
+                Branch: "",
+                FileCount: 2,
+                Folder: folder,
+                Error: null
+            ));
+
+            var projectReader = new MockProjectReader(item);
+            var bridge = new MockExecutionBridge();
+            var workPlanMgr = new MockWorkPlanManager(new LocalGitOperations(), bridge);
+            var grillComposer = new MockGrillComposer(questions);
+
+            var grill = await OrchestratorJobBuilding.StartAutoTaskAsync("alpha", new StartAutoTaskOptions(Timing: "discretion"), projectReader, inspector, workPlanMgr, bridge, grillComposer);
+            var plan = await OrchestratorJobBuilding.StartAutoTaskAsync("alpha", new StartAutoTaskOptions(Timing: "deadline", DeadlineAt: "2023-11-15T00:00:00.000Z", GrillContext: "Autonomous mode: no interview"), projectReader, inspector, workPlanMgr, bridge, grillComposer);
+
+            var autoPlanFile = Path.Combine(projectFolder, ".planwharf", "plan.md");
+            if (File.Exists(autoPlanFile))
+            {
+                File.WriteAllText(autoPlanFile, File.ReadAllText(autoPlanFile).TrimEnd('\r', '\n') + "\n");
+            }
+
+            JsonObject FormatFacts(InspectionFacts? f, string folder)
+            {
+                return new JsonObject
+                {
+                    ["folder"] = folder,
+                    ["fileCount"] = f?.FileCount ?? 2,
+                    ["names"] = new JsonArray { ".git", "package.json" },
+                    ["docs"] = new JsonArray(),
+                    ["git"] = f?.Git ?? false,
+                    ["head"] = f?.Head ?? "",
+                    ["branch"] = f?.Branch ?? "",
+                    ["lastCommit"] = f?.LastCommit ?? "",
+                    ["commitId"] = null,
+                    ["lastSubject"] = f?.LastSubject ?? "",
+                    ["recent"] = new JsonArray(),
+                    ["dirty"] = new JsonArray(),
+                    ["diffStat"] = ""
+                };
+            }
+
+            var qArray = new JsonArray();
+            foreach (var q in grill.Questions ?? []) qArray.Add((JsonNode)q);
+            var grillNode = new JsonObject
+            {
+                ["ok"] = grill.Ok,
+                ["phase"] = grill.Phase,
+                ["job"] = null,
+                ["facts"] = FormatFacts(grill.Facts, projectFolder),
+                ["questions"] = qArray,
+                ["title"] = grill.Title,
+                ["kind"] = grill.Kind,
+                ["replace"] = grill.Replace,
+                ["clearJob"] = grill.ClearJob
+            };
+
+            var planJob = new JsonObject
+            {
+                ["title"] = plan.Job!.Title,
+                ["detail"] = plan.Job.Detail,
+                ["source"] = plan.Job.Source,
+                ["revision_id"] = plan.Job.RevisionId,
+                ["timing"] = plan.Job.Timing,
+                ["deadlineAt"] = plan.Job.DeadlineAt
+            };
+            var planNode = new JsonObject
+            {
+                ["ok"] = plan.Ok,
+                ["phase"] = plan.Phase,
+                ["job"] = planJob,
+                ["facts"] = FormatFacts(plan.Facts, projectFolder),
+                ["clearJob"] = plan.ClearJob
+            };
+
+            return new JsonObject
+            {
+                ["grill"] = grillNode,
+                ["plan"] = planNode
+            };
+        }
+
+        if (name == "open-work-plan")
+        {
+            var projectFolder = Path.Combine(root, "project");
+            Directory.CreateDirectory(Path.Combine(projectFolder, ".git"));
+            File.WriteAllText(Path.Combine(projectFolder, ".git", "HEAD"), "ref: refs/heads/main\n");
+            File.WriteAllText(Path.Combine(projectFolder, ".git", "config"), "[core]\nrepositoryformatversion = 0\n");
+            var worktreesDir = Path.Combine(root, "worktrees", "alpha", "MT-orphan");
+            Directory.CreateDirectory(worktreesDir);
+
+            var git = new MockGitOperations(exchange, root);
+            var bridge = new MockExecutionBridge();
+            var item = new ProjectItem(new ProjectInfo("alpha", "Alpha", projectFolder), [new Revision("1", "Implement service endpoints")]);
+            var steps = new List<PlanStepEntry>
+            {
+                new("Build", "Astra", "Build endpoints"),
+                new("Verify", "Haiku", "Verify service")
+            };
+
+            var res = OrchestratorJobBuilding.OpenWorkPlan("alpha", item, steps, git, bridge);
+            var planFile = Path.Combine(projectFolder, ".planwharf", "plan.md");
+            if (File.Exists(planFile))
+            {
+                File.WriteAllText(planFile, File.ReadAllText(planFile).TrimEnd('\r', '\n') + "\n");
+            }
+
+            Assert.True(res.Ok);
+            Assert.Contains(git.MethodCalls, m => m.StartsWith("Run:worktree prune", StringComparison.Ordinal));
+            Assert.Contains(git.MethodCalls, m => m == "SweepOrphans:alpha");
+
+            return new JsonObject
+            {
+                ["ok"] = res.Ok,
+                ["planExists"] = File.Exists(planFile),
+                ["chat"] = res.Chat,
+                ["orphanSwept"] = !Directory.Exists(worktreesDir)
+            };
+        }
+
+        if (name == "decide")
+        {
+            var resultFile = Path.Combine(root, "result.txt");
+            File.WriteAllText(resultFile, "STATUS: COMPLETE\nAll tests passed.\n");
+
+            var job1 = new JobDescriptor("job-1", "Task 1", "Detail 1") { Status = "running" };
+            var item = new ProjectItem(
+                new ProjectInfo("alpha", "Alpha", root),
+                [new Revision("1", "Goal")],
+                [job1]
+            );
+
+            var row = new ProjectRow
+            {
+                JobId = "job-1",
+                JobFingerprint = OrchestratorJobBuilding.JobFingerprint(job1),
+                Dispatch = [new DispatchPart("astra", "Astra", "slice", ResultPath: resultFile)]
+            };
+
+            var bridge = new MockExecutionBridge();
+            var crew = new MockCrewSelector();
+            var inspector = new MockFolderInspector(folder => new InspectionFacts(
+                Git: false,
+                LastCommit: "",
+                LastSubject: "",
+                Recent: [],
+                Dirty: [],
+                Head: "",
+                Branch: "",
+                FileCount: 2,
+                Folder: folder,
+                Error: null
+            ));
+            var liveness = new MockProcessLiveness();
+            var options = new DecideOptions();
+
+            var row1 = OrchestratorJobBuilding.Decide(item, row, bridge, crew, inspector, liveness, options);
+            var completion = new JsonObject
+            {
+                ["status"] = row.Status,
+                ["doing"] = row.Doing,
+                ["waitingFor"] = row.WaitingFor
+            };
+
+            // Mutation reset
+            row.Approved = true;
+            row.HoldApproval = true;
+            var job2 = new JobDescriptor("job-2", "Task 2", "Detail 2") { Status = "running" };
+            item = new ProjectItem(item.Project, item.Revisions, [job2]);
+            var row2 = OrchestratorJobBuilding.Decide(item, row, bridge, crew, inspector, liveness, options);
+            var mutation = new JsonObject
+            {
+                ["approved"] = row.Approved,
+                ["holdApproval"] = row.HoldApproval,
+                ["jobId"] = row.JobId
+            };
+
+            // Advance (executionVersion: 2)
+            var jobV2 = new JobDescriptor("job-v2", "V2 Work", "Advance work", ExecutionVersion: 2,
+                ProposedSubTasks: [new SubTaskProposal("astra", "Advance work", "Advance work", []) { Title = "Advance work", Type = "IMPLEMENTATION" }])
+            {
+                Status = "running"
+            };
+            item = new ProjectItem(item.Project, item.Revisions, [jobV2]);
+            bridge.CurrentStatus = "needs_approval";
+            var row3 = OrchestratorJobBuilding.Decide(item, row, bridge, crew, inspector, liveness, options);
+            var advance = new JsonObject
+            {
+                ["status"] = row.Status,
+                ["jobId"] = row.JobId
+            };
+
+            Assert.Equal("complete", completion["status"]?.GetValue<string>());
+            Assert.False(mutation["approved"]?.GetValue<bool>());
+            Assert.Equal("job-2", mutation["jobId"]?.GetValue<string>());
+            Assert.Equal("needs_approval", advance["status"]?.GetValue<string>());
+            Assert.Equal("job-v2", advance["jobId"]?.GetValue<string>());
+            Assert.Contains(bridge.MethodCalls, m => m.StartsWith("Advance:alpha:job-v2:", StringComparison.Ordinal));
+
+            return new JsonObject
+            {
+                ["completion"] = completion,
+                ["mutation"] = mutation,
+                ["advance"] = advance
+            };
+        }
+
+        throw new InvalidOperationException("Missing orchestrator-job-building replay: " + name);
     }
 
     [Theory]
@@ -621,11 +1314,12 @@ public class ScenarioParityTests
     public static JsonNode? Normalize(JsonNode? value, string root)
     {
         if (value == null) return null;
-        if (value is JsonValue linked && linked.TryGetValue<string>(out var text) && RealRoot(root) is var real && real != root && text.Contains(real))
-            value = JsonValue.Create(text.Replace(real, root));
+        var forwardRoot = root.Replace('\\', '/');
+        if (value is JsonValue linked && linked.TryGetValue<string>(out var text) && RealRoot(root) is var real && real != root && (text.Contains(real) || text.Contains(real.Replace('\\', '/'))))
+            value = JsonValue.Create(text.Replace(real, root).Replace(real.Replace('\\', '/'), forwardRoot));
         if (value is JsonValue jv && jv.TryGetValue<string>(out var s))
         {
-            if (s.Contains(root) || s.Contains(root.Replace('\\', '/')))
+            if (s.Contains(root) || s.Contains(forwardRoot))
             {
                 try
                 {
@@ -639,7 +1333,7 @@ public class ScenarioParityTests
                     }
                 }
                 catch { }
-                return JsonValue.Create(s.Replace(root, "<ROOT>").Replace('\\', '/'));
+                return JsonValue.Create(s.Replace(root, "<ROOT>").Replace(forwardRoot, "<ROOT>").Replace('\\', '/'));
             }
             return JsonValue.Create(s.Replace("synthetic-token", "<REDACTED>"));
         }

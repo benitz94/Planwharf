@@ -73,7 +73,8 @@ function sandbox(root, overrides = {}) {
       if (!Object.hasOwn(builtins, key)) throw new Error('Unexpected builtin: ' + id);
       return builtins[key];
     };
-    const fn = vm.runInContext('(function(require,module,exports,__filename,__dirname){' + fs.readFileSync(file, 'utf8') + '\n})', context, { filename: file });
+    const content = typeof overrides.transform === 'function' ? overrides.transform(file, fs.readFileSync(file, 'utf8')) : fs.readFileSync(file, 'utf8');
+    const fn = vm.runInContext('(function(require,module,exports,__filename,__dirname){\n' + content + '\n})', context, { filename: file });
     fn(localRequire, module, module.exports, file, engine);
     return module.exports;
   }
@@ -457,6 +458,25 @@ function verify(module, rows) {
     assert.equal(saving.safe.picked.id, 'sonnet');
     assert.equal(saving.ultraSafe.picked.id, 'haiku');
     assert.equal(saving.teamWeightOverride.picked.id, 'haiku');
+  } else if (module === 'orchestrator-job-building') {
+    const plan = get('plan-by-lead').result;
+    assert.equal(plan.ok, true);
+    assert.equal(plan.replanned, true);
+    assert.equal(plan.subTasks.length, 3);
+    const assign = get('assign-by-lead').result;
+    assert.equal(assign.ok, true);
+    assert.equal(assign.assigned, true);
+    const start = get('start-auto-task').result;
+    assert.equal(start.grill.phase, 'grill');
+    assert.equal(start.plan.phase, 'plan');
+    assert.equal(start.plan.job.timing, 'deadline');
+    const open = get('open-work-plan').result;
+    assert.equal(open.ok, true);
+    assert.equal(open.planExists, true);
+    const decide = get('decide').result;
+    assert.equal(decide.completion.status, 'complete');
+    assert.equal(decide.mutation.approved, false);
+    assert.equal(decide.advance.status, 'needs_approval');
   } else {
     assert.equal(get('allowed').events[0].stdout, 'ALLOWED\nno blocker\n');
     assert.equal(get('live-blocked').requests.length, 1);
@@ -912,4 +932,260 @@ scenario('orchestrator-team-models', 'saving-mode-candidate-filtering', { catego
   const teamWeightOverride = await evaluate('safe');
   return { normal, safe, ultraSafe, teamWeightOverride, modelsAfterOverride: (await orchestra.snapshot()).models };
 });
+
+function jobBuildingSandbox(root, overrides = {}) {
+  const { builtins: extraBuiltins, ...rest } = overrides;
+  return sandbox(root, {
+    builtins: {
+      async_hooks: require('node:async_hooks'),
+      events: require('node:events'),
+      '../plan.js': require('../../../plan.js'),
+      '../quota.js': require('../../../quota.js'),
+      ...extraBuiltins
+    },
+    transform: (file, content) => {
+      if (path.basename(file) === 'orchestrator.js') {
+        return content.replace(
+          'return { stopPullRequestFix,',
+          'return { bridge, planByLead, assignByLead, openWorkPlan, decide, stopPullRequestFix,'
+        );
+      }
+      return content;
+    },
+    ...rest
+  });
+}
+
+function jobBuildingModels() {
+  const providers = [
+    { id: 'codex', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true },
+    { id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true }
+  ];
+  const models = [
+    { id: 'astra', label: 'Astra', provider: 'codex', providerId: 'codex', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'default', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true, canVerify: true } },
+    { id: 'opus', label: 'Opus 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true, canVerify: true } },
+    { id: 'haiku', label: 'Haiku 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-haiku-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'local', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true, canVerify: true } }
+  ];
+  return { providers, models };
+}
+
+function cleanOrchFiles(root) {
+  for (const name of fs.readdirSync(root)) {
+    if (name.startsWith('orchestrator.json') || name.startsWith('invocations.jsonl')) {
+      fs.rmSync(path.join(root, name), { force: true, recursive: true });
+    }
+  }
+}
+
+scenario('orchestrator-job-building', 'plan-by-lead', { category: 'lead-split' }, async ({ root, exchange }) => {
+  const { providers, models } = jobBuildingModels();
+  const projectFolder = path.join(root, 'project');
+  fs.mkdirSync(projectFolder, { recursive: true });
+  fs.writeFileSync(path.join(projectFolder, 'package.json'), '{"name":"project"}\n');
+  const item = { project: { id: 'alpha', name: 'Alpha', folder: projectFolder }, revisions: [{ id: 1, direction: 'Implement service and tests' }] };
+  const job = { id: 'job-1', title: 'Implement service and tests', detail: 'Build service' };
+  const askModel = async ({ question, model, projectId, folder }) => {
+    const answer = JSON.stringify({
+      parts: [
+        { title: 'Build endpoints', detail: 'Write service endpoints', files: ['src/service.js'], dependsOn: [], size: 'light', model: 'opus' },
+        { title: 'Build tests', detail: 'Write unit tests', files: ['tests/service.test.js'], dependsOn: [0], size: 'normal', model: 'opus' }
+      ],
+      verify: 'haiku',
+      why: 'Two-part split'
+    });
+    exchange({ kind: 'askModel', modelId: model.id, question }, { answer });
+    return { answer };
+  };
+  const orch = jobBuildingSandbox(root).load('orchestrator.js').createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => ({ schema: 2, projects: [item] }),
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    askModel,
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  await orch.setOrchestrator('astra');
+  const mega = orch.bridge.propose(item, job, [{ title: 'Implement feature', modelId: 'astra', type: 'IMPLEMENTATION' }]);
+  const ok = await orch.planByLead('alpha', item, mega.id);
+  const subTasks = orch.bridge.view('alpha').subTasks;
+  cleanOrchFiles(root);
+  return { ok, replanned: ok, subTasks: subTasks.map(s => ({ id: s.id, title: s.title, assignedModelId: s.assignedModelId, dependencies: s.dependencies })) };
+});
+
+scenario('orchestrator-job-building', 'assign-by-lead', { category: 'lead-assignment' }, async ({ root, exchange }) => {
+  const { providers, models } = jobBuildingModels();
+  const projectFolder = path.join(root, 'project');
+  fs.mkdirSync(projectFolder, { recursive: true });
+  fs.writeFileSync(path.join(projectFolder, 'package.json'), '{"name":"project"}\n');
+  const item = { project: { id: 'alpha', name: 'Alpha', folder: projectFolder }, revisions: [{ id: 1, direction: 'Build two components' }] };
+  const job = { id: 'job-2', title: 'Build two components', detail: 'Dual component implementation' };
+  const askModel = async ({ question, model, projectId, folder }) => {
+    const answer = JSON.stringify({
+      assign: ['opus', 'astra'],
+      why: 'Optimized crew matching'
+    });
+    exchange({ kind: 'askModel', modelId: model.id, question }, { answer });
+    return { answer };
+  };
+  const orch = jobBuildingSandbox(root).load('orchestrator.js').createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => ({ schema: 2, projects: [item] }),
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    askModel,
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  await orch.setOrchestrator('astra');
+  const mega = orch.bridge.propose(item, job, [
+    { title: 'Build service', modelId: 'astra', type: 'IMPLEMENTATION' },
+    { title: 'Build tests', modelId: 'opus', type: 'IMPLEMENTATION' }
+  ]);
+  await orch.assignByLead('alpha', item, mega.id);
+  const subTasks = orch.bridge.view('alpha').subTasks;
+  cleanOrchFiles(root);
+  return { ok: true, assigned: true, subTasks: subTasks.map(s => ({ id: s.id, assignedModelId: s.assignedModelId })) };
+});
+
+scenario('orchestrator-job-building', 'start-auto-task', { category: 'auto-start' }, async ({ root }) => {
+  const { providers, models } = jobBuildingModels();
+  const projectFolder = path.join(root, 'project');
+  fs.mkdirSync(path.join(projectFolder, '.git'), { recursive: true });
+  fs.writeFileSync(path.join(projectFolder, '.git', 'HEAD'), 'ref: refs/heads/main\n');
+  fs.writeFileSync(path.join(projectFolder, '.git', 'config'), '[core]\nrepositoryformatversion = 0\n');
+  fs.writeFileSync(path.join(projectFolder, 'package.json'), '{"name":"project"}\n');
+  const item = {
+    project: { id: 'alpha', name: 'Alpha', folder: projectFolder },
+    revisions: [{ id: 'rev-1', direction: 'Build web service and automated tests' }],
+    tasks: []
+  };
+  const orch = jobBuildingSandbox(root, {
+    builtins: {
+      child_process: {
+        spawnSync(cmd, args) {
+          if (args.includes('--is-inside-work-tree')) return { status: 1, stdout: '' };
+          return { status: 0, stdout: '' };
+        }
+      }
+    }
+  }).load('orchestrator.js').createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => ({ schema: 2, projects: [item] }),
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  await orch.setGrillPropose(true);
+  const grill = await orch.startAutoTask('alpha', { timing: 'discretion' });
+  const plan = await orch.startAutoTask('alpha', { timing: 'deadline', deadlineAt: '2023-11-15T00:00:00.000Z', grillContext: 'Autonomous mode: no interview' });
+  cleanOrchFiles(root);
+  return { grill, plan };
+});
+
+scenario('orchestrator-job-building', 'open-work-plan', { category: 'work-plan' }, async ({ root, exchange }) => {
+  const { providers, models } = jobBuildingModels();
+  const projectFolder = path.join(root, 'project');
+  fs.mkdirSync(path.join(projectFolder, '.git'), { recursive: true });
+  fs.writeFileSync(path.join(projectFolder, '.git', 'HEAD'), 'ref: refs/heads/main\n');
+  fs.writeFileSync(path.join(projectFolder, '.git', 'config'), '[core]\nrepositoryformatversion = 0\n');
+  const worktreesDir = path.join(root, 'worktrees', 'alpha', 'MT-orphan');
+  fs.mkdirSync(worktreesDir, { recursive: true });
+  const box = jobBuildingSandbox(root, {
+    builtins: {
+      child_process: {
+        spawnSync(cmd, args) {
+          exchange({ kind: 'git', command: cmd, args }, { status: 0 });
+          if (args.includes('--is-inside-work-tree')) return { status: 1, stdout: '' };
+          return { status: 0, stdout: '' };
+        }
+      }
+    }
+  });
+  const orch = box.load('orchestrator.js').createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => ({ schema: 2, projects: [] }),
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  const item = { project: { id: 'alpha', folder: projectFolder }, revisions: [{ id: 1, direction: 'Implement service endpoints' }] };
+  const res = orch.openWorkPlan('alpha', item, [
+    { role: 'Build', model: 'Astra', title: 'Build endpoints' },
+    { role: 'Verify', model: 'Haiku', title: 'Verify service' }
+  ]);
+  const planFile = path.join(projectFolder, '.planwharf', 'plan.md');
+  const out = {
+    ok: res.ok,
+    planExists: fs.existsSync(planFile),
+    chat: res.chat || null,
+    orphanSwept: !fs.existsSync(worktreesDir)
+  };
+  cleanOrchFiles(root);
+  return out;
+});
+
+scenario('orchestrator-job-building', 'decide', { category: 'decide-lifecycle' }, async ({ root }) => {
+  const { providers, models } = jobBuildingModels();
+  const box = jobBuildingSandbox(root);
+  const api = box.load('orchestrator.js');
+  const resultFile = path.join(root, 'result.txt');
+  fs.writeFileSync(resultFile, 'STATUS: COMPLETE\nAll tests passed.\n');
+  const job1 = { id: 'job-1', title: 'Task 1', detail: 'Detail 1', status: 'running' };
+  const item = {
+    project: { id: 'alpha', name: 'Alpha', folder: root },
+    revisions: [{ id: 1, direction: 'Goal' }],
+    tasks: [job1]
+  };
+  fs.writeFileSync(path.join(root, 'orchestrator.json'), JSON.stringify({
+    projects: {
+      alpha: {
+        jobId: 'job-1',
+        jobFingerprint: api.jobFingerprint(job1),
+        dispatch: [{ resultPath: resultFile, stoppedByUser: false }]
+      }
+    }
+  }, null, 2) + '\n');
+  const orch = api.createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => ({ schema: 2, projects: [item] }),
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  const row1 = orch.decide(item);
+  const completion = { status: row1.status, doing: row1.doing, waitingFor: row1.waitingFor };
+
+  // Mutation reset
+  row1.approved = true;
+  row1.holdApproval = true;
+  const job2 = { id: 'job-2', title: 'Task 2', detail: 'Detail 2', status: 'running' };
+  item.tasks = [job2];
+  const row2 = orch.decide(item);
+  const mutation = { approved: row2.approved, holdApproval: row2.holdApproval, jobId: row2.jobId };
+
+  // Advance (executionVersion: 2)
+  const jobV2 = { id: 'job-v2', executionVersion: 2, title: 'V2 Work', detail: 'Advance work', status: 'running' };
+  item.tasks = [jobV2];
+  orch.bridge.propose(item, jobV2, [{ title: 'Advance work', modelId: 'astra', type: 'IMPLEMENTATION' }]);
+  const row3 = orch.decide(item);
+  const advance = { status: row3.status, jobId: row3.jobId };
+
+  cleanOrchFiles(root);
+  return { completion, mutation, advance };
+});
+
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });

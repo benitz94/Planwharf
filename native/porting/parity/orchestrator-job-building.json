@@ -1,0 +1,4071 @@
+[
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": []
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": []
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": []
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": []
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Hard architecture changes",
+        "detail": "complex algorithm escalation"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": []
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": []
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": []
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": []
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Implement feature",
+        "detail": "write code and tests"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": []
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": []
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": []
+      },
+      2
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": []
+      },
+      5
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      2
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js"
+        ]
+      },
+      5
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "src/a.js",
+          "src/b.js",
+          "src/c.js",
+          "src/d.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      2
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Review repository status",
+        "detail": "check notes"
+      },
+      {
+        "dirty": [
+          "1.js",
+          "2.js",
+          "3.js",
+          "4.js",
+          "5.js",
+          "6.js",
+          "7.js",
+          "8.js",
+          "9.js",
+          "10.js",
+          "11.js",
+          "12.js"
+        ]
+      },
+      5
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      null,
+      null,
+      2
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Complex task"
+      },
+      null,
+      0
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      null,
+      {
+        "dirty": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      3
+    ],
+    "result": 2
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Build task"
+      },
+      {
+        "dirty": null
+      },
+      -1
+    ],
+    "result": 1
+  },
+  {
+    "fn": "sliceCount",
+    "args": [
+      {
+        "title": "Inspect"
+      },
+      {
+        "dirty": []
+      },
+      10
+    ],
+    "result": 1
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "lastCommit": "9a8b7c6",
+        "branch": "main",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 9a8b7c6 on main.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": true,
+        "head": "1a2b3c4",
+        "branch": "feature/login",
+        "dirty": [
+          "app.js",
+          "app.test.js"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Latest git: 1a2b3c4 on feature/login.",
+      "Uncommitted: 2 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Assigned Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Gemini Pro",
+            "slice": "Whole job"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Pick Gemini Flash (fast).",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "discretion"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      true,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": {
+          "path": ".planwharf/checkpoints/cp-42.json"
+        }
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Resume from checkpoint .planwharf/checkpoints/cp-42.json.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Planwharf",
+          "folder": "C:/repos/test-project"
+        },
+        "revisions": [
+          {
+            "id": "rev-1",
+            "direction": "Build the parity test suite"
+          }
+        ],
+        "tasks": []
+      },
+      {
+        "git": false,
+        "fileCount": 17
+      },
+      {
+        "id": "m1",
+        "label": "Gemini Flash",
+        "why": "fast"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "Builder",
+            "slice": "Implement code"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Verify tests"
+          }
+        ],
+        "job": {
+          "timing": "deadline",
+          "deadlineAt": "2026-12-01T15:00:00.000Z"
+        },
+        "checkpoint": null
+      }
+    ],
+    "result": [
+      "Stay inside C:/repos/test-project.",
+      "Notebook goal: Build the parity test suite",
+      "Read-only inspect (17 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Split into 2 slices for parallel workers.",
+      "Slice 1: Builder — Implement code.",
+      "Slice 2: Verifier — Verify tests.",
+      "Finish by 2026-12-01T15:00:00.000Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Proj",
+          "folder": "/app"
+        },
+        "revisions": []
+      },
+      {
+        "git": true,
+        "lastCommit": "c1"
+      },
+      {
+        "id": "m1",
+        "label": "Flash"
+      },
+      true,
+      null
+    ],
+    "result": [
+      "Stay inside /app.",
+      "Latest git: c1.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Assigned Flash.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Proj",
+          "folder": "/app"
+        },
+        "revisions": [
+          {
+            "direction": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          }
+        ]
+      },
+      {
+        "git": true,
+        "lastCommit": "c1"
+      },
+      {
+        "id": "m1"
+      },
+      false,
+      {}
+    ],
+    "result": [
+      "Stay inside /app.",
+      "Notebook goal: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA…",
+      "Latest git: c1.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Pick m1.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Proj",
+          "folder": "/app"
+        },
+        "revisions": [
+          {
+            "direction": "Test"
+          }
+        ],
+        "tasks": [
+          {
+            "status": "running",
+            "timing": "deadline",
+            "deadlineAt": "2026-12-31T23:59:59Z"
+          }
+        ]
+      },
+      {
+        "git": false,
+        "fileCount": 0
+      },
+      {
+        "id": "m2",
+        "label": "Sonnet",
+        "why": ""
+      },
+      true,
+      {
+        "dispatch": []
+      }
+    ],
+    "result": [
+      "Stay inside /app.",
+      "Notebook goal: Test",
+      "Read-only inspect (0 top-level names).",
+      "Proceed with the plan from those changes.",
+      "Assigned Sonnet.",
+      "Finish by 2026-12-31T23:59:59Z. At that time the orchestrator delivers the output or writes a checkpoint.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Proj",
+          "folder": "/app"
+        },
+        "revisions": [
+          {
+            "direction": "Multi"
+          }
+        ]
+      },
+      {
+        "git": true,
+        "head": "h1",
+        "dirty": []
+      },
+      {
+        "id": "m1",
+        "label": "Model1"
+      },
+      false,
+      {
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "",
+            "slice": "Slice 1"
+          },
+          {
+            "modelId": "m2",
+            "label": "Verifier",
+            "slice": "Slice 2"
+          },
+          {
+            "modelId": "m3",
+            "label": "Reviewer",
+            "slice": "Slice 3"
+          }
+        ]
+      }
+    ],
+    "result": [
+      "Stay inside /app.",
+      "Notebook goal: Multi",
+      "Latest git: h1.",
+      "Working tree clean. Proceed from the latest commit.",
+      "Proceed with the plan from those changes.",
+      "Split into 3 slices for parallel workers.",
+      "Slice 1: m1 — Slice 1.",
+      "Slice 2: Verifier — Slice 2.",
+      "Slice 3: Reviewer — Slice 3.",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  },
+  {
+    "fn": "planLines",
+    "args": [
+      {
+        "project": {
+          "id": "p1",
+          "name": "Proj",
+          "folder": "/app"
+        },
+        "revisions": [
+          {
+            "direction": "Branchless"
+          }
+        ]
+      },
+      {
+        "git": true,
+        "lastCommit": "abc",
+        "branch": null,
+        "dirty": [
+          "file.txt"
+        ]
+      },
+      {
+        "id": "m1",
+        "label": "Model1",
+        "why": "chosen"
+      },
+      true,
+      null
+    ],
+    "result": [
+      "Stay inside /app.",
+      "Notebook goal: Branchless",
+      "Latest git: abc.",
+      "Uncommitted: 1 path(s). Read those changes.",
+      "Proceed with the plan from those changes.",
+      "Assigned Model1 (chosen).",
+      "Timing is at the worker’s discretion.",
+      "Watch the worker process, the result file (STATUS: COMPLETE), and the project folder."
+    ]
+  }
+]
