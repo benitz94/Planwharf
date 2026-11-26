@@ -63,5 +63,6 @@
     }
   },
   "orchestrator-order-parsing": { "minCases": 50 },
-  "orchestrator-team-models": { "minCases": 50 }
+  "orchestrator-team-models": { "minCases": 50 },
+  "orchestrator-job-building": { "minCases": 50 }
 }
