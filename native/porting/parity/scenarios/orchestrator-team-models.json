@@ -1,0 +1,1833 @@
+{
+  "schema": 1,
+  "module": "orchestrator-team-models",
+  "scenarios": [
+    {
+      "name": "project-team-role-isolation-and-account-scope",
+      "input": {
+        "category": "project-teams"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "alpha": {
+          "selectedOrchestratorId": "opus",
+          "orchestratorId": "opus",
+          "models": [
+            {
+              "id": "astra",
+              "label": "Astra",
+              "provider": "codex-main",
+              "providerId": "codex-main",
+              "adapter": "codex",
+              "cli": "gpt-6-astra",
+              "plan": "chatgpt",
+              "quotaPoolId": "chatgpt",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-alpha",
+              "accountType": "normal",
+              "accountScope": "codex-main:acct-alpha",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "codex-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "chatgpt"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            },
+            {
+              "id": "opus",
+              "label": "Opus Business",
+              "provider": "claude-main",
+              "providerId": "claude-main",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-beta",
+              "accountType": "business",
+              "accountScope": "claude-main:acct-beta",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": false,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            }
+          ]
+        },
+        "beta": {
+          "selectedOrchestratorId": "astra",
+          "orchestratorId": "astra",
+          "models": [
+            {
+              "id": "astra",
+              "label": "Astra",
+              "provider": "codex-main",
+              "providerId": "codex-main",
+              "adapter": "codex",
+              "cli": "gpt-6-astra",
+              "plan": "chatgpt",
+              "quotaPoolId": "chatgpt",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-alpha",
+              "accountType": "normal",
+              "accountScope": "codex-main:acct-alpha",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "codex-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "chatgpt"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": false,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            },
+            {
+              "id": "opus",
+              "label": "Opus Business",
+              "provider": "claude-main",
+              "providerId": "claude-main",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-beta",
+              "accountType": "business",
+              "accountScope": "claude-main:acct-beta",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": false,
+                "worker": true,
+                "verifier": false,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            }
+          ]
+        },
+        "shared": {
+          "selectedOrchestratorId": "astra",
+          "orchestratorId": "astra",
+          "models": [
+            {
+              "id": "astra",
+              "label": "Astra",
+              "provider": "codex-main",
+              "providerId": "codex-main",
+              "adapter": "codex",
+              "cli": "gpt-6-astra",
+              "plan": "chatgpt",
+              "quotaPoolId": "chatgpt",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-alpha",
+              "accountType": "normal",
+              "accountScope": "codex-main:acct-alpha",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "codex-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "chatgpt"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            },
+            {
+              "id": "opus",
+              "label": "Opus Business",
+              "provider": "claude-main",
+              "providerId": "claude-main",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 200,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": "acct-beta",
+              "accountType": "business",
+              "accountScope": "claude-main:acct-beta",
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude-main",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 200,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            }
+          ]
+        },
+        "switchedAccount": [
+          {
+            "id": "astra",
+            "label": "Astra",
+            "provider": "codex-main",
+            "providerId": "codex-main",
+            "adapter": "codex",
+            "cli": "gpt-6-astra",
+            "plan": "chatgpt",
+            "quotaPoolId": "chatgpt",
+            "kind": "premium",
+            "enabled": false,
+            "available": true,
+            "limit": 200,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": "acct-second",
+            "accountType": "normal",
+            "accountScope": "codex-main:acct-second",
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "codex-main",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "chatgpt"
+            },
+            "lowQuota": false,
+            "leadTier": 0,
+            "weight": "premium",
+            "weightSource": "lineup",
+            "modelClass": "flagship",
+            "used": 0,
+            "remaining": 200,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": false,
+              "worker": false,
+              "verifier": false,
+              "reviewer": false,
+              "supervisor": false
+            },
+            "leadAllowed": true
+          },
+          {
+            "id": "opus",
+            "label": "Opus Business",
+            "provider": "claude-main",
+            "providerId": "claude-main",
+            "adapter": "claude",
+            "cli": "claude-opus-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "premium",
+            "enabled": true,
+            "available": true,
+            "limit": 200,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": "acct-beta",
+            "accountType": "business",
+            "accountScope": "claude-main:acct-beta",
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude-main",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 0,
+            "weight": "premium",
+            "weightSource": "lineup",
+            "modelClass": "flagship",
+            "used": 0,
+            "remaining": 200,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "lead-automatic-handover-on-quota-depletion",
+      "input": {
+        "category": "lead-handover"
+      },
+      "requests": [
+        {
+          "kind": "fetchPlans",
+          "call": 1
+        },
+        {
+          "kind": "fetchPlans",
+          "call": 2
+        }
+      ],
+      "replies": [
+        [
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 80,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 80
+              },
+              {
+                "name": "weekly",
+                "leftPct": 85
+              }
+            ]
+          },
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 75,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 75
+              },
+              {
+                "name": "weekly",
+                "leftPct": 85
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "id": "claude",
+            "readable": true,
+            "leftPct": 12,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 12
+              },
+              {
+                "name": "weekly",
+                "leftPct": 85
+              }
+            ]
+          },
+          {
+            "id": "chatgpt",
+            "readable": true,
+            "leftPct": 75,
+            "windows": [
+              {
+                "name": "5-hour",
+                "leftPct": 75
+              },
+              {
+                "name": "weekly",
+                "leftPct": 85
+              }
+            ]
+          }
+        ]
+      ],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "before": {
+          "orchestratorId": "opus",
+          "selectedOrchestratorId": "opus",
+          "opusLowQuota": false
+        },
+        "after": {
+          "orchestratorId": "astra",
+          "selectedOrchestratorId": "astra",
+          "orchestratorLabel": "Astra",
+          "astraRoles": {
+            "orchestrator": true,
+            "worker": true,
+            "verifier": true,
+            "reviewer": true,
+            "supervisor": false
+          },
+          "log": [
+            {
+              "at": "2023-11-14T22:13:20.000Z",
+              "text": "Planwharf switched the lead: Opus 5.5 → Astra. Why: quota of Opus 5.5 is at 12% (switch at 35%)."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "twenty-four-hour-credit-lockout",
+      "input": {
+        "category": "credit-lockout"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [
+        {
+          "operation": "mkdir",
+          "path": "<ROOT>",
+          "ok": true
+        }
+      ],
+      "effects": {
+        "orchestrator.json": "{\n  \"orchestratorId\": \"astra\",\n  \"creditsNeeded\": {\n    \"opus\": {\n      \"at\": \"2023-11-14T22:13:20.000Z\"\n    }\n  }\n}\n"
+      },
+      "result": {
+        "evaluations": [
+          {
+            "at": "2023-11-14T22:13:20.000Z",
+            "opus": {
+              "id": "opus",
+              "label": "Opus 5.5",
+              "provider": "claude",
+              "providerId": "claude",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": false,
+              "limit": 100,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": "Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.",
+              "neverUsable": true,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": null,
+              "accountType": "unread",
+              "accountScope": null,
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 100,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true,
+              "creditsNeeded": true
+            },
+            "pickedId": "astra"
+          },
+          {
+            "at": "2023-11-15T10:13:20.000Z",
+            "opus": {
+              "id": "opus",
+              "label": "Opus 5.5",
+              "provider": "claude",
+              "providerId": "claude",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": false,
+              "limit": 100,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": "Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.",
+              "neverUsable": true,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": null,
+              "accountType": "unread",
+              "accountScope": null,
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 100,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true,
+              "creditsNeeded": true
+            },
+            "pickedId": "astra"
+          },
+          {
+            "at": "2023-11-15T22:13:19.000Z",
+            "opus": {
+              "id": "opus",
+              "label": "Opus 5.5",
+              "provider": "claude",
+              "providerId": "claude",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": false,
+              "limit": 100,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": "Needs usage credits: your plan no longer includes this model. Buy credits, or leave it out; Look for models again checks it again.",
+              "neverUsable": true,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": null,
+              "accountType": "unread",
+              "accountScope": null,
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 100,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true,
+              "creditsNeeded": true
+            },
+            "pickedId": "astra"
+          },
+          {
+            "at": "2023-11-15T22:13:20.000Z",
+            "opus": {
+              "id": "opus",
+              "label": "Opus 5.5",
+              "provider": "claude",
+              "providerId": "claude",
+              "adapter": "claude",
+              "cli": "claude-opus-5-5",
+              "plan": "claude",
+              "quotaPoolId": "claude",
+              "kind": "premium",
+              "enabled": true,
+              "available": true,
+              "limit": 100,
+              "capabilities": {
+                "canUseTools": true,
+                "canInspectFilesystem": true,
+                "canCode": true
+              },
+              "unavailableReason": null,
+              "neverUsable": false,
+              "availabilityWarning": null,
+              "cost": 1,
+              "accountKey": null,
+              "accountType": "unread",
+              "accountScope": null,
+              "settingsFolder": null,
+              "planStatus": "unknown",
+              "providerEnabled": true,
+              "policy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false
+              },
+              "fallbackProviderId": null,
+              "policyScope": "claude",
+              "alwaysApprove": false,
+              "usagePolicy": {
+                "minRemainingPercent": null,
+                "warningRemainingPercent": null,
+                "fallbackModelId": null,
+                "alwaysApprove": false,
+                "remainingPercent": null,
+                "usedPercent": null,
+                "blocked": false,
+                "state": "ok",
+                "reason": null
+              },
+              "quotaWindows": {
+                "fiveHour": null,
+                "weekly": null
+              },
+              "quotaLimit": {
+                "none": false,
+                "fiveHourPercent": 35,
+                "weeklyPercent": 35,
+                "custom": false,
+                "source": "general",
+                "pool": "claude"
+              },
+              "lowQuota": false,
+              "leadTier": 0,
+              "weight": "premium",
+              "weightSource": "lineup",
+              "modelClass": "flagship",
+              "used": 0,
+              "remaining": 100,
+              "roleEligibility": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "roles": {
+                "orchestrator": true,
+                "worker": true,
+                "verifier": true,
+                "reviewer": true,
+                "supervisor": false
+              },
+              "leadAllowed": true
+            },
+            "pickedId": "opus"
+          }
+        ]
+      }
+    },
+    {
+      "name": "saving-mode-candidate-filtering",
+      "input": {
+        "category": "saving-mode"
+      },
+      "requests": [],
+      "replies": [],
+      "events": [],
+      "fileEffects": [],
+      "effects": {},
+      "result": {
+        "normal": {
+          "allowed": {
+            "opus": true,
+            "sonnet": true,
+            "haiku": true
+          },
+          "picked": {
+            "id": "opus",
+            "label": "Opus 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-opus-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "premium",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 0,
+            "weight": "premium",
+            "weightSource": "lineup",
+            "modelClass": "flagship",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true,
+            "index": 0,
+            "why": "build job · Opus 5.5 on claude; user catalog order"
+          },
+          "crewIds": [
+            "opus",
+            "sonnet"
+          ]
+        },
+        "safe": {
+          "allowed": {
+            "opus": false,
+            "sonnet": true,
+            "haiku": true
+          },
+          "picked": {
+            "id": "sonnet",
+            "label": "Sonnet 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-sonnet-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "default",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 1,
+            "weight": "default",
+            "weightSource": "lineup",
+            "modelClass": "mid",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true,
+            "index": 1,
+            "why": "build job · Sonnet 5.5 on claude; user catalog order"
+          },
+          "crewIds": [
+            "sonnet",
+            "haiku"
+          ]
+        },
+        "ultraSafe": {
+          "allowed": {
+            "opus": false,
+            "sonnet": false,
+            "haiku": true
+          },
+          "picked": {
+            "id": "haiku",
+            "label": "Haiku 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-haiku-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "local",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 2,
+            "weight": "light",
+            "weightSource": "lineup",
+            "modelClass": "light",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true,
+            "index": 2,
+            "why": "build job · Haiku 5.5 on claude; user catalog order"
+          },
+          "crewIds": [
+            "haiku"
+          ]
+        },
+        "teamWeightOverride": {
+          "allowed": {
+            "opus": false,
+            "sonnet": false,
+            "haiku": true
+          },
+          "picked": {
+            "id": "haiku",
+            "label": "Haiku 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-haiku-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "local",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 2,
+            "weight": "light",
+            "weightSource": "lineup",
+            "modelClass": "light",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true,
+            "index": 2,
+            "why": "build job · Haiku 5.5 on claude; user catalog order"
+          },
+          "crewIds": [
+            "haiku"
+          ]
+        },
+        "modelsAfterOverride": [
+          {
+            "id": "opus",
+            "label": "Opus 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-opus-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "premium",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 0,
+            "weight": "premium",
+            "weightSource": "lineup",
+            "modelClass": "flagship",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true
+          },
+          {
+            "id": "sonnet",
+            "label": "Sonnet 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-sonnet-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "default",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 1,
+            "weight": "premium",
+            "weightSource": "team",
+            "modelClass": "flagship",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": true,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true
+          },
+          {
+            "id": "haiku",
+            "label": "Haiku 5.5",
+            "provider": "claude",
+            "providerId": "claude",
+            "adapter": "claude",
+            "cli": "claude-haiku-5-5",
+            "plan": "claude",
+            "quotaPoolId": "claude",
+            "kind": "local",
+            "enabled": true,
+            "available": true,
+            "limit": 100,
+            "capabilities": {
+              "canUseTools": true,
+              "canInspectFilesystem": true,
+              "canCode": true
+            },
+            "unavailableReason": null,
+            "neverUsable": false,
+            "availabilityWarning": null,
+            "cost": 1,
+            "accountKey": null,
+            "accountType": "unread",
+            "accountScope": null,
+            "settingsFolder": null,
+            "planStatus": "unknown",
+            "providerEnabled": true,
+            "policy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false
+            },
+            "fallbackProviderId": null,
+            "policyScope": "claude",
+            "alwaysApprove": false,
+            "usagePolicy": {
+              "minRemainingPercent": null,
+              "warningRemainingPercent": null,
+              "fallbackModelId": null,
+              "alwaysApprove": false,
+              "remainingPercent": null,
+              "usedPercent": null,
+              "blocked": false,
+              "state": "ok",
+              "reason": null
+            },
+            "quotaWindows": {
+              "fiveHour": null,
+              "weekly": null
+            },
+            "quotaLimit": {
+              "none": false,
+              "fiveHourPercent": 35,
+              "weeklyPercent": 35,
+              "custom": false,
+              "source": "general",
+              "pool": "claude"
+            },
+            "lowQuota": false,
+            "leadTier": 2,
+            "weight": "light",
+            "weightSource": "lineup",
+            "modelClass": "light",
+            "used": 0,
+            "remaining": 100,
+            "roleEligibility": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "roles": {
+              "orchestrator": false,
+              "worker": true,
+              "verifier": true,
+              "reviewer": true,
+              "supervisor": false
+            },
+            "leadAllowed": true
+          }
+        ]
+      }
+    }
+  ]
+}
