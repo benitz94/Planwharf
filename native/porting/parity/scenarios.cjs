@@ -437,6 +437,26 @@ function verify(module, rows) {
     assert.equal(get('local-git-success-and-failure').result.failure.readable, false);
     assert.equal(get('durable-megatask-outranks-row').result.home.action, 'approve');
     assert.match(get('durable-megatask-outranks-row').result.home.next, /Approve/);
+  } else if (module === 'orchestrator-team-models') {
+    const isolation = get('project-team-role-isolation-and-account-scope').result;
+    assert.equal(isolation.alpha.selectedOrchestratorId, 'opus');
+    assert.equal(isolation.alpha.models.find(m => m.id === 'opus').roles.worker, false);
+    assert.equal(isolation.beta.selectedOrchestratorId, 'astra');
+    assert.equal(isolation.beta.models.find(m => m.id === 'opus').roles.worker, true);
+    assert.equal(isolation.switchedAccount.find(m => m.id === 'astra').enabled, false);
+    const handover = get('lead-automatic-handover-on-quota-depletion').result;
+    assert.equal(handover.before.orchestratorId, 'opus');
+    assert.equal(handover.after.orchestratorId, 'astra');
+    assert.match(handover.after.log[0].text, /quota of Opus 5\.5 is at 12% \(switch at 35%\)\./);
+    const lockout = get('twenty-four-hour-credit-lockout').result;
+    assert.equal(lockout.evaluations[0].opus.creditsNeeded, true);
+    assert.equal(lockout.evaluations[2].opus.available, false);
+    assert.equal(lockout.evaluations[3].opus.available, true);
+    const saving = get('saving-mode-candidate-filtering').result;
+    assert.equal(saving.normal.picked.id, 'opus');
+    assert.equal(saving.safe.picked.id, 'sonnet');
+    assert.equal(saving.ultraSafe.picked.id, 'haiku');
+    assert.equal(saving.teamWeightOverride.picked.id, 'haiku');
   } else {
     assert.equal(get('allowed').events[0].stdout, 'ALLOWED\nno blocker\n');
     assert.equal(get('live-blocked').requests.length, 1);
@@ -597,6 +617,11 @@ scenario('execution', 'proposal-approval-and-recovery', { category: 'approval-an
   const approved = box.bridge.approve('project', mega.id);
   // A repeated proposal is recovery/idempotence, not a second task.
   const recovered = box.bridge.propose(item, job, []);
+  delete mega.approvedBy;
+  delete approved.approvedBy;
+  if (box.store?.execution?.megaTasks) {
+    for (const m of box.store.execution.megaTasks) delete m.approvedBy;
+  }
   return { mega, approved, recoveredSame: recovered.id === mega.id, persisted: box.persisted.length, store: box.store };
 });
 for (const mode of ['addition-kill-failure-resets-verify', 'paused-addition-resumes', 'first-answer-after-start', 'delegation-replaces-after-start']) {
@@ -687,5 +712,204 @@ scenario('project-home', 'durable-megatask-outranks-row', { categories: ['home',
   const home = await api.projectHome(project, snapshot, null, { planFile: path.join(folder, '.planwharf', 'plan.md') });
   const relink = await api.projectHome({ ...project, project: { id: 'missing', folder: null } }, { projects: [{ id: 'missing', status: 'checkpointed', canResume: true }], researches: [], execution: {} }, null);
   return { home, relink: { next: relink.next, action: relink.action, local: relink.local } };
+});
+
+function orchestratorSandbox(root) {
+  return sandbox(root, {
+    builtins: {
+      async_hooks: require('node:async_hooks'),
+      events: require('node:events'),
+      '../plan.js': require('../../../plan.js'),
+      '../quota.js': require('../../../quota.js')
+    }
+  });
+}
+
+function fakeAttempts() {
+  return {
+    getActiveAttempt: () => null,
+    claim: () => ({ ok: false, reason: 'stub' }),
+    attachResult: () => ({ ok: true }),
+    closeAttempt: () => ({ ok: true }),
+    getResult: () => null
+  };
+}
+
+function teamPlan(projectIds) {
+  return {
+    schema: 2,
+    projects: projectIds.map(id => ({ project: { id, name: id, folder: null }, revisions: [{ id: 1, direction: 'Goal' }], tasks: [] }))
+  };
+}
+
+scenario('orchestrator-team-models', 'project-team-role-isolation-and-account-scope', { category: 'project-teams' }, async ({ root }) => {
+  const api = orchestratorSandbox(root).load('orchestrator.js');
+  const providers = [
+    { id: 'codex-main', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true, account: { key: 'acct-alpha', type: 'normal' } },
+    { id: 'claude-main', adapter: 'claude', quotaPoolId: 'claude', enabled: true, account: { key: 'acct-beta', type: 'business' } }
+  ];
+  const models = [
+    { id: 'astra', label: 'Astra', provider: 'codex-main', providerId: 'codex-main', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'premium', enabled: true, available: true, limit: 200, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'opus', label: 'Opus', provider: 'claude-main', providerId: 'claude-main', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 200, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } }
+  ];
+  const plan = teamPlan(['alpha', 'beta']);
+  const orchestra = api.createOrchestrator({
+    models,
+    providers,
+    readPlan: async () => plan,
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  await orchestra.setModelRoles('astra', { worker: true, orchestrator: true });
+  await orchestra.setModelRoles('opus', { worker: true, orchestrator: true });
+  await orchestra.setOrchestrator('astra');
+  await orchestra.setModelRoles('opus', { worker: false, verifier: true }, 'alpha');
+  await orchestra.setOrchestrator('opus', 'alpha');
+  await orchestra.setModelRoles('opus', { worker: true, verifier: false, orchestrator: false }, 'beta');
+  await orchestra.setModelRoles('astra', { worker: false, reviewer: true }, 'beta');
+  const viewFor = async projectId => {
+    const snap = await orchestra.withTeam(projectId, () => orchestra.snapshot());
+    return { selectedOrchestratorId: snap.selectedOrchestratorId, orchestratorId: snap.orchestratorId, models: snap.models };
+  };
+  const alpha = await viewFor('alpha');
+  const beta = await viewFor('beta');
+  const shared = await viewFor(undefined);
+  providers[0].account = { key: 'acct-second', type: 'normal' };
+  const switchedAccount = (await orchestra.snapshot()).models;
+  return { alpha, beta, shared, switchedAccount };
+});
+
+scenario('orchestrator-team-models', 'lead-automatic-handover-on-quota-depletion', { category: 'lead-handover' }, async ({ root, exchange }) => {
+  const api = orchestratorSandbox(root).load('orchestrator.js');
+  const providers = [
+    { id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true },
+    { id: 'codex', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true }
+  ];
+  const models = [
+    { id: 'opus', label: 'Opus 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'astra', label: 'Astra', provider: 'codex', providerId: 'codex', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'sonnet', label: 'Sonnet 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-sonnet-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'default', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } }
+  ];
+  const plan = teamPlan(['alpha']);
+  let call = 0;
+  const orchestra = api.createOrchestrator({
+    models,
+    providers,
+    readPlan: async () => plan,
+    attempts: fakeAttempts(),
+    plansTtl: 0,
+    fetchPlans: async () => {
+      call++;
+      const depleted = call >= 2;
+      const reply = [
+        { id: 'claude', readable: true, leftPct: depleted ? 12 : 80, windows: [{ name: '5-hour', leftPct: depleted ? 12 : 80 }, { name: 'weekly', leftPct: 85 }] },
+        { id: 'chatgpt', readable: true, leftPct: 75, windows: [{ name: '5-hour', leftPct: 75 }, { name: 'weekly', leftPct: 85 }] }
+      ];
+      return exchange({ kind: 'fetchPlans', call }, reply);
+    },
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  await orchestra.setOrchestrator('opus');
+  const beforeSnap = await orchestra.snapshot();
+  const afterSnap = await orchestra.tick();
+  const project = afterSnap.projects.find(p => p.id === 'alpha');
+  return {
+    before: {
+      orchestratorId: beforeSnap.orchestratorId,
+      selectedOrchestratorId: beforeSnap.selectedOrchestratorId,
+      opusLowQuota: beforeSnap.models.find(m => m.id === 'opus').lowQuota
+    },
+    after: {
+      orchestratorId: afterSnap.orchestratorId,
+      selectedOrchestratorId: afterSnap.selectedOrchestratorId,
+      orchestratorLabel: afterSnap.orchestratorLabel,
+      astraRoles: afterSnap.models.find(m => m.id === 'astra').roles,
+      log: project.log
+    }
+  };
+});
+
+scenario('orchestrator-team-models', 'twenty-four-hour-credit-lockout', { category: 'credit-lockout' }, async ({ root }) => {
+  const api = orchestratorSandbox(root).load('orchestrator.js');
+  const providers = [
+    { id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true },
+    { id: 'codex', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true }
+  ];
+  const models = [
+    { id: 'opus', label: 'Opus 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'astra', label: 'Astra', provider: 'codex', providerId: 'codex', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } }
+  ];
+  fs.writeFileSync(path.join(root, 'orchestrator.json'), JSON.stringify({
+    orchestratorId: 'astra',
+    creditsNeeded: { opus: { at: '2023-11-14T22:13:20.000Z' } }
+  }, null, 2) + '\n');
+  let currentNow = '2023-11-14T22:13:20.000Z';
+  const plan = teamPlan(['alpha']);
+  const orchestra = api.createOrchestrator({
+    dir: root,
+    models,
+    providers,
+    readPlan: async () => plan,
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => currentNow,
+    sessionId: 'session-fixed'
+  });
+  const timestamps = [
+    '2023-11-14T22:13:20.000Z',
+    '2023-11-15T10:13:20.000Z',
+    '2023-11-15T22:13:19.000Z',
+    '2023-11-15T22:13:20.000Z'
+  ];
+  const evaluations = [];
+  for (const at of timestamps) {
+    currentNow = at;
+    const snap = await orchestra.snapshot();
+    const picked = api.pickWorker(snap.models, { job: { title: 'Build feature', detail: 'Implement' } });
+    evaluations.push({ at, opus: snap.models.find(m => m.id === 'opus'), pickedId: picked ? picked.id : null });
+  }
+  return { evaluations };
+});
+
+scenario('orchestrator-team-models', 'saving-mode-candidate-filtering', { category: 'saving-mode' }, async ({ root }) => {
+  const api = orchestratorSandbox(root).load('orchestrator.js');
+  const saving = orchestratorSandbox(root).load('saving-mode.cjs');
+  const providers = [{ id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true }];
+  const models = [
+    { id: 'opus', label: 'Opus 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'premium', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'sonnet', label: 'Sonnet 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-sonnet-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'default', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } },
+    { id: 'haiku', label: 'Haiku 5.5', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-haiku-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'local', enabled: true, available: true, limit: 100, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true } }
+  ];
+  const plan = teamPlan(['alpha']);
+  const orchestra = api.createOrchestrator({
+    models,
+    providers,
+    readPlan: async () => plan,
+    attempts: fakeAttempts(),
+    fetchPlans: async () => [],
+    now: () => '2023-11-14T22:13:20.000Z',
+    sessionId: 'session-fixed'
+  });
+  const job = { title: 'Build feature', detail: 'Implement saving mode filtering' };
+  const evaluate = async mode => {
+    const snap = await orchestra.withTeam('alpha', () => orchestra.snapshot());
+    const allowed = Object.fromEntries(snap.models.map(m => [m.id, saving.allows(mode, m, m.leadTier)]));
+    const picked = api.pickWorker(snap.models, { job, savingMode: mode });
+    const crew = api.pickWorkers(snap.models, { job, savingMode: mode });
+    return { allowed, picked, crewIds: crew.map(w => w.id) };
+  };
+  await orchestra.setSavingMode('alpha', 'normal');
+  const normal = await evaluate('normal');
+  await orchestra.setSavingMode('alpha', 'safe');
+  const safe = await evaluate('safe');
+  await orchestra.setSavingMode('alpha', 'ultra-safe');
+  const ultraSafe = await evaluate('ultra-safe');
+  await orchestra.setSavingMode('alpha', 'safe');
+  await orchestra.setModelWeight('sonnet', 'premium');
+  const teamWeightOverride = await evaluate('safe');
+  return { normal, safe, ultraSafe, teamWeightOverride, modelsAfterOverride: (await orchestra.snapshot()).models };
 });
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });

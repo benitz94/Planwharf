@@ -62,5 +62,6 @@
       "project-home": 2
     }
   },
-  "orchestrator-order-parsing": { "minCases": 50 }
+  "orchestrator-order-parsing": { "minCases": 50 },
+  "orchestrator-team-models": { "minCases": 50 }
 }

@@ -15,6 +15,7 @@ public class ScenarioParityTests
 
     public static TheoryData<string> ExecutionScenarios => GetScenarios("execution");
     public static TheoryData<string> ProjectHomeScenarios => GetScenarios("project-home");
+    public static TheoryData<string> OrchestratorTeamModelsScenarios => GetScenarios("orchestrator-team-models");
 
     [Theory]
     [MemberData(nameof(ProjectHomeScenarios))]
@@ -63,6 +64,255 @@ public class ScenarioParityTests
             AssertOutcome(sc, Normalize(result, root), null, GetEffects(root), exchange);
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [MemberData(nameof(OrchestratorTeamModelsScenarios))]
+    public void Replay_OrchestratorTeamModels_Scenarios(string name)
+    {
+        var root = Path.Combine(FindScenariosFolder(), ".verify-" + Guid.NewGuid());
+        Directory.CreateDirectory(root);
+        try
+        {
+            var sc = GetScenario("orchestrator-team-models", name);
+            var exchange = new Exchange(sc["requests"]!.AsArray(), sc["replies"]!.AsArray(), root);
+            JsonNode? result = null;
+            string? error = null;
+            try { result = RunOrchestratorTeamModelsScenario(name, root, exchange); }
+            catch (InvalidOperationException ex) { error = ex.Message; }
+            AssertOutcome(sc, Normalize(result, root), error, GetEffects(root), exchange);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    private static JsonObject RunOrchestratorTeamModelsScenario(string name, string root, Exchange exchange)
+    {
+        if (name == "project-team-role-isolation-and-account-scope")
+        {
+            var providers = JsonNode.Parse("""
+                [
+                  {"id":"codex-main","adapter":"codex","quotaPoolId":"chatgpt","enabled":true,"account":{"key":"acct-alpha","type":"normal"}},
+                  {"id":"claude-main","adapter":"claude","quotaPoolId":"claude","enabled":true,"account":{"key":"acct-beta","type":"business"}}
+                ]
+                """)!.AsArray();
+            var models = JsonNode.Parse("""
+                [
+                  {"id":"astra","label":"Astra","provider":"codex-main","providerId":"codex-main","adapter":"codex","cli":"gpt-6-astra","plan":"chatgpt","quotaPoolId":"chatgpt","kind":"premium","enabled":true,"available":true,"limit":200,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"opus","label":"Opus","provider":"claude-main","providerId":"claude-main","adapter":"claude","cli":"claude-opus-5-5","plan":"claude","quotaPoolId":"claude","kind":"premium","enabled":true,"available":true,"limit":200,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}}
+                ]
+                """)!.AsArray();
+            var store = new JsonObject();
+            TeamRosterContext Ctx(string? projectId) => new()
+            {
+                Models = models,
+                Store = store,
+                ProviderDefinitions = providers,
+                PlansLive = new JsonArray(),
+                CurrentProjectId = projectId is null ? null : () => projectId,
+                Now = () => "2023-11-14T22:13:20.000Z"
+            };
+            Assert.True(OrchestratorTeamModels.SetModelRoles(Ctx(null), "astra", EObj("""{"worker":true,"orchestrator":true}"""))["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetModelRoles(Ctx(null), "opus", EObj("""{"worker":true,"orchestrator":true}"""))["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetOrchestrator(Ctx(null), "astra")["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetModelRoles(Ctx(null), "opus", EObj("""{"worker":false,"verifier":true}"""), "alpha")["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetOrchestrator(Ctx(null), "opus", "alpha")["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetModelRoles(Ctx(null), "opus", EObj("""{"worker":true,"verifier":false,"orchestrator":false}"""), "beta")["ok"]!.GetValue<bool>());
+            Assert.True(OrchestratorTeamModels.SetModelRoles(Ctx(null), "astra", EObj("""{"worker":false,"reviewer":true}"""), "beta")["ok"]!.GetValue<bool>());
+
+            JsonObject ViewFor(string? projectId)
+            {
+                var c = Ctx(projectId);
+                var roster = OrchestratorTeamModels.BuildRoster(c);
+                var lead = OrchestratorTeamModels.SelectLead(c);
+                var selectedId = projectId is not null && store["projectTeams"]?[projectId] is JsonObject team
+                    ? team["orchestratorId"]?.DeepClone()
+                    : store["orchestratorId"]?.DeepClone();
+                return new JsonObject
+                {
+                    ["selectedOrchestratorId"] = selectedId,
+                    ["orchestratorId"] = lead?["id"]?.DeepClone(),
+                    ["models"] = roster
+                };
+            }
+
+            var alpha = ViewFor("alpha");
+            var beta = ViewFor("beta");
+            var shared = ViewFor(null);
+            providers[0]!.AsObject()["account"] = EObj("""{"key":"acct-second","type":"normal"}""");
+            var switchedAccount = OrchestratorTeamModels.BuildRoster(Ctx(null));
+            return new JsonObject
+            {
+                ["alpha"] = alpha,
+                ["beta"] = beta,
+                ["shared"] = shared,
+                ["switchedAccount"] = switchedAccount
+            };
+        }
+
+        if (name == "lead-automatic-handover-on-quota-depletion")
+        {
+            var providers = JsonNode.Parse("""
+                [
+                  {"id":"claude","adapter":"claude","quotaPoolId":"claude","enabled":true},
+                  {"id":"codex","adapter":"codex","quotaPoolId":"chatgpt","enabled":true}
+                ]
+                """)!.AsArray();
+            var models = JsonNode.Parse("""
+                [
+                  {"id":"opus","label":"Opus 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-opus-5-5","plan":"claude","quotaPoolId":"claude","kind":"premium","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"astra","label":"Astra","provider":"codex","providerId":"codex","adapter":"codex","cli":"gpt-6-astra","plan":"chatgpt","quotaPoolId":"chatgpt","kind":"premium","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"sonnet","label":"Sonnet 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-sonnet-5-5","plan":"claude","quotaPoolId":"claude","kind":"default","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}}
+                ]
+                """)!.AsArray();
+            var store = EObj("""{"projects":{"alpha":{}}}""");
+            TeamRosterContext Ctx(JsonArray plans) => new()
+            {
+                Models = models,
+                Store = store,
+                ProviderDefinitions = providers,
+                PlansLive = plans,
+                Now = () => "2023-11-14T22:13:20.000Z"
+            };
+            Assert.True(OrchestratorTeamModels.SetOrchestrator(Ctx(new JsonArray()), "opus")["ok"]!.GetValue<bool>());
+            var plans1 = exchange.Call(new JsonObject { ["kind"] = "fetchPlans", ["call"] = 1 }).AsArray();
+            var beforeRoster = OrchestratorTeamModels.BuildRoster(Ctx(plans1));
+            var beforeLead = OrchestratorTeamModels.SelectLead(Ctx(plans1));
+            var beforeSelectedId = store["orchestratorId"]?.DeepClone();
+            var plans2 = exchange.Call(new JsonObject { ["kind"] = "fetchPlans", ["call"] = 2 }).AsArray();
+            var afterLead = OrchestratorTeamModels.SelectLead(Ctx(plans2));
+            var afterRoster = OrchestratorTeamModels.BuildRoster(Ctx(plans2));
+            var astra = afterRoster.OfType<JsonObject>().First(m => m["id"]!.GetValue<string>() == "astra");
+            var opusBefore = beforeRoster.OfType<JsonObject>().First(m => m["id"]!.GetValue<string>() == "opus");
+            return new JsonObject
+            {
+                ["before"] = new JsonObject
+                {
+                    ["orchestratorId"] = beforeLead?["id"]?.DeepClone(),
+                    ["selectedOrchestratorId"] = beforeSelectedId,
+                    ["opusLowQuota"] = opusBefore["lowQuota"]?.DeepClone()
+                },
+                ["after"] = new JsonObject
+                {
+                    ["orchestratorId"] = afterLead?["id"]?.DeepClone(),
+                    ["selectedOrchestratorId"] = store["orchestratorId"]?.DeepClone(),
+                    ["orchestratorLabel"] = afterLead?["label"]?.DeepClone(),
+                    ["astraRoles"] = astra["roles"]?.DeepClone(),
+                    ["log"] = store["projects"]!["alpha"]!["log"]?.DeepClone()
+                }
+            };
+        }
+
+        if (name == "twenty-four-hour-credit-lockout")
+        {
+            var providers = JsonNode.Parse("""
+                [
+                  {"id":"claude","adapter":"claude","quotaPoolId":"claude","enabled":true},
+                  {"id":"codex","adapter":"codex","quotaPoolId":"chatgpt","enabled":true}
+                ]
+                """)!.AsArray();
+            var models = JsonNode.Parse("""
+                [
+                  {"id":"opus","label":"Opus 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-opus-5-5","plan":"claude","quotaPoolId":"claude","kind":"premium","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"astra","label":"Astra","provider":"codex","providerId":"codex","adapter":"codex","cli":"gpt-6-astra","plan":"chatgpt","quotaPoolId":"chatgpt","kind":"premium","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}}
+                ]
+                """)!.AsArray();
+            var orchPath = Path.Combine(root, "orchestrator.json");
+            File.WriteAllText(orchPath, "{\n  \"orchestratorId\": \"astra\",\n  \"creditsNeeded\": {\n    \"opus\": {\n      \"at\": \"2023-11-14T22:13:20.000Z\"\n    }\n  }\n}\n");
+            var store = JsonNode.Parse(File.ReadAllText(orchPath))!.AsObject();
+            var timestamps = new[]
+            {
+                "2023-11-14T22:13:20.000Z",
+                "2023-11-15T10:13:20.000Z",
+                "2023-11-15T22:13:19.000Z",
+                "2023-11-15T22:13:20.000Z"
+            };
+            var evaluations = new JsonArray();
+            var job = EObj("""{"job":{"title":"Build feature","detail":"Implement"}}""");
+            foreach (var at in timestamps)
+            {
+                var ctx = new TeamRosterContext
+                {
+                    Models = models,
+                    Store = store,
+                    ProviderDefinitions = providers,
+                    PlansLive = new JsonArray(),
+                    Now = () => at
+                };
+                var roster = OrchestratorTeamModels.BuildRoster(ctx);
+                var picked = OrchestratorTeamModels.PickWorker(roster, job);
+                var opus = roster.OfType<JsonObject>().First(m => m["id"]!.GetValue<string>() == "opus");
+                evaluations.Add((JsonNode)new JsonObject
+                {
+                    ["at"] = at,
+                    ["opus"] = opus.DeepClone(),
+                    ["pickedId"] = picked?["id"]?.DeepClone()
+                });
+            }
+            return new JsonObject { ["evaluations"] = evaluations };
+        }
+
+        if (name == "saving-mode-candidate-filtering")
+        {
+            var providers = JsonNode.Parse("""
+                [{"id":"claude","adapter":"claude","quotaPoolId":"claude","enabled":true}]
+                """)!.AsArray();
+            var models = JsonNode.Parse("""
+                [
+                  {"id":"opus","label":"Opus 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-opus-5-5","plan":"claude","quotaPoolId":"claude","kind":"premium","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"sonnet","label":"Sonnet 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-sonnet-5-5","plan":"claude","quotaPoolId":"claude","kind":"default","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}},
+                  {"id":"haiku","label":"Haiku 5.5","provider":"claude","providerId":"claude","adapter":"claude","cli":"claude-haiku-5-5","plan":"claude","quotaPoolId":"claude","kind":"local","enabled":true,"available":true,"limit":100,"capabilities":{"canUseTools":true,"canInspectFilesystem":true,"canCode":true}}
+                ]
+                """)!.AsArray();
+            var store = new JsonObject();
+            TeamRosterContext Ctx(string? projectId) => new()
+            {
+                Models = models,
+                Store = store,
+                ProviderDefinitions = providers,
+                PlansLive = new JsonArray(),
+                CurrentProjectId = projectId is null ? null : () => projectId,
+                Now = () => "2023-11-14T22:13:20.000Z"
+            };
+            var job = EObj("""{"title":"Build feature","detail":"Implement saving mode filtering"}""");
+            JsonObject Evaluate(string mode)
+            {
+                var roster = OrchestratorTeamModels.BuildRoster(Ctx("alpha"));
+                var allowed = new JsonObject();
+                foreach (var m in roster.OfType<JsonObject>())
+                    allowed[m["id"]!.GetValue<string>()] = OrchestratorTeamModels.AllowedBySavingMode(mode, m);
+                var options = new JsonObject { ["job"] = job.DeepClone(), ["savingMode"] = mode };
+                var picked = OrchestratorTeamModels.PickWorker(roster, options);
+                var crew = OrchestratorTeamModels.PickWorkers(roster, options);
+                var crewIds = new JsonArray(crew.OfType<JsonObject>().Select(w => (JsonNode?)w["id"]?.DeepClone()).ToArray());
+                return new JsonObject
+                {
+                    ["allowed"] = allowed,
+                    ["picked"] = picked?.DeepClone(),
+                    ["crewIds"] = crewIds
+                };
+            }
+
+            store["savingModes"] = new JsonObject { ["alpha"] = "normal" };
+            var normal = Evaluate("normal");
+            store["savingModes"]!["alpha"] = "safe";
+            var safe = Evaluate("safe");
+            store["savingModes"]!["alpha"] = "ultra-safe";
+            var ultraSafe = Evaluate("ultra-safe");
+            store["savingModes"]!["alpha"] = "safe";
+            store["modelWeights"] = new JsonObject { ["sonnet"] = "premium" };
+            var teamWeightOverride = Evaluate("safe");
+            var modelsAfterOverride = OrchestratorTeamModels.BuildRoster(Ctx(null));
+            return new JsonObject
+            {
+                ["normal"] = normal,
+                ["safe"] = safe,
+                ["ultraSafe"] = ultraSafe,
+                ["teamWeightOverride"] = teamWeightOverride,
+                ["modelsAfterOverride"] = modelsAfterOverride
+            };
+        }
+
+        throw new InvalidOperationException("Missing orchestrator-team-models replay: " + name);
     }
 
     [Theory]

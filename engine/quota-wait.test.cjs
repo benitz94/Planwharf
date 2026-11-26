@@ -63,3 +63,40 @@ test('a problem that is not quota blocks the step with a clear message', t => {
   assert.equal(sub.status, 'BLOCKED');
   assert.match(live.nextAction, /give a model the Build role/);
 });
+
+test('checkpoint resume preserves partial work and waits for quota before launching the exact worker once', t => {
+  const { bridge, mega, item, job, parts, store, launches, state } = fixture(t);
+  const source = path.join(item.project.folder, 'partial.cs');
+  fs.writeFileSync(source, '// Valid partial work\n');
+  bridge.advance(item, job, parts);
+  bridge.stop(item, job, mega.id);
+  const cp = store.execution.checkpoints.at(-1), before = structuredClone(cp);
+  assert.equal(bridge.resume(item, job, {
+    megaTaskId: mega.id, checkpointId: cp.id, confirmChanges: true
+  }).ok, true);
+  bridge.advance(item, job, parts);
+  assert.equal(launches.length, 0, 'resume does not establish available quota');
+  assert.match(store.execution.subTasks[0].waitingFor, /Waiting for quota/);
+  state.quota = true;
+  bridge.advance(item, job, parts);
+  bridge.advance(item, job, parts);
+  assert.equal(launches.length, 1);
+  assert.equal(launches[0].worker.id, 'terra');
+  assert.equal(launches[0].worker.provider, 'codex');
+  assert.equal(launches[0].worker.cli, 'gpt-6.1-terra');
+  assert.equal(fs.readFileSync(source, 'utf8'), '// Valid partial work\n');
+  assert.deepEqual(cp, before);
+});
+
+test('checkpoint resume refuses an unknown replacement without changing state or launching work', t => {
+  const { bridge, mega, item, job, parts, store, launches } = fixture(t);
+  bridge.advance(item, job, parts);
+  bridge.stop(item, job, mega.id);
+  const cp = store.execution.checkpoints.at(-1), before = bridge.view(item.project.id);
+  assert.throws(() => bridge.resume(item, job, {
+    megaTaskId: mega.id, checkpointId: cp.id, confirmChanges: true,
+    assignments: { [before.subTasks[0].id]: 'unapproved-substitute' }
+  }), /Invalid remaining SubTask or exact worker model/);
+  assert.deepEqual(bridge.view(item.project.id), before);
+  assert.equal(launches.length, 0);
+});

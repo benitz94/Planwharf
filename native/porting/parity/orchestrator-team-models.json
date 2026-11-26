@@ -1,0 +1,2402 @@
+[
+  {
+    "fn": "normalizeModels",
+    "args": [
+      []
+    ],
+    "result": []
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        null,
+        123,
+        "bad",
+        {},
+        {
+          "label": "No ID"
+        },
+        {
+          "id": 456
+        }
+      ]
+    ],
+    "result": []
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "legacy-1",
+          "plan": "chatgpt"
+        },
+        {
+          "id": "legacy-2",
+          "label": "Custom Label",
+          "plan": "claude",
+          "enabled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "legacy-1",
+        "plan": "chatgpt",
+        "label": "legacy-1",
+        "enabled": false,
+        "available": true,
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "kind": "default",
+        "cost": 1,
+        "limit": 50
+      },
+      {
+        "id": "legacy-2",
+        "label": "Custom Label",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "kind": "default",
+        "cost": 1,
+        "limit": 50
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra",
+          "provider": "codex",
+          "cli": "gpt-5",
+          "cost": 2,
+          "limit": 100,
+          "enabled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "terra",
+        "label": "Terra",
+        "provider": "codex",
+        "cli": "gpt-5",
+        "cost": 2,
+        "limit": 100,
+        "enabled": true,
+        "available": true,
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan",
+        "kind": "default"
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "sonnet",
+          "label": "Sonnet",
+          "provider": "claude",
+          "cli": "claude-3-5-sonnet",
+          "kind": "premium",
+          "cost": 0,
+          "limit": 10
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "sonnet",
+        "label": "Sonnet",
+        "provider": "claude",
+        "cli": "claude-3-5-sonnet",
+        "kind": "premium",
+        "cost": 0,
+        "limit": 10,
+        "enabled": false,
+        "available": true,
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan"
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "local-ollama",
+          "label": "Llama",
+          "provider": "ollama",
+          "cli": "llama3:8b",
+          "kind": "local"
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "local-ollama",
+        "label": "Llama",
+        "provider": "ollama",
+        "cli": "llama3:8b",
+        "kind": "local",
+        "enabled": false,
+        "available": false,
+        "unavailableReason": "Provider/model mismatch: unsupported provider adapter ollama",
+        "neverUsable": true,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan",
+        "cost": 1,
+        "limit": 50
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "bad-route",
+          "provider": "nonexistent-adapter",
+          "cli": "some-cli",
+          "enabled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "bad-route",
+        "provider": "nonexistent-adapter",
+        "cli": "some-cli",
+        "enabled": false,
+        "label": "bad-route",
+        "available": false,
+        "unavailableReason": "Provider/model mismatch: unsupported provider adapter nonexistent-adapter",
+        "neverUsable": true,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan",
+        "kind": "default",
+        "cost": 1,
+        "limit": 50
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "bad-cli",
+          "provider": "codex",
+          "cli": "",
+          "enabled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "bad-cli",
+        "provider": "codex",
+        "enabled": false,
+        "label": "bad-cli",
+        "available": false,
+        "unavailableReason": "Provider/model mismatch: an exact nonempty CLI model ID is required for codex",
+        "neverUsable": true,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan",
+        "kind": "default",
+        "cost": 1,
+        "limit": 50
+      }
+    ]
+  },
+  {
+    "fn": "normalizeModels",
+    "args": [
+      [
+        {
+          "id": "cat-ex",
+          "catalogExcluded": true,
+          "enabled": true
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "cat-ex",
+        "catalogExcluded": true,
+        "enabled": true,
+        "label": "cat-ex",
+        "available": true,
+        "unavailableReason": null,
+        "neverUsable": true,
+        "availabilityWarning": null,
+        "plan": "Unnamed plan",
+        "kind": "default",
+        "cost": 1,
+        "limit": 50
+      }
+    ]
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 0,
+        "limit": 50
+      }
+    ],
+    "result": {
+      "used": 0,
+      "limit": 50,
+      "remaining": 50,
+      "pct": 0,
+      "leftPct": 100
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 15,
+        "limit": 50
+      }
+    ],
+    "result": {
+      "used": 15,
+      "limit": 50,
+      "remaining": 35,
+      "pct": 30,
+      "leftPct": 70
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 50,
+        "limit": 50
+      }
+    ],
+    "result": {
+      "used": 50,
+      "limit": 50,
+      "remaining": 0,
+      "pct": 100,
+      "leftPct": 0
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 60,
+        "limit": 50
+      }
+    ],
+    "result": {
+      "used": 60,
+      "limit": 50,
+      "remaining": 0,
+      "pct": 100,
+      "leftPct": 0
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 10,
+        "limit": 100,
+        "remaining": 85
+      }
+    ],
+    "result": {
+      "used": 10,
+      "limit": 100,
+      "remaining": 85,
+      "pct": 10,
+      "leftPct": 90
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 5,
+        "limit": 0
+      }
+    ],
+    "result": {
+      "used": 5,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 0,
+      "leftPct": 100
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {
+        "used": 25,
+        "limit": 100
+      }
+    ],
+    "result": {
+      "used": 25,
+      "limit": 100,
+      "remaining": 75,
+      "pct": 25,
+      "leftPct": 75
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      {}
+    ],
+    "result": {
+      "used": 0,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 0,
+      "leftPct": 100
+    }
+  },
+  {
+    "fn": "usageOf",
+    "args": [
+      null
+    ],
+    "result": {
+      "used": 0,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 0,
+      "leftPct": 100
+    }
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "claude-3-7-fable"
+      }
+    ],
+    "result": 0
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "label": "Anthropic Fable 1.0"
+      }
+    ],
+    "result": 0
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "claude-3-opus"
+      }
+    ],
+    "result": 0
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "cli": "claude-opus-4-6-thinking"
+      }
+    ],
+    "result": 0
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "claude-3-5-sonnet"
+      }
+    ],
+    "result": 1
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "label": "Sonnet 3.5"
+      }
+    ],
+    "result": 1
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "claude-3-5-haiku"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "haiku-latest"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "flagship-gpt",
+        "kind": "premium"
+      }
+    ],
+    "result": 0
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "local-llama",
+        "kind": "local"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "std-model",
+        "kind": "default"
+      }
+    ],
+    "result": 1
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "gemini-flash"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "gpt-4o-mini"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "luna-v1"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "custom-lite-model"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "deepseek-nano"
+      }
+    ],
+    "result": 2
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      {
+        "id": "unknown-model"
+      }
+    ],
+    "result": 1
+  },
+  {
+    "fn": "leadTier",
+    "args": [
+      null
+    ],
+    "result": 1
+  },
+  {
+    "fn": "leadRanking",
+    "args": [
+      [
+        {
+          "id": "opus-3",
+          "label": "Claude 3 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "opus-4",
+          "label": "Claude 4 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "fable-1",
+          "label": "Claude 1 Fable",
+          "plan": "claude"
+        },
+        {
+          "id": "sonnet-3-5",
+          "label": "Claude 3.5 Sonnet",
+          "plan": "claude"
+        },
+        {
+          "id": "haiku-3-5",
+          "label": "Claude 3.5 Haiku",
+          "plan": "claude"
+        },
+        {
+          "id": "gemini-flash",
+          "label": "Gemini Flash",
+          "plan": "gemini"
+        },
+        {
+          "id": "terra",
+          "label": "GPT-6 Terra",
+          "kind": "premium",
+          "plan": "chatgpt"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "fable-1",
+        "label": "Claude 1 Fable",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-4",
+        "label": "Claude 4 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-3",
+        "label": "Claude 3 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "terra",
+        "label": "GPT-6 Terra",
+        "kind": "premium",
+        "plan": "chatgpt"
+      },
+      {
+        "id": "sonnet-3-5",
+        "label": "Claude 3.5 Sonnet",
+        "plan": "claude"
+      },
+      {
+        "id": "gemini-flash",
+        "label": "Gemini Flash",
+        "plan": "gemini"
+      },
+      {
+        "id": "haiku-3-5",
+        "label": "Claude 3.5 Haiku",
+        "plan": "claude"
+      }
+    ]
+  },
+  {
+    "fn": "leadRanking",
+    "args": [
+      [
+        {
+          "id": "opus-3",
+          "label": "Claude 3 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "opus-4",
+          "label": "Claude 4 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "fable-1",
+          "label": "Claude 1 Fable",
+          "plan": "claude"
+        },
+        {
+          "id": "sonnet-3-5",
+          "label": "Claude 3.5 Sonnet",
+          "plan": "claude"
+        },
+        {
+          "id": "haiku-3-5",
+          "label": "Claude 3.5 Haiku",
+          "plan": "claude"
+        },
+        {
+          "id": "gemini-flash",
+          "label": "Gemini Flash",
+          "plan": "gemini"
+        },
+        {
+          "id": "terra",
+          "label": "GPT-6 Terra",
+          "kind": "premium",
+          "plan": "chatgpt"
+        }
+      ],
+      []
+    ],
+    "result": [
+      {
+        "id": "fable-1",
+        "label": "Claude 1 Fable",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-4",
+        "label": "Claude 4 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-3",
+        "label": "Claude 3 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "terra",
+        "label": "GPT-6 Terra",
+        "kind": "premium",
+        "plan": "chatgpt"
+      },
+      {
+        "id": "sonnet-3-5",
+        "label": "Claude 3.5 Sonnet",
+        "plan": "claude"
+      },
+      {
+        "id": "haiku-3-5",
+        "label": "Claude 3.5 Haiku",
+        "plan": "claude"
+      },
+      {
+        "id": "gemini-flash",
+        "label": "Gemini Flash",
+        "plan": "gemini"
+      }
+    ]
+  },
+  {
+    "fn": "leadRanking",
+    "args": [
+      [
+        {
+          "id": "custom-flag",
+          "label": "Custom Flag",
+          "kind": "premium"
+        },
+        {
+          "id": "custom-mid",
+          "label": "Custom Mid",
+          "kind": "default"
+        },
+        {
+          "id": "custom-local",
+          "label": "Custom Local",
+          "kind": "local"
+        },
+        {
+          "id": "luna",
+          "label": "Luna Light"
+        }
+      ],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "custom-flag",
+        "label": "Custom Flag",
+        "kind": "premium"
+      },
+      {
+        "id": "custom-mid",
+        "label": "Custom Mid",
+        "kind": "default"
+      },
+      {
+        "id": "custom-local",
+        "label": "Custom Local",
+        "kind": "local"
+      },
+      {
+        "id": "luna",
+        "label": "Luna Light"
+      }
+    ]
+  },
+  {
+    "fn": "leadRanking",
+    "args": [
+      [],
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": []
+  },
+  {
+    "fn": "leadRanking",
+    "args": [
+      null,
+      [
+        {
+          "id": "chatgpt",
+          "readable": true,
+          "leftPct": 12,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 69
+            },
+            {
+              "name": "weekly",
+              "leftPct": 12
+            }
+          ]
+        },
+        {
+          "id": "claude",
+          "readable": true,
+          "leftPct": 60,
+          "windows": [
+            {
+              "name": "5-hour",
+              "leftPct": 60
+            },
+            {
+              "name": "weekly",
+              "leftPct": 81
+            }
+          ]
+        },
+        {
+          "id": "gemini",
+          "readable": true,
+          "leftPct": 98
+        },
+        {
+          "id": "grok",
+          "readable": false
+        },
+        {
+          "id": "empty",
+          "readable": true,
+          "exhausted": true,
+          "leftPct": 0
+        }
+      ]
+    ],
+    "result": []
+  },
+  {
+    "fn": "leadQuality",
+    "args": [
+      [
+        {
+          "id": "opus-3",
+          "label": "Claude 3 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "opus-4",
+          "label": "Claude 4 Opus",
+          "plan": "claude"
+        },
+        {
+          "id": "fable-1",
+          "label": "Claude 1 Fable",
+          "plan": "claude"
+        },
+        {
+          "id": "sonnet-3-5",
+          "label": "Claude 3.5 Sonnet",
+          "plan": "claude"
+        },
+        {
+          "id": "haiku-3-5",
+          "label": "Claude 3.5 Haiku",
+          "plan": "claude"
+        },
+        {
+          "id": "gemini-flash",
+          "label": "Gemini Flash",
+          "plan": "gemini"
+        },
+        {
+          "id": "terra",
+          "label": "GPT-6 Terra",
+          "kind": "premium",
+          "plan": "chatgpt"
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "fable-1",
+        "label": "Claude 1 Fable",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-4",
+        "label": "Claude 4 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "opus-3",
+        "label": "Claude 3 Opus",
+        "plan": "claude"
+      },
+      {
+        "id": "terra",
+        "label": "GPT-6 Terra",
+        "kind": "premium",
+        "plan": "chatgpt"
+      },
+      {
+        "id": "sonnet-3-5",
+        "label": "Claude 3.5 Sonnet",
+        "plan": "claude"
+      },
+      {
+        "id": "haiku-3-5",
+        "label": "Claude 3.5 Haiku",
+        "plan": "claude"
+      },
+      {
+        "id": "gemini-flash",
+        "label": "Gemini Flash",
+        "plan": "gemini"
+      }
+    ]
+  },
+  {
+    "fn": "leadQuality",
+    "args": [
+      [
+        {
+          "id": "custom-flag",
+          "label": "Custom Flag",
+          "kind": "premium"
+        },
+        {
+          "id": "custom-mid",
+          "label": "Custom Mid",
+          "kind": "default"
+        },
+        {
+          "id": "custom-local",
+          "label": "Custom Local",
+          "kind": "local"
+        },
+        {
+          "id": "luna",
+          "label": "Luna Light"
+        }
+      ]
+    ],
+    "result": [
+      {
+        "id": "custom-flag",
+        "label": "Custom Flag",
+        "kind": "premium"
+      },
+      {
+        "id": "custom-mid",
+        "label": "Custom Mid",
+        "kind": "default"
+      },
+      {
+        "id": "custom-local",
+        "label": "Custom Local",
+        "kind": "local"
+      },
+      {
+        "id": "luna",
+        "label": "Luna Light"
+      }
+    ]
+  },
+  {
+    "fn": "leadQuality",
+    "args": [
+      []
+    ],
+    "result": []
+  },
+  {
+    "fn": "leadQuality",
+    "args": [
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Implement feature",
+          "detail": "Write code"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Verify tests",
+          "detail": "Check edge cases",
+          "kind": "verify"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Review pull request",
+          "detail": "Check standards",
+          "kind": "review"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Research docs",
+          "detail": "Find facts",
+          "kind": "research"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build",
+          "detail": "code"
+        },
+        "skip": [
+          "terra"
+        ]
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build",
+          "detail": "code"
+        },
+        "savingMode": "safe"
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build",
+          "detail": "code"
+        },
+        "usage": {
+          "terra": {
+            "used": 100
+          }
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorker",
+    "args": [
+      [],
+      {
+        "job": {
+          "title": "Build",
+          "detail": "code"
+        }
+      }
+    ],
+    "result": null
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build engine",
+          "detail": "Write tests"
+        }
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex",
+          "cli": "gpt-5"
+        },
+        {
+          "id": "sol",
+          "label": "Sol",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex",
+          "cli": "gpt-5"
+        },
+        {
+          "id": "sonnet",
+          "label": "Sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude",
+          "cli": "claude-3-5-sonnet"
+        },
+        {
+          "id": "gemini",
+          "label": "Gemini Pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity",
+          "cli": "gemini-flash"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build feature",
+          "detail": "Code"
+        },
+        "count": 2
+      }
+    ],
+    "result": [
+      {
+        "id": "terra",
+        "label": "Terra",
+        "plan": "chatgpt",
+        "enabled": true,
+        "available": true,
+        "provider": "codex",
+        "cli": "gpt-5",
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "kind": "default",
+        "cost": 1,
+        "limit": 50,
+        "index": 0,
+        "why": "build job · Terra on chatgpt; user catalog order"
+      },
+      {
+        "id": "sonnet",
+        "label": "Sonnet",
+        "plan": "claude",
+        "enabled": true,
+        "available": true,
+        "provider": "claude",
+        "cli": "claude-3-5-sonnet",
+        "unavailableReason": null,
+        "neverUsable": false,
+        "availabilityWarning": null,
+        "kind": "default",
+        "cost": 1,
+        "limit": 50,
+        "index": 0,
+        "why": "build job · Sonnet on claude; user catalog order"
+      }
+    ]
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build feature",
+          "detail": "Code"
+        },
+        "count": 1
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Review changes",
+          "detail": "Audit code",
+          "kind": "review"
+        },
+        "count": 3
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build feature",
+          "detail": "Code"
+        },
+        "usage": {
+          "terra": {
+            "used": 49
+          }
+        },
+        "count": 2
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "pickWorkers",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "terra",
+          "plan": "chatgpt",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        },
+        {
+          "id": "sonnet",
+          "label": "sonnet",
+          "plan": "claude",
+          "enabled": true,
+          "available": true,
+          "provider": "claude"
+        },
+        {
+          "id": "gemini-pro",
+          "label": "gemini-pro",
+          "plan": "gemini",
+          "enabled": true,
+          "available": true,
+          "provider": "antigravity"
+        },
+        {
+          "id": "grok",
+          "label": "grok",
+          "plan": "grok",
+          "enabled": true,
+          "available": true,
+          "provider": "grok"
+        },
+        {
+          "id": "spent",
+          "label": "spent",
+          "plan": "empty",
+          "enabled": true,
+          "available": true,
+          "provider": "codex"
+        }
+      ],
+      {
+        "job": {
+          "title": "Build feature",
+          "detail": "Code"
+        },
+        "savingMode": "ultra-safe"
+      }
+    ],
+    "result": []
+  },
+  {
+    "fn": "dispatchPlan",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra",
+          "why": "selected"
+        }
+      ],
+      {
+        "title": "Build"
+      },
+      null
+    ],
+    "result": [
+      {
+        "modelId": "terra",
+        "label": "Terra",
+        "slice": "Whole job",
+        "why": "selected",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      }
+    ]
+  },
+  {
+    "fn": "dispatchPlan",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra"
+        },
+        {
+          "id": "sonnet",
+          "label": "Sonnet"
+        }
+      ],
+      {
+        "title": "Build"
+      },
+      {
+        "dirty": []
+      }
+    ],
+    "result": [
+      {
+        "modelId": "terra",
+        "label": "Terra",
+        "slice": "Implement the whole job in the project folder, with automated tests. Run the tests before you finish.",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      },
+      {
+        "modelId": "sonnet",
+        "label": "Sonnet",
+        "slice": "Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\" only if the wrong choice could lose work or break the app, otherwise \"breaks: no\".",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      }
+    ]
+  },
+  {
+    "fn": "dispatchPlan",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra"
+        },
+        {
+          "id": "sonnet",
+          "label": "Sonnet"
+        }
+      ],
+      {
+        "title": "Build"
+      },
+      {
+        "dirty": [
+          "file.cs",
+          "test.cs"
+        ]
+      }
+    ],
+    "result": [
+      {
+        "modelId": "terra",
+        "label": "Terra",
+        "slice": "Implement the whole job in the project folder, starting from the uncommitted changes, with automated tests. Run the tests before you finish.",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      },
+      {
+        "modelId": "sonnet",
+        "label": "Sonnet",
+        "slice": "Verify the work independently against the job: read the requirements and run the tests, then go straight to what the tests do not cover (edge cases, error, recovery and concurrency paths), add tests for it and fix what fails. Do not rewrite code that works. If you find something you must not decide or fix yourself, write one line: \"Needs your decision: <plain words a non-programmer understands> | suggestion: <what you recommend> | breaks: yes\" only if the wrong choice could lose work or break the app, otherwise \"breaks: no\".",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      }
+    ]
+  },
+  {
+    "fn": "dispatchPlan",
+    "args": [
+      [
+        {
+          "id": "terra",
+          "label": "Terra"
+        },
+        {
+          "id": "sonnet",
+          "label": "Sonnet"
+        },
+        {
+          "id": "gemini",
+          "label": "Gemini"
+        }
+      ],
+      {
+        "title": "Review",
+        "kind": "review"
+      },
+      null
+    ],
+    "result": [
+      {
+        "modelId": "terra",
+        "label": "Terra",
+        "slice": "Review the approved scope and report findings.",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      },
+      {
+        "modelId": "sonnet",
+        "label": "Sonnet",
+        "slice": "Review correctness and edge cases; report findings.",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      },
+      {
+        "modelId": "gemini",
+        "label": "Gemini",
+        "slice": "Review tests and verification evidence; report findings.",
+        "why": "",
+        "pid": null,
+        "logPath": null,
+        "resultPath": null,
+        "alive": false,
+        "activity": ""
+      }
+    ]
+  },
+  {
+    "fn": "dispatchPlan",
+    "args": [
+      [],
+      {
+        "title": "Build"
+      },
+      null
+    ],
+    "result": []
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "normal",
+      {
+        "id": "fable",
+        "leadTier": 0
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "normale",
+      {
+        "id": "sonnet",
+        "leadTier": 1
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "normal",
+      {
+        "id": "haiku",
+        "leadTier": 2
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "safe",
+      {
+        "id": "fable",
+        "leadTier": 0
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "sicura",
+      {
+        "id": "sonnet",
+        "leadTier": 1
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "safe",
+      {
+        "id": "haiku",
+        "leadTier": 2
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "ultra-safe",
+      {
+        "id": "fable",
+        "leadTier": 0
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "ultra sicura",
+      {
+        "id": "sonnet",
+        "leadTier": 1
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "ultra-safe",
+      {
+        "id": "haiku",
+        "leadTier": 2
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "safe",
+      {
+        "id": "fable",
+        "leadTier": 0,
+        "weightSource": "team",
+        "weight": "light"
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "ultra-safe",
+      {
+        "id": "sonnet",
+        "leadTier": 1,
+        "weightSource": "team",
+        "weight": "light"
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "safe",
+      {
+        "id": "haiku",
+        "leadTier": 2,
+        "weightSource": "team",
+        "weight": "premium"
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "safe",
+      {
+        "id": "fable",
+        "leadTier": 0,
+        "weightSource": "lineup",
+        "weight": "light"
+      }
+    ],
+    "result": false
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      "",
+      {
+        "id": "fable",
+        "leadTier": 0
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "allowedBySavingMode",
+    "args": [
+      null,
+      {
+        "id": "fable",
+        "leadTier": 0
+      }
+    ],
+    "result": true
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m1"
+      },
+      0
+    ],
+    "result": "flagship"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m2"
+      },
+      1
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m3"
+      },
+      2
+    ],
+    "result": "light"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m1",
+        "leadTier": 0
+      }
+    ],
+    "result": "flagship"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m2",
+        "leadTier": 1
+      }
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m3",
+        "leadTier": 2
+      }
+    ],
+    "result": "light"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m1",
+        "kind": "premium"
+      }
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m2",
+        "kind": "default"
+      }
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m3",
+        "kind": "local"
+      }
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m1",
+        "leadTier": 0,
+        "weightSource": "team",
+        "weight": "light"
+      },
+      0
+    ],
+    "result": "light"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m2",
+        "leadTier": 2,
+        "weightSource": "team",
+        "weight": "premium"
+      },
+      2
+    ],
+    "result": "flagship"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m3",
+        "leadTier": 0,
+        "weightSource": "team",
+        "weight": "default"
+      },
+      0
+    ],
+    "result": "mid"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      {
+        "id": "m1",
+        "leadTier": 0,
+        "weightSource": "lineup",
+        "weight": "light"
+      },
+      0
+    ],
+    "result": "flagship"
+  },
+  {
+    "fn": "modelClass",
+    "args": [
+      null
+    ],
+    "result": "mid"
+  }
+]
