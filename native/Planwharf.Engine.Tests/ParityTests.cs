@@ -747,6 +747,16 @@ public class ParityTests
             }
             return json;
         },
+        ["orchestrator-team-models/normalizeModels"] = a => OrchestratorTeamModels.NormalizeModels(Node(a, 0)),
+        ["orchestrator-team-models/usageOf"] = a => OrchestratorTeamModels.UsageOf(Obj(a, 0)),
+        ["orchestrator-team-models/leadTier"] = a => (JsonNode)JsonValue.Create(OrchestratorTeamModels.LeadTier(Obj(a, 0)))!,
+        ["orchestrator-team-models/leadRanking"] = a => OrchestratorTeamModels.LeadRanking(Arr(a, 0), Arr(a, 1)),
+        ["orchestrator-team-models/leadQuality"] = a => OrchestratorTeamModels.LeadQuality(Arr(a, 0)),
+        ["orchestrator-team-models/pickWorker"] = a => OrchestratorTeamModels.PickWorker(Arr(a, 0), Obj(a, 1)),
+        ["orchestrator-team-models/pickWorkers"] = a => OrchestratorTeamModels.PickWorkers(Arr(a, 0), Obj(a, 1)),
+        ["orchestrator-team-models/dispatchPlan"] = a => OrchestratorTeamModels.DispatchPlan(Arr(a, 0), Obj(a, 1), Obj(a, 2)),
+        ["orchestrator-team-models/allowedBySavingMode"] = a => (JsonNode)JsonValue.Create(OrchestratorTeamModels.AllowedBySavingMode(Text(a, 0), Obj(a, 1)))!,
+        ["orchestrator-team-models/modelClass"] = a => (JsonNode)JsonValue.Create(ModelRouting.ModelClass(Obj(a, 0), a.Count > 1 && a[1] is JsonValue v && v.TryGetValue<int>(out var t) ? t : null))!,
     };
 
     // Same JSON: numbers by value (35 and 35.0 are the same), objects by keys, arrays in order.
