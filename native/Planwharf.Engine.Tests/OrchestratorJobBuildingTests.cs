@@ -828,5 +828,3 @@ public class OrchestratorJobBuildingTests
         Assert.Contains(bridge.Events, e => e.Summary == "Lead crew choice was refused: locked");
     }
 }
-
-
