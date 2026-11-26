@@ -791,7 +791,7 @@ public static partial class OrchestratorLeadQuestions
     static void EmitEffect(LeadServices services, List<LeadEffect> effects, string kind, string? projectId, JsonObject payload)
     {
         var effect = new LeadEffect(kind, projectId, payload);
-        effects.Add(effect);
+        lock (effects) { effects.Add(effect); }
         services.OnEffect?.Invoke(effect);
     }
 
@@ -1631,18 +1631,27 @@ public static partial class OrchestratorLeadQuestions
                     var workRunning = WorkInFlight(row);
                     var github = Truth(Field(row?.Data, "github")) ? OptText(Field(row?.Data, "github")) : null;
 
+                    var progressGate = new object();
                     void OnModelProgress(LeadAskProgress part)
                     {
                         if (cancellationToken.IsCancellationRequested || !request.IsCurrent()) return;
-                        var nextThinking = part.Thinking ?? OptText(thinkingState["thinking"]) ?? "";
-                        var nextDraft = part.Answer is not null
-                            ? (StructuredDraftRegex.IsMatch(part.Answer) ? "" : part.Answer)
-                            : OptText(thinkingState["draft"]) ?? "";
-                        var nextMs = part.Ms ?? Math.Max(0, services.NowMilliseconds() - started);
-                        thinkingState["thinking"] = nextThinking;
-                        thinkingState["draft"] = nextDraft;
-                        thinkingState["ms"] = nextMs;
-                        EmitEffect(services, effects, "progress", contextProjectId, (JsonObject)thinkingState.DeepClone());
+                        string nextThinking;
+                        string nextDraft;
+                        long nextMs;
+                        JsonObject progressPayload;
+                        lock (progressGate)
+                        {
+                            nextThinking = part.Thinking ?? OptText(thinkingState["thinking"]) ?? "";
+                            nextDraft = part.Answer is not null
+                                ? (StructuredDraftRegex.IsMatch(part.Answer) ? "" : part.Answer)
+                                : OptText(thinkingState["draft"]) ?? "";
+                            nextMs = part.Ms ?? Math.Max(0, services.NowMilliseconds() - started);
+                            thinkingState["thinking"] = nextThinking;
+                            thinkingState["draft"] = nextDraft;
+                            thinkingState["ms"] = nextMs;
+                            progressPayload = (JsonObject)thinkingState.DeepClone();
+                        }
+                        EmitEffect(services, effects, "progress", contextProjectId, progressPayload);
                         services.OnProgress?.Invoke(new LeadAskProgress(nextThinking, part.Answer is not null ? nextDraft : null, nextMs));
                     }
 

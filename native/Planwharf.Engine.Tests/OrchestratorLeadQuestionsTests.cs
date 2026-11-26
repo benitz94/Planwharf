@@ -1928,6 +1928,400 @@ public class OrchestratorLeadQuestionsTests
         Assert.Equal("reject", order.Payload["action"]!.GetValue<string>());
     }
 
+    [Fact]
+    public void LeadEnvelope_DuplicateJsonKeys_FollowLastWriteWinsSemantics()
+    {
+        var envelope = OrchestratorLeadQuestions.LeadEnvelope("""{"answer":"first","answer":"second","actions":[]}""");
+        Assert.Null(envelope.Error);
+        Assert.Equal("second", envelope.Answer);
+        Assert.Empty(envelope.Actions);
+    }
+
+    [Fact]
+    public async Task AskAsync_ConcurrentProgressCallbacks_RemainThreadSafe()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var snap = TwoProjectSnap();
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var progressCount = 0;
+
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = async (inv, _) =>
+            {
+                var tasks = Enumerable.Range(0, 4).Select(worker => Task.Run(() =>
+                {
+                    for (var i = 0; i < 20; i++)
+                        inv.OnProgress?.Invoke(new OrchestratorLeadQuestions.LeadAskProgress($"t-{worker}-{i}", $"draft-{worker}-{i}", i));
+                })).ToArray();
+                await Task.WhenAll(tasks);
+                return new OrchestratorLeadQuestions.LeadSpokenResponse("Final concurrent reply.");
+            }
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            OnEffect = effects.Add,
+            OnProgress = _ => Interlocked.Increment(ref progressCount)
+        };
+
+        var result = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [lead], () => true),
+            adapter, services);
+
+        Assert.True(result.Ok);
+        Assert.Equal("Final concurrent reply.", result.Answer);
+        Assert.Equal(80, progressCount);
+        Assert.Equal(80, effects.Count(e => e.Kind == "progress"));
+    }
+
+    [Fact]
+    public async Task AskLeadDecisionAsync_StrictRetryFailsThenFallsBackToAlternateProvider_AndCoversStopAndPrepFailurePaths()
+    {
+        var codex = MakeModel("lead-codex", "Codex Lead", provider: "codex", cli: "gpt-6-astra");
+        var grok = MakeModel("lead-grok", "Grok Lead", provider: "grok", cli: "grok-4.6");
+        var roster = new[] { codex, grok };
+        var item = new OrchestratorLeadQuestions.Item(Obj("""{"project":{"id":"p1","name":"Demo"},"revisions":[]}"""));
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+
+        // 1. Round 0 unreadable -> Round 1 strict retry also unreadable -> Round 2 switches to Grok -> GOAL_REACHED.
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (inv, _) =>
+            {
+                var id = inv.Model.Data["id"]!.GetValue<string>();
+                if (id == "lead-codex")
+                    return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("Still prose without JSON."));
+                return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("""{"done":true,"next":null}"""));
+            }
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => codex, OnEffect = effects.Add };
+        var recovered = await OrchestratorLeadQuestions.AskLeadDecisionAsync(
+            new OrchestratorLeadQuestions.LeadDecisionRequest("p1", item, new JsonObject(), "Evaluate?", roster),
+            adapter, services);
+        Assert.True(recovered.Ok);
+        Assert.Equal("GOAL_REACHED", recovered.StopReason);
+        Assert.Equal(new[] { "lead-codex", "lead-codex", "lead-grok" },
+            adapter.Invocations.Select(i => i.Model.Data["id"]!.GetValue<string>()).ToArray());
+        Assert.Equal(Autonomy.StrictDecisionPrompt("Evaluate?"), adapter.Invocations[1].Question);
+        Assert.Equal("Evaluate?", adapter.Invocations[2].Question);
+
+        // 2. All rounds throw -> stops with LEAD_FAILED.
+        adapter.Invocations.Clear();
+        effects.Clear();
+        adapter.Handler = (_, _) => throw new InvalidOperationException("transport down");
+        var allFailed = await OrchestratorLeadQuestions.AskLeadDecisionAsync(
+            new OrchestratorLeadQuestions.LeadDecisionRequest("p1", item, new JsonObject(), "Evaluate?", roster),
+            adapter, services);
+        Assert.False(allFailed.Ok);
+        Assert.Equal("LEAD_FAILED: transport down", allFailed.StopReason);
+        Assert.Contains(effects, e => e.Kind == "stop_autonomy");
+
+        // 3. Decision with done=false and next=null keeps autonomy open without preparing a task.
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("""{"done":false,"next":null}"""));
+        var idleDecision = await OrchestratorLeadQuestions.AskLeadDecisionAsync(
+            new OrchestratorLeadQuestions.LeadDecisionRequest("p1", item, new JsonObject(), "Evaluate?", [codex]),
+            adapter, services);
+        Assert.True(idleDecision.Ok);
+        Assert.Null(idleDecision.StopReason);
+
+        // 4. PrepareTask failure records note without failing the decision result.
+        effects.Clear();
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("""{"done":false,"next":"Next step"}"""));
+        services = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => codex,
+            OnEffect = effects.Add,
+            PrepareTaskWithContext = (_, _) => ValueTask.FromResult(Obj("""{"ok":false,"reason":"folder locked"}"""))
+        };
+        var prepFail = await OrchestratorLeadQuestions.AskLeadDecisionAsync(
+            new OrchestratorLeadQuestions.LeadDecisionRequest("p1", item, new JsonObject(), "Evaluate?", [codex]),
+            adapter, services);
+        Assert.True(prepFail.Ok);
+        Assert.Contains(effects, e => e.Kind == "note" && e.Payload["text"]!.GetValue<string>().Contains("folder locked", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ReviewSnapshotAsync_And_ComposeGrillRoundAsync_RecordFailuresAndEmptyQuestionFallback()
+    {
+        var sup = MakeModel("sup-api", "Supervisor API", provider: "api", cli: "api-model", supervisor: true, remaining: 10, cost: 2);
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("Partial output", Failure: "provider"))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { OnEffect = effects.Add };
+
+        var failedReview = await OrchestratorLeadQuestions.ReviewSnapshotAsync(
+            new OrchestratorLeadQuestions.SupervisorReviewRequest("p1", "sup-api", "Review?", new JsonObject(), new JsonArray(), [sup]),
+            adapter, services);
+        Assert.Equal("Partial output", failedReview.Answer);
+        Assert.Equal("FAILED", effects.Last(e => e.Kind == "ledger_finish").Payload["status"]!.GetValue<string>());
+
+        effects.Clear();
+        adapter.Handler = (_, _) => throw new InvalidOperationException("boom");
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await OrchestratorLeadQuestions.ReviewSnapshotAsync(
+                new OrchestratorLeadQuestions.SupervisorReviewRequest("p1", "sup-api", "Review?", new JsonObject(), new JsonArray(), [sup]),
+                adapter, services));
+        Assert.Equal("FAILED", effects.Last(e => e.Kind == "ledger_finish").Payload["status"]!.GetValue<string>());
+
+        // ComposeGrillRoundAsync falls back to Plan.GrillFrontier when lead returns zero questions.
+        var lead = MakeModel("astra", "GPT-6 Astra");
+        var item = new OrchestratorLeadQuestions.Item(Obj("""{"project":{"id":"p1","name":"Demo"},"revisions":[]}"""));
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("No open questions remain."));
+        services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead, Roster = [lead] };
+        var fallback = await OrchestratorLeadQuestions.ComposeGrillRoundAsync(item, new OrchestratorLeadQuestions.Facts(new JsonObject()), "me", adapter, services);
+        Assert.NotEmpty(fallback);
+    }
+
+    [Fact]
+    public async Task AskAsync_ProcessRetryCascadesToUsageLimitHandover_AndCoversFallbacksAndEnvelopeErrors()
+    {
+        var lead1 = MakeModel("lead-1", "Lead One", provider: "codex", cli: "gpt-6-astra");
+        var lead2 = MakeModel("lead-2", "Lead Two", provider: "grok", cli: "grok-4.6");
+        var lead3 = MakeModel("lead-3", "Lead Three", provider: "claude", cli: "claude-opus-5-5");
+        var roster = new[] { lead1, lead2, lead3 };
+        var snap = TwoProjectSnap(leadId: "lead-1");
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+
+        // 1. lead1 fails process twice -> switches to lead2 -> lead2 hits usage limit -> hands over immediately to lead3.
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (inv, _) =>
+            {
+                var id = inv.Model.Data["id"]!.GetValue<string>();
+                if (id == "lead-1")
+                    return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("", Failure: "process", ProcessExit: 1));
+                if (id == "lead-2")
+                    return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                        "Limit", Failure: "provider", Diagnostic: Obj("""{"code":"PROVIDER_USAGE_LIMIT","message":"quota"}""")));
+                return ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("Claude answered."));
+            }
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead1, OnEffect = effects.Add };
+        var cascaded = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            adapter, services);
+        Assert.True(cascaded.Ok);
+        Assert.Equal("Claude answered.", cascaded.Answer);
+        Assert.Equal(new[] { "lead-1", "lead-1", "lead-2", "lead-3" },
+            adapter.Invocations.Select(i => i.Model.Data["id"]!.GetValue<string>()).ToArray());
+        Assert.Equal(2, effects.Count(e => e.Kind == "lead_switch"));
+
+        // 2. Null adapter (non-grill) falls back deterministically to AnswerQuestion.
+        var deterministic = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Status?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            null, services);
+        Assert.True(deterministic.Ok);
+        Assert.Contains("Speaking as Astra. Alpha is", deterministic.Answer);
+
+        // 3. Adapter present but no lead available returns selection prompt.
+        var noLead = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Status?", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [], () => true),
+            adapter, new OrchestratorLeadQuestions.LeadServices { LeadModel = () => null });
+        Assert.True(noLead.Ok);
+        Assert.Contains("Pick an orchestrator model first", noLead.Answer);
+
+        // 4. Empty answer fallback and envelope error preservation in AskAsync.
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("   "));
+        var emptyReply = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            adapter, services);
+        Assert.Equal("Lead One returned no answer. The provider CLI in the project folder produced nothing.", emptyReply.Answer);
+
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("{bad-json"));
+        var badEnvelope = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            adapter, services);
+        Assert.Equal("{bad-json\n\nUnreadable lead action envelope; no workers were dispatched.", badEnvelope.Answer);
+
+        // 5. Exception after IsCurrent becomes false returns cancelled cleanly without diagnostic failure.
+        var current = true;
+        effects.Clear();
+        adapter.Handler = (_, _) =>
+        {
+            current = false;
+            throw new InvalidOperationException("killed mid-flight");
+        };
+        var cancelledAfterThrow = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => current),
+            adapter, services);
+        Assert.True(cancelledAfterThrow.Ok);
+        Assert.Equal("cancelled", cancelledAfterThrow.Reason);
+        Assert.Contains(effects, e => e.Kind == "cancelled");
+        Assert.DoesNotContain(effects, e => e.Kind == "ask_turn");
+    }
+
+    [Fact]
+    public async Task AskAsync_SavingModeFallbackNote_Phase2Routing_AndToolRequestUnscoped()
+    {
+        var flagship = MakeModel("astra", "GPT-6 Astra", provider: "codex", cli: "gpt-6-astra", kind: "premium");
+        var snap = TwoProjectSnap();
+        snap.Data["savingModes"] = new JsonObject { ["alpha"] = "safe" };
+        var effects = new List<OrchestratorLeadQuestions.LeadEffect>();
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("Thinking through it."))
+        };
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => flagship, OnEffect = effects.Add };
+
+        // 1. Safe mode appends lead fallback note once and emits note_once.
+        var first = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), [flagship], () => true),
+            adapter, services);
+        Assert.Contains("Safe allows no lead. Planwharf keeps GPT-6 Astra", first.Answer);
+        Assert.Single(effects, e => e.Kind == "note_once");
+
+        // Suppress duplicate note when savingNotes already records it.
+        effects.Clear();
+        var rowWithNote = new OrchestratorLeadQuestions.Project(Obj("""{"id":"alpha","name":"Alpha","savingMode":"safe","savingNotes":{"lead-answer:safe":true}}"""));
+        var second = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Explain alpha", "alpha", "s1", "default", null, null, snap, rowWithNote, new JsonArray(), [flagship], () => true),
+            adapter, services);
+        Assert.Equal("Thinking through it.", second.Answer);
+        Assert.DoesNotContain(effects, e => e.Kind == "note_once");
+
+        // 2. Phase 2 explicit command promotes projectId when none selected.
+        effects.Clear();
+        var phase2Start = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "start Alpha", null, "s1", "default", null, null, snap, null, new JsonArray(), [flagship], () => true,
+                Metadata: Obj("""{"phase2":true}""")),
+            adapter, services);
+        Assert.True(phase2Start.Ok);
+        var orderEffect = Assert.Single(effects, e => e.Kind == "order");
+        Assert.Equal("alpha", orderEffect.Payload["projectId"]!.GetValue<string>());
+        Assert.Equal("start", orderEffect.Payload["action"]!.GetValue<string>());
+
+        // 3. Unselected multi-project mention rejects ambiguously.
+        var ambiguous = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Compare Alpha and Beta", null, "s1", "default", null, null, snap, null, new JsonArray(), [flagship], () => true),
+            adapter, services);
+        Assert.False(ambiguous.Ok);
+        Assert.Equal("Message names multiple projects. Select the intended recipient.", ambiguous.Reason);
+
+        // 4. TOOL REQUEST without resolved project does not strip or emit tool_request.
+        effects.Clear();
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse("Check docs.\n\nTOOL REQUEST: browser"));
+        var unscopedTool = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "Check docs?", null, "s1", "default", null, null, TwoProjectSnap(), null, new JsonArray(), [flagship], () => true),
+            adapter, services);
+        Assert.Contains("TOOL REQUEST: browser", unscopedTool.Answer);
+        Assert.DoesNotContain(effects, e => e.Kind == "tool_request");
+    }
+
+    [Fact]
+    public async Task AskAsync_ResearchValidationBoundaries_FollowUpIntent_AndApplyActionReceipts()
+    {
+        var lead = MakeModel("astra", "GPT-6 Astra", provider: "codex", cli: "gpt-6-astra", kind: "premium");
+        var luna = MakeModel("luna", "GPT-6 Luna", provider: "codex", cli: "gpt-6-luna", kind: "local");
+        var nonWorker = MakeModel("non-worker", "No Worker", provider: "codex", cli: "gpt-6-nw", kind: "local", worker: false);
+        var broke = MakeModel("broke", "Broke Worker", provider: "codex", cli: "gpt-6-broke", kind: "local", remaining: 1, cost: 5);
+        var roster = new[] { lead, luna, nonWorker, broke };
+        var snap = TwoProjectSnap();
+
+        var adapter = new FakeLeadAdapter
+        {
+            Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                """{"answer":"Proposed.","actions":[{"type":"dispatch_research","projectId":"alpha","modelId":"luna","title":"Telemetry","detail":"Inspect logs."}]}"""))
+        };
+
+        // 1. Follow-up "yes" after prior research turn authorizes dispatch_research + proposal ApplyAction receipt.
+        var priorResearchHistory = Arr("""[{"projectId":"alpha","chatSessionId":"s1","question":"Should we investigate?","answer":"I can run research on telemetry."}]""");
+        var proposalServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, null, null, action, Obj("""{"proposal":true,"research":{"megaTaskId":"mt-7","projectName":"Alpha"}}""")))
+        };
+        var followUp = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "yes", "alpha", "s1", "default", null, null, snap, null, priorResearchHistory, roster, () => true),
+            adapter, proposalServices);
+        Assert.True(followUp.ActionResults[0].Ok);
+        Assert.Contains("Research MegaTask mt-7 proposed for Alpha.", followUp.Answer);
+
+        // 2. Live worker start & duplicate receipts format pid line.
+        var startedServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, null, null, action, Obj("""{"duplicate":true,"research":{"pid":4321,"workerLabel":"GPT-6 Luna","provider":"codex","cli":"gpt-6-luna","title":"Telemetry"}}""")))
+        };
+        var dupResult = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "research telemetry", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+            adapter, startedServices);
+        Assert.Contains("Notebook: already running GPT-6 Luna (codex/gpt-6-luna), process 4321", dupResult.Answer);
+
+        // 3. ValidateResearchDispatch boundaries: missing model, non-worker, remaining < cost, oversized title, saving mode.
+        var services = new OrchestratorLeadQuestions.LeadServices { LeadModel = () => lead };
+        foreach (var (actionJson, expectedSubstring) in new[]
+        {
+            ("""{"type":"dispatch_research","projectId":"alpha","modelId":"missing","title":"T","detail":"D"}""", "not in the roster"),
+            ("""{"type":"dispatch_research","projectId":"alpha","modelId":"non-worker","title":"T","detail":"D"}""", "not enabled for the Worker role"),
+            ("""{"type":"dispatch_research","projectId":"alpha","modelId":"broke","title":"T","detail":"D"}""", "no remaining usage"),
+            ($$"""{"type":"dispatch_research","projectId":"alpha","modelId":"luna","title":"{{new string('a', 201)}}","detail":"D"}""", "too large")
+        })
+        {
+            adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+                $$"""{"answer":"Try.","actions":[{{actionJson}}]}"""));
+            var res = await OrchestratorLeadQuestions.AskAsync(
+                new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                    "research telemetry", "alpha", "s1", "default", null, null, snap, null, new JsonArray(), roster, () => true),
+                adapter, services);
+            Assert.False(res.ActionResults[0].Ok);
+            Assert.Contains(expectedSubstring, res.Answer);
+        }
+
+        // Saving mode blocks flagship research worker.
+        var safeSnap = TwoProjectSnap();
+        safeSnap.Data["savingModes"] = new JsonObject { ["alpha"] = "safe" };
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Try.","actions":[{"type":"dispatch_research","projectId":"alpha","modelId":"astra","title":"T","detail":"D"}]}"""));
+        var savingBlocked = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "research telemetry", "alpha", "s1", "default", null, null, safeSnap, null, new JsonArray(), roster, () => true),
+            adapter, services);
+        Assert.False(savingBlocked.ActionResults[0].Ok);
+        Assert.Contains("Safe", savingBlocked.Answer);
+
+        // 4. reassign_crew with ApplyAction and nested megaTask.id fallback.
+        var crewSnap = new OrchestratorLeadQuestions.Snapshot(Obj("""
+            {
+              "orchestratorId": "astra",
+              "orchestratorLabel": "Astra",
+              "projects": [{ "id": "alpha", "name": "Alpha", "megaTask": { "id": "mt-nested" } }]
+            }
+            """));
+        adapter.Handler = (_, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadSpokenResponse(
+            """{"answer":"Updating crew.","actions":[{"type":"reassign_crew","projectId":"alpha","assignments":{"m1":"s1"},"why":"fit"}]}"""));
+        var crewServices = new OrchestratorLeadQuestions.LeadServices
+        {
+            LeadModel = () => lead,
+            ApplyAction = (action, _) => ValueTask.FromResult(new OrchestratorLeadQuestions.LeadActionResult(
+                true, "Crew changed. Approve the work to start it.", null, action))
+        };
+        var crewOk = await OrchestratorLeadQuestions.AskAsync(
+            new OrchestratorLeadQuestions.LeadAskTurnRequest(
+                "reassign", "alpha", "s1", "default", null, null, crewSnap, null, new JsonArray(), roster, () => true),
+            adapter, crewServices);
+        Assert.True(crewOk.ActionResults[0].Ok);
+        Assert.Contains("Crew changed. Approve the work to start it.", crewOk.Answer);
+    }
+
     // Composition-root cases deferred to Job 52 (Orchestrator.cs / server integration):
     // - HTTP routes (/api/orchestrator, /api/orchestrator/ask, /api/orchestrator/ask/cancel, /api/orchestrator/lead, /api/orchestrator/research/*).
     // - Durable orchestrator.json persistence (store.asks mutations, briefingBaselines, atomic persist/renameWithRetry, restart recovery).
