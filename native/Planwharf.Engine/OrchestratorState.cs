@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace Planwharf.Engine;
 
@@ -38,7 +40,10 @@ public sealed record NotebookRevision(
     string? Direction = null,
     string State = "",
     IReadOnlyList<string>? Open = null,
-    IReadOnlyList<string>? Closed = null);
+    IReadOnlyList<string>? Closed = null,
+    string? Id = null,
+    string? Title = null,
+    string? Mode = null);
 
 public sealed record NotebookTask(
     string Id,
@@ -49,7 +54,10 @@ public sealed record NotebookTask(
     int ExecutionVersion = 1,
     string Timing = "discretion",
     string? DeadlineAt = null,
-    string? MegaTaskId = null);
+    string? MegaTaskId = null,
+    JsonObject? Raw = null,
+    string? Source = null,
+    ModelCandidate? GoldModel = null);
 
 public sealed record NotebookProject(
     string Id,
@@ -207,8 +215,10 @@ public sealed record ProjectSnapshot
     public string WorkerTail { get; init; } = "";
     public string WorkerActivity { get; init; } = "";
     public string OrchestratorDoing { get; init; } = "Idle.";
+    public string? OrchestratorId { get; init; }
     public string OrchestratorLabel { get; init; } = OrchestratorState.OrchestratorDefaultName;
     public MonitoringMetrics? Monitoring { get; init; }
+    public string? GoldModel { get; init; }
 }
 
 public sealed record OrchestratorStateSnapshot
@@ -248,7 +258,7 @@ public sealed record OrchestratorStateSnapshot
 public sealed record RepositoryInspectOptions(bool Force = false);
 public sealed record InspectRepositoryResult(bool Ok, RepositoryInfo? Repository = null, OrchestratorStateSnapshot? Snapshot = null, string? Reason = null);
 public sealed record DecisionsInbox(IReadOnlyList<DecisionRecord> Open, IReadOnlyList<DecisionRecord> Answered, int OpenCount);
-public sealed record ArchivedSummary(string ProjectId, string Reason, string At);
+public sealed record ArchivedSummary(string At, string Reason, int Asks, int MegaTasks);
 public sealed record ArchivedProjectState(JsonObject State);
 public sealed record ProjectArchiveRecord(string ProjectId, string Reason, string At, NotebookProject? Notebook, ArchivedProjectState State);
 public sealed record ArchiveProjectOptions(bool KeepTeam = false, NotebookProject? Notebook = null);
@@ -280,7 +290,8 @@ public sealed record ResearchRecord(
     string StartedAt = "",
     string UpdatedAt = "",
     int ExecutionVersion = 2,
-    IReadOnlyList<DispatchView>? Dispatch = null);
+    IReadOnlyList<DispatchView>? Dispatch = null,
+    JsonObject? Diagnostic = null);
 
 public record ProjectLogLine(
     [property: JsonPropertyName("at")] string At,
@@ -296,7 +307,13 @@ public record PendingAutoStart(
 
 public record MonitoringMetrics(
     [property: JsonPropertyName("cpuPercent")] double? CpuPercent = null,
-    [property: JsonPropertyName("memoryBytes")] long? MemoryBytes = null
+    [property: JsonPropertyName("memoryBytes")] long? MemoryBytes = null,
+    [property: JsonPropertyName("workers")] int? Workers = null,
+    [property: JsonPropertyName("alive")] int? Alive = null,
+    [property: JsonPropertyName("logMoving")] bool? LogMoving = null,
+    [property: JsonPropertyName("folderFiles")] int? FolderFiles = null,
+    [property: JsonPropertyName("lastProgress")] string? LastProgress = null,
+    JsonObject? Raw = null
 );
 
 public record RepositoryInfo(
@@ -385,8 +402,34 @@ public sealed record OrchestratorStateCollaborators(
     Func<string?, string>? LogStat = null,
     Func<string, bool>? IsProcessAlive = null,
     Func<CancellationToken, Task<NotebookPlan>>? ReadPlan = null,
-    Func<string, RepositoryInspectOptions?, CancellationToken, Task<RepositoryInfo>>? InspectRepository = null
+    Func<string, RepositoryInspectOptions?, CancellationToken, Task<RepositoryInfo>>? InspectRepository = null,
+    Action? RestoreUnavailableModels = null,
+    Func<bool, CancellationToken, Task>? RefreshPlans = null,
+    Action<NotebookPlan, string?>? RefreshRepositoryMetadata = null,
+    Action<OrchestratorTickProject>? Decide = null,
+    Action<NotebookPlan, bool, string?>? RefreshPhaseTwoResearch = null,
+    Action? RefreshResearch = null,
+    Func<IReadOnlyList<CompletedNotebookTask>, CancellationToken, Task<NotebookPlan>>? CompleteTasks = null,
+    Func<bool>? IsShuttingDown = null,
+    Func<ExecutionBridge?>? Bridge = null,
+    AttemptEngine? Attempts = null,
+    Func<string, string>? ReadResult = null,
+    bool EnforceSessionBoundary = false,
+    Func<NotebookProject, NotebookTask, IReadOnlyList<JsonObject>>? DispatchParts = null,
+    IExecutionAttempts? AttemptAdapter = null,
+    Func<int, bool>? KillWorker = null,
+    ExecutionBridge? ExecutionBridge = null,
+    bool Phase2 = false
 );
+
+// The composition root supplies team selection/dispatch. Each invocation carries its own
+// project and the exact durable row; there is no shared current-project field.
+public sealed record OrchestratorTickProject(
+    NotebookProject Project, JsonObject Row, bool WasRunningAtStartup,
+    string SessionId, CancellationToken CancellationToken);
+
+public sealed record CompletedNotebookTask(
+    string ProjectId, string TaskId, string Fingerprint, string? AttemptId, string? MegaTaskId);
 
 public sealed class OrchestratorState
 {
@@ -414,6 +457,10 @@ public sealed class OrchestratorState
     private readonly string _sessionId;
     private readonly Func<string> _now;
     private readonly Action<string, string> _rename;
+    private readonly SemaphoreSlim _transitionGate = new(1, 1);
+    private readonly AsyncLocal<int> _gateDepth = new();
+    private Dictionary<string, HashSet<string>>? _startupProjects;
+    private ExecutionBridge? _executionBridge;
 
     public string? Dir => _dir;
     public string? StateFile => _stateFile;
@@ -422,6 +469,53 @@ public sealed class OrchestratorState
     public OrchestratorStateCollaborators Collaborators => _collaborators;
 
     public Func<string, string?, JsonObject> RowForDelegate => RowFor;
+
+    public void AttachExecutionBridge(ExecutionBridge? bridge) => _executionBridge = bridge;
+
+    private IDisposable EnterGate()
+    {
+        if (_gateDepth.Value > 0)
+        {
+            _gateDepth.Value++;
+            return new GateScope(this, acquired: false);
+        }
+        _transitionGate.Wait();
+        _gateDepth.Value = 1;
+        return new GateScope(this, acquired: true);
+    }
+
+    // WaitGateIfNeededAsync must not be an async method that mutates _gateDepth directly,
+    // because AsyncLocal mutations inside an async state machine do not flow back to callers.
+    private Task<bool> WaitGateIfNeededAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_gateDepth.Value > 0) return Task.FromResult(false);
+        return WaitGateCoreAsync(cancellationToken);
+    }
+
+    private async Task<bool> WaitGateCoreAsync(CancellationToken cancellationToken)
+    {
+        await _transitionGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private IDisposable PushGateScope(bool acquired)
+    {
+        _gateDepth.Value++;
+        return new GateScope(this, acquired);
+    }
+
+    private sealed class GateScope(OrchestratorState owner, bool acquired) : IDisposable
+    {
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            owner._gateDepth.Value = Math.Max(0, owner._gateDepth.Value - 1);
+            if (acquired) owner._transitionGate.Release();
+        }
+    }
 
     private static JsonObject ObjectOrEmpty(JsonNode? node) =>
         node is JsonObject value ? (JsonObject)value.DeepClone() : new JsonObject();
@@ -460,6 +554,90 @@ public sealed class OrchestratorState
             .Select(pair => (pair.Key, Value: pair.Value is JsonValue value && value.TryGetValue<bool>(out var flag) ? flag : (bool?)null))
             .Where(pair => pair.Value.HasValue)
             .ToDictionary(pair => pair.Key, pair => pair.Value!.Value);
+    }
+
+    private static JsonObject NormalizeProjectTeams(JsonNode? node)
+    {
+        var result = new JsonObject();
+        if (node is not JsonObject teams) return result;
+        foreach (var (id, teamNode) in teams)
+        {
+            if (teamNode is not JsonObject team || team["roles"] is not JsonObject roles) continue;
+            var clean = new JsonObject
+            {
+                ["orchestratorId"] = StringOrNull(team["orchestratorId"]),
+                ["roles"] = (JsonObject)roles.DeepClone()
+            };
+            if (team["notLead"] is JsonArray nl)
+            {
+                clean["notLead"] = new JsonArray(nl.Select(StringOrNull).Where(s => s != null).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
+            }
+            result[id] = clean;
+        }
+        return result;
+    }
+
+    private static JsonArray NormalizePullRequestFixes(JsonNode? node)
+    {
+        var result = new JsonArray();
+        if (node is not JsonArray arr) return result;
+        foreach (var item in arr.OfType<JsonObject>())
+        {
+            if (StringOrNull(item["projectId"]) is null) continue;
+            if (item["number"] is not JsonValue numVal || !numVal.TryGetValue<int>(out _)) continue;
+            result.Add((JsonNode)item.DeepClone());
+        }
+        return result;
+    }
+
+    private static JsonObject ToolFlagsObject(JsonObject? chosen)
+    {
+        var flags = new JsonObject();
+        foreach (var name in Claude.ToolNames)
+        {
+            flags[name] = chosen != null && BoolOrFalse(chosen[name]);
+        }
+        return flags;
+    }
+
+    private static JsonObject NormalizeToolSettingsObject(JsonNode? node)
+    {
+        var value = node as JsonObject;
+        var defaultObj = value?["default"] as JsonObject ?? value;
+        var modelsObj = new JsonObject();
+        if (value?["models"] is JsonObject rawModels)
+        {
+            foreach (var (id, toolsNode) in rawModels)
+            {
+                if (toolsNode is JsonObject tools)
+                {
+                    modelsObj[id] = ToolFlagsObject(tools);
+                }
+            }
+        }
+        return new JsonObject
+        {
+            ["default"] = ToolFlagsObject(defaultObj),
+            ["models"] = modelsObj
+        };
+    }
+
+    private static string NormalizeChatMode(string? value)
+    {
+        var mode = (value ?? "").Trim().ToLowerInvariant();
+        return mode is "talk" or "plan" ? mode : "plan";
+    }
+
+    private static string? NormalizeTeamWeight(string? value)
+    {
+        var text = (value ?? "").Trim().ToLowerInvariant();
+        return text switch
+        {
+            "flagship" or "premium" => "flagship",
+            "mid" or "default" => "mid",
+            "light" => "light",
+            _ => null
+        };
     }
 
     private static InspectionFacts? FactsFromObject(JsonNode? node)
@@ -539,7 +717,16 @@ public sealed class OrchestratorState
         if (node is not JsonObject obj) return null;
         double? cpu = obj["cpuPercent"] is JsonValue cpuValue && cpuValue.TryGetValue<double>(out var cpuValueResult) ? cpuValueResult : null;
         long? memory = obj["memoryBytes"] is JsonValue memoryValue && memoryValue.TryGetValue<long>(out var memoryValueResult) ? memoryValueResult : null;
-        return new MonitoringMetrics(cpu, memory);
+        bool? logMoving = obj["logMoving"] is JsonValue lmValue && lmValue.TryGetValue<bool>(out var lmResult) ? lmResult : null;
+        return new MonitoringMetrics(
+            cpu,
+            memory,
+            IntOrNull(obj["workers"]),
+            IntOrNull(obj["alive"]),
+            logMoving,
+            IntOrNull(obj["folderFiles"]),
+            StringOrNull(obj["lastProgress"]),
+            (JsonObject)obj.DeepClone());
     }
 
     public OrchestratorState(string? dir, JsonObject store, OrchestratorStateCollaborators? collaborators = null)
@@ -551,6 +738,7 @@ public sealed class OrchestratorState
         _sessionId = _collaborators.SessionId ?? Guid.NewGuid().ToString();
         _now = _collaborators.Now ?? (() => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
         _rename = _collaborators.Rename ?? ((source, target) => File.Move(source, target, overwrite: true));
+        _executionBridge = _collaborators.ExecutionBridge;
     }
 
     public static OrchestratorState Load(string? dir, OrchestratorStateCollaborators? collaborators = null)
@@ -611,6 +799,12 @@ public sealed class OrchestratorState
                     // Normalize and repair known fields to match JS loadState. Read legacy values
                     // defensively: one malformed field must not prevent unrelated evidence loading.
                     store["autonomy"] = ObjectOrEmpty(parsed["autonomy"]);
+                    if (parsed["autoSwitch"] is JsonObject autoSwitchObj) store["autoSwitch"] = (JsonObject)autoSwitchObj.DeepClone();
+                    else store.Remove("autoSwitch");
+                    store["quotaLimits"] = ObjectOrEmpty(parsed["quotaLimits"]);
+                    store["creditsNeeded"] = ObjectOrEmpty(parsed["creditsNeeded"]);
+                    store["poolLimits"] = ObjectOrEmpty(parsed["poolLimits"]);
+                    store["notLead"] = new JsonArray((StringList(parsed["notLead"]) ?? []).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
                     store["chatModes"] = ObjectOrEmpty(parsed["chatModes"]);
                     store["savingModes"] = ObjectOrEmpty(parsed["savingModes"]);
                     store["modelWeights"] = ObjectOrEmpty(parsed["modelWeights"]);
@@ -625,7 +819,7 @@ public sealed class OrchestratorState
                     store["providerPolicies"] = ObjectOrEmpty(parsed["providerPolicies"]);
                     store["modelRoles"] = ObjectOrEmpty(parsed["modelRoles"]);
                     store["accountModelRoles"] = ObjectOrEmpty(parsed["accountModelRoles"]);
-                    store["projectTeams"] = ObjectOrEmpty(parsed["projectTeams"]);
+                    store["projectTeams"] = NormalizeProjectTeams(parsed["projectTeams"]);
                     store["accountBindings"] = ObjectOrEmpty(parsed["accountBindings"]);
                     store["lastAccountKeys"] = ObjectOrEmpty(parsed["lastAccountKeys"]);
                     store["briefingBaselines"] = ObjectOrEmpty(parsed["briefingBaselines"]);
@@ -635,11 +829,13 @@ public sealed class OrchestratorState
                     store["archivedProjects"] = ObjectOrEmpty(parsed["archivedProjects"]);
                     store["projectArchive"] = ArrayOrEmpty(parsed["projectArchive"]);
                     store["projectTools"] = ObjectOrEmpty(parsed["projectTools"]);
-                    store["pullRequestFixes"] = ArrayOrEmpty(parsed["pullRequestFixes"]);
-                    store["selectedProjectId"] = StringOrNull(parsed["selectedProjectId"]);
+                    store["pullRequestFixes"] = NormalizePullRequestFixes(parsed["pullRequestFixes"]);
+                    var selProj = StringOrNull(parsed["selectedProjectId"]);
+                    store["selectedProjectId"] = string.IsNullOrEmpty(selProj) ? null : selProj;
                     store["sessions"] = ArrayOrEmpty(parsed["sessions"]);
                     store["goldModelId"] = StringOrNull(parsed["goldModelId"]);
-                    store["orchestratorId"] = StringOrNull(parsed["orchestratorId"]);
+                    var orchId = StringOrNull(parsed["orchestratorId"]);
+                    store["orchestratorId"] = !string.IsNullOrWhiteSpace(orchId) ? orchId : null;
 
                     if (parsed["projects"] is JsonObject projObj)
                     {
@@ -667,6 +863,52 @@ public sealed class OrchestratorState
             catch
             {
                 // Unreadable or corrupt store file starts with clean defaults
+            }
+        }
+
+        // Normalize projectTools, chatModes, savingModes, and modelWeights matching JS loadState
+        if (store["projectTools"] is JsonObject rawProjectTools)
+        {
+            var normalizedTools = new JsonObject();
+            foreach (var (projId, toolsNode) in rawProjectTools)
+            {
+                normalizedTools[projId] = NormalizeToolSettingsObject(toolsNode);
+            }
+            store["projectTools"] = normalizedTools;
+        }
+        if (store["chatModes"] is JsonObject rawChatModes)
+        {
+            foreach (var key in rawChatModes.Select(p => p.Key).ToArray())
+            {
+                rawChatModes[key] = NormalizeChatMode(StringOrNull(rawChatModes[key]));
+            }
+        }
+        var savingRepaired = false;
+        if (store["savingModes"] is JsonObject rawSavingModes)
+        {
+            foreach (var key in rawSavingModes.Select(p => p.Key).ToArray())
+            {
+                var currentVal = StringOrNull(rawSavingModes[key]);
+                var nextVal = ModelRouting.PersistedSavingMode(currentVal);
+                if (currentVal != nextVal) savingRepaired = true;
+                rawSavingModes[key] = nextVal;
+            }
+        }
+        if (store["modelWeights"] is JsonObject rawWeights)
+        {
+            foreach (var key in rawWeights.Select(p => p.Key).ToArray())
+            {
+                var nextWeight = NormalizeTeamWeight(StringOrNull(rawWeights[key]));
+                if (nextWeight != null)
+                {
+                    if (StringOrNull(rawWeights[key]) != nextWeight) savingRepaired = true;
+                    rawWeights[key] = nextWeight;
+                }
+                else
+                {
+                    rawWeights.Remove(key);
+                    savingRepaired = true;
+                }
             }
         }
 
@@ -743,12 +985,14 @@ public sealed class OrchestratorState
         // that was registered above, including when the caller omitted SessionId.
         var resolvedCollaborators = collaborators with { SessionId = sessionId };
         var state = new OrchestratorState(dir, store, resolvedCollaborators);
+        if (savingRepaired) state.Persist();
         state.HydrateCheckpoints();
         return state;
     }
 
     public void Persist()
     {
+        using var _ = EnterGate();
         if (string.IsNullOrWhiteSpace(_stateFile)) return;
         var dir = Path.GetDirectoryName(_stateFile);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
@@ -757,7 +1001,12 @@ public sealed class OrchestratorState
         var json = _store.ToJsonString(JsonSerializationOptions) + "\n";
         try
         {
-            File.WriteAllText(temporary, json, new UTF8Encoding(false));
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+            {
+                writer.Write(json);
+                writer.Flush();
+            }
             AtomicRename.RenameWithRetry(temporary, _stateFile, rename: _rename);
         }
         catch
@@ -807,12 +1056,13 @@ public sealed class OrchestratorState
 
     public void HydrateCheckpoints()
     {
+        using var _ = EnterGate();
         if (string.IsNullOrWhiteSpace(_dir)) return;
         var checkpointsFolder = Path.Combine(_dir, "checkpoints");
-        if (!Directory.Exists(checkpointsFolder)) return;
-
-        var checkpointFiles = Directory.GetFiles(checkpointsFolder, "*.json");
-        var ids = new HashSet<string>();
+        var checkpointFiles = Directory.Exists(checkpointsFolder)
+            ? Directory.GetFiles(checkpointsFolder, "*.json")
+            : [];
+        var ids = new HashSet<string>(StringComparer.Ordinal);
         if (_store["projects"] is JsonObject projectsObj)
         {
             foreach (var (key, _) in projectsObj) ids.Add(key);
@@ -857,9 +1107,12 @@ public sealed class OrchestratorState
 
     private JsonObject? ReadCheckpointFile(string id)
     {
-        if (string.IsNullOrWhiteSpace(_dir)) return null;
-        var file = Path.Combine(_dir, "checkpoints", $"{id}.json");
-        if (!File.Exists(file)) return null;
+        if (string.IsNullOrWhiteSpace(_dir) || string.IsNullOrWhiteSpace(id)) return null;
+        if (id.IndexOfAny(['/', '\\', ':']) >= 0 || id == "." || id == ".." || id.Contains("..", StringComparison.Ordinal))
+            return null;
+        var checkpointsFolder = Path.GetFullPath(Path.Combine(_dir, "checkpoints"));
+        var file = Path.GetFullPath(Path.Combine(checkpointsFolder, $"{id}.json"));
+        if (!ProjectWorkspace.Within(checkpointsFolder, file) || !File.Exists(file)) return null;
         try
         {
             var content = File.ReadAllText(file, Encoding.UTF8);
@@ -1025,7 +1278,7 @@ public sealed class OrchestratorState
         if (row.Status == "watching")
         {
             var alive = row.Dispatch.Count > 0
-                ? row.Dispatch.Count(p => p.Pid != null)
+                ? row.Dispatch.Count(p => !p.StoppedByUser && p.Pid != null)
                 : (row.WorkerAlive ? 1 : 0);
             var files = row.Facts?.FileCount;
             var folder = files == null ? "project folder" : $"{files} files in the project folder";
@@ -1059,19 +1312,19 @@ public sealed class OrchestratorState
         if (row == null) return "Idle.";
         var dispatchArr = row["dispatch"] as JsonArray;
         var dispatchCount = dispatchArr?.Count ?? 0;
-        var workerLabel = row["workerLabel"]?.GetValue<string>();
+        var workerLabel = StringOrNull(row["workerLabel"]);
         var n = dispatchCount > 0 ? dispatchCount : (!string.IsNullOrEmpty(workerLabel) ? 1 : 0);
         var status = StringOrNull(row["status"]) ?? "idle";
-        var workerActivity = row["workerActivity"]?.GetValue<string>() ?? "";
-        var workerAlive = row["workerAlive"]?.GetValue<bool>() ?? false;
+        var workerActivity = StringOrNull(row["workerActivity"]) ?? "";
+        var workerAlive = BoolOrFalse(row["workerAlive"]);
 
         if (status == "watching")
         {
             var alive = dispatchArr is not null
-                ? dispatchArr!.OfType<JsonObject>().Count(p => p["alive"]?.GetValue<bool>() ?? false)
+                ? dispatchArr.OfType<JsonObject>().Count(p => BoolOrFalse(p["alive"]))
                 : (workerAlive ? 1 : 0);
             var factsObj = row["facts"] as JsonObject;
-            int? files = factsObj?["fileCount"]?.GetValue<int?>();
+            int? files = IntOrNull(factsObj?["fileCount"]);
             var folder = files == null ? "project folder" : $"{files} files in the project folder";
             if (workerActivity.Contains("Hit an error", StringComparison.OrdinalIgnoreCase))
             {
@@ -1177,14 +1430,17 @@ public sealed class OrchestratorState
 
     public static IReadOnlyList<CrewMember> CrewOf(JsonObject? row, string? leadLabel, JsonObject? execution = null)
     {
-        var rowOrchDoing = row?["orchestratorDoing"]?.GetValue<string>();
-        var rowOrchLabel = row?["orchestratorLabel"]?.GetValue<string>();
+        var rowOrchDoing = StringOrNull(row?["orchestratorDoing"]);
+        var rowOrchLabel = StringOrNull(row?["orchestratorLabel"]);
         var crew = new List<CrewMember>
         {
-            new("Orchestrator", leadLabel ?? rowOrchLabel ?? OrchestratorDefaultName, rowOrchDoing ?? OrchestratorDoing(row))
+            new(
+                "Orchestrator",
+                !string.IsNullOrEmpty(leadLabel) ? leadLabel : (!string.IsNullOrEmpty(rowOrchLabel) ? rowOrchLabel : OrchestratorDefaultName),
+                !string.IsNullOrEmpty(rowOrchDoing) ? rowOrchDoing : OrchestratorDoing(row))
         };
 
-        var status = row?["status"]?.GetValue<string>() ?? "idle";
+        var status = StringOrNull(row?["status"]) ?? "idle";
         var liveWorkers = row != null && status != "idle" && status != "propose_grill" && status != "waiting_on_you" && status != "blocked_no_folder";
         var dispatchArr = liveWorkers ? row?["dispatch"] as JsonArray : null;
 
@@ -1193,25 +1449,25 @@ public sealed class OrchestratorState
             var subTasksArr = (execution?["subTasks"] as JsonArray) ?? (row?["subTasks"] as JsonArray) ?? [];
             foreach (var partNode in dispatchArr.OfType<JsonObject>())
             {
-                var subTaskId = partNode["subTaskId"]?.GetValue<string>();
-                var partMegaTaskId = partNode["megaTaskId"]?.GetValue<string>();
+                var subTaskId = StringOrNull(partNode["subTaskId"]);
+                var partMegaTaskId = StringOrNull(partNode["megaTaskId"]);
                 var subObj = subTasksArr.OfType<JsonObject>().FirstOrDefault(s =>
-                    s["id"]?.GetValue<string>() == subTaskId && (string.IsNullOrEmpty(partMegaTaskId) || s["megaTaskId"]?.GetValue<string>() == partMegaTaskId));
+                    StringOrNull(s["id"]) == subTaskId && (string.IsNullOrEmpty(partMegaTaskId) || StringOrNull(s["megaTaskId"]) == partMegaTaskId));
 
-                var retainedRole = partNode["activitySession"]?["role"]?.GetValue<string>();
+                var retainedRole = StringOrNull(partNode["activitySession"]?["role"]);
                 var role = retainedRole == "reviewer" || (retainedRole == null && ModelRoles.AssignmentRole(subObj ?? partNode) == "reviewer")
                     ? "Reviewer"
                     : "Worker";
 
-                var slice = partNode["slice"]?.GetValue<string>();
+                var slice = StringOrNull(partNode["slice"]);
                 var doing = !string.IsNullOrEmpty(slice) ? slice : "On the plan";
-                var historical = partNode["historicalAssignment"]?.GetValue<bool>() ?? false;
-                var label = partNode["label"]?.GetValue<string>() ?? partNode["modelId"]?.GetValue<string>() ?? "";
+                var historical = BoolOrFalse(partNode["historicalAssignment"]);
+                var label = StringOrNull(partNode["label"]) ?? StringOrNull(partNode["modelId"]) ?? "";
 
                 if (historical)
                 {
-                    var histTitle = partNode["assignmentJobTitle"]?.GetValue<string>() ?? "Historical assignment";
-                    var histAct = partNode["activity"]?.GetValue<string>() ?? "Original activity is not retained.";
+                    var histTitle = StringOrNull(partNode["assignmentJobTitle"]) ?? "Historical assignment";
+                    var histAct = StringOrNull(partNode["activity"]) ?? "Original activity is not retained.";
                     crew.Add(new CrewMember(role, label, $"{histTitle}: {histAct}"));
                     continue;
                 }
@@ -1219,10 +1475,10 @@ public sealed class OrchestratorState
                 if (status == "needs_approval") doing = $"{(!string.IsNullOrEmpty(slice) ? slice : "Whole job")}. Waiting for Approve.";
                 else if (status == "watching")
                 {
-                    var partAct = partNode["activity"]?.GetValue<string>();
-                    var rowAct = row?["workerActivity"]?.GetValue<string>();
-                    var pid = partNode["pid"]?.GetValue<int?>();
-                    var alive = partNode["alive"]?.GetValue<bool>() ?? false;
+                    var partAct = StringOrNull(partNode["activity"]);
+                    var rowAct = StringOrNull(row?["workerActivity"]);
+                    var pid = IntOrNull(partNode["pid"]);
+                    var alive = BoolOrFalse(partNode["alive"]);
                     doing = !string.IsNullOrEmpty(partAct) ? partAct : (!string.IsNullOrEmpty(rowAct) ? rowAct : $"{(!string.IsNullOrEmpty(slice) ? slice : "Whole job")}. {(pid != null ? $"Process {pid}{(alive ? " running" : " stopped")}." : "Claimed.")}");
                 }
                 else if (status == "complete") doing = "Evidence complete.";
@@ -1238,13 +1494,13 @@ public sealed class OrchestratorState
         }
         else
         {
-            var workerLabel = row?["workerLabel"]?.GetValue<string>();
+            var workerLabel = StringOrNull(row?["workerLabel"]);
             if (!string.IsNullOrEmpty(workerLabel) && !workerLabel.Contains(" + "))
             {
-                var workerActivity = row?["workerActivity"]?.GetValue<string>();
-                var workerPid = row?["workerPid"]?.GetValue<int?>();
-                var workerAlive = row?["workerAlive"]?.GetValue<bool>() ?? false;
-                var waitingFor = row?["waitingFor"]?.GetValue<string>() ?? "";
+                var workerActivity = StringOrNull(row?["workerActivity"]);
+                var workerPid = IntOrNull(row?["workerPid"]);
+                var workerAlive = BoolOrFalse(row?["workerAlive"]);
+                var waitingFor = StringOrNull(row?["waitingFor"]) ?? "";
                 var doing = status == "watching"
                     ? (!string.IsNullOrEmpty(workerActivity)
                         ? workerActivity
@@ -1316,35 +1572,74 @@ public sealed class OrchestratorState
         return $"{fileCount}|{names}|{dirty}|{logs}";
     }
 
-    public static InspectionFacts DefaultInspect(string folder)
+    public static JsonObject DefaultInspectJson(string? folder)
     {
-        if (string.IsNullOrWhiteSpace(folder)) return new InspectionFacts(Error: "no folder");
+        if (string.IsNullOrWhiteSpace(folder)) return new JsonObject { ["error"] = "no folder" };
         try
         {
+            if (File.Exists(folder) && !Directory.Exists(folder))
+            {
+                return new JsonObject { ["error"] = "not a directory", ["folder"] = folder };
+            }
             var linked = ProjectWorkspace.LinkedWorkspace(folder);
-            if (linked is null) return new InspectionFacts(Folder: folder, Error: "folder not found");
+            if (linked is null) return new JsonObject { ["error"] = "folder not found", ["folder"] = folder };
+
             var allNames = Directory.EnumerateFileSystemEntries(linked)
                 .Select(Path.GetFileName)
                 .Where(name => !string.IsNullOrEmpty(name))
                 .Cast<string>()
                 .ToArray();
             var names = allNames.Take(24).ToArray();
+            var docs = OrchestratorLeadQuestions.ListDocs(linked);
+            var topLevel = RunGit(linked, "rev-parse", "--show-toplevel");
             var git = ProjectWorkspace.SafeGitWorkspace(linked) is not null &&
-                string.Equals(RunGit(linked, "rev-parse", "--show-toplevel"), linked, StringComparison.OrdinalIgnoreCase);
+                string.Equals(ProjectWorkspace.LinkedWorkspace(topLevel), linked, StringComparison.OrdinalIgnoreCase);
             var head = git ? ReadGitHead(linked) : "";
             var branch = git ? RunGit(linked, "rev-parse", "--abbrev-ref", "HEAD") : "";
             var lastCommit = git ? RunGit(linked, "log", "-1", "--format=%h %s") : "";
+            var commitId = git ? RunGit(linked, "rev-parse", "--verify", "HEAD") : "";
             var lastSubject = git ? RunGit(linked, "log", "-1", "--format=%s") : "";
             var recent = git ? Lines(RunGit(linked, "log", "-5", "--oneline"), 5) : [];
             var dirty = git ? Lines(RunGit(linked, "status", "--ignore-submodules=all", "--porcelain", "--no-renames"), 20) : [];
             var diffStat = git ? Clip(RunGit(linked, "diff", "--ignore-submodules=all", "--submodule=short", "--no-ext-diff", "--no-textconv", "--no-renames", "--stat", "HEAD"), 400) : "";
-            return new InspectionFacts(Git: git, LastCommit: lastCommit, LastSubject: lastSubject,
-                Recent: recent, Dirty: dirty, Head: head, Branch: branch, FileCount: allNames.Length, Folder: linked);
+
+            return new JsonObject
+            {
+                ["folder"] = linked,
+                ["fileCount"] = allNames.Length,
+                ["names"] = new JsonArray(names.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray()),
+                ["docs"] = new JsonArray(docs.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray()),
+                ["git"] = git,
+                ["head"] = head,
+                ["branch"] = branch,
+                ["lastCommit"] = lastCommit,
+                ["commitId"] = string.IsNullOrEmpty(commitId) ? null : commitId,
+                ["lastSubject"] = lastSubject,
+                ["recent"] = new JsonArray(recent.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray()),
+                ["dirty"] = new JsonArray(dirty.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray()),
+                ["diffStat"] = diffStat
+            };
         }
         catch
         {
-            return new InspectionFacts(Folder: folder, Error: "folder not found");
+            return new JsonObject { ["error"] = "folder not found", ["folder"] = folder };
         }
+    }
+
+    public static InspectionFacts DefaultInspect(string folder)
+    {
+        var obj = DefaultInspectJson(folder);
+        return new InspectionFacts(
+            Git: BoolOrFalse(obj["git"]),
+            LastCommit: StringOrNull(obj["lastCommit"]),
+            LastSubject: StringOrNull(obj["lastSubject"]),
+            Recent: StringList(obj["recent"]),
+            Dirty: StringList(obj["dirty"]),
+            Head: StringOrNull(obj["head"]),
+            Branch: StringOrNull(obj["branch"]),
+            FileCount: IntOrNull(obj["fileCount"]) ?? 0,
+            Folder: StringOrNull(obj["folder"]),
+            Error: StringOrNull(obj["error"]));
     }
 
     private static string ReadGitHead(string folder)
@@ -1374,7 +1669,8 @@ public sealed class OrchestratorState
             foreach (var pair in ProjectWorkspace.GitEnvironment()) start.Environment[pair.Key] = pair.Value;
             using var process = Process.Start(start);
             if (process is null || !process.WaitForExit(4000) || process.ExitCode != 0) return "";
-            return process.StandardOutput.ReadToEnd().Trim();
+            var output = process.StandardOutput.ReadToEnd();
+            return args.Length > 0 && args[0] == "status" ? output.TrimEnd('\r', '\n') : output.Trim();
         }
         catch { return ""; }
     }
@@ -1443,10 +1739,20 @@ public sealed class OrchestratorState
     public async Task<PagedActivitySessions> ActivitySessionPageAsync(string projectId, int offset = 0, int limit = 20, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
+        using var _ = PushGateScope(gateAcquired);
+        if (_collaborators.ReadPlan is not null)
+        {
+            var plan = await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
+            if (!plan.Projects.Any(p => p.Id == projectId))
+                throw new InvalidOperationException("Select an existing project.");
+        }
+        else if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
+        {
+            throw new InvalidOperationException("Select an existing project.");
+        }
         if (offset < 0 || limit < 1 || limit > ActivitySessions.SessionLimit)
             throw new InvalidOperationException(string.Concat("Invalid", " activity session page."));
-        if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
-            throw new InvalidOperationException("Select an existing project.");
 
         var metadata = ActivityMetadata(projectId);
         var sessions = new List<ActivitySession>();
@@ -1493,15 +1799,20 @@ public sealed class OrchestratorState
             if (!string.IsNullOrEmpty(subId) && subs.TryGetValue(subId, out var sub) && StringOrNull(sub["megaTaskId"]) != megaId) return;
             var attempt = StringOrNull(part["attemptId"]);
             var key = attempt is not null ? $"{megaId ?? "null"}:{subId ?? "null"}:{attempt}" : "legacy-" + index;
-            index++;
+            var itemIndex = index++;
             if (!known.Add(key)) return;
-            result.Add(((JsonObject)part.DeepClone(), (JsonObject)record.DeepClone(), historical, index - 1));
+            result.Add(((JsonObject)part.DeepClone(), (JsonObject)record.DeepClone(), historical, itemIndex));
         }
 
         if (_store["projects"] is JsonObject projects && projects[projectId] is JsonObject row)
         {
-            foreach (var part in (row["dispatch"] as JsonArray)?.OfType<JsonObject>() ?? [])
-                Add(part, row, false);
+            var rowProj = StringOrNull(row["projectId"]);
+            var rowId = StringOrNull(row["id"]);
+            if ((string.IsNullOrEmpty(rowProj) || rowProj == projectId) && (string.IsNullOrEmpty(rowId) || rowId == projectId))
+            {
+                foreach (var part in (row["dispatch"] as JsonArray)?.OfType<JsonObject>() ?? [])
+                    Add(part, row, false);
+            }
         }
         foreach (var record in (_store["workerHistory"] as JsonArray)?.OfType<JsonObject>().Where(r => StringOrNull(r["id"]) == projectId).Reverse() ?? [])
             foreach (var part in (record["dispatch"] as JsonArray)?.OfType<JsonObject>() ?? []) Add(part, record, true);
@@ -1536,14 +1847,56 @@ public sealed class OrchestratorState
 
     public OrchestratorStateSnapshot Snapshot(NotebookPlan plan, string? projectId = null)
     {
+        using var _ = EnterGate();
+        var projectList = plan.Projects ?? [];
+        RememberStartup(plan);
+        var bridge = SharedBridge();
+        foreach (var item in projectList.Where(p => string.IsNullOrEmpty(projectId) || p.Id == projectId))
+        {
+            var legacy = EntryRow(item.Id);
+            if (bridge is not null)
+            {
+                var raw = NotebookItemJson(item);
+                bridge.Observe(raw);
+                if (_collaborators.Phase2 && string.IsNullOrEmpty(StringOrNull(legacy["megaTaskId"])) && StringOrNull(legacy["status"]) == "watching")
+                {
+                    ReconcileLegacyWatchingRow(item, legacy);
+                }
+                var job = item.Tasks?.FirstOrDefault(t => t.ExecutionVersion == 2 && t.Status == "running");
+                if (job is not null && bridge.Find(item.Id, job.Id) is { } mega)
+                {
+                    RequireSharedRow(bridge, item.Id, StringOrNull(mega["id"]));
+                    // A view may collect finished work, but it never schedules another worker.
+                    bridge.Advance(raw, NotebookTaskJson(job), [], false);
+                }
+            }
+            else if (_collaborators.Phase2 && string.IsNullOrEmpty(StringOrNull(legacy["megaTaskId"])) && StringOrNull(legacy["status"]) == "watching")
+            {
+                ReconcileLegacyWatchingRow(item, legacy);
+            }
+        }
+        if (_collaborators.RefreshPhaseTwoResearch is not null)
+            _collaborators.RefreshPhaseTwoResearch(plan, false, projectId);
+        else RefreshPhaseTwoResearch(plan, false, projectId);
+        if (_collaborators.RefreshResearch is not null) _collaborators.RefreshResearch();
+        else RefreshResearch();
         var projects = new List<ProjectSnapshot>();
-        foreach (var item in plan.Projects ?? [])
+        foreach (var item in projectList)
         {
             var row = EntryRow(item.Id);
             projects.Add(ProjectSnapshotOf(item, row));
         }
         var models = ModelsFromStore();
         var execution = ExecutionFromStore();
+        var selectedLeadId = ResolveLeadId(projectId);
+        var leadModel = ResolveLeadModel(models, selectedLeadId);
+        var grillPropose = !(_store["grillPropose"] is JsonValue gp && gp.TryGetValue<bool>(out var gpv) && !gpv);
+        var grillKind = !grillPropose ? "off" : (StringOrNull(_store["grillKind"]) == "docs" ? "docs" : "me");
+        var thinkingByProject = ThinkingByProjectFromStore();
+        var thinkingFocus = LiveThinkingFromStore(thinkingByProject, projectId);
+        var (projectTools, projectToolSettings) = ProjectToolsFromStore(projectId);
+        var teamScopeId = !string.IsNullOrEmpty(projectId) && (_store["projectTeams"] as JsonObject)?.ContainsKey(projectId) == true ? projectId : null;
+
         return new OrchestratorStateSnapshot
         {
             UpdatedAt = _now(),
@@ -1555,17 +1908,31 @@ public sealed class OrchestratorState
             Mode = StringOrNull(_store["mode"]) == "auto" ? "auto" : "manual",
             AutoDecide = AutoDecideFromStore(),
             DefaultAutoDecide = BoolOrFalse(_store["defaultAutoDecide"]),
-            DecisionsInbox = DecisionsFromStore(),
+            DecisionsInbox = DecisionsFromStore(projectList),
             Autonomy = AutonomyFromStore(),
-            GrillPropose = !(_store["grillPropose"] is JsonValue gp && gp.TryGetValue<bool>(out var gpv) && !gpv),
-            GrillKind = StringOrNull(_store["grillKind"]) == "docs" ? "docs" : "me",
+            GrillPropose = grillPropose,
+            GrillKind = grillKind,
             Models = models,
             Researches = ResearchFromStore(),
             Asks = AsksFromStore(),
-            Asking = (_store["thinkingByKey"] as JsonObject)?.Count > 0,
+            Thinking = thinkingFocus,
+            ThinkingByProject = thinkingByProject,
+            ProjectTools = projectTools,
+            ProjectToolSettings = projectToolSettings,
+            Asking = thinkingByProject.Count > 0,
+            OrchestratorId = leadModel?.Id,
+            SelectedOrchestratorId = selectedLeadId,
+            TeamProjectId = teamScopeId,
+            OwnTeam = teamScopeId is not null,
             GoldModelId = StringOrNull(_store["goldModelId"]),
-            OrchestratorLabel = models.FirstOrDefault()?.Label ?? OrchestratorDefaultName,
-            Orchestrators = models.Select(m => new OrchestratorChoice(m.Id, m.Label, m.Provider, m.Plan)).ToArray(),
+            OrchestratorUnavailableReason = !string.IsNullOrEmpty(selectedLeadId) && leadModel is null
+                ? "Selected orchestrator is unavailable or blocked by its usage policy. Choose an eligible model or configure an explicit fallback."
+                : null,
+            OrchestratorLabel = leadModel?.Label ?? OrchestratorDefaultName,
+            Orchestrators = models
+                .Where(m => m.Raw is null || OrchestratorTeamModels.CanOrchestrate(m.Raw))
+                .Select(m => new OrchestratorChoice(m.Id, m.Label, m.Provider, m.Plan))
+                .ToArray(),
             Projects = projects
         };
     }
@@ -1574,57 +1941,272 @@ public sealed class OrchestratorState
     {
         var entry = ProjectEntryFromObject(row);
         var terminal = entry.Status is "complete" or "failed" or "checkpointed";
+        var executionObj = _store["execution"] as JsonObject;
+        var execResults = (executionObj?["results"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        var execMegas = (executionObj?["megaTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        var rowSubTasks = (row["subTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+
         var dispatch = new List<DispatchView>();
+        var dispatchForCrew = new JsonArray();
         var sessions = new List<ActivitySession>();
         foreach (var part in (row["dispatch"] as JsonArray)?.OfType<JsonObject>() ?? [])
         {
             var pid = IntOrNull(part["pid"]);
-            var alive = !terminal && pid is int p && (_collaborators.IsProcessAlive?.Invoke(p.ToString()) ?? BoolOrFalse(part["alive"]));
-            part["observedAlive"] = alive;
-            var session = SessionFor(item.Id, row, part, false, dispatch.Count);
+            var alive = pid is int p && (_collaborators.IsProcessAlive?.Invoke(p.ToString()) ?? BoolOrFalse(part["alive"]));
+            var subId = StringOrNull(part["subTaskId"]);
+            var attemptId = StringOrNull(part["attemptId"]);
+            var resultObj = !string.IsNullOrEmpty(attemptId)
+                ? execResults.FirstOrDefault(r => StringOrNull(r["attemptId"]) == attemptId)
+                : null;
+            var partMegaId = StringOrNull(part["megaTaskId"]) ?? StringOrNull(resultObj?["megaTaskId"]);
+            var assignmentMega = !string.IsNullOrEmpty(partMegaId)
+                ? execMegas.FirstOrDefault(m => StringOrNull(m["id"]) == partMegaId)
+                : null;
+            var historicalAssignment = assignmentMega is not null && StringOrNull(assignmentMega["id"]) != entry.MegaTaskId;
+            var effectiveAlive = !terminal && !historicalAssignment && !BoolOrFalse(part["stoppedByUser"]) && alive;
+
+            var partCopy = (JsonObject)part.DeepClone();
+            if (assignmentMega is not null && !string.IsNullOrEmpty(StringOrNull(assignmentMega["id"])))
+            {
+                partCopy["megaTaskId"] = assignmentMega["id"]?.DeepClone();
+            }
+            partCopy["observedAlive"] = !terminal && !historicalAssignment && alive;
+            partCopy["alive"] = effectiveAlive;
+
+            var session = dispatch.Count < ActivitySessions.SessionLimit
+                ? SessionFor(item.Id, row, partCopy, historicalAssignment, dispatch.Count)
+                : null;
             if (session is not null) sessions.Add(session);
-            dispatch.Add(new DispatchView(StringOrNull(part["subTaskId"]), StringOrNull(part["megaTaskId"]),
-                StringOrNull(part["attemptId"]), StringOrNull(part["modelId"]), StringOrNull(part["label"]),
-                StringOrNull(part["slice"]), StringOrNull(part["folder"]), StringOrNull(part["resultPath"]),
-                StringOrNull(part["logPath"]), pid, alive, BoolOrFalse(part["stoppedByUser"]),
-                StringOrNull(part["activity"]), session, false, null, entry.Status, alive, ReadDiagnostic(StringOrNull(part["resultPath"]))));
+
+            var assignmentTitle = StringOrNull(assignmentMega?["title"]);
+            var assignmentStatus = historicalAssignment
+                ? StringOrNull(resultObj?["status"]) switch
+                {
+                    "COMPLETE" => "complete",
+                    "FAILED" => "failed",
+                    "BLOCKED" => "blocked",
+                    _ => "historical"
+                }
+                : entry.Status;
+            var partActivity = historicalAssignment
+                ? (StringOrNull(resultObj?["summary"]) ?? "Original activity is not retained for this historical assignment.")
+                : StringOrNull(part["activity"]);
+
+            partCopy["historicalAssignment"] = historicalAssignment;
+            partCopy["assignmentJobTitle"] = assignmentTitle;
+            partCopy["assignmentStatus"] = assignmentStatus;
+            if (historicalAssignment) partCopy["activity"] = partActivity;
+            if (session?.Raw is not null) partCopy["activitySession"] = (JsonObject)session.Raw.DeepClone();
+            dispatchForCrew.Add((JsonNode)partCopy);
+
+            dispatch.Add(new DispatchView(
+                subId,
+                partMegaId,
+                attemptId,
+                StringOrNull(part["modelId"]),
+                StringOrNull(part["label"]),
+                StringOrNull(part["slice"]),
+                StringOrNull(part["folder"]),
+                StringOrNull(part["resultPath"]),
+                StringOrNull(part["logPath"]),
+                pid,
+                effectiveAlive,
+                BoolOrFalse(part["stoppedByUser"]),
+                partActivity,
+                session,
+                historicalAssignment,
+                assignmentTitle,
+                assignmentStatus,
+                alive,
+                ReadDiagnostic(StringOrNull(part["resultPath"]))));
         }
+
         var all = ActivityMetadata(item.Id);
-        foreach (var old in all.Where(value => value.Historical).Take(ActivitySessions.SessionLimit - sessions.Count))
+        foreach (var old in all.Where(value => value.Historical))
         {
+            if (sessions.Count >= ActivitySessions.SessionLimit) break;
             var session = SessionFor(item.Id, old.Record, old.Part, true, old.Index);
-            if (session is not null && sessions.All(s => s.AttemptId != session.AttemptId)) sessions.Add(session);
+            if (session is not null && (string.IsNullOrEmpty(session.AttemptId) || sessions.All(s => s.AttemptId != session.AttemptId)))
+            {
+                sessions.Add(session);
+            }
         }
-        var plan = item.Revisions?.LastOrDefault()?.Direction ?? item.Goal;
-        var docs = entry.Docs.ToArray();
-        var facts = entry.Facts;
-        var docsAvailability = docs.Length > 0 ? "available" : item.Folder is null && item.Github is null ? "unlinked" : "unknown";
+
+        var latestRevision = item.Revisions?.LastOrDefault();
+        var goal = latestRevision?.Direction ?? item.Goal;
+        var goalStarted = item.GoalStarted || (latestRevision is not null && !string.IsNullOrEmpty(latestRevision.Id) &&
+            item.Tasks?.Any(t => t.RevisionId == latestRevision.Id) == true);
+        var docs = entry.Docs.Count > 0
+            ? entry.Docs.ToArray()
+            : CollectDocsFromFactsObject(row["facts"] as JsonObject);
+        var factsFolder = StringOrNull(row["facts"]?["folder"]);
+        var docsInspected = row["facts"] is JsonObject && (string.IsNullOrEmpty(factsFolder) || factsFolder == item.Folder);
+        var docsAvailability = docs.Length > 0
+            ? "available"
+            : item.Folder is null && item.Github is null
+                ? "unlinked"
+                : docsInspected && item.Github is null
+                    ? "none"
+                    : "unknown";
         var task = item.Tasks?.FirstOrDefault(t => t.Status == "running");
-        var crew = CrewOf(entry, ModelsFromStore().FirstOrDefault()?.Label, ExecutionFromStore());
+        var models = ModelsFromStore();
+        var selectedLeadId = ResolveLeadId(item.Id);
+        var leadModel = ResolveLeadModel(models, selectedLeadId);
+        var leadLabel = ProjectLeadLabel(item.Id, leadModel, models);
+        var orchDoing = OrchestratorDoing(row);
+
+        var crewRow = (JsonObject)row.DeepClone();
+        crewRow["dispatch"] = dispatchForCrew;
+        crewRow["orchestratorDoing"] = orchDoing;
+        crewRow["orchestratorLabel"] = leadLabel;
+        var crew = CrewOf(crewRow, leadLabel, executionObj);
+
+        var chatMode = (_store["chatModes"] as JsonObject)?[item.Id] is JsonNode cmNode && StringOrNull(cmNode) is string cmText
+            ? NormalizeChatMode(cmText)
+            : NormalizeChatMode(item.ChatMode);
+        var savingMode = (_store["savingModes"] as JsonObject)?[item.Id] is JsonNode smNode && StringOrNull(smNode) is string smText
+            ? ModelRouting.PersistedSavingMode(smText)
+            : ModelRouting.PersistedSavingMode(item.SavingMode);
+
+        var repoMatches = entry.Repository is not null &&
+            entry.Repository.Folder == item.Folder &&
+            entry.Repository.Github == item.Github;
+        var repository = repoMatches ? RepositoryFromObject(row["repository"]) : null;
+
+        var megaResultsArr = new JsonArray(!string.IsNullOrEmpty(entry.MegaTaskId)
+            ? execResults.Where(r => StringOrNull(r["megaTaskId"]) == entry.MegaTaskId).Select(r => (JsonNode)r.DeepClone()).ToArray()
+            : []);
+        var (plainSummary, plainFrom) = PlainLines.WorkSummary(row["megaTask"] as JsonObject, megaResultsArr, row["subTasks"] as JsonArray);
+        var plainSteps = new JsonArray(rowSubTasks.Select(s =>
+        {
+            var (line, from) = PlainLines.StepLine(s);
+            return (JsonNode)new JsonObject { ["id"] = s["id"]?.DeepClone(), ["line"] = line, ["from"] = from };
+        }).ToArray());
+        var plainWork = new JsonObject { ["summary"] = plainSummary, ["summaryFrom"] = plainFrom, ["steps"] = plainSteps };
+
+        var subTaskViews = rowSubTasks.Select(s =>
+        {
+            var cloned = (JsonObject)s.DeepClone();
+            cloned["plainLine"] = PlainLines.StepLine(s).Line;
+            return new PlainSubTask(
+                StringOrNull(s["id"]) ?? "",
+                StringOrNull(s["title"]) ?? "",
+                StringOrNull(s["status"]) ?? "",
+                StringOrNull(s["resultId"]),
+                cloned);
+        }).ToArray();
+
+        var resultSummaries = !string.IsNullOrEmpty(entry.MegaTaskId)
+            ? execResults.Where(r => StringOrNull(r["megaTaskId"]) == entry.MegaTaskId).Select(r => new PlainResultSummary(
+                StringOrNull(r["attemptId"]) ?? "",
+                StringOrNull(r["status"]) ?? "",
+                ClipSummary(StringOrNull(r["summary"]) ?? ""),
+                (JsonObject)r.DeepClone())).ToArray()
+            : [];
+
+        var openDecisions = OpenDecisionsOf(item.Id, entry.MegaTaskId, executionObj);
+        var itemJson = NotebookItemJson(item);
+        var nextText = ExecutionNext.GetHomeNext(itemJson, row, executionObj);
+        if (string.IsNullOrEmpty(nextText)) nextText = entry.Next;
+
+        var resumableCheckpoints = (executionObj?["checkpoints"] as JsonArray)?.OfType<JsonObject>()
+            .Where(cp => StringOrNull(cp["projectId"]) == item.Id &&
+                execMegas.FirstOrDefault(m => StringOrNull(m["id"]) == StringOrNull(cp["megaTaskId"])) is JsonObject targetMega &&
+                StringOrNull(targetMega["status"]) is "PAUSED" or "FAILED")
+            .Select(cp => new CheckpointRecord(StringOrNull(cp["path"]) ?? StringOrNull(cp["id"])))
+            .ToArray() ?? [];
+
+        var workerAlive = !terminal && (dispatch.Count > 0
+            ? dispatch.Any(part => part.Alive)
+            : (entry.WorkerPid is int wp && (_collaborators.IsProcessAlive?.Invoke(wp.ToString()) ?? entry.WorkerAlive)));
+
+        var aliveCount = dispatch.Count > 0 ? dispatch.Count(p => p.Alive) : (workerAlive ? 1 : 0);
+        MonitoringMetrics? monitoringView = null;
+        if (entry.Monitoring is not null)
+        {
+            var rawMon = entry.Monitoring.Raw is not null ? (JsonObject)entry.Monitoring.Raw.DeepClone() : new JsonObject();
+            rawMon["alive"] = aliveCount;
+            monitoringView = entry.Monitoring with { Alive = aliveCount, Raw = rawMon };
+        }
+
+        var megaStatus = StringOrNull(row["megaTask"]?["status"])?.ToUpperInvariant() ?? "";
+        var canResume = entry.Status != "complete" &&
+            row["checkpoint"] is JsonObject cpObj &&
+            megaStatus != "RUNNING" &&
+            !dispatch.Any(p => p.Alive) &&
+            (item.Tasks?.Any(t => t.Status == "running" && CheckpointMatches(cpObj, t)) == true);
+        var canStop = entry.Status == "watching" &&
+            (item.Tasks?.Any(t => t.Status == "running") == true);
+
+        var isLegacyPhase2Complete = _collaborators.Phase2 && string.IsNullOrEmpty(entry.MegaTaskId) && entry.Status == "complete";
+
         return new ProjectSnapshot
         {
-            Id = item.Id, Name = item.Name, Folder = item.Folder, Github = item.Github, Repository = entry.Repository,
-            Goal = plan ?? "", GoalStarted = item.GoalStarted, ChatMode = item.ChatMode, SavingMode = item.SavingMode,
-            Notes = (item.Notes ?? []).ToArray(), StateArt = item.StateArt, Open = (item.Open ?? []).ToArray(),
-            Status = entry.Status, Label = StatusLabel(entry.Status), Doing = entry.Doing, Plan = entry.Plan.ToArray(),
-            Facts = facts, JobTitle = entry.JobTitle ?? task?.Title, JobId = entry.JobId ?? task?.Id, AttemptId = entry.AttemptId,
-            MegaTaskId = entry.MegaTaskId, MegaTask = entry.MegaTask, SubTasks = entry.SubTasks?.Select(s => new PlainSubTask(s.Id, s.Title, s.Status)).ToArray() ?? [],
-            Plain = new PlainWorkSummary(entry.Status, entry.Doing), Results = [],
-            CheckpointId = entry.Checkpoint?.Path, ResumableCheckpoints = entry.Checkpoint is null ? [] : [entry.Checkpoint],
-            ModelId = entry.ModelId, WorkerLabel = entry.WorkerLabel, WaitingFor = entry.WaitingFor,
-            Next = entry.Next, Step = StepOf(entry), Pipeline = PipelineOf(entry), LeadLabel = crew.FirstOrDefault()?.Name ?? OrchestratorDefaultName,
-            Crew = crew.ToArray(), ResultPath = entry.ResultPath, WatchingSince = entry.WatchingSince, Approved = entry.Approved,
-            SessionId = entry.AuthorizedSessionId ?? _sessionId, CanStart = entry.Status is "idle" or "failed" or "complete",
-            CanResume = entry.Status == "checkpointed", CanStop = entry.Status == "watching", PendingAutoStart = entry.PendingAutoStart is not null,
-            Dispatch = dispatch.ToArray(), ActivitySessionPagination = new(true, all.Count, ActivitySessions.SessionLimit),
-            ActivitySessions = sessions.Take(ActivitySessions.SessionLimit).ToArray(), Checkpoint = entry.Checkpoint,
-            Timing = task?.Timing ?? entry.PendingAutoStart?.Timing, DeadlineAt = task?.DeadlineAt ?? entry.PendingAutoStart?.DeadlineAt,
-            CanGrillDocs = docsAvailability is "available" or "unknown", DocsAvailability = docsAvailability, Docs = docs,
-            GrillSkipped = entry.GrillSkipped, Log = entry.Log.ToArray(), WorkerPid = entry.WorkerPid,
-            WorkerAlive = !terminal && entry.WorkerPid is int wp && (_collaborators.IsProcessAlive?.Invoke(wp.ToString()) ?? entry.WorkerAlive),
-            WorkerLog = entry.WorkerLog, WorkerTail = entry.WorkerTail, WorkerActivity = entry.WorkerActivity,
-            OrchestratorDoing = OrchestratorDoing(entry), OrchestratorLabel = crew.FirstOrDefault()?.Name ?? OrchestratorDefaultName,
-            Monitoring = entry.Monitoring
+            Id = item.Id,
+            Name = item.Name,
+            Folder = item.Folder,
+            Github = item.Github,
+            Repository = repository,
+            Goal = goal ?? "",
+            GoalStarted = goalStarted,
+            ChatMode = chatMode,
+            SavingMode = savingMode,
+            Notes = (item.Notes ?? []).ToArray(),
+            StateArt = !string.IsNullOrEmpty(latestRevision?.State) ? latestRevision.State : item.StateArt,
+            Open = (latestRevision?.Open ?? item.Open ?? []).ToArray(),
+            Status = entry.Status,
+            Label = isLegacyPhase2Complete ? "Legacy completion recorded" : StatusLabel(entry.Status),
+            Doing = isLegacyPhase2Complete ? "Historical completion recorded. This run predates structured Phase 2 results." : entry.Doing,
+            Plan = entry.Plan.ToArray(),
+            Facts = entry.Facts,
+            GoldModel = (item.Tasks?.FirstOrDefault(t => t.Id == entry.JobId)?.GoldModel?.Id) ?? task?.GoldModel?.Id,
+            JobTitle = entry.JobTitle ?? task?.Title,
+            JobId = entry.JobId ?? task?.Id,
+            AttemptId = entry.AttemptId,
+            MegaTaskId = entry.MegaTaskId,
+            MegaTask = entry.MegaTask,
+            SubTasks = subTaskViews,
+            Plain = new PlainWorkSummary(entry.Status, plainSummary, plainWork),
+            Results = resultSummaries,
+            CheckpointId = StringOrNull(row["checkpoint"]?["id"]) ?? entry.Checkpoint?.Path,
+            ResumableCheckpoints = resumableCheckpoints,
+            ModelId = entry.ModelId,
+            WorkerLabel = entry.WorkerLabel,
+            WaitingFor = entry.WaitingFor,
+            OpenDecisions = openDecisions,
+            Next = nextText,
+            Step = StepOf(row),
+            Pipeline = PipelineOf(row),
+            LeadLabel = leadLabel,
+            Crew = crew.ToArray(),
+            ResultPath = entry.ResultPath,
+            WatchingSince = entry.WatchingSince,
+            Approved = entry.Approved,
+            SessionId = entry.AuthorizedSessionId,
+            CanStart = true,
+            CanResume = canResume,
+            CanStop = canStop,
+            PendingAutoStart = entry.PendingAutoStart is not null,
+            Dispatch = dispatch.ToArray(),
+            ActivitySessionPagination = new(true, all.Count, ActivitySessions.SessionLimit),
+            ActivitySessions = sessions.Take(ActivitySessions.SessionLimit).ToArray(),
+            Checkpoint = entry.Checkpoint,
+            Timing = task?.Timing ?? entry.PendingAutoStart?.Timing,
+            DeadlineAt = task?.DeadlineAt ?? entry.PendingAutoStart?.DeadlineAt,
+            CanGrillDocs = docsAvailability is "available" or "unknown",
+            DocsAvailability = docsAvailability,
+            Docs = docs,
+            GrillSkipped = entry.GrillSkipped,
+            Log = entry.Log.ToArray(),
+            WorkerPid = entry.WorkerPid,
+            WorkerAlive = workerAlive,
+            WorkerLog = entry.WorkerLog,
+            WorkerTail = entry.WorkerTail,
+            WorkerActivity = entry.WorkerActivity,
+            OrchestratorDoing = orchDoing,
+            OrchestratorId = leadModel?.Id,
+            OrchestratorLabel = leadModel?.Label ?? OrchestratorDefaultName,
+            Monitoring = monitoringView
         };
     }
 
@@ -1632,8 +2214,12 @@ public sealed class OrchestratorState
     {
         var session = ActivitySessions.AssignmentSession(new JsonObject
         {
-            ["projectId"] = projectId, ["row"] = (JsonObject)row.DeepClone(), ["part"] = (JsonObject)part.DeepClone(),
-            ["execution"] = ObjectOrEmpty(_store["execution"]), ["historical"] = historical, ["index"] = index,
+            ["projectId"] = projectId,
+            ["row"] = (JsonObject)row.DeepClone(),
+            ["part"] = (JsonObject)part.DeepClone(),
+            ["execution"] = ObjectOrEmpty(_store["execution"]),
+            ["historical"] = historical,
+            ["index"] = index,
             ["tail"] = ActivitySessions.ReadRecordedTail(StringOrNull(part["logPath"]), _dir)
         });
         return session is null ? null : ActivitySessionFromJson(session);
@@ -1644,8 +2230,17 @@ public sealed class OrchestratorState
         if (string.IsNullOrEmpty(resultPath) || string.IsNullOrEmpty(_dir)) return null;
         try
         {
+            var rootCanonical = ProjectWorkspace.LinkedWorkspace(_dir) ?? Path.GetFullPath(_dir);
             var file = Path.GetFullPath(resultPath + ".diagnostic.json");
             if (!ProjectWorkspace.Within(_dir, file) || !File.Exists(file)) return null;
+            var parentCanonical = ProjectWorkspace.LinkedWorkspace(Path.GetDirectoryName(file));
+            if (parentCanonical is null || !ProjectWorkspace.Within(rootCanonical, parentCanonical)) return null;
+            var fileInfo = new FileInfo(file);
+            if ((fileInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                var target = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
+                if (target is null || !ProjectWorkspace.Within(rootCanonical, target.FullName)) return null;
+            }
             return JsonNode.Parse(File.ReadAllText(file, Encoding.UTF8)) as JsonObject;
         }
         catch { return null; }
@@ -1710,27 +2305,266 @@ public sealed class OrchestratorState
         return result;
     }
 
-    private DecisionsInbox DecisionsFromStore()
+    private DecisionsInbox DecisionsFromStore(IReadOnlyList<NotebookProject> projects)
     {
-        var source = _store["decisionsInbox"] as JsonObject;
-        static IReadOnlyList<DecisionRecord> Parse(JsonNode? node) => (node as JsonArray)?.OfType<JsonObject>().Select(d => new DecisionRecord(
-            StringOrNull(d["id"]) ?? "", StringOrNull(d["text"]) ?? "", StringOrNull(d["projectId"]),
-            StringOrNull(d["suggestion"]), BoolOrFalse(d["breaks"]), StringOrNull(d["answer"]), (JsonObject)d.DeepClone())).ToArray() ?? [];
-        var open = Parse(source?["open"]);
-        var answered = Parse(source?["answered"]);
-        return new DecisionsInbox(open, answered, IntOrNull(source?["openCount"]) ?? open.Count);
+        var executionDecisions = (_store["execution"]?["decisions"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        var pipelineJobs = (_store["pipelineJobs"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        if (executionDecisions.Length == 0 && pipelineJobs.Length == 0 && _store["decisionsInbox"] is JsonObject source)
+        {
+            static IReadOnlyList<DecisionRecord> Parse(JsonNode? node) => (node as JsonArray)?.OfType<JsonObject>().Select(d => new DecisionRecord(
+                StringOrNull(d["id"]) ?? "", StringOrNull(d["text"]) ?? "", StringOrNull(d["projectId"]),
+                StringOrNull(d["suggestion"]), BoolOrFalse(d["breaks"]), StringOrNull(d["answer"]), (JsonObject)d.DeepClone())).ToArray() ?? [];
+            var openLegacy = Parse(source["open"]);
+            var answeredLegacy = Parse(source["answered"]);
+            return new DecisionsInbox(openLegacy, answeredLegacy, IntOrNull(source["openCount"]) ?? openLegacy.Count);
+        }
+
+        var megaTasks = (_store["execution"]?["megaTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        var subTasks = (_store["execution"]?["subTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        var projectMap = projects.ToDictionary(p => p.Id, p => p, StringComparer.Ordinal);
+        var all = new List<(DecisionRecord Record, bool Breaks, string SortTime)>();
+
+        foreach (var d in executionDecisions)
+        {
+            var projId = StringOrNull(d["projectId"]) ?? "";
+            var megaId = StringOrNull(d["megaTaskId"]) ?? "";
+            var mega = megaTasks.FirstOrDefault(m => StringOrNull(m["id"]) == megaId);
+            var projName = projectMap.TryGetValue(projId, out var p) ? p.Name : (string.IsNullOrEmpty(projId) ? "Project" : projId);
+            var workTitle = StringOrNull(mega?["title"]) ?? StringOrNull(mega?["goal"]) ?? (string.IsNullOrEmpty(megaId) ? "Work" : megaId);
+            var stepStarted = !string.IsNullOrEmpty(megaId) && subTasks.Any(s =>
+                StringOrNull(s["megaTaskId"]) == megaId && StringOrNull(s["status"]) is "RUNNING" or "COMPLETE");
+            var at = StringOrNull(d["at"]) ?? _now();
+            var answer = StringOrNull(d["answer"]) ?? "";
+            var answeredAt = StringOrNull(d["answeredAt"]);
+            var raw = (JsonObject)d.DeepClone();
+            raw["projectName"] = projName;
+            raw["workId"] = megaId;
+            raw["workTitle"] = workTitle;
+            raw["isPipeline"] = false;
+            raw["stepStarted"] = stepStarted;
+            var rec = new DecisionRecord(
+                StringOrNull(d["id"]) ?? "",
+                StringOrNull(d["text"]) ?? "",
+                projId,
+                StringOrNull(d["suggestion"]) ?? "",
+                BoolOrFalse(d["breaks"]),
+                string.IsNullOrEmpty(answer) ? null : answer,
+                raw);
+            all.Add((rec, BoolOrFalse(d["breaks"]), answeredAt ?? at));
+        }
+
+        foreach (var job in pipelineJobs)
+        {
+            var projId = StringOrNull(job["projectId"]) ?? "";
+            var jobId = StringOrNull(job["id"]) ?? "";
+            var projName = projectMap.TryGetValue(projId, out var p) ? p.Name : (string.IsNullOrEmpty(projId) ? "Pipeline" : projId);
+            var workTitle = StringOrNull(job["title"]) ?? (string.IsNullOrEmpty(jobId) ? "Pipeline job" : jobId);
+            var stepStarted = StringOrNull(job["status"]) is "specifying" or "building" or "merged";
+            foreach (var q in (job["questions"] as JsonArray)?.OfType<JsonObject>() ?? [])
+            {
+                var qId = StringOrNull(q["id"]) ?? "";
+                var at = StringOrNull(q["at"]) ?? StringOrNull(job["updatedAt"]) ?? StringOrNull(job["createdAt"]) ?? _now();
+                var answer = StringOrNull(q["answer"]) ?? "";
+                var answeredAt = StringOrNull(q["answeredAt"]);
+                var raw = (JsonObject)q.DeepClone();
+                raw["id"] = $"pipeline:{jobId}:{qId}";
+                raw["projectId"] = projId;
+                raw["projectName"] = projName;
+                raw["workId"] = jobId;
+                raw["workTitle"] = workTitle;
+                raw["isPipeline"] = true;
+                raw["stepStarted"] = stepStarted;
+                var rec = new DecisionRecord(
+                    $"pipeline:{jobId}:{qId}",
+                    StringOrNull(q["text"]) ?? "",
+                    projId,
+                    StringOrNull(q["suggestion"]) ?? "",
+                    BoolOrFalse(q["breaks"]),
+                    string.IsNullOrEmpty(answer) ? null : answer,
+                    raw);
+                all.Add((rec, BoolOrFalse(q["breaks"]), answeredAt ?? at));
+            }
+        }
+
+        static long ParseTimeMs(string s) => DateTimeOffset.TryParse(s, out var dto) ? dto.ToUnixTimeMilliseconds() : 0;
+        var sorted = all
+            .OrderByDescending(x => x.Breaks)
+            .ThenByDescending(x => ParseTimeMs(x.SortTime))
+            .Select(x => x.Record)
+            .ToArray();
+        var open = sorted.Where(r => string.IsNullOrEmpty(r.Answer)).ToArray();
+        var answered = sorted.Where(r => !string.IsNullOrEmpty(r.Answer)).ToArray();
+        return new DecisionsInbox(open, answered, open.Length);
     }
 
     private IReadOnlyList<ResearchRecord> ResearchFromStore()
     {
-        return (_store["researches"] as JsonArray)?.OfType<JsonObject>().Select(r => new ResearchRecord(
-            StringOrNull(r["id"]) ?? "", StringOrNull(r["projectId"]) ?? "", StringOrNull(r["megaTaskId"]), StringOrNull(r["attemptId"]),
-            StringOrNull(r["modelId"]), StringOrNull(r["provider"]), StringOrNull(r["cli"]), StringOrNull(r["status"]) ?? "",
-            StringOrNull(r["doing"]), StringOrNull(r["activity"]), StringOrNull(r["reason"]), StringOrNull(r["folder"]),
-            StringOrNull(r["reportPath"]), StringOrNull(r["resultPath"]), StringOrNull(r["logPath"]), IntOrNull(r["pid"]),
-            BoolOrFalse(r["alive"]), BoolOrFalse(r["reportAvailable"]), StringOrNull(r["workerTail"]) ?? "",
-            StringOrNull(r["sessionId"]), StringOrNull(r["startedAt"]) ?? "", StringOrNull(r["updatedAt"]) ?? "",
-            IntOrNull(r["executionVersion"]) ?? 2)).ToArray() ?? [];
+        return (_store["researches"] as JsonArray)?.OfType<JsonObject>().Select(r =>
+        {
+            var dispatch = (r["dispatch"] as JsonArray)?.OfType<JsonObject>().Select(part => new DispatchView(
+                StringOrNull(part["subTaskId"]),
+                StringOrNull(part["megaTaskId"]),
+                StringOrNull(part["attemptId"]),
+                StringOrNull(part["modelId"]),
+                StringOrNull(part["label"]),
+                StringOrNull(part["slice"]),
+                StringOrNull(part["folder"]),
+                StringOrNull(part["resultPath"]),
+                StringOrNull(part["logPath"]),
+                IntOrNull(part["pid"]),
+                BoolOrFalse(part["alive"]),
+                BoolOrFalse(part["stoppedByUser"]),
+                StringOrNull(part["activity"]),
+                Diagnostic: ReadDiagnostic(StringOrNull(part["resultPath"])))).ToArray();
+            return new ResearchRecord(
+                StringOrNull(r["id"]) ?? "", StringOrNull(r["projectId"]) ?? "", StringOrNull(r["megaTaskId"]), StringOrNull(r["attemptId"]),
+                StringOrNull(r["modelId"]), StringOrNull(r["provider"]), StringOrNull(r["cli"]), StringOrNull(r["status"]) ?? "",
+                StringOrNull(r["doing"]), StringOrNull(r["activity"]), StringOrNull(r["reason"]), StringOrNull(r["folder"]),
+                StringOrNull(r["reportPath"]), StringOrNull(r["resultPath"]), StringOrNull(r["logPath"]), IntOrNull(r["pid"]),
+                BoolOrFalse(r["alive"]), BoolOrFalse(r["reportAvailable"]), StringOrNull(r["workerTail"]) ?? "",
+                StringOrNull(r["sessionId"]), StringOrNull(r["startedAt"]) ?? "", StringOrNull(r["updatedAt"]) ?? "",
+                IntOrNull(r["executionVersion"]) ?? 2, dispatch, ReadDiagnostic(StringOrNull(r["resultPath"])));
+        }).ToArray() ?? [];
+    }
+
+    private string? ResolveLeadId(string? projectId)
+    {
+        if (!string.IsNullOrEmpty(projectId) && _store["projectTeams"] is JsonObject teams && teams[projectId] is JsonObject team)
+        {
+            return StringOrNull(team["orchestratorId"]);
+        }
+        return StringOrNull(_store["orchestratorId"]);
+    }
+
+    private static ModelInfo? ResolveLeadModel(IReadOnlyList<ModelInfo> models, string? leadId)
+    {
+        if (string.IsNullOrEmpty(leadId)) return null;
+        var model = models.FirstOrDefault(m => m.Id == leadId);
+        if (model is null) return null;
+        if (!model.Enabled || !model.Available) return null;
+        if (model.Raw is not null && !OrchestratorTeamModels.CanOrchestrate(model.Raw)) return null;
+        return model;
+    }
+
+    private string ProjectLeadLabel(string projectId, ModelInfo? sharedLead, IReadOnlyList<ModelInfo> models)
+    {
+        if (_store["projectTeams"] is JsonObject teams && teams[projectId] is JsonObject team)
+        {
+            var ownId = StringOrNull(team["orchestratorId"]);
+            if (!string.IsNullOrEmpty(ownId))
+            {
+                var ownModel = models.FirstOrDefault(m => m.Id == ownId);
+                return ownModel?.Label ?? ownId;
+            }
+            return OrchestratorDefaultName;
+        }
+        return sharedLead?.Label ?? OrchestratorDefaultName;
+    }
+
+    private IReadOnlyDictionary<string, object> ThinkingByProjectFromStore()
+    {
+        var result = new Dictionary<string, object>(StringComparer.Ordinal);
+        if (_store["thinkingByKey"] is JsonObject obj)
+        {
+            foreach (var (key, val) in obj)
+            {
+                if (val is not null) result[key] = val.DeepClone();
+            }
+        }
+        return result;
+    }
+
+    private IReadOnlyDictionary<string, object> LiveThinkingFromStore(IReadOnlyDictionary<string, object> byProject, string? projectId)
+    {
+        var key = !string.IsNullOrEmpty(projectId) ? projectId : StringOrNull(_store["selectedProjectId"]);
+        object? selected = null;
+        if (!string.IsNullOrEmpty(key) && byProject.TryGetValue(key, out var found))
+        {
+            selected = found;
+        }
+        else if (string.IsNullOrEmpty(projectId) && byProject.Count > 0)
+        {
+            selected = byProject.Values
+                .OfType<JsonObject>()
+                .OrderByDescending(o => StringOrNull(o["startedAt"]) ?? "", StringComparer.Ordinal)
+                .FirstOrDefault();
+        }
+        var dict = new Dictionary<string, object>(StringComparer.Ordinal);
+        if (selected is JsonObject selectedObj)
+        {
+            foreach (var (propKey, propVal) in selectedObj)
+            {
+                if (propVal is not null) dict[propKey] = propVal.DeepClone();
+            }
+        }
+        return dict;
+    }
+
+    private (IReadOnlyDictionary<string, ToolSettings> Tools, IReadOnlyDictionary<string, ToolSettings> Settings) ProjectToolsFromStore(string? projectId)
+    {
+        var tools = new Dictionary<string, ToolSettings>(StringComparer.Ordinal);
+        var settings = new Dictionary<string, ToolSettings>(StringComparer.Ordinal);
+        var raw = _store["projectTools"] as JsonObject;
+        var keys = !string.IsNullOrEmpty(projectId)
+            ? [projectId]
+            : (raw?.Select(p => p.Key).ToArray() ?? []);
+
+        foreach (var id in keys)
+        {
+            var normalized = NormalizeToolSettingsObject(raw?[id]);
+            settings[id] = new ToolSettings((JsonObject)normalized.DeepClone());
+            tools[id] = new ToolSettings(ToolFlagsObject(normalized["default"] as JsonObject));
+        }
+        return (tools, settings);
+    }
+
+    private static IReadOnlyList<DecisionRecord> OpenDecisionsOf(string projectId, string? megaTaskId, JsonObject? execution)
+    {
+        if (string.IsNullOrEmpty(megaTaskId) || execution is null) return [];
+        var mega = (execution["megaTasks"] as JsonArray)?.OfType<JsonObject>()
+            .FirstOrDefault(m => StringOrNull(m["id"]) == megaTaskId);
+        if (StringOrNull(mega?["status"]) == "CANCELLED") return [];
+
+        return (execution["decisions"] as JsonArray)?.OfType<JsonObject>()
+            .Where(d => StringOrNull(d["projectId"]) == projectId &&
+                        StringOrNull(d["megaTaskId"]) == megaTaskId &&
+                        string.IsNullOrEmpty(StringOrNull(d["answer"])))
+            .Select(d => new DecisionRecord(
+                StringOrNull(d["id"]) ?? "",
+                StringOrNull(d["text"]) ?? "",
+                projectId,
+                StringOrNull(d["suggestion"]),
+                BoolOrFalse(d["breaks"]),
+                null,
+                (JsonObject)d.DeepClone()))
+            .ToArray() ?? [];
+    }
+
+    private static string ClipSummary(string value)
+    {
+        if (value.Length <= 600) return value;
+        var decisions = value.Split(["\r\n", "\n"], StringSplitOptions.None)
+            .Where(line => Regex.IsMatch(line, @"needs your decision:", RegexOptions.IgnoreCase))
+            .Select(line => line.Trim())
+            .ToArray();
+        var slice = value[..600];
+        var body = Regex.Replace(slice, @"\s*\S*$", "");
+        body = Regex.Replace(body, @"\n[^\n]*needs your deci[^\n]*$", "", RegexOptions.IgnoreCase);
+        body += "…";
+        var parts = new List<string> { body };
+        foreach (var d in decisions)
+        {
+            if (!body.Contains(d, StringComparison.Ordinal)) parts.Add(d);
+        }
+        return string.Join("\n", parts);
+    }
+
+    private static DocInfo[] CollectDocsFromFactsObject(JsonObject? facts)
+    {
+        if (facts is null) return [];
+        return OrchestratorLeadQuestions.CollectDocs(new OrchestratorLeadQuestions.Facts(facts))
+            .Select(path => new DocInfo(path))
+            .ToArray();
     }
 
     private IReadOnlyList<AskRecord> AsksFromStore()
@@ -1740,63 +2574,648 @@ public sealed class OrchestratorState
             StringOrNull(a["answer"]), StringOrNull(a["at"]), (JsonObject)a.DeepClone())).ToArray() ?? [];
     }
 
-    public Task<OrchestratorStateSnapshot> TickAsync(string? projectId = null, CancellationToken cancellationToken = default)
+    public async Task<OrchestratorStateSnapshot> TickAsync(string? projectId = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var plan = _collaborators.ReadPlan is null
-            ? new NotebookPlan([])
-            : _collaborators.ReadPlan(cancellationToken).GetAwaiter().GetResult();
-        return Task.FromResult(Snapshot(plan, projectId));
+        var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
+        using var _ = PushGateScope(gateAcquired);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_collaborators.RestoreUnavailableModels is not null) _collaborators.RestoreUnavailableModels();
+        else RestoreUnavailableModels();
+        if (_collaborators.RefreshPlans is not null)
+            await _collaborators.RefreshPlans(false, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var plan = _collaborators.ReadPlan is null ? new NotebookPlan([])
+            : await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        RememberStartup(plan);
+        _collaborators.RefreshRepositoryMetadata?.Invoke(plan, projectId);
+        if (!IsShuttingDown)
+        {
+            foreach (var item in (plan.Projects ?? []).Where(p => string.IsNullOrEmpty(projectId) || p.Id == projectId))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (IsShuttingDown) break;
+                var context = new OrchestratorTickProject(item, EntryRow(item.Id),
+                    _startupProjects!.TryGetValue(item.Id, out var initial) && initial.Contains(item.Tasks?.FirstOrDefault(t => t.Status == "running")?.Id ?? ""),
+                    _sessionId, cancellationToken);
+                if (_collaborators.Decide is not null) _collaborators.Decide(context);
+                else DecideProject(context);
+            }
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_collaborators.RefreshPhaseTwoResearch is not null)
+            _collaborators.RefreshPhaseTwoResearch(plan, !IsShuttingDown, projectId);
+        else RefreshPhaseTwoResearch(plan, !IsShuttingDown, projectId);
+        if (_collaborators.RefreshResearch is not null) _collaborators.RefreshResearch();
+        else RefreshResearch();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_collaborators.CompleteTasks is not null)
+        {
+            var completed = CompletedTasks(plan, projectId);
+            if (completed.Count > 0)
+                plan = await _collaborators.CompleteTasks(completed, cancellationToken).ConfigureAwait(false);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        Persist();
+        return Snapshot(plan, projectId);
     }
 
-    public Task<SetFocusResult> SetFocusAsync(string projectId, CancellationToken cancellationToken = default)
+    private bool IsShuttingDown => _collaborators.IsShuttingDown?.Invoke() == true;
+
+    private void RememberStartup(NotebookPlan plan) => _startupProjects ??= plan.Projects.ToDictionary(
+        p => p.Id, p => (p.Tasks ?? []).Where(t => t.Status == "running").Select(t => t.Id).ToHashSet(StringComparer.Ordinal),
+        StringComparer.Ordinal);
+
+    private void RestoreUnavailableModels()
+    {
+        if (!DateTimeOffset.TryParse(_now(), out var now)) return;
+        foreach (var model in (_store["models"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            if (!ModelPolicy.AvailableAgain(model, now.ToUnixTimeMilliseconds())) continue;
+            model["available"] = true;
+            model["unavailableReason"] = null;
+            model["unavailableAt"] = null;
+        }
+    }
+
+    private ExecutionBridge? SharedBridge()
+    {
+        var bridge = _executionBridge ?? _collaborators.ExecutionBridge ?? _collaborators.Bridge?.Invoke();
+        if (bridge is not null && !ReferenceEquals(bridge.Options.Store, _store))
+            throw new ArgumentException(null, nameof(ExecutionOptions.Store));
+        return bridge;
+    }
+
+    private void RequireSharedRow(ExecutionBridge bridge, string projectId, string? megaTaskId)
+    {
+        if (!ReferenceEquals(bridge.Options.RowFor(projectId, megaTaskId), RowFor(projectId, megaTaskId)))
+            throw new ArgumentException(null, nameof(ExecutionOptions.RowFor));
+    }
+
+    private static JsonObject NotebookTaskJson(NotebookTask task)
+    {
+        var raw = task.Raw is null ? new JsonObject() : (JsonObject)task.Raw.DeepClone();
+        raw["id"] = task.Id; raw["title"] = task.Title; raw["detail"] = task.Detail;
+        raw["status"] = task.Status; raw["executionVersion"] = task.ExecutionVersion;
+        // Keep numeric revision IDs and Gold model field ordering from the notebook.
+        if (!raw.ContainsKey("revision_id")) raw["revision_id"] = task.RevisionId;
+        if (!raw.ContainsKey("timing")) raw["timing"] = task.Timing;
+        if (!raw.ContainsKey("deadlineAt")) raw["deadlineAt"] = task.DeadlineAt;
+        if (!raw.ContainsKey("source") && !string.IsNullOrEmpty(task.Source)) raw["source"] = task.Source;
+        if (!raw.ContainsKey("goldModel") && task.GoldModel is not null)
+        {
+            raw["goldModel"] = new JsonObject
+            {
+                ["id"] = task.GoldModel.Id,
+                ["label"] = task.GoldModel.Label,
+                ["provider"] = task.GoldModel.Provider
+            };
+        }
+        return raw;
+    }
+
+    private static JsonObject NotebookItemJson(NotebookProject item)
+    {
+        var raw = item.Raw is null ? new JsonObject() : (JsonObject)item.Raw.DeepClone();
+        if (raw["project"] is not JsonObject) raw["project"] = new JsonObject();
+        var project = (JsonObject)raw["project"]!;
+        project["id"] = item.Id; project["name"] = item.Name; project["folder"] = item.Folder; project["github"] = item.Github;
+        if (raw["revisions"] is not JsonArray)
+        {
+            raw["revisions"] = new JsonArray((item.Revisions ?? []).Select((r, idx) => (JsonNode)new JsonObject
+            {
+                ["id"] = r.Id ?? (idx + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["title"] = r.Title,
+                ["mode"] = r.Mode,
+                ["direction"] = r.Direction,
+                ["state"] = r.State,
+                ["open"] = new JsonArray((r.Open ?? []).Select(x => (JsonNode?)JsonValue.Create(x)).ToArray()),
+                ["closed"] = new JsonArray((r.Closed ?? []).Select(x => (JsonNode?)JsonValue.Create(x)).ToArray())
+            }).ToArray());
+        }
+        if (raw["home"] is not JsonObject && item.Notes is not null)
+        {
+            raw["home"] = new JsonObject { ["notes"] = new JsonArray(item.Notes.Select(n => (JsonNode)new JsonObject { ["text"] = n }).ToArray()) };
+        }
+        raw["tasks"] = new JsonArray((item.Tasks ?? []).Select(t => (JsonNode?)NotebookTaskJson(t)).ToArray());
+        return raw;
+    }
+
+    public static string JobFingerprint(NotebookTask task)
+    {
+        var job = NotebookTaskJson(task);
+        var revision = job["revision_id"];
+        var input = new JsonArray(task.Id, task.Title, task.Detail,
+            Execution.Truthy(revision) ? revision?.DeepClone() : null);
+        if (Execution.Truthy(job["goldModel"])) input.Add(job["goldModel"]!.DeepClone());
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(input.ToJsonString(JsonSerializationOptions))));
+    }
+
+    private string ResultText(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return "";
+        try { return _collaborators.ReadResult?.Invoke(path) ?? File.ReadAllText(path, Encoding.UTF8); }
+        catch (IOException) { return ""; }
+        catch (UnauthorizedAccessException) { return ""; }
+    }
+
+    private static string ResearchTail(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        try
+        {
+            var raw = File.ReadAllText(path, Encoding.UTF8);
+            return raw[Math.Max(0, raw.Length - 1600)..].Replace("\r", "", StringComparison.Ordinal).Trim();
+        }
+        catch (IOException) { return ""; }
+        catch (UnauthorizedAccessException) { return ""; }
+    }
+
+    public void RefreshResearch()
+    {
+        using var _ = EnterGate();
+        var execResults = (_store["execution"]?["results"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        foreach (var record in (_store["researches"] as JsonArray ?? []).OfType<JsonObject>())
+        {
+            if (IntOrNull(record["executionVersion"]) == 2)
+            {
+                var dispatch = (record["dispatch"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+                var part = dispatch.LastOrDefault();
+                record["alive"] = dispatch.Any(p => Execution.Truthy(p["alive"]));
+                record["pid"] = Execution.Truthy(part?["pid"]) ? part!["pid"]!.DeepClone() : null;
+                record["folder"] = Execution.Truthy(part?["folder"]) ? part!["folder"]!.DeepClone() : null;
+                if (Execution.Truthy(part?["sessionId"])) record["sessionId"] = part!["sessionId"]!.DeepClone();
+                record["logPath"] = Execution.Truthy(part?["logPath"]) ? part!["logPath"]!.DeepClone() : null;
+                record["workerTail"] = part is not null ? ResearchTail(StringOrNull(part["logPath"])) : "";
+                var megaTaskId = StringOrNull(record["megaTaskId"]);
+                var result = !string.IsNullOrEmpty(megaTaskId)
+                    ? execResults.LastOrDefault(r => StringOrNull(r["megaTaskId"]) == megaTaskId)
+                    : null;
+                var report = StringOrNull(result?["reportPath"]);
+                record["reportPath"] = string.IsNullOrEmpty(report) ? null : report;
+                record["reportAvailable"] = !string.IsNullOrEmpty(report) && File.Exists(report);
+                record["activity"] = StringOrNull(result?["summary"]) is { Length: > 0 } summary ? summary
+                    : StringOrNull(record["doing"]) is { Length: > 0 } doing ? doing : "Awaiting MegaTask approval.";
+                continue;
+            }
+            var pid = IntOrNull(record["pid"]);
+            var alive = pid is not null && pid != 0 && (_collaborators.IsProcessAlive is not null
+                ? _collaborators.IsProcessAlive(pid.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                : StringOrNull(record["status"]) == "watching");
+            record["alive"] = alive;
+            var tail = ResearchTail(StringOrNull(record["logPath"]));
+            if (tail != StringOrNull(record["workerTail"])) record["updatedAt"] = _now();
+            record["workerTail"] = tail;
+            record["activity"] = Activity.InterpretActivity(tail, null, alive);
+            var reportPath = StringOrNull(record["reportPath"]);
+            var available = false;
+            try
+            {
+                available = !string.IsNullOrEmpty(reportPath) &&
+                    new FileInfo(reportPath) is { Exists: true, Length: > 0 } fi &&
+                    (fi.Attributes & FileAttributes.Directory) == 0;
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            record["reportAvailable"] = available;
+            if (StringOrNull(record["status"]) != "watching") continue;
+            var resultPath = StringOrNull(record["resultPath"]);
+            var status = ResultStatus(resultPath);
+            var success = Regex.IsMatch(ResultText(resultPath), @"(^|\n)\s*EXIT:\s*0\s*(?:\r?\n|$)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript);
+            string? next = null, reason = null;
+            if (status == "COMPLETE" && success)
+            {
+                next = available ? "complete" : "failed";
+                reason = available ? "Report and successful provider exit recorded." : "Provider exited successfully without the required report.md.";
+            }
+            else if (status == "FAILED") { next = "failed"; reason = "Research provider or runner failed; inspect the log and result evidence."; }
+            else if (pid is not null and not 0 && _collaborators.IsProcessAlive is not null && !alive)
+            { next = "failed"; reason = "Research process exited without successful completion evidence."; }
+            if (next is null) continue;
+            record["status"] = next; record["reason"] = reason; record["updatedAt"] = _now();
+            if (StringOrNull(record["attemptId"]) is { Length: > 0 } attemptId)
+                CloseAttemptSafe(attemptId, !string.IsNullOrEmpty(reason) ? reason : next);
+        }
+    }
+
+    private void CloseAttemptSafe(string attemptId, string reason)
+    {
+        var input = new JsonObject { ["attemptId"] = attemptId, ["reason"] = reason };
+        if (_collaborators.AttemptAdapter is not null)
+        {
+            _collaborators.AttemptAdapter.CloseAttempt(input);
+        }
+        else
+        {
+            _collaborators.Attempts?.CloseAttempt(input);
+        }
+    }
+
+    private string ResultStatus(string? path)
+    {
+        var raw = ResultText(path);
+        foreach (var status in new[] { "COMPLETE", "FAILED", "BLOCKED", "WATCHING" })
+            if (Regex.IsMatch(raw, @"(^|\n)\s*STATUS:\s*" + status + @"\b", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)) return status;
+        return raw.Length == 0 ? "MISSING" : "OTHER";
+    }
+
+    private static IReadOnlyList<string> ResultFiles(JsonObject row)
+    {
+        var files = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select(p => StringOrNull(p["resultPath"])).Where(p => !string.IsNullOrEmpty(p)).Cast<string>().ToList();
+        if (files.Count == 0 && StringOrNull(row["resultPath"]) is { Length: > 0 } file) files.Add(file);
+        return files;
+    }
+
+    private IReadOnlyList<CompletedNotebookTask> CompletedTasks(NotebookPlan plan, string? projectId)
+    {
+        var completed = new List<CompletedNotebookTask>();
+        foreach (var item in plan.Projects.Where(p => projectId is null || p.Id == projectId))
+        {
+            var row = EntryRow(item.Id);
+            var job = item.Tasks?.FirstOrDefault(t => t.Status == "running" && t.Id == StringOrNull(row["jobId"]));
+            if (job is null || StringOrNull(row["status"]) != "complete" || StringOrNull(row["jobFingerprint"]) != JobFingerprint(job)) continue;
+            var files = ResultFiles(row);
+            var evidence = job.ExecutionVersion == 2
+                ? StringOrNull(SharedBridge()?.Find(item.Id, job.Id)?["status"]) == "COMPLETE"
+                : files.Count > 0 && files.All(file => ResultStatus(file) == "COMPLETE");
+            if (evidence) completed.Add(new(item.Id, job.Id, JobFingerprint(job), StringOrNull(row["attemptId"]), StringOrNull(row["megaTaskId"])));
+        }
+        return completed;
+    }
+
+    private void RefreshPhaseTwoResearch(NotebookPlan plan, bool schedule, string? projectId)
+    {
+        var bridge = SharedBridge();
+        if (bridge is null) return;
+        foreach (var record in (_store["researches"] as JsonArray ?? []).OfType<JsonObject>()
+            .Where(r => IntOrNull(r["executionVersion"]) == 2 && (projectId is null || StringOrNull(r["projectId"]) == projectId)))
+        {
+            var item = plan.Projects.FirstOrDefault(p => p.Id == StringOrNull(record["projectId"]));
+            if (item is null || record["job"] is not JsonObject job) continue;
+            RequireSharedRow(bridge, item.Id, StringOrNull(record["megaTaskId"]));
+            bridge.Advance(NotebookItemJson(item), job, [], schedule);
+        }
+    }
+
+    private void DecideProject(OrchestratorTickProject context)
+    {
+        var item = context.Project;
+        var job = item.Tasks?.FirstOrDefault(t => t.Status == "running");
+        if (job?.ExecutionVersion != 2)
+        {
+            ReconcileLegacyProject(context, job);
+            return;
+        }
+        var bridge = SharedBridge();
+        if (bridge is null) return;
+        var existing = bridge.Find(item.Id, job.Id);
+        RequireSharedRow(bridge, item.Id, StringOrNull(existing?["id"]));
+        context.Row["jobId"] = job.Id; context.Row["jobTitle"] = job.Title;
+        context.Row["jobFingerprint"] = JobFingerprint(job); context.Row["jobDetail"] = job.Detail;
+        context.Row["jobRevisionId"] = NotebookTaskJson(job)["revision_id"]?.DeepClone();
+        try
+        {
+            bridge.Advance(NotebookItemJson(item), NotebookTaskJson(job), _collaborators.DispatchParts?.Invoke(item, job) ?? []);
+        }
+        catch (InvalidOperationException error)
+        {
+            context.Row["status"] = "blocked_no_worker";
+            context.Row["doing"] = error.Message;
+            context.Row["next"] = error.Message;
+        }
+    }
+
+    private bool ProcessAlive(JsonObject part) => IntOrNull(part["pid"]) is int pid &&
+        (_collaborators.IsProcessAlive?.Invoke(pid.ToString(System.Globalization.CultureInfo.InvariantCulture)) ?? false);
+
+    private void CloseLegacyAttempt(string projectId, string? attemptId, string reason, string? taskId = null)
+    {
+        var attempts = _collaborators.Attempts;
+        var active = attempts?.GetActiveAttempt(new JsonObject { ["projectId"] = projectId, ["taskId"] = taskId });
+        if (active is not null && (attemptId is null || StringOrNull(active["id"]) == attemptId))
+            attempts!.CloseAttempt(new JsonObject { ["attemptId"] = active["id"]!.DeepClone(), ["reason"] = reason });
+    }
+
+    private void SettleLegacyCompletion(JsonObject row, string projectId, NotebookTask job)
+    {
+        row["workerAlive"] = false;
+        foreach (var part in (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>()) part["alive"] = false;
+        if (row["monitoring"] is not JsonObject) row["monitoring"] = new JsonObject();
+        row["monitoring"]!["alive"] = 0;
+        var files = ResultFiles(row);
+        if (files.Count > 0 && files.All(f => ResultStatus(f) == "COMPLETE") && StringOrNull(row["attemptId"]) is { } id)
+            CloseLegacyAttempt(projectId, id, "complete", job.Id);
+    }
+
+    private static bool CheckpointMatches(JsonObject checkpoint, NotebookTask job)
+    {
+        if (StringOrNull(checkpoint["jobId"]) is { Length: > 0 } id && id != job.Id) return false;
+        if (StringOrNull(checkpoint["jobFingerprint"]) is { Length: > 0 } fingerprint) return fingerprint == JobFingerprint(job);
+        if (StringOrNull(checkpoint["jobTitle"]) is { Length: > 0 } title && title != job.Title) return false;
+        return StringOrNull(checkpoint["detail"]) is not { } detail || detail == job.Detail;
+    }
+
+    // Legacy worker selection, launching and stall fallback stay injectable with Decide.
+    // The state-owned fallback reconciles saved evidence and never creates a new worker.
+    private void ReconcileLegacyProject(OrchestratorTickProject context, NotebookTask? job)
+    {
+        var item = context.Project;
+        var row = context.Row;
+        var parts = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().ToArray();
+        var completedJob = job ?? item.Tasks?.FirstOrDefault(t => t.Id == StringOrNull(row["jobId"]) && t.Status == "complete");
+        var fingerprint = StringOrNull(row["jobFingerprint"]);
+        if (StringOrNull(row["status"]) == "complete" && completedJob is not null &&
+            StringOrNull(row["jobId"]) == completedJob.Id && (fingerprint is null || fingerprint == JobFingerprint(completedJob)))
+        {
+            SettleLegacyCompletion(row, item.Id, completedJob);
+            return;
+        }
+
+        // Snapshot recovery in JavaScript validates a successful provider exit as well as
+        // completion. Incomplete/dead old workers cannot silently become approved new work.
+        if (StringOrNull(row["status"]) == "watching" && !Execution.Truthy(row["megaTaskId"]) && parts.Any(p => IntOrNull(p["pid"]) is not null))
+        {
+            if (_collaborators.Phase2)
+            {
+                ReconcileLegacyWatchingRow(item, row);
+                return;
+            }
+            foreach (var part in parts) part["alive"] = ProcessAlive(part);
+            row["workerAlive"] = parts.Any(p => BoolOrFalse(p["alive"]));
+            if (!BoolOrFalse(row["workerAlive"]))
+            {
+                var complete = parts.All(p => ResultStatus(StringOrNull(p["resultPath"])) == "COMPLETE" &&
+                    Regex.IsMatch(ResultText(StringOrNull(p["resultPath"])), @"^EXIT:\s*0\s*$", RegexOptions.Multiline | RegexOptions.ECMAScript));
+                row["status"] = complete ? "complete" : "failed";
+                row["holdApproval"] = true;
+                row["doing"] = complete ? "Historical completion and successful provider exit recorded."
+                    : "Historical worker ended without validated completion. Review the saved attempt before preparing new work.";
+                if (StringOrNull(row["attemptId"]) is { } attemptId)
+                    CloseLegacyAttempt(item.Id, attemptId, complete ? "legacy completion" : "technical failure: dead legacy worker without validated completion");
+                return;
+            }
+        }
+
+        if (_collaborators.Phase2 && job is null && !Execution.Truthy(row["megaTaskId"]) &&
+            BoolOrFalse(row["holdApproval"]) && StringOrNull(row["status"]) is "complete" or "failed")
+        {
+            return;
+        }
+
+        if (job is not null && StringOrNull(row["jobId"]) == job.Id && fingerprint == JobFingerprint(job) &&
+            !parts.Any(p => BoolOrFalse(p["stoppedByUser"])) && ResultFiles(row) is { Count: > 0 } files && files.All(f => ResultStatus(f) == "COMPLETE"))
+        {
+            row["status"] = "complete";
+            row["doing"] = $"Evidence complete for {job.Title} on {item.Name}.";
+            row["waitingFor"] = "Nothing. Evidence is complete.";
+            row["next"] = "Read the result, or add a new job.";
+            row["workerActivity"] = "Evidence complete.";
+            row["orchestratorDoing"] = "Verified STATUS: COMPLETE and folder output.";
+            SettleLegacyCompletion(row, item.Id, job);
+            return;
+        }
+
+        if (job is not null && Execution.Truthy(row["jobId"]) &&
+            (StringOrNull(row["jobId"]) != job.Id || fingerprint is not null && fingerprint != JobFingerprint(job)))
+        {
+            row["approved"] = false; row["holdApproval"] = false; row["attemptId"] = null; row["modelId"] = null;
+            row["plan"] = new JsonArray(); row["dispatch"] = new JsonArray(); row["tried"] = new JsonArray(); row["resumeRequested"] = false;
+            parts = [];
+        }
+        row["jobId"] = job?.Id; row["jobFingerprint"] = job is null ? null : JobFingerprint(job);
+        row["jobTitle"] = job?.Title; row["jobDetail"] = job?.Detail; row["jobRevisionId"] = job?.RevisionId;
+
+        if (job is not null)
+        {
+            var ongoing = parts.Any(p => !BoolOrFalse(p["stoppedByUser"]) && ProcessAlive(p));
+            if (_collaborators.EnforceSessionBoundary && context.WasRunningAtStartup && StringOrNull(row["authorizedSessionId"]) != _sessionId && !ongoing)
+            { row["approved"] = false; row["holdApproval"] = true; }
+            if (row["checkpoint"] is not JsonObject && ReadCheckpointFile(item.Id) is { } disk && CheckpointMatches(disk, job))
+                row["checkpoint"] = disk;
+            if (row["checkpoint"] is JsonObject checkpoint && !CheckpointMatches(checkpoint, job)) row["checkpoint"] = null;
+            if (row["checkpoint"] is JsonObject && !BoolOrFalse(row["resumeRequested"]) &&
+                _collaborators.Attempts?.GetActiveAttempt(new JsonObject { ["projectId"] = item.Id }) is null)
+            { PaintCheckpoint(row, item.Name, job.Title); return; }
+            if (ongoing) { row["status"] = "watching"; row["workerAlive"] = true; return; }
+            if (!BoolOrFalse(row["approved"]) || BoolOrFalse(row["holdApproval"]))
+            { row["status"] = "needs_approval"; row["waitingFor"] = "Your Approve run"; }
+            return;
+        }
+
+        CloseLegacyAttempt(item.Id, null, "no running job");
+        row["workerPid"] = null; row["workerLog"] = null; row["workerAlive"] = false;
+        row["tried"] = new JsonArray(); row["progressAt"] = null; row["progressKey"] = null;
+        row["workerTail"] = ""; row["workerActivity"] = "";
+        row["status"] = "idle";
+        row["doing"] = Execution.Truthy(row["pendingAutoStart"]) ? $"Auto start is waiting to plan {item.Name}."
+            : $"No job on {item.Name}. Tell the lead what to build, or let the crew do it.";
+        row["waitingFor"] = "Auto start"; row["next"] = "Tell the lead what to build, or let the crew do it.";
+        row["workerLabel"] = null; row["attemptId"] = null; row["watchingSince"] = null;
+        row["facts"] = null; row["docs"] = new JsonArray(); row["dispatch"] = new JsonArray();
+        row["approved"] = false; row["holdApproval"] = false;
+    }
+
+    public async Task<SetFocusResult> SetFocusAsync(string projectId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
-            return Task.FromResult(new SetFocusResult(false, StringOrNull(_store["selectedProjectId"]), "Selected project no longer exists."));
+        var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
+        using var _ = PushGateScope(gateAcquired);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(projectId))
+        {
+            return new SetFocusResult(false, StringOrNull(_store["selectedProjectId"]), "Selected project no longer exists.");
+        }
+
+        if (_collaborators.ReadPlan is not null)
+        {
+            var plan = await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!plan.Projects.Any(p => p.Id == projectId))
+            {
+                return new SetFocusResult(false, StringOrNull(_store["selectedProjectId"]), "Selected project no longer exists.");
+            }
+        }
+        else if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
+        {
+            return new SetFocusResult(false, StringOrNull(_store["selectedProjectId"]), "Selected project no longer exists.");
+        }
+
         _store["selectedProjectId"] = projectId;
         Persist();
-        return Task.FromResult(new SetFocusResult(true, projectId));
+        return new SetFocusResult(true, projectId);
+    }
+
+    public async Task<ArchiveProjectResult> ArchiveProjectAsync(string projectId, string reason, ArchiveProjectOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(projectId)) return new ArchiveProjectResult(false, Reason: "Project not found.");
+        var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
+        using var _ = PushGateScope(gateAcquired);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var plan = _collaborators.ReadPlan is null ? new NotebookPlan([])
+            : await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var targetProject = plan.Projects?.FirstOrDefault(p => p.Id == projectId);
+        var hasAliveDispatch = false;
+        if (targetProject is not null)
+        {
+            var snap = Snapshot(new NotebookPlan([targetProject]), projectId);
+            hasAliveDispatch = snap.Projects.FirstOrDefault(p => p.Id == projectId)?.Dispatch.Any(p => p.Alive) == true;
+        }
+        else if (_store["projects"] is JsonObject projectsObj && projectsObj[projectId] is JsonObject existingRow)
+        {
+            var terminal = StringOrNull(existingRow["status"]) is "complete" or "failed" or "checkpointed";
+            hasAliveDispatch = !terminal && ((existingRow["dispatch"] as JsonArray)?.OfType<JsonObject>().Any(part =>
+            {
+                var pid = IntOrNull(part["pid"]);
+                return !BoolOrFalse(part["stoppedByUser"]) && pid is int pVal &&
+                    (_collaborators.IsProcessAlive?.Invoke(pVal.ToString()) ?? BoolOrFalse(part["alive"]));
+            }) == true);
+        }
+
+        if (hasAliveDispatch ||
+            (_store["researches"] as JsonArray ?? []).OfType<JsonObject>().Any(r => StringOrNull(r["projectId"]) == projectId && StringOrNull(r["status"]) == "watching"))
+            return new ArchiveProjectResult(false, Reason: "Stop the work on this project first.");
+
+        var execution = _store["execution"] as JsonObject ?? new JsonObject();
+        bool Mine(JsonObject item) => StringOrNull(item["projectId"]) == projectId;
+        var megaIds = (execution["megaTasks"] as JsonArray ?? []).OfType<JsonObject>().Where(Mine)
+            .Select(m => StringOrNull(m["id"])).ToHashSet(StringComparer.Ordinal);
+        bool OfMega(JsonObject item) => megaIds.Contains(StringOrNull(item["megaTaskId"]));
+        static JsonArray Select(JsonNode? source, Func<JsonObject, bool> predicate) =>
+            new((source as JsonArray ?? []).OfType<JsonObject>().Where(predicate).Select(x => x.DeepClone()).ToArray());
+        JsonNode? ProjectValue(string key) => (_store[key] as JsonObject)?[projectId]?.DeepClone();
+        var archivedExecution = new JsonObject();
+        foreach (var key in new[] { "megaTasks", "subTasks", "results", "checkpoints", "timeline" })
+            archivedExecution[key] = Select(execution[key], key is "subTasks" or "results" ? OfMega : Mine);
+        var state = new JsonObject
+        {
+            ["project"] = ProjectValue("projects"), ["autonomy"] = ProjectValue("autonomy"),
+            ["team"] = ProjectValue("projectTeams"), ["tools"] = ProjectValue("projectTools"),
+            ["briefingBaseline"] = ProjectValue("briefingBaselines"),
+            ["asks"] = Select(_store["asks"], Mine), ["researches"] = Select(_store["researches"], Mine),
+            ["workerHistory"] = Select(_store["workerHistory"], x => StringOrNull(x["id"]) == projectId),
+            ["execution"] = archivedExecution
+        };
+        var at = _now();
+        var archive = new JsonObject { ["projectId"] = projectId, ["reason"] = reason, ["at"] = at,
+            ["notebook"] = options?.Notebook is null ? null : options.Notebook.Raw?.DeepClone() ?? NotebookItemJson(options.Notebook), ["state"] = state };
+        if (_store["projectArchive"] is not JsonArray archiveArr)
+        {
+            archiveArr = new JsonArray();
+            _store["projectArchive"] = archiveArr;
+        }
+        archiveArr.Add((JsonNode)archive);
+        foreach (var key in new[] { "projects", "autonomy", "briefingBaselines" }) (_store[key] as JsonObject)?.Remove(projectId);
+        if (options?.KeepTeam != true)
+            foreach (var key in new[] { "projectTeams", "projectTools" }) (_store[key] as JsonObject)?.Remove(projectId);
+        foreach (var key in new[] { "asks", "researches", "workerHistory" })
+        {
+            if (_store[key] is not JsonArray items) continue;
+            Func<JsonObject, bool> remove = key == "workerHistory" ? x => StringOrNull(x["id"]) == projectId : Mine;
+            for (var i = items.Count - 1; i >= 0; i--) if (items[i] is JsonObject item && remove(item)) items.RemoveAt(i);
+        }
+        foreach (var key in new[] { "megaTasks", "subTasks", "results", "checkpoints", "timeline" })
+        {
+            if (execution[key] is not JsonArray items) continue;
+            Func<JsonObject, bool> remove = key is "subTasks" or "results" ? OfMega : Mine;
+            for (var i = items.Count - 1; i >= 0; i--) if (items[i] is JsonObject item && remove(item)) items.RemoveAt(i);
+        }
+        (_store["thinkingByKey"] as JsonObject)?.Remove(projectId);
+        Persist();
+        return new ArchiveProjectResult(true, new ArchivedSummary(at, reason, ((JsonArray)state["asks"]!).Count, ((JsonArray)archivedExecution["megaTasks"]!).Count));
     }
 
     public Task<InspectRepositoryResult> InspectRepositoryAsync(string projectId, RepositoryInspectOptions? options = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var task = InspectRepositoryCoreAsync(projectId, options, cancellationToken);
-        return task;
+        return InspectRepositoryCoreAsync(projectId, options, cancellationToken);
     }
 
     private async Task<InspectRepositoryResult> InspectRepositoryCoreAsync(string projectId, RepositoryInspectOptions? options, CancellationToken cancellationToken)
     {
-        if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
-            return new InspectRepositoryResult(false, Reason: "project not found");
-        var row = EntryRow(projectId);
-        var folder = StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]);
+        var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
+        using var _ = PushGateScope(gateAcquired);
+        cancellationToken.ThrowIfCancellationRequested();
         NotebookProject? notebookProject = null;
         if (_collaborators.ReadPlan is not null)
         {
             var plan = await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
             notebookProject = plan.Projects.FirstOrDefault(p => p.Id == projectId);
-            folder ??= notebookProject?.Folder;
+            if (notebookProject is null)
+                return new InspectRepositoryResult(false, Reason: "project not found");
         }
+        else if (_store["projects"] is not JsonObject projects || projects[projectId] is null)
+        {
+            return new InspectRepositoryResult(false, Reason: "project not found");
+        }
+        var row = EntryRow(projectId);
+        var folder = StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]) ?? notebookProject?.Folder;
         var repository = _collaborators.InspectRepository is not null
             ? await _collaborators.InspectRepository(folder ?? "", options, cancellationToken).ConfigureAwait(false)
             : await InspectRepositoryDefaultAsync(folder, cancellationToken).ConfigureAwait(false);
         row["repository"] = RepositoryToJson(repository);
         if (!string.IsNullOrEmpty(folder))
         {
-            var facts = DefaultInspect(folder);
-            row["facts"] = new JsonObject
-            {
-                ["git"] = facts.Git, ["lastCommit"] = facts.LastCommit, ["lastSubject"] = facts.LastSubject,
-                ["recent"] = new JsonArray(facts.Recent?.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray() ?? []),
-                ["dirty"] = new JsonArray(facts.Dirty?.Select(x => (JsonNode?)JsonValue.Create(x)).ToArray() ?? []),
-                ["head"] = facts.Head, ["branch"] = facts.Branch, ["fileCount"] = facts.FileCount, ["folder"] = facts.Folder, ["error"] = facts.Error
-            };
+            row["facts"] = DefaultInspectJson(folder);
         }
         Persist();
         var snapshot = notebookProject is null ? null : Snapshot(new NotebookPlan([notebookProject]), projectId);
         return new InspectRepositoryResult(true, repository, snapshot, null);
+    }
+
+    private void ReconcileLegacyWatchingRow(NotebookProject item, JsonObject row)
+    {
+        var parts = (row["dispatch"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
+        if (parts.Length == 0 || !parts.Any(p => IntOrNull(p["pid"]) is int pid && pid > 0)) return;
+
+        foreach (var part in parts)
+        {
+            var pid = IntOrNull(part["pid"]);
+            part["alive"] = pid is int pVal && pVal > 0 && (_collaborators.IsProcessAlive?.Invoke(pVal.ToString()) ?? false);
+        }
+        if (parts.Any(p => BoolOrFalse(p["alive"]))) return;
+
+        var complete = parts.All(part =>
+        {
+            var rp = StringOrNull(part["resultPath"]);
+            if (string.IsNullOrEmpty(rp)) return false;
+            var raw = ResultText(rp);
+            return ResultStatus(rp) == "COMPLETE" && Regex.IsMatch(
+                raw, @"^EXIT:\s*0\s*$",
+                RegexOptions.Multiline | RegexOptions.ECMAScript);
+        });
+
+        row["status"] = complete ? "complete" : "failed";
+        row["workerAlive"] = false;
+        row["holdApproval"] = true;
+        row["doing"] = complete
+            ? "Historical completion and successful provider exit recorded."
+            : "Historical worker ended without validated completion. Review the saved attempt before preparing new work.";
+
+        var attemptId = StringOrNull(row["attemptId"]);
+        if (!string.IsNullOrEmpty(attemptId))
+        {
+            if (_collaborators.Attempts is not null)
+            {
+                var active = _collaborators.Attempts.GetResult(attemptId);
+                if (StringOrNull(active?["status"]) == "active" && StringOrNull(active?["projectId"]) == item.Id)
+                {
+                    CloseAttemptSafe(attemptId, complete ? "legacy completion" : "technical failure: dead legacy worker without validated completion");
+                }
+            }
+            else if (_collaborators.AttemptAdapter is not null)
+            {
+                CloseAttemptSafe(attemptId, complete ? "legacy completion" : "technical failure: dead legacy worker without validated completion");
+            }
+        }
+        Persist();
     }
 
     private static JsonObject RepositoryToJson(RepositoryInfo value)

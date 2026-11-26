@@ -20,7 +20,7 @@ function normalize(value, root) {
         const parsed = JSON.parse(value);
         if (parsed && typeof parsed === 'object') return JSON.stringify(normalize(parsed, root), null, value.includes('\n  ') ? 2 : undefined) + (value.endsWith('\n') ? '\n' : '');
       } catch { /* Plain text reports and error messages are normalized below. */ }
-      return value.split(root).join('<ROOT>').replace(/\\/g, '/');
+      return value.split(root).join('<ROOT>').split(JSON.stringify(root).slice(1, -1)).join('<ROOT>').replace(/\\/g, '/');
     }
     return value.replaceAll('synthetic-token', '<REDACTED>');
   }
@@ -38,7 +38,8 @@ function sandbox(root, overrides = {}) {
     const method = target[key];
     if (typeof method !== 'function') return method;
     return (...args) => {
-      guard(args[0]); if (/^(rename|copyFile|link|symlink)/.test(key)) guard(args[1]);
+      if (!(/^(fstat|read|write|close)(Sync)?$/.test(key) && Number.isInteger(args[0]))) guard(args[0]);
+      if (/^(rename|copyFile|link|symlink)/.test(key)) guard(args[1]);
       const mutation = /^(mkdir|writeFile|appendFile|rename|copyFile|unlink|rm|rmdir|chmod)/.test(key);
       const effect = mutation ? { operation: key.replace(/Sync$/, ''), path: args[0],
         ...(/^(rename|copyFile)/.test(key) ? { destination: args[1] } : {}),
@@ -56,7 +57,7 @@ function sandbox(root, overrides = {}) {
   const context = vm.createContext({ Buffer, URL, AbortSignal, Date: FixedDate, structuredClone, process: processDouble,
     fetch: overrides.fetch || denied('fetch'), setTimeout, clearTimeout, console: { log: denied('console'), error: denied('console') } });
   const builtins = {
-    fs: fileApi(fs), 'fs/promises': fileApi(fs.promises), path,
+    fs: fileApi(overrides.fs || fs), 'fs/promises': fileApi(fs.promises), path,
     os: { homedir: () => root, tmpdir: () => root, platform: () => process.platform },
     crypto: { createHash: require('node:crypto').createHash, randomUUID: () => '00000000-0000-4000-8000-000000000001' }, child_process: { spawn: denied('spawn'), spawnSync: denied('spawnSync'), execFile: denied('execFile') },
     ...overrides.builtins
@@ -496,6 +497,68 @@ function verify(module, rows) {
     assert.equal(cancelled.result.cancelled, true);
     assert.equal(cancelled.result.asks[0].answer, 'Stopped.');
     assert.doesNotMatch(JSON.stringify(cancelled.result.asks), /must not be persisted/);
+  } else if (module === 'orchestrator-state') {
+    for (const row of rows) {
+      assert.ok(!row.error, 'Unexpected scenario error in ' + row.name + ': ' + row.error);
+      assert.ok(Array.isArray(row.fileEffects), 'Missing fileEffects in ' + row.name);
+      assert.ok(row.effects && typeof row.effects === 'object', 'Missing persisted effects in ' + row.name);
+    }
+    const load = get('fresh-and-legacy-load-unknown-fields-and-persist-bytes');
+    assert.equal(load.result.fresh.endsWithNewline, true);
+    assert.equal(load.result.fresh.singleLine, true);
+    assert.equal(load.result.legacy.mode, 'manual');
+    assert.equal(load.result.legacy.grillPropose, false);
+    assert.equal(load.result.legacy.alphaChatMode, 'plan');
+    assert.equal(load.result.legacy.betaChatMode, 'talk');
+    assert.equal(load.result.legacy.alphaSavingMode, 'normal');
+    assert.equal(load.result.legacy.betaSavingMode, 'safe');
+    assert.equal(load.result.legacy.autonomyEnabled, false);
+    assert.equal(load.result.legacy.preservedRowField, 'keep-me');
+    assert.equal(load.result.legacy.preservedAskField, 42);
+    assert.equal(load.result.legacy.preservedExecField, 'keep-exec');
+    assert.ok(load.result.legacy.hydratedSessionIds.includes('hist-sess-1'));
+    const atomic = get('atomic-persist-retry-and-failure');
+    assert.equal(atomic.result.afterRetryMode, 'auto');
+    assert.equal(atomic.result.afterFailMode, 'auto');
+    assert.match(atomic.result.permError, /EPERM/);
+    assert.deepEqual(atomic.result.remainingTmps, []);
+    assert.ok(atomic.fileEffects.some(e => e.operation === 'rename' && e.ok === false && e.code === 'EBUSY'));
+    assert.ok(atomic.fileEffects.some(e => e.operation === 'rename' && e.ok === true));
+    const life = get('lifecycle-snapshots-and-execution-row-sharing');
+    assert.equal(life.result.approval.status, 'needs_approval');
+    assert.equal(life.result.watching.status, 'watching');
+    assert.equal(life.result.watching.sharedMegaTaskId, true);
+    assert.equal(life.result.complete.status, 'complete');
+    assert.ok(life.result.activityTotal >= 1);
+    const cp = get('checkpoint-hydration-on-startup');
+    assert.equal(cp.result.alpha.status, 'checkpointed');
+    assert.equal(cp.result.beta.status, 'checkpointed');
+    assert.equal(cp.requests.filter(r => r.kind === 'spawnWorker').length, 0);
+    const rec = get('alive-and-dead-worker-restart-reconciliation');
+    assert.equal(rec.result.firstTick.alpha.workerAlive, true);
+    assert.equal(rec.result.firstTick.beta.workerAlive, false);
+    assert.equal(rec.result.secondTickBeta.workerAlive, false);
+    assert.equal(rec.requests.filter(r => r.kind === 'spawnWorker').length, 0);
+    const res = get('research-v1-and-v2-lifecycle-and-row-sharing');
+    assert.equal(res.result.v1.watchingAlive, true);
+    assert.equal(res.result.v1.completeStatus, 'complete');
+    assert.equal(res.result.v1.reportAvailable, true);
+    assert.equal(res.result.v2.executionVersion, 2);
+    assert.equal(res.result.v2.approvedOk, true);
+    assert.ok(res.result.v2.researchDispatchLen >= 1);
+    assert.equal(res.result.v2.projectRowDispatchLen, 0);
+    const arch = get('archive-cleanup-focus-switching-and-two-project-isolation');
+    assert.equal(arch.result.focusBeta.ok, true);
+    assert.equal(arch.result.focusInvalid.ok, false);
+    assert.equal(arch.result.blockedBeta.ok, false);
+    assert.equal(arch.result.archivedAlpha.ok, true);
+    assert.equal(arch.result.selectedAfter, 'beta');
+    assert.deepEqual(arch.result.remainingProjects, ['beta']);
+    assert.deepEqual(arch.result.remainingAsks, ['ask-b']);
+    assert.deepEqual(arch.result.remainingResearches, ['res-b']);
+    assert.deepEqual(arch.result.remainingMegaTasks, ['MT-b']);
+    assert.equal(arch.result.archiveCount, 1);
+    assert.equal(arch.result.archiveProjectId, 'alpha');
   } else {
     assert.equal(get('allowed').events[0].stdout, 'ALLOWED\nno blocker\n');
     assert.equal(get('live-blocked').requests.length, 1);
@@ -1404,6 +1467,559 @@ scenario('orchestrator-lead-questions', 'mid-turn-cancellation-preserves-only-st
     const asks = result.asks.map(item => ({ question: item.question, answer: item.answer, thinking: item.thinking, order: item.order }));
     cleanOrchFiles(root);
     return { ok: result.ok, cancelled: result.cancelled, asks };
+  });
+
+function stateSandbox(root, overrides = {}) {
+  let uuidSeq = 0;
+  const { builtins: extraBuiltins, ...rest } = overrides;
+  return sandbox(root, {
+    builtins: {
+      async_hooks: require('node:async_hooks'),
+      events: require('node:events'),
+      crypto: {
+        createHash: require('node:crypto').createHash,
+        randomUUID: () => '00000000-0000-4000-8000-' + String(++uuidSeq).padStart(12, '0')
+      },
+      '../plan.js': require('../../../plan.js'),
+      '../quota.js': require('../../../quota.js'),
+      ...extraBuiltins
+    },
+    ...rest
+  });
+}
+
+function stateModels() {
+  return {
+    providers: [
+      { id: 'codex', adapter: 'codex', quotaPoolId: 'chatgpt', enabled: true },
+      { id: 'claude', adapter: 'claude', quotaPoolId: 'claude', enabled: true }
+    ],
+    models: [
+      { id: 'astra', label: 'Astra', provider: 'codex', providerId: 'codex', adapter: 'codex', cli: 'gpt-6-astra', plan: 'chatgpt', quotaPoolId: 'chatgpt', kind: 'premium', enabled: true, available: true, limit: 100, cost: 1, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true, canResearch: true, canVerify: true } },
+      { id: 'opus', label: 'Opus', provider: 'claude', providerId: 'claude', adapter: 'claude', cli: 'claude-opus-5-5', plan: 'claude', quotaPoolId: 'claude', kind: 'default', enabled: true, available: true, limit: 100, cost: 1, capabilities: { canUseTools: true, canInspectFilesystem: true, canCode: true, canResearch: true, canVerify: true } }
+    ]
+  };
+}
+
+function stateAttempts(root) {
+  let seq = 0;
+  const active = new Map();
+  const results = new Map();
+  return {
+    getActiveAttempt: ({ projectId, taskId } = {}) => {
+      for (const att of active.values()) {
+        if (att.projectId === projectId && (!taskId || att.taskId === taskId)) return att;
+      }
+      return null;
+    },
+    claim: ({ taskId, projectId, modelId }) => {
+      const id = 'attempt-' + (++seq);
+      const att = { id, taskId, projectId, modelId, startedAt: '2023-11-14T22:13:20.000Z', folder: path.join(root, 'attempts', id) };
+      active.set(id, att);
+      return { ok: true, attempt: att };
+    },
+    attachResult: ({ attemptId, resultPath }) => {
+      results.set(attemptId, { attemptId, resultPath });
+      return { ok: true };
+    },
+    closeAttempt: ({ attemptId, status } = {}) => {
+      const att = active.get(attemptId);
+      if (att) {
+        att.status = status || 'closed';
+        active.delete(attemptId);
+      }
+      return { ok: true };
+    },
+    getResult: attemptId => results.get(attemptId) || null
+  };
+}
+
+function stateInspect(folder) {
+  return {
+    folder,
+    fileCount: 2,
+    names: ['README.md', 'src'],
+    docs: [{ path: 'README.md' }],
+    git: true,
+    head: '1111111111111111111111111111111111111111',
+    branch: 'main',
+    lastCommit: '1111111 Fix fixture',
+    commitId: '1111111111111111111111111111111111111111',
+    lastSubject: 'Fix fixture',
+    recent: ['1111111 Fix fixture'],
+    dirty: [' M src/app.js'],
+    diffStat: ' src/app.js | 2 +-',
+    error: null
+  };
+}
+
+scenario('orchestrator-state', 'fresh-and-legacy-load-unknown-fields-and-persist-bytes',
+  { category: 'load-and-persist' }, async ({ root }) => {
+    const { providers, models } = stateModels();
+    const freshDir = path.join(root, 'fresh');
+    const freshPlan = { schema: 2, projects: [{ project: { id: 'alpha', name: 'Alpha', folder: null }, revisions: [{ id: 1, direction: 'Fresh goal' }], tasks: [] }] };
+    const freshOrch = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: freshDir, models, providers, readPlan: async () => freshPlan, attempts: fakeAttempts(),
+      fetchPlans: async () => [], now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-fresh'
+    });
+    const freshSnap = await freshOrch.tick();
+    const freshBytes = fs.readFileSync(path.join(freshDir, 'orchestrator.json'), 'utf8');
+
+    const legacyDir = path.join(root, 'legacy');
+    fs.mkdirSync(legacyDir, { recursive: true });
+    const legacyInput = {
+      mode: 'invalid-mode',
+      grillPropose: true,
+      grillKind: 'docs',
+      chatModes: { alpha: 'auto', beta: 'talk' },
+      savingModes: { alpha: 'bogus', beta: 'safe' },
+      modelWeights: { astra: 'invalid-weight', opus: 'premium' },
+      autonomy: { alpha: { enabled: true, sessionId: 'old-session' } },
+      projects: {
+        alpha: { status: 'idle', customRowField: 'keep-me', nestedUnknown: { depth: 2 } }
+      },
+      asks: [
+        { id: 'ask-1', projectId: 'alpha', sessionId: 'hist-sess-1', at: '2023-11-14T20:00:00.000Z', question: 'Q?', answer: 'A.', customAskField: 42 }
+      ],
+      execution: { megaTasks: [], subTasks: [], results: [], checkpoints: [], timeline: [], customExecField: 'keep-exec' }
+    };
+    fs.writeFileSync(path.join(legacyDir, 'orchestrator.json'), JSON.stringify(legacyInput, null, 2) + '\n');
+    const legacyPlan = {
+      schema: 2,
+      projects: [
+        { project: { id: 'alpha', name: 'Alpha', folder: null }, revisions: [{ id: 1, direction: 'Legacy A' }], tasks: [] },
+        { project: { id: 'beta', name: 'Beta', folder: null }, revisions: [{ id: 1, direction: 'Legacy B' }], tasks: [] }
+      ]
+    };
+    const legacyOrch = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: legacyDir, models, providers, readPlan: async () => legacyPlan, attempts: fakeAttempts(),
+      fetchPlans: async () => [], now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-legacy'
+    });
+    const legacySnap = await legacyOrch.snapshot();
+    const legacyBytes = fs.readFileSync(path.join(legacyDir, 'orchestrator.json'), 'utf8');
+    const legacyParsed = JSON.parse(legacyBytes);
+    return {
+      fresh: {
+        mode: freshSnap.mode,
+        sessionCount: freshSnap.sessions.length,
+        endsWithNewline: freshBytes.endsWith('\n'),
+        singleLine: freshBytes.indexOf('\n') === freshBytes.length - 1
+      },
+      legacy: {
+        mode: legacySnap.mode,
+        grillPropose: legacySnap.grillPropose,
+        grillKind: legacySnap.grillKind,
+        alphaChatMode: legacySnap.projects.find(p => p.id === 'alpha').chatMode,
+        betaChatMode: legacySnap.projects.find(p => p.id === 'beta').chatMode,
+        alphaSavingMode: legacySnap.projects.find(p => p.id === 'alpha').savingMode,
+        betaSavingMode: legacySnap.projects.find(p => p.id === 'beta').savingMode,
+        autonomyEnabled: legacyParsed.autonomy.alpha.enabled,
+        modelWeights: legacyParsed.modelWeights,
+        preservedRowField: legacyParsed.projects.alpha.customRowField,
+        preservedRowNested: legacyParsed.projects.alpha.nestedUnknown,
+        preservedAskField: legacyParsed.asks[0].customAskField,
+        preservedExecField: legacyParsed.execution.customExecField,
+        hydratedSessionIds: legacyParsed.sessions.map(s => s.id),
+        endsWithNewline: legacyBytes.endsWith('\n')
+      }
+    };
+  });
+
+scenario('orchestrator-state', 'atomic-persist-retry-and-failure',
+  { category: 'atomic-persist' }, async ({ root, exchange }) => {
+    const { providers, models } = stateModels();
+    const dir = path.join(root, 'state');
+    let renameCalls = 0;
+    let failAll = false;
+    const customFs = {
+      ...fs,
+      renameSync(from, to) {
+        renameCalls++;
+        if (failAll) {
+          const err = Object.assign(new Error('EPERM: persistent lock'), { code: 'EPERM' });
+          exchange({ kind: 'rename', call: renameCalls, failAll: true }, { ok: false, code: 'EPERM' });
+          throw err;
+        }
+        if (renameCalls === 1) {
+          exchange({ kind: 'rename', call: renameCalls }, { ok: false, code: 'EBUSY' });
+          throw Object.assign(new Error('EBUSY: busy'), { code: 'EBUSY' });
+        }
+        if (renameCalls === 2) {
+          exchange({ kind: 'rename', call: renameCalls }, { ok: false, code: 'EPERM' });
+          throw Object.assign(new Error('EPERM: locked'), { code: 'EPERM' });
+        }
+        exchange({ kind: 'rename', call: renameCalls }, { ok: true });
+        return fs.renameSync(from, to);
+      }
+    };
+    const orch = stateSandbox(root, { fs: customFs }).load('orchestrator.js').createOrchestrator({
+      dir, models, providers, readPlan: async () => teamPlan(['alpha']), attempts: fakeAttempts(),
+      fetchPlans: async () => [], now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-atomic'
+    });
+    const autoSnap = await orch.setMode('auto');
+    const afterRetryMode = JSON.parse(fs.readFileSync(path.join(dir, 'orchestrator.json'), 'utf8')).mode;
+
+    failAll = true;
+    let permError = null;
+    try { await orch.setMode('manual'); }
+    catch (error) { permError = error.message; }
+    const afterFailMode = JSON.parse(fs.readFileSync(path.join(dir, 'orchestrator.json'), 'utf8')).mode;
+    const remainingTmps = fs.readdirSync(dir).filter(name => name.endsWith('.tmp'));
+    return {
+      retryCount: renameCalls,
+      autoSnapMode: autoSnap.mode,
+      afterRetryMode,
+      permError,
+      afterFailMode,
+      remainingTmps
+    };
+  });
+
+scenario('orchestrator-state', 'lifecycle-snapshots-and-execution-row-sharing',
+  { category: 'lifecycle-snapshots' }, async ({ root, exchange }) => {
+    const { providers, models } = stateModels();
+    const dir = path.join(root, 'state');
+    const projectFolder = path.join(root, 'project-alpha');
+    fs.mkdirSync(projectFolder, { recursive: true });
+    fs.writeFileSync(path.join(projectFolder, 'README.md'), '# Alpha\n');
+    const job = { id: 'job-1', executionVersion: 2, title: 'Build Alpha', detail: 'Implement feature', status: 'running' };
+    const plan = {
+      schema: 2,
+      projects: [{ project: { id: 'alpha', name: 'Alpha', folder: projectFolder }, revisions: [{ id: 1, direction: 'Ship Alpha' }], tasks: [job] }]
+    };
+    const livePids = new Set();
+    const launchedParts = [];
+    let pidSeq = 100;
+    const orch = stateSandbox(root, {
+      builtins: {
+        child_process: {
+          spawnSync(cmd, args) {
+            const reply = args.includes('--is-inside-work-tree') ? { status: 1, stdout: '' } : { status: 0, stdout: '' };
+            exchange({ kind: 'process', command: cmd, args: plain(args) }, reply);
+            return reply;
+          }
+        }
+      }
+    }).load('orchestrator.js').createOrchestrator({
+      dir, models, providers,
+      readPlan: async () => plan,
+      attempts: stateAttempts(root),
+      fetchPlans: async () => [],
+      inspectFolder: stateInspect,
+      readRepository: async () => ({ provider: 'github', slug: 'owner/alpha', url: 'https://github.com/owner/alpha' }),
+      isProcessAlive: pid => livePids.has(pid),
+      spawnWorker: info => {
+        const pid = ++pidSeq;
+        livePids.add(pid);
+        fs.mkdirSync(path.dirname(info.logPath), { recursive: true });
+        fs.writeFileSync(info.logPath, 'Running Alpha build\n');
+        launchedParts.push({
+          pid,
+          attemptId: info.attemptId,
+          subTaskId: info.subTaskId,
+          megaTaskId: info.megaTaskId,
+          provider: info.worker.providerId || info.worker.provider,
+          cli: info.worker.cli,
+          resultPath: info.resultPath,
+          exitPath: info.exitPath,
+          structuredResultPath: info.structuredResultPath
+        });
+        exchange({ kind: 'spawnWorker', projectId: info.projectId, attemptId: info.attemptId, modelId: info.worker.id }, { pid });
+        return { pid, logPath: info.logPath };
+      },
+      now: () => '2023-11-14T22:13:20.000Z',
+      sessionId: 'session-life'
+    });
+    const approvalSnap = await orch.tick('alpha');
+    const approvalProj = approvalSnap.projects[0];
+
+    const approveResult = await orch.approve('alpha', approvalProj.megaTaskId);
+    const watchingSnap = await orch.snapshot('alpha');
+    const watchingProj = watchingSnap.projects[0];
+    const execViewWatching = orch.executionView('alpha');
+
+    let completeSnap = watchingSnap;
+    let completeProj = watchingProj;
+    for (let round = 0; round < 3 && completeProj.status === 'watching'; round++) {
+      for (const part of launchedParts) {
+        if (!livePids.has(part.pid)) continue;
+        if (part.resultPath) {
+          fs.mkdirSync(path.dirname(part.resultPath), { recursive: true });
+          fs.writeFileSync(part.resultPath, 'STATUS: COMPLETE\nEXIT: 0\n');
+        }
+        if (part.exitPath) {
+          fs.mkdirSync(path.dirname(part.exitPath), { recursive: true });
+          fs.writeFileSync(part.exitPath, JSON.stringify({
+            attemptId: part.attemptId,
+            exitCode: 0,
+            provider: part.provider,
+            model: part.cli,
+            createdAt: '2023-11-14T22:13:20.000Z'
+          }));
+        }
+        if (part.structuredResultPath) {
+          fs.mkdirSync(path.dirname(part.structuredResultPath), { recursive: true });
+          fs.writeFileSync(part.structuredResultPath, JSON.stringify({
+            resultId: 'R-' + part.attemptId,
+            attemptId: part.attemptId,
+            subTaskId: part.subTaskId,
+            megaTaskId: part.megaTaskId,
+            status: 'COMPLETE',
+            summary: 'Completed slice',
+            filesChanged: [],
+            tests: [{ command: 'test', status: 'PASSED', evidence: 'ok' }],
+            blockers: [],
+            nextAction: 'Done'
+          }));
+        }
+        livePids.delete(part.pid);
+      }
+      completeSnap = await orch.tick('alpha');
+      completeProj = completeSnap.projects[0];
+    }
+    const page = await orch.activitySessionPage('alpha', 0, 20);
+    return {
+      approveOk: approveResult.ok,
+      approveReason: approveResult.reason || null,
+      approval: { status: approvalProj.status, step: approvalProj.step, pipeline: approvalProj.pipeline, canStart: approvalProj.canStart, crew: approvalProj.crew },
+      watching: {
+        status: watchingProj.status, step: watchingProj.step, pipeline: watchingProj.pipeline,
+        workerPid: watchingProj.workerPid, workerAlive: watchingProj.workerAlive, canStop: watchingProj.canStop,
+        crew: watchingProj.crew, dispatchLen: watchingProj.dispatch.length,
+        sharedMegaTaskId: Boolean(watchingProj.megaTaskId && execViewWatching.megaTasks[0]?.id === watchingProj.megaTaskId)
+      },
+      complete: { status: completeProj.status, step: completeProj.step, pipeline: completeProj.pipeline, workerAlive: completeProj.workerAlive },
+      activityTotal: page.total,
+      activitySessionsLen: page.sessions.length
+    };
+  });
+
+scenario('orchestrator-state', 'checkpoint-hydration-on-startup',
+  { category: 'checkpoint-hydration' }, async ({ root, exchange }) => {
+    const { providers, models } = stateModels();
+    const dir = path.join(root, 'state');
+    const cpDir = path.join(dir, 'checkpoints');
+    fs.mkdirSync(cpDir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'orchestrator.json'), JSON.stringify({
+      projects: { alpha: { status: 'idle', checkpoint: null } }
+    }) + '\n');
+    fs.writeFileSync(path.join(cpDir, 'alpha.json'), JSON.stringify({
+      id: 'CP-alpha', projectId: 'alpha', jobId: 'job-a', jobTitle: 'Interrupted Alpha', reason: 'stop', at: '2023-11-14T21:00:00.000Z'
+    }));
+    fs.writeFileSync(path.join(cpDir, 'beta.json'), JSON.stringify({
+      id: 'CP-beta', jobId: 'job-b', jobTitle: 'Interrupted Beta', reason: 'shutdown', at: '2023-11-14T21:05:00.000Z'
+    }));
+    const plan = teamPlan(['alpha', 'beta']);
+    const orch = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir, models, providers, readPlan: async () => plan, attempts: fakeAttempts(),
+      fetchPlans: async () => [],
+      spawnWorker: info => { exchange({ kind: 'spawnWorker', unexpected: true, projectId: info.projectId }, { pid: 999 }); return { pid: 999 }; },
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-cp'
+    });
+    const snap = await orch.snapshot();
+    const persisted = JSON.parse(fs.readFileSync(path.join(dir, 'orchestrator.json'), 'utf8'));
+    return {
+      alpha: {
+        status: snap.projects.find(p => p.id === 'alpha').status,
+        step: snap.projects.find(p => p.id === 'alpha').step,
+        canResume: snap.projects.find(p => p.id === 'alpha').canResume,
+        workerAlive: snap.projects.find(p => p.id === 'alpha').workerAlive,
+        checkpointPath: snap.projects.find(p => p.id === 'alpha').checkpoint?.path || null
+      },
+      beta: {
+        status: snap.projects.find(p => p.id === 'beta').status,
+        step: snap.projects.find(p => p.id === 'beta').step,
+        canResume: snap.projects.find(p => p.id === 'beta').canResume,
+        checkpointPath: snap.projects.find(p => p.id === 'beta').checkpoint?.path || null
+      },
+      persistedAlphaStatus: persisted.projects.alpha.status,
+      persistedBetaStatus: persisted.projects.beta.status
+    };
+  });
+
+scenario('orchestrator-state', 'alive-and-dead-worker-restart-reconciliation',
+  { category: 'restart-reconcile' }, async ({ root, exchange }) => {
+    const { providers, models } = stateModels();
+    const dir = path.join(root, 'state');
+    fs.mkdirSync(dir, { recursive: true });
+    const aliveLog = path.join(dir, 'alive.log');
+    const deadLog = path.join(dir, 'dead.log');
+    fs.writeFileSync(aliveLog, 'Still working on Alpha\n');
+    fs.writeFileSync(deadLog, 'Crashed on Beta\n');
+    const aliveResult = path.join(dir, 'alive.result.txt');
+    const deadResult = path.join(dir, 'dead.result.txt');
+    fs.writeFileSync(aliveResult, 'STATUS: WATCHING\n');
+    fs.writeFileSync(deadResult, 'STATUS: WATCHING\n');
+    fs.writeFileSync(path.join(dir, 'orchestrator.json'), JSON.stringify({
+      projects: {
+        alpha: {
+          status: 'watching', jobId: 'job-a', jobTitle: 'Alive job', workerPid: 201, workerAlive: true, workerLog: aliveLog, resultPath: aliveResult,
+          dispatch: [{ subTaskId: 'ST-alive', attemptId: 'att-alive', pid: 201, alive: true, logPath: aliveLog, resultPath: aliveResult, stoppedByUser: false }]
+        },
+        beta: {
+          status: 'watching', jobId: 'job-b', jobTitle: 'Dead job', workerPid: 202, workerAlive: true, workerLog: deadLog, resultPath: deadResult,
+          dispatch: [{ subTaskId: 'ST-dead', attemptId: 'att-dead', pid: 202, alive: true, logPath: deadLog, resultPath: deadResult, stoppedByUser: false }]
+        }
+      }
+    }) + '\n');
+    const livePids = new Set([201]);
+    const plan = {
+      schema: 2,
+      projects: [
+        { project: { id: 'alpha', name: 'Alpha', folder: null }, revisions: [{ id: 1, direction: 'Goal A' }], tasks: [{ id: 'job-a', title: 'Alive job', status: 'running' }] },
+        { project: { id: 'beta', name: 'Beta', folder: null }, revisions: [{ id: 1, direction: 'Goal B' }], tasks: [{ id: 'job-b', title: 'Dead job', status: 'running' }] }
+      ]
+    };
+    const orch = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir, models, providers, readPlan: async () => plan, attempts: fakeAttempts(), fetchPlans: async () => [],
+      isProcessAlive: pid => {
+        const alive = livePids.has(pid);
+        exchange({ kind: 'isProcessAlive', pid }, { alive });
+        return alive;
+      },
+      spawnWorker: info => { exchange({ kind: 'spawnWorker', unexpected: true, projectId: info.projectId }, { pid: 999 }); return { pid: 999 }; },
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-reconcile'
+    });
+    const first = await orch.tick();
+    const second = await orch.tick();
+    const alpha1 = first.projects.find(p => p.id === 'alpha');
+    const beta1 = first.projects.find(p => p.id === 'beta');
+    const beta2 = second.projects.find(p => p.id === 'beta');
+    return {
+      firstTick: {
+        alpha: { status: alpha1.status, workerAlive: alpha1.workerAlive, workerPid: alpha1.workerPid },
+        beta: { status: beta1.status, workerAlive: beta1.workerAlive, workerPid: beta1.workerPid }
+      },
+      secondTickBeta: { status: beta2.status, workerAlive: beta2.workerAlive, workerPid: beta2.workerPid }
+    };
+  });
+
+scenario('orchestrator-state', 'research-v1-and-v2-lifecycle-and-row-sharing',
+  { category: 'research' }, async ({ root, exchange }) => {
+    const { providers, models } = stateModels();
+    const dir1 = path.join(root, 'v1');
+    const dir2 = path.join(root, 'v2');
+    const plan = teamPlan(['alpha']);
+    const livePids = new Set();
+    let pidSeq = 300;
+    const makeSpawn = label => info => {
+      const pid = ++pidSeq;
+      livePids.add(pid);
+      fs.mkdirSync(path.dirname(info.logPath), { recursive: true });
+      fs.writeFileSync(info.logPath, 'Researching ' + label + '\n');
+      exchange({ kind: 'spawnWorker', label, projectId: info.projectId, attemptId: info.attemptId }, { pid });
+      return { pid, logPath: info.logPath };
+    };
+
+    const orch1 = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: dir1, models, providers, readPlan: async () => plan, attempts: stateAttempts(dir1), fetchPlans: async () => [],
+      isProcessAlive: pid => livePids.has(pid),
+      killWorker: pid => { livePids.delete(pid); return true; },
+      spawnWorker: makeSpawn('v1'),
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-res-v1'
+    });
+    const d1 = await orch1.dispatchResearch({ type: 'dispatch_research', projectId: 'alpha', modelId: 'astra', title: 'Research v1', detail: 'Check v1' });
+    const snap1Watching = await orch1.snapshot('alpha');
+    fs.writeFileSync(d1.research.reportPath, '# V1 Report\nFindings.\n');
+    fs.writeFileSync(d1.research.resultPath, 'STATUS: COMPLETE\nEXIT: 0\n');
+    livePids.delete(d1.research.pid);
+    const snap1Complete = await orch1.snapshot('alpha');
+    const report1 = orch1.researchReport(d1.research.id);
+
+    const orch2 = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir: dir2, phase2: true, models, providers, readPlan: async () => plan, attempts: stateAttempts(dir2), fetchPlans: async () => [],
+      isProcessAlive: pid => livePids.has(pid),
+      spawnWorker: makeSpawn('v2'),
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-res-v2'
+    });
+    const d2 = await orch2.dispatchResearch({ type: 'dispatch_research', projectId: 'alpha', modelId: 'astra', title: 'Research v2', detail: 'Check v2' });
+    const approved2 = await orch2.approveResearch(d2.research.id, { projectId: 'alpha', megaTaskId: d2.research.megaTaskId });
+    const res2Record = approved2.snapshot.researches.find(r => r.id === d2.research.id);
+    const alphaRow = approved2.snapshot.projects.find(p => p.id === 'alpha');
+    return {
+      v1: {
+        watchingAlive: snap1Watching.researches[0].alive,
+        completeStatus: snap1Complete.researches[0].status,
+        reportAvailable: snap1Complete.researches[0].reportAvailable,
+        reportText: report1.ok ? report1.report : null
+      },
+      v2: {
+        proposalStatus: d2.research.status,
+        executionVersion: d2.research.executionVersion,
+        approvedOk: approved2.ok,
+        researchDispatchLen: (res2Record.dispatch || []).length,
+        researchAlive: res2Record.alive,
+        projectRowDispatchLen: alphaRow.dispatch.length
+      }
+    };
+  });
+
+scenario('orchestrator-state', 'archive-cleanup-focus-switching-and-two-project-isolation',
+  { category: 'archive-and-focus' }, async ({ root }) => {
+    const { providers, models } = stateModels();
+    const dir = path.join(root, 'state');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'orchestrator.json'), JSON.stringify({
+      selectedProjectId: 'alpha',
+      projects: {
+        alpha: { status: 'complete', jobId: 'job-a' },
+        beta: { status: 'idle', jobId: 'job-b' }
+      },
+      autonomy: { alpha: { enabled: false }, beta: { enabled: true, sessionId: 'session-focus' } },
+      projectTeams: { alpha: { orchestratorId: 'astra', roles: {} }, beta: { orchestratorId: 'opus', roles: {} } },
+      projectTools: { alpha: { default: { bash: true } }, beta: { default: { bash: false } } },
+      asks: [
+        { id: 'ask-a', projectId: 'alpha', question: 'QA', answer: 'AA' },
+        { id: 'ask-b', projectId: 'beta', question: 'QB', answer: 'AB' }
+      ],
+      researches: [
+        { id: 'res-a', projectId: 'alpha', status: 'complete' },
+        { id: 'res-b', projectId: 'beta', status: 'watching' }
+      ],
+      workerHistory: [
+        { id: 'alpha', status: 'complete', dispatch: [] },
+        { id: 'beta', status: 'complete', dispatch: [] }
+      ],
+      execution: {
+        megaTasks: [
+          { id: 'MT-a', projectId: 'alpha', taskId: 'job-a', status: 'COMPLETE' },
+          { id: 'MT-b', projectId: 'beta', taskId: 'job-b', status: 'READY_FOR_APPROVAL' }
+        ],
+        subTasks: [
+          { id: 'ST-a', megaTaskId: 'MT-a', status: 'COMPLETE' },
+          { id: 'ST-b', megaTaskId: 'MT-b', status: 'PENDING' }
+        ],
+        results: [{ id: 'R-a', megaTaskId: 'MT-a', status: 'COMPLETE' }],
+        checkpoints: [{ id: 'CP-a', projectId: 'alpha', megaTaskId: 'MT-a' }],
+        timeline: [{ id: 'EV-a', projectId: 'alpha', type: 'NOTE' }, { id: 'EV-b', projectId: 'beta', type: 'NOTE' }]
+      }
+    }) + '\n');
+    const plan = teamPlan(['alpha', 'beta']);
+    const orch = stateSandbox(root).load('orchestrator.js').createOrchestrator({
+      dir, models, providers, readPlan: async () => plan, attempts: fakeAttempts(), fetchPlans: async () => [],
+      spawnWorker: () => { throw new Error('Unexpected worker launch'); },
+      now: () => '2023-11-14T22:13:20.000Z', sessionId: 'session-focus'
+    });
+    const focusBeta = await orch.setFocus('beta');
+    const focusInvalid = await orch.setFocus('missing');
+    const blockedBeta = await orch.archiveProject('beta', 'Cannot archive watching research');
+    const archivedAlpha = await orch.archiveProject('alpha', 'Removed by owner');
+    const persisted = JSON.parse(fs.readFileSync(path.join(dir, 'orchestrator.json'), 'utf8'));
+    return {
+      focusBeta,
+      focusInvalid,
+      blockedBeta,
+      archivedAlpha,
+      selectedAfter: persisted.selectedProjectId,
+      remainingProjects: Object.keys(persisted.projects),
+      remainingAsks: persisted.asks.map(a => a.id),
+      remainingResearches: persisted.researches.map(r => r.id),
+      remainingMegaTasks: persisted.execution.megaTasks.map(m => m.id),
+      remainingSubTasks: persisted.execution.subTasks.map(s => s.id),
+      remainingResults: persisted.execution.results.length,
+      archiveCount: persisted.projectArchive.length,
+      archiveProjectId: persisted.projectArchive[0].projectId
+    };
   });
 
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
