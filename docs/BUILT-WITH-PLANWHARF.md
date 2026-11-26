@@ -16,7 +16,7 @@ numbers below.
 | Engine modules ported to C# | **67 of 72** | 72 |
 | JavaScript engine lines ported | **about 10,500 of 14,000** (75%) | all; the orchestrator alone is about 3,800 |
 | Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building implemented / waiting for review | 0 to 8 |
-| C# engine tests | 2622, plus 1149 comparison cases with the JavaScript across 45 modules and 125 scenario parity cases | |
+| C# engine tests | 2623, plus 1149 comparison cases with the JavaScript across 45 modules and 125 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,

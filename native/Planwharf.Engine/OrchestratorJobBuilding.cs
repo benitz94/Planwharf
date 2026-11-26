@@ -451,9 +451,12 @@ public static class OrchestratorJobBuilding
         var recordedFiles = (row.Dispatch ?? []).Select(p => p?.ResultPath).Where(p => !string.IsNullOrEmpty(p)).Select(p => p!).ToList();
         if (recordedFiles.Count == 0 && !string.IsNullOrEmpty(row.ResultPath)) recordedFiles.Add(row.ResultPath);
 
+        var everySliceHasResultPath = row.Dispatch is not { Count: > 0 }
+            || row.Dispatch.All(part => !string.IsNullOrEmpty(part?.ResultPath));
         if (job != null && row.JobId == job.Id && row.JobFingerprint == JobFingerprint(job)
             && !(row.Dispatch ?? []).Any(p => p?.StoppedByUser == true)
-            && recordedFiles.Count > 0 && recordedFiles.All(file => ResultStatus(file) == "COMPLETE"))
+            && everySliceHasResultPath && recordedFiles.Count > 0
+            && recordedFiles.All(file => ResultStatus(file) == "COMPLETE"))
         {
             row.Status = "complete";
             row.Doing = $"Evidence complete for {job.Title} on {item.Project.Name}.";

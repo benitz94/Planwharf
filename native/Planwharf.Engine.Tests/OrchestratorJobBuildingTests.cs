@@ -481,6 +481,59 @@ public class OrchestratorJobBuildingTests
 
     // 6. Decide_CompletionVerification_Tests
     [Fact]
+    public void Decide_CompletionVerification_DoesNotIgnoreSliceWithoutResultPath()
+    {
+        var tempDir = CreateTempDir();
+        try
+        {
+            var result = Path.Combine(tempDir, "builder.txt");
+            File.WriteAllText(result, "STATUS: COMPLETE\n");
+            var job = new JobDescriptor("j1", "Build", "Details") { Status = "running" };
+            var item = new ProjectItem(new ProjectInfo("p1", "App", tempDir), [], [job]);
+            var row = new ProjectRow
+            {
+                JobId = job.Id,
+                JobFingerprint = OrchestratorJobBuilding.JobFingerprint(job),
+                Approved = true,
+                Dispatch =
+                [
+                    new DispatchPart("builder", "Builder", "Build", ResultPath: result),
+                    new DispatchPart("verifier", "Verifier", "Verify")
+                ]
+            };
+            var outcome = OrchestratorJobBuilding.Decide(
+                item, row, new FakeExecutionBridge(),
+                new FakeCrewSelector { Workers = [new ModelCandidate("builder", "Builder")] },
+                new FakeFolderInspector(), new FakeProcessLiveness(), new DecideOptions());
+
+            Assert.Equal("running", outcome.Status);
+
+            var verifierResult = Path.Combine(tempDir, "verifier.txt");
+            row.Dispatch =
+            [
+                new DispatchPart("builder", "Builder", "Build", ResultPath: result),
+                new DispatchPart("verifier", "Verifier", "Verify", ResultPath: verifierResult)
+            ];
+            var stillMissing = OrchestratorJobBuilding.Decide(
+                item, row, new FakeExecutionBridge(),
+                new FakeCrewSelector { Workers = [new ModelCandidate("builder", "Builder")] },
+                new FakeFolderInspector(), new FakeProcessLiveness(), new DecideOptions());
+            Assert.Equal("running", stillMissing.Status);
+
+            File.WriteAllText(verifierResult, "STATUS: COMPLETE\n");
+            var recovered = OrchestratorJobBuilding.Decide(
+                item, row, new FakeExecutionBridge(),
+                new FakeCrewSelector { Workers = [new ModelCandidate("builder", "Builder")] },
+                new FakeFolderInspector(), new FakeProcessLiveness(), new DecideOptions());
+            Assert.Equal("complete", recovered.Status);
+        }
+        finally
+        {
+            DeleteTempDir(tempDir);
+        }
+    }
+
+    [Fact]
     public void Decide_CompletionVerification_RequiresAllSlicesCompleteAndNeverRedispatches()
     {
         var tempDir = CreateTempDir();
