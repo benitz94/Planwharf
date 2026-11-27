@@ -385,4 +385,4 @@ before Job 43 acceptance; no cross-platform CI result is claimed.
 | The work the lead named after job 45 stopped could not start any part: its parts were numbered from 1 again, and the stopped work's worktrees still held those branches | #240 |
 | The app had an Italian translation the owner no longer wanted: the native app is English only | #243 |
 | A pull request fix wrote its progress into the project's chat and Progress instead of the Pull requests panel, and when it gave up it did not say why the other models were left out | #242 |
-| Job 51 looped: each step stopped on tests outside its own files, the lead split the same parts again, and since files changed each round the crew never counted it as no progress | #? |
+| Job 51 looped: each step stopped on tests outside its own files, the lead split the same parts again, and since files changed each round the crew never counted it as no progress | #249 |
