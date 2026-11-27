@@ -129,11 +129,32 @@ const orchestratorStateCases = [
     { modelId: 'm2', label: 'Historical', slice: 'Old slice', historicalAssignment: true, assignmentJobTitle: 'Old job', activity: 'Finished' }
   ] }), 'Lead']],
   ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'Unhealthy', slice: 'Slice', alive: true }], workerActivity: 'Hit an error: provider' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', workerPid: 0, workerAlive: true, workerActivity: '' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', workerPid: 42, workerAlive: false, workerActivity: '' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', workerPid: 42, workerAlive: true, workerActivity: '' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', workerPid: null, workerAlive: false, workerActivity: '' }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', facts: { fileCount: 0 } }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', facts: { fileCount: 1 } }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', facts: { fileCount: 5 } }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', facts: { fileCount: null } }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', workerLabel: 'Solo', facts: null }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'P1', slice: 'Slice', pid: 0, alive: true }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'P1', slice: 'Slice', pid: 55, alive: false }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'P1', slice: 'Slice', pid: 55, alive: true }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'P1', slice: null, pid: 77, alive: true }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'watching', dispatch: [{ modelId: 'm1', label: 'P1', slice: '', pid: 77, alive: false }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'complete', dispatch: [{ modelId: 'm1', label: 'P1', slice: 'Slice' }] }), 'Lead']],
+  ['crewOf', [stateEntry({ status: 'blocked_no_worker', dispatch: [{ modelId: 'm1', label: 'P1', slice: 'Slice' }] }), 'Lead']],
   ['progressKey', [null, null, null]],
   ['progressKey', [{ fileCount: 3, names: ['a.cs', 'docs'], dirty: [' M a.cs'] }, 'missing-parity-log-a', null]],
   ['progressKey', [{ fileCount: 3, names: ['a.cs', 'docs'], dirty: [' M a.cs', '?? b.cs'] }, null,
     [{ logPath: 'missing-parity-log-a' }, { logPath: 'missing-parity-log-b' }]]],
-  ['progressKey', [{ fileCount: null, names: 'not-an-array', dirty: null }, '', []]]
+  ['progressKey', [{ fileCount: null, names: 'not-an-array', dirty: null }, '', []]],
+  ['progressKey', [{ fileCount: 0, names: ['src'], dirty: [] }, null, null]],
+  ['progressKey', [{ fileCount: 1, names: ['a', 'b'], dirty: ['M a'] }, null, null]],
+  ['progressKey', [{ fileCount: '10', names: [], dirty: [] }, null, null]],
+  ['progressKey', [{ fileCount: -2, names: [], dirty: [] }, null, null]],
+  ['progressKey', [{ fileCount: 0, names: [], dirty: [] }, 'missing-parity-log-c', []]]
 ];
 
 module.exports = {
