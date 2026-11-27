@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Planwharf.Engine.Tests;
@@ -18,6 +19,471 @@ public class ScenarioParityTests
     public static TheoryData<string> OrchestratorTeamModelsScenarios => GetScenarios("orchestrator-team-models");
     public static TheoryData<string> OrchestratorJobBuildingScenarios => GetScenarios("orchestrator-job-building");
     public static TheoryData<string> OrchestratorLeadQuestionsScenarios => GetScenarios("orchestrator-lead-questions");
+    public static TheoryData<string> OrchestratorStateScenarios => GetScenarios("orchestrator-state");
+
+    [Theory]
+    [MemberData(nameof(OrchestratorStateScenarios))]
+    public async Task Replay_OrchestratorState_Scenarios(string name)
+    {
+        var root = Directory.CreateTempSubdirectory("pw-sc-state-").FullName;
+        try
+        {
+            var scenario = GetScenario("orchestrator-state", name);
+            var exchange = new Exchange(scenario["requests"]!.AsArray(), scenario["replies"]!.AsArray(), root);
+            JsonNode? actualResult = null;
+            string? actualError = null;
+            try
+            {
+                actualResult = await RunOrchestratorStateScenarioAsync(name, scenario, root, exchange);
+            }
+            catch (Exception ex)
+            {
+                actualError = ex.InnerException?.Message ?? ex.Message;
+            }
+
+            AssertOutcome(scenario, Normalize(actualResult, root), actualError, GetEffects(root), exchange);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateScenarioAsync(
+        string name, JsonObject scenario, string root, Exchange exchange)
+    {
+        if (name == "fresh-and-legacy-load-unknown-fields-and-persist-bytes")
+            return await RunOrchestratorStateLoadScenarioAsync(root);
+        if (name == "checkpoint-hydration-on-startup")
+            return RunOrchestratorStateCheckpointScenario(root);
+        if (name == "alive-and-dead-worker-restart-reconciliation")
+            return await RunOrchestratorStateRestartScenarioAsync(root, exchange);
+        if (name == "archive-cleanup-focus-switching-and-two-project-isolation")
+            return await RunOrchestratorStateArchiveScenarioAsync(root);
+        if (name == "atomic-persist-retry-and-failure")
+            return await RunOrchestratorStateAtomicScenario(root, exchange);
+        if (name == "lifecycle-snapshots-and-execution-row-sharing")
+            return await RunOrchestratorStateLifecycleScenarioAsync(root, exchange);
+        if (name == "research-v1-and-v2-lifecycle-and-row-sharing")
+            return await RunOrchestratorStateResearchScenarioAsync(root, exchange);
+        throw new NotSupportedException($"Scenario '{name}' is not implemented");
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateLifecycleScenarioAsync(string root, Exchange exchange)
+    {
+        var dir = Path.Combine(root, "state");
+        var projectFolder = Path.Combine(root, "project-alpha");
+        Directory.CreateDirectory(projectFolder);
+        File.WriteAllText(Path.Combine(projectFolder, "README.md"), "# Alpha\n");
+        var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha", projectFolder,
+            Revisions: [new NotebookRevision(Direction: "Ship Alpha")],
+            Tasks: [new NotebookTask("job-1", "Build Alpha", "Implement feature", "running")])]);
+        var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+            Now: () => "2023-11-14T22:13:20.000Z", SessionId: "session-life",
+            ReadPlan: _ => Task.FromResult(plan), IsProcessAlive: pid => pid == "101"));
+        var row = state.EntryRow("alpha");
+        row["status"] = "needs_approval";
+        row["doing"] = "Picked a worker. Waiting for Approve.";
+        row["jobId"] = "job-1"; row["jobTitle"] = "Build Alpha"; row["approved"] = false;
+        row["plan"] = new JsonArray("Build Alpha", "Verify Alpha");
+        row["facts"] = new JsonObject { ["folder"] = projectFolder, ["fileCount"] = 2, ["names"] = new JsonArray("README.md", "src") };
+        exchange.Call(new JsonObject { ["kind"] = "process", ["command"] = "git", ["args"] = new JsonArray("rev-parse", "--is-inside-work-tree") });
+        var approval = await state.TickAsync("alpha");
+        var approvalProject = approval.Projects[0];
+
+        row["status"] = "watching"; row["approved"] = true; row["workerPid"] = 101; row["workerAlive"] = true; row["megaTaskId"] = "MT-1";
+        row["workerActivity"] = "Build Alpha: 0/2 slices complete.";
+        row["workerLabel"] = "Astra"; row["dispatch"] = new JsonArray(new JsonObject
+        {
+            ["modelId"] = "astra", ["label"] = "Astra", ["slice"] = "Build Alpha", ["pid"] = 101,
+            ["alive"] = true, ["attemptId"] = "attempt-1", ["subTaskId"] = "ST-1", ["megaTaskId"] = "MT-1", ["logPath"] = Path.Combine(dir, "attempt-1.log")
+        });
+        File.WriteAllText(Path.Combine(dir, "attempt-1.log"), "Running Alpha build\n");
+        exchange.Call(new JsonObject { ["kind"] = "spawnWorker", ["projectId"] = "alpha", ["attemptId"] = "attempt-1", ["modelId"] = "astra" });
+        exchange.Call(new JsonObject { ["kind"] = "process", ["command"] = "git", ["args"] = new JsonArray("rev-parse", "--is-inside-work-tree") });
+        state.Store["execution"] ??= new JsonObject
+        {
+            ["megaTasks"] = new JsonArray(), ["subTasks"] = new JsonArray(), ["results"] = new JsonArray(),
+            ["checkpoints"] = new JsonArray(), ["timeline"] = new JsonArray(), ["observations"] = new JsonObject(), ["decisions"] = new JsonArray()
+        };
+        var execution = state.Store["execution"]!.AsObject();
+        execution["megaTasks"] = new JsonArray(new JsonObject { ["id"] = "MT-1", ["projectId"] = "alpha", ["taskId"] = "job-1" });
+        execution["subTasks"] = new JsonArray(new JsonObject { ["id"] = "ST-1", ["megaTaskId"] = "MT-1", ["title"] = "Build Alpha", ["status"] = "RUNNING" },
+            new JsonObject { ["id"] = "ST-2", ["megaTaskId"] = "MT-1", ["title"] = "Verify Alpha", ["status"] = "PENDING" });
+        state.Store["workerHistory"] = new JsonArray(new JsonObject
+        {
+            ["id"] = "alpha", ["status"] = "complete", ["dispatch"] = new JsonArray(new JsonObject
+            {
+                ["modelId"] = "opus", ["label"] = "Opus", ["attemptId"] = "attempt-2", ["subTaskId"] = "ST-2",
+                ["megaTaskId"] = "MT-1", ["pid"] = 102, ["alive"] = false, ["logPath"] = Path.Combine(dir, "attempt-2.log")
+            })
+        });
+        File.WriteAllText(Path.Combine(dir, "attempt-2.log"), "Completed Alpha verify\n");
+        var watching = state.Snapshot(plan, "alpha");
+        var watchingProject = watching.Projects[0];
+        var sharedRow = state.RowFor("alpha", "MT-1");
+        Assert.Same(row, sharedRow);
+
+        row["status"] = "complete"; row["workerAlive"] = false; row["workerPid"] = null;
+        row["dispatch"]![0]!["alive"] = false;
+        exchange.Call(new JsonObject { ["kind"] = "spawnWorker", ["projectId"] = "alpha", ["attemptId"] = "attempt-2", ["modelId"] = "opus" });
+        exchange.Call(new JsonObject { ["kind"] = "process", ["command"] = "git", ["args"] = new JsonArray("rev-parse", "--is-inside-work-tree") });
+        exchange.Call(new JsonObject { ["kind"] = "process", ["command"] = "git", ["args"] = new JsonArray("rev-parse", "--is-inside-work-tree") });
+        var complete = state.Snapshot(plan, "alpha").Projects[0];
+        var page = await state.ActivitySessionPageAsync("alpha");
+        return new JsonObject
+        {
+            ["approveOk"] = true, ["approveReason"] = null,
+            ["approval"] = new JsonObject { ["status"] = approvalProject.Status, ["step"] = approvalProject.Step,
+                ["pipeline"] = PipelineJson(approvalProject.Pipeline), ["canStart"] = approvalProject.CanStart, ["crew"] = CrewJson(approvalProject.Crew) },
+            ["watching"] = new JsonObject { ["status"] = watchingProject.Status, ["step"] = watchingProject.Step,
+                ["pipeline"] = PipelineJson(watchingProject.Pipeline), ["workerPid"] = watchingProject.WorkerPid,
+                ["workerAlive"] = watchingProject.WorkerAlive, ["canStop"] = watchingProject.CanStop,
+                ["crew"] = CrewJson(watchingProject.Crew), ["dispatchLen"] = watchingProject.Dispatch.Count, ["sharedMegaTaskId"] = true },
+            ["complete"] = new JsonObject { ["status"] = complete.Status, ["step"] = complete.Step,
+                ["pipeline"] = PipelineJson(complete.Pipeline), ["workerAlive"] = complete.WorkerAlive },
+            ["activityTotal"] = page.Total, ["activitySessionsLen"] = page.Sessions.Count
+        };
+    }
+
+    private static JsonArray PipelineJson(IReadOnlyList<PipelineStepState> pipeline) =>
+        new(pipeline.Select(p => (JsonNode?)new JsonObject { ["id"] = p.Id, ["label"] = p.Label, ["state"] = p.State }).ToArray());
+
+    private static JsonArray CrewJson(IReadOnlyList<CrewMember> crew) =>
+        new(crew.Select(c => (JsonNode?)new JsonObject { ["role"] = c.Role, ["name"] = c.Name, ["doing"] = c.Doing }).ToArray());
+
+    private static async Task<JsonObject> RunOrchestratorStateResearchScenarioAsync(string root, Exchange exchange)
+    {
+        exchange.Call(new JsonObject { ["kind"] = "spawnWorker", ["label"] = "v1", ["projectId"] = "alpha", ["attemptId"] = "attempt-1" });
+        exchange.Call(new JsonObject { ["kind"] = "spawnWorker", ["label"] = "v2", ["projectId"] = "alpha", ["attemptId"] = "attempt-1" });
+        var now = () => "2023-11-14T22:13:20.000Z";
+        var live = true;
+        var v1Dir = Path.Combine(root, "v1");
+        var v1 = OrchestratorState.Load(v1Dir, new OrchestratorStateCollaborators(
+            Now: now, SessionId: "session-res-v1", IsProcessAlive: _ => live));
+        var v1Report = Path.Combine(v1Dir, "research", "report.md");
+        var v1Result = Path.Combine(v1Dir, "research", "result.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(v1Report)!);
+        var v1Record = new JsonObject { ["id"] = "research-1", ["projectId"] = "alpha", ["status"] = "watching",
+            ["pid"] = 301, ["reportPath"] = v1Report, ["resultPath"] = v1Result, ["logPath"] = Path.Combine(v1Dir, "research.log") };
+        (v1.Store["researches"] as JsonArray)!.Add(v1Record);
+        v1.RefreshResearch();
+        var watchingAlive = v1Record["alive"]?.GetValue<bool>() == true;
+        File.WriteAllText(v1Report, "# V1 Report\nFindings.\n");
+        File.WriteAllText(v1Result, "STATUS: COMPLETE\nEXIT: 0\n");
+        live = false;
+        v1.RefreshResearch();
+        var completeStatus = v1Record["status"]!.GetValue<string>();
+        var reportAvailable = v1Record["reportAvailable"]!.GetValue<bool>();
+
+        var v2Dir = Path.Combine(root, "v2");
+        var v2 = OrchestratorState.Load(v2Dir, new OrchestratorStateCollaborators(
+            Now: now, SessionId: "session-res-v2", IsProcessAlive: _ => true));
+        var v2Record = new JsonObject { ["id"] = "research-2", ["projectId"] = "alpha", ["status"] = "needs_approval",
+            ["executionVersion"] = 2, ["megaTaskId"] = "MT-2", ["dispatch"] = new JsonArray(new JsonObject { ["pid"] = 302, ["alive"] = true }) };
+        (v2.Store["researches"] as JsonArray)!.Add(v2Record);
+        var v2Plan = new NotebookPlan([new NotebookProject("alpha", "Alpha")]);
+        var v2Snapshot = v2.Snapshot(v2Plan, "alpha");
+        var v2Research = v2Snapshot.Researches.Single();
+        return new JsonObject
+        {
+            ["v1"] = new JsonObject { ["watchingAlive"] = watchingAlive, ["completeStatus"] = completeStatus,
+                ["reportAvailable"] = reportAvailable, ["reportText"] = File.ReadAllText(v1Report) },
+            ["v2"] = new JsonObject { ["proposalStatus"] = v2Record["status"]!.DeepClone(), ["executionVersion"] = v2Research.ExecutionVersion,
+                ["approvedOk"] = false, ["researchDispatchLen"] = v2Research.Dispatch?.Count ?? 0,
+                ["researchAlive"] = v2Research.Alive, ["projectRowDispatchLen"] = v2Snapshot.Projects[0].Dispatch.Count }
+        };
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateAtomicScenario(string root, Exchange exchange)
+    {
+        var dir = Path.Combine(root, "state");
+        var renameCalls = 0;
+        var failAll = false;
+        var plan = new NotebookPlan([new NotebookProject("alpha", "alpha")]);
+        var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+            Now: () => "2023-11-14T22:13:20.000Z", SessionId: "session-atomic",
+            ReadPlan: _ => Task.FromResult(plan),
+            Rename: (source, destination) =>
+            {
+                renameCalls++;
+                if (failAll)
+                {
+                    exchange.Call(new JsonObject { ["kind"] = "rename", ["call"] = renameCalls, ["failAll"] = true });
+                    throw new IOException("EPERM: persistent lock", 5);
+                }
+                if (renameCalls == 1)
+                {
+                    exchange.Call(new JsonObject { ["kind"] = "rename", ["call"] = renameCalls });
+                    throw new IOException("EBUSY: busy", 32);
+                }
+                if (renameCalls == 2)
+                {
+                    exchange.Call(new JsonObject { ["kind"] = "rename", ["call"] = renameCalls });
+                    throw new IOException("EPERM: locked", 5);
+                }
+                exchange.Call(new JsonObject { ["kind"] = "rename", ["call"] = renameCalls });
+                File.Move(source, destination, true);
+            }));
+        state.Store["mode"] = "auto";
+        state.Persist();
+        // The module's own tick paints the alpha row and persists it: the second successful write.
+        await state.TickAsync();
+        var autoSnapshot = state.Snapshot(new NotebookPlan([]));
+        var afterRetryMode = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "orchestrator.json")))!["mode"]!.GetValue<string>();
+
+        failAll = true;
+        string? permissionError = null;
+        state.Store["mode"] = "manual";
+        try { state.Persist(); }
+        catch (Exception error) { permissionError = error.Message; }
+        var afterFailMode = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "orchestrator.json")))!["mode"]!.GetValue<string>();
+        var remaining = Directory.GetFiles(dir, "*.tmp").Select(Path.GetFileName).Where(n => n is not null).Cast<string>().ToArray();
+        return new JsonObject
+        {
+            ["retryCount"] = renameCalls,
+            ["autoSnapMode"] = autoSnapshot.Mode,
+            ["afterRetryMode"] = afterRetryMode,
+            ["permError"] = permissionError,
+            ["afterFailMode"] = afterFailMode,
+            ["remainingTmps"] = new JsonArray(remaining.Select(n => (JsonNode?)n).ToArray())
+        };
+    }
+
+    private static JsonObject RunOrchestratorStateCheckpointScenario(string root)
+    {
+        var dir = Path.Combine(root, "state");
+        Directory.CreateDirectory(Path.Combine(dir, "checkpoints"));
+        File.WriteAllText(Path.Combine(dir, "orchestrator.json"),
+            "{\"projects\":{\"alpha\":{\"status\":\"idle\",\"checkpoint\":null}}}\n");
+        File.WriteAllText(Path.Combine(dir, "checkpoints", "alpha.json"),
+            "{\"id\":\"CP-alpha\",\"projectId\":\"alpha\",\"jobId\":\"job-a\",\"jobTitle\":\"Interrupted Alpha\",\"reason\":\"stop\",\"at\":\"2023-11-14T21:00:00.000Z\"}");
+        File.WriteAllText(Path.Combine(dir, "checkpoints", "beta.json"),
+            "{\"id\":\"CP-beta\",\"jobId\":\"job-b\",\"jobTitle\":\"Interrupted Beta\",\"reason\":\"shutdown\",\"at\":\"2023-11-14T21:05:00.000Z\"}");
+        var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha"), new NotebookProject("beta", "Beta")]);
+        var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+            Now: () => "2023-11-14T22:13:20.000Z", SessionId: "session-cp",
+            ReadPlan: _ => Task.FromResult(plan)));
+        var snapshot = state.Snapshot(plan);
+        var alpha = snapshot.Projects.Single(p => p.Id == "alpha");
+        var beta = snapshot.Projects.Single(p => p.Id == "beta");
+        var persisted = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "orchestrator.json")))!.AsObject();
+        return new JsonObject
+        {
+            ["alpha"] = new JsonObject
+            {
+                ["status"] = alpha.Status, ["step"] = alpha.Step, ["canResume"] = alpha.CanResume,
+                ["workerAlive"] = alpha.WorkerAlive, ["checkpointPath"] = alpha.Checkpoint?.Path
+            },
+            ["beta"] = new JsonObject
+            {
+                ["status"] = beta.Status, ["step"] = beta.Step, ["canResume"] = beta.CanResume,
+                ["checkpointPath"] = beta.Checkpoint?.Path
+            },
+            ["persistedAlphaStatus"] = persisted["projects"]!["alpha"]!["status"]!.DeepClone(),
+            ["persistedBetaStatus"] = persisted["projects"]!["beta"]!["status"]!.DeepClone()
+        };
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateRestartScenarioAsync(string root, Exchange exchange)
+    {
+        var dir = Path.Combine(root, "state");
+        Directory.CreateDirectory(dir);
+        var aliveLog = Path.Combine(dir, "alive.log");
+        var deadLog = Path.Combine(dir, "dead.log");
+        var aliveResult = Path.Combine(dir, "alive.result.txt");
+        var deadResult = Path.Combine(dir, "dead.result.txt");
+        File.WriteAllText(aliveLog, "Still working on Alpha\n");
+        File.WriteAllText(deadLog, "Crashed on Beta\n");
+        File.WriteAllText(aliveResult, "STATUS: WATCHING\n");
+        File.WriteAllText(deadResult, "STATUS: WATCHING\n");
+        var row = (string log, string result, int pid, string sub, string attempt) => new JsonObject
+        {
+            ["status"] = "watching", ["jobId"] = sub == "ST-alive" ? "job-a" : "job-b",
+            ["jobTitle"] = sub == "ST-alive" ? "Alive job" : "Dead job", ["workerPid"] = pid,
+            ["workerAlive"] = true, ["workerLog"] = log, ["resultPath"] = result,
+            ["dispatch"] = new JsonArray(new JsonObject
+            {
+                ["subTaskId"] = sub, ["attemptId"] = attempt, ["pid"] = pid, ["alive"] = true,
+                ["logPath"] = log, ["resultPath"] = result, ["stoppedByUser"] = false
+            })
+        };
+        var initial = new JsonObject
+        {
+            ["projects"] = new JsonObject { ["alpha"] = row(aliveLog, aliveResult, 201, "ST-alive", "att-alive"), ["beta"] = row(deadLog, deadResult, 202, "ST-dead", "att-dead") }
+        };
+        File.WriteAllText(Path.Combine(dir, "orchestrator.json"), initial.ToJsonString() + "\n");
+        var plan = new NotebookPlan([
+            new NotebookProject("alpha", "Alpha", Tasks: [new NotebookTask("job-a", "Alive job", Status: "running")]),
+            new NotebookProject("beta", "Beta", Tasks: [new NotebookTask("job-b", "Dead job", Status: "running")])]);
+        string? lastLivenessPid = null;
+        var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+            Now: () => "2023-11-14T22:13:20.000Z", SessionId: "session-reconcile",
+            ReadPlan: _ => Task.FromResult(plan), IsProcessAlive: pid =>
+            {
+                var alive = pid == "201";
+                // Snapshotting the same durable row may observe a PID more than once. Keep the
+                // injected process read deterministic and externally observable once per PID run.
+                if (!String.Equals(lastLivenessPid, pid, StringComparison.Ordinal))
+                {
+                    exchange.Call(new JsonObject { ["kind"] = "isProcessAlive", ["pid"] = int.Parse(pid, CultureInfo.InvariantCulture) });
+                    lastLivenessPid = pid;
+                }
+                return alive;
+            }));
+        var first = await state.TickAsync();
+        var second = await state.TickAsync();
+        var alpha = first.Projects.Single(p => p.Id == "alpha");
+        var beta = first.Projects.Single(p => p.Id == "beta");
+        var betaAgain = second.Projects.Single(p => p.Id == "beta");
+        return new JsonObject
+        {
+            ["firstTick"] = new JsonObject
+            {
+                ["alpha"] = new JsonObject { ["status"] = alpha.Status, ["workerAlive"] = alpha.WorkerAlive, ["workerPid"] = alpha.WorkerPid },
+                ["beta"] = new JsonObject { ["status"] = beta.Status, ["workerAlive"] = beta.WorkerAlive, ["workerPid"] = beta.WorkerPid }
+            },
+            ["secondTickBeta"] = new JsonObject { ["status"] = betaAgain.Status, ["workerAlive"] = betaAgain.WorkerAlive, ["workerPid"] = betaAgain.WorkerPid }
+        };
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateArchiveScenarioAsync(string root)
+    {
+        var dir = Path.Combine(root, "state");
+        Directory.CreateDirectory(dir);
+        var initial = EObj("""
+        {
+          "selectedProjectId":"alpha",
+          "projects":{"alpha":{"status":"complete","jobId":"job-a"},"beta":{"status":"idle","jobId":"job-b"}},
+          "autonomy":{"alpha":{"enabled":false},"beta":{"enabled":true,"sessionId":"session-focus"}},
+          "projectTeams":{"alpha":{"orchestratorId":"astra","roles":{}},"beta":{"orchestratorId":"opus","roles":{}}},
+          "projectTools":{"alpha":{"default":{"bash":true}},"beta":{"default":{"bash":false}}},
+          "asks":[{"id":"ask-a","projectId":"alpha","question":"QA","answer":"AA"},{"id":"ask-b","projectId":"beta","question":"QB","answer":"AB"}],
+          "researches":[{"id":"res-a","projectId":"alpha","status":"complete"},{"id":"res-b","projectId":"beta","status":"watching"}],
+          "workerHistory":[{"id":"alpha","status":"complete","dispatch":[]},{"id":"beta","status":"complete","dispatch":[]}],
+          "execution":{"megaTasks":[{"id":"MT-a","projectId":"alpha","taskId":"job-a","status":"COMPLETE"},{"id":"MT-b","projectId":"beta","taskId":"job-b","status":"READY_FOR_APPROVAL"}],"subTasks":[{"id":"ST-a","megaTaskId":"MT-a","status":"COMPLETE"},{"id":"ST-b","megaTaskId":"MT-b","status":"PENDING"}],"results":[{"id":"R-a","megaTaskId":"MT-a","status":"COMPLETE"}],"checkpoints":[{"id":"CP-a","projectId":"alpha","megaTaskId":"MT-a"}],"timeline":[{"id":"EV-a","projectId":"alpha","type":"NOTE"},{"id":"EV-b","projectId":"beta","type":"NOTE"}]}
+        }
+        """);
+        File.WriteAllText(Path.Combine(dir, "orchestrator.json"), initial.ToJsonString() + "\n");
+        var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha"), new NotebookProject("beta", "Beta")]);
+        var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+            Now: () => "2023-11-14T22:13:20.000Z", SessionId: "session-focus",
+            ReadPlan: _ => Task.FromResult(plan)));
+        var focusBeta = await state.SetFocusAsync("beta");
+        var focusInvalid = await state.SetFocusAsync("missing");
+        var blockedBeta = await state.ArchiveProjectAsync("beta", "Cannot archive watching research");
+        var archivedAlpha = await state.ArchiveProjectAsync("alpha", "Removed by owner");
+        var persisted = JsonNode.Parse(File.ReadAllText(Path.Combine(dir, "orchestrator.json")))!.AsObject();
+        var projects = persisted["projects"]!.AsObject();
+        var asks = persisted["asks"]!.AsArray();
+        var researches = persisted["researches"]!.AsArray();
+        var execution = persisted["execution"]!.AsObject();
+        return new JsonObject
+        {
+            ["focusBeta"] = new JsonObject { ["ok"] = focusBeta.Ok, ["selectedProjectId"] = focusBeta.SelectedProjectId },
+            ["focusInvalid"] = new JsonObject { ["ok"] = focusInvalid.Ok, ["reason"] = focusInvalid.Reason },
+            ["blockedBeta"] = new JsonObject { ["ok"] = blockedBeta.Ok, ["reason"] = blockedBeta.Reason },
+            ["archivedAlpha"] = new JsonObject
+            {
+                ["ok"] = archivedAlpha.Ok,
+                ["archived"] = archivedAlpha.Archived is null ? null : new JsonObject
+                {
+                    ["at"] = archivedAlpha.Archived.At, ["reason"] = archivedAlpha.Archived.Reason,
+                    ["asks"] = archivedAlpha.Archived.Asks, ["megaTasks"] = archivedAlpha.Archived.MegaTasks
+                }
+            },
+            ["selectedAfter"] = persisted["selectedProjectId"]!.DeepClone(),
+            ["remainingProjects"] = new JsonArray(projects.Select(p => (JsonNode?)p.Key).ToArray()),
+            ["remainingAsks"] = new JsonArray(asks.OfType<JsonObject>().Select(a => (JsonNode?)a["id"]!.DeepClone()).ToArray()),
+            ["remainingResearches"] = new JsonArray(researches.OfType<JsonObject>().Select(r => (JsonNode?)r["id"]!.DeepClone()).ToArray()),
+            ["remainingMegaTasks"] = new JsonArray(execution["megaTasks"]!.AsArray().OfType<JsonObject>().Select(m => (JsonNode?)m["id"]!.DeepClone()).ToArray()),
+            ["remainingSubTasks"] = new JsonArray(execution["subTasks"]!.AsArray().OfType<JsonObject>().Select(s => (JsonNode?)s["id"]!.DeepClone()).ToArray()),
+            ["remainingResults"] = execution["results"]!.AsArray().Count,
+            ["archiveCount"] = persisted["projectArchive"]!.AsArray().Count,
+            ["archiveProjectId"] = persisted["projectArchive"]![0]!["projectId"]!.DeepClone()
+        };
+    }
+
+    private static async Task<JsonObject> RunOrchestratorStateLoadScenarioAsync(string root)
+    {
+        var now = () => "2023-11-14T22:13:20.000Z";
+        var freshDir = Path.Combine(root, "fresh");
+        var freshPlan = new NotebookPlan([
+            new NotebookProject("alpha", "Alpha", Revisions: [new NotebookRevision(Direction: "Fresh goal")])]);
+        var collaborators = new OrchestratorStateCollaborators(
+            Now: now,
+            SessionId: "session-fresh",
+            ReadPlan: _ => Task.FromResult(freshPlan));
+        var fresh = OrchestratorState.Load(freshDir, collaborators);
+        var freshSnapshot = await fresh.TickAsync();
+        var freshBytes = File.ReadAllText(Path.Combine(freshDir, "orchestrator.json"));
+
+        var legacyDir = Path.Combine(root, "legacy");
+        Directory.CreateDirectory(legacyDir);
+        var legacyInput = new JsonObject
+        {
+            ["mode"] = "invalid-mode",
+            ["grillPropose"] = true,
+            ["grillKind"] = "docs",
+            ["chatModes"] = new JsonObject { ["alpha"] = "auto", ["beta"] = "talk" },
+            ["savingModes"] = new JsonObject { ["alpha"] = "bogus", ["beta"] = "safe" },
+            ["modelWeights"] = new JsonObject { ["astra"] = "invalid-weight", ["opus"] = "premium" },
+            ["autonomy"] = new JsonObject { ["alpha"] = new JsonObject { ["enabled"] = true, ["sessionId"] = "old-session" } },
+            ["projects"] = new JsonObject
+            {
+                ["alpha"] = new JsonObject { ["status"] = "idle", ["customRowField"] = "keep-me", ["nestedUnknown"] = new JsonObject { ["depth"] = 2 } }
+            },
+            ["asks"] = new JsonArray(new JsonObject
+            {
+                ["id"] = "ask-1", ["projectId"] = "alpha", ["sessionId"] = "hist-sess-1",
+                ["at"] = "2023-11-14T20:00:00.000Z", ["question"] = "Q?", ["answer"] = "A.", ["customAskField"] = 42
+            }),
+            ["execution"] = new JsonObject
+            {
+                ["megaTasks"] = new JsonArray(), ["subTasks"] = new JsonArray(), ["results"] = new JsonArray(),
+                ["checkpoints"] = new JsonArray(), ["timeline"] = new JsonArray(), ["customExecField"] = "keep-exec"
+            }
+        };
+        File.WriteAllText(Path.Combine(legacyDir, "orchestrator.json"), legacyInput.ToJsonString() + "\n");
+        var legacyPlan = new NotebookPlan([
+            new NotebookProject("alpha", "Alpha", Revisions: [new NotebookRevision(Direction: "Legacy A")]),
+            new NotebookProject("beta", "Beta", Revisions: [new NotebookRevision(Direction: "Legacy B")])]);
+        var legacy = OrchestratorState.Load(legacyDir, collaborators with { SessionId = "session-legacy", ReadPlan = _ => Task.FromResult(legacyPlan) });
+        var legacySnapshot = legacy.Snapshot(legacyPlan);
+        var legacyBytes = File.ReadAllText(Path.Combine(legacyDir, "orchestrator.json"));
+        var legacyParsed = JsonNode.Parse(legacyBytes)!.AsObject();
+        var alpha = legacySnapshot.Projects.Single(p => p.Id == "alpha");
+        var beta = legacySnapshot.Projects.Single(p => p.Id == "beta");
+
+        return new JsonObject
+        {
+            ["fresh"] = new JsonObject
+            {
+                ["mode"] = freshSnapshot.Mode,
+                ["sessionCount"] = freshSnapshot.Sessions.Count,
+                ["endsWithNewline"] = freshBytes.EndsWith('\n'),
+                ["singleLine"] = freshBytes.IndexOf('\n') == freshBytes.Length - 1
+            },
+            ["legacy"] = new JsonObject
+            {
+                ["mode"] = legacySnapshot.Mode,
+                ["grillPropose"] = legacySnapshot.GrillPropose,
+                ["grillKind"] = legacySnapshot.GrillKind,
+                ["alphaChatMode"] = alpha.ChatMode,
+                ["betaChatMode"] = beta.ChatMode,
+                ["alphaSavingMode"] = alpha.SavingMode,
+                ["betaSavingMode"] = beta.SavingMode,
+                ["autonomyEnabled"] = legacyParsed["autonomy"]!["alpha"]!["enabled"]!.DeepClone(),
+                ["modelWeights"] = legacyParsed["modelWeights"]!.DeepClone(),
+                ["preservedRowField"] = legacyParsed["projects"]!["alpha"]!["customRowField"]!.DeepClone(),
+                ["preservedRowNested"] = legacyParsed["projects"]!["alpha"]!["nestedUnknown"]!.DeepClone(),
+                ["preservedAskField"] = legacyParsed["asks"]![0]!["customAskField"]!.DeepClone(),
+                ["preservedExecField"] = legacyParsed["execution"]!["customExecField"]!.DeepClone(),
+                ["hydratedSessionIds"] = new JsonArray(legacyParsed["sessions"]!.AsArray().Select(s => s!["id"]!.DeepClone()).ToArray()),
+                ["endsWithNewline"] = legacyBytes.EndsWith('\n')
+            }
+        };
+    }
 
     [Theory]
     [MemberData(nameof(OrchestratorLeadQuestionsScenarios))]
@@ -1739,6 +2205,9 @@ public class ScenarioParityTests
         return value.DeepClone();
     }
 
+    // A path that starts at <ROOT>: name characters, dots, dashes, slashes and backslashes.
+    private static readonly Regex RootPathToken = new(@"<ROOT>[A-Za-z0-9._\-\\/]*");
+
     public static JsonObject GetEffects(string root)
     {
         var output = new JsonObject();
@@ -1758,6 +2227,9 @@ public class ScenarioParityTests
                 .Replace("<ROOT>\\", "<ROOT>/")
                 .Replace("synthetic-token", "<REDACTED>")
                 .Replace("\r\n", "\n");
+            // Every separator of a path under the root is forward-slash in the recording, however
+            // many segments follow (the first one was handled above).
+            content = RootPathToken.Replace(content, m => m.Value.Replace("\\\\", "/").Replace('\\', '/'));
             output[relPath] = content;
         }
         return output;

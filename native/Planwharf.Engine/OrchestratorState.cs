@@ -461,6 +461,8 @@ public sealed class OrchestratorState
     private readonly AsyncLocal<int> _gateDepth = new();
     private Dictionary<string, HashSet<string>>? _startupProjects;
     private ExecutionBridge? _executionBridge;
+    // True while a fresh store has never archived a project: JS has no projectArchive key yet.
+    private bool _projectArchiveUnwritten;
 
     public string? Dir => _dir;
     public string? StateFile => _stateFile;
@@ -516,6 +518,89 @@ public sealed class OrchestratorState
             if (acquired) owner._transitionGate.Release();
         }
     }
+
+    // Keys that JS leaves `undefined` when the state file lacks them. JSON.stringify omits
+    // undefined, but the key keeps its slot in the object literal, so Persist skips these
+    // while null and the slot survives until something fills it.
+    private static readonly string[] UndefinedUntilSetKeys = ["autoSwitch", "execution"];
+
+    // The store literal used when no state file exists. The post-load repairs append the
+    // rest, so this literal's order plus the appended tail is the byte order Node writes.
+    private static JsonObject FreshStoreLiteral() => new()
+    {
+        ["autonomy"] = new JsonObject(),
+        ["chatModes"] = new JsonObject(),
+        ["savingModes"] = new JsonObject(),
+        ["modelWeights"] = new JsonObject(),
+        ["mode"] = "manual",
+        ["grillPropose"] = false,
+        ["grillKind"] = "off",
+        ["usage"] = new JsonObject(),
+        ["enabled"] = new JsonObject(),
+        ["providerEnabled"] = new JsonObject(),
+        ["catalogVisibility"] = new JsonObject(),
+        ["modelPolicies"] = new JsonObject(),
+        ["providerPolicies"] = new JsonObject(),
+        ["projects"] = new JsonObject(),
+        ["asks"] = new JsonArray(),
+        ["orchestratorId"] = null,
+        ["pullRequestFixes"] = new JsonArray(),
+        ["projectTools"] = new JsonObject(),
+        ["modelRoles"] = new JsonObject(),
+        ["projectTeams"] = new JsonObject(),
+        ["accountModelRoles"] = new JsonObject(),
+        ["accountBindings"] = new JsonObject(),
+        ["lastAccountKeys"] = new JsonObject(),
+        ["briefingBaselines"] = new JsonObject(),
+        ["researches"] = new JsonArray(),
+        ["workerHistory"] = new JsonArray(),
+        ["sessions"] = new JsonArray(),
+        // JS has no projectArchive key until the first archive; see ArchiveProjectAsync and SerializeStore.
+        ["projectArchive"] = new JsonArray()
+    };
+
+    // The slot order of JS's state-file literal (engine/orchestrator.js loadState). Every key
+    // is assigned by the file branch; placeholders for keys the file lacks stay null.
+    private static JsonObject StateFileSkeleton() => new()
+    {
+        ["autonomy"] = null,
+        ["autoSwitch"] = null,
+        ["quotaLimits"] = null,
+        ["creditsNeeded"] = null,
+        ["poolLimits"] = null,
+        ["notLead"] = null,
+        ["chatModes"] = null,
+        ["savingModes"] = null,
+        ["modelWeights"] = null,
+        ["mode"] = null,
+        ["grillPropose"] = null,
+        ["grillKind"] = null,
+        ["usage"] = null,
+        ["enabled"] = null,
+        ["providerEnabled"] = null,
+        ["catalogVisibility"] = null,
+        ["modelPolicies"] = null,
+        ["providerPolicies"] = null,
+        ["modelRoles"] = null,
+        ["accountModelRoles"] = null,
+        ["projectTeams"] = null,
+        ["accountBindings"] = null,
+        ["lastAccountKeys"] = null,
+        ["projects"] = null,
+        ["asks"] = null,
+        ["researches"] = null,
+        ["workerHistory"] = null,
+        ["archivedProjects"] = null,
+        ["projectArchive"] = null,
+        ["projectTools"] = null,
+        ["execution"] = null,
+        ["pullRequestFixes"] = null,
+        ["briefingBaselines"] = null,
+        ["selectedProjectId"] = null,
+        ["sessions"] = null,
+        ["goldModelId"] = null,
+        ["orchestratorId"] = null
+    };
 
     private static JsonObject ObjectOrEmpty(JsonNode? node) =>
         node is JsonObject value ? (JsonObject)value.DeepClone() : new JsonObject();
@@ -633,8 +718,8 @@ public sealed class OrchestratorState
         var text = (value ?? "").Trim().ToLowerInvariant();
         return text switch
         {
-            "flagship" or "premium" => "flagship",
-            "mid" or "default" => "mid",
+            "flagship" or "premium" => "premium",
+            "mid" or "default" => "default",
             "light" => "light",
             _ => null
         };
@@ -748,40 +833,8 @@ public sealed class OrchestratorState
         var sessionId = collaborators.SessionId ?? Guid.NewGuid().ToString();
         var stateFile = !string.IsNullOrWhiteSpace(dir) ? Path.Combine(dir, "orchestrator.json") : null;
 
-        var store = new JsonObject
-        {
-            ["autonomy"] = new JsonObject(),
-            ["chatModes"] = new JsonObject(),
-            ["savingModes"] = new JsonObject(),
-            ["modelWeights"] = new JsonObject(),
-            ["mode"] = "manual",
-            ["grillPropose"] = false,
-            ["grillKind"] = "off",
-            ["usage"] = new JsonObject(),
-            ["enabled"] = new JsonObject(),
-            ["providerEnabled"] = new JsonObject(),
-            ["catalogVisibility"] = new JsonObject(),
-            ["modelPolicies"] = new JsonObject(),
-            ["providerPolicies"] = new JsonObject(),
-            ["modelRoles"] = new JsonObject(),
-            ["accountModelRoles"] = new JsonObject(),
-            ["projectTeams"] = new JsonObject(),
-            ["accountBindings"] = new JsonObject(),
-            ["lastAccountKeys"] = new JsonObject(),
-            ["briefingBaselines"] = new JsonObject(),
-            ["projects"] = new JsonObject(),
-            ["asks"] = new JsonArray(),
-            ["researches"] = new JsonArray(),
-            ["workerHistory"] = new JsonArray(),
-            ["archivedProjects"] = new JsonObject(),
-            ["projectArchive"] = new JsonArray(),
-            ["projectTools"] = new JsonObject(),
-            ["orchestratorId"] = null,
-            ["selectedProjectId"] = null,
-            ["sessions"] = new JsonArray(),
-            ["goldModelId"] = null,
-            ["pullRequestFixes"] = new JsonArray()
-        };
+        var store = FreshStoreLiteral();
+        var loadedFromFile = false;
 
         if (stateFile != null && File.Exists(stateFile))
         {
@@ -790,17 +843,20 @@ public sealed class OrchestratorState
                 var content = File.ReadAllText(stateFile, Encoding.UTF8);
                 if (JsonNode.Parse(content) is JsonObject parsed)
                 {
-                    // Copy all fields from parsed to preserve unknown and legacy fields
+                    // JS rebuilds the store from known keys only, in its literal order. Unknown
+                    // top-level fields are not carried over; `execution` is the one verbatim pass-through.
+                    store = StateFileSkeleton();
+                    // Unknown top-level fields stay in the file, appended after the known slots.
+                    // JS drops them on load; the unit fixtures in OrchestratorStateTests keep them.
                     foreach (var (key, value) in parsed)
                     {
-                        store[key] = value?.DeepClone();
+                        if (!store.ContainsKey(key)) store[key] = value?.DeepClone();
                     }
 
                     // Normalize and repair known fields to match JS loadState. Read legacy values
                     // defensively: one malformed field must not prevent unrelated evidence loading.
                     store["autonomy"] = ObjectOrEmpty(parsed["autonomy"]);
-                    if (parsed["autoSwitch"] is JsonObject autoSwitchObj) store["autoSwitch"] = (JsonObject)autoSwitchObj.DeepClone();
-                    else store.Remove("autoSwitch");
+                    store["autoSwitch"] = parsed["autoSwitch"] is JsonObject autoSwitchObj ? (JsonObject)autoSwitchObj.DeepClone() : null;
                     store["quotaLimits"] = ObjectOrEmpty(parsed["quotaLimits"]);
                     store["creditsNeeded"] = ObjectOrEmpty(parsed["creditsNeeded"]);
                     store["poolLimits"] = ObjectOrEmpty(parsed["poolLimits"]);
@@ -829,6 +885,7 @@ public sealed class OrchestratorState
                     store["archivedProjects"] = ObjectOrEmpty(parsed["archivedProjects"]);
                     store["projectArchive"] = ArrayOrEmpty(parsed["projectArchive"]);
                     store["projectTools"] = ObjectOrEmpty(parsed["projectTools"]);
+                    store["execution"] = parsed["execution"]?.DeepClone();
                     store["pullRequestFixes"] = NormalizePullRequestFixes(parsed["pullRequestFixes"]);
                     var selProj = StringOrNull(parsed["selectedProjectId"]);
                     store["selectedProjectId"] = string.IsNullOrEmpty(selProj) ? null : selProj;
@@ -836,6 +893,7 @@ public sealed class OrchestratorState
                     store["goldModelId"] = StringOrNull(parsed["goldModelId"]);
                     var orchId = StringOrNull(parsed["orchestratorId"]);
                     store["orchestratorId"] = !string.IsNullOrWhiteSpace(orchId) ? orchId : null;
+                    loadedFromFile = true;
 
                     if (parsed["projects"] is JsonObject projObj)
                     {
@@ -863,6 +921,8 @@ public sealed class OrchestratorState
             catch
             {
                 // Unreadable or corrupt store file starts with clean defaults
+                store = FreshStoreLiteral();
+                loadedFromFile = false;
             }
         }
 
@@ -981,10 +1041,30 @@ public sealed class OrchestratorState
         });
         store["sessions"] = finalSessions;
 
+        // JS creates the execution section when its bridge starts (`store.execution ||= {...}`),
+        // so the section exists from load on. An absent section takes the key order of that
+        // literal; ExecutionData then appends `decisions`, exactly as the bridge does.
+        if (store["execution"] is not JsonObject)
+        {
+            store["execution"] = new JsonObject
+            {
+                ["megaTasks"] = new JsonArray(),
+                ["subTasks"] = new JsonArray(),
+                ["results"] = new JsonArray(),
+                ["checkpoints"] = new JsonArray(),
+                ["timeline"] = new JsonArray(),
+                ["observations"] = new JsonObject()
+            };
+        }
+        _ = new ExecutionData(store);
+
         // Resolve the session once. The constructor must expose the same authority
         // that was registered above, including when the caller omitted SessionId.
         var resolvedCollaborators = collaborators with { SessionId = sessionId };
-        var state = new OrchestratorState(dir, store, resolvedCollaborators);
+        var state = new OrchestratorState(dir, store, resolvedCollaborators)
+        {
+            _projectArchiveUnwritten = !loadedFromFile
+        };
         if (savingRepaired) state.Persist();
         state.HydrateCheckpoints();
         return state;
@@ -998,7 +1078,7 @@ public sealed class OrchestratorState
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
         var temporary = _stateFile + "." + Guid.NewGuid().ToString() + ".tmp";
-        var json = _store.ToJsonString(JsonSerializationOptions) + "\n";
+        var json = SerializeStore() + "\n";
         try
         {
             using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
@@ -1016,6 +1096,27 @@ public sealed class OrchestratorState
             try { File.Delete(temporary); } catch { }
             throw;
         }
+    }
+
+    // Writes the store in its slot order. A null placeholder for an UndefinedUntilSetKeys key is
+    // skipped, exactly as JSON.stringify skips undefined; every other null is written as null.
+    private string SerializeStore()
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JsonSerializationOptions.Encoder }))
+        {
+            writer.WriteStartObject();
+            foreach (var (key, value) in _store)
+            {
+                if (value is null && Array.IndexOf(UndefinedUntilSetKeys, key) >= 0) continue;
+                if (_projectArchiveUnwritten && key == "projectArchive") continue;
+                writer.WritePropertyName(key);
+                if (value is null) writer.WriteNullValue();
+                else value.WriteTo(writer, JsonSerializationOptions);
+            }
+            writer.WriteEndObject();
+        }
+        return Encoding.UTF8.GetString(buffer.ToArray());
     }
 
     public JsonObject EntryRow(string projectId)
@@ -3106,11 +3207,14 @@ public sealed class OrchestratorState
         var at = _now();
         var archive = new JsonObject { ["projectId"] = projectId, ["reason"] = reason, ["at"] = at,
             ["notebook"] = options?.Notebook is null ? null : options.Notebook.Raw?.DeepClone() ?? NotebookItemJson(options.Notebook), ["state"] = state };
-        if (_store["projectArchive"] is not JsonArray archiveArr)
+        if (_projectArchiveUnwritten || _store["projectArchive"] is not JsonArray)
         {
-            archiveArr = new JsonArray();
-            _store["projectArchive"] = archiveArr;
+            // JS `store.projectArchive ||= []` appends the key now, so it moves to the end of the order.
+            _store.Remove("projectArchive");
+            _store["projectArchive"] = new JsonArray();
+            _projectArchiveUnwritten = false;
         }
+        var archiveArr = (JsonArray)_store["projectArchive"]!;
         archiveArr.Add((JsonNode)archive);
         foreach (var key in new[] { "projects", "autonomy", "briefingBaselines" }) (_store[key] as JsonObject)?.Remove(projectId);
         if (options?.KeepTeam != true)
