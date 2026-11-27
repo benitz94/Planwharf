@@ -2889,6 +2889,249 @@ public class OrchestratorStateTests
         Assert.Equal(0, emptyPage.Total);
     }
 
+    [Fact]
+    public async Task ZeroPid_IsTreatedAsUnclaimedAcrossSnapshotDoingReconcileAndArchive()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-pid0-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var probedPids = new List<string>();
+            var task = new NotebookTask("job-1", "Build", "Work", "running", ExecutionVersion: 1);
+            var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha", Folder: dir, Tasks: [task])]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan),
+                IsProcessAlive: pid => { probedPids.Add(pid); return pid != "0"; }));
+
+            var row = state.EntryRow("alpha");
+            row["status"] = "watching";
+            row["jobId"] = task.Id;
+            row["jobFingerprint"] = OrchestratorState.JobFingerprint(task);
+            row["approved"] = false;
+            row["workerPid"] = 0;
+            row["workerAlive"] = true;
+            row["dispatch"] = new JsonArray(new JsonObject { ["modelId"] = "m1", ["pid"] = 0, ["alive"] = true });
+
+            var entryView = state.Entry("alpha");
+            Assert.Contains("(0 alive)", OrchestratorState.OrchestratorDoing(entryView), StringComparison.Ordinal);
+
+            var snap = state.Snapshot(plan, "alpha");
+            var proj = snap.Projects.Single();
+            Assert.Null(proj.WorkerPid);
+            Assert.False(proj.WorkerAlive);
+            Assert.False(proj.Dispatch.Single().Alive);
+            Assert.Empty(probedPids);
+
+            var staleState = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan), IsProcessAlive: _ => false));
+            var staleRow = staleState.EntryRow("alpha");
+            staleRow["status"] = "watching";
+            staleRow["workerLabel"] = "worker";
+            staleRow["workerPid"] = 42;
+            staleRow["workerAlive"] = true;
+            var staleProject = staleState.Snapshot(plan, "alpha").Projects.Single();
+            Assert.False(staleProject.WorkerAlive);
+            Assert.Contains("(0 alive)", staleProject.OrchestratorDoing, StringComparison.Ordinal);
+
+            // Phase2=false Tick must treat pid 0 as unclaimed (needs_approval), not a dead worker failure
+            await state.TickAsync("alpha");
+            Assert.Equal("needs_approval", state.Entry("alpha").Status);
+            Assert.Empty(probedPids);
+
+            // Archive fallback (no ReadPlan match) must not treat pid 0 as live dispatch
+            var fallbackState = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                IsProcessAlive: pid => { probedPids.Add(pid); return true; }));
+            fallbackState.EntryRow("ghost")["status"] = "watching";
+            fallbackState.EntryRow("ghost")["dispatch"] = new JsonArray(new JsonObject { ["pid"] = 0, ["alive"] = true });
+            var archived = await fallbackState.ArchiveProjectAsync("ghost", "cleanup");
+            Assert.True(archived.Ok);
+            Assert.Empty(probedPids);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task AsyncGate_ReleasesOnErrorsAndCancellations_AndAllowsReentrantCallbacks()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-gate-rec-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var failRename = false;
+            var failRead = false;
+            var failInspect = false;
+            var plan = new NotebookPlan([new("alpha", "Alpha", Folder: dir), new("beta", "Beta", Folder: dir)]);
+            OrchestratorState? state = null;
+            var reentrantRan = false;
+            state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T12:00:00.000Z",
+                ReadPlan: async _ =>
+                {
+                    if (failRead) throw new IOException("plan read failed");
+                    if (!reentrantRan)
+                    {
+                        reentrantRan = true;
+                        var nestedSnapshot = state!.Snapshot(plan, "alpha");
+                        Assert.Equal(2, nestedSnapshot.Projects.Count);
+                        var nestedFocus = await state.SetFocusAsync("alpha");
+                        Assert.True(nestedFocus.Ok);
+                    }
+                    return plan;
+                },
+                InspectRepository: (_, _, _) => failInspect
+                    ? Task.FromException<RepositoryInfo>(new InvalidOperationException("repo inspect failed"))
+                    : Task.FromResult(new RepositoryInfo("2026-11-27T12:00:00.000Z", dir)),
+                Rename: (src, dst) =>
+                {
+                    if (failRename) throw new IOException("rename blocked");
+                    File.Move(src, dst, true);
+                }));
+
+            // Reentrant Snapshot + SetFocusAsync inside TickAsync's ReadPlan must not deadlock
+            var initialTick = await state.TickAsync("alpha");
+            Assert.Equal("alpha", initialTick.SelectedProjectId);
+
+            // SetFocusAsync ReadPlan error + cancelled token + Persist failure must all release the gate
+            failRead = true;
+            await Assert.ThrowsAsync<IOException>(() => state.SetFocusAsync("beta"));
+            using (var cts = new CancellationTokenSource())
+            {
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => state.ArchiveProjectAsync("alpha", "cancel", cancellationToken: cts.Token));
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => state.InspectRepositoryAsync("alpha", cancellationToken: cts.Token));
+            }
+            failRead = false;
+            failRename = true;
+            await Assert.ThrowsAsync<IOException>(() => state.SetFocusAsync("beta"));
+            await Assert.ThrowsAsync<IOException>(() => state.ArchiveProjectAsync("alpha", "rename-fail"));
+            failRename = false;
+            failInspect = true;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => state.InspectRepositoryAsync("beta"));
+            failInspect = false;
+            await Assert.ThrowsAsync<InvalidOperationException>(() => state.ActivitySessionPageAsync("missing"));
+
+            // Gate remains healthy after every failure/cancellation
+            var focusBeta = await state.SetFocusAsync("beta");
+            Assert.True(focusBeta.Ok);
+            var inspected = await state.InspectRepositoryAsync("beta");
+            Assert.True(inspected.Ok);
+            var archivedAlpha = await state.ArchiveProjectAsync("alpha", "ok");
+            Assert.True(archivedAlpha.Ok);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task Recovery_HandlesDuplicateExecutionIdsNonStringWarningsNullExecutionAndEmptyProjectIdTick()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-malformed-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        Directory.CreateDirectory(Path.Combine(dir, "checkpoints"));
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "checkpoints", "badarray.json"), "[]");
+            File.WriteAllText(Path.Combine(dir, "orchestrator.json"), """
+            {
+                "projects": ["not-an-object"],
+                "execution": null,
+                "pullRequestFixes": [
+                    { "projectId": "alpha", "number": 7 },
+                    { "projectId": "alpha", "number": "7" },
+                    { "projectId": "alpha", "number": 7.5 }
+                ],
+                "customMarker": "survived"
+            }
+            """);
+
+            var resultFile = Path.Combine(dir, "res.txt");
+            File.WriteAllText(resultFile, "STATUS: COMPLETE\nEXIT: 0\n");
+            var task = new NotebookTask("job-1", "Build", "Work", "running", ExecutionVersion: 1);
+            var completed = new List<CompletedNotebookTask>();
+            var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha", Folder: dir, Tasks: [task])]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan),
+                CompleteTasks: (items, _) =>
+                {
+                    completed.AddRange(items);
+                    plan = new NotebookPlan([plan.Projects[0] with { Tasks = [task with { Status = "complete" }] }]);
+                    return Task.FromResult(plan);
+                }));
+
+            Assert.Equal("survived", state.Store["customMarker"]?.GetValue<string>());
+            Assert.IsType<JsonObject>(state.Store["projects"]);
+            Assert.IsType<JsonObject>(state.Store["execution"]);
+            Assert.Single((JsonArray)state.Store["pullRequestFixes"]!);
+            Assert.Null(state.EntryRow("badarray")["checkpoint"]);
+            Assert.Equal("idle", state.Entry("badarray").Status);
+
+            // Duplicate / missing IDs in execution.megaTasks and subTasks must not throw in Snapshot or ActivitySessionPageAsync
+            state.Store["execution"] = new JsonObject
+            {
+                ["megaTasks"] = new JsonArray(
+                    new JsonObject { ["id"] = "mt-dup", ["projectId"] = "alpha" },
+                    new JsonObject { ["id"] = "mt-dup", ["projectId"] = "alpha" },
+                    new JsonObject { ["projectId"] = "alpha" }),
+                ["subTasks"] = new JsonArray(
+                    new JsonObject { ["id"] = "st-dup", ["megaTaskId"] = "mt-dup" },
+                    new JsonObject { ["id"] = "st-dup", ["megaTaskId"] = "mt-dup" },
+                    new JsonObject { ["megaTaskId"] = "mt-dup" }),
+                ["results"] = new JsonArray(),
+                ["checkpoints"] = new JsonArray(),
+                ["timeline"] = new JsonArray(),
+                ["decisions"] = new JsonArray()
+            };
+            var row = state.EntryRow("alpha");
+            row["status"] = "complete";
+            row["jobId"] = task.Id;
+            row["jobFingerprint"] = OrchestratorState.JobFingerprint(task);
+            row["resultPath"] = resultFile;
+            row["dispatch"] = new JsonArray(new JsonObject { ["attemptId"] = "a-1", ["megaTaskId"] = "mt-dup", ["subTaskId"] = "st-dup" });
+
+            var page = await state.ActivitySessionPageAsync("alpha");
+            Assert.Equal(1, page.Total);
+            Assert.False(page.Sessions.Single().Historical);
+            Assert.NotEmpty(page.Sessions.Single().Warnings);
+
+            // Empty string projectId in TickAsync must match null (complete tasks across all projects)
+            var snap = await state.TickAsync("");
+            Assert.Single(snap.Projects);
+            Assert.Single(completed);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task InspectRepositoryAsync_PrefersUpdatedNotebookFolderOverStaleFactsFolder()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "planwharf-repo-folder-" + Guid.NewGuid().ToString("N"));
+        var staleFolder = Path.Combine(root, "stale");
+        var freshFolder = Path.Combine(root, "fresh");
+        Directory.CreateDirectory(staleFolder);
+        Directory.CreateDirectory(freshFolder);
+        File.WriteAllText(Path.Combine(freshFolder, "fresh-marker.txt"), "ok");
+        try
+        {
+            string? inspectedFolder = null;
+            var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha", Folder: freshFolder)]);
+            var state = OrchestratorState.Load(root, new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan),
+                InspectRepository: (folder, _, _) =>
+                {
+                    inspectedFolder = folder;
+                    return Task.FromResult(new RepositoryInfo("2026-11-27T12:00:00.000Z", folder));
+                }));
+            state.EntryRow("alpha")["facts"] = new JsonObject { ["folder"] = staleFolder };
+
+            var res = await state.InspectRepositoryAsync("alpha");
+            Assert.True(res.Ok);
+            Assert.Equal(freshFolder, inspectedFolder);
+            Assert.Contains("fresh-marker.txt", state.Entry("alpha").Facts is { } facts
+                ? ((JsonArray)state.EntryRow("alpha")["facts"]!["names"]!).Select(n => n!.GetValue<string>())
+                : []);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
     private static string RunGit(string folder, params string[] args)
     {
         var psi = new System.Diagnostics.ProcessStartInfo("git")

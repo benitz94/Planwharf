@@ -1380,7 +1380,7 @@ public sealed class OrchestratorState
         if (row.Status == "watching")
         {
             var alive = row.Dispatch.Count > 0
-                ? row.Dispatch.Count(p => !p.StoppedByUser && p.Pid != null)
+                ? row.Dispatch.Count(p => !p.StoppedByUser && p.Pid is int and not 0)
                 : (row.WorkerAlive ? 1 : 0);
             var files = row.Facts?.FileCount;
             var folder = files == null ? "project folder" : $"{files} files in the project folder";
@@ -1883,11 +1883,17 @@ public sealed class OrchestratorState
     {
         var result = new List<(JsonObject, JsonObject, bool, int)>();
         var known = new HashSet<string>(StringComparer.Ordinal);
-        var megas = (_store["execution"]?["megaTasks"] as JsonArray)?.OfType<JsonObject>()
-            .Where(m => StringOrNull(m["projectId"]) == projectId)
-            .ToDictionary(m => StringOrNull(m["id"]) ?? "", StringComparer.Ordinal) ?? [];
-        var subs = (_store["execution"]?["subTasks"] as JsonArray)?.OfType<JsonObject>()
-            .ToDictionary(s => StringOrNull(s["id"]) ?? "", StringComparer.Ordinal) ?? [];
+        var megas = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        foreach (var m in (_store["execution"]?["megaTasks"] as JsonArray)?.OfType<JsonObject>()
+            .Where(m => StringOrNull(m["projectId"]) == projectId) ?? [])
+        {
+            if (StringOrNull(m["id"]) is { Length: > 0 } id) megas[id] = m;
+        }
+        var subs = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+        foreach (var s in (_store["execution"]?["subTasks"] as JsonArray)?.OfType<JsonObject>() ?? [])
+        {
+            if (StringOrNull(s["id"]) is { Length: > 0 } id) subs[id] = s;
+        }
         var index = 0;
 
         void Add(JsonObject? part, JsonObject record, bool historical)
@@ -1935,14 +1941,14 @@ public sealed class OrchestratorState
         static string? S(JsonObject o, string key) => o[key] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
         static int? I(JsonObject o, string key) => o[key] is JsonValue v && v.TryGetValue<int>(out var i) ? i : null;
         var events = (value["events"] as JsonArray)?.OfType<JsonObject>().Select(e => (JsonObject)e.DeepClone()).ToArray() ?? [];
-        var warnings = (value["warnings"] as JsonArray)?.Select(n => n?.GetValue<string>()).Where(s => s is not null).Cast<string>().ToArray() ?? [];
+        var warnings = (value["warnings"] as JsonArray)?.Select(StringOrNull).Where(s => s is not null).Cast<string>().ToArray() ?? [];
         return new ActivitySession(
             S(value, "id") ?? "",
             S(value, "projectId"), S(value, "jobId"), S(value, "megaTaskId"), S(value, "subTaskId"),
             S(value, "attemptId"), S(value, "recordedSessionId"), S(value, "role"), S(value, "provider"),
             S(value, "adapter"), S(value, "model"), S(value, "modelId"), S(value, "startedAt"),
             S(value, "completedAt"), S(value, "reportedResultAt"), S(value, "processState") ?? "unknown",
-            S(value, "state") ?? "unknown", value["historical"]?.GetValue<bool>() ?? false,
+            S(value, "state") ?? "unknown", BoolOrFalse(value["historical"]),
             S(value, "validatedResultStatus"), S(value, "recordedResultStatus"), I(value, "exitCode"),
             events, warnings, (JsonObject)value.DeepClone());
     }
@@ -2054,7 +2060,7 @@ public sealed class OrchestratorState
         foreach (var part in (row["dispatch"] as JsonArray)?.OfType<JsonObject>() ?? [])
         {
             var pid = IntOrNull(part["pid"]);
-            var alive = pid is int p && (_collaborators.IsProcessAlive?.Invoke(p.ToString()) ?? BoolOrFalse(part["alive"]));
+            var alive = pid is int p && p != 0 && (_collaborators.IsProcessAlive?.Invoke(p.ToString()) ?? BoolOrFalse(part["alive"]));
             var subId = StringOrNull(part["subTaskId"]);
             var attemptId = StringOrNull(part["attemptId"]);
             var resultObj = !string.IsNullOrEmpty(attemptId)
@@ -2155,14 +2161,6 @@ public sealed class OrchestratorState
         var selectedLeadId = ResolveLeadId(item.Id);
         var leadModel = ResolveLeadModel(models, selectedLeadId);
         var leadLabel = ProjectLeadLabel(item.Id, leadModel, models);
-        var orchDoing = OrchestratorDoing(row);
-
-        var crewRow = (JsonObject)row.DeepClone();
-        crewRow["dispatch"] = dispatchForCrew;
-        crewRow["orchestratorDoing"] = orchDoing;
-        crewRow["orchestratorLabel"] = leadLabel;
-        var crew = CrewOf(crewRow, leadLabel, executionObj);
-
         var chatMode = (_store["chatModes"] as JsonObject)?[item.Id] is JsonNode cmNode && StringOrNull(cmNode) is string cmText
             ? NormalizeChatMode(cmText)
             : NormalizeChatMode(item.ChatMode);
@@ -2220,7 +2218,15 @@ public sealed class OrchestratorState
 
         var workerAlive = !terminal && (dispatch.Count > 0
             ? dispatch.Any(part => part.Alive)
-            : (entry.WorkerPid is int wp && (_collaborators.IsProcessAlive?.Invoke(wp.ToString()) ?? entry.WorkerAlive)));
+            : (entry.WorkerPid is int wp && wp != 0 && (_collaborators.IsProcessAlive?.Invoke(wp.ToString()) ?? entry.WorkerAlive)));
+
+        var crewRow = (JsonObject)row.DeepClone();
+        crewRow["dispatch"] = dispatchForCrew;
+        crewRow["workerAlive"] = workerAlive;
+        var orchDoing = OrchestratorDoing(crewRow);
+        crewRow["orchestratorDoing"] = orchDoing;
+        crewRow["orchestratorLabel"] = leadLabel;
+        var crew = CrewOf(crewRow, leadLabel, executionObj);
 
         var aliveCount = dispatch.Count > 0 ? dispatch.Count(p => p.Alive) : (workerAlive ? 1 : 0);
         MonitoringMetrics? monitoringView = null;
@@ -2300,7 +2306,7 @@ public sealed class OrchestratorState
             Docs = docs,
             GrillSkipped = entry.GrillSkipped,
             Log = entry.Log.ToArray(),
-            WorkerPid = entry.WorkerPid,
+            WorkerPid = entry.WorkerPid is int workerPidValue && workerPidValue != 0 ? workerPidValue : null,
             WorkerAlive = workerAlive,
             WorkerLog = entry.WorkerLog,
             WorkerTail = entry.WorkerTail,
@@ -2423,7 +2429,8 @@ public sealed class OrchestratorState
 
         var megaTasks = (_store["execution"]?["megaTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
         var subTasks = (_store["execution"]?["subTasks"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
-        var projectMap = projects.ToDictionary(p => p.Id, p => p, StringComparer.Ordinal);
+        var projectMap = new Dictionary<string, NotebookProject>(StringComparer.Ordinal);
+        foreach (var p in projects) projectMap[p.Id] = p;
         var all = new List<(DecisionRecord Record, bool Breaks, string SortTime)>();
 
         foreach (var d in executionDecisions)
@@ -2726,9 +2733,16 @@ public sealed class OrchestratorState
 
     private bool IsShuttingDown => _collaborators.IsShuttingDown?.Invoke() == true;
 
-    private void RememberStartup(NotebookPlan plan) => _startupProjects ??= plan.Projects.ToDictionary(
-        p => p.Id, p => (p.Tasks ?? []).Where(t => t.Status == "running").Select(t => t.Id).ToHashSet(StringComparer.Ordinal),
-        StringComparer.Ordinal);
+    private void RememberStartup(NotebookPlan plan)
+    {
+        if (_startupProjects is not null) return;
+        var map = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var p in plan.Projects ?? [])
+        {
+            map[p.Id] = (p.Tasks ?? []).Where(t => t.Status == "running").Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+        }
+        _startupProjects = map;
+    }
 
     private void RestoreUnavailableModels()
     {
@@ -2934,7 +2948,7 @@ public sealed class OrchestratorState
     private IReadOnlyList<CompletedNotebookTask> CompletedTasks(NotebookPlan plan, string? projectId)
     {
         var completed = new List<CompletedNotebookTask>();
-        foreach (var item in plan.Projects.Where(p => projectId is null || p.Id == projectId))
+        foreach (var item in (plan.Projects ?? []).Where(p => string.IsNullOrEmpty(projectId) || p.Id == projectId))
         {
             var row = EntryRow(item.Id);
             var job = item.Tasks?.FirstOrDefault(t => t.Status == "running" && t.Id == StringOrNull(row["jobId"]));
@@ -2953,7 +2967,7 @@ public sealed class OrchestratorState
         var bridge = SharedBridge();
         if (bridge is null) return;
         foreach (var record in (_store["researches"] as JsonArray ?? []).OfType<JsonObject>()
-            .Where(r => IntOrNull(r["executionVersion"]) == 2 && (projectId is null || StringOrNull(r["projectId"]) == projectId)))
+            .Where(r => IntOrNull(r["executionVersion"]) == 2 && (string.IsNullOrEmpty(projectId) || StringOrNull(r["projectId"]) == projectId)))
         {
             var item = plan.Projects.FirstOrDefault(p => p.Id == StringOrNull(record["projectId"]));
             if (item is null || record["job"] is not JsonObject job) continue;
@@ -2990,7 +3004,7 @@ public sealed class OrchestratorState
         }
     }
 
-    private bool ProcessAlive(JsonObject part) => IntOrNull(part["pid"]) is int pid &&
+    private bool ProcessAlive(JsonObject part) => IntOrNull(part["pid"]) is int pid && pid != 0 &&
         (_collaborators.IsProcessAlive?.Invoke(pid.ToString(System.Globalization.CultureInfo.InvariantCulture)) ?? false);
 
     private void CloseLegacyAttempt(string projectId, string? attemptId, string reason, string? taskId = null)
@@ -3042,7 +3056,7 @@ public sealed class OrchestratorState
         // Snapshot recovery in JavaScript validates a successful provider exit as well as
         // completion. Incomplete/dead old workers cannot silently become approved new work.
         if (StringOrNull(row["status"]) == "watching" && !Execution.Truthy(row["megaTaskId"]) &&
-            (job is null || StringOrNull(row["jobId"]) == job.Id) && parts.Any(p => IntOrNull(p["pid"]) is not null))
+            (job is null || StringOrNull(row["jobId"]) == job.Id) && parts.Any(p => IntOrNull(p["pid"]) is int pid && pid != 0))
         {
             if (job is not null && string.IsNullOrWhiteSpace(item.Folder))
             {
@@ -3206,7 +3220,7 @@ public sealed class OrchestratorState
             hasAliveDispatch = !terminal && ((existingRow["dispatch"] as JsonArray)?.OfType<JsonObject>().Any(part =>
             {
                 var pid = IntOrNull(part["pid"]);
-                return !BoolOrFalse(part["stoppedByUser"]) && pid is int pVal &&
+                return !BoolOrFalse(part["stoppedByUser"]) && pid is int pVal && pVal != 0 &&
                     (_collaborators.IsProcessAlive?.Invoke(pVal.ToString()) ?? BoolOrFalse(part["alive"]));
             }) == true);
         }
@@ -3291,7 +3305,7 @@ public sealed class OrchestratorState
             return new InspectRepositoryResult(false, Reason: "project not found");
         }
         var row = EntryRow(projectId);
-        var folder = StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]) ?? notebookProject?.Folder;
+        var folder = notebookProject?.Folder ?? StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]);
         var repository = _collaborators.InspectRepository is not null
             ? await _collaborators.InspectRepository(folder ?? "", options, cancellationToken).ConfigureAwait(false)
             : await InspectRepositoryDefaultAsync(folder, cancellationToken).ConfigureAwait(false);

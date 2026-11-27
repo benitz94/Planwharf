@@ -32,7 +32,7 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `step-outcomes`, `structured-final`, `supervisor`, `temp-cleanup`, `time-left`, `worker-result`,
 `worktrees`, `orchestrator-state`.
 
-## Job 51 port done, awaiting review
+## Job 51 port complete, closeout validated locally
 
 The Job 51 port of orchestrator state from sheet 46d is complete on `port/51-orchestrator-state`.
 The final repair includes JavaScript-compatible premium team-weight normalization, preservation of
@@ -59,6 +59,21 @@ Raw command output is retained in `validation/job51-*.txt`; the AOT toolchain wa
 Execution-host ledgers, invocation records, plan markdown, and worker result-facade effects remain
 the documented Job 52 composition boundary; state-owned durable rows, observations, archive scope,
 and historical evidence are asserted by the Job 51 tests.
+
+Closeout validation on 27 November 2026:
+
+- The retained `validation/job51-state-scenarios-after-fixes.txt` compile failure (`CS0103` for
+  `StringOrNull` in `ScenarioParityTests.cs`) was resolved in the current revision; the affected
+  test project now builds and the full Release suite passes.
+- The final uncommitted repairs were independently reviewed for standards and Job 51 behavior.
+- The closeout rerun of `dotnet test native/Planwharf.Engine.Tests/Planwharf.Engine.Tests.csproj -c Release`
+  passed 2,996 tests with 0 failures and 0 skipped tests; the earlier retained 2,992-test log remains
+  unchanged as historical evidence.
+- `node native/porting/parity/record.cjs --check`,
+  `node native/porting/parity/scenarios.cjs --check --self-test`,
+  `node --test engine/parity.test.cjs`, and `git diff --check` passed.
+- Native AOT remains blocked by the documented Windows platform linker / Visual Studio C++
+  workload requirement; no environment installation or source workaround was attempted.
 
 ## Job 50 port done, merged in PR #248
 
