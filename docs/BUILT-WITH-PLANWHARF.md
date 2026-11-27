@@ -13,10 +13,10 @@ numbers below.
 
 | | Now | At the end |
 |---|---|---|
-| Engine modules ported to C# | **68 of 72** | 72 |
+| Engine modules ported to C# | **69 of 72** | 72 |
 | JavaScript engine lines ported | **about 11,500 of 14,000** (82%) | all; the orchestrator alone is about 3,800 |
-| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator) in progress: job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions merged (#248); job 51 orchestrator state in progress on `port/51-orchestrator-state` | 0 to 8 |
-| C# engine tests | 2810, plus 1252 comparison cases with the JavaScript across 46 modules and 131 scenario parity cases | |
+| Phases done | 0 (foundations), 1 (test bench), 2 (modules with no dependencies), 3 (first level, job 40), comparison cases for jobs 24 and 40 (job 41), plus the pipeline (jobs 32 to 34), the pipeline drawn (job 38) and the decisions inbox (job 39), 4 (processes and providers, job 43), 5 (execution and project home, job 45); phase 6 (orchestrator): job 46 sheets merged (#244), job 47 order parsing merged (#245), job 48 team models merged (#246), job 49 job building merged (#247), job 50 lead questions merged (#248), job 51 orchestrator state complete on `port/51-orchestrator-state` | 0 to 8 |
+| C# engine tests | 2992, plus 1309 comparison cases with the JavaScript across 47 modules and 138 scenario parity cases | |
 
 Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evidence`, `activity-sessions`,
 `antigravity`, `api-agent`, `atomic-rename`, `attempts`, `autonomy`, `briefing`, `browser-settings`,
@@ -30,7 +30,35 @@ Ported so far: `account-folders`, `activity`, `activity-events`, `activity-evide
 `provider-diagnostics`, `provider-models`, `provider-policy`, `provider-refusal`, `provider-runtime`,
 `provider-status`, `push-email`, `quota`, `repository`, `runner`, `sentinel`, `skills`,
 `step-outcomes`, `structured-final`, `supervisor`, `temp-cleanup`, `time-left`, `worker-result`,
-`worktrees`.
+`worktrees`, `orchestrator-state`.
+
+## Job 51 port done, awaiting review
+
+The Job 51 port of orchestrator state from sheet 46d is complete on `port/51-orchestrator-state`.
+The final repair includes JavaScript-compatible premium team-weight normalization, preservation of
+unknown state fields and explicit null execution input, folderless alive/dead restart reconciliation
+without double collection, research v1/v2 lifecycle and shared-row behavior, detached lifecycle
+snapshots, archive/focus/two-project isolation, and the `orchestrator-state` parity requirement
+(`57` pure cases and `7` scenarios). The null-execution behavior is intentionally retained as a
+non-null initialized execution section, matching the state bridge's durable invariant; unknown
+fields remain retained on load and persist.
+
+Observed final validation on 27 November 2026:
+
+| Command | Result |
+|---|---|
+| `node native/porting/parity/record.cjs --check` | Exit 0 |
+| `node native/porting/parity/scenarios.cjs --check --self-test` | Exit 0; 7 orchestrator-state scenarios |
+| `node --test engine/parity.test.cjs` | Exit 0; 5 tests |
+| `dotnet test native/Planwharf.Engine.Tests/Planwharf.Engine.Tests.csproj -c Release --no-build --no-restore` | Exit 0; 2992 passed, 0 failed |
+| `dotnet test native/Planwharf.Engine.Tests/Planwharf.Engine.Tests.csproj -c Release --no-build --no-restore --filter FullyQualifiedName~ScenarioParityTests` | Exit 0; 144 passed, 0 failed |
+| `node scripts/engineering/ci.cjs` | Exit 0; all syntax, engine, and engineering tests passed |
+| `dotnet publish native/Planwharf.Engine -c Release -r win-x64 -p:PublishAot=true -p:NativeLib=Shared` | Exit 1 after restore: Windows platform linker (`link.exe`) / Visual Studio C++ workload is unavailable |
+
+Raw command output is retained in `validation/job51-*.txt`; the AOT toolchain was not installed.
+Execution-host ledgers, invocation records, plan markdown, and worker result-facade effects remain
+the documented Job 52 composition boundary; state-owned durable rows, observations, archive scope,
+and historical evidence are asserted by the Job 51 tests.
 
 ## Job 50 port done, merged in PR #248
 

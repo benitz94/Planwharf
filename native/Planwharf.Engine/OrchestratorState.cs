@@ -648,14 +648,16 @@ public sealed class OrchestratorState
         foreach (var (id, teamNode) in teams)
         {
             if (teamNode is not JsonObject team || team["roles"] is not JsonObject roles) continue;
-            var clean = new JsonObject
-            {
-                ["orchestratorId"] = StringOrNull(team["orchestratorId"]),
-                ["roles"] = (JsonObject)roles.DeepClone()
-            };
+            var clean = (JsonObject)team.DeepClone();
+            clean["orchestratorId"] = StringOrNull(team["orchestratorId"]);
+            clean["roles"] = (JsonObject)roles.DeepClone();
             if (team["notLead"] is JsonArray nl)
             {
                 clean["notLead"] = new JsonArray(nl.Select(StringOrNull).Where(s => s != null).Select(s => (JsonNode?)JsonValue.Create(s)).ToArray());
+            }
+            else
+            {
+                clean.Remove("notLead");
             }
             result[id] = clean;
         }
@@ -677,7 +679,7 @@ public sealed class OrchestratorState
 
     private static JsonObject ToolFlagsObject(JsonObject? chosen)
     {
-        var flags = new JsonObject();
+        var flags = chosen is null ? new JsonObject() : (JsonObject)chosen.DeepClone();
         foreach (var name in Claude.ToolNames)
         {
             flags[name] = chosen != null && BoolOrFalse(chosen[name]);
@@ -700,11 +702,10 @@ public sealed class OrchestratorState
                 }
             }
         }
-        return new JsonObject
-        {
-            ["default"] = ToolFlagsObject(defaultObj),
-            ["models"] = modelsObj
-        };
+        var result = value is null ? new JsonObject() : (JsonObject)value.DeepClone();
+        result["default"] = ToolFlagsObject(defaultObj);
+        result["models"] = modelsObj;
+        return result;
     }
 
     private static string NormalizeChatMode(string? value)
@@ -3028,6 +3029,9 @@ public sealed class OrchestratorState
         var parts = (row["dispatch"] as JsonArray ?? []).OfType<JsonObject>().ToArray();
         var completedJob = job ?? item.Tasks?.FirstOrDefault(t => t.Id == StringOrNull(row["jobId"]) && t.Status == "complete");
         var fingerprint = StringOrNull(row["jobFingerprint"]);
+        var savedJobId = StringOrNull(row["jobId"]);
+        var jobWasAlreadySelected = job is not null && savedJobId == job.Id;
+        var jobChanged = job is not null && !string.IsNullOrEmpty(savedJobId) && savedJobId != job.Id;
         if (StringOrNull(row["status"]) == "complete" && completedJob is not null &&
             StringOrNull(row["jobId"]) == completedJob.Id && (fingerprint is null || fingerprint == JobFingerprint(completedJob)))
         {
@@ -3037,8 +3041,20 @@ public sealed class OrchestratorState
 
         // Snapshot recovery in JavaScript validates a successful provider exit as well as
         // completion. Incomplete/dead old workers cannot silently become approved new work.
-        if (StringOrNull(row["status"]) == "watching" && !Execution.Truthy(row["megaTaskId"]) && parts.Any(p => IntOrNull(p["pid"]) is not null))
+        if (StringOrNull(row["status"]) == "watching" && !Execution.Truthy(row["megaTaskId"]) &&
+            (job is null || StringOrNull(row["jobId"]) == job.Id) && parts.Any(p => IntOrNull(p["pid"]) is not null))
         {
+            if (job is not null && string.IsNullOrWhiteSpace(item.Folder))
+            {
+                // A dead saved PID is still historical evidence; without a local folder
+                // it cannot be safely classified as a new failure or completion.
+                row["status"] = "blocked_no_folder";
+                row["doing"] = $"{item.Name} has a job ({job.Title}) but no local folder. Set place so the orchestrator can inspect the repo.";
+                row["waitingFor"] = "A local folder";
+                row["next"] = "Set place with a folder on this PC.";
+                row["workerLabel"] = null;
+                return;
+            }
             if (_collaborators.Phase2)
             {
                 ReconcileLegacyWatchingRow(item, row);
@@ -3083,7 +3099,7 @@ public sealed class OrchestratorState
             (StringOrNull(row["jobId"]) != job.Id || fingerprint is not null && fingerprint != JobFingerprint(job)))
         {
             row["approved"] = false; row["holdApproval"] = false; row["attemptId"] = null; row["modelId"] = null;
-            row["plan"] = new JsonArray(); row["dispatch"] = new JsonArray(); row["tried"] = new JsonArray(); row["resumeRequested"] = false;
+            row["plan"] = new JsonArray(); row["dispatch"] = new JsonArray(); row["tried"] = new JsonArray(); row["resumeRequested"] = false; row["checkpoint"] = null;
             parts = [];
         }
         row["jobId"] = job?.Id; row["jobFingerprint"] = job is null ? null : JobFingerprint(job);
@@ -3091,6 +3107,19 @@ public sealed class OrchestratorState
 
         if (job is not null)
         {
+            // Match the JavaScript legacy path: a saved worker is still observed in the
+            // snapshot, but a job without a local folder cannot be resumed or reconciled.
+            // Keep the dispatch/PID evidence intact for the next repair attempt.
+            if (string.IsNullOrWhiteSpace(item.Folder) && !jobChanged &&
+                (jobWasAlreadySelected || StringOrNull(row["status"]) == "watching"))
+            {
+                row["status"] = "blocked_no_folder";
+                row["doing"] = $"{item.Name} has a job ({job.Title}) but no local folder. Set place so the orchestrator can inspect the repo.";
+                row["waitingFor"] = "A local folder";
+                row["next"] = "Set place with a folder on this PC.";
+                row["workerLabel"] = null;
+                return;
+            }
             var ongoing = parts.Any(p => !BoolOrFalse(p["stoppedByUser"]) && ProcessAlive(p));
             if (_collaborators.EnforceSessionBoundary && context.WasRunningAtStartup && StringOrNull(row["authorizedSessionId"]) != _sessionId && !ongoing)
             { row["approved"] = false; row["holdApproval"] = true; }
@@ -3166,6 +3195,8 @@ public sealed class OrchestratorState
         var hasAliveDispatch = false;
         if (targetProject is not null)
         {
+            // Observe only the target row. Snapshotting the complete notebook would
+            // recreate a project already removed by an earlier archive.
             var snap = Snapshot(new NotebookPlan([targetProject]), projectId);
             hasAliveDispatch = snap.Projects.FirstOrDefault(p => p.Id == projectId)?.Dispatch.Any(p => p.Alive) == true;
         }

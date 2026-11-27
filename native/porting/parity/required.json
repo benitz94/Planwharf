@@ -65,5 +65,11 @@
   "orchestrator-order-parsing": { "minCases": 50 },
   "orchestrator-team-models": { "minCases": 50 },
   "orchestrator-job-building": { "minCases": 50 },
-  "orchestrator-lead-questions": { "minCases": 103 }
+  "orchestrator-lead-questions": { "minCases": 103 },
+  "orchestrator-state": {
+    "minCases": 57,
+    "scenarioFloors": {
+      "orchestrator-state": 7
+    }
+  }
 }

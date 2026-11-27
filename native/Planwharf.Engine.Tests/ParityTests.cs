@@ -184,7 +184,8 @@ public class ParityTests
         ["pr-check"] = 18,
         ["phone-activation-check"] = 12,
         ["execution"] = 11,
-        ["project-home"] = 2
+        ["project-home"] = 2,
+        ["orchestrator-state"] = 7
     };
 
     public static Dictionary<string, int> LoadScenarioFloors(string parityDir)

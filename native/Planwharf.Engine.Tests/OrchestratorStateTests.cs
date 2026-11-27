@@ -1717,9 +1717,14 @@ public class OrchestratorStateTests
                 "savingModes": { "alpha": "bad-mode", "beta": "safe" },
                 "modelWeights": { "m1": "premium", "m2": "bogus" },
                 "projectTeams": {
-                    "alpha": { "orchestratorId": null, "roles": { "m1": { "worker": true } }, "notLead": ["m1", 42] },
+                    "alpha": { "orchestratorId": null, "roles": { "m1": { "worker": true } }, "notLead": ["m1", 42], "teamExtension": { "keep": true } },
+                    "scalarNotLead": { "orchestratorId": "lead", "roles": {}, "notLead": "bad" },
                     "invalid": "not-an-object"
                 },
+                "projectTools": {
+                    "alpha": { "default": { "Read": true, "toolExtension": "keep" }, "models": {}, "settingsExtension": 7 }
+                },
+                "execution": null,
                 "pullRequestFixes": [
                     { "projectId": "alpha", "number": 12, "result": "fixed" },
                     { "projectId": "alpha", "number": "bad" }
@@ -1737,10 +1742,16 @@ public class OrchestratorStateTests
             Assert.Equal("talk", state.Store["chatModes"]!["beta"]!.GetValue<string>());
             Assert.Equal("normal", state.Store["savingModes"]!["alpha"]!.GetValue<string>());
             Assert.Equal("safe", state.Store["savingModes"]!["beta"]!.GetValue<string>());
-            Assert.Equal("flagship", state.Store["modelWeights"]!["m1"]!.GetValue<string>());
+            Assert.Equal("premium", state.Store["modelWeights"]!["m1"]!.GetValue<string>());
             Assert.False((state.Store["modelWeights"] as JsonObject)!.ContainsKey("m2"));
             Assert.Single((state.Store["pullRequestFixes"] as JsonArray)!);
             Assert.False((state.Store["projectTeams"] as JsonObject)!.ContainsKey("invalid"));
+            Assert.True(state.Store["projectTeams"]!["alpha"]!["teamExtension"]!["keep"]!.GetValue<bool>());
+            Assert.NotNull(state.Store["projectTeams"]!["scalarNotLead"]);
+            Assert.False(state.Store["projectTeams"]!["scalarNotLead"]!.AsObject().ContainsKey("notLead"));
+            Assert.Equal("keep", state.Store["projectTools"]!["alpha"]!["default"]!["toolExtension"]!.GetValue<string>());
+            Assert.Equal(7, state.Store["projectTools"]!["alpha"]!["settingsExtension"]!.GetValue<int>());
+            Assert.IsType<JsonObject>(state.Store["execution"]);
             Assert.True(state.Store["customTop"]!["kept"]!.GetValue<bool>());
 
             // savingRepaired persisted repaired savingModes/modelWeights immediately on load
@@ -1769,6 +1780,7 @@ public class OrchestratorStateTests
             var attemptId = claim["attempt"]!["id"]!.GetValue<string>();
             var resultPath = Path.Combine(dir, "legacy-result.txt");
             File.WriteAllText(resultPath, "STATUS: COMPLETE\nEXIT: 0\n");
+            var historicalResultBytes = File.ReadAllBytes(resultPath);
 
             File.WriteAllText(Path.Combine(dir, "orchestrator.json"), new JsonObject
             {
@@ -1826,6 +1838,7 @@ public class OrchestratorStateTests
             var sessions = Assert.IsType<JsonArray>(reloaded.Store["sessions"]);
             Assert.Equal(1, sessions.OfType<JsonObject>().Count(s => s["id"]?.GetValue<string>() == "reconcile-1"));
             Assert.Equal(1, sessions.OfType<JsonObject>().Count(s => s["id"]?.GetValue<string>() == "reconcile-2"));
+            Assert.Equal(historicalResultBytes, File.ReadAllBytes(resultPath));
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
@@ -2290,6 +2303,28 @@ public class OrchestratorStateTests
             Assert.Equal(OrchestratorState.OrchestratorDefaultName, snap.Projects.Single(p => p.Id == "empty-team").LeadLabel);
             Assert.Equal("Lead B", snap.Projects.Single(p => p.Id == "beta").LeadLabel);
             Assert.Equal("beta", snap.SelectedProjectId);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_DoesNotRecreateEarlierArchivedProjectDuringSecondArchive()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-archive-sequence-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha"), new NotebookProject("beta", "Beta")]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T10:00:00.000Z", ReadPlan: _ => Task.FromResult(plan)));
+            state.EntryRow("alpha")["status"] = "complete";
+            state.EntryRow("beta")["status"] = "complete";
+
+            Assert.True((await state.ArchiveProjectAsync("alpha", "remove alpha")).Ok);
+            Assert.True((await state.ArchiveProjectAsync("beta", "remove beta")).Ok);
+
+            Assert.Empty((state.Store["projects"] as JsonObject)!);
+            Assert.Equal(2, (state.Store["projectArchive"] as JsonArray)!.Count);
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
