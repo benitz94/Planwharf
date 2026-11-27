@@ -2354,6 +2354,506 @@ public class OrchestratorStateTests
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
 
+    [Fact]
+    public void EmptyEntry_And_EntryAccess_IsolateInstancesAndPreserveMissingState()
+    {
+        var first = OrchestratorState.EmptyEntryObject();
+        var second = OrchestratorState.EmptyEntryObject();
+        ((JsonArray)first["plan"]!).Add("step-1");
+        Assert.Empty((JsonArray)second["plan"]!);
+
+        var state = OrchestratorState.Load(null);
+        Assert.Null(state.TryGetEntry("missing"));
+        Assert.False(((JsonObject)state.Store["projects"]!).ContainsKey("missing"));
+
+        var created = state.Entry("alpha");
+        Assert.Equal("idle", created.Status);
+        Assert.NotNull(state.TryGetEntry("alpha"));
+    }
+
+    [Fact]
+    public void StepOf_NullAndEmptyStatus_ReturnIdle()
+    {
+        Assert.Equal("idle", OrchestratorState.StepOf((ProjectEntry?)null));
+        Assert.Equal("idle", OrchestratorState.StepOf((JsonObject?)null));
+        Assert.Equal("idle", OrchestratorState.StepOf(OrchestratorState.EmptyEntry() with { Status = "" }));
+    }
+
+    [Theory]
+    [InlineData(null, false, false, "check", "todo")]
+    [InlineData("blocked_no_folder", false, false, "check", "now")]
+    [InlineData("propose_grill", false, true, "grill", "now")]
+    [InlineData("waiting_on_you", false, false, "grill", "now")]
+    [InlineData("idle", true, false, "plan", "now")]
+    [InlineData("blocked_no_worker", false, true, "assign", "now")]
+    [InlineData("watching", false, true, "watch", "now")]
+    [InlineData("checkpointed", false, false, "watch", "now")]
+    [InlineData("failed", false, false, "watch", "now")]
+    [InlineData("complete", false, true, "watch", "done")]
+    public void PipelineOf_JsonAndTyped_CoverAllStagesAndGrillSkipRules(
+        string? status, bool pendingAutoStart, bool grillSkipped, string focusStep, string expectedState)
+    {
+        JsonObject? obj = status is null ? null : OrchestratorState.EmptyEntryObject();
+        if (obj is not null)
+        {
+            obj["status"] = status;
+            obj["grillSkipped"] = grillSkipped;
+            if (pendingAutoStart) obj["pendingAutoStart"] = new JsonObject();
+        }
+        var entry = status is null
+            ? null
+            : OrchestratorState.EmptyEntry() with
+            {
+                Status = status,
+                GrillSkipped = grillSkipped,
+                PendingAutoStart = pendingAutoStart ? new PendingAutoStart() : null
+            };
+
+        foreach (var pipeline in new[] { OrchestratorState.PipelineOf(obj), OrchestratorState.PipelineOf(entry) })
+        {
+            Assert.Equal(6, pipeline.Count);
+            Assert.Equal(expectedState, pipeline.Single(p => p.Id == focusStep).State);
+            if (status is "propose_grill" or "waiting_on_you")
+            {
+                Assert.Equal("now", pipeline.Single(p => p.Id == "grill").State);
+            }
+            else if (grillSkipped && status is "blocked_no_worker" or "watching" or "complete")
+            {
+                Assert.Equal("skip", pipeline.Single(p => p.Id == "grill").State);
+            }
+        }
+    }
+
+    [Fact]
+    public void CrewOf_TypedAndJsonOverloads_CoverRolesStatusesAndFallbacks()
+    {
+        // Typed overload with ExecutionState SubTasks and various statuses
+        var entry = OrchestratorState.EmptyEntry() with
+        {
+            Status = "watching",
+            WorkerActivity = "",
+            Dispatch = [new DispatchPart("m1", "Worker One", "Implement API", "why", Pid: 321, LogPath: null, ResultPath: null, StoppedByUser: false)]
+        };
+        var exec = new ExecutionState(SubTasks: [new JsonObject { ["id"] = "s1", ["type"] = "AUDIT" }]);
+        var watchingCrew = OrchestratorState.CrewOf(entry, "Lead One", exec);
+        Assert.Equal("Orchestrator", watchingCrew[0].Role);
+        Assert.Equal("Lead One", watchingCrew[0].Name);
+        Assert.Equal("Reviewer", watchingCrew[1].Role);
+        Assert.Contains("Process 321 running.", watchingCrew[1].Doing);
+
+        Assert.Equal("Evidence complete.", OrchestratorState.CrewOf(entry with { Status = "complete" }, null)[1].Doing);
+        Assert.Equal("No remaining provider usage.", OrchestratorState.CrewOf(entry with { Status = "blocked_no_worker" }, null)[1].Doing);
+        Assert.Contains("checkpoint", OrchestratorState.CrewOf(entry with { Status = "checkpointed" }, null)[1].Doing, StringComparison.OrdinalIgnoreCase);
+
+        var singleLabel = OrchestratorState.EmptyEntry() with { Status = "watching", WorkerLabel = "Solo", WorkerPid = 44, WorkerAlive = false };
+        Assert.Equal("Process 44 stopped.", OrchestratorState.CrewOf(singleLabel, null)[1].Doing);
+
+        var multiLabel = OrchestratorState.EmptyEntry() with { Status = "watching", WorkerLabel = "A + B" };
+        Assert.Single(OrchestratorState.CrewOf(multiLabel, null));
+
+        var grillRow = OrchestratorState.EmptyEntry() with { Status = "propose_grill" };
+        Assert.Equal("Not assigned until grill is closed.", OrchestratorState.CrewOf(grillRow, null)[1].Doing);
+        Assert.Equal("Not assigned yet.", OrchestratorState.CrewOf((ProjectEntry?)null, null)[1].Doing);
+
+        // JsonObject overload with historical assignment and watching fallbacks
+        var jsonRow = OrchestratorState.EmptyEntryObject();
+        jsonRow["status"] = "watching";
+        jsonRow["dispatch"] = new JsonArray(
+            new JsonObject { ["label"] = "Hist", ["historicalAssignment"] = true, ["assignmentJobTitle"] = "Old Job", ["activity"] = "Done earlier" },
+            new JsonObject { ["modelId"] = "m2", ["slice"] = "Core", ["pid"] = 55, ["alive"] = false },
+            new JsonObject { ["modelId"] = "m3", ["slice"] = "Docs" });
+        var jsonCrew = OrchestratorState.CrewOf(jsonRow, null);
+        Assert.Equal("Old Job: Done earlier", jsonCrew[1].Doing);
+        Assert.Equal("Core. Process 55 stopped.", jsonCrew[2].Doing);
+        Assert.Equal("Docs. Claimed.", jsonCrew[3].Doing);
+    }
+
+    [Fact]
+    public void ProgressKey_And_LogStat_CoverAllOverloadsAndRealLogFiles()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-prog-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            Assert.Equal("0|0", OrchestratorState.LogStat(null));
+            Assert.Equal("0|0", OrchestratorState.LogStat(Path.Combine(dir, "missing.log")));
+
+            var logFile = Path.Combine(dir, "worker.log");
+            File.WriteAllText(logFile, "hello");
+            var stat = OrchestratorState.LogStat(logFile);
+            Assert.StartsWith("5|", stat, StringComparison.Ordinal);
+
+            var facts = new InspectionFacts(Git: false, LastCommit: "", LastSubject: "", Recent: [], Dirty: ["a.cs", "b.cs"], Head: "", Branch: "", FileCount: 12, Folder: dir);
+            var keyTypedSingle = OrchestratorState.ProgressKey(facts, logFile, null);
+            Assert.Equal($"12||2|{stat}", keyTypedSingle);
+
+            var dispatch = new List<DispatchPart> { new("m1", "M1", "s1", "", LogPath: logFile) };
+            var factsObj = new JsonObject { ["fileCount"] = 12, ["names"] = new JsonArray("src"), ["dirty"] = new JsonArray("a.cs") };
+            var keyObjList = OrchestratorState.ProgressKey(factsObj, null, dispatch, f => f == logFile ? "custom" : "0|0");
+            Assert.Equal("12|src|1|custom", keyObjList);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void DefaultInspect_CoversEmptyInvalidFileNameClippingAndGitMetadata()
+    {
+        Assert.Equal("no folder", OrchestratorState.DefaultInspectJson(null)["error"]?.GetValue<string>());
+        Assert.Equal("no folder", OrchestratorState.DefaultInspectJson("")["error"]?.GetValue<string>());
+
+        var root = Path.Combine(Path.GetTempPath(), "planwharf-inspect-extra-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var plainFile = Path.Combine(root, "plain.txt");
+            File.WriteAllText(plainFile, "content");
+            Assert.Equal("not a directory", OrchestratorState.DefaultInspectJson(plainFile)["error"]?.GetValue<string>());
+
+            var manyDir = Path.Combine(root, "many");
+            Directory.CreateDirectory(manyDir);
+            File.WriteAllText(Path.Combine(manyDir, "README.md"), "# Doc\n");
+            for (var i = 0; i < 30; i++) File.WriteAllText(Path.Combine(manyDir, $"f-{i:D2}.txt"), "x");
+            var manyJson = OrchestratorState.DefaultInspectJson(manyDir);
+            Assert.Equal(31, manyJson["fileCount"]?.GetValue<int>());
+            Assert.Equal(24, manyJson["names"]!.AsArray().Count);
+            Assert.Contains("README.md", manyJson["docs"]!.AsArray().Select(n => n!.GetValue<string>()));
+
+            var repo = Path.Combine(root, "repo");
+            Directory.CreateDirectory(repo);
+            RunGit(repo, "init", "-q");
+            RunGit(repo, "config", "user.name", "Fixture");
+            RunGit(repo, "config", "user.email", "fixture@example.invalid");
+            for (var i = 1; i <= 6; i++)
+            {
+                File.WriteAllText(Path.Combine(repo, $"long-file-name-for-diffstat-clipping-{i:D2}-abcdefghijklmnopqrstuvwxyz.txt"), $"v{i}\n");
+                RunGit(repo, "add", ".");
+                RunGit(repo, "commit", "-qm", $"Commit {i}");
+            }
+            for (var i = 1; i <= 6; i++)
+            {
+                File.WriteAllText(Path.Combine(repo, $"long-file-name-for-diffstat-clipping-{i:D2}-abcdefghijklmnopqrstuvwxyz.txt"), $"changed-{i}\n");
+            }
+            var inspected = OrchestratorState.DefaultInspect(repo);
+            Assert.True(inspected.Git);
+            Assert.False(string.IsNullOrEmpty(inspected.Branch));
+            Assert.False(string.IsNullOrEmpty(inspected.Head));
+            Assert.Equal("Commit 6", inspected.LastSubject);
+            Assert.Equal(5, inspected.Recent!.Count);
+            var jsonInspected = OrchestratorState.DefaultInspectJson(repo);
+            Assert.False(string.IsNullOrEmpty(jsonInspected["commitId"]?.GetValue<string>()));
+            var diffStat = jsonInspected["diffStat"]?.GetValue<string>() ?? "";
+            Assert.True(diffStat.Length <= 400);
+            Assert.EndsWith("…", diffStat, StringComparison.Ordinal);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    [Fact]
+    public void Load_CorruptJsonNullDirAndOptionalStores_RecoverCleanly()
+    {
+        var memoryOnly = OrchestratorState.Load(null);
+        memoryOnly.EntryRow("in-mem")["status"] = "watching";
+        memoryOnly.Persist();
+        Assert.Null(memoryOnly.StateFile);
+
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-load-corrupt-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var stateFile = Path.Combine(dir, "orchestrator.json");
+            File.WriteAllText(stateFile, "{ not valid json");
+            var corruptState = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(SessionId: "clean-sess"));
+            Assert.Equal("manual", corruptState.Store["mode"]?.GetValue<string>());
+            Assert.Empty((JsonObject)corruptState.Store["projects"]!);
+
+            File.WriteAllText(stateFile, """
+            {
+                "autoSwitch": { "enabled": true },
+                "notLead": ["m1", 123, "m2"],
+                "workerHistory": [
+                    { "id": "alpha", "dispatch": [ { "sessionId": "hist-sess-1", "startedAt": "2026-11-20T09:00:00.000Z" } ] }
+                ]
+            }
+            """);
+            var repaired = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(SessionId: "cur-sess"));
+            Assert.True(repaired.Store["autoSwitch"]?["enabled"]?.GetValue<bool>());
+            Assert.Equal(["m1", "m2"], ((JsonArray)repaired.Store["notLead"]!).Select(n => n!.GetValue<string>()).ToArray());
+            var sessionIds = ((JsonArray)repaired.Store["sessions"]!).OfType<JsonObject>().Select(s => s["id"]?.GetValue<string>()).ToArray();
+            Assert.Contains("hist-sess-1", sessionIds);
+            Assert.Equal("cur-sess", sessionIds[^1]);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void Persist_ExhaustedSharingViolationRetries_CleansTempFilesAndPreservesOriginal()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-persist-exhaust-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var stateFile = Path.Combine(dir, "orchestrator.json");
+            File.WriteAllText(stateFile, "{\"kept\":\"original\"}\n");
+            var originalBytes = File.ReadAllBytes(stateFile);
+            var attempts = 0;
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Rename: (_, _) =>
+                {
+                    attempts++;
+                    throw new IOException("Persistent sharing violation", unchecked((int)0x80070020));
+                }));
+            state.EntryRow("alpha")["doing"] = "updated";
+
+            Assert.Throws<IOException>(() => state.Persist());
+            Assert.True(attempts > 1);
+            Assert.Equal(originalBytes, File.ReadAllBytes(stateFile));
+            Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void HydrateCheckpoints_BackfillsPathIgnoresCorruptDiskAndPreservesComplete()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-cp-edge-" + Guid.NewGuid().ToString("N"));
+        var cpDir = Path.Combine(dir, "checkpoints");
+        Directory.CreateDirectory(cpDir);
+        try
+        {
+            var alphaCp = Path.Combine(cpDir, "alpha.json");
+            File.WriteAllText(alphaCp, "{\"jobTitle\":\"Alpha Work\",\"reason\":\"shutdown\"}");
+            File.WriteAllText(Path.Combine(cpDir, "done.json"), "{\"jobTitle\":\"Done Work\",\"reason\":\"shutdown\"}");
+            File.WriteAllText(Path.Combine(cpDir, "corrupt.json"), "{broken");
+            File.WriteAllText(Path.Combine(dir, "orchestrator.json"), """
+            {
+                "projects": {
+                    "alpha": { "status": "idle", "checkpoint": { "jobTitle": "Alpha Work", "reason": "shutdown" } },
+                    "done": { "status": "complete" }
+                }
+            }
+            """);
+
+            var state = OrchestratorState.Load(dir);
+            Assert.Equal(alphaCp, state.EntryRow("alpha")["checkpoint"]?["path"]?.GetValue<string>());
+            Assert.Equal("checkpointed", state.EntryRow("alpha")["status"]?.GetValue<string>());
+            Assert.Equal("complete", state.EntryRow("done")["status"]?.GetValue<string>());
+            Assert.Null(state.EntryRow("corrupt")["checkpoint"]);
+            Assert.Equal("idle", state.EntryRow("corrupt")["status"]?.GetValue<string>());
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void RefreshResearch_CoversLogTailTruncationNonZeroExitAndV2Fallbacks()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-res-edge-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var longLog = Path.Combine(dir, "long.log");
+            File.WriteAllText(longLog, new string('x', 2000) + "\r\nend-marker\r\n");
+            var nonZeroResult = Path.Combine(dir, "nonzero.txt");
+            File.WriteAllText(nonZeroResult, "STATUS: COMPLETE\nEXIT: 2\n");
+            var nowCalls = 0;
+            var times = new[] { "2026-11-27T10:00:00.000Z", "2026-11-27T10:01:00.000Z", "2026-11-27T10:02:00.000Z" };
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => times[Math.Min(nowCalls++, times.Length - 1)],
+                IsProcessAlive: _ => false));
+
+            var v1Tail = new JsonObject { ["id"] = "v1-tail", ["executionVersion"] = 1, ["status"] = "watching", ["logPath"] = longLog };
+            var v1BadExit = new JsonObject { ["id"] = "v1-exit2", ["executionVersion"] = 1, ["status"] = "watching", ["pid"] = 99, ["resultPath"] = nonZeroResult };
+            var v2Empty = new JsonObject { ["id"] = "v2-empty", ["executionVersion"] = 2, ["megaTaskId"] = "mt-missing", ["status"] = "watching" };
+            state.Store["execution"] = new JsonObject { ["results"] = new JsonArray(new JsonObject { ["megaTaskId"] = "mt-missing", ["reportPath"] = Path.Combine(dir, "gone.md") }) };
+            ((JsonArray)state.Store["researches"]!).Add(v1Tail);
+            ((JsonArray)state.Store["researches"]!).Add(v1BadExit);
+            ((JsonArray)state.Store["researches"]!).Add(v2Empty);
+
+            state.RefreshResearch();
+            var tail = v1Tail["workerTail"]!.GetValue<string>();
+            Assert.True(tail.Length <= 1600);
+            Assert.DoesNotContain("\r", tail, StringComparison.Ordinal);
+            Assert.EndsWith("end-marker", tail, StringComparison.Ordinal);
+            Assert.Equal("watching", v1Tail["status"]?.GetValue<string>());
+            var updatedAfterTail = v1Tail["updatedAt"]!.GetValue<string>();
+            state.RefreshResearch();
+            Assert.Equal(updatedAfterTail, v1Tail["updatedAt"]!.GetValue<string>());
+
+            Assert.Equal("failed", v1BadExit["status"]?.GetValue<string>());
+            Assert.Contains("without successful completion evidence", v1BadExit["reason"]?.GetValue<string>());
+            Assert.False(v2Empty["reportAvailable"]!.GetValue<bool>());
+            Assert.Equal("Awaiting MegaTask approval.", v2Empty["activity"]?.GetValue<string>());
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_PurgesScopedStoresAndRejectsLiveFallbackDispatch()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-arch-edge-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T11:00:00.000Z",
+                IsProcessAlive: pid => pid == "303",
+                ReadPlan: _ => Task.FromResult(new NotebookPlan([]))));
+
+            state.EntryRow("alpha")["status"] = "watching";
+            state.EntryRow("alpha")["dispatch"] = new JsonArray(new JsonObject { ["pid"] = 303, ["alive"] = false });
+            var blocked = await state.ArchiveProjectAsync("alpha", "remove");
+            Assert.False(blocked.Ok);
+            Assert.Equal("Stop the work on this project first.", blocked.Reason);
+
+            state.EntryRow("alpha")["status"] = "complete";
+            state.EntryRow("beta")["status"] = "idle";
+            state.Store["thinkingByKey"] = new JsonObject { ["alpha"] = new JsonObject { ["draft"] = "a" }, ["beta"] = new JsonObject { ["draft"] = "b" } };
+            state.Store["briefingBaselines"] = new JsonObject { ["alpha"] = new JsonObject { ["ok"] = true }, ["beta"] = new JsonObject { ["ok"] = true } };
+            state.Store["workerHistory"] = new JsonArray(new JsonObject { ["id"] = "alpha" }, new JsonObject { ["id"] = "beta" });
+            state.Store["execution"] = new JsonObject
+            {
+                ["megaTasks"] = new JsonArray(new JsonObject { ["id"] = "m-a", ["projectId"] = "alpha" }, new JsonObject { ["id"] = "m-b", ["projectId"] = "beta" }),
+                ["subTasks"] = new JsonArray(),
+                ["results"] = new JsonArray(),
+                ["checkpoints"] = new JsonArray(new JsonObject { ["id"] = "c-a", ["projectId"] = "alpha" }, new JsonObject { ["id"] = "c-b", ["projectId"] = "beta" }),
+                ["timeline"] = new JsonArray(new JsonObject { ["id"] = "t-a", ["projectId"] = "alpha" }, new JsonObject { ["id"] = "t-b", ["projectId"] = "beta" })
+            };
+
+            var res = await state.ArchiveProjectAsync("alpha", "cleanup");
+            Assert.True(res.Ok);
+            Assert.Null(state.Store["projectArchive"]![0]!["notebook"]);
+            Assert.False(((JsonObject)state.Store["thinkingByKey"]!).ContainsKey("alpha"));
+            Assert.True(((JsonObject)state.Store["thinkingByKey"]!).ContainsKey("beta"));
+            Assert.False(((JsonObject)state.Store["briefingBaselines"]!).ContainsKey("alpha"));
+            Assert.True(((JsonObject)state.Store["briefingBaselines"]!).ContainsKey("beta"));
+            Assert.Single((JsonArray)state.Store["workerHistory"]!);
+            Assert.Single((JsonArray)state.Store["execution"]!["checkpoints"]!);
+            Assert.Single((JsonArray)state.Store["execution"]!["timeline"]!);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task SetFocusAsync_And_Snapshot_IsolateStoreFallbackAndTeamFocus()
+    {
+        var state = OrchestratorState.Load(null);
+        state.EntryRow("alpha")["doing"] = "alpha-work";
+        state.EntryRow("beta")["doing"] = "beta-work";
+
+        Assert.True((await state.SetFocusAsync("alpha")).Ok);
+        var missing = await state.SetFocusAsync("missing");
+        Assert.False(missing.Ok);
+        Assert.Equal("alpha", missing.SelectedProjectId);
+        var empty = await state.SetFocusAsync(" ");
+        Assert.False(empty.Ok);
+        Assert.Equal("alpha", empty.SelectedProjectId);
+
+        state.Store["models"] = new JsonArray(
+            new JsonObject { ["id"] = "lead-a", ["label"] = "Lead A", ["enabled"] = true, ["available"] = true, ["roles"] = new JsonObject { ["orchestrator"] = true } },
+            new JsonObject { ["id"] = "lead-b", ["label"] = "Lead B", ["enabled"] = true, ["available"] = true, ["roles"] = new JsonObject { ["orchestrator"] = true } });
+        state.Store["projectTeams"] = new JsonObject
+        {
+            ["alpha"] = new JsonObject { ["orchestratorId"] = "lead-a", ["roles"] = new JsonObject() },
+            ["beta"] = new JsonObject { ["orchestratorId"] = "lead-b", ["roles"] = new JsonObject() }
+        };
+        state.Store["projectTools"] = new JsonObject
+        {
+            ["alpha"] = new JsonObject { ["default"] = new JsonObject { ["Read"] = true } },
+            ["beta"] = new JsonObject { ["default"] = new JsonObject { ["Edit"] = true } }
+        };
+        state.Store["thinkingByKey"] = new JsonObject
+        {
+            ["alpha"] = new JsonObject { ["draft"] = "alpha-thought", ["startedAt"] = "2026-11-27T10:00:00.000Z" },
+            ["beta"] = new JsonObject { ["draft"] = "beta-thought", ["startedAt"] = "2026-11-27T10:01:00.000Z" }
+        };
+
+        var plan = new NotebookPlan([new("alpha", "Alpha"), new("beta", "Beta")]);
+        var snapAlpha = state.Snapshot(plan, "alpha");
+        Assert.Equal("lead-a", snapAlpha.SelectedOrchestratorId);
+        Assert.Equal("alpha", snapAlpha.TeamProjectId);
+        Assert.True(snapAlpha.OwnTeam);
+        Assert.Single(snapAlpha.ProjectTools);
+        Assert.True(snapAlpha.ProjectTools.ContainsKey("alpha"));
+        Assert.Equal("alpha-thought", snapAlpha.Thinking["draft"]!.ToString());
+
+        var snapBeta = state.Snapshot(plan, "beta");
+        Assert.Equal("lead-b", snapBeta.SelectedOrchestratorId);
+        Assert.Equal("beta", snapBeta.TeamProjectId);
+        Assert.Single(snapBeta.ProjectTools);
+        Assert.True(snapBeta.ProjectTools.ContainsKey("beta"));
+        Assert.Equal("beta-thought", snapBeta.Thinking["draft"]!.ToString());
+    }
+
+    [Fact]
+    public async Task TickAsync_DecisionsInbox_And_ActivitySessionPage_CoverRemainingPaths()
+    {
+        var decided = new List<string>();
+        var oldTask = new NotebookTask("old-job", "Old", "v1", "running");
+        var newTask = new NotebookTask("new-job", "New", "v2", "running");
+        var plan = new NotebookPlan([new("alpha", "Alpha", Tasks: [newTask]), new("beta", "Beta", Tasks: [oldTask])]);
+
+        var state = OrchestratorState.Load(null, new OrchestratorStateCollaborators(
+            ReadPlan: _ => Task.FromResult(plan)));
+        var row = state.EntryRow("alpha");
+        row["jobId"] = oldTask.Id;
+        row["jobFingerprint"] = OrchestratorState.JobFingerprint(oldTask);
+        row["approved"] = true;
+        row["holdApproval"] = true;
+        row["attemptId"] = "old-att";
+        row["modelId"] = "old-model";
+        row["plan"] = new JsonArray("old-step");
+        row["dispatch"] = new JsonArray(new JsonObject { ["modelId"] = "old-model" });
+        row["tried"] = new JsonArray("old-model");
+        row["resumeRequested"] = true;
+        row["checkpoint"] = new JsonObject { ["jobId"] = oldTask.Id, ["reason"] = "shutdown" };
+
+        await state.TickAsync("alpha");
+        Assert.Equal("new-job", row["jobId"]?.GetValue<string>());
+        Assert.False(row["approved"]!.GetValue<bool>());
+        Assert.False(row["holdApproval"]!.GetValue<bool>());
+        Assert.Null(row["attemptId"]);
+        Assert.Null(row["modelId"]);
+        Assert.Empty((JsonArray)row["plan"]!);
+        Assert.Empty((JsonArray)row["dispatch"]!);
+        Assert.Empty((JsonArray)row["tried"]!);
+        Assert.False(row["resumeRequested"]!.GetValue<bool>());
+        Assert.Null(row["checkpoint"]);
+        Assert.Equal("needs_approval", row["status"]?.GetValue<string>());
+        Assert.Equal("idle", state.Entry("beta").Status);
+
+        var scoped = OrchestratorState.Load(null, new OrchestratorStateCollaborators(
+            ReadPlan: _ => Task.FromResult(plan),
+            Decide: ctx => decided.Add(ctx.Project.Id)));
+        await scoped.TickAsync("beta");
+        Assert.Equal(["beta"], decided);
+
+        // DecisionsInbox merges pipelineJobs + execution.decisions and excludes CANCELLED megaTask open decisions
+        scoped.Store["pipelineJobs"] = new JsonArray(new JsonObject
+        {
+            ["id"] = "pipe-1", ["projectId"] = "alpha", ["title"] = "Pipeline", ["status"] = "building",
+            ["questions"] = new JsonArray(new JsonObject { ["id"] = "q1", ["text"] = "Pipe Q?", ["breaks"] = true, ["at"] = "2026-11-27T09:00:00.000Z" })
+        });
+        scoped.Store["execution"] = new JsonObject
+        {
+            ["megaTasks"] = new JsonArray(new JsonObject { ["id"] = "mt-c", ["projectId"] = "alpha", ["status"] = "CANCELLED" }),
+            ["subTasks"] = new JsonArray(),
+            ["decisions"] = new JsonArray(new JsonObject { ["id"] = "d1", ["projectId"] = "alpha", ["megaTaskId"] = "mt-c", ["text"] = "Cancelled?", ["breaks"] = false, ["at"] = "2026-11-27T08:00:00.000Z" })
+        };
+        scoped.EntryRow("alpha")["megaTaskId"] = "mt-c";
+        var snap = scoped.Snapshot(plan, "alpha");
+        Assert.Equal(2, snap.DecisionsInbox.OpenCount);
+        Assert.Equal("pipeline:pipe-1:q1", snap.DecisionsInbox.Open[0].Id);
+        Assert.Empty(snap.Projects[0].OpenDecisions);
+
+        // ActivitySessionPageAsync without ReadPlan validates existence and page bounds
+        var noPlanState = OrchestratorState.Load(null);
+        noPlanState.EntryRow("alpha");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => noPlanState.ActivitySessionPageAsync("missing"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => noPlanState.ActivitySessionPageAsync("alpha", -1, 10));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => noPlanState.ActivitySessionPageAsync("alpha", 0, ActivitySessions.SessionLimit + 1));
+        var emptyPage = await noPlanState.ActivitySessionPageAsync("alpha", 0, ActivitySessions.SessionLimit);
+        Assert.Equal(0, emptyPage.Total);
+    }
+
     private static string RunGit(string folder, params string[] args)
     {
         var psi = new System.Diagnostics.ProcessStartInfo("git")
