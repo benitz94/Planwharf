@@ -1396,7 +1396,7 @@ public sealed class OrchestratorState
                 {
                     doing = !string.IsNullOrEmpty(row.WorkerActivity)
                         ? row.WorkerActivity
-                        : $"{(!string.IsNullOrEmpty(part.Slice) ? part.Slice : "Whole job")}. {(part.Pid != null ? $"Process {part.Pid} running." : "Claimed.")}";
+                        : $"{(!string.IsNullOrEmpty(part.Slice) ? part.Slice : "Whole job")}. {(part.Pid is int and not 0 ? $"Process {part.Pid} running." : "Claimed.")}";
                 }
                 else if (row.Status == "complete") doing = "Evidence complete.";
                 else if (row.Status == "checkpointed")
@@ -1413,7 +1413,7 @@ public sealed class OrchestratorState
             var doing = row.Status == "watching"
                 ? (!string.IsNullOrEmpty(row.WorkerActivity)
                     ? row.WorkerActivity
-                    : (row.WorkerPid != null ? $"Process {row.WorkerPid}{(row.WorkerAlive ? " running" : " stopped")}." : "Claimed."))
+                    : (row.WorkerPid is int and not 0 ? $"Process {row.WorkerPid}{(row.WorkerAlive ? " running" : " stopped")}." : "Claimed."))
                 : (row.Status == "needs_approval" ? "Picked. Waiting for Approve." : (row.WaitingFor ?? ""));
             crew.Add(new CrewMember("Worker", row.WorkerLabel, doing));
         }
@@ -1479,7 +1479,7 @@ public sealed class OrchestratorState
                     var rowAct = StringOrNull(row?["workerActivity"]);
                     var pid = IntOrNull(partNode["pid"]);
                     var alive = BoolOrFalse(partNode["alive"]);
-                    doing = !string.IsNullOrEmpty(partAct) ? partAct : (!string.IsNullOrEmpty(rowAct) ? rowAct : $"{(!string.IsNullOrEmpty(slice) ? slice : "Whole job")}. {(pid != null ? $"Process {pid}{(alive ? " running" : " stopped")}." : "Claimed.")}");
+                    doing = !string.IsNullOrEmpty(partAct) ? partAct : (!string.IsNullOrEmpty(rowAct) ? rowAct : $"{(!string.IsNullOrEmpty(slice) ? slice : "Whole job")}. {(pid is int and not 0 ? $"Process {pid}{(alive ? " running" : " stopped")}." : "Claimed.")}");
                 }
                 else if (status == "complete") doing = "Evidence complete.";
                 else if (status == "checkpointed")
@@ -1504,7 +1504,7 @@ public sealed class OrchestratorState
                 var doing = status == "watching"
                     ? (!string.IsNullOrEmpty(workerActivity)
                         ? workerActivity
-                        : (workerPid != null ? $"Process {workerPid}{(workerAlive ? " running" : " stopped")}." : "Claimed."))
+                        : (workerPid is int and not 0 ? $"Process {workerPid}{(workerAlive ? " running" : " stopped")}." : "Claimed."))
                     : (status == "needs_approval" ? "Picked. Waiting for Approve." : waitingFor);
                 crew.Add(new CrewMember("Worker", workerLabel, doing));
             }
