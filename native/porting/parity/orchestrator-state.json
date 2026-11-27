@@ -1169,6 +1169,882 @@
     ]
   },
   {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": 0,
+        "workerLog": null,
+        "workerAlive": true,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": 42,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Process 42 stopped."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": 42,
+        "workerLog": null,
+        "workerAlive": true,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Process 42 running."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": {
+          "fileCount": 0
+        },
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and 0 files in the project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": {
+          "fileCount": 1
+        },
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and 1 files in the project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": {
+          "fileCount": 5
+        },
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and 5 files in the project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": {
+          "fileCount": null
+        },
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": "Solo",
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "Solo",
+        "doing": "Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "Slice",
+            "pid": 0,
+            "alive": true
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (1 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Slice. Claimed."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "Slice",
+            "pid": 55,
+            "alive": false
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Slice. Process 55 stopped."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "Slice",
+            "pid": 55,
+            "alive": true
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (1 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Slice. Process 55 running."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": null,
+            "pid": 77,
+            "alive": true
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (1 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Whole job. Process 77 running."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "watching",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "",
+            "pid": 77,
+            "alive": false
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Monitoring 1 worker (0 alive). Watching process, worker log, and project folder."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Whole job. Process 77 stopped."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "complete",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "Slice"
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "Verified STATUS: COMPLETE and folder output."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "Evidence complete."
+      }
+    ]
+  },
+  {
+    "fn": "crewOf",
+    "args": [
+      {
+        "status": "blocked_no_worker",
+        "doing": "",
+        "plan": [],
+        "facts": null,
+        "jobId": null,
+        "jobTitle": null,
+        "attemptId": null,
+        "modelId": null,
+        "approved": false,
+        "waitingFor": "",
+        "next": "",
+        "workerLabel": null,
+        "resultPath": null,
+        "watchingSince": null,
+        "holdApproval": false,
+        "grillSkipped": false,
+        "docs": [],
+        "log": [],
+        "pendingAutoStart": null,
+        "checkpoint": null,
+        "dispatch": [
+          {
+            "modelId": "m1",
+            "label": "P1",
+            "slice": "Slice"
+          }
+        ],
+        "resumeRequested": false,
+        "deadlineHonored": false,
+        "workerPid": null,
+        "workerLog": null,
+        "workerAlive": false,
+        "tried": [],
+        "progressAt": null,
+        "progressKey": null,
+        "workerTail": "",
+        "workerActivity": ""
+      },
+      "Lead"
+    ],
+    "result": [
+      {
+        "role": "Orchestrator",
+        "name": "Lead",
+        "doing": "No eligible worker. Turn a model on, or wait until its provider usage resets."
+      },
+      {
+        "role": "Worker",
+        "name": "P1",
+        "doing": "No remaining provider usage."
+      }
+    ]
+  },
+  {
     "fn": "progressKey",
     "args": [
       null,
@@ -1230,6 +2106,78 @@
         "dirty": null
       },
       "",
+      []
+    ],
+    "result": "0||0|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": 0,
+        "names": [
+          "src"
+        ],
+        "dirty": []
+      },
+      null,
+      null
+    ],
+    "result": "0|src|0|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": 1,
+        "names": [
+          "a",
+          "b"
+        ],
+        "dirty": [
+          "M a"
+        ]
+      },
+      null,
+      null
+    ],
+    "result": "1|a,b|1|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": "10",
+        "names": [],
+        "dirty": []
+      },
+      null,
+      null
+    ],
+    "result": "0||0|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": -2,
+        "names": [],
+        "dirty": []
+      },
+      null,
+      null
+    ],
+    "result": "-2||0|0|0"
+  },
+  {
+    "fn": "progressKey",
+    "args": [
+      {
+        "fileCount": 0,
+        "names": [],
+        "dirty": []
+      },
+      "missing-parity-log-c",
       []
     ],
     "result": "0||0|0|0"
