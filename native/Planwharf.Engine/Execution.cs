@@ -1121,7 +1121,7 @@ public sealed partial class ExecutionBridge
             ["notes"] = new JsonArray((item["home"]?["notes"] as JsonArray ?? []).OfType<JsonObject>().Where(n => Execution.Truthy(n["aiRelevant"])).Select(n => (JsonNode?)n.DeepClone()).ToArray()) };
         if (handoff["checkpoint"] is null) handoff.Remove("checkpoint");
         var scope = sub["scope"] is JsonArray { Count: > 0 } scopes
-            ? $"\n\nYour scope: change only these files or folders, relative to {(worktree is null ? "the project folder" : "this worker folder")}: {string.Join(", ", scopes.Select(Execution.Text))}. {(worktree is null ? "Other workers are changing other files in this folder at the same time." : "Other workers have their own folders.")} A change outside your scope stops your part."
+            ? $"\n\nYour scope: change only these files or folders, relative to {(worktree is null ? "the project folder" : "this worker folder")}: {string.Join(", ", scopes.Select(Execution.Text))}. {(worktree is null ? "Other workers are changing other files in this folder at the same time." : "Other workers have their own folders.")} A change outside your scope stops your part. Tests or checks that fail outside your scope are not yours to fix: if your own work is done and its tests pass, finish with status COMPLETE and list those failures in your summary under \"Outside my scope:\"; the part that wires the work together, or Verify, fixes them."
             : "";
         if (scope.Length > 0 && sub["scopeViolation"] is JsonArray { Count: > 0 } violations)
             scope += $"\nLast time this part was stopped for changing files outside its scope: {string.Join(", ", violations.Select(Execution.Text))}. Do not touch them: if the work needs them, say so in your result and stop.";

@@ -3239,13 +3239,16 @@ function createOrchestrator(options) {
     settings.continued = [...(settings.continued || []), megaTaskId].slice(-50);
     const results = (view.execution?.results || []).filter(result => result.megaTaskId === megaTaskId);
     const changed = results.some(result => Array.isArray(result.filesChanged) && result.filesChanged.length);
+    // A round where no step finished is no progress either, whatever files changed (job 51: six steps, none
+    // finished, round after round, each stopping on tests outside its own files).
+    const finishedOne = results.some(result => result.status === 'COMPLETE');
     // The same step stopped for the same reason as last time is no progress, whatever other files changed.
     const subs = (view.execution?.subTasks || []).filter(sub => sub.megaTaskId === megaTaskId);
     const stop = results.filter(result => result.status !== 'COMPLETE').map(result => `${subs.find(sub => sub.id === result.subTaskId)?.title || ''}: ${String((result.blockers || [])[0] || result.summary || '').replace(/\(.*\)/g, '').slice(0, 200)}`).sort().join(' | ');
     const repeated = Boolean(stop) && stop === settings.lastStop;
     before.lastStop = settings.lastStop;
     settings.lastStop = stop;
-    settings.stalls = changed && !repeated ? 0 : (settings.stalls || 0) + 1;
+    settings.stalls = changed && finishedOne && !repeated ? 0 : (settings.stalls || 0) + 1;
     persist();
     // An error on the way leaves the stop as it was, so the next try hears about it again.
     try { return await continueWith(); }
@@ -3256,7 +3259,7 @@ function createOrchestrator(options) {
         const blocker = results.flatMap(result => result.blockers || []).map(String).find(Boolean) || results.at(-1)?.summary || 'no result was recorded';
         const decisions = store.execution && Array.isArray(store.execution.decisions) ? store.execution.decisions : null;
         if (decisions) decisions.push({ id: 'no-progress-' + megaTaskId, kind: 'no-progress', projectId, megaTaskId, breaks: true, at: now(), answer: '',
-          text: `The crew made no progress twice in a row (no file changed, or the same step stopped for the same reason). Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
+          text: `The crew made no progress twice in a row (no step finished, no file changed, or the same step stopped for the same reason). Last blocker: ${String(blocker).slice(0, 400)} How should it continue?`,
           suggestion: 'Continue: split the remaining work into smaller parts and try other models' });
         note(projectId, 'The crew made no progress twice in a row. Planwharf stopped and asks you in Decisions how to continue.');
         return stopAutonomy(projectId, settings, 'NO_PROGRESS');

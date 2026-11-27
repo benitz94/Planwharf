@@ -103,7 +103,7 @@ test('two rounds with no file changed stop the crew and ask the owner in Decisio
     const inbox = await api('/api/decisions');
     const decision = inbox.open.find(item => item.projectId === projectId);
     assert.ok(decision, JSON.stringify(inbox));
-    assert.match(decision.text, /made no progress twice in a row \(no file changed, or the same step stopped for the same reason\)\. Last blocker: .*How should it continue\?/);
+    assert.match(decision.text, /made no progress twice in a row \(no step finished, no file changed, or the same step stopped for the same reason\)\. Last blocker: .*How should it continue\?/);
     assert.ok(view.execution.timeline.some(event => event.projectId === projectId && event.type === 'NOTE' && /no progress twice in a row/.test(event.summary)), 'the stop is explained in Progress');
     const launched = run.launches.length;
     const answered = await api('/api/decisions/answer', { projectId, decisionId: decision.id, answer: 'Install the tool first, then port.' });
@@ -136,4 +136,24 @@ test('an unusable split is asked again once, and what Planwharf decided is shown
     assert.equal(run.launches.filter(launch => /^Port module/.test(launch.job.title)).length, 16, 'sixteen parts ran, ten at a time: ' + JSON.stringify(run.launches.map(launch => launch.job.title)) + JSON.stringify(timeline.map(event => event.type + ' ' + event.summary).slice(-12)));
     assert.ok(timeline.some(event => event.type === 'NOTE' && /Planwharf gave "Port module 0" to .*: the lead named a model that may not build it\./.test(event.summary)), 'the note is in Progress');
   } finally { await run.close(); }
+});
+
+test('rounds where files change but no step finishes are no progress: the crew stops after two and asks', async () => {
+  let round = 0;
+  const run = harness({
+    // Each round writes something, and each step stops on tests outside its own files (job 51).
+    worker: () => ({ status: 'BLOCKED', summary: `Round ${++round}: my part is done; tests of other parts fail.`, filesChanged: [`src/try-${round}.cs`], blockers: [`${round} scenarios outside my scope fail.`] }),
+    lead: info => splitQuestion(info) ? oneBuild : /stopped before the goal was met/.test(info.question) ? '{"done":false,"next":"Finish the port.","assumptions":[]}' : '{"done":true,"next":null,"assumptions":[]}' });
+  try {
+    const { projectId, until } = await run.start();
+    const view = await until(view => view.autonomy?.[projectId]?.stopReason);
+    const timeline = view.execution.timeline.filter(event => event.projectId === projectId).map(event => event.type + ' ' + event.summary);
+    assert.equal(view.autonomy[projectId].stopReason, 'NO_PROGRESS', JSON.stringify(timeline));
+    assert.ok(run.launches.filter(launch => !/Verify|independently/i.test(launch.job.title)).length <= 3, 'it stopped within a few rounds');
+  } finally { await run.close(); }
+});
+
+test('a step limited to some files is told that failing tests outside them are not its to fix', () => {
+  const source = require('node:fs').readFileSync(require('node:path').join(__dirname, 'execution.cjs'), 'utf8');
+  assert.match(source, /Tests or checks that fail outside your scope are not yours to fix: if your own work is done and its tests pass, finish with status COMPLETE/);
 });

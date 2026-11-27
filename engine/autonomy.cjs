@@ -93,6 +93,7 @@ function continuePrompt({ name, goal, results, reason }) {
   const lines = resultLines(results);
   return [`Autonomous review of project ${name}. The current MegaTask stopped before the goal was met (${reason || 'a step did not finish'}).`, `Goal: ${goal || 'not recorded'}`, 'Recorded results:', ...(lines.length ? lines : ['- none recorded']),
     'Inspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.',
+    'If steps stopped on tests or checks outside their own files, give those failures to one part that may change those files (or to the part that wires the work together), instead of repeating the same parts.',
     'Put in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.',
     leadInstructions()].join('\n');
 }

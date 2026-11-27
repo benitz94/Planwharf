@@ -291,6 +291,7 @@ public static class Autonomy
         if (lines.Count > 0) parts.AddRange(lines);
         else parts.Add("- none recorded");
         parts.Add("Inspect the project folder (files, git log, git diff) to see what is already done. Do not edit files.");
+        parts.Add("If steps stopped on tests or checks outside their own files, give those failures to one part that may change those files (or to the part that wires the work together), instead of repeating the same parts.");
         parts.Add("Put in next the complete remaining work, naming what is already done so the crew does not redo it. Planwharf prepares it and you split it into parts again, so a step that was too big becomes several smaller ones. If a blocker needs the owner (an approval, a key, a decision), say so in next.");
         parts.Add(LeadInstructions());
         return string.Join("\n", parts);
