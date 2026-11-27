@@ -3132,6 +3132,272 @@ public class OrchestratorStateTests
         finally { try { Directory.Delete(root, true); } catch { } }
     }
 
+    [Fact]
+    public async Task InspectRepositoryAsync_KeepsAllPlanProjectsInSnapshot_RejectsParentGitLeak_AndHandlesUnlinkedFolder()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "planwharf-inspect-scope-" + Guid.NewGuid().ToString("N"));
+        var parentRepo = Path.Combine(root, "parent-repo");
+        var nestedPlain = Path.Combine(parentRepo, "nested-alpha");
+        var betaFolder = Path.Combine(root, "beta-folder");
+        var staleFolder = Path.Combine(root, "stale-beta");
+        Directory.CreateDirectory(nestedPlain);
+        Directory.CreateDirectory(betaFolder);
+        Directory.CreateDirectory(staleFolder);
+        try
+        {
+            RunGit(parentRepo, "init", "-q");
+            RunGit(parentRepo, "config", "user.name", "Fixture");
+            RunGit(parentRepo, "config", "user.email", "fixture@example.invalid");
+            File.WriteAllText(Path.Combine(nestedPlain, "app.txt"), "v1\n");
+            RunGit(parentRepo, "add", ".");
+            RunGit(parentRepo, "commit", "-qm", "Parent commit");
+            File.WriteAllText(Path.Combine(nestedPlain, "app.txt"), "v2\n");
+
+            var betaTask = new NotebookTask("job-b", "Beta Job", "Detail", "running", ExecutionVersion: 1);
+            var plan = new NotebookPlan([
+                new NotebookProject("alpha", "Alpha", Folder: nestedPlain),
+                new NotebookProject("beta", "Beta", Folder: betaFolder, Tasks: [betaTask]),
+                new NotebookProject("gamma", "Gamma", Folder: null)
+            ]);
+            var state = OrchestratorState.Load(Path.Combine(root, "state"), new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T13:00:00.000Z",
+                SessionId: "new-session",
+                EnforceSessionBoundary: true,
+                ReadPlan: _ => Task.FromResult(plan)));
+
+            var betaRow = state.EntryRow("beta");
+            betaRow["status"] = "watching";
+            betaRow["approved"] = true;
+            betaRow["jobId"] = betaTask.Id;
+            betaRow["jobFingerprint"] = OrchestratorState.JobFingerprint(betaTask);
+            betaRow["authorizedSessionId"] = "old-session";
+
+            Assert.False((await state.InspectRepositoryAsync("   ")).Ok);
+
+            var inspectAlpha = await state.InspectRepositoryAsync("alpha");
+            Assert.True(inspectAlpha.Ok);
+            Assert.NotNull(inspectAlpha.Snapshot);
+            Assert.Equal(3, inspectAlpha.Snapshot!.Projects.Count);
+            Assert.False(inspectAlpha.Repository!.Local!["git"]!.GetValue<bool>());
+            Assert.Equal("", inspectAlpha.Repository.Local["head"]!.GetValue<string>());
+            Assert.Equal("", inspectAlpha.Repository.Local["diffStat"]!.GetValue<string>());
+
+            // Unlinked gamma must not fall back to stale facts.folder
+            string? inspectedGammaFolder = null;
+            var stateWithCustomInspect = OrchestratorState.Load(Path.Combine(root, "state2"), new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan),
+                InspectRepository: (folder, _, _) =>
+                {
+                    inspectedGammaFolder = folder;
+                    return Task.FromResult(new RepositoryInfo("2026-11-27T13:00:00.000Z", folder));
+                }));
+            stateWithCustomInspect.EntryRow("gamma")["facts"] = new JsonObject { ["folder"] = staleFolder };
+            var inspectGamma = await stateWithCustomInspect.InspectRepositoryAsync("gamma");
+            Assert.True(inspectGamma.Ok);
+            Assert.Equal("", inspectedGammaFolder);
+
+            // InspectRepositoryAsync("alpha") must not have dropped beta from _startupProjects
+            await state.TickAsync("beta");
+            Assert.False(state.Entry("beta").Approved);
+            Assert.True(state.Entry("beta").HoldApproval);
+            Assert.Equal("needs_approval", state.Entry("beta").Status);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task ArchiveProjectAsync_BeforeFirstTick_PreservesSiblingStartupBoundary()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-arch-startup-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var betaTask = new NotebookTask("job-b", "Beta Job", "Detail", "running", ExecutionVersion: 1);
+            var plan = new NotebookPlan([
+                new NotebookProject("alpha", "Alpha", Folder: dir),
+                new NotebookProject("beta", "Beta", Folder: dir, Tasks: [betaTask])
+            ]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T13:05:00.000Z",
+                SessionId: "new-session",
+                EnforceSessionBoundary: true,
+                ReadPlan: _ => Task.FromResult(plan)));
+
+            state.EntryRow("alpha")["status"] = "complete";
+            var betaRow = state.EntryRow("beta");
+            betaRow["status"] = "watching";
+            betaRow["approved"] = true;
+            betaRow["jobId"] = betaTask.Id;
+            betaRow["jobFingerprint"] = OrchestratorState.JobFingerprint(betaTask);
+            betaRow["authorizedSessionId"] = "old-session";
+
+            // Archive alpha BEFORE any TickAsync or Snapshot call
+            var archived = await state.ArchiveProjectAsync("alpha", "cleanup");
+            Assert.True(archived.Ok);
+
+            await state.TickAsync("beta");
+            Assert.False(state.Entry("beta").Approved);
+            Assert.True(state.Entry("beta").HoldApproval);
+            Assert.Equal("needs_approval", state.Entry("beta").Status);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task ReconcileLegacyProject_StoppedByUserClearsAlive_AndInvalidResearchPathsFailClosed()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-stopped-res-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var task = new NotebookTask("job-1", "Build", "Work", "running", ExecutionVersion: 1);
+            var plan = new NotebookPlan([new NotebookProject("alpha", "Alpha", Folder: dir, Tasks: [task])]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                ReadPlan: _ => Task.FromResult(plan),
+                IsProcessAlive: _ => true));
+
+            var row = state.EntryRow("alpha");
+            row["status"] = "watching";
+            row["jobId"] = task.Id;
+            row["jobFingerprint"] = OrchestratorState.JobFingerprint(task);
+            row["approved"] = false;
+            row["workerAlive"] = true;
+            row["dispatch"] = new JsonArray(new JsonObject
+            {
+                ["modelId"] = "m1",
+                ["pid"] = 456,
+                ["alive"] = true,
+                ["stoppedByUser"] = true
+            });
+
+            await state.TickAsync("alpha");
+            Assert.False(state.Entry("alpha").WorkerAlive);
+            Assert.False(row["dispatch"]![0]!["alive"]!.GetValue<bool>());
+            Assert.Equal("needs_approval", state.Entry("alpha").Status);
+
+            var badPath = Path.Combine(dir, "bad\0path");
+            var res = new JsonObject
+            {
+                ["id"] = "res-bad",
+                ["executionVersion"] = 1,
+                ["status"] = "watching",
+                ["pid"] = 999,
+                ["logPath"] = badPath,
+                ["resultPath"] = badPath,
+                ["reportPath"] = badPath
+            };
+            ((JsonArray)state.Store["researches"]!).Add(res);
+            state.RefreshResearch();
+            Assert.True(res["alive"]!.GetValue<bool>());
+            Assert.False(res["reportAvailable"]!.GetValue<bool>());
+            Assert.Equal("", res["workerTail"]!.GetValue<string>());
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void LoadAndSnapshot_HandleNullModelFlagsEmptyLabelsAndEmptyCheckpointFilename()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-edge-shapes-" + Guid.NewGuid().ToString("N"));
+        var cpDir = Path.Combine(dir, "checkpoints");
+        Directory.CreateDirectory(cpDir);
+        try
+        {
+            File.WriteAllText(Path.Combine(cpDir, ".json"), "{\"jobTitle\":\"Empty Id\"}");
+            var state = OrchestratorState.Load(dir);
+            Assert.False(((JsonObject)state.Store["projects"]!).ContainsKey(""));
+
+            state.Store["models"] = new JsonArray(
+                new JsonObject
+                {
+                    ["id"] = "m-null-flags",
+                    ["label"] = "",
+                    ["kind"] = "premium",
+                    ["enabled"] = true,
+                    ["available"] = null,
+                    ["roles"] = new JsonObject { ["orchestrator"] = true }
+                },
+                new JsonObject
+                {
+                    ["id"] = "m-null-enabled",
+                    ["label"] = "",
+                    ["enabled"] = null,
+                    ["available"] = null
+                });
+            state.Store["orchestratorId"] = "m-null-flags";
+
+            var row = state.EntryRow("alpha");
+            row["status"] = "watching";
+            row["jobId"] = "job-gold";
+            row["repository"] = new JsonObject { ["checkedAt"] = "2026-11-27T12:00:00.000Z", ["folder"] = null, ["github"] = null };
+            row["dispatch"] = new JsonArray(new JsonObject { ["modelId"] = "m-fallback", ["label"] = "", ["slice"] = "Work" });
+
+            var task = new NotebookTask("job-gold", "Gold", "Work", "running",
+                Raw: JsonNode.Parse("{\"goldModel\":{\"id\":\"gold-raw-id\"}}")!.AsObject());
+            var snap = state.Snapshot(new NotebookPlan([new NotebookProject("alpha", "Alpha", Folder: "", Github: "", Tasks: [task])]));
+
+            Assert.Equal(2, snap.Models.Count);
+            var model = snap.Models[0];
+            Assert.Equal("m-null-flags", model.Label);
+            Assert.True(model.Enabled);
+            Assert.True(model.Available);
+            Assert.True(snap.Models[1].Enabled);
+            Assert.True(snap.Models[1].Available);
+            Assert.Equal("m-null-flags", snap.OrchestratorId);
+
+            var proj = Assert.Single(snap.Projects);
+            Assert.Equal("unlinked", proj.DocsAvailability);
+            Assert.NotNull(proj.Repository);
+            Assert.Equal("gold-raw-id", proj.GoldModel);
+            Assert.Equal("m-fallback", proj.Crew[1].Name);
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public async Task ConcurrentStress_TickSnapshotFocusInspectPersistAndPage_SerializeWithoutCorruption()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "planwharf-conc-stress-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var plan = new NotebookPlan([
+                new NotebookProject("alpha", "Alpha", Folder: dir),
+                new NotebookProject("beta", "Beta", Folder: dir)
+            ]);
+            var state = OrchestratorState.Load(dir, new OrchestratorStateCollaborators(
+                Now: () => "2026-11-27T13:15:00.000Z",
+                SessionId: "stress-session",
+                ReadPlan: async _ => { await Task.Yield(); return plan; },
+                InspectRepository: async (folder, _, _) =>
+                {
+                    await Task.Yield();
+                    return new RepositoryInfo("2026-11-27T13:15:00.000Z", folder);
+                }));
+
+            var tasks = new List<Task>();
+            for (var i = 0; i < 6; i++)
+            {
+                var target = i % 2 == 0 ? "alpha" : "beta";
+                tasks.Add(state.TickAsync(target));
+                tasks.Add(state.SetFocusAsync(target));
+                tasks.Add(state.InspectRepositoryAsync(target));
+                tasks.Add(state.ActivitySessionPageAsync(target));
+                tasks.Add(Task.Run(() => state.Snapshot(plan, target)));
+                tasks.Add(Task.Run(() => state.Persist()));
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+            var diskJson = JsonNode.Parse(File.ReadAllText(state.StateFile!))!.AsObject();
+            Assert.Contains(diskJson["selectedProjectId"]!.GetValue<string>(), new[] { "alpha", "beta" });
+            Assert.True(((JsonObject)diskJson["projects"]!).ContainsKey("alpha"));
+            Assert.True(((JsonObject)diskJson["projects"]!).ContainsKey("beta"));
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
     private static string RunGit(string folder, params string[] args)
     {
         var psi = new System.Diagnostics.ProcessStartInfo("git")

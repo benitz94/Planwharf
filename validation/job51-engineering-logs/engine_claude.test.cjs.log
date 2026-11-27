@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: catalog resolves CLI aliases only from explicit resolvedModel, deduplicates and rejects unsafe IDs
+ok 1 - catalog resolves CLI aliases only from explicit resolvedModel, deduplicates and rejects unsafe IDs
+  ---
+  duration_ms: 1.632
+  type: 'test'
+  ...
+# Subtest: missing CLI and unauthenticated login never enumerate or claim model access
+ok 2 - missing CLI and unauthenticated login never enumerate or claim model access
+  ---
+  duration_ms: 0.4165
+  type: 'test'
+  ...
+# Subtest: native launch preserves long Unicode stdin and explicit permissions without fallback
+ok 3 - native launch preserves long Unicode stdin and explicit permissions without fallback
+  ---
+  duration_ms: 6.1626
+  type: 'test'
+  ...
+# Subtest: stream requires final success and exact identity; extracts observed usage
+ok 4 - stream requires final success and exact identity; extracts observed usage
+  ---
+  duration_ms: 3.2657
+  type: 'test'
+  ...
+# Subtest: unsupported source-protected research remains unavailable
+ok 5 - unsupported source-protected research remains unavailable
+  ---
+  duration_ms: 0.1344
+  type: 'test'
+  ...
+# Subtest: isolated notebook exposes Claude catalog and persists explicit roles without dispatch
+ok 6 - isolated notebook exposes Claude catalog and persists explicit roles without dispatch
+  ---
+  duration_ms: 167.4529
+  type: 'test'
+  ...
+# Subtest: the lead's steps say what each tool did, and when it was refused
+ok 7 - the lead's steps say what each tool did, and when it was refused
+  ---
+  duration_ms: 0.9109
+  type: 'test'
+  ...
+# Subtest: a tool cut off by the end of the stream is still listed
+ok 8 - a tool cut off by the end of the stream is still listed
+  ---
+  duration_ms: 0.3674
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 188.2334

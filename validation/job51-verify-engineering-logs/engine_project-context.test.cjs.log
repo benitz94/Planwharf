@@ -1,0 +1,1 @@
+OK: project history/context isolation with absent/shared/new chat IDs, inferred recipients, preserved global history, restart, scoped cancellation and no worker dispatch. Mock providers only.

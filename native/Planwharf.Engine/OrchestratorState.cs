@@ -611,8 +611,14 @@ public sealed class OrchestratorState
     private static string? StringOrNull(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
+    private static string? NonEmptyString(JsonNode? node) =>
+        StringOrNull(node) is { Length: > 0 } text ? text : null;
+
     private static bool BoolOrFalse(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<bool>(out var result) && result;
+
+    private static bool BoolOrTrueUnlessFalse(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<bool>(out var result) ? result : true;
 
     private static int? IntOrNull(JsonNode? node) =>
         node is JsonValue value && value.TryGetValue<int>(out var result) ? result : null;
@@ -760,11 +766,11 @@ public sealed class OrchestratorState
             Label: StringOrNull(obj["label"]),
             Why: StringOrNull(obj["why"]),
             Provider: StringOrNull(obj["provider"]),
-            Enabled: !obj.ContainsKey("enabled") || BoolOrFalse(obj["enabled"]),
-            Available: !obj.ContainsKey("available") || BoolOrFalse(obj["available"]),
-            ProviderEnabled: !obj.ContainsKey("providerEnabled") || BoolOrFalse(obj["providerEnabled"]),
-            CanCode: !obj.ContainsKey("canCode") || BoolOrFalse(obj["canCode"]),
-            CanVerify: !obj.ContainsKey("canVerify") || BoolOrFalse(obj["canVerify"]),
+            Enabled: BoolOrTrueUnlessFalse(obj["enabled"]),
+            Available: BoolOrTrueUnlessFalse(obj["available"]),
+            ProviderEnabled: BoolOrTrueUnlessFalse(obj["providerEnabled"]),
+            CanCode: BoolOrTrueUnlessFalse(obj["canCode"]),
+            CanVerify: BoolOrTrueUnlessFalse(obj["canVerify"]),
             Plan: StringOrNull(obj["plan"]),
             Role: StringOrNull(obj["role"]));
     }
@@ -1172,7 +1178,7 @@ public sealed class OrchestratorState
         foreach (var file in checkpointFiles)
         {
             var name = Path.GetFileName(file);
-            if (name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            if (name.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && name.Length > 5)
             {
                 ids.Add(name[..^5]);
             }
@@ -1217,6 +1223,13 @@ public sealed class OrchestratorState
         if (!ProjectWorkspace.Within(checkpointsFolder, file) || !File.Exists(file)) return null;
         try
         {
+            var cpCanonical = ProjectWorkspace.LinkedWorkspace(checkpointsFolder) ?? checkpointsFolder;
+            var fileInfo = new FileInfo(file);
+            if ((fileInfo.Attributes & FileAttributes.ReparsePoint) != 0)
+            {
+                var target = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
+                if (target is null || !ProjectWorkspace.Within(cpCanonical, target.FullName)) return null;
+            }
             var content = File.ReadAllText(file, Encoding.UTF8);
             var parsed = JsonNode.Parse(content) as JsonObject;
             if (parsed == null) return null;
@@ -1564,7 +1577,7 @@ public sealed class OrchestratorState
                 var slice = StringOrNull(partNode["slice"]);
                 var doing = !string.IsNullOrEmpty(slice) ? slice : "On the plan";
                 var historical = BoolOrFalse(partNode["historicalAssignment"]);
-                var label = StringOrNull(partNode["label"]) ?? StringOrNull(partNode["modelId"]) ?? "";
+                var label = NonEmptyString(partNode["label"]) ?? StringOrNull(partNode["modelId"]) ?? "";
 
                 if (historical)
                 {
@@ -1770,8 +1783,17 @@ public sealed class OrchestratorState
             foreach (var arg in args) start.ArgumentList.Add(arg);
             foreach (var pair in ProjectWorkspace.GitEnvironment()) start.Environment[pair.Key] = pair.Value;
             using var process = Process.Start(start);
-            if (process is null || !process.WaitForExit(4000) || process.ExitCode != 0) return "";
-            var output = process.StandardOutput.ReadToEnd();
+            if (process is null) return "";
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            if (!process.WaitForExit(4000))
+            {
+                try { process.Kill(entireProcessTree: true); } catch { }
+                return "";
+            }
+            if (process.ExitCode != 0) return "";
+            var output = stdoutTask.GetAwaiter().GetResult();
+            _ = stderrTask.IsCompleted;
             return args.Length > 0 && args[0] == "status" ? output.TrimEnd('\r', '\n') : output.Trim();
         }
         catch { return ""; }
@@ -2147,13 +2169,15 @@ public sealed class OrchestratorState
         var docs = entry.Docs.Count > 0
             ? entry.Docs.ToArray()
             : CollectDocsFromFactsObject(row["facts"] as JsonObject);
+        var hasFolder = !string.IsNullOrEmpty(item.Folder);
+        var hasGithub = !string.IsNullOrEmpty(item.Github);
         var factsFolder = StringOrNull(row["facts"]?["folder"]);
         var docsInspected = row["facts"] is JsonObject && (string.IsNullOrEmpty(factsFolder) || factsFolder == item.Folder);
         var docsAvailability = docs.Length > 0
             ? "available"
-            : item.Folder is null && item.Github is null
+            : !hasFolder && !hasGithub
                 ? "unlinked"
-                : docsInspected && item.Github is null
+                : docsInspected && !hasGithub
                     ? "none"
                     : "unknown";
         var task = item.Tasks?.FirstOrDefault(t => t.Status == "running");
@@ -2169,8 +2193,8 @@ public sealed class OrchestratorState
             : ModelRouting.PersistedSavingMode(item.SavingMode);
 
         var repoMatches = entry.Repository is not null &&
-            entry.Repository.Folder == item.Folder &&
-            entry.Repository.Github == item.Github;
+            (string.IsNullOrEmpty(entry.Repository.Folder) ? null : entry.Repository.Folder) == (hasFolder ? item.Folder : null) &&
+            (string.IsNullOrEmpty(entry.Repository.Github) ? null : entry.Repository.Github) == (hasGithub ? item.Github : null);
         var repository = repoMatches ? RepositoryFromObject(row["repository"]) : null;
 
         var megaResultsArr = new JsonArray(!string.IsNullOrEmpty(entry.MegaTaskId)
@@ -2267,7 +2291,9 @@ public sealed class OrchestratorState
             Doing = isLegacyPhase2Complete ? "Historical completion recorded. This run predates structured Phase 2 results." : entry.Doing,
             Plan = entry.Plan.ToArray(),
             Facts = entry.Facts,
-            GoldModel = (item.Tasks?.FirstOrDefault(t => t.Id == entry.JobId)?.GoldModel?.Id) ?? task?.GoldModel?.Id,
+            GoldModel = (item.Tasks?.FirstOrDefault(t => t.Id == entry.JobId) is { } selectedTask
+                ? (selectedTask.GoldModel?.Id ?? StringOrNull(selectedTask.Raw?["goldModel"]?["id"]))
+                : null) ?? task?.GoldModel?.Id ?? StringOrNull(task?.Raw?["goldModel"]?["id"]),
             JobTitle = entry.JobTitle ?? task?.Title,
             JobId = entry.JobId ?? task?.Id,
             AttemptId = entry.AttemptId,
@@ -2365,9 +2391,9 @@ public sealed class OrchestratorState
     private IReadOnlyList<ModelInfo> ModelsFromStore()
     {
         return (_store["models"] as JsonArray)?.OfType<JsonObject>().Select(m => new ModelInfo(
-            StringOrNull(m["id"]) ?? "", StringOrNull(m["label"]) ?? StringOrNull(m["id"]) ?? "",
+            StringOrNull(m["id"]) ?? "", NonEmptyString(m["label"]) ?? StringOrNull(m["id"]) ?? "",
             StringOrNull(m["provider"]) ?? StringOrNull(m["providerId"]), StringOrNull(m["cli"]),
-            !m.ContainsKey("enabled") || BoolOrFalse(m["enabled"]), !m.ContainsKey("available") || BoolOrFalse(m["available"]),
+            BoolOrTrueUnlessFalse(m["enabled"]), BoolOrTrueUnlessFalse(m["available"]),
             StringOrNull(m["plan"]), (JsonObject)m.DeepClone())).ToArray() ?? [];
     }
 
@@ -2833,8 +2859,7 @@ public sealed class OrchestratorState
     {
         if (string.IsNullOrEmpty(path)) return "";
         try { return _collaborators.ReadResult?.Invoke(path) ?? File.ReadAllText(path, Encoding.UTF8); }
-        catch (IOException) { return ""; }
-        catch (UnauthorizedAccessException) { return ""; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return ""; }
     }
 
     private static string ResearchTail(string? path)
@@ -2845,8 +2870,7 @@ public sealed class OrchestratorState
             var raw = File.ReadAllText(path, Encoding.UTF8);
             return raw[Math.Max(0, raw.Length - 1600)..].Replace("\r", "", StringComparison.Ordinal).Trim();
         }
-        catch (IOException) { return ""; }
-        catch (UnauthorizedAccessException) { return ""; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return ""; }
     }
 
     public void RefreshResearch()
@@ -2893,8 +2917,7 @@ public sealed class OrchestratorState
                     new FileInfo(reportPath) is { Exists: true, Length: > 0 } fi &&
                     (fi.Attributes & FileAttributes.Directory) == 0;
             }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { }
             record["reportAvailable"] = available;
             if (StringOrNull(record["status"]) != "watching") continue;
             var resultPath = StringOrNull(record["resultPath"]);
@@ -3056,7 +3079,7 @@ public sealed class OrchestratorState
         // Snapshot recovery in JavaScript validates a successful provider exit as well as
         // completion. Incomplete/dead old workers cannot silently become approved new work.
         if (StringOrNull(row["status"]) == "watching" && !Execution.Truthy(row["megaTaskId"]) &&
-            (job is null || StringOrNull(row["jobId"]) == job.Id) && parts.Any(p => IntOrNull(p["pid"]) is int pid && pid != 0))
+            (job is null || StringOrNull(row["jobId"]) == job.Id) && parts.Any(p => !BoolOrFalse(p["stoppedByUser"]) && IntOrNull(p["pid"]) is int pid && pid != 0))
         {
             if (job is not null && string.IsNullOrWhiteSpace(item.Folder))
             {
@@ -3074,7 +3097,7 @@ public sealed class OrchestratorState
                 ReconcileLegacyWatchingRow(item, row);
                 return;
             }
-            foreach (var part in parts) part["alive"] = ProcessAlive(part);
+            foreach (var part in parts) part["alive"] = !BoolOrFalse(part["stoppedByUser"]) && ProcessAlive(part);
             row["workerAlive"] = parts.Any(p => BoolOrFalse(p["alive"]));
             if (!BoolOrFalse(row["workerAlive"]))
             {
@@ -3135,6 +3158,11 @@ public sealed class OrchestratorState
                 return;
             }
             var ongoing = parts.Any(p => !BoolOrFalse(p["stoppedByUser"]) && ProcessAlive(p));
+            if (!ongoing)
+            {
+                row["workerAlive"] = false;
+                foreach (var part in parts) part["alive"] = false;
+            }
             if (_collaborators.EnforceSessionBoundary && context.WasRunningAtStartup && StringOrNull(row["authorizedSessionId"]) != _sessionId && !ongoing)
             { row["approved"] = false; row["holdApproval"] = true; }
             if (row["checkpoint"] is not JsonObject && ReadCheckpointFile(item.Id) is { } disk && CheckpointMatches(disk, job))
@@ -3204,6 +3232,7 @@ public sealed class OrchestratorState
         var plan = _collaborators.ReadPlan is null ? new NotebookPlan([])
             : await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
+        RememberStartup(plan);
 
         var targetProject = plan.Projects?.FirstOrDefault(p => p.Id == projectId);
         var hasAliveDispatch = false;
@@ -3292,11 +3321,14 @@ public sealed class OrchestratorState
         var gateAcquired = await WaitGateIfNeededAsync(cancellationToken).ConfigureAwait(false);
         using var _ = PushGateScope(gateAcquired);
         cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(projectId))
+            return new InspectRepositoryResult(false, Reason: "project not found");
+        NotebookPlan? fullPlan = null;
         NotebookProject? notebookProject = null;
         if (_collaborators.ReadPlan is not null)
         {
-            var plan = await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
-            notebookProject = plan.Projects.FirstOrDefault(p => p.Id == projectId);
+            fullPlan = await _collaborators.ReadPlan(cancellationToken).ConfigureAwait(false);
+            notebookProject = fullPlan.Projects.FirstOrDefault(p => p.Id == projectId);
             if (notebookProject is null)
                 return new InspectRepositoryResult(false, Reason: "project not found");
         }
@@ -3305,7 +3337,9 @@ public sealed class OrchestratorState
             return new InspectRepositoryResult(false, Reason: "project not found");
         }
         var row = EntryRow(projectId);
-        var folder = notebookProject?.Folder ?? StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]);
+        var folder = notebookProject is not null
+            ? notebookProject.Folder
+            : StringOrNull(row["folder"]) ?? StringOrNull(row["facts"]?["folder"]);
         var repository = _collaborators.InspectRepository is not null
             ? await _collaborators.InspectRepository(folder ?? "", options, cancellationToken).ConfigureAwait(false)
             : await InspectRepositoryDefaultAsync(folder, cancellationToken).ConfigureAwait(false);
@@ -3315,19 +3349,19 @@ public sealed class OrchestratorState
             row["facts"] = DefaultInspectJson(folder);
         }
         Persist();
-        var snapshot = notebookProject is null ? null : Snapshot(new NotebookPlan([notebookProject]), projectId);
+        var snapshot = fullPlan is null ? null : Snapshot(fullPlan, projectId);
         return new InspectRepositoryResult(true, repository, snapshot, null);
     }
 
     private void ReconcileLegacyWatchingRow(NotebookProject item, JsonObject row)
     {
         var parts = (row["dispatch"] as JsonArray)?.OfType<JsonObject>().ToArray() ?? [];
-        if (parts.Length == 0 || !parts.Any(p => IntOrNull(p["pid"]) is int pid && pid > 0)) return;
+        if (parts.Length == 0 || !parts.Any(p => !BoolOrFalse(p["stoppedByUser"]) && IntOrNull(p["pid"]) is int pid && pid > 0)) return;
 
         foreach (var part in parts)
         {
             var pid = IntOrNull(part["pid"]);
-            part["alive"] = pid is int pVal && pVal > 0 && (_collaborators.IsProcessAlive?.Invoke(pVal.ToString()) ?? false);
+            part["alive"] = !BoolOrFalse(part["stoppedByUser"]) && pid is int pVal && pVal > 0 && (_collaborators.IsProcessAlive?.Invoke(pVal.ToString()) ?? false);
         }
         if (parts.Any(p => BoolOrFalse(p["alive"]))) return;
 
@@ -3396,9 +3430,15 @@ public sealed class OrchestratorState
             try
             {
                 var probe = Path.Combine(linked, ".planwharf-write-" + Guid.NewGuid().ToString("N"));
-                File.WriteAllText(probe, "");
-                File.Delete(probe);
-                local["writable"] = true;
+                try
+                {
+                    File.WriteAllText(probe, "");
+                    local["writable"] = true;
+                }
+                finally
+                {
+                    try { if (File.Exists(probe)) File.Delete(probe); } catch { }
+                }
             }
             catch { }
         }
@@ -3407,13 +3447,14 @@ public sealed class OrchestratorState
             return new RepositoryInfo(_now(), linked, null, local, new JsonObject { ["accessible"] = false }, new JsonObject { ["status"] = "unknown" }, error.Message);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         var facts = DefaultInspect(linked);
         local["git"] = facts.Git;
         local["folder"] = linked;
         local["branch"] = facts.Branch;
-        local["head"] = RunGit(linked, "rev-parse", "--verify", "HEAD");
+        local["head"] = facts.Git ? RunGit(linked, "rev-parse", "--verify", "HEAD") : "";
         local["dirty"] = new JsonArray((facts.Dirty ?? []).Select(x => (JsonNode?)JsonValue.Create(x)).ToArray());
-        local["diffStat"] = Clip(RunGit(linked, "diff", "--stat", "HEAD"), 400);
+        local["diffStat"] = facts.Git ? Clip(RunGit(linked, "diff", "--stat", "HEAD"), 400) : "";
         return new RepositoryInfo(_now(), linked, null, local,
             new JsonObject { ["accessible"] = false },
             new JsonObject { ["status"] = facts.Git ? "local-only" : "unknown", ["ahead"] = null, ["behind"] = null });

@@ -1,0 +1,184 @@
+TAP version 13
+# Subtest: parallel parts have isolated registered worktrees and merge in order
+ok 1 - parallel parts have isolated registered worktrees and merge in order
+  ---
+  duration_ms: 3361.3172
+  type: 'test'
+  ...
+# Subtest: conflict aborts the merge and retains both branches for recovery
+ok 2 - conflict aborts the merge and retains both branches for recovery
+  ---
+  duration_ms: 2668.3732
+  type: 'test'
+  ...
+# Subtest: interrupted worktree is reused and dirty work is preserved during cleanup
+ok 3 - interrupted worktree is reused and dirty work is preserved during cleanup
+  ---
+  duration_ms: 1439.4108
+  type: 'test'
+  ...
+# Subtest: explicit drop removes clean unmerged part branches
+ok 4 - explicit drop removes clean unmerged part branches
+  ---
+  duration_ms: 1455.3671
+  type: 'test'
+  ...
+# Subtest: non-git folders do not acquire worktrees
+ok 5 - non-git folders do not acquire worktrees
+  ---
+  duration_ms: 2.215
+  type: 'test'
+  ...
+# Subtest: execution bridge isolates successive parallel groups and verifies after both integrations
+ok 6 - execution bridge isolates successive parallel groups and verifies after both integrations
+  ---
+  duration_ms: 8387.0417
+  type: 'test'
+  ...
+# Subtest: execution bridge gives merge conflicts to an integration worker
+ok 7 - execution bridge gives merge conflicts to an integration worker
+  ---
+  duration_ms: 5251.9064
+  type: 'test'
+  ...
+# Subtest: failed parallel work keeps both worktrees for recovery
+ok 8 - failed parallel work keeps both worktrees for recovery
+  ---
+  duration_ms: 2211.1681
+  type: 'test'
+  ...
+# Subtest: merges are no-ff and a later conflict keeps only the earlier merge
+ok 9 - merges are no-ff and a later conflict keeps only the earlier merge
+  ---
+  duration_ms: 2697.9072
+  type: 'test'
+  ...
+# Subtest: dirty work or part pauses integration before any merge
+ok 10 - dirty work or part pauses integration before any merge
+  ---
+  duration_ms: 2166.3581
+  type: 'test'
+  ...
+# Subtest: Planwharf's own work plan does not pause integration, even when a project tracks it
+ok 11 - Planwharf's own work plan does not pause integration, even when a project tracks it
+  ---
+  duration_ms: 2735.1451
+  type: 'test'
+  ...
+# Subtest: a missing part folder pauses integration instead of throwing
+ok 12 - a missing part folder pauses integration instead of throwing
+  ---
+  duration_ms: 1373.3033
+  type: 'test'
+  ...
+# Subtest: explicit drop removes a dirty worktree and its branch
+ok 13 - explicit drop removes a dirty worktree and its branch
+  ---
+  duration_ms: 1544.1536
+  type: 'test'
+  ...
+# Subtest: deleting the worktree directory keeps the branch and create restores it
+ok 14 - deleting the worktree directory keeps the branch and create restores it
+  ---
+  duration_ms: 1599.379
+  type: 'test'
+  ...
+# Subtest: an occupied destination on another branch is refused
+ok 15 - an occupied destination on another branch is refused
+  ---
+  duration_ms: 1482.4676
+  type: 'test'
+  ...
+# Subtest: invalid identities and branches are rejected before git writes
+ok 16 - invalid identities and branches are rejected before git writes
+  ---
+  duration_ms: 767.3718
+  type: 'test'
+  ...
+# Subtest: cleanup refuses a path outside the work and leaves it in place
+ok 17 - cleanup refuses a path outside the work and leaves it in place
+  ---
+  duration_ms: 1059.5573
+  type: 'test'
+  ...
+# Subtest: worktree paths with spaces and non-ASCII names round-trip
+ok 18 - worktree paths with spaces and non-ASCII names round-trip
+  ---
+  duration_ms: 1689.6978
+  type: 'test'
+  ...
+# Subtest: concurrent commits in two worktrees both merge
+ok 19 - concurrent commits in two worktrees both merge
+  ---
+  duration_ms: 2186.36
+  type: 'test'
+  ...
+# Subtest: explicit drop removes a locked worktree
+ok 20 - explicit drop removes a locked worktree
+  ---
+  duration_ms: 1312.4081
+  type: 'test'
+  ...
+# Subtest: one build part and every verify step stay in the project folder
+ok 21 - one build part and every verify step stay in the project folder
+  ---
+  duration_ms: 1505.221
+  type: 'test'
+  ...
+# Subtest: a folder that is not a git repository runs every part in that folder
+ok 22 - a folder that is not a git repository runs every part in that folder
+  ---
+  duration_ms: 214.3799
+  type: 'test'
+  ...
+# Subtest: a commit outside the worktree scope blocks the part and does not merge
+ok 23 - a commit outside the worktree scope blocks the part and does not merge
+  ---
+  duration_ms: 2924.1996
+  type: 'test'
+  ...
+# Subtest: detached HEAD fails worktree creation and leaves the project untouched
+ok 24 - detached HEAD fails worktree creation and leaves the project untouched
+  ---
+  duration_ms: 1349.1074
+  type: 'test'
+  ...
+# Subtest: an integration result that does not merge stays blocked and keeps the worktrees
+ok 25 - an integration result that does not merge stays blocked and keeps the worktrees
+  ---
+  duration_ms: 3719.6212
+  type: 'test'
+  ...
+# Subtest: a failed part is not merged and its worktree is reused on resume
+ok 26 - a failed part is not merged and its worktree is reused on resume
+  ---
+  duration_ms: 5442.4695
+  type: 'test'
+  ...
+# Subtest: drop refuses while a worker is running and removes dirty work after failure
+ok 27 - drop refuses while a worker is running and removes dirty work after failure
+  ---
+  duration_ms: 4106.3934
+  type: 'test'
+  ...
+# Subtest: uncommitted part files pause integration and keep both worktrees
+ok 28 - uncommitted part files pause integration and keep both worktrees
+  ---
+  duration_ms: 3060.6521
+  type: 'test'
+  ...
+# Subtest: a worktree removed before integration is handed over and can still be merged
+ok 29 - a worktree removed before integration is handed over and can still be merged
+  ---
+  duration_ms: 4776.4001
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72499.8978

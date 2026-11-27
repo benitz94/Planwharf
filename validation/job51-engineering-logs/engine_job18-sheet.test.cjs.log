@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: job 18 sheet keeps the design tools and the error, recovery, and concurrency limits
+ok 1 - job 18 sheet keeps the design tools and the error, recovery, and concurrency limits
+  ---
+  duration_ms: 16.9373
+  type: 'test'
+  ...
+# Subtest: a dropped limit, a built server, or a drifted tool table fails on its own
+ok 2 - a dropped limit, a built server, or a drifted tool table fails on its own
+  ---
+  duration_ms: 2.4416
+  type: 'test'
+  ...
+# Subtest: parallel assessments do not mix a sound sheet with a broken one
+ok 3 - parallel assessments do not mix a sound sheet with a broken one
+  ---
+  duration_ms: 0.809
+  type: 'test'
+  ...
+# Subtest: the branch is only the sheet and its required docs on refreshed origin/main
+ok 4 - the branch is only the sheet and its required docs on refreshed origin/main
+  ---
+  duration_ms: 440.1828
+  type: 'test'
+  ...
+# Subtest: job 18 records the independent review that actually happened
+ok 5 - job 18 records the independent review that actually happened
+  ---
+  duration_ms: 0.9758
+  type: 'test'
+  ...
+# Subtest: an isolated sheet branch on refreshed origin/main passes the same checks
+ok 6 - an isolated sheet branch on refreshed origin/main passes the same checks
+  ---
+  duration_ms: 1661.2556
+  type: 'test'
+  ...
+# Subtest: a detached sheet checkout still has to be based on refreshed origin/main
+ok 7 - a detached sheet checkout still has to be based on refreshed origin/main
+  ---
+  duration_ms: 1559.0202
+  type: 'test'
+  ...
+# Subtest: each isolated branch fault fails on its own
+ok 8 - each isolated branch fault fails on its own
+  ---
+  duration_ms: 10866.8027
+  type: 'test'
+  ...
+# Subtest: an empty diff behind origin/main is not a sheet-branch pass
+ok 9 - an empty diff behind origin/main is not a sheet-branch pass
+  ---
+  duration_ms: 1653.9418
+  type: 'test'
+  ...
+# Subtest: the set-aside gate files stay recoverable and out of this branch
+ok 10 - the set-aside gate files stay recoverable and out of this branch
+  ---
+  duration_ms: 415.3203
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16628.8684

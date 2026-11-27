@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: a chat message that says review makes an implementation task
+ok 1 - a chat message that says review makes an implementation task
+  ---
+  duration_ms: 234.0597
+  type: 'test'
+  ...
+# Subtest: the proposal route accepts audit kind and AUDIT subtask type
+ok 2 - the proposal route accepts audit kind and AUDIT subtask type
+  ---
+  duration_ms: 42.3662
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 281.5035

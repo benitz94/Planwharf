@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: job 35 sheet covers worker isolation, OS mechanisms, escalation, and escape tests
+ok 1 - job 35 sheet covers worker isolation, OS mechanisms, escalation, and escape tests
+  ---
+  duration_ms: 2.7965
+  type: 'test'
+  ...
+# Subtest: dropping an isolation rule, platform, escalation, or escape test fails assessment
+ok 2 - dropping an isolation rule, platform, escalation, or escape test fails assessment
+  ---
+  duration_ms: 9.1475
+  type: 'test'
+  ...
+# Subtest: dropping a concurrency, error, recovery, or edge case limit fails assessment
+ok 3 - dropping a concurrency, error, recovery, or edge case limit fails assessment
+  ---
+  duration_ms: 10.7795
+  type: 'test'
+  ...
+# Subtest: assessSheet rejects empty text, malformed structures, and premature implementation claims
+ok 4 - assessSheet rejects empty text, malformed structures, and premature implementation claims
+  ---
+  duration_ms: 0.1858
+  type: 'test'
+  ...
+# Subtest: documentation names job 35 as the sandbox sheet, whatever its status now
+ok 5 - documentation names job 35 as the sandbox sheet, whatever its status now
+  ---
+  duration_ms: 1.1161
+  type: 'test'
+  ...
+# Subtest: the verdict stays on the sheet branch and conforms to plan
+ok 6 - the verdict stays on the sheet branch and conforms to plan
+  ---
+  duration_ms: 57.0324
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.9845

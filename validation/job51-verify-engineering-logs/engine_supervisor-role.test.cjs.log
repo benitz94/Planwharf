@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: fourth permission is opt-in, preserves old roles, and never authorizes implementation or review
+ok 1 - fourth permission is opt-in, preserves old roles, and never authorizes implementation or review
+  ---
+  duration_ms: 1.8357
+  type: 'test'
+  ...
+# Subtest: legacy advisory selection does not silently grant new role or automatic calls; name/history survive restart
+ok 2 - legacy advisory selection does not silently grant new role or automatic calls; name/history survive restart
+  ---
+  duration_ms: 27.8212
+  type: 'test'
+  ...
+# Subtest: advisory permission, exact selection, provider availability and quota are checked before every call
+ok 3 - advisory permission, exact selection, provider availability and quota are checked before every call
+  ---
+  duration_ms: 21.9916
+  type: 'test'
+  ...
+# Subtest: Supervisor usage is separate and unfinished calls become blocked after restart
+ok 4 - Supervisor usage is separate and unfinished calls become blocked after restart
+  ---
+  duration_ms: 10.7663
+  type: 'test'
+  ...
+# Subtest: Core keeps observing concurrent worker evidence while a bounded advisory is pending
+ok 5 - Core keeps observing concurrent worker evidence while a bounded advisory is pending
+  ---
+  duration_ms: 5.4841
+  type: 'test'
+  ...
+# Subtest: HTTP migrates legacy and per-account permissions; generic enabling cannot silently grant Supervisor
+ok 6 - HTTP migrates legacy and per-account permissions; generic enabling cannot silently grant Supervisor
+  ---
+  duration_ms: 165.7107
+  type: 'test'
+  ...
+# Subtest: HTTP blocks exhausted internal budgets without invocation, debits accepted calls durably, and honors catalog exemption
+ok 7 - HTTP blocks exhausted internal budgets without invocation, debits accepted calls durably, and honors catalog exemption
+  ---
+  duration_ms: 110.4106
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 350.6997

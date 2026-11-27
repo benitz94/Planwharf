@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: handover stays blocked until the backup, token and a different build are present
+ok 1 - handover stays blocked until the backup, token and a different build are present
+  ---
+  duration_ms: 1.4918
+  type: 'test'
+  ...
+# Subtest: exchange evidence keeps the message text and drops a bot token
+ok 2 - exchange evidence keeps the message text and drops a bot token
+  ---
+  duration_ms: 0.3514
+  type: 'test'
+  ...
+# Subtest: a paused listener is restored when the updated build sends the alert and a natural reply
+ok 3 - a paused listener is restored when the updated build sends the alert and a natural reply
+  ---
+  duration_ms: 1.2074
+  type: 'test'
+  ...
+# Subtest: a failed pause does not start the updated build
+ok 4 - a failed pause does not start the updated build
+  ---
+  duration_ms: 0.2504
+  type: 'test'
+  ...
+# Subtest: a poll that is still blocked restores the installed listener
+ok 5 - a poll that is still blocked restores the installed listener
+  ---
+  duration_ms: 0.2933
+  type: 'test'
+  ...
+# Subtest: a handover poll error stops handover, skips build and idle reply, and restores polling
+ok 6 - a handover poll error stops handover, skips build and idle reply, and restores polling
+  ---
+  duration_ms: 0.3831
+  type: 'test'
+  ...
+# Subtest: the installed listener is polling again when the updated build does not start
+ok 7 - the installed listener is polling again when the updated build does not start
+  ---
+  duration_ms: 1.0346
+  type: 'test'
+  ...
+# Subtest: a thrown step after pause still restores polling and stops a build that started
+ok 8 - a thrown step after pause still restores polling and stops a build that started
+  ---
+  duration_ms: 1.0616
+  type: 'test'
+  ...
+# Subtest: stopping the updated build cannot skip restoring the installed listener
+ok 9 - stopping the updated build cannot skip restoring the installed listener
+  ---
+  duration_ms: 0.5198
+  type: 'test'
+  ...
+# Subtest: an empty alert is kept as a failed exchange and polling still returns
+ok 10 - an empty alert is kept as a failed exchange and polling still returns
+  ---
+  duration_ms: 0.4977
+  type: 'test'
+  ...
+# Subtest: no pending message uses the idle question and records that reply
+ok 11 - no pending message uses the idle question and records that reply
+  ---
+  duration_ms: 0.4279
+  type: 'test'
+  ...
+# Subtest: a pause that throws does not resume or start, and the next handover can run
+ok 12 - a pause that throws does not resume or start, and the next handover can run
+  ---
+  duration_ms: 0.3466
+  type: 'test'
+  ...
+# Subtest: a second handover waits out the first instead of pausing the listener twice
+ok 13 - a second handover waits out the first instead of pausing the listener twice
+  ---
+  duration_ms: 6.8763
+  type: 'test'
+  ...
+# Subtest: resume failure is reported after the alert and the build has stopped
+ok 14 - resume failure is reported after the alert and the build has stopped
+  ---
+  duration_ms: 0.2136
+  type: 'test'
+  ...
+# Subtest: a thrown resume is a failed restore after the build stops
+ok 15 - a thrown resume is a failed restore after the build stops
+  ---
+  duration_ms: 0.2592
+  type: 'test'
+  ...
+# Subtest: a missing token never pauses the installed listener
+ok 16 - a missing token never pauses the installed listener
+  ---
+  duration_ms: 0.1237
+  type: 'test'
+  ...
+# Subtest: a 409 conflict retries and stops only if the other poller never clears, not as an immediate stop
+ok 17 - a 409 conflict retries and stops only if the other poller never clears, not as an immediate stop
+  ---
+  duration_ms: 7.2794
+  type: 'test'
+  ...
+# Subtest: a 409 conflict retries and recovers when the other poller clears
+ok 18 - a 409 conflict retries and recovers when the other poller clears
+  ---
+  duration_ms: 0.2124
+  type: 'test'
+  ...
+# Subtest: a non-409 poll error stops immediately without retrying
+ok 19 - a non-409 poll error stops immediately without retrying
+  ---
+  duration_ms: 0.1662
+  type: 'test'
+  ...
+# Subtest: a clean poll with no waiting message and no error follows the existing path that sends the idle reply
+ok 20 - a clean poll with no waiting message and no error follows the existing path that sends the idle reply
+  ---
+  duration_ms: 0.3023
+  type: 'test'
+  ...
+# Subtest: an error object, a failed poll result, and a waiting message still stop without a build or idle reply
+ok 21 - an error object, a failed poll result, and a waiting message still stop without a build or idle reply
+  ---
+  duration_ms: 0.4438
+  type: 'test'
+  ...
+# Subtest: a poll error restores the installed listener even when resume throws, then the next handover can run
+ok 22 - a poll error restores the installed listener even when resume throws, then the next handover can run
+  ---
+  duration_ms: 0.2855
+  type: 'test'
+  ...
+# Subtest: a poll error with no resume function does not start the build and leaves polling unrestored
+ok 23 - a poll error with no resume function does not start the build and leaves polling unrestored
+  ---
+  duration_ms: 0.1884
+  type: 'test'
+  ...
+# Subtest: a second handover does not pause while the first poll is failing
+ok 24 - a second handover does not pause while the first poll is failing
+  ---
+  duration_ms: 2.6215
+  type: 'test'
+  ...
+# Subtest: live poll errors stop immediately, keep 409 retries, and recover without moving the ack
+ok 25 - live poll errors stop immediately, keep 409 retries, and recover without moving the ack
+  ---
+  duration_ms: 0.8703
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36.8542

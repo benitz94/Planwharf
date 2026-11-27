@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: authority needs the setting, Automatic mode and the session that enabled it
+ok 1 - authority needs the setting, Automatic mode and the session that enabled it
+  ---
+  duration_ms: 2.3736
+  type: 'test'
+  ...
+# Subtest: a user pause or stop is never overridden, even with an active alert
+ok 2 - a user pause or stop is never overridden, even with an active alert
+  ---
+  duration_ms: 0.182
+  type: 'test'
+  ...
+# Subtest: a slice that ends blocked or failed goes back to the lead at once, without waiting for an alert
+ok 3 - a slice that ends blocked or failed goes back to the lead at once, without waiting for an alert
+  ---
+  duration_ms: 0.3032
+  type: 'test'
+  ...
+# Subtest: the lead sees the documents a goal names and may read the project to size the work
+ok 4 - the lead sees the documents a goal names and may read the project to size the work
+  ---
+  duration_ms: 1.251
+  type: 'test'
+  ...
+# Subtest: the lead is told what a stopped step did, so it names only the rest of the work
+ok 5 - the lead is told what a stopped step did, so it names only the rest of the work
+  ---
+  duration_ms: 0.3054
+  type: 'test'
+  ...
+# Subtest: the MegaTask cap stops approval and reports the limit
+ok 6 - the MegaTask cap stops approval and reports the limit
+  ---
+  duration_ms: 0.1653
+  type: 'test'
+  ...
+# Subtest: a completed MegaTask is evaluated once
+ok 7 - a completed MegaTask is evaluated once
+  ---
+  duration_ms: 0.2113
+  type: 'test'
+  ...
+# Subtest: turning the crew on after finished work starts new work instead of re-judging the old one
+ok 8 - turning the crew on after finished work starts new work instead of re-judging the old one
+  ---
+  duration_ms: 0.147
+  type: 'test'
+  ...
+# Subtest: each alert nudges once, ignored alerts never, and the hourly cap holds
+ok 9 - each alert nudges once, ignored alerts never, and the hourly cap holds
+  ---
+  duration_ms: 0.4197
+  type: 'test'
+  ...
+# Subtest: a nudge is written from detected facts
+ok 10 - a nudge is written from detected facts
+  ---
+  duration_ms: 0.406
+  type: 'test'
+  ...
+# Subtest: lead replies only yield done, an objective or assumptions; anything else is rejected
+ok 11 - lead replies only yield done, an objective or assumptions; anything else is rejected
+  ---
+  duration_ms: 0.4128
+  type: 'test'
+  ...
+# Subtest: the guard stops real pushes for URL and local remotes and keeps prior Git config
+ok 12 - the guard stops real pushes for URL and local remotes and keeps prior Git config
+  ---
+  duration_ms: 951.1333
+  type: 'test'
+  ...
+# Subtest: off by default: nothing is approved, and enabling requires Automatic mode
+ok 13 - off by default: nothing is approved, and enabling requires Automatic mode
+  ---
+  duration_ms: 103.4384
+  type: 'test'
+  ...
+# Subtest: enabled: the policy approves, records itself, guards the worker, and disabling stops it
+ok 14 - enabled: the policy approves, records itself, guards the worker, and disabling stops it
+  ---
+  duration_ms: 162.5759
+  type: 'test'
+  ...
+# Subtest: a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+ok 15 - a manual approval carries no autonomy claim, and its worker is still guarded against pushing
+  ---
+  duration_ms: 112.6932
+  type: 'test'
+  ...
+# Subtest: full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+ok 16 - full loop on a real server: starts, approves, works, reassesses, continues and stops without a person
+  ---
+  duration_ms: 1001.1353
+  type: 'test'
+  ...
+# Subtest: a restart turns autonomy off instead of resuming it
+ok 17 - a restart turns autonomy off instead of resuming it
+  ---
+  duration_ms: 21.4692
+  type: 'test'
+  ...
+# Subtest: a lead reply with a summary is read, not an error
+ok 18 - a lead reply with a summary is read, not an error
+  ---
+  duration_ms: 0.2145
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2367.3206

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: stripPathsAndCode thoroughly strips Unix paths, Windows paths (slash & backslash), UNC, and relative paths
+ok 1 - stripPathsAndCode thoroughly strips Unix paths, Windows paths (slash & backslash), UNC, and relative paths
+  ---
+  duration_ms: 2.0828
+  type: 'test'
+  ...
+# Subtest: stripPathsAndCode removes code blocks, braces, backticks, and filenames without stripping model IDs or normal words
+ok 2 - stripPathsAndCode removes code blocks, braces, backticks, and filenames without stripping model IDs or normal words
+  ---
+  duration_ms: 0.1745
+  type: 'test'
+  ...
+# Subtest: stepOutcomeRecord sanitizes free-text fields (kind, size, refusal) against path and code leakage
+ok 3 - stepOutcomeRecord sanitizes free-text fields (kind, size, refusal) against path and code leakage
+  ---
+  duration_ms: 0.8439
+  type: 'test'
+  ...
+# Subtest: stepOutcomeRecord handles model objects, empty models, and case normalization
+ok 4 - stepOutcomeRecord handles model objects, empty models, and case normalization
+  ---
+  duration_ms: 0.1864
+  type: 'test'
+  ...
+# Subtest: stepOutcomeRecord normalizes negative/NaN/string values in duration, quota, and test counts
+ok 5 - stepOutcomeRecord normalizes negative/NaN/string values in duration, quota, and test counts
+  ---
+  duration_ms: 0.8552
+  type: 'test'
+  ...
+# Subtest: readStepOutcomes gracefully recovers across corrupt JSON lines, empty lines, and non-existent folders
+ok 6 - readStepOutcomes gracefully recovers across corrupt JSON lines, empty lines, and non-existent folders
+  ---
+  duration_ms: 8.3721
+  type: 'test'
+  ...
+# Subtest: high-concurrency writes: multiple concurrent appends produce intact JSONL lines with matching summary counts
+ok 7 - high-concurrency writes: multiple concurrent appends produce intact JSONL lines with matching summary counts
+  ---
+  duration_ms: 42.8583
+  type: 'test'
+  ...
+# Subtest: executionBridge handles multiple build steps verified together
+ok 8 - executionBridge handles multiple build steps verified together
+  ---
+  duration_ms: 332.253
+  type: 'test'
+  ...
+# Subtest: executionBridge with retried subtask uses completed attempt result rather than failed initial attempt
+ok 9 - executionBridge with retried subtask uses completed attempt result rather than failed initial attempt
+  ---
+  duration_ms: 308.4652
+  type: 'test'
+  ...
+# Subtest: executionBridge records no-verdict switch outcome when worker process times out twice
+ok 10 - executionBridge records no-verdict switch outcome when worker process times out twice
+  ---
+  duration_ms: 45.2628
+  type: 'test'
+  ...
+# Subtest: executionBridge megatask completion records unverified steps cleanly without duplicates
+ok 11 - executionBridge megatask completion records unverified steps cleanly without duplicates
+  ---
+  duration_ms: 200.8367
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 948.609

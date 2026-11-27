@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: a commit status is red or green by its state, and a red one can be fixed
+ok 1 - a commit status is red or green by its state, and a red one can be fixed
+  ---
+  duration_ms: 3.9641
+  type: 'test'
+  ...
+# Subtest: a merged list that cannot be read does not pretend nothing was merged
+ok 2 - a merged list that cannot be read does not pretend nothing was merged
+  ---
+  duration_ms: 1.0169
+  type: 'test'
+  ...
+# Subtest: a closed list or a check-run list can fail and the open panel still answers
+ok 3 - a closed list or a check-run list can fail and the open panel still answers
+  ---
+  duration_ms: 0.7572
+  type: 'test'
+  ...
+# Subtest: the summary window, the median and the busiest checks stay inside 30 days
+ok 4 - the summary window, the median and the busiest checks stay inside 30 days
+  ---
+  duration_ms: 11.9551
+  type: 'test'
+  ...
+# Subtest: bad pages, duplicate numbers and a failed fix still leave a way to try again
+ok 5 - bad pages, duplicate numbers and a failed fix still leave a way to try again
+  ---
+  duration_ms: 1.2871
+  type: 'test'
+  ...
+# Subtest: the four gh reads overlap, and two panels do not mix their answers
+ok 6 - the four gh reads overlap, and two panels do not mix their answers
+  ---
+  duration_ms: 95.2851
+  type: 'test'
+  ...
+# Subtest: the 30 day summary counts merges past the first page gh would return
+ok 7 - the 30 day summary counts merges past the first page gh would return
+  ---
+  duration_ms: 2.3889
+  type: 'test'
+  ...
+# Subtest: the merged list still answers when the closed list cannot be read
+ok 8 - the merged list still answers when the closed list cannot be read
+  ---
+  duration_ms: 0.3073
+  type: 'test'
+  ...
+# Subtest: a gh read that crashes is a panel message, and it does not wipe the other panel
+ok 9 - a gh read that crashes is a panel message, and it does not wipe the other panel
+  ---
+  duration_ms: 1.3514
+  type: 'test'
+  ...
+# Subtest: a timed out or broken check counts among the checks that failed most often
+ok 10 - a timed out or broken check counts among the checks that failed most often
+  ---
+  duration_ms: 0.6193
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 125.1115

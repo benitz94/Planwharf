@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: addToWork refuses empty, missing, idle and unknown work
+ok 1 - addToWork refuses empty, missing, idle and unknown work
+  ---
+  duration_ms: 136.6307
+  type: 'test'
+  ...
+# Subtest: two additions keep unique ids, sit before Verify, and Verify waits for both
+ok 2 - two additions keep unique ids, sit before Verify, and Verify waits for both
+  ---
+  duration_ms: 138.1389
+  type: 'test'
+  ...
+# Subtest: two addToWork calls at once keep both steps and unique ids
+ok 3 - two addToWork calls at once keep both steps and unique ids
+  ---
+  duration_ms: 133.426
+  type: 'test'
+  ...
+# Subtest: the work plan lists the new step and unticks Verify
+ok 4 - the work plan lists the new step and unticks Verify
+  ---
+  duration_ms: 170.2245
+  type: 'test'
+  ...
+# Subtest: a thrown kill while Verify runs still adds the step and reruns Verify
+ok 5 - a thrown kill while Verify runs still adds the step and reruns Verify
+  ---
+  duration_ms: 324.2562
+  type: 'test'
+  ...
+# Subtest: Ultra safe assigns a light model, and a flagged model is not used
+ok 6 - Ultra safe assigns a light model, and a flagged model is not used
+  ---
+  duration_ms: 132.9134
+  type: 'test'
+  ...
+# Subtest: a last chat answer supplies the addition, and a broken plan file does not block it
+ok 7 - a last chat answer supplies the addition, and a broken plan file does not block it
+  ---
+  duration_ms: 203.254
+  type: 'test'
+  ...
+# Subtest: named files wait for a running step on the same path, including a parent folder
+ok 8 - named files wait for a running step on the same path, including a parent folder
+  ---
+  duration_ms: 109.7562
+  type: 'test'
+  ...
+# Subtest: an addition waits for a running Build that did not name its files
+ok 9 - an addition waits for a running Build that did not name its files
+  ---
+  duration_ms: 124.502
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1480.0033

@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: Grill starts a real lead turn with Grill me instructions and keeps follow-up decisions in chat without a source folder
+ok 1 - Grill starts a real lead turn with Grill me instructions and keeps follow-up decisions in chat without a source folder
+  ---
+  duration_ms: 161.8357
+  type: 'test'
+  ...
+# Subtest: a missing lead is reported in the conversation
+ok 2 - a missing lead is reported in the conversation
+  ---
+  duration_ms: 20.6161
+  type: 'test'
+  ...
+# Subtest: unrecognized Antigravity model is classified precisely and never replaced with another provider
+ok 3 - unrecognized Antigravity model is classified precisely and never replaced with another provider
+  ---
+  duration_ms: 32.1685
+  type: 'test'
+  ...
+# Subtest: Antigravity discovery only accepts exact listed IDs and keeps auth failures unread
+ok 4 - Antigravity discovery only accepts exact listed IDs and keeps auth failures unread
+  ---
+  duration_ms: 0.9461
+  type: 'test'
+  ...
+# Subtest: explicit Start after chat grilling prepares the discussed task without reopening the old questionnaire
+ok 5 - explicit Start after chat grilling prepares the discussed task without reopening the old questionnaire
+  ---
+  duration_ms: 151.277
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 372.5892

@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: quotaWatchTick uses the project team and moves a step whose model lost its role
+ok 1 - quotaWatchTick uses the project team and moves a step whose model lost its role
+  ---
+  duration_ms: 543.857
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick moves verifier and reviewer steps when models lose respective roles
+ok 2 - quotaWatchTick moves verifier and reviewer steps when models lose respective roles
+  ---
+  duration_ms: 198.8026
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick leaves step in place when no eligible model is above quota
+ok 3 - quotaWatchTick leaves step in place when no eligible model is above quota
+  ---
+  duration_ms: 141.1348
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick catches reassignRemaining error without crashing
+ok 4 - quotaWatchTick catches reassignRemaining error without crashing
+  ---
+  duration_ms: 196.3411
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick moves step when role is removed in shared team for project without own team
+ok 5 - quotaWatchTick moves step when role is removed in shared team for project without own team
+  ---
+  duration_ms: 144.3682
+  type: 'test'
+  ...
+# Subtest: quotaWatchTick prefers an independent provider when moving a step that lost its role
+ok 6 - quotaWatchTick prefers an independent provider when moving a step that lost its role
+  ---
+  duration_ms: 176.5348
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1451.7165

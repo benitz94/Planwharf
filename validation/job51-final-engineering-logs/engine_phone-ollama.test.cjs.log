@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: ollama defaults to the local qwen2.5:3b model and refuses other origins
+ok 1 - ollama defaults to the local qwen2.5:3b model and refuses other origins
+  ---
+  duration_ms: 1.2608
+  type: 'test'
+  ...
+# Subtest: project facts stay fresh and leave out paths, files and secrets
+ok 2 - project facts stay fresh and leave out paths, files and secrets
+  ---
+  duration_ms: 1.3317
+  type: 'test'
+  ...
+# Subtest: chat memory is bounded, isolated, clearable, and recovers from a broken file
+ok 3 - chat memory is bounded, isolated, clearable, and recovers from a broken file
+  ---
+  duration_ms: 11.5033
+  type: 'test'
+  ...
+# Subtest: ollama chat posts only the requested model and fails closed on timeout, http errors and empty text
+ok 4 - ollama chat posts only the requested model and fails closed on timeout, http errors and empty text
+  ---
+  duration_ms: 54.0436
+  type: 'test'
+  ...
+# Subtest: a paired chat gets a natural reply from fresh facts and does not run a command
+ok 5 - a paired chat gets a natural reply from fresh facts and does not run a command
+  ---
+  duration_ms: 67.9015
+  type: 'test'
+  ...
+# Subtest: ollama escapes model HTML, retries once, and hides error bodies
+ok 6 - ollama escapes model HTML, retries once, and hides error bodies
+  ---
+  duration_ms: 1.3964
+  type: 'test'
+  ...
+# Subtest: concurrent ollama calls keep their own reply when one is down
+ok 7 - concurrent ollama calls keep their own reply when one is down
+  ---
+  duration_ms: 69.1817
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 211.9898

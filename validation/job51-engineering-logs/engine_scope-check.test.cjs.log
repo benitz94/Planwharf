@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: a part that reports a file outside its scope is stopped and named
+ok 1 - a part that reports a file outside its scope is stopped and named
+  ---
+  duration_ms: 2192.1129
+  type: 'test'
+  ...
+# Subtest: when the part runs again its worker is told what it touched last time
+ok 2 - when the part runs again its worker is told what it touched last time
+  ---
+  duration_ms: 2907.8607
+  type: 'test'
+  ...
+# Subtest: git is not used to blame a part while another part was working at the same time
+ok 3 - git is not used to blame a part while another part was working at the same time
+  ---
+  duration_ms: 2479.871
+  type: 'test'
+  ...
+# Subtest: a part alone in its time is checked against git; files dirty before the work do not count
+ok 4 - a part alone in its time is checked against git; files dirty before the work do not count
+  ---
+  duration_ms: 363.0249
+  type: 'test'
+  ...
+# Subtest: a part with no scope (the check of the whole) may change any file
+ok 5 - a part with no scope (the check of the whole) may change any file
+  ---
+  duration_ms: 3102.6074
+  type: 'test'
+  ...
+# Subtest: a part that waits for others may change their finished files and files nobody owns, not a file of a part that may still work
+ok 6 - a part that waits for others may change their finished files and files nobody owns, not a file of a part that may still work
+  ---
+  duration_ms: 6248.152
+  type: 'test'
+  ...
+# Subtest: Resume works after the same work stopped twice (two checkpoints): it continues from the latest
+ok 7 - Resume works after the same work stopped twice (two checkpoints): it continues from the latest
+  ---
+  duration_ms: 2819.1278
+  type: 'test'
+  ...
+# Subtest: a work that continues a stopped one gets new branches for its parts, while the stopped parts keep theirs
+ok 8 - a work that continues a stopped one gets new branches for its parts, while the stopped parts keep theirs
+  ---
+  duration_ms: 4109.6161
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24231.879

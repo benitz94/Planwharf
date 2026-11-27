@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: a conflicting pull request is fixed in its own copy and pushed to the same branch
+ok 1 - a conflicting pull request is fixed in its own copy and pushed to the same branch
+  ---
+  duration_ms: 3332.6825
+  type: 'test'
+  ...
+# Subtest: conflict markers left in a file stop the push
+ok 2 - conflict markers left in a file stop the push
+  ---
+  duration_ms: 2444.8188
+  type: 'test'
+  ...
+# Subtest: a fix is pushed while the worker push guard is set
+ok 3 - a fix is pushed while the worker push guard is set
+  ---
+  duration_ms: 3004.3874
+  type: 'test'
+  ...
+# Subtest: a concurrent push to the remote branch refuses the fix push without losing work
+ok 4 - a concurrent push to the remote branch refuses the fix push without losing work
+  ---
+  duration_ms: 3667.7811
+  type: 'test'
+  ...
+# Subtest: a clean fix where nothing needed changing does not push
+ok 5 - a clean fix where nothing needed changing does not push
+  ---
+  duration_ms: 2931.6798
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15386.2663

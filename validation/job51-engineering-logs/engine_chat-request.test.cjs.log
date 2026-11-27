@@ -1,0 +1,1 @@
+OK: isolated HTTP chat accepts >64 KiB Unicode, enforces 1 MiB, preserves other request limits and notebook data.

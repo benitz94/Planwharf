@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: isClearMemory handles bot suffix, case variance, and rejects non-clear commands
+ok 1 - isClearMemory handles bot suffix, case variance, and rejects non-clear commands
+  ---
+  duration_ms: 1.2605
+  type: 'test'
+  ...
+# Subtest: normalizeOllamaSettings validates model patterns and loopback URL variations
+ok 2 - normalizeOllamaSettings validates model patterns and loopback URL variations
+  ---
+  duration_ms: 0.4698
+  type: 'test'
+  ...
+# Subtest: samePath normalizes relative, absolute, whitespace, and slash differences
+ok 3 - samePath normalizes relative, absolute, whitespace, and slash differences
+  ---
+  duration_ms: 0.6009
+  type: 'test'
+  ...
+# Subtest: copyBackup recovers files located in .attempts-plan fallback
+ok 4 - copyBackup recovers files located in .attempts-plan fallback
+  ---
+  duration_ms: 20.9975
+  type: 'test'
+  ...
+# Subtest: liveExchange recovers from network errors and exceptions without throwing
+ok 5 - liveExchange recovers from network errors and exceptions without throwing
+  ---
+  duration_ms: 0.4662
+  type: 'test'
+  ...
+# Subtest: assessPairedActivation handles mixed listeners and relative build path
+ok 6 - assessPairedActivation handles mixed listeners and relative build path
+  ---
+  duration_ms: 0.3193
+  type: 'test'
+  ...
+# Subtest: concurrent saveChatMemory calls do not collide or corrupt store
+ok 7 - concurrent saveChatMemory calls do not collide or corrupt store
+  ---
+  duration_ms: 24.685
+  type: 'test'
+  ...
+# Subtest: telegram bot handles /clear@BotName in live notifier without leaking memory
+ok 8 - telegram bot handles /clear@BotName in live notifier without leaking memory
+  ---
+  duration_ms: 63.3029
+  type: 'test'
+  ...
+# Subtest: probeOllama safely handles unreachable Ollama and reports installed status
+ok 9 - probeOllama safely handles unreachable Ollama and reports installed status
+  ---
+  duration_ms: 28.1489
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 153.2174

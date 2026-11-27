@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: job 42 sheet covers all 16 modules, mappings, parity, checks, and CI commands
+ok 1 - job 42 sheet covers all 16 modules, mappings, parity, checks, and CI commands
+  ---
+  duration_ms: 4.4249
+  type: 'test'
+  ...
+# Subtest: dropping any required module or target class fails assessment
+ok 2 - dropping any required module or target class fails assessment
+  ---
+  duration_ms: 19.8249
+  type: 'test'
+  ...
+# Subtest: dropping a parity rule, check, or CI command fails assessment
+ok 3 - dropping a parity rule, check, or CI command fails assessment
+  ---
+  duration_ms: 17.9319
+  type: 'test'
+  ...
+# Subtest: dropping an error, recovery, concurrency, or edge case limit fails assessment
+ok 4 - dropping an error, recovery, concurrency, or edge case limit fails assessment
+  ---
+  duration_ms: 31.6222
+  type: 'test'
+  ...
+# Subtest: dropping an open design decision fails assessment
+ok 5 - dropping an open design decision fails assessment
+  ---
+  duration_ms: 13.3219
+  type: 'test'
+  ...
+# Subtest: assessSheet rejects empty text, malformed structures, and premature implementation claims
+ok 6 - assessSheet rejects empty text, malformed structures, and premature implementation claims
+  ---
+  duration_ms: 0.3409
+  type: 'test'
+  ...
+# Subtest: documentation names job 42 as the phase 4 sheet and points to its port, whatever the status now
+ok 7 - documentation names job 42 as the phase 4 sheet and points to its port, whatever the status now
+  ---
+  duration_ms: 1.2092
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 101.3977

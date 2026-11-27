@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: subscription state is explicit; recorded quota refusals are not misclassified as expiry
+ok 1 - subscription state is explicit; recorded quota refusals are not misclassified as expiry
+  ---
+  duration_ms: 2.7233
+  type: 'test'
+  ...
+# Subtest: expired and signed-out plans block assignment without confusing unknown quota
+ok 2 - expired and signed-out plans block assignment without confusing unknown quota
+  ---
+  duration_ms: 0.4873
+  type: 'test'
+  ...
+# Subtest: same exact model on another account wins before a different company; quotas stay isolated
+ok 3 - same exact model on another account wins before a different company; quotas stay isolated
+  ---
+  duration_ms: 1.1289
+  type: 'test'
+  ...
+# Subtest: account folders save paths only and reject unsupported providers
+ok 4 - account folders save paths only and reject unsupported providers
+  ---
+  duration_ms: 24.7302
+  type: 'test'
+  ...
+# Subtest: hidden models and explain lines match company and subscription state
+ok 5 - hidden models and explain lines match company and subscription state
+  ---
+  duration_ms: 0.9208
+  type: 'test'
+  ...
+# Subtest: server /api/accounts creates account folder and returns sign-in command without storing secrets
+ok 6 - server /api/accounts creates account folder and returns sign-in command without storing secrets
+  ---
+  duration_ms: 211.7458
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 402.0116

@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: a path outside temp is refused before anything is removed
+ok 1 - a path outside temp is refused before anything is removed
+  ---
+  duration_ms: 1.6786
+  type: 'test'
+  ...
+# Subtest: a path that only looks like it leaves temp is still removed
+ok 2 - a path that only looks like it leaves temp is still removed
+  ---
+  duration_ms: 2.8338
+  type: 'test'
+  ...
+# Subtest: a missing path inside temp is already clean, and an invalid path fails at once
+ok 3 - a missing path inside temp is already clean, and an invalid path fails at once
+  ---
+  duration_ms: 3.3276
+  type: 'test'
+  ...
+# Subtest: a different drive-letter case is still inside temp on Windows
+ok 4 - a different drive-letter case is still inside temp on Windows
+  ---
+  duration_ms: 2.0597
+  type: 'test'
+  ...
+# Subtest: removing a symlink removes the link and leaves the target
+ok 5 - removing a symlink removes the link and leaves the target
+  ---
+  duration_ms: 3.4813
+  type: 'test'
+  ...
+# Subtest: two removals of the same folder both finish
+ok 6 - two removals of the same folder both finish
+  ---
+  duration_ms: 2.6445
+  type: 'test'
+  ...
+# Subtest: cleanup waits out a holder, then removes the folder after it exits
+ok 7 - cleanup waits out a holder, then removes the folder after it exits
+  ---
+  duration_ms: 242.6292
+  type: 'test'
+  ...
+# Subtest: waitForExit reports a dead pid and gives up on one that stays
+ok 8 - waitForExit reports a dead pid and gives up on one that stays
+  ---
+  duration_ms: 94.2445
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 358.4648

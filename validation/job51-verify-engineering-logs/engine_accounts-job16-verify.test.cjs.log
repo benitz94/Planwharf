@@ -1,0 +1,88 @@
+TAP version 13
+# Subtest: a stale account list cannot drop an account already saved
+ok 1 - a stale account list cannot drop an account already saved
+  ---
+  duration_ms: 24.9906
+  type: 'test'
+  ...
+# Subtest: account files reject secrets, duplicates, escapes and broken JSON
+ok 2 - account files reject secrets, duplicates, escapes and broken JSON
+  ---
+  duration_ms: 34.7618
+  type: 'test'
+  ...
+# Subtest: a folder that points outside the account root is rejected
+ok 3 - a folder that points outside the account root is rejected
+  ---
+  duration_ms: 12.1724
+  type: 'test'
+  ...
+# Subtest: a failed save removes the new folder and keeps the previous accounts
+ok 4 - a failed save removes the new folder and keeps the previous accounts
+  ---
+  duration_ms: 6.7293
+  type: 'test'
+  ...
+# Subtest: sign-in commands keep quotes closed
+ok 5 - sign-in commands keep quotes closed
+  ---
+  duration_ms: 0.3233
+  type: 'test'
+  ...
+# Subtest: parallel adds keep every account
+ok 6 - parallel adds keep every account
+  ---
+  duration_ms: 179.4816
+  type: 'test'
+  ...
+# Subtest: a stale lock is recovered and a live lock fails closed
+ok 7 - a stale lock is recovered and a live lock fails closed
+  ---
+  duration_ms: 5051.506
+  type: 'test'
+  ...
+# Subtest: another account is used only when its own quota has room
+ok 8 - another account is used only when its own quota has room
+  ---
+  duration_ms: 1.9551
+  type: 'test'
+  ...
+# Subtest: assignment skips an unread sibling and keeps a sibling that still has quota
+ok 9 - assignment skips an unread sibling and keeps a sibling that still has quota
+  ---
+  duration_ms: 0.6418
+  type: 'test'
+  ...
+# Subtest: two account folders read two quotas and never return the tokens
+ok 10 - two account folders read two quotas and never return the tokens
+  ---
+  duration_ms: 13.8627
+  type: 'test'
+  ...
+# Subtest: a company limit applies separately to each account quota
+ok 11 - a company limit applies separately to each account quota
+  ---
+  duration_ms: 111.5705
+  type: 'test'
+  ...
+# Subtest: the server rejects a poisoned account file, a single-account tool, and keeps parallel adds
+ok 12 - the server rejects a poisoned account file, a single-account tool, and keeps parallel adds
+  ---
+  duration_ms: 339.6457
+  type: 'test'
+  ...
+# Subtest: subscription errors stay classified without copying secrets
+ok 13 - subscription errors stay classified without copying secrets
+  ---
+  duration_ms: 0.928
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7648.9167

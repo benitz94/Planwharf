@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: flat removes markdown marks and normalises whitespace
+ok 1 - flat removes markdown marks and normalises whitespace
+  ---
+  duration_ms: 1.2058
+  type: 'test'
+  ...
+# Subtest: clip truncates cleanly at word boundaries with an ellipsis
+ok 2 - clip truncates cleanly at word boundaries with an ellipsis
+  ---
+  duration_ms: 0.1716
+  type: 'test'
+  ...
+# Subtest: firstSentence extracts up to the first terminal punctuation or colon
+ok 3 - firstSentence extracts up to the first terminal punctuation or colon
+  ---
+  duration_ms: 0.2165
+  type: 'test'
+  ...
+# Subtest: stepLine returns the lead line when present
+ok 4 - stepLine returns the lead line when present
+  ---
+  duration_ms: 1.2561
+  type: 'test'
+  ...
+# Subtest: stepLine falls back to a safe short sentence when lead gives none
+ok 5 - stepLine falls back to a safe short sentence when lead gives none
+  ---
+  duration_ms: 0.2767
+  type: 'test'
+  ...
+# Subtest: stepLine caps text to LINE_MAX characters
+ok 6 - stepLine caps text to LINE_MAX characters
+  ---
+  duration_ms: 0.2221
+  type: 'test'
+  ...
+# Subtest: workSummary returns the lead summary when present
+ok 7 - workSummary returns the lead summary when present
+  ---
+  duration_ms: 0.338
+  type: 'test'
+  ...
+# Subtest: workSummary falls back to last finished build step result or work title
+ok 8 - workSummary falls back to last finished build step result or work title
+  ---
+  duration_ms: 0.2784
+  type: 'test'
+  ...
+# Subtest: workSummary caps text to SUMMARY_MAX characters and 2 sentences
+ok 9 - workSummary caps text to SUMMARY_MAX characters and 2 sentences
+  ---
+  duration_ms: 0.4112
+  type: 'test'
+  ...
+# Subtest: readSplitLines and readSummary parse JSON answers from the lead
+ok 10 - readSplitLines and readSummary parse JSON answers from the lead
+  ---
+  duration_ms: 0.5998
+  type: 'test'
+  ...
+# Subtest: forWork formats work summary and step lines for native client consumption
+ok 11 - forWork formats work summary and step lines for native client consumption
+  ---
+  duration_ms: 0.269
+  type: 'test'
+  ...
+# Subtest: asks prompts are defined and clear
+ok 12 - asks prompts are defined and clear
+  ---
+  duration_ms: 0.0931
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.971

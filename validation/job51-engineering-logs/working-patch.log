@@ -1,0 +1,4 @@
+warning: in the working copy of 'native/Planwharf.Engine.Tests/ParityTests.cs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'native/Planwharf.Engine.Tests/ScenarioParityTests.cs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'native/Planwharf.Engine/OrchestratorState.cs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'native/porting/parity/required.json', LF will be replaced by CRLF the next time Git touches it

@@ -1,0 +1,14 @@
+PASS first claim writes a file row
+DOUBLE_CLAIM same_task first.ok=true second.ok=false first.id=attempt-1 second.attempt=null reason=task already assigned
+PASS second claim same task fails and writes no extra row
+DOUBLE_CLAIM same_project first.ok=true second.ok=false reason=project already assigned
+PASS second claim same project different task fails and writes no extra row
+PASS reconstructed engine finds the same attempt
+PASS distinct project and task may claim
+PASS same task id on two projects may claim
+PASS disabled and missing models are refused without a row
+PASS close releases the claim so another model may take it
+PASS sentinel: written COMPLETE ends waiting even if process is alive
+PASS sentinel: missing verdict closes the attempt
+PASS sentinel: does not open a second attempt while the first is active
+passed=11 failed=0

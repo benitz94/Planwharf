@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: a pull request list gh cannot read is a panel message, not an HTTP error
+ok 1 - a pull request list gh cannot read is a panel message, not an HTTP error
+  ---
+  duration_ms: 174.6756
+  type: 'test'
+  ...
+# Subtest: one project refuses a second fix while another project starts, then the first can be tried again
+ok 2 - one project refuses a second fix while another project starts, then the first can be tried again
+  ---
+  duration_ms: 494.0986
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 673.8811

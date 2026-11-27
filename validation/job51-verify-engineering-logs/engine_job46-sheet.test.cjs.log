@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: all Job 46 specification sheets exist and are nonempty
+ok 1 - all Job 46 specification sheets exist and are nonempty
+  ---
+  duration_ms: 3.2293
+  type: 'test'
+  ...
+# Subtest: Master sheet (46-phase6-orchestrator.md) satisfies all structural and behavioral requirements
+ok 2 - Master sheet (46-phase6-orchestrator.md) satisfies all structural and behavioral requirements
+  ---
+  duration_ms: 1.3634
+  type: 'test'
+  ...
+# Subtest: Sub-module sheets (46a-e) satisfy all responsibilities, signatures, boundaries, dependencies, tests, parity, and migration
+ok 3 - Sub-module sheets (46a-e) satisfy all responsibilities, signatures, boundaries, dependencies, tests, parity, and migration
+  ---
+  duration_ms: 5.3828
+  type: 'test'
+  ...
+# Subtest: every requirement pattern across master and split modules detects its own omission
+ok 4 - every requirement pattern across master and split modules detects its own omission
+  ---
+  duration_ms: 61.4182
+  type: 'test'
+  ...
+# Subtest: empty, null, undefined, and truncated sheets fail assessment
+ok 5 - empty, null, undefined, and truncated sheets fail assessment
+  ---
+  duration_ms: 3.9136
+  type: 'test'
+  ...
+# Subtest: interleaved assessments stay independent across concurrent runs
+ok 6 - interleaved assessments stay independent across concurrent runs
+  ---
+  duration_ms: 2.8304
+  type: 'test'
+  ...
+# Subtest: representative architectural, state boundary, parity, and migration mutations are detected
+ok 7 - representative architectural, state boundary, parity, and migration mutations are detected
+  ---
+  duration_ms: 1.9309
+  type: 'test'
+  ...
+# Subtest: specification sheets cover edge cases, error conditions, and recovery mechanisms across all five split modules
+ok 8 - specification sheets cover edge cases, error conditions, and recovery mechanisms across all five split modules
+  ---
+  duration_ms: 2.0398
+  type: 'test'
+  ...
+# Subtest: master orchestrator sheet enforces context isolation, concurrency gates, and cross-project token separation
+ok 9 - master orchestrator sheet enforces context isolation, concurrency gates, and cross-project token separation
+  ---
+  duration_ms: 0.7385
+  type: 'test'
+  ...
+# Subtest: cross-sheet contracts and migration sequence are strictly consistent and bidirectional
+ok 10 - cross-sheet contracts and migration sequence are strictly consistent and bidirectional
+  ---
+  duration_ms: 1.6743
+  type: 'test'
+  ...
+# Subtest: edge case, recovery, and concurrency requirement mutations are detected across all sheets
+ok 11 - edge case, recovery, and concurrency requirement mutations are detected across all sheets
+  ---
+  duration_ms: 2.3225
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 97.4321
