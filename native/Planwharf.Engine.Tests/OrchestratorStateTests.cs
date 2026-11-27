@@ -1534,7 +1534,8 @@ public class OrchestratorStateTests
         {
             for (var i = 0; i < 30; i++) File.WriteAllText(Path.Combine(folder, $"file-{i:D2}.txt"), "fixture");
             var facts = OrchestratorState.DefaultInspect(folder);
-            Assert.Equal(folder, facts.Folder);
+            // The engine records the folder with links followed (on macOS /var is /private/var).
+            Assert.Equal(ScenarioParityTests.RealRootForTests(folder), facts.Folder);
             Assert.Equal(30, facts.FileCount);
             Assert.False(OrchestratorState.DefaultInspect(Path.Combine(folder, "missing")).Git);
             Assert.Equal("folder not found", OrchestratorState.DefaultInspect(Path.Combine(folder, "missing")).Error);

@@ -1,2 +1,0 @@
-PASS browser discovery fixtures; no real browser coverage
-PASS actual disposable child startup failure classification; this is not a browser test
