@@ -55,3 +55,7 @@ engineering-logs/
 
 # Planwharf's own work plan, rewritten at every step of a work
 .planwharf/
+
+# Logs of a local CI run (PLANWHARF_CI_LOGS), never committed
+validation/*engineering-logs/
+*-engineering-logs/
