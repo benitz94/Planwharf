@@ -5,7 +5,7 @@ const stepRole = sub => sub.type === 'AUDIT' ? 'Review' : sub.type === 'RESEARCH
 const MAX_PARALLEL = 10;
 // A step limited to some files is told so, and why: other workers change the rest at the same time.
 const scopeText = (sub, isolated = false) => Array.isArray(sub.scope) && sub.scope.length
-  ? `\n\nYour scope: change only these files or folders, relative to ${isolated ? 'this worker folder' : 'the project folder'}: ${sub.scope.join(', ')}. ${isolated ? 'Other workers have their own folders.' : 'Other workers are changing other files in this folder at the same time.'} A change outside your scope stops your part.`
+  ? `\n\nYour scope: change only these files or folders, relative to ${isolated ? 'this worker folder' : 'the project folder'}: ${sub.scope.join(', ')}. ${isolated ? 'Other workers have their own folders.' : 'Other workers are changing other files in this folder at the same time.'} A change outside your scope stops your part. Tests or checks that fail outside your scope are not yours to fix: if your own work is done and its tests pass, finish with status COMPLETE and list those failures in your summary under "Outside my scope:"; the part that wires the work together, or Verify, fixes them.`
     + (Array.isArray(sub.scopeViolation) && sub.scopeViolation.length ? `\nLast time this part was stopped for changing files outside its scope: ${sub.scopeViolation.join(', ')}. Do not touch them: if the work needs them, say so in your result and stop.` : '')
   : '';
 const slash = file => String(file).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
